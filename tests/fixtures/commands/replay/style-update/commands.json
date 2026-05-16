@@ -1,0 +1,18 @@
+[
+  {
+    "id": "cmd-style-districts",
+    "version": "0.1",
+    "type": "setPaint",
+    "baseRevision": "1",
+    "layerId": "district-fill",
+    "paint": {
+      "fill-color": ["step", ["get", "score"], "#dbeafe", 60, "#60a5fa", 90, "#1d4ed8"],
+      "fill-opacity": 0.85
+    },
+    "author": {
+      "type": "agent",
+      "name": "contract-test"
+    },
+    "reason": "Verify command replay updates paint."
+  }
+]

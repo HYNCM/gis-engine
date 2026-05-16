@@ -1,0 +1,30 @@
+{
+  "name": "gis-engine-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "build": "pnpm -r build",
+    "build:schema": "pnpm --filter @gis-engine/engine build:schema",
+    "test": "pnpm test:schema && pnpm test:commands && pnpm test:patch && pnpm test:runtime && pnpm test:adapter && pnpm test:ai",
+    "test:schema": "vitest run tests/schema",
+    "test:commands": "vitest run tests/commands",
+    "test:patch": "vitest run tests/patch",
+    "test:runtime": "vitest run tests/runtime",
+    "test:adapter": "vitest run tests/adapter",
+    "test:snapshot": "playwright test tests/snapshot",
+    "test:snapshot:update": "SNAPSHOT_UPDATE=1 playwright test tests/snapshot",
+    "test:ai": "vitest run tests/ai",
+    "test:perf:smoke": "vitest run tests/perf",
+    "test:resources": "vitest run tests/resources",
+    "check": "pnpm build && pnpm test",
+    "example:basic-geojson": "tsx examples/basic-geojson/validate.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}

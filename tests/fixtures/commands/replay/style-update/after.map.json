@@ -1,0 +1,27 @@
+{
+  "version": "0.1",
+  "id": "style-update",
+  "revision": "2",
+  "view": {
+    "mode": "map2d",
+    "center": [120.15, 30.28],
+    "zoom": 11
+  },
+  "sources": {
+    "districts": {
+      "type": "geojson",
+      "data": "./data/districts.geojson"
+    }
+  },
+  "layers": [
+    {
+      "id": "district-fill",
+      "type": "fill",
+      "source": "districts",
+      "paint": {
+        "fill-color": ["step", ["get", "score"], "#dbeafe", 60, "#60a5fa", 90, "#1d4ed8"],
+        "fill-opacity": 0.85
+      }
+    }
+  ]
+}

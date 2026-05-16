@@ -1,0 +1,27 @@
+{
+  "version": "0.1",
+  "id": "ai-map-edit",
+  "revision": "1",
+  "view": {
+    "mode": "map2d",
+    "center": [120.15, 30.28],
+    "zoom": 11
+  },
+  "sources": {
+    "pois": {
+      "type": "geojson",
+      "data": "../basic-geojson/data/points.geojson"
+    }
+  },
+  "layers": [
+    {
+      "id": "poi-circles",
+      "type": "circle",
+      "source": "pois",
+      "paint": {
+        "circle-radius": 6,
+        "circle-color": "#2563eb"
+      }
+    }
+  ]
+}

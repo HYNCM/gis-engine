@@ -1,0 +1,26 @@
+{
+  "version": "0.1",
+  "id": "basic-geojson-example",
+  "view": {
+    "mode": "map2d",
+    "center": [120.15, 30.28],
+    "zoom": 11
+  },
+  "sources": {
+    "pois": {
+      "type": "geojson",
+      "data": "./data/points.geojson"
+    }
+  },
+  "layers": [
+    {
+      "id": "poi-circles",
+      "type": "circle",
+      "source": "pois",
+      "paint": {
+        "circle-radius": 6,
+        "circle-color": "#2563eb"
+      }
+    }
+  ]
+}

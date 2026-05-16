@@ -1,0 +1,11 @@
+export { DiagnosticCodes } from "./diagnostics/codes.js";
+export { applyCommands, type ApplyCommandsResult } from "./commands/applyCommands.js";
+export { buildPatch, type BuildPatchResult } from "./commands/buildPatch.js";
+export { validateSpec } from "./spec/validate.js";
+export * from "./spec/patch/index.js";
+export * from "./spec/schemas/index.js";
+export { createMap, type CreateMapOptions } from "./runtime/createMap.js";
+export { MapRuntime, MapSpecValidationError, type MapRuntimeOptions } from "./runtime/MapRuntime.js";
+export { createAdapter, listAdapters, registerAdapter, type RendererAdapterFactory } from "./renderer/registry.js";
+export type * from "./renderer/adapter.js";
+export type * from "./types.js";

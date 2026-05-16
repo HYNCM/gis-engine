@@ -1,0 +1,243 @@
+# CI 与测试策略
+
+## 目标
+
+CI 的目标不是只证明代码能编译，而是证明 AI 生成、修改和验证地图的核心闭环稳定。
+
+必测闭环：
+
+```txt
+fixtures -> schema validation -> command replay -> renderer adapter -> snapshot -> exportSpec -> reload
+```
+
+## 计划脚本
+
+```json
+{
+  "scripts": {
+    "build": "pnpm -r build",
+    "build:schema": "pnpm --filter @gis-engine/engine build:schema",
+    "test": "pnpm test:schema && pnpm test:commands && pnpm test:adapter && pnpm test:snapshot && pnpm test:ai",
+    "test:schema": "vitest run tests/schema",
+    "test:commands": "vitest run tests/commands",
+    "test:adapter": "vitest run tests/adapter",
+    "test:snapshot": "playwright test tests/snapshot",
+    "test:snapshot:update": "SNAPSHOT_UPDATE=1 playwright test tests/snapshot",
+    "test:ai": "vitest run tests/ai",
+    "test:perf:smoke": "vitest run tests/perf",
+    "test:resources": "vitest run tests/resources",
+    "check": "pnpm build && pnpm test && pnpm test:resources"
+  }
+}
+```
+
+脚本实现细节、目录约定和参考伪代码见 [implementation-playbook.md](./implementation-playbook.md)。
+
+## Required Gates
+
+| Gate | Required for PR | Required for release |
+| --- | --- | --- |
+| schema sync | 是 | 是 |
+| schema fixtures | 是 | 是 |
+| command replay | 是 | 是 |
+| diagnostics codes | 是 | 是 |
+| MapLibre adapter contract | 是 | 是 |
+| WebGL2 lite contract | 否 | 是，如果声明 experimental |
+| snapshot regression | 是 | 是 |
+| AI tool contract | 是 | 是 |
+| resource release | 是 | 是 |
+| perf smoke | 否 | 是 |
+| migration tests | 变更 schema 时 | 是 |
+
+## Fixtures
+
+建议目录：
+
+```txt
+tests/fixtures/
+  specs/
+    valid/
+    invalid/
+  commands/
+    valid/
+    invalid/
+    replay/
+  data/
+    geojson/
+    pmtiles/
+    raster/
+  snapshots/
+    baselines/
+```
+
+fixture 规则：
+
+- valid spec 必须能 `createMap -> snapshot -> exportSpec -> reload`。
+- invalid spec 必须包含预期 diagnostic code。
+- command replay fixture 必须包含 before、commands、after。
+- 所有 fixtures 禁止依赖随机公网服务。
+
+## Snapshot Harness
+
+工具：
+
+- Playwright。
+- 固定 Chromium baseline。
+- Safari/WebKit 和 Firefox 做兼容 smoke。
+
+流程：
+
+```txt
+start example server
+open fixture page
+wait for map idle
+capture canvas pixels
+run snapshot validation
+compare optional baseline
+collect browser console warnings/errors
+write SnapshotReport
+```
+
+默认判定：
+
+- canvas 存在且尺寸正确。
+- non-transparent pixels 大于阈值。
+- changed pixels from background 大于阈值。
+- target layer pixels 大于阈值，若 adapter 不支持则返回 warning。
+- browser console 没有 error。
+- renderer diagnostics 没有 error。
+
+Baseline 管理：
+
+- baseline 存放在 `tests/fixtures/snapshots/baselines/`。
+- actual、diff、report 输出到 `test-results/snapshots/`。
+- 默认允许 `0.5%` 像素差。
+- 单像素颜色 delta 默认阈值为 `10`。
+- 没有 baseline 时生成 warning 和 actual image，不直接失败。
+- 只有显式运行 `pnpm test:snapshot:update` 才能更新 baseline。
+
+SnapshotReport:
+
+```ts
+export interface SnapshotReport {
+  passed: boolean;
+  width: number;
+  height: number;
+  pixelRatio: number;
+  nonTransparentPixels: number;
+  changedPixelsFromBackground: number;
+  targetLayerPixels?: Record<string, number>;
+  diagnostics: Diagnostic[];
+}
+```
+
+## Command Replay Tests
+
+每个 command 必须覆盖：
+
+- valid apply。
+- dry-run。
+- repeated apply 幂等。
+- baseRevision mismatch。
+- atomic rollback。
+- best-effort partial apply。
+- export 后重新加载一致。
+- conflict 只返回 `CONFLICT.BASE_REVISION`，v0.1 不自动 retry 和 three-way merge。
+
+示例 fixture：
+
+```txt
+tests/fixtures/commands/replay/style-update/
+  before.map.json
+  commands.json
+  after.map.json
+  expected-results.json
+```
+
+## Adapter Contract Tests
+
+所有 renderer adapter 共用同一套 contract tests。
+
+必测：
+
+- `getCapabilities()`。
+- `load(spec)`。
+- `applyPatch(patch)`。
+- `queryFeatures(point)`。
+- `queryFeatures(bbox)`。
+- `snapshot()`。
+- `resize()`。
+- `destroy()`。
+- error/warning event 转换。
+
+MapLibre adapter 和 WebGL2 lite adapter 的一致性只要求覆盖交集：
+
+- GeoJSON。
+- raster。
+- background。
+- fill。
+- line。
+- circle。
+
+Contract harness 必须通过 `tests/adapter/createAdapterContractSuite.ts` 复用，不允许每个 adapter 自己写一套不一致的测试。
+
+## AI Tool Contract Tests
+
+工具：
+
+- `validateMap`
+- `applyCommands`
+- `explainMap`
+- `snapshotMap`
+- `exportSpec`
+- `exportExampleApp`
+
+规则：
+
+- tool input/output 必须有 schema。
+- output 必须结构化。
+- 不允许只返回自然语言。
+- tool 不直接访问 renderer 私有对象。
+- tool failure 必须返回 diagnostic code。
+
+## Performance Smoke
+
+v0.1 release 前至少运行：
+
+| 场景 | 目标 |
+| --- | --- |
+| 1k GeoJSON features | create + render 不超过 1s |
+| 10k GeoJSON features | create + render 不超过 3s |
+| 100k GeoJSON features | 允许 warning，不允许崩溃 |
+| pan/zoom 5s | 无连续 long task 超过 500ms |
+| queryFeatures point | p95 不超过 50ms |
+| snapshot 1024x768 | 不超过 2s |
+| destroy | 无残留 raf、listener、worker |
+
+这些不是长期性能承诺，只是防止 v0.1 出现明显不可用状态。
+
+## Resource Release Tests
+
+`destroy()` 必须验证：
+
+- DOM event listener 被移除。
+- requestAnimationFrame 被取消。
+- worker 被 terminate 或归还 pool。
+- WebGL buffer/texture/program 被释放或 adapter 报告不可直接验证。
+- tile cache 清空。
+- 后续调用 `snapshot` 和 `queryFeatures` 返回明确错误。
+- 浏览器无法直接验证的 WebGL resource 必须在 `ResourceReport` 标记 `verifiable: false` 和原因，不能空报成功。
+
+## CI 输出
+
+CI 必须归档：
+
+- schema artifacts。
+- validation reports。
+- command replay reports。
+- snapshot images。
+- snapshot reports。
+- performance smoke reports。
+- resource reports。
+
+这些产物用于 AI eval 和回归分析。

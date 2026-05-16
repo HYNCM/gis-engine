@@ -1,0 +1,30 @@
+export const DiagnosticCodes = {
+  SpecUnknownField: "SPEC.UNKNOWN_FIELD",
+  SpecInvalidVersion: "SPEC.INVALID_VERSION",
+  SpecInvalidType: "SPEC.INVALID_TYPE",
+  SpecMissingField: "SPEC.MISSING_FIELD",
+  SourceNotFound: "SRC.NOT_FOUND",
+  LayerDuplicateId: "LAYER.DUPLICATE_ID",
+  LayerNotFound: "LAYER.NOT_FOUND",
+  LayerSourceMissing: "LAYER.SOURCE_MISSING",
+  LayerSourceIncompatible: "LAYER.SOURCE_INCOMPATIBLE",
+  ExpressionTypeMismatch: "EXPR.TYPE_MISMATCH",
+  ExpressionUnknownOperator: "EXPR.UNKNOWN_OPERATOR",
+  ExpressionInvalidArity: "EXPR.INVALID_ARITY",
+  ExpressionInvalidColor: "EXPR.INVALID_COLOR",
+  ExpressionPropertyUnknown: "EXPR.PROPERTY_UNKNOWN",
+  ViewOutOfDataBounds: "VIEW.OUT_OF_DATA_BOUNDS",
+  RenderAdapterError: "RENDER.ADAPTER_ERROR",
+  RenderDestroyed: "RENDER.DESTROYED",
+  SnapshotBlankCanvas: "SNAPSHOT.BLANK_CANVAS",
+  CapabilityUnsupported: "CAPABILITY.UNSUPPORTED",
+  CommandInvalidPatch: "COMMAND.INVALID_PATCH",
+  CommandUnsupported: "COMMAND.UNSUPPORTED",
+  ConflictBaseRevision: "CONFLICT.BASE_REVISION",
+  MigrationUnsupportedVersion: "MIGRATION.UNSUPPORTED_VERSION",
+  SecurityUrlBlocked: "SECURITY.URL_BLOCKED",
+  SecurityResourceTimeout: "SECURITY.RESOURCE_TIMEOUT",
+  SecurityResourceTooLarge: "SECURITY.RESOURCE_TOO_LARGE"
+} as const;
+
+export type DiagnosticCode = (typeof DiagnosticCodes)[keyof typeof DiagnosticCodes];

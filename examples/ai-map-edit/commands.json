@@ -1,0 +1,18 @@
+[
+  {
+    "id": "cmd-highlight-pois",
+    "version": "0.1",
+    "type": "setPaint",
+    "baseRevision": "1",
+    "layerId": "poi-circles",
+    "paint": {
+      "circle-radius": ["step", ["get", "score"], 5, 80, 9],
+      "circle-color": ["case", [">=", ["get", "score"], 80], "#dc2626", "#2563eb"]
+    },
+    "author": {
+      "type": "agent",
+      "name": "example-agent"
+    },
+    "reason": "Highlight high-score POIs."
+  }
+]

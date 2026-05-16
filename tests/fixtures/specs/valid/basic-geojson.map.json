@@ -1,0 +1,37 @@
+{
+  "version": "0.1",
+  "id": "basic-geojson",
+  "revision": "1",
+  "view": {
+    "mode": "map2d",
+    "center": [120.15, 30.28],
+    "zoom": 11
+  },
+  "sources": {
+    "pois": {
+      "type": "geojson",
+      "data": "./data/points.geojson"
+    }
+  },
+  "layers": [
+    {
+      "id": "background",
+      "type": "background",
+      "paint": {
+        "background-color": "#f8fafc"
+      }
+    },
+    {
+      "id": "poi-circles",
+      "type": "circle",
+      "source": "pois",
+      "paint": {
+        "circle-radius": 6,
+        "circle-color": "#2563eb"
+      }
+    }
+  ],
+  "metadata": {
+    "description": "Minimal GeoJSON fixture for schema and command tests."
+  }
+}

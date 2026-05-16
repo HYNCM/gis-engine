@@ -1,0 +1,21 @@
+{
+  "version": "0.1",
+  "id": "layer-source-missing",
+  "view": {
+    "mode": "map2d",
+    "center": [120.15, 30.28],
+    "zoom": 11
+  },
+  "sources": {},
+  "layers": [
+    {
+      "id": "poi-circles",
+      "type": "circle",
+      "source": "missing-pois",
+      "paint": {
+        "circle-radius": 6,
+        "circle-color": "#2563eb"
+      }
+    }
+  ]
+}
