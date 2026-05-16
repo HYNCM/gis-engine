@@ -4,12 +4,16 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "tsc -p tsconfig.json"
+    "build": "tsc -p tsconfig.json",
+    "start:mcp": "node dist/mcp/server.js"
   },
   "dependencies": {
     "@gis-engine/engine": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "ajv": "^8.17.0"
   },
   "devDependencies": {

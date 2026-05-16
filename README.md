@@ -28,9 +28,9 @@ Traditional map SDKs are powerful, but AI agents need a stricter contract:
 | Command system | Started | `applyCommands` supports the first command replay path, JSON Patch output, inverse patch, dry-run shape, and `baseRevision` conflict rejection. |
 | Patch utilities | Started | Minimal JSON Pointer normalization, apply, invert, changed path sorting, and validation utilities exist. |
 | Diagnostics | Started | Diagnostic code registry exists; more codes and expression-specific validation are still pending. |
-| Renderer adapter | Contract only | `RendererAdapter` TypeScript contract exists; MapLibre adapter implementation is not yet started. |
-| Snapshot harness | Planned | CI/test strategy and thresholds are documented; Playwright implementation is pending. |
-| AI tools | Minimal | `applyCommandsTool` exists; MCP server and full tool suite are pending. |
+| Renderer adapter | Started | `RendererAdapter` contract exists; `MockAdapter` implemented for testing. |
+| Snapshot harness | Started | Playwright implementation started; `MockAdapter` supports data-url snapshots. |
+| AI tools | Functional | `applyCommandsTool` exists; **MCP Server** implemented for tool discovery. |
 | Examples/fixtures | Started | Basic GeoJSON and AI map edit examples plus schema/command fixtures exist. |
 | CI | Planned | Scripts are declared, but no GitHub Actions workflow is present yet. |
 

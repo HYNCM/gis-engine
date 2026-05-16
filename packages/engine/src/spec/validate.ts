@@ -47,6 +47,19 @@ function schemaKeywordToCode(error: ErrorObject): Diagnostic["code"] {
 
 function validateSemanticRules(spec: MapSpec): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
+
+  if (spec.view.center) {
+    const [lng, lat] = spec.view.center;
+    if (lng < -180 || lng > 180 || lat < -90 || lat > 90) {
+      diagnostics.push({
+        severity: "error",
+        code: DiagnosticCodes.GeoInvalidCoordinates,
+        message: `Center coordinates [${lng}, ${lat}] are out of range. Longitude must be [-180, 180] and latitude must be [-90, 90].`,
+        path: "/view/center"
+      });
+    }
+  }
+
   const layerIds = new Set<string>();
 
   for (const [index, layer] of spec.layers.entries()) {

@@ -7,5 +7,6 @@ export * from "./spec/schemas/index.js";
 export { createMap, type CreateMapOptions } from "./runtime/createMap.js";
 export { MapRuntime, MapSpecValidationError, type MapRuntimeOptions } from "./runtime/MapRuntime.js";
 export { createAdapter, listAdapters, registerAdapter, type RendererAdapterFactory } from "./renderer/registry.js";
+export { MockAdapter } from "./renderer/mock.js";
 export type * from "./renderer/adapter.js";
 export type * from "./types.js";

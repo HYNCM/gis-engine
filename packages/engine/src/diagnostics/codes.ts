@@ -24,7 +24,9 @@ export const DiagnosticCodes = {
   MigrationUnsupportedVersion: "MIGRATION.UNSUPPORTED_VERSION",
   SecurityUrlBlocked: "SECURITY.URL_BLOCKED",
   SecurityResourceTimeout: "SECURITY.RESOURCE_TIMEOUT",
-  SecurityResourceTooLarge: "SECURITY.RESOURCE_TOO_LARGE"
+  SecurityResourceTooLarge: "SECURITY.RESOURCE_TOO_LARGE",
+  GeoInvalidCoordinates: "GEO.INVALID_COORDINATES",
+  GeoEmptyBbox: "GEO.EMPTY_BBOX"
 } as const;
 
 export type DiagnosticCode = (typeof DiagnosticCodes)[keyof typeof DiagnosticCodes];
