@@ -42,6 +42,12 @@ All agents must respect the existing GIS Engine architecture:
 - MCP contract: AI tools must use the documented snake_case tool names:
   `validate_spec`, `apply_commands`, `export_spec`, `get_context_summary`,
   `snapshot_spec`, `explain_spec`, and `export_example_app`.
+- Resource policy: URL, tile, worker, example, and external asset changes must
+  be checked against `packages/engine/src/spec/resource-policy.ts`,
+  `tests/schema/resource-policy.test.ts`, and the resource policy sections in
+  `docs/engineering/ci-test-strategy.md`. If a dedicated
+  `docs/security/resource-policy.md` is added later, it becomes the human-facing
+  policy entry point and must stay aligned with the implementation and tests.
 
 Use the current repo scripts unless a task explicitly changes them:
 
@@ -66,7 +72,7 @@ generated_at: YYYY-MM-DDTHH:mm:ssZ
 repo_revision: "<git sha or unknown>"
 inputs:
   - path-or-url
-decision_level: info | advisory | blocking
+decision_level: info | advisory | blocking | emergency
 ```
 
 Every recommendation must include:
@@ -75,6 +81,22 @@ Every recommendation must include:
 - Impact: user, product, architecture, AI safety, performance, or security.
 - Action: owner, next step, and target artifact.
 - Confidence: high, medium, or low.
+
+## State Ownership
+
+Planning documents are evidence snapshots, not a distributed task database.
+
+- `docs/planning/task-burndown.md`, sprint plans, and dependency graphs record
+  the state observed or approved during one agent run.
+- Only `coordinator` or `task-distributor` may write planning state updates.
+  Other agents must propose status changes in their own reports.
+- If multiple agents produce competing updates, `coordinator` is the single
+  writer that resolves and applies the merged state.
+- Do not let multiple agents concurrently edit the same planning markdown file.
+  Batch updates into one serialized commit.
+- When a real issue tracker is available, it becomes the canonical task state.
+  Markdown burndown and dependency files should then be generated snapshots that
+  reference issue ids rather than hand-maintained status stores.
 
 ## Agent 1: Coordinator
 
@@ -111,6 +133,9 @@ Decision rules:
 - Reserve 20% to 30% of each sprint for infrastructure, test reliability,
   contract cleanup, and technical debt.
 - Any P0 or release-blocking issue overrides roadmap feature work.
+- Emergency mode is allowed only when the input artifact has
+  `decision_level: emergency`, names the P0 user or production impact, and
+  includes the recovery owner, rollback plan, and follow-up task target.
 
 Coordinator workflow:
 
@@ -120,6 +145,15 @@ Coordinator workflow:
 4. Assign priority using the product scoring model.
 5. Produce roadmap and send accepted work to `task-distributor`.
 6. Ask `quality-guardian` to validate release or merge readiness when needed.
+
+Emergency workflow:
+
+1. Write or update `docs/alerts/critical-gaps.md` with the emergency reason,
+   affected users/systems, time window, and rollback plan.
+2. Ask `quality-guardian` for an emergency gate decision.
+3. Ask `task-distributor` to create follow-up P0/P1 tasks for any compressed
+   schema, test, snapshot, documentation, or release-evidence work.
+4. Close emergency mode only after the follow-up tasks have owners and dates.
 
 ## Agent 2: Competitive Intelligence
 
@@ -299,6 +333,18 @@ Outputs:
 - Burndown: `docs/planning/task-burndown.md`
 - Dependency graph: `docs/planning/dependency-graph.md`
 
+State management:
+
+- Treat markdown task state as a run snapshot. It is not safe for multiple
+  agents to update it independently.
+- `task-distributor` owns task ids, dependency ordering, and generated burndown
+  snapshots.
+- Status transitions must be proposed by worker or reviewer reports and then
+  applied by one `task-distributor` run or by `coordinator`.
+- If GitHub Issues, Linear, Jira, or another tracker is connected, task state
+  belongs there. Markdown files should reference tracker ids and summarize the
+  current state.
+
 Task template:
 
 ```yaml
@@ -355,6 +401,37 @@ Required checks:
 | MCP contract | required when AI tools change | required |
 | release notes | recommended | required |
 
+Visual snapshot waiver:
+
+- A waiver is allowed only when `code-reviewer` or `coordinator` explicitly
+  labels the change as non-rendering and records why visual output cannot
+  change.
+- Waiver candidates include docs-only, schema-only, type-only, MCP-only, and
+  command logic changes that do not affect renderer adapters, style
+  transformation, snapshot code, resources, examples, or visual fixtures.
+- Waiver is not allowed when the change touches renderer adapters, layer/source
+  transformation, styles, snapshots, visual fixtures, URLs, tiles, workers,
+  browser examples, or resource policy.
+- Waived PRs must still pass deterministic gates and smoke snapshots. Release
+  candidates must either run strict visual snapshots in a release-capable
+  environment or record a coordinator-approved release waiver.
+
+Emergency bypass:
+
+- `quality-guardian` may issue a conditional pass for a P0 fix only when the
+  input contains `decision_level: emergency` from `coordinator`.
+- The emergency artifact must name the user/system impact, rollback plan, owner,
+  time limit, and follow-up task ids.
+- Minimal gates still apply: schema validation for public inputs, deterministic
+  tests that are relevant to the touched area, resource policy checks for any
+  URL/tile/worker changes, and a smoke snapshot when rendering may be affected.
+- The bypass cannot be used to relax schema contracts, disable diagnostics,
+  hide security/resource-policy failures, or skip tests for convenience.
+- Any skipped contract, visual snapshot, documentation, or release evidence must
+  be converted into a P0/P1 follow-up task by `task-distributor`.
+- Emergency bypass expires when the immediate incident is mitigated or within
+  48 hours, whichever comes first.
+
 Final checklist:
 
 - Public API has schema and documentation.
@@ -408,6 +485,9 @@ Emergency:
 2. `coordinator` writes `docs/alerts/critical-gaps.md`.
 3. `task-distributor` creates P0/P1 remediation tasks.
 4. `quality-guardian` defines the recovery gate.
+5. If `decision_level: emergency` is used, `quality-guardian` may apply the
+   emergency bypass rules above and must record every waived gate plus the
+   follow-up task that closes it.
 
 ## Invocation Examples
 
