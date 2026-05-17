@@ -1,8 +1,8 @@
 ---
 agent: competitive-intel
 period: 2026-W20
-generated_at: 2026-05-17T14:04:15Z
-repo_revision: "bab1327"
+generated_at: 2026-05-17T16:35:00Z
+repo_revision: "acdf28e"
 inputs:
   - https://github.com/mapbox/mapbox-gl-js/releases
   - https://github.com/maplibre/maplibre-gl-js/releases
@@ -21,6 +21,8 @@ decision_level: advisory
 ## 摘要
 
 本轮只记录会影响 GIS Engine 路线的外部信号。结论是：云原生数据源、结构化 AI 工具契约、3D 边界定义是近期最值得转入产品规划的方向。
+
+2026-05-17 实施跟进：AI tool contract gate、PMTiles/vector tile source RFC、3D boundary 已进入 v0.2 checkpoint 证据；2D renderer adapter 性能基准仍是后续任务。
 
 ## 重点更新
 
@@ -60,8 +62,8 @@ decision_level: advisory
 
 | 优先级 | 建议 | 理由 |
 | --- | --- | --- |
-| P0 | 把 AI tool contract gate 做成不可绕过项 | MCP/structured output 已是行业默认预期 |
-| P1 | 启动 PMTiles/vector tile source RFC | Mapbox 已把 PMTiles 推入核心数据能力 |
+| P0 | 把 AI tool contract gate 做成不可绕过项 | 已完成当前 checkpoint；MCP/structured output 已是行业默认预期 |
+| P1 | 启动 PMTiles/vector tile source RFC | 已完成当前 checkpoint；Mapbox 已把 PMTiles 推入核心数据能力 |
 | P1 | 建立 2D renderer adapter 性能基准 | MapLibre/Mapbox/deck.gl 的渲染与图层生态成熟 |
-| P1 | 先写 3D MapSpec extension | Cesium 3D 能力和 AI 场景操作都在推进，GIS Engine 需要安全边界 |
+| P1 | 先写 3D MapSpec extension | 已完成 reserved boundary；Cesium 3D 能力和 AI 场景操作都在推进，GIS Engine 需要安全边界 |
 | P2 | 补专业 GIS 交互与数据诊断清单 | OpenLayers 的传统 GIS 能力仍是专业用户的预期 |

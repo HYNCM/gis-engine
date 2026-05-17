@@ -71,7 +71,7 @@ MVP 应收敛成一句话：
 
 - `MapSpec` 是核心产品，不是附属配置。
 - command 系统强约束、可验证、可回放。
-- `validate()` 和 `explainMap()` 能发现图层顺序、source/layer 类型、表达式、视角、不可见样式、瓦片加载等问题。
+- `validate()` 和 `explain_spec` 能发现图层顺序、source/layer 类型、表达式、视角、不可见样式、瓦片加载等问题。
 - `snapshot()` 能判断 AI 生成地图是否空白或明显异常。
 - 2.5D 只作为 `fill-extrusion-lite` 展示能力，不暗示项目已经要和 Cesium 正面对打。
 

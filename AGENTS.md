@@ -41,7 +41,8 @@ All agents must respect the existing GIS Engine architecture:
   `RendererAdapter` contracts.
 - MCP contract: AI tools must use the documented snake_case tool names:
   `validate_spec`, `apply_commands`, `export_spec`, `get_context_summary`,
-  `snapshot_spec`, `explain_spec`, and `export_example_app`.
+  `snapshot_spec`, `explain_spec`, and `export_example_app`; every public tool
+  descriptor must expose both `inputSchema` and `outputSchema`.
 - Resource policy: URL, tile, worker, example, and external asset changes must
   be checked against `packages/engine/src/spec/resource-policy.ts`,
   `tests/schema/resource-policy.test.ts`, and the resource policy sections in

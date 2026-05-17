@@ -270,7 +270,7 @@ AI 生成地图后必须能验证“真的渲染出来了”。
 
 要求：
 
-- `snapshotMap` 是一等 tool。
+- `snapshot_spec` 是一等 MCP tool。
 - 支持 fixed viewport。
 - 检查 canvas 非空白。
 - 检查目标图层是否产生可见像素。
@@ -379,7 +379,7 @@ interface CapabilityRequest {
 | GeoJSON | 是 | 可 drape 或转 object | v0.1 |
 | Raster tiles | 是 | 可 drape | v0.1 |
 | PMTiles | 是 | 可 drape | v0.1 |
-| Vector tiles | 是 | 可 drape | v0.2 |
+| Vector tiles | 是 | 可 drape | v0.2 checkpoint 已实现 schema/transformer/snapshot 证据 |
 | Terrain | 否 | 是 | v1 |
 | glTF | 否 | 是 | v1 |
 | 3D Tiles | 否 | 是 | v1 |
@@ -422,7 +422,7 @@ interface CapabilityRequest {
 | GeoJSON | 稳定 | 稳定 | 稳定 | 稳定 |
 | Raster tiles | 稳定 | 稳定 | 稳定 | 稳定 |
 | PMTiles | 稳定 | 稳定 | 稳定 | 稳定 |
-| Vector tiles | 无或 experimental | beta | 稳定 | 稳定 |
+| Vector tiles | 无或 experimental | checkpoint | 稳定 | 稳定 |
 | Terrain | 无 | 无 | beta | 稳定 |
 | glTF | 无 | 无 | beta | 稳定 |
 | 3D Tiles | 无 | experimental | beta | 稳定 |

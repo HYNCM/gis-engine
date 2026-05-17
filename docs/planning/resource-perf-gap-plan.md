@@ -1,8 +1,8 @@
 ---
 agent: task-distributor
 period: 2026-W21
-generated_at: 2026-05-17T15:45:00Z
-repo_revision: "48644af"
+generated_at: 2026-05-17T16:35:00Z
+repo_revision: "acdf28e"
 inputs:
   - docs/reviews/daily-audit-2026-05-17.md
   - docs/engineering/ci-test-strategy.md
@@ -16,8 +16,9 @@ decision_level: advisory
 ## Current Gap
 
 The daily audit found that resource-release and perf smoke coverage are narrower
-than the CI strategy describes. Current tests prove the minimum command/runtime
-path, but not enough lifecycle and performance evidence for v0.2 expansion.
+than the CI strategy describes. The v0.2 checkpoint now has schema, MCP, vector,
+command, snapshot, and visual evidence; this plan remains open specifically for
+lifecycle and performance depth.
 
 ## Resource Release Follow-Ups
 

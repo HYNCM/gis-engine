@@ -1,11 +1,11 @@
 # GIS Engine
 
-AI-native, TypeScript-first map runtime for building, validating, replaying, and exporting 2D and 3D-ready web map applications.
+AI-native, TypeScript-first map runtime for building, validating, replaying, snapshotting, and exporting 2D and 3D-ready web map applications.
 
-GIS Engine is currently in v0.1 RC hardening. The implementation target is a runtime that proves this loop:
+GIS Engine has completed the 2026-05-17 v0.2 checkpoint on top of the v0.1 runtime base. The current implementation proves this loop:
 
 ```txt
-MapSpec -> validate -> render -> command modify -> snapshot -> export
+MapSpec -> validate -> render/transform -> command modify -> snapshot -> export
 ```
 
 ## Why This Exists
@@ -22,19 +22,19 @@ Traditional map SDKs are powerful, but AI agents need a stricter contract:
 
 | Area | Status | Notes |
 | --- | --- | --- |
-| Workspace scaffold | Started | Root `package.json`, `pnpm-workspace.yaml`, `packages/engine`, and `packages/ai` exist. |
-| `MapSpec` schema | Started | TypeBox schemas are defined in `packages/engine/src/spec/schemas/`; schema build script is present. |
-| Runtime validation | Started | `validateSpec` runs schema and semantic checks such as duplicate layers and missing sources. |
-| Command system | Functional | `applyCommands` returns batch transaction metadata, trace ids, command sequence ids, JSON Patch output, inverse patch, dry-run shape, and `baseRevision` conflict rejection. |
-| Patch utilities | Started | Minimal JSON Pointer normalization, apply, invert, changed path sorting, and validation utilities exist. |
-| Diagnostics | Functional | Diagnostic code registry exists; validation covers schema, semantic rules, v0.1 expression support, and static resource URL policy. |
-| Renderer adapter | Functional MVP | `RendererAdapter` contract exists; `MockAdapter` keeps real internal state; `MapLibreAdapter` MVP and style transformer are registered. |
-| Snapshot harness | Functional | Adapter snapshot smoke returns data-url snapshots without requiring GPU/WebGL; Playwright real-browser visual strict gate is implemented. |
-| AI tools | Functional | MCP exposes `validate_spec`, `apply_commands`, `export_spec`, `get_context_summary`, `snapshot_spec`, `explain_spec`, and `export_example_app`. CamelCase aliases are intentionally not supported. |
-| Examples/fixtures | Functional | Basic GeoJSON, AI map edit, raster-basemap, and pmtiles-local examples plus schema/command fixtures exist. |
-| CI | Started | GitHub Actions exists and runs schema build plus `pnpm check`; `pnpm check` must stay deterministic and must not depend on real GPU/WebGL. |
+| Workspace scaffold | Functional | Root workspace, `@gis-engine/engine`, and `@gis-engine/ai` build through `pnpm -r build`. |
+| `MapSpec` schema | Functional | TypeBox schemas cover GeoJSON, raster, PMTiles, generic vector tiles, command contracts, diagnostics, and strict capability reports. |
+| Runtime validation | Functional | `validateSpec` runs schema, semantic, expression, resource policy, experimental 2.5D, and reserved `scene3d` boundary checks. |
+| Command system | Functional | `applyCommands` returns transaction metadata, trace ids, command sequence ids, JSON Patch output, inverse patch, dry-run shape, deterministic layer order behavior, and `baseRevision` conflict rejection. |
+| Patch utilities | Functional | JSON Pointer normalization, apply, invert, changed path sorting, and validation utilities are covered by tests. |
+| Diagnostics | Functional | Diagnostic registry covers schema, source/layer references, expressions, resource URL policy, command failures, unsupported capabilities, and snapshot errors. |
+| Renderer adapter | Functional MVP | `MockAdapter` and `MapLibreAdapter` implement the renderer contract; MapLibre transformation covers GeoJSON, raster, PMTiles, and generic vector sources. |
+| Snapshot harness | Functional | Node smoke snapshots are deterministic; Playwright visual snapshots cover a GeoJSON scene and a generated local MVT vector tile scene. |
+| AI tools | Functional | MCP exposes `validate_spec`, `apply_commands`, `export_spec`, `get_context_summary`, `snapshot_spec`, `explain_spec`, and `export_example_app` with input and output schemas. CamelCase aliases are intentionally not supported. |
+| Examples/fixtures | Functional | Basic GeoJSON, AI map edit, raster-basemap, pmtiles-local, and vector-tile-url examples plus schema/command/snapshot fixtures exist. |
+| CI/test gates | Functional | `pnpm build:schema` and `pnpm check` are required finish gates; strict visual snapshots require a browser/WebGL-capable runner. |
 
-## Planned v0.1 Shape
+## Current Runtime Shape
 
 ```ts
 import { createMap } from "@gis-engine/engine";
@@ -71,21 +71,26 @@ const exported = map.exportSpec();
 - [Contract freeze checklist](./docs/engineering/contract-freeze.md)
 - [v0.1 implementation playbook](./docs/engineering/implementation-playbook.md)
 - [Supported Feature Matrix](./docs/engineering/supported-feature-matrix.md)
+- [v0.2 checkpoint audit](./docs/reviews/v0.2-checkpoint-audit-2026-05-17.md)
+- [v0.2 release note draft](./docs/planning/v0.2-release-note-draft.md)
+- [v0.2 gate checklist](./docs/planning/v0.2-gate-checklist.md)
 - [Framework review](./docs/reviews/framework-review.md)
 - [External AI review follow-up](./docs/reviews/external-ai-review-followup.md)
 
 ## Known Limitations
 
-v0.1 does not provide automatic retry for command application or export flows. Callers that receive revision conflicts or transient adapter failures must decide whether and how to retry.
+GIS Engine does not provide automatic retry for command application or export flows. Callers that receive revision conflicts or transient adapter failures must decide whether and how to retry.
 
-v0.1 also does not implement three-way merge. For cross-runtime, multi-tab, or multi-process concurrency, callers must refresh the latest spec, rebase their intended commands, and retry explicitly.
+GIS Engine also does not implement three-way merge. For cross-runtime, multi-tab, or multi-process concurrency, callers must refresh the latest spec, rebase their intended commands, and retry explicitly.
 
 Within a single runtime instance, `MapRuntime.apply()` uses a minimal single-flight serialization path so concurrent local calls are applied one at a time. This is not a full command queue and does not perform automatic rebase or merge.
 
-The current `MapLibreAdapter` is an MVP transformer/adapter binding with deterministic smoke snapshots. Binding it to a real browser MapLibre GL canvas is deferred to a future `RFC-QC-*` contract-quality-control change.
+The current `MapLibreAdapter` is still an MVP renderer binding. It transforms supported `MapSpec` sources/layers, passes adapter contract tests, and is exercised by real-browser visual snapshots, but it is not a complete replacement for MapLibre GL JS.
+
+`fill-extrusion-lite` is an experimental 2.5D contract gated by `capabilities.experimental`. `scene3d` is reserved and returns structured unsupported diagnostics; terrain, glTF, and 3D Tiles are not implemented renderers yet.
 
 ## Not Yet
 
-v0.1 will not attempt to replace Cesium or MapLibre. It will not ship full 3D Tiles, full WebGPU rendering, complete Mapbox expression compatibility, complete symbol collision/text shaping, GeoParquet analytics, or a full enterprise GIS platform.
+GIS Engine will not attempt to replace Cesium or MapLibre in the current line. It does not ship full 3D Tiles, full WebGPU rendering, complete Mapbox expression compatibility, complete symbol collision/text shaping, GeoParquet analytics, or a full enterprise GIS platform.
 
 Those are staged for later versions after the AI-operable `MapSpec`, command system, diagnostics, snapshot validation, and adapter contracts are stable.

@@ -2,7 +2,7 @@
 agent: adapter-agent
 period: 2026-W23
 generated_at: 2026-05-17T16:20:00Z
-repo_revision: "working-tree"
+repo_revision: "acdf28e"
 inputs:
   - docs/planning/monthly-roadmap.md
   - docs/research/competitive-analysis-ai-native-2d-3d.md

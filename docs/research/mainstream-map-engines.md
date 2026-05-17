@@ -27,7 +27,7 @@
 | 3DTilesRendererJS | TilesRenderer / plugin / cache / traversal | Three.js 场景里的 3D Tiles 加载和插件机制清晰 | v1 可作为 3D Tiles adapter 的候选实现或参考 | v0 不承诺 3D Tiles |
 | PMTiles | 单文件瓦片归档 / range request | 静态部署友好，适合云原生和内网数据分发 | v0 优先支持，体现低运维地图数据能力 | 不在 v0 同时铺开所有瓦片协议 |
 | GeoParquet / FlatGeobuf | 列式或流式地理数据格式 | 面向分析、云存储、分块读取和空间过滤 | v2 作为大规模分析与流式数据方向 | v0 不引入 DuckDB WASM 和复杂查询引擎 |
-| Model Context Protocol | tools / resources / prompts / schemas | 为 AI Agent 提供明确、结构化、可调用接口 | 将 `validateMap`、`applyCommands`、`explainMap`、`snapshotMap` 暴露为 MCP tools | MCP 不进入渲染核心生命周期 |
+| Model Context Protocol | tools / resources / prompts / schemas | 为 AI Agent 提供明确、结构化、可调用接口 | 将 `validate_spec`、`apply_commands`、`explain_spec`、`snapshot_spec` 等 snake_case tools 暴露为 MCP tools，并提供 input/output schemas | MCP 不进入渲染核心生命周期 |
 
 ## 可吸收的核心设计理念
 
@@ -86,7 +86,7 @@ PMTiles 的价值在于静态部署、range request 和低运维门槛。对 AI 
 本项目采用：
 
 - v0.1 优先支持 GeoJSON、raster tiles、PMTiles。
-- generic vector tile URL template 放入 v0.2，避免首版数据源矩阵过大。
+- v0.2 checkpoint 已补齐 generic vector tile URL template，用于 MVT / TileJSON 风格数据入口。
 - GeoParquet、FlatGeobuf、DuckDB WASM 放入 v2 大规模分析方向。
 
 ### 6. AI 原生不是 wrapper，而是可验证协议

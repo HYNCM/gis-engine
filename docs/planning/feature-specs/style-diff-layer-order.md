@@ -2,7 +2,7 @@
 agent: product-strategist
 period: 2026-W21
 generated_at: 2026-05-17T15:20:00Z
-repo_revision: "93daf6c"
+repo_revision: "acdf28e"
 inputs:
   - docs/planning/sprint-2026-W21.md
   - docs/spec/contracts-and-interfaces.md

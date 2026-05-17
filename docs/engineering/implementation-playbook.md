@@ -506,33 +506,34 @@ call queryFeatures and expect RENDER.DESTROYED
 
 ## 10. 下一步实施顺序
 
-1. 初始化 `pnpm workspace`。
-2. 创建 `packages/engine` 和 `packages/ai`。
-3. 添加 TypeBox、Ajv、Vitest、Playwright。
-4. 实现 schema build 和 schema-sync test。
-5. 实现 patch utilities。
-6. 实现 command dry-run/apply reference path。
-7. 实现 diagnostics code registry。
-8. 实现 adapter contract harness。
-9. 实现 snapshot health check。
-10. 添加 4 个 fixtures 示例。
+已完成的历史顺序保留为实现脉络：workspace、packages、TypeBox/Ajv/Vitest/Playwright、schema build、schema-sync、patch utilities、command dry-run/apply、diagnostics、adapter contract、snapshot health check 和示例 fixtures 均已落地。
+
+当前下一步顺序：
+
+1. 完成 npm publish dry-run 和 package file review。
+2. 在正式 runner 固化 `pnpm test:release:strict` 证据。
+3. 按 `resource-perf-gap-plan.md` 补 deterministic resource/perf tests。
+4. 将 command conflict/replay/audit 语义产品化为 spec、fixtures 和示例。
+5. 继续推进 `fill-extrusion-lite` beta adapter 和 SceneView3D v1 边界。
 
 ## 11. 当前落地状态
 
-本仓库已经开始从蓝图进入最小实现：
+本仓库已经从蓝图进入可验证的 v0.2 checkpoint：
 
 - 已创建 root workspace 配置。
 - 已创建 `packages/engine` 和 `packages/ai`。
 - 已创建 TypeBox schema、schema build 脚本和 Ajv validation 入口。
-- 已创建 JSON Patch 工具、`applyCommands` 最小实现和 command replay fixture。
-- 已创建 adapter contract suite 模板和本地静态服务工具。
-- 已创建基础 GeoJSON 示例和 AI map edit 示例。
+- 已创建 JSON Patch 工具、`applyCommands`、command replay/dry-run/rollback 覆盖。
+- 已创建 adapter contract suite、本地静态服务工具、MockAdapter 和 MapLibreAdapter MVP。
+- 已创建基础 GeoJSON、AI map edit、raster-basemap、pmtiles-local、vector-tile-url 示例。
+- 已创建 MCP server，且 tool descriptor 包含 input/output schemas。
+- 已创建 expression validator、resource URL policy 和 schema/command/adapter/AI/examples/snapshot tests。
+- 已创建 Playwright visual snapshot harness，覆盖 GeoJSON 和生成式本地 MVT 场景。
 
-仍未实现：
+仍未实现或仍为边界：
 
-- MapLibre adapter。
-- Playwright snapshot harness。
-- MCP server。
-- expression validator。
-- URL policy runtime。
-- GitHub Actions workflow。
+- npm publish dry-run 和 package file review。
+- 正式 release runner 上的 strict visual snapshot 归档证据。
+- `fill-extrusion-lite` 的真实 adapter 渲染。
+- SceneView3D、terrain、glTF、3D Tiles adapter。
+- GeoParquet / FlatGeobuf / DuckDB WASM。

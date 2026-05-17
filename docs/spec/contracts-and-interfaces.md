@@ -259,6 +259,13 @@ export interface CapabilityReport {
 }
 ```
 
+规则：
+
+- `CapabilityReportSchema` 是能力报告的单一外部契约，MCP context/explain 工具必须按此 schema 校验输入。
+- `renderer`、`sources`、`layers`、`expressions`、`queries`、`snapshot` 和 `experimental` 都必须显式给出，不允许任意 capability 对象绕过 schema。
+- `sources` 当前可声明 `geojson`、`raster`、`pmtiles`、`vector`；`layers` 当前可声明 `background`、`raster`、`fill`、`line`、`circle`、`symbol-lite`。
+- experimental 能力只能通过 `experimental` 暴露，例如未来 renderer 明确支持 `fill-extrusion-lite` 后才可声明。
+
 Adapter contract tests 必须验证：
 
 - `load -> snapshot -> destroy` 成功。
@@ -315,9 +322,32 @@ Baseline diff 策略：
 - 如果 adapter 支持 layer mask，统计目标图层可见像素。
 - 无法统计目标图层时返回 warning，不伪造通过。
 
+## MCP Tool Contract
+
+当前 MCP public tool names 是 snake_case，camelCase 不作为别名暴露：
+
+```txt
+validate_spec
+apply_commands
+export_spec
+get_context_summary
+snapshot_spec
+explain_spec
+export_example_app
+```
+
+规则：
+
+- 每个 tool descriptor 必须包含 `inputSchema` 和 `outputSchema`。
+- 所有 `inputSchema` / `outputSchema` 必须可被 Ajv 编译，并由 `pnpm test:schema-sync` 覆盖。
+- 工具失败必须返回包含 `Diagnostic` 的结构化结果，不允许只返回 `{ message }` 或纯自然语言。
+- `export_spec` 即使没有 commands，也必须先校验输入 spec。
+- `get_context_summary` 和 `explain_spec` 接收的 `capabilities` 必须符合 `CapabilityReportSchema`。
+- MCP tools 只能调用 engine 的公开 schema、validator、commands、snapshot 和 example export API，不访问 renderer 私有对象。
+
 ## Expression 子集
 
-v0.1 只支持 JSON-array expression 子集：
+当前支持 JSON-array expression 子集：
 
 ```txt
 Expression =
@@ -409,6 +439,6 @@ v0.1 使用 optimistic concurrency。
 - 默认只允许相对 URL、`localhost`、`127.0.0.1` 和显式配置的 `https` host。
 - 默认禁止任意 `file:` 和未配置公网 host。
 - 远程资源必须有 timeout 和 size limit。
-- `exportExampleApp` 只能写入受控目标目录，或返回文件清单。
+- `export_example_app` 只能写入受控目标目录，或返回文件清单。
 - MCP tools 不得读取 renderer 私有对象。
 - 远程资源失败必须返回 diagnostic，不能静默降级。

@@ -1,6 +1,6 @@
 # Contract Freeze Checklist
 
-This file records the v0.1 public API freeze boundary. Changes to these areas require an explicit breaking/non-breaking note in the PR summary.
+This file records the public API freeze boundary for the v0.1 base and the 2026-05-17 v0.2 checkpoint additions. Changes to these areas require an explicit breaking/non-breaking note in the PR summary.
 
 ## Frozen Boundary
 
@@ -8,7 +8,7 @@ This file records the v0.1 public API freeze boundary. Changes to these areas re
 - `packages/engine/src/spec/schemas/*.ts`
 - `packages/engine/src/index.ts`
 - `packages/ai/src/tools/*`
-- MCP tool names, input schema, and JSON result shape
+- MCP tool names, input schema, output schema, and JSON result shape
 
 ## Current v0.1 Contract Additions
 
@@ -20,6 +20,16 @@ This file records the v0.1 public API freeze boundary. Changes to these areas re
 - `ApplyCommandsResult.traceId`
 - `CommandResult.sequenceId`
 - `get_context_summary` MCP tool
+
+## Current v0.2 Checkpoint Additions
+
+- `vector` source contract with `tiles[]` or `url` and optional `sourceLayer`, `minzoom`, `maxzoom`, `attribution`.
+- `CapabilityReportSchema` as a public schema artifact.
+- MCP tool descriptors with `outputSchema` for every public tool.
+- Strict `CapabilityReportSchema` validation for context/explain tool inputs.
+- Expanded expression contract: `case`, `match`, `zoom`, `to-number`, `to-string`.
+- `fill-extrusion-lite` experimental gate.
+- Reserved `scene3d` unsupported diagnostics.
 
 ## RFC-QC Fast Track
 

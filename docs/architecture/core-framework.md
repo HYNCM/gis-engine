@@ -193,7 +193,7 @@ export interface MapSpec {
 | `SpecCommand` | 修改声明式地图状态 | `addSource`、`addLayer`、`setPaint`、`setLayout`、`removeLayer`、`reorderLayer` |
 | `ViewCommand` | 修改视图和交互状态 | `setView`、`fitBounds`、`setPitch`、`setBearing` |
 | `RuntimeQuery` | 查询运行时状态，不改变 spec | `queryFeatures`、`snapshot`、`inspectLayers` |
-| `AITool` | AI 编排和开发工具能力 | `validateMap`、`explainMap`、`repairSpec`、`exportApp` |
+| `AITool` | AI 编排和开发工具能力 | `validate_spec`、`apply_commands`、`explain_spec`、`snapshot_spec`、`export_example_app` |
 
 ### 命令结果
 

@@ -1,14 +1,18 @@
 ---
 agent: task-distributor
 period: 2026-W21
-generated_at: 2026-05-17T14:10:00Z
-repo_revision: "bab1327"
+generated_at: 2026-05-17T16:35:00Z
+repo_revision: "acdf28e"
 inputs:
   - docs/planning/sprint-2026-W21.md
 decision_level: advisory
 ---
 
 # Task Burndown
+
+## 当前结论
+
+原 W21/W23 计划中的 v0.2 checkpoint 关键任务已经提前完成并进入证据归档状态。下面的理想燃尽表保留为计划基线；真实状态以“2026-05-17 执行快照”为准。
 
 ## 初始容量
 
@@ -49,8 +53,8 @@ decision_level: advisory
 
 ## 风险控制
 
-- 如果 W21 两个 P1 未完成，W23 public capability 任务不得进入实现阶段。
-- 如果 vector tile adapter 行为不稳定，先保留 schema/transformer/diagnostics，不承诺真实网络加载。
+- W21 两个 P1 已完成；后续 public capability 变更仍必须跑 schema-sync、MCP contract 和 command replay gates。
+- vector tile adapter 当前承诺 schema/transformer/diagnostics、snapshot smoke 和本地生成 MVT visual 场景；不承诺解析生产远程 MVT 数据作为默认 PR gate。
 - 如果 visual snapshot 环境不可用，PR 可记录 skipped report；release 或 strict gate 不允许跳过。
 - fill-extrusion-lite / SceneView3D boundary 是 stretch work，不阻塞 v0.2 2D 主线。
 
