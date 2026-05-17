@@ -1,44 +1,57 @@
 import { Type, type Static } from "@sinclair/typebox";
 import { LayerSpecSchema, SourceSpecSchema } from "./map-spec.schema.js";
 
-const CommandBaseSchema = Type.Object({
-  id: Type.String({ minLength: 1 }),
-  version: Type.Literal("0.1"),
-  baseRevision: Type.Optional(Type.String()),
-  author: Type.Optional(
-    Type.Object(
-      {
-        type: Type.Union([Type.Literal("human"), Type.Literal("agent"), Type.Literal("system")]),
-        id: Type.Optional(Type.String()),
-        name: Type.Optional(Type.String())
-      },
-      { additionalProperties: false }
-    )
-  ),
-  reason: Type.Optional(Type.String()),
-  createdAt: Type.Optional(Type.String()),
-  sourcePromptHash: Type.Optional(Type.String()),
-  dryRun: Type.Optional(Type.Boolean())
-});
+const CommandBaseSchema = Type.Object(
+  {
+    id: Type.String({ minLength: 1 }),
+    version: Type.Literal("0.1"),
+    baseRevision: Type.Optional(Type.String()),
+    author: Type.Optional(
+      Type.Object(
+        {
+          type: Type.Union([Type.Literal("human"), Type.Literal("agent"), Type.Literal("system")]),
+          id: Type.Optional(Type.String()),
+          name: Type.Optional(Type.String())
+        },
+        { additionalProperties: false }
+      )
+    ),
+    reason: Type.Optional(Type.String()),
+    createdAt: Type.Optional(Type.String()),
+    sourcePromptHash: Type.Optional(Type.String()),
+    dryRun: Type.Optional(Type.Boolean())
+  },
+  { additionalProperties: false }
+);
 
 const JsonValueSchema = Type.Unknown();
 
 const PaintLayoutSchema = Type.Record(Type.String(), JsonValueSchema);
 
 export const MapCommandSchema = Type.Union([
-  Type.Composite([CommandBaseSchema, Type.Object({ type: Type.Literal("addSource"), sourceId: Type.String(), source: SourceSpecSchema })]),
-  Type.Composite([CommandBaseSchema, Type.Object({ type: Type.Literal("removeSource"), sourceId: Type.String() })]),
+  Type.Composite([CommandBaseSchema, Type.Object({ type: Type.Literal("addSource"), sourceId: Type.String(), source: SourceSpecSchema })], {
+    additionalProperties: false
+  }),
+  Type.Composite([CommandBaseSchema, Type.Object({ type: Type.Literal("removeSource"), sourceId: Type.String() })], {
+    additionalProperties: false
+  }),
   Type.Composite([
     CommandBaseSchema,
     Type.Object({ type: Type.Literal("addLayer"), layer: LayerSpecSchema, beforeLayerId: Type.Optional(Type.String()) })
-  ]),
-  Type.Composite([CommandBaseSchema, Type.Object({ type: Type.Literal("removeLayer"), layerId: Type.String() })]),
-  Type.Composite([CommandBaseSchema, Type.Object({ type: Type.Literal("setPaint"), layerId: Type.String(), paint: PaintLayoutSchema })]),
-  Type.Composite([CommandBaseSchema, Type.Object({ type: Type.Literal("setLayout"), layerId: Type.String(), layout: PaintLayoutSchema })]),
+  ], { additionalProperties: false }),
+  Type.Composite([CommandBaseSchema, Type.Object({ type: Type.Literal("removeLayer"), layerId: Type.String() })], {
+    additionalProperties: false
+  }),
+  Type.Composite([CommandBaseSchema, Type.Object({ type: Type.Literal("setPaint"), layerId: Type.String(), paint: PaintLayoutSchema })], {
+    additionalProperties: false
+  }),
+  Type.Composite([CommandBaseSchema, Type.Object({ type: Type.Literal("setLayout"), layerId: Type.String(), layout: PaintLayoutSchema })], {
+    additionalProperties: false
+  }),
   Type.Composite([
     CommandBaseSchema,
     Type.Object({ type: Type.Literal("reorderLayer"), layerId: Type.String(), beforeLayerId: Type.Optional(Type.String()) })
-  ]),
+  ], { additionalProperties: false }),
   Type.Composite([
     CommandBaseSchema,
     Type.Object({
@@ -57,7 +70,7 @@ export const MapCommandSchema = Type.Union([
         )
       )
     })
-  ]),
+  ], { additionalProperties: false }),
   Type.Composite([
     CommandBaseSchema,
     Type.Object({
@@ -65,7 +78,7 @@ export const MapCommandSchema = Type.Union([
       bounds: Type.Tuple([Type.Number(), Type.Number(), Type.Number(), Type.Number()]),
       padding: Type.Optional(Type.Number())
     })
-  ])
+  ], { additionalProperties: false })
 ], {
   $id: "https://gis-engine.dev/schemas/commands.v0.1.schema.json"
 });

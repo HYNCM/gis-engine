@@ -1,14 +1,17 @@
 import { pathToFileURL } from "node:url";
+import { Ajv, type ValidateFunction } from "ajv/dist/ajv.js";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import {
   ApplyCommandsToolInputSchema,
+  DiagnosticCodes,
   MapCommandSchema,
   MapSpecSchema,
   applyCommands,
   validateSpec,
   type CapabilityReport,
+  type Diagnostic,
   type MapCommand,
   type MapSpec
 } from "@gis-engine/engine";
@@ -16,7 +19,64 @@ import { applyCommandsTool } from "../tools/applyCommands.js";
 import { getContextSummary } from "../tools/contextSummary.js";
 import { explainSpecTool, ExplainSpecToolInputSchema } from "../tools/explainSpec.js";
 import { exportExampleAppTool, ExportExampleAppToolInputSchema } from "../tools/exportExampleApp.js";
+import { toolInputErrorsToDiagnostics } from "../tools/schemaDiagnostics.js";
 import { snapshotSpecTool, SnapshotSpecToolInputSchema } from "../tools/snapshotSpec.js";
+
+const ValidateSpecToolInputSchema = {
+  type: "object",
+  properties: {
+    spec: MapSpecSchema
+  },
+  required: ["spec"],
+  additionalProperties: false
+} as const;
+
+const ExportSpecToolInputSchema = {
+  type: "object",
+  properties: {
+    spec: MapSpecSchema,
+    commands: { type: "array", items: MapCommandSchema },
+    dryRun: { type: "boolean" },
+    transaction: { type: "string", enum: ["atomic", "best-effort"] },
+    traceId: { type: "string" }
+  },
+  required: ["spec"],
+  additionalProperties: false
+} as const;
+
+const ContextSummaryToolInputSchema = {
+  type: "object",
+  properties: {
+    spec: MapSpecSchema,
+    capabilities: { type: "object", additionalProperties: true }
+  },
+  required: ["spec"],
+  additionalProperties: false
+} as const;
+
+interface ValidateSpecToolInput {
+  spec: MapSpec;
+}
+
+interface ExportSpecToolInput {
+  spec: MapSpec;
+  commands?: MapCommand[];
+  dryRun?: boolean;
+  transaction?: "atomic" | "best-effort";
+  traceId?: string;
+}
+
+interface ContextSummaryToolInput {
+  spec: MapSpec;
+  capabilities?: CapabilityReport;
+}
+
+type ToolInputResult<T> = { ok: true; input: T } | { ok: false; diagnostics: Diagnostic[] };
+
+const ajv = new Ajv({ allErrors: true, strict: false });
+const validateValidateSpecInput = ajv.compile(ValidateSpecToolInputSchema);
+const validateExportSpecInput = ajv.compile(ExportSpecToolInputSchema);
+const validateContextSummaryInput = ajv.compile(ContextSummaryToolInputSchema);
 
 export const gisEngineTools = [
   {
@@ -27,43 +87,17 @@ export const gisEngineTools = [
   {
     name: "validate_spec",
     description: "Validate a MapSpec and return diagnostics.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        spec: MapSpecSchema
-      },
-      required: ["spec"],
-      additionalProperties: false
-    }
+    inputSchema: ValidateSpecToolInputSchema
   },
   {
     name: "export_spec",
     description: "Return a validated, optionally command-modified MapSpec.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        spec: MapSpecSchema,
-        commands: { type: "array", items: MapCommandSchema },
-        dryRun: { type: "boolean" },
-        transaction: { type: "string", enum: ["atomic", "best-effort"] },
-        traceId: { type: "string" }
-      },
-      required: ["spec"],
-      additionalProperties: false
-    }
+    inputSchema: ExportSpecToolInputSchema
   },
   {
     name: "get_context_summary",
     description: "Return a compact summary of a MapSpec for AI planning and review.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        spec: MapSpecSchema,
-        capabilities: { type: "object" }
-      },
-      required: ["spec"],
-      additionalProperties: false
-    }
+    inputSchema: ContextSummaryToolInputSchema
   },
   {
     name: "snapshot_spec",
@@ -99,23 +133,32 @@ export async function callGisEngineTool(request: { params: { name: string; argum
     }
 
     if (name === "validate_spec") {
-      const { spec } = requireObjectWithSpec(args);
-      return toolTextResult(validateSpec(spec));
+      const input = validateToolInput<ValidateSpecToolInput>(validateValidateSpecInput, args, "Invalid validate_spec tool input.");
+      if (!input.ok) return toolTextResult(input.diagnostics, true);
+      return toolTextResult(validateSpec(input.input.spec));
     }
 
     if (name === "export_spec") {
-      const { spec, commands, dryRun, transaction, traceId } = requireExportSpecInput(args);
+      const input = validateToolInput<ExportSpecToolInput>(validateExportSpecInput, args, "Invalid export_spec tool input.");
+      if (!input.ok) return toolTextResult(input.diagnostics, true);
+      const { spec, commands = [], dryRun = false, transaction, traceId } = input.input;
+      const validation = validateSpec(spec);
+      if (!validation.valid) return toolTextResult(validation.diagnostics, true);
       if (commands.length === 0) return toolTextResult(spec);
       const result = applyCommands(spec, commands, {
         dryRun,
         ...(transaction ? { transaction } : {}),
         ...(traceId ? { traceId } : {})
       });
+      const diagnostics = result.results.flatMap((commandResult) => commandResult.diagnostics);
+      if (diagnostics.some((diagnostic) => diagnostic.severity === "error")) return toolTextResult(diagnostics, true);
       return toolTextResult(result.spec);
     }
 
     if (name === "get_context_summary") {
-      const { spec, capabilities } = requireContextSummaryInput(args);
+      const input = validateToolInput<ContextSummaryToolInput>(validateContextSummaryInput, args, "Invalid get_context_summary tool input.");
+      if (!input.ok) return toolTextResult(input.diagnostics, true);
+      const { spec, capabilities } = input.input;
       return toolTextResult(getContextSummary({ spec, ...(capabilities ? { capabilities } : {}) }));
     }
 
@@ -134,9 +177,9 @@ export async function callGisEngineTool(request: { params: { name: string; argum
       return toolTextResult(result.ok ? result.result : result.diagnostics, !result.ok);
     }
 
-    throw new Error(`Tool not found: ${name}`);
+    return toolTextResult([toolErrorDiagnostic(`Tool not found: ${name}`, DiagnosticCodes.CommandUnsupported)], true);
   } catch (error) {
-    return toolTextResult(error instanceof Error ? { message: error.message } : { message: "Unknown error" }, true);
+    return toolTextResult([toolErrorDiagnostic(error instanceof Error ? error.message : "Unknown tool failure.")], true);
   }
 }
 
@@ -179,37 +222,19 @@ function toolTextResult(value: unknown, isError = false): { isError?: boolean; c
   };
 }
 
-function requireObjectWithSpec(args: unknown): { spec: MapSpec } {
-  if (!args || typeof args !== "object" || !("spec" in args)) throw new Error("Missing spec argument.");
-  return { spec: (args as { spec: MapSpec }).spec };
-}
-
-function requireExportSpecInput(args: unknown): {
-  spec: MapSpec;
-  commands: MapCommand[];
-  dryRun: boolean;
-  transaction?: "atomic" | "best-effort";
-  traceId?: string;
-} {
-  const { spec } = requireObjectWithSpec(args);
-  const input = args as {
-    commands?: MapCommand[];
-    dryRun?: boolean;
-    transaction?: "atomic" | "best-effort";
-    traceId?: string;
-  };
-
+function validateToolInput<T>(validateInput: ValidateFunction, args: unknown, fallbackMessage: string): ToolInputResult<T> {
+  if (validateInput(args)) return { ok: true, input: args as T };
   return {
-    spec,
-    commands: Array.isArray(input.commands) ? input.commands : [],
-    dryRun: input.dryRun ?? false,
-    ...(input.transaction ? { transaction: input.transaction } : {}),
-    ...(input.traceId ? { traceId: input.traceId } : {})
+    ok: false,
+    diagnostics: toolInputErrorsToDiagnostics(validateInput.errors, fallbackMessage)
   };
 }
 
-function requireContextSummaryInput(args: unknown): { spec: MapSpec; capabilities?: CapabilityReport } {
-  const { spec } = requireObjectWithSpec(args);
-  const capabilities = (args as { capabilities?: CapabilityReport }).capabilities;
-  return { spec, ...(capabilities ? { capabilities } : {}) };
+function toolErrorDiagnostic(message: string, code: Diagnostic["code"] = DiagnosticCodes.SpecInvalidType): Diagnostic {
+  return {
+    severity: "error",
+    code,
+    message,
+    path: "/"
+  };
 }

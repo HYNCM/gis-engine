@@ -44,6 +44,19 @@ describe("MCP Server Integration", () => {
     expect(report.diagnostics.some((diagnostic) => diagnostic.code === "GEO.INVALID_COORDINATES")).toBe(true);
   });
 
+  it("returns structured diagnostics for invalid validate_spec tool input", async () => {
+    const result = await callGisEngineTool({
+      params: {
+        name: "validate_spec",
+        arguments: {}
+      }
+    });
+
+    const diagnostics = JSON.parse(result.content[0]!.text) as Array<{ code: string; path?: string }>;
+    expect(result.isError).toBe(true);
+    expect(diagnostics).toContainEqual(expect.objectContaining({ code: "SPEC.MISSING_FIELD", path: "/" }));
+  });
+
   it("exports a command-modified spec through a pure handler", async () => {
     const result = await callGisEngineTool({
       params: {
@@ -57,6 +70,33 @@ describe("MCP Server Integration", () => {
 
     const spec = JSON.parse(result.content[0]!.text) as { revision?: string };
     expect(spec.revision).toBe("2");
+  });
+
+  it("validates export_spec input and spec before exporting", async () => {
+    const invalidSpec = { ...before, view: { ...before.view, center: [200, 100] } };
+
+    const invalidSpecResult = await callGisEngineTool({
+      params: {
+        name: "export_spec",
+        arguments: { spec: invalidSpec }
+      }
+    });
+    const validationDiagnostics = JSON.parse(invalidSpecResult.content[0]!.text) as Array<{ code: string; path?: string }>;
+    expect(invalidSpecResult.isError).toBe(true);
+    expect(validationDiagnostics).toContainEqual(expect.objectContaining({ code: "GEO.INVALID_COORDINATES", path: "/view/center" }));
+
+    const invalidCommandResult = await callGisEngineTool({
+      params: {
+        name: "export_spec",
+        arguments: {
+          spec: before,
+          commands: [{ id: "cmd-view", version: "0.1", type: "setView", view: { zoom: 8 }, unexpected: true }]
+        }
+      }
+    });
+    const commandDiagnostics = JSON.parse(invalidCommandResult.content[0]!.text) as Array<{ code: string }>;
+    expect(invalidCommandResult.isError).toBe(true);
+    expect(commandDiagnostics).toContainEqual(expect.objectContaining({ code: "SPEC.UNKNOWN_FIELD" }));
   });
 
   it("returns compact context summaries for AI planning", async () => {
@@ -79,6 +119,28 @@ describe("MCP Server Integration", () => {
     expect(summary.sources).toEqual([{ id: "districts", type: "geojson" }]);
     expect(summary.layers[0]).toMatchObject({ id: "district-fill", visibility: "visible" });
     expect(summary.validation).toMatchObject({ valid: true, diagnosticCounts: { error: 0 } });
+  });
+
+  it("returns structured diagnostics for invalid context and unknown tool requests", async () => {
+    const contextResult = await callGisEngineTool({
+      params: {
+        name: "get_context_summary",
+        arguments: { spec: before, unexpected: true }
+      }
+    });
+    const contextDiagnostics = JSON.parse(contextResult.content[0]!.text) as Array<{ code: string }>;
+    expect(contextResult.isError).toBe(true);
+    expect(contextDiagnostics).toContainEqual(expect.objectContaining({ code: "SPEC.UNKNOWN_FIELD" }));
+
+    const unknownToolResult = await callGisEngineTool({
+      params: {
+        name: "missing_tool",
+        arguments: {}
+      }
+    });
+    const unknownToolDiagnostics = JSON.parse(unknownToolResult.content[0]!.text) as Array<{ code: string }>;
+    expect(unknownToolResult.isError).toBe(true);
+    expect(unknownToolDiagnostics).toContainEqual(expect.objectContaining({ code: "COMMAND.UNSUPPORTED" }));
   });
 
   it("snapshots a valid spec with a headless MapLibre adapter", async () => {

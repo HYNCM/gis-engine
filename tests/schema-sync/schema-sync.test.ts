@@ -36,6 +36,15 @@ describe("schema sync gate", () => {
     expect(ApplyCommandsToolInputSchema.properties).toHaveProperty("traceId");
   });
 
+  it("rejects unknown public command fields", () => {
+    const ajv = new Ajv({ allErrors: true, strict: false });
+    const validateCommand = ajv.compile(MapCommandSchema);
+
+    expect(validateCommand({ id: "cmd-view", version: "0.1", type: "setView", view: { zoom: 8 } })).toBe(true);
+    expect(validateCommand({ id: "cmd-view", version: "0.1", type: "setView", view: { zoom: 8 }, unexpected: true })).toBe(false);
+    expect(validateCommand.errors?.some((error) => error.keyword === "additionalProperties")).toBe(true);
+  });
+
   it("locks diagnostic schema to registered diagnostic codes", () => {
     const diagnosticCodeSchema = DiagnosticSchema.properties.code;
     const schemaText = JSON.stringify(diagnosticCodeSchema);
