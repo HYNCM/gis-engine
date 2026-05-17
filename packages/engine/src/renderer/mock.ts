@@ -9,6 +9,9 @@ import type {
   MapSpec,
   Diagnostic
 } from "../types.js";
+import { DiagnosticCodes } from "../diagnostics/codes.js";
+import { applyJsonPatch } from "../spec/patch/index.js";
+import { validateSpec } from "../spec/validate.js";
 import type { RendererAdapter, RenderContext, AdapterApplyResult, AdapterEventListener, Unsubscribe } from "./adapter.js";
 
 export class MockAdapter implements RendererAdapter {
@@ -38,25 +41,36 @@ export class MockAdapter implements RendererAdapter {
   }
 
   async applyPatch(patch: JsonPatchOperation[], _context: RenderContext): Promise<AdapterApplyResult> {
-    // In a real mock, we might want to actually apply the patch to #spec
-    // but for now, we just return success.
     const diagnostics: Diagnostic[] = [];
-    
-    for (const op of patch) {
-      if (op.path.startsWith("/layers/") && op.op === "add") {
-        const value = op.value as any;
-        if (value && value.type === "fill" && !value.source) {
-          diagnostics.push({
+    if (!this.#spec) {
+      return {
+        diagnostics: [
+          {
             severity: "error",
-            code: "MOCK.MISSING_SOURCE" as any,
-            message: `Layer "${value.id}" of type "fill" must have a source.`,
-            path: op.path
-          });
-        }
-      }
+            code: DiagnosticCodes.RenderAdapterError,
+            message: "MockAdapter must load a MapSpec before applying patches."
+          }
+        ]
+      };
     }
 
-    return { diagnostics };
+    try {
+      const nextSpec = applyJsonPatch(this.#spec, patch);
+      const validation = validateSpec(nextSpec);
+      if (!validation.valid) return { diagnostics: validation.diagnostics };
+      this.#spec = nextSpec;
+      return { diagnostics };
+    } catch (error) {
+      return {
+        diagnostics: [
+          {
+            severity: "error",
+            code: DiagnosticCodes.CommandInvalidPatch,
+            message: error instanceof Error ? error.message : "Failed to apply patch in MockAdapter."
+          }
+        ]
+      };
+    }
   }
 
   async queryFeatures(_options: QueryFeaturesOptions): Promise<FeatureQueryResult> {
@@ -89,5 +103,9 @@ export class MockAdapter implements RendererAdapter {
     }
     this.#listeners.get(event)!.add(listener);
     return () => this.#listeners.get(event)?.delete(listener);
+  }
+
+  exportSpec(): MapSpec | null {
+    return this.#spec ? structuredClone(this.#spec) : null;
   }
 }

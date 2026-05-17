@@ -107,6 +107,7 @@ export interface ApplyOptions {
   dryRun?: boolean;
   transaction?: "atomic" | "best-effort";
   collectTrace?: boolean;
+  traceId?: string;
 }
 ```
 
@@ -126,6 +127,7 @@ v0.1 使用 RFC 6902 JSON Patch。
 ```ts
 export interface CommandResult {
   commandId: string;
+  sequenceId: number;
   status: "applied" | "skipped" | "failed";
   baseRevision?: string;
   nextRevision?: string;
@@ -137,9 +139,22 @@ export interface CommandResult {
 }
 ```
 
+```ts
+export interface ApplyCommandsResult {
+  spec: MapSpec;
+  results: CommandResult[];
+  transaction: "atomic" | "best-effort";
+  dryRun: boolean;
+  committed: boolean;
+  rolledBack: boolean;
+  traceId: string;
+}
+```
+
 规则：
 
 - `patch` 表示实际变更。
+- runtime-managed `revision` 更新必须进入 patch，确保 adapter state 可通过 patch 与 `exportSpec()` 对齐。
 - `inversePatch` 用于 rollback。
 - `changedPaths` 必须稳定排序。
 - `skipped` 用于幂等命令，例如重复添加完全相同的 source。

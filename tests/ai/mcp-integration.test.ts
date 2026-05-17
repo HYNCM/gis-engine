@@ -1,40 +1,71 @@
-import { describe, expect, it, vi } from "vitest";
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { ListToolsRequestSchema, CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
-import { applyCommandsTool } from "../../packages/ai/src/tools/applyCommands.js";
-import { validateSpec } from "../../packages/engine/src/spec/validate.js";
+import { describe, expect, it } from "vitest";
+import before from "../fixtures/commands/replay/style-update/before.map.json";
+import commands from "../fixtures/commands/replay/style-update/commands.json";
+import { callGisEngineTool, createGisEngineMcpServer, listGisEngineTools } from "@gis-engine/ai";
 
-// We can't easily test the full StdioServerTransport in Vitest without more setup,
-// but we can test the request handlers directly by extracting the logic
-// or by mocking the server's handler registration.
+describe("MCP Server Integration", () => {
+  it("defines the expected v0.1 tools without starting stdio", async () => {
+    const server = createGisEngineMcpServer();
+    const { tools } = await listGisEngineTools();
 
-describe("MCP Server Integration (Logical)", () => {
-  it("defines the expected tools", async () => {
-    // This is a bit of a hack since the server instance is private in server.ts
-    // In a real project, we might export the server or the handlers for testing.
-    // For now, let's just verify the tool schemas are consistent.
-    
-    const tools = [
-      { name: "apply_commands" },
-      { name: "validate_spec" }
-    ];
-    
-    expect(tools.map(t => t.name)).toContain("apply_commands");
-    expect(tools.map(t => t.name)).toContain("validate_spec");
+    expect(server).toBeDefined();
+    expect(tools.map((tool) => tool.name)).toEqual(["apply_commands", "validate_spec", "export_spec", "get_context_summary"]);
   });
 
-  it("validateSpec handles invalid coordinates", () => {
-    const spec = {
-      version: "0.1",
-      view: {
-        center: [200, 100] // Invalid
-      },
-      sources: {},
-      layers: []
+  it("handles validate_spec through a pure handler", async () => {
+    const result = await callGisEngineTool({
+      params: {
+        name: "validate_spec",
+        arguments: {
+          spec: {
+            version: "0.1",
+            view: { center: [200, 100] },
+            sources: {},
+            layers: []
+          }
+        }
+      }
+    });
+
+    const report = JSON.parse(result.content[0]!.text) as { valid: boolean; diagnostics: Array<{ code: string }> };
+    expect(report.valid).toBe(false);
+    expect(report.diagnostics.some((diagnostic) => diagnostic.code === "GEO.INVALID_COORDINATES")).toBe(true);
+  });
+
+  it("exports a command-modified spec through a pure handler", async () => {
+    const result = await callGisEngineTool({
+      params: {
+        name: "export_spec",
+        arguments: {
+          spec: before,
+          commands
+        }
+      }
+    });
+
+    const spec = JSON.parse(result.content[0]!.text) as { revision?: string };
+    expect(spec.revision).toBe("2");
+  });
+
+  it("returns compact context summaries for AI planning", async () => {
+    const result = await callGisEngineTool({
+      params: {
+        name: "get_context_summary",
+        arguments: { spec: before }
+      }
+    });
+
+    const summary = JSON.parse(result.content[0]!.text) as {
+      id?: string;
+      revision?: string;
+      sources: Array<{ id: string; type: string }>;
+      layers: Array<{ id: string; visibility: string }>;
+      validation: { valid: boolean; diagnosticCounts: { error: number } };
     };
-    
-    const result = validateSpec(spec);
-    expect(result.valid).toBe(false);
-    expect(result.diagnostics.some(d => d.code === "GEO.INVALID_COORDINATES")).toBe(true);
+    expect(summary.id).toBe("style-update");
+    expect(summary.revision).toBe("1");
+    expect(summary.sources).toEqual([{ id: "districts", type: "geojson" }]);
+    expect(summary.layers[0]).toMatchObject({ id: "district-fill", visibility: "visible" });
+    expect(summary.validation).toMatchObject({ valid: true, diagnosticCounts: { error: 0 } });
   });
 });

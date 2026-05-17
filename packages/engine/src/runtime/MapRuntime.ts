@@ -58,20 +58,20 @@ export class MapRuntime {
     this.#assertAlive();
     const result = applyCommands(this.#spec, commands, options);
     const commandList = Array.isArray(commands) ? commands : [commands];
-    const transaction = options.transaction ?? "atomic";
-    const failedAtomicBatch = transaction === "atomic" && result.results.some((commandResult) => commandResult.status === "failed");
-    const patch = failedAtomicBatch
-      ? []
-      : result.results.flatMap((commandResult, index) => (commandList[index]?.dryRun ? [] : commandResult.patch ?? []));
+    const patch = result.committed
+      ? result.results.flatMap((commandResult, index) => (commandList[index]?.dryRun ? [] : commandResult.patch ?? []))
+      : [];
 
     if (!options.dryRun && patch.length > 0) {
-      const adapterResult = await this.#adapter.applyPatch(patch, { container: this.#container });
-      if (adapterResult.diagnostics.some((diagnostic) => diagnostic.severity === "error")) {
-        return result.results.map((commandResult) => ({
-          ...commandResult,
-          status: "failed",
-          diagnostics: [...commandResult.diagnostics, ...adapterResult.diagnostics]
-        }));
+      try {
+        const adapterResult = await this.#adapter.applyPatch(patch, { container: this.#container });
+        if (adapterResult.diagnostics.some((diagnostic) => diagnostic.severity === "error")) {
+          await this.#reloadLastCommittedSpec();
+          return markAdapterFailure(result.results, adapterResult.diagnostics);
+        }
+      } catch (error) {
+        await this.#reloadLastCommittedSpec();
+        return markAdapterFailure(result.results, [adapterErrorDiagnostic(error)]);
       }
       this.#spec = result.spec;
     }
@@ -120,4 +120,38 @@ export class MapRuntime {
   #assertAlive(): void {
     if (this.#destroyed) throw new Error("MapRuntime has been destroyed.");
   }
+
+  async #reloadLastCommittedSpec(): Promise<void> {
+    await this.#adapter.load(this.#spec, { container: this.#container });
+  }
+}
+
+function markAdapterFailure(results: CommandResult[], diagnostics: Diagnostic[]): CommandResult[] {
+  const adapterDiagnostics = ensureAdapterErrorDiagnostic(diagnostics);
+  return results.map((commandResult) => ({
+    ...commandResult,
+    status: "failed",
+    diagnostics: [...commandResult.diagnostics, ...adapterDiagnostics]
+  }));
+}
+
+function ensureAdapterErrorDiagnostic(diagnostics: Diagnostic[]): Diagnostic[] {
+  const hasRenderAdapterError = diagnostics.some((diagnostic) => diagnostic.code === DiagnosticCodes.RenderAdapterError);
+  if (hasRenderAdapterError) return diagnostics;
+  return [
+    {
+      severity: "error",
+      code: DiagnosticCodes.RenderAdapterError,
+      message: "Renderer adapter failed while applying patches."
+    },
+    ...diagnostics
+  ];
+}
+
+function adapterErrorDiagnostic(error: unknown): Diagnostic {
+  return {
+    severity: "error",
+    code: DiagnosticCodes.RenderAdapterError,
+    message: error instanceof Error ? error.message : "Renderer adapter failed while applying patches."
+  };
 }

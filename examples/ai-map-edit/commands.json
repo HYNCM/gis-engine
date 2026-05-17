@@ -7,7 +7,7 @@
     "layerId": "poi-circles",
     "paint": {
       "circle-radius": ["step", ["get", "score"], 5, 80, 9],
-      "circle-color": ["case", [">=", ["get", "score"], 80], "#dc2626", "#2563eb"]
+      "circle-color": ["step", ["get", "score"], "#2563eb", 80, "#dc2626"]
     },
     "author": {
       "type": "agent",

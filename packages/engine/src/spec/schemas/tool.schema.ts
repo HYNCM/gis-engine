@@ -7,7 +7,8 @@ export const ApplyCommandsToolInputSchema = Type.Object(
     spec: MapSpecSchema,
     commands: Type.Array(MapCommandSchema),
     dryRun: Type.Optional(Type.Boolean()),
-    transaction: Type.Optional(Type.Union([Type.Literal("atomic"), Type.Literal("best-effort")]))
+    transaction: Type.Optional(Type.Union([Type.Literal("atomic"), Type.Literal("best-effort")])),
+    traceId: Type.Optional(Type.String({ minLength: 1 }))
   },
   {
     $id: "https://gis-engine.dev/schemas/ai-tools.v0.1.schema.json",

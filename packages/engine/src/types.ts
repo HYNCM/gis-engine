@@ -191,10 +191,12 @@ export interface ApplyOptions {
   dryRun?: boolean;
   transaction?: "atomic" | "best-effort";
   collectTrace?: boolean;
+  traceId?: string;
 }
 
 export interface CommandResult {
   commandId: string;
+  sequenceId: number;
   status: "applied" | "skipped" | "failed";
   baseRevision?: string;
   nextRevision?: string;

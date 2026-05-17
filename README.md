@@ -25,14 +25,14 @@ Traditional map SDKs are powerful, but AI agents need a stricter contract:
 | Workspace scaffold | Started | Root `package.json`, `pnpm-workspace.yaml`, `packages/engine`, and `packages/ai` exist. |
 | `MapSpec` schema | Started | TypeBox schemas are defined in `packages/engine/src/spec/schemas/`; schema build script is present. |
 | Runtime validation | Started | `validateSpec` runs schema and semantic checks such as duplicate layers and missing sources. |
-| Command system | Started | `applyCommands` supports the first command replay path, JSON Patch output, inverse patch, dry-run shape, and `baseRevision` conflict rejection. |
+| Command system | Functional | `applyCommands` returns batch transaction metadata, trace ids, command sequence ids, JSON Patch output, inverse patch, dry-run shape, and `baseRevision` conflict rejection. |
 | Patch utilities | Started | Minimal JSON Pointer normalization, apply, invert, changed path sorting, and validation utilities exist. |
 | Diagnostics | Started | Diagnostic code registry exists; more codes and expression-specific validation are still pending. |
-| Renderer adapter | Started | `RendererAdapter` contract exists; `MockAdapter` implemented for testing. |
-| Snapshot harness | Started | Playwright implementation started; `MockAdapter` supports data-url snapshots. |
-| AI tools | Functional | `applyCommandsTool` exists; **MCP Server** implemented for tool discovery. |
+| Renderer adapter | Functional MVP | `RendererAdapter` contract exists; `MockAdapter` keeps real internal state; `MapLibreAdapter` MVP and style transformer are registered. |
+| Snapshot harness | Started | Adapter snapshot smoke returns data-url snapshots; pixel regression remains planned. |
+| AI tools | Functional | `applyCommandsTool`, `validate_spec`, `export_spec`, `get_context_summary`, and testable MCP handlers exist. |
 | Examples/fixtures | Started | Basic GeoJSON and AI map edit examples plus schema/command fixtures exist. |
-| CI | Planned | Scripts are declared, but no GitHub Actions workflow is present yet. |
+| CI | Started | GitHub Actions exists and runs schema build plus `pnpm check`; schema-sync and examples gates are included in `pnpm test`. |
 
 ## Planned v0.1 Shape
 
@@ -67,7 +67,9 @@ const exported = map.exportSpec();
 - [Contracts and interfaces](./docs/spec/contracts-and-interfaces.md)
 - [v0.1 MVP acceptance criteria](./docs/engineering/v0.1-mvp-acceptance.md)
 - [CI and test strategy](./docs/engineering/ci-test-strategy.md)
+- [Contract freeze checklist](./docs/engineering/contract-freeze.md)
 - [v0.1 implementation playbook](./docs/engineering/implementation-playbook.md)
+- [Supported Feature Matrix](./docs/engineering/supported-feature-matrix.md)
 - [Framework review](./docs/reviews/framework-review.md)
 - [External AI review follow-up](./docs/reviews/external-ai-review-followup.md)
 

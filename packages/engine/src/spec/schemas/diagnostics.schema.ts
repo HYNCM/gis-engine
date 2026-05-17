@@ -1,4 +1,7 @@
 import { Type, type Static } from "@sinclair/typebox";
+import { DiagnosticCodes } from "../../diagnostics/codes.js";
+
+const DiagnosticCodeSchema = Type.Union(Object.values(DiagnosticCodes).map((code) => Type.Literal(code)));
 
 const JsonPatchOperationSchema = Type.Object(
   {
@@ -12,7 +15,7 @@ const JsonPatchOperationSchema = Type.Object(
 export const DiagnosticSchema = Type.Object(
   {
     severity: Type.Union([Type.Literal("error"), Type.Literal("warning"), Type.Literal("info")]),
-    code: Type.String(),
+    code: DiagnosticCodeSchema,
     message: Type.String(),
     path: Type.Optional(Type.String()),
     relatedResources: Type.Optional(

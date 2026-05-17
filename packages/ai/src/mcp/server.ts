@@ -1,108 +1,181 @@
+import { pathToFileURL } from "node:url";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from "@modelcontextprotocol/sdk/types.js";
+  ApplyCommandsToolInputSchema,
+  MapSpecSchema,
+  applyCommands,
+  validateSpec,
+  type CapabilityReport,
+  type MapCommand,
+  type MapSpec
+} from "@gis-engine/engine";
 import { applyCommandsTool } from "../tools/applyCommands.js";
-import { validateSpec, DiagnosticCodes } from "@gis-engine/engine";
+import { getContextSummary } from "../tools/contextSummary.js";
 
-const server = new Server(
+export const gisEngineTools = [
   {
-    name: "gis-engine",
-    version: "0.1.0",
+    name: "apply_commands",
+    description: "Apply a series of MapCommands to a MapSpec to modify the map state.",
+    inputSchema: ApplyCommandsToolInputSchema
   },
   {
-    capabilities: {
-      tools: {},
-    },
-  }
-);
-
-server.setRequestHandler(ListToolsRequestSchema, async () => {
-  return {
-    tools: [
-      {
-        name: "apply_commands",
-        description: "Apply a series of MapCommands to a MapSpec to modify the map state.",
-        inputSchema: {
-          type: "object",
-          properties: {
-            spec: { type: "object", description: "The current MapSpec." },
-            commands: {
-              type: "array",
-              items: { type: "object" },
-              description: "Array of MapCommands to apply."
-            },
-            dryRun: { type: "boolean", description: "If true, validates but does not return a modified spec." },
-            transaction: {
-              type: "string",
-              enum: ["atomic", "best-effort"],
-              description: "Transaction mode."
-            }
-          },
-          required: ["spec", "commands"]
-        }
+    name: "validate_spec",
+    description: "Validate a MapSpec and return diagnostics.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        spec: MapSpecSchema
       },
-      {
-        name: "validate_spec",
-        description: "Validate a MapSpec and return diagnostics.",
-        inputSchema: {
-          type: "object",
-          properties: {
-            spec: { type: "object", description: "The MapSpec to validate." }
-          },
-          required: ["spec"]
-        }
-      }
-    ]
-  };
-});
+      required: ["spec"],
+      additionalProperties: false
+    }
+  },
+  {
+    name: "export_spec",
+    description: "Return a validated, optionally command-modified MapSpec.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        spec: MapSpecSchema,
+        commands: { type: "array", items: { type: "object" } },
+        dryRun: { type: "boolean" },
+        transaction: { type: "string", enum: ["atomic", "best-effort"] },
+        traceId: { type: "string" }
+      },
+      required: ["spec"],
+      additionalProperties: false
+    }
+  },
+  {
+    name: "get_context_summary",
+    description: "Return a compact summary of a MapSpec for AI planning and review.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        spec: MapSpecSchema,
+        capabilities: { type: "object" }
+      },
+      required: ["spec"],
+      additionalProperties: false
+    }
+  }
+] as const;
 
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
+export async function listGisEngineTools(): Promise<{ tools: typeof gisEngineTools }> {
+  return { tools: gisEngineTools };
+}
+
+export async function callGisEngineTool(request: { params: { name: string; arguments?: unknown } }): Promise<{
+  isError?: boolean;
+  content: Array<{ type: "text"; text: string }>;
+}> {
   const { name, arguments: args } = request.params;
 
   try {
     if (name === "apply_commands") {
       const result = applyCommandsTool(args);
-      if (result.ok) {
-        return {
-          content: [{ type: "text", text: JSON.stringify(result.result, null, 2) }]
-        };
-      } else {
-        return {
-          isError: true,
-          content: [{ type: "text", text: JSON.stringify(result.diagnostics, null, 2) }]
-        };
-      }
+      return toolTextResult(result.ok ? result.result : result.diagnostics, !result.ok);
     }
 
     if (name === "validate_spec") {
-      if (!args || typeof args !== "object" || !("spec" in args)) {
-        throw new Error("Missing spec argument");
-      }
-      const result = validateSpec(args.spec as any);
-      return {
-        content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
-      };
+      const { spec } = requireObjectWithSpec(args);
+      return toolTextResult(validateSpec(spec));
+    }
+
+    if (name === "export_spec") {
+      const { spec, commands, dryRun, transaction, traceId } = requireExportSpecInput(args);
+      if (commands.length === 0) return toolTextResult(spec);
+      const result = applyCommands(spec, commands, {
+        dryRun,
+        ...(transaction ? { transaction } : {}),
+        ...(traceId ? { traceId } : {})
+      });
+      return toolTextResult(result.spec);
+    }
+
+    if (name === "get_context_summary") {
+      const { spec, capabilities } = requireContextSummaryInput(args);
+      return toolTextResult(getContextSummary({ spec, ...(capabilities ? { capabilities } : {}) }));
     }
 
     throw new Error(`Tool not found: ${name}`);
-  } catch (error: any) {
-    return {
-      isError: true,
-      content: [{ type: "text", text: error.message || "Unknown error" }]
-    };
+  } catch (error) {
+    return toolTextResult(error instanceof Error ? { message: error.message } : { message: "Unknown error" }, true);
   }
-});
+}
 
-async function main() {
+export function createGisEngineMcpServer(): Server {
+  const server = new Server(
+    {
+      name: "gis-engine",
+      version: "0.1.0"
+    },
+    {
+      capabilities: {
+        tools: {}
+      }
+    }
+  );
+
+  server.setRequestHandler(ListToolsRequestSchema, listGisEngineTools);
+  server.setRequestHandler(CallToolRequestSchema, callGisEngineTool);
+  return server;
+}
+
+export async function main(): Promise<void> {
+  const server = createGisEngineMcpServer();
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error("GIS Engine MCP Server running on stdio");
 }
 
-main().catch((error) => {
-  console.error("Fatal error in MCP server:", error);
-  process.exit(1);
-});
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+  main().catch((error) => {
+    console.error("Fatal error in MCP server:", error);
+    process.exit(1);
+  });
+}
+
+function toolTextResult(value: unknown, isError = false): { isError?: boolean; content: Array<{ type: "text"; text: string }> } {
+  return {
+    ...(isError ? { isError: true } : {}),
+    content: [{ type: "text", text: JSON.stringify(value, null, 2) }]
+  };
+}
+
+function requireObjectWithSpec(args: unknown): { spec: MapSpec } {
+  if (!args || typeof args !== "object" || !("spec" in args)) throw new Error("Missing spec argument.");
+  return { spec: (args as { spec: MapSpec }).spec };
+}
+
+function requireExportSpecInput(args: unknown): {
+  spec: MapSpec;
+  commands: MapCommand[];
+  dryRun: boolean;
+  transaction?: "atomic" | "best-effort";
+  traceId?: string;
+} {
+  const { spec } = requireObjectWithSpec(args);
+  const input = args as {
+    commands?: MapCommand[];
+    dryRun?: boolean;
+    transaction?: "atomic" | "best-effort";
+    traceId?: string;
+  };
+
+  return {
+    spec,
+    commands: Array.isArray(input.commands) ? input.commands : [],
+    dryRun: input.dryRun ?? false,
+    ...(input.transaction ? { transaction: input.transaction } : {}),
+    ...(input.traceId ? { traceId: input.traceId } : {})
+  };
+}
+
+function requireContextSummaryInput(args: unknown): { spec: MapSpec; capabilities?: CapabilityReport } {
+  const { spec } = requireObjectWithSpec(args);
+  const capabilities = (args as { capabilities?: CapabilityReport }).capabilities;
+  return { spec, ...(capabilities ? { capabilities } : {}) };
+}

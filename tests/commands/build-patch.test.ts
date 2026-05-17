@@ -21,7 +21,7 @@ describe("command patch generation", () => {
       "fill-color": "#ef4444",
       "fill-opacity": 0.7
     });
-    expect(result.results[0]?.changedPaths).toEqual(["/layers/0/paint/fill-color"]);
+    expect(result.results[0]?.changedPaths).toEqual(["/layers/0/paint/fill-color", "/revision"]);
   });
 
   it("adds paint when the layer has no paint object", () => {
@@ -60,6 +60,6 @@ describe("command patch generation", () => {
     const result = applyCommands(spec, [command]);
 
     expect(result.spec.layers.map((layer) => layer.id)).toEqual(["district-line", "district-fill"]);
-    expect(result.results[0]?.patch?.map((operation) => operation.op)).toEqual(["remove", "add"]);
+    expect(result.results[0]?.patch?.map((operation) => operation.op)).toEqual(["remove", "add", "replace"]);
   });
 });

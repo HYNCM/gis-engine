@@ -11,8 +11,14 @@ describe("applyCommands", () => {
     expect(result.spec).toEqual(after);
     expect(result.results).toHaveLength(1);
     expect(result.results[0]?.status).toBe("applied");
-    expect(result.results[0]?.changedPaths).toEqual(["/layers/0/paint/fill-color", "/layers/0/paint/fill-opacity"]);
-    expect(result.results[0]?.inversePatch).toHaveLength(2);
+    expect(result.results[0]?.sequenceId).toBe(0);
+    expect(result.results[0]?.traceId).toBe(result.traceId);
+    expect(result.results[0]?.changedPaths).toEqual(["/layers/0/paint/fill-color", "/layers/0/paint/fill-opacity", "/revision"]);
+    expect(result.results[0]?.inversePatch).toHaveLength(3);
+    expect(result.transaction).toBe("atomic");
+    expect(result.dryRun).toBe(false);
+    expect(result.committed).toBe(true);
+    expect(result.rolledBack).toBe(false);
   });
 
   it("rejects stale baseRevision without changing the spec", () => {
@@ -21,7 +27,10 @@ describe("applyCommands", () => {
 
     expect(result.spec).toEqual(before);
     expect(result.results[0]?.status).toBe("failed");
+    expect(result.results[0]?.sequenceId).toBe(0);
     expect(result.results[0]?.diagnostics[0]?.code).toBe("CONFLICT.BASE_REVISION");
+    expect(result.committed).toBe(false);
+    expect(result.rolledBack).toBe(true);
   });
 
   it("rolls back the returned spec when an atomic batch fails", () => {
@@ -38,7 +47,10 @@ describe("applyCommands", () => {
 
     expect(result.spec).toEqual(before);
     expect(result.results.map((commandResult) => commandResult.status)).toEqual(["applied", "failed"]);
+    expect(result.results.map((commandResult) => commandResult.sequenceId)).toEqual([0, 1]);
     expect(result.results[1]?.diagnostics[0]?.code).toBe("LAYER.NOT_FOUND");
+    expect(result.committed).toBe(false);
+    expect(result.rolledBack).toBe(true);
   });
 
   it("keeps successful commands in best-effort mode", () => {
@@ -56,6 +68,9 @@ describe("applyCommands", () => {
     expect(result.spec).toEqual(after);
     expect(result.results.map((commandResult) => commandResult.status)).toEqual(["applied", "failed"]);
     expect(result.results[1]?.diagnostics[0]?.code).toBe("LAYER.NOT_FOUND");
+    expect(result.transaction).toBe("best-effort");
+    expect(result.committed).toBe(true);
+    expect(result.rolledBack).toBe(false);
   });
 
   it("returns patches during dry runs without changing the returned spec", () => {
@@ -63,7 +78,17 @@ describe("applyCommands", () => {
 
     expect(result.spec).toEqual(before);
     expect(result.results[0]?.status).toBe("applied");
-    expect(result.results[0]?.patch).toHaveLength(2);
+    expect(result.results[0]?.patch).toHaveLength(3);
     expect(result.results[0]?.nextRevision).toBe("2");
+    expect(result.dryRun).toBe(true);
+    expect(result.committed).toBe(false);
+    expect(result.rolledBack).toBe(false);
+  });
+
+  it("uses caller trace ids for batch and command results", () => {
+    const result = applyCommands(before as MapSpec, commands as MapCommand[], { traceId: "trace-review-1" });
+
+    expect(result.traceId).toBe("trace-review-1");
+    expect(result.results[0]?.traceId).toBe("trace-review-1");
   });
 });

@@ -1,67 +1,41 @@
+import { describe, expect, it } from "vitest";
+import before from "../fixtures/commands/replay/style-update/before.map.json";
+import commands from "../fixtures/commands/replay/style-update/commands.json";
+import after from "../fixtures/commands/replay/style-update/after.map.json";
+import { applyCommands, MockAdapter, type MapCommand, type MapSpec } from "@gis-engine/engine";
 import { createAdapterContractSuite } from "./createAdapterContractSuite.js";
-import type {
-  CapabilityReport,
-  FeatureQueryResult,
-  JsonPatchOperation,
-  QueryFeaturesOptions,
-  ResourceReport,
-  SnapshotOptions,
-  SnapshotResult,
-  AdapterApplyResult,
-  AdapterEventListener,
-  RenderContext,
-  RendererAdapter,
-  Unsubscribe,
-  MapSpec
-} from "@gis-engine/engine";
-
-class MockAdapter implements RendererAdapter {
-  readonly id = "mock";
-  readonly version = "0.1.0";
-
-  async getCapabilities(): Promise<CapabilityReport> {
-    return {
-      renderer: this.id,
-      dimensions: ["2d"],
-      sources: ["geojson"],
-      layers: ["background", "circle"],
-      expressions: ["get", "literal"],
-      queries: ["point", "bbox"],
-      snapshot: {
-        supported: true,
-        formats: ["data-url"]
-      },
-      experimental: []
-    };
-  }
-
-  async load(_spec: MapSpec, _context: RenderContext): Promise<void> {
-    return undefined;
-  }
-
-  async applyPatch(_patch: JsonPatchOperation[], _context: RenderContext): Promise<AdapterApplyResult> {
-    return { diagnostics: [] };
-  }
-
-  async queryFeatures(_options: QueryFeaturesOptions): Promise<FeatureQueryResult> {
-    return { features: [], diagnostics: [] };
-  }
-
-  async snapshot(_options: SnapshotOptions): Promise<SnapshotResult> {
-    return { passed: true, diagnostics: [], dataUrl: "data:image/png;base64," };
-  }
-
-  resize(_size: { width: number; height: number }): void {
-    return undefined;
-  }
-
-  async destroy(): Promise<ResourceReport> {
-    return { destroyed: true, diagnostics: [], resources: { verifiable: false, reason: "mock adapter" } };
-  }
-
-  on(_event: "error" | "warning" | "stats", _listener: AdapterEventListener): Unsubscribe {
-    return () => undefined;
-  }
-}
 
 createAdapterContractSuite("mock", () => new MockAdapter());
+
+describe("MockAdapter state", () => {
+  it("keeps its internal spec in sync after patches are applied", async () => {
+    const adapter = new MockAdapter();
+    await adapter.load(before as MapSpec, { container: {} as HTMLElement });
+    const result = applyCommands(before as MapSpec, commands as MapCommand[]);
+    const patch = result.results.flatMap((commandResult) => commandResult.patch ?? []);
+
+    const adapterResult = await adapter.applyPatch(patch, { container: {} as HTMLElement });
+
+    expect(adapterResult.diagnostics).toEqual([]);
+    expect(adapter.exportSpec()).toEqual(after);
+  });
+
+  it("keeps the last committed spec when a patch fails validation", async () => {
+    const adapter = new MockAdapter();
+    await adapter.load(before as MapSpec, { container: {} as HTMLElement });
+
+    const adapterResult = await adapter.applyPatch(
+      [
+        {
+          op: "add",
+          path: "/layers/1",
+          value: { id: "invalid-fill", type: "fill", source: "missing-source" }
+        }
+      ],
+      { container: {} as HTMLElement }
+    );
+
+    expect(adapterResult.diagnostics.some((diagnostic) => diagnostic.severity === "error")).toBe(true);
+    expect(adapter.exportSpec()).toEqual(before);
+  });
+});

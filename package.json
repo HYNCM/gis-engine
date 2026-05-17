@@ -7,12 +7,14 @@
   "scripts": {
     "build": "pnpm -r build",
     "build:schema": "pnpm --filter @gis-engine/engine build:schema",
-    "test": "pnpm test:schema && pnpm test:commands && pnpm test:patch && pnpm test:runtime && pnpm test:adapter && pnpm test:ai",
-    "test:schema": "vitest run tests/schema",
+    "test": "pnpm test:schema && pnpm test:schema-sync && pnpm test:commands && pnpm test:patch && pnpm test:runtime && pnpm test:adapter && pnpm test:ai && pnpm test:examples && pnpm test:resources && pnpm test:perf:smoke",
+    "test:schema": "vitest run tests/schema/schema-fixtures.test.ts",
+    "test:schema-sync": "vitest run tests/schema-sync",
     "test:commands": "vitest run tests/commands",
     "test:patch": "vitest run tests/patch",
     "test:runtime": "vitest run tests/runtime",
     "test:adapter": "vitest run tests/adapter",
+    "test:examples": "vitest run tests/examples",
     "test:snapshot": "playwright test tests/snapshot",
     "test:snapshot:update": "SNAPSHOT_UPDATE=1 playwright test tests/snapshot",
     "test:ai": "vitest run tests/ai",
@@ -24,6 +26,7 @@
   "devDependencies": {
     "@playwright/test": "^1.56.0",
     "@types/node": "^22.10.0",
+    "ajv": "^8.17.0",
     "typescript": "^5.7.0",
     "vitest": "^2.1.0"
   }

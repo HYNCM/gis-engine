@@ -25,6 +25,8 @@ class RuntimeMockAdapter implements RendererAdapter {
   readonly version = "0.1.0";
   patches: JsonPatchOperation[][] = [];
   loadCalls = 0;
+  loadedSpec: MapSpec | null = null;
+  applyDiagnostics: AdapterApplyResult["diagnostics"] = [];
 
   async getCapabilities(): Promise<CapabilityReport> {
     return {
@@ -39,13 +41,14 @@ class RuntimeMockAdapter implements RendererAdapter {
     };
   }
 
-  async load(_spec: MapSpec, _context: RenderContext): Promise<void> {
+  async load(spec: MapSpec, _context: RenderContext): Promise<void> {
     this.loadCalls += 1;
+    this.loadedSpec = structuredClone(spec);
   }
 
   async applyPatch(patch: JsonPatchOperation[], _context: RenderContext): Promise<AdapterApplyResult> {
     this.patches.push(patch);
-    return { diagnostics: [] };
+    return { diagnostics: this.applyDiagnostics };
   }
 
   async queryFeatures(_options: QueryFeaturesOptions): Promise<FeatureQueryResult> {
@@ -160,8 +163,31 @@ describe("MapRuntime", () => {
     const results = await runtime.apply(previewCommand);
 
     expect(results[0]?.status).toBe("applied");
-    expect(results[0]?.patch).toHaveLength(2);
+    expect(results[0]?.patch).toHaveLength(3);
     expect(runtime.exportSpec()).toEqual(before);
     expect(adapter.patches).toHaveLength(0);
+  });
+
+  it("keeps the last committed spec and reloads the adapter when adapter apply fails", async () => {
+    const adapter = new RuntimeMockAdapter();
+    const runtime = await MapRuntime.create(before as MapSpec, {
+      adapter,
+      container: {} as HTMLElement
+    });
+    adapter.applyDiagnostics = [
+      {
+        severity: "error",
+        code: "RENDER.ADAPTER_ERROR",
+        message: "adapter rejected patch"
+      }
+    ];
+
+    const results = await runtime.apply(commands as MapCommand[]);
+
+    expect(results[0]?.status).toBe("failed");
+    expect(results[0]?.diagnostics.some((diagnostic) => diagnostic.code === "RENDER.ADAPTER_ERROR")).toBe(true);
+    expect(runtime.exportSpec()).toEqual(before);
+    expect(adapter.loadCalls).toBe(2);
+    expect(adapter.loadedSpec).toEqual(before);
   });
 });
