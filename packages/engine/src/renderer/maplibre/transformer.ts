@@ -25,7 +25,11 @@ export type MapLibreSource =
     }
   | {
       type: "vector";
-      url: string;
+      url?: string;
+      tiles?: string[];
+      minzoom?: number;
+      maxzoom?: number;
+      attribution?: string;
     };
 
 export interface MapLibreLayer {
@@ -91,6 +95,15 @@ function transformSource(sourceId: string, source: SourceSpec, diagnostics: Diag
     });
     return { type: "vector", url: source.url };
   }
+  if (source.type === "vector") {
+    const vectorSource: MapLibreSource = { type: "vector" };
+    if ("tiles" in source) vectorSource.tiles = source.tiles;
+    if ("url" in source) vectorSource.url = source.url;
+    if (source.minzoom !== undefined) vectorSource.minzoom = source.minzoom;
+    if (source.maxzoom !== undefined) vectorSource.maxzoom = source.maxzoom;
+    if (source.attribution !== undefined) vectorSource.attribution = source.attribution;
+    return vectorSource;
+  }
 
   diagnostics.push({
     severity: "error",
@@ -136,7 +149,7 @@ function transformLayer(spec: MapSpec, layer: LayerSpec, index: number, diagnost
 
 function sourceLayerFor(spec: MapSpec, layer: LayerSpec): string | undefined {
   const source = layer.source ? spec.sources[layer.source] : undefined;
-  if (!source || source.type !== "pmtiles") return undefined;
+  if (!source || (source.type !== "pmtiles" && source.type !== "vector")) return undefined;
   const metadata = layer.metadata;
   const sourceLayer = metadata?.["source-layer"];
   return typeof sourceLayer === "string" && sourceLayer.length > 0 ? sourceLayer : undefined;

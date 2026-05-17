@@ -146,7 +146,7 @@ function isLayerSourceCompatible(layerType: string, sourceType: string): boolean
   if (layerType === "background") return true;
   if (layerType === "raster") return sourceType === "raster" || sourceType === "pmtiles";
   if (layerType === "fill" || layerType === "line" || layerType === "circle" || layerType === "symbol-lite" || layerType === "fill-extrusion-lite") {
-    return sourceType === "geojson" || sourceType === "pmtiles";
+    return sourceType === "geojson" || sourceType === "pmtiles" || sourceType === "vector";
   }
   return false;
 }

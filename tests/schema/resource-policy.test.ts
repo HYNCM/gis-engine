@@ -52,9 +52,10 @@ describe("ResourcePolicy validation", () => {
     expect(localhost.valid).toBe(true);
   });
 
-  it("points diagnostics at raster tile and PMTiles URL fields", () => {
+  it("points diagnostics at raster tile, PMTiles URL, and vector tile fields", () => {
     const raster = validateSpec(withRasterTile("file:///tmp/{z}/{x}/{y}.png"));
     const pmtiles = validateSpec(withPmtilesUrl("file:///tmp/parcels.pmtiles"));
+    const vector = validateSpec(withVectorTile("file:///tmp/vector/{z}/{x}/{y}.pbf"));
 
     expect(raster.diagnostics).toContainEqual(
       expect.objectContaining({
@@ -66,6 +67,12 @@ describe("ResourcePolicy validation", () => {
       expect.objectContaining({
         code: DiagnosticCodes.SecurityUrlBlocked,
         path: "/sources/parcels/url"
+      })
+    );
+    expect(vector.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: DiagnosticCodes.SecurityUrlBlocked,
+        path: "/sources/vector/tiles/0"
       })
     );
   });
@@ -132,6 +139,28 @@ function withPmtilesUrl(url: string): MapSpec {
         source: "parcels",
         metadata: { "source-layer": "parcels" },
         paint: { "fill-color": "#22c55e" }
+      }
+    ]
+  };
+}
+
+function withVectorTile(tileUrl: string): MapSpec {
+  return {
+    version: "0.1",
+    id: "resource-policy-vector",
+    view: { center: [120, 30], zoom: 10 },
+    sources: {
+      vector: {
+        type: "vector",
+        tiles: [tileUrl]
+      }
+    },
+    layers: [
+      {
+        id: "vector-fill",
+        type: "fill",
+        source: "vector",
+        metadata: { "source-layer": "districts" }
       }
     ]
   };

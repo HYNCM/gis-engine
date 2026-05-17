@@ -31,6 +31,35 @@ describe("MapSpecToMapLibreStyleTransformer", () => {
     expect(result.diagnostics.some((diagnostic) => diagnostic.code === "EXPR.UNKNOWN_OPERATOR")).toBe(true);
   });
 
+  it("transforms generic vector tile sources with source-layer metadata", () => {
+    const spec = structuredClone(before) as MapSpec;
+    spec.sources = {
+      districts: {
+        type: "vector",
+        tiles: ["./tiles/{z}/{x}/{y}.pbf"],
+        minzoom: 0,
+        maxzoom: 12,
+        attribution: "Local test tiles"
+      }
+    };
+    spec.layers[0] = {
+      ...spec.layers[0]!,
+      metadata: { "source-layer": "districts" }
+    };
+
+    const result = transformMapSpecToMapLibreStyle(spec);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.style?.sources.districts).toEqual({
+      type: "vector",
+      tiles: ["./tiles/{z}/{x}/{y}.pbf"],
+      minzoom: 0,
+      maxzoom: 12,
+      attribution: "Local test tiles"
+    });
+    expect(result.style?.layers[0]?.["source-layer"]).toBe("districts");
+  });
+
   it("returns capability-only diagnostics for schema-valid unsupported layers", () => {
     const spec = structuredClone(before) as MapSpec;
     spec.layers[0] = {

@@ -54,7 +54,29 @@ const PmtilesSourceSchema = Type.Object(
   { additionalProperties: false }
 );
 
-export const SourceSpecSchema = Type.Union([GeoJsonSourceSchema, RasterSourceSchema, PmtilesSourceSchema]);
+const VectorTileSourceSchema = Type.Object(
+  {
+    type: Type.Literal("vector"),
+    tiles: Type.Array(Type.String()),
+    minzoom: Type.Optional(Type.Number()),
+    maxzoom: Type.Optional(Type.Number()),
+    attribution: Type.Optional(Type.String())
+  },
+  { additionalProperties: false }
+);
+
+const VectorUrlSourceSchema = Type.Object(
+  {
+    type: Type.Literal("vector"),
+    url: Type.String(),
+    minzoom: Type.Optional(Type.Number()),
+    maxzoom: Type.Optional(Type.Number()),
+    attribution: Type.Optional(Type.String())
+  },
+  { additionalProperties: false }
+);
+
+export const SourceSpecSchema = Type.Union([GeoJsonSourceSchema, RasterSourceSchema, PmtilesSourceSchema, VectorTileSourceSchema, VectorUrlSourceSchema]);
 
 export const LayerSpecSchema = Type.Object(
   {

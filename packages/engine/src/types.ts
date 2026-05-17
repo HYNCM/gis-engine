@@ -76,7 +76,25 @@ export interface PmtilesSourceSpec {
   attribution?: string;
 }
 
-export type SourceSpec = GeoJsonSourceSpec | RasterSourceSpec | PmtilesSourceSpec;
+export interface VectorTileSourceSpec {
+  type: "vector";
+  tiles: string[];
+  minzoom?: number;
+  maxzoom?: number;
+  attribution?: string;
+}
+
+export interface VectorUrlSourceSpec {
+  type: "vector";
+  url: string;
+  minzoom?: number;
+  maxzoom?: number;
+  attribution?: string;
+}
+
+export type VectorSourceSpec = VectorTileSourceSpec | VectorUrlSourceSpec;
+
+export type SourceSpec = GeoJsonSourceSpec | RasterSourceSpec | PmtilesSourceSpec | VectorSourceSpec;
 
 export interface LayerSpec {
   id: string;
