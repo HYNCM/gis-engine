@@ -24,16 +24,15 @@ decision_level: advisory
 | 排名 | 债务 | 得分 | 证据 | 建议修复 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
 | 1 | 正式 release runner 证据未固化 | 7.80 | strict visual 在默认 macOS 沙箱受 Chromium Mach port 权限限制 | 在正式 runner 记录 `test:release:strict` 输出 | high |
-| 2 | npm publish dry-run / package file review 未完成 | 7.30 | release checklist | 跑 publish dry-run，审查 package files、exports、schema artifacts | high |
-| 3 | 资源释放测试覆盖仍窄 | 6.10 | resource-release tests 与 CI strategy 不一致 | 补 destroy 后 snapshot/query/lifecycle tests | medium |
-| 4 | perf smoke 与长期性能目标仍有距离 | 5.90 | perf test 是小样本 command replay guard | 补 deterministic create/render/query/snapshot/destroy 基线，较大数据放 nightly/release | medium |
-| 5 | 命令冲突 / 回放 / 审计语义未完全产品化 | 5.70 | contracts、types、playbook | 写 spec、fixtures、examples | high |
-| 6 | fill-extrusion-lite 仍只有 boundary | 5.20 | feature spec、schema gate | 未来 beta adapter 明确 capability 后再实现渲染与 visual evidence | medium |
-| 7 | SceneView3D 仍为 reserved boundary | 4.90 | scene3d-boundary spec | v1 前继续细化 camera/source/layer/snapshot 规则 | medium |
+| 2 | 资源释放测试覆盖仍窄 | 6.10 | resource-release tests 与 CI strategy 不一致 | 补 destroy 后 snapshot/query/lifecycle tests | medium |
+| 3 | perf smoke 与长期性能目标仍有距离 | 5.90 | perf test 是小样本 command replay guard | 补 deterministic create/render/query/snapshot/destroy 基线，较大数据放 nightly/release | medium |
+| 4 | 命令冲突 / 回放 / 审计语义未完全产品化 | 5.70 | contracts、types、playbook | 写 spec、fixtures、examples | high |
+| 5 | fill-extrusion-lite 仍只有 boundary | 5.20 | feature spec、schema gate | 未来 beta adapter 明确 capability 后再实现渲染与 visual evidence | medium |
+| 6 | SceneView3D 仍为 reserved boundary | 4.90 | scene3d-boundary spec | v1 前继续细化 camera/source/layer/snapshot 规则 | medium |
 
 ## 修复顺序
 
-1. 先关闭 release runner 与 package 发布证据。
+1. 先关闭正式 release runner strict visual 证据。
 2. 补资源释放和 perf smoke deterministic evidence。
 3. 将 command replay/audit 语义整理成产品化文档和 fixtures。
 4. 继续推进 fill-extrusion-lite beta adapter 和 SceneView3D v1 边界。

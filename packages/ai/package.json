@@ -1,12 +1,22 @@
 {
   "name": "@gis-engine/ai",
   "version": "0.1.0",
+  "description": "AI and MCP tools for validating, editing, explaining, snapshotting, and exporting GIS Engine MapSpec documents.",
+  "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HYNCM/gis-engine.git",
+    "directory": "packages/ai"
+  },
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "build:schema": "pnpm build && node scripts/build-schema.mjs",

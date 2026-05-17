@@ -510,11 +510,10 @@ call queryFeatures and expect RENDER.DESTROYED
 
 当前下一步顺序：
 
-1. 完成 npm publish dry-run 和 package file review。
-2. 在正式 runner 固化 `pnpm test:release:strict` 证据。
-3. 按 `resource-perf-gap-plan.md` 补 deterministic resource/perf tests。
-4. 将 command conflict/replay/audit 语义产品化为 spec、fixtures 和示例。
-5. 继续推进 `fill-extrusion-lite` beta adapter 和 SceneView3D v1 边界。
+1. 在正式 runner 固化 `pnpm test:release:strict` 证据。
+2. 按 `resource-perf-gap-plan.md` 补 deterministic resource/perf tests。
+3. 将 command conflict/replay/audit 语义产品化为 spec、fixtures 和示例。
+4. 继续推进 `fill-extrusion-lite` beta adapter 和 SceneView3D v1 边界。
 
 ## 11. 当前落地状态
 
@@ -532,7 +531,6 @@ call queryFeatures and expect RENDER.DESTROYED
 
 仍未实现或仍为边界：
 
-- npm publish dry-run 和 package file review。
 - 正式 release runner 上的 strict visual snapshot 归档证据。
 - `fill-extrusion-lite` 的真实 adapter 渲染。
 - SceneView3D、terrain、glTF、3D Tiles adapter。

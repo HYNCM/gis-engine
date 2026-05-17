@@ -58,7 +58,7 @@ flowchart LR
 
 ## 关键路径
 
-1. Release/package closure -> npm publish dry-run -> package file review -> 正式 runner strict visual snapshot。
+1. Formal release runner evidence -> `pnpm test:release:strict` -> release evidence archive。
 2. Resource/perf deterministic evidence -> create/query/snapshot/destroy tests -> CI 策略更新。
 3. Command conflict/replay/audit product spec -> fixtures/examples -> coordinator monthly planning。
 
