@@ -512,7 +512,6 @@ call queryFeatures and expect RENDER.DESTROYED
 当前下一步顺序：
 
 1. 继续推进 SceneView3D v1 边界。
-2. 在正式 release runner 加入 gated `fill-extrusion-lite` visual scene。
 
 ## 11. 当前落地状态
 
@@ -527,12 +526,11 @@ call queryFeatures and expect RENDER.DESTROYED
 - 已创建基础 GeoJSON、AI map edit、raster-basemap、pmtiles-local、vector-tile-url、fill-extrusion-lite 示例。
 - 已创建 MCP server，且 tool descriptor 包含 input/output schemas。
 - 已创建 expression validator、resource URL policy 和 schema/command/adapter/AI/examples/snapshot tests。
-- 已创建 Playwright visual snapshot harness，覆盖 GeoJSON 和生成式本地 MVT 场景。
+- 已创建 Playwright visual snapshot harness，覆盖 GeoJSON、生成式本地 MVT 和 gated `fill-extrusion-lite` 场景。
 - 已归档 release-capable `pnpm -s test:release:strict` 证据。
 - 已创建 `pnpm test:perf:nightly`，覆盖 1k/10k/100k inline GeoJSON create/query/snapshot/destroy。
 
 仍未实现或仍为边界：
 
-- `fill-extrusion-lite` 的 release-runner visual snapshot 归档证据。
 - SceneView3D、terrain、glTF、3D Tiles adapter。
 - GeoParquet / FlatGeobuf / DuckDB WASM。

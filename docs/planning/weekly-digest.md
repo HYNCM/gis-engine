@@ -24,7 +24,7 @@ decision_level: advisory
 
 当前仓库位于 `acdf28e` 时，主线已经从 v0.1 闭环推进到 v0.2 checkpoint：generic vector tile source、MCP output schema、strict capability report、expression 扩展、deterministic layer order、visual MVT 场景和 2.5D/3D 边界均已完成。质量门禁显示 PR gate 可放行；初始审计发现的 2 个 P1 已关闭。
 
-2026-05-18 follow-up：package dry-run、resource/perf deterministic evidence、command audit trace 产品化、`fill-extrusion-lite` MapLibre beta mapping、release-capable strict visual evidence 和 1k/10k/100k perf nightly evidence 已补齐；剩余主线风险转向 SceneView3D 边界深化和 2.5D release visual scene。
+2026-05-18 follow-up：package dry-run、resource/perf deterministic evidence、command audit trace 产品化、`fill-extrusion-lite` MapLibre beta mapping、3-scene release-capable strict visual evidence 和 1k/10k/100k perf nightly evidence 已补齐；剩余主线风险转向 SceneView3D 边界深化。
 
 ## 本周关键信号
 
@@ -54,11 +54,11 @@ decision_level: advisory
 1. v0.2 不直接扩 3D 实现，先写 2.5D/3D extension 边界。
 2. v0.2 的首要工程项已按合同对齐执行：command schema、MCP diagnostics/output schema、expression matrix、style diff/layer order。
 3. PMTiles/vector tile source 已从 backlog 升级并完成当前 checkpoint。
-4. 下一轮 sprint 继续保留 20% 到 30% 给 2.5D release visual、test reliability 和 v1 3D boundary。
+4. 下一轮 sprint 继续保留 20% 到 30% 给 test reliability 和 v1 3D boundary。
 
 ## 下游交接
 
 - `code-reviewer -> task-distributor`: 两个 P1 审计缺口已关闭，P2 resource/perf 已补 deterministic 与 nightly evidence。
 - `competitive-intel -> product-strategist`: PMTiles/vector tile、MCP structured contract、3D boundary 已纳入并完成 checkpoint。
 - `quality-guardian -> coordinator`: PR gate 可放行；release gate 需要正式 runner 再跑 strict visual snapshot。
-- `product-strategist -> task-distributor`: 下游优先级转向 SceneView3D 边界深化和 gated 2.5D release visual 场景。
+- `product-strategist -> task-distributor`: 下游优先级转向 SceneView3D 边界深化。

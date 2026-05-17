@@ -40,10 +40,11 @@ Visual coverage:
 
 - GeoJSON MapLibre visual snapshot: passed.
 - Generated local MVT release acceptance snapshot: passed.
+- `fill-extrusion-lite` beta visual snapshot: passed.
 
 ## Notes
 
 This evidence closes the strict visual runner gap for the current local release
-candidate. CI runners still need Chromium/WebGL/Mach-port permissions; otherwise
-they should fail fast in strict mode rather than silently downgrade visual
-coverage.
+candidate and adds gated 2.5D visual coverage. CI runners still need
+Chromium/WebGL/Mach-port permissions; otherwise they should fail fast in strict
+mode rather than silently downgrade visual coverage.

@@ -37,9 +37,8 @@ Missing either condition returns `CAPABILITY.UNSUPPORTED` at
 - `transformMapSpecToMapLibreStyle()` maps `fill-extrusion-lite` to MapLibre
   `fill-extrusion` only after `validateSpec()` accepts the experimental gate.
 - Missing gate still returns `CAPABILITY.UNSUPPORTED` and no style.
-- Snapshot smoke includes the gated 2.5D fixture; visual snapshot remains a
-  release-runner follow-up because current visual scenarios cover GeoJSON and
-  generated local MVT.
+- Snapshot smoke includes the gated 2.5D fixture, and strict visual snapshot
+  includes a gated `fill-extrusion-lite` release scene.
 
 ## Non-Goals
 

@@ -98,7 +98,7 @@ fixture 规则：
 Snapshot 分为两层：
 
 - `snapshot:smoke`：必跑。使用 Node/Vitest 和 adapter contract 验证 `load -> snapshot -> exportSpec` 的结构化结果、diagnostics 和状态一致性，不要求真实 WebGL；当前覆盖 GeoJSON、vector tile 和 gated `fill-extrusion-lite`。
-- `snapshot:visual`：条件跑。使用 Playwright、真实浏览器和真实 MapLibre GL canvas 验证像素健康度和可选 baseline diff。当前覆盖 GeoJSON 基础场景和本地生成 MVT 的 vector tile release 场景。
+- `snapshot:visual`：条件跑。使用 Playwright、真实浏览器和真实 MapLibre GL canvas 验证像素健康度和可选 baseline diff。当前覆盖 GeoJSON 基础场景、本地生成 MVT 的 vector tile release 场景和 gated `fill-extrusion-lite` beta 场景。
 
 工具：
 
