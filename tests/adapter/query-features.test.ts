@@ -51,7 +51,7 @@ const querySpec: MapSpec = {
     },
     raster: {
       type: "raster",
-      tiles: ["https://example.test/tiles/{z}/{x}/{y}.png"]
+      tiles: ["./tiles/{z}/{x}/{y}.png"]
     },
     tiles: {
       type: "pmtiles",

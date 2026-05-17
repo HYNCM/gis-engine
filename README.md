@@ -2,7 +2,7 @@
 
 AI-native, TypeScript-first map runtime for building, validating, replaying, and exporting 2D and 3D-ready web map applications.
 
-GIS Engine is currently in architecture and contract design. The first implementation target is a v0.1 runtime that proves this loop:
+GIS Engine is currently in v0.1 RC hardening. The implementation target is a runtime that proves this loop:
 
 ```txt
 MapSpec -> validate -> render -> command modify -> snapshot -> export
@@ -27,11 +27,11 @@ Traditional map SDKs are powerful, but AI agents need a stricter contract:
 | Runtime validation | Started | `validateSpec` runs schema and semantic checks such as duplicate layers and missing sources. |
 | Command system | Functional | `applyCommands` returns batch transaction metadata, trace ids, command sequence ids, JSON Patch output, inverse patch, dry-run shape, and `baseRevision` conflict rejection. |
 | Patch utilities | Started | Minimal JSON Pointer normalization, apply, invert, changed path sorting, and validation utilities exist. |
-| Diagnostics | Started | Diagnostic code registry exists; more codes and expression-specific validation are still pending. |
+| Diagnostics | Functional | Diagnostic code registry exists; validation covers schema, semantic rules, v0.1 expression support, and static resource URL policy. |
 | Renderer adapter | Functional MVP | `RendererAdapter` contract exists; `MockAdapter` keeps real internal state; `MapLibreAdapter` MVP and style transformer are registered. |
-| Snapshot harness | Started | Adapter snapshot smoke returns data-url snapshots without requiring GPU/WebGL; real-browser visual snapshot remains planned. |
-| AI tools | Functional | MCP exposes `validate_spec`, `apply_commands`, `export_spec`, and `get_context_summary`; planned follow-up tools are `snapshot_spec`, `explain_spec`, and `export_example_app`. CamelCase aliases are intentionally not supported. |
-| Examples/fixtures | Started | Basic GeoJSON and AI map edit examples plus schema/command fixtures exist. |
+| Snapshot harness | Functional | Adapter snapshot smoke returns data-url snapshots without requiring GPU/WebGL; Playwright real-browser visual strict gate is implemented. |
+| AI tools | Functional | MCP exposes `validate_spec`, `apply_commands`, `export_spec`, `get_context_summary`, `snapshot_spec`, `explain_spec`, and `export_example_app`. CamelCase aliases are intentionally not supported. |
+| Examples/fixtures | Functional | Basic GeoJSON, AI map edit, raster-basemap, and pmtiles-local examples plus schema/command fixtures exist. |
 | CI | Started | GitHub Actions exists and runs schema build plus `pnpm check`; `pnpm check` must stay deterministic and must not depend on real GPU/WebGL. |
 
 ## Planned v0.1 Shape

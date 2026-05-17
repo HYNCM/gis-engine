@@ -2,6 +2,7 @@ export { DiagnosticCodes } from "./diagnostics/codes.js";
 export { applyCommands, type ApplyCommandsResult } from "./commands/applyCommands.js";
 export { buildPatch, type BuildPatchResult } from "./commands/buildPatch.js";
 export { validateSpec } from "./spec/validate.js";
+export { defaultResourcePolicy, validateResourcePolicy, validateResourceUrl, type ResourcePolicy, type ResourceUrlScheme } from "./spec/resource-policy.js";
 export * from "./spec/patch/index.js";
 export * from "./spec/schemas/index.js";
 export { createMap, type CreateMapOptions } from "./runtime/createMap.js";

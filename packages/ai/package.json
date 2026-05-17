@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "build:schema": "pnpm build && node scripts/build-schema.mjs",
     "start:mcp": "node dist/mcp/server.js"
   },
   "dependencies": {

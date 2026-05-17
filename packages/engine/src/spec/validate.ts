@@ -2,6 +2,8 @@ import { Ajv, type ErrorObject } from "ajv/dist/ajv.js";
 import { DiagnosticCodes } from "../diagnostics/codes.js";
 import type { Diagnostic, MapSpec, ValidationReport } from "../types.js";
 import { MapSpecSchema } from "./schemas/index.js";
+import { validateExpression } from "./expression-validator.js";
+import { validateResourcePolicy } from "./resource-policy.js";
 
 const ajv = new Ajv({ allErrors: true, strict: false });
 const validateMapSpecSchema = ajv.compile(MapSpecSchema);
@@ -15,6 +17,7 @@ export function validateSpec(spec: unknown): ValidationReport {
 
   if (isMapSpecLike(spec)) {
     diagnostics.push(...validateSemanticRules(spec));
+    diagnostics.push(...validateResourcePolicy(spec));
   }
 
   return {
@@ -117,6 +120,22 @@ function validateSemanticRules(spec: MapSpec): Diagnostic[] {
           { kind: "source", id: layer.source }
         ]
       });
+    }
+
+    if (layer.paint) {
+      for (const [key, value] of Object.entries(layer.paint)) {
+        if (Array.isArray(value)) {
+          diagnostics.push(...validateExpression(value, `${layerPath}/paint/${key}`));
+        }
+      }
+    }
+
+    if (layer.layout) {
+      for (const [key, value] of Object.entries(layer.layout)) {
+        if (Array.isArray(value)) {
+          diagnostics.push(...validateExpression(value, `${layerPath}/layout/${key}`));
+        }
+      }
     }
   }
 

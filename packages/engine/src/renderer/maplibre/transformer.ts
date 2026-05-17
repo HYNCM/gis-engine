@@ -42,7 +42,6 @@ export interface TransformResult {
   diagnostics: Diagnostic[];
 }
 
-const supportedExpressionOperators = new Set(["get", "step", "interpolate", "literal", "linear"]);
 const supportedLayerTypes = new Set(["background", "raster", "fill", "line", "circle", "symbol-lite"]);
 
 export function transformMapSpecToMapLibreStyle(spec: MapSpec): TransformResult {
@@ -132,9 +131,6 @@ function transformLayer(spec: MapSpec, layer: LayerSpec, index: number, diagnost
   if (layer.paint) styleLayer.paint = layer.paint;
   if (layer.layout) styleLayer.layout = layer.layout;
 
-  diagnostics.push(...validateExpressionValues(layer.paint, `/layers/${index}/paint`));
-  diagnostics.push(...validateExpressionValues(layer.layout, `/layers/${index}/layout`));
-
   return styleLayer;
 }
 
@@ -144,62 +140,6 @@ function sourceLayerFor(spec: MapSpec, layer: LayerSpec): string | undefined {
   const metadata = layer.metadata;
   const sourceLayer = metadata?.["source-layer"];
   return typeof sourceLayer === "string" && sourceLayer.length > 0 ? sourceLayer : undefined;
-}
-
-function validateExpressionValues(value: Record<string, unknown> | undefined, path: string): Diagnostic[] {
-  if (!value) return [];
-  const diagnostics: Diagnostic[] = [];
-  for (const [key, entry] of Object.entries(value)) {
-    diagnostics.push(...validateExpression(entry, `${path}/${escapePathSegment(key)}`));
-  }
-  return diagnostics;
-}
-
-function validateExpression(value: unknown, path: string): Diagnostic[] {
-  if (!Array.isArray(value)) return [];
-  if (value.length === 0) {
-    return [
-      {
-        severity: "error",
-        code: DiagnosticCodes.ExpressionInvalidArity,
-        message: "Expression arrays must not be empty.",
-        path
-      }
-    ];
-  }
-
-  const [operator] = value;
-  if (typeof operator !== "string" || !supportedExpressionOperators.has(operator)) {
-    return [
-      {
-        severity: "error",
-        code: DiagnosticCodes.CapabilityUnsupported,
-        message: `Expression operator "${String(operator)}" is not supported by the MapLibre MVP transformer.`,
-        path
-      }
-    ];
-  }
-
-  if (operator === "interpolate" && !isLinearInterpolation(value[1])) {
-    return [
-      {
-        severity: "error",
-        code: DiagnosticCodes.CapabilityUnsupported,
-        message: "Only linear interpolate expressions are supported by the MapLibre MVP transformer.",
-        path
-      }
-    ];
-  }
-
-  return [];
-}
-
-function isLinearInterpolation(value: unknown): boolean {
-  return value === "linear" || (Array.isArray(value) && value.length === 1 && value[0] === "linear");
-}
-
-function escapePathSegment(segment: string): string {
-  return segment.replaceAll("~", "~0").replaceAll("/", "~1");
 }
 
 function mapLayerType(layerType: LayerSpec["type"]): MapLibreLayer["type"] {

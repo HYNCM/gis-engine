@@ -6,9 +6,9 @@
   "packageManager": "pnpm@9.15.0",
   "scripts": {
     "build": "pnpm -r build",
-    "build:schema": "pnpm --filter @gis-engine/engine build:schema",
+    "build:schema": "pnpm --filter @gis-engine/engine build:schema && pnpm --filter @gis-engine/ai build:schema",
     "test": "pnpm test:schema && pnpm test:schema-sync && pnpm test:commands && pnpm test:patch && pnpm test:runtime && pnpm test:adapter && pnpm test:ai && pnpm test:examples && pnpm test:resources && pnpm test:perf:smoke && pnpm test:snapshot:smoke",
-    "test:schema": "vitest run tests/schema/schema-fixtures.test.ts",
+    "test:schema": "vitest run tests/schema/schema-fixtures.test.ts tests/schema/expression-validator.test.ts tests/schema/resource-policy.test.ts",
     "test:schema-sync": "vitest run tests/schema-sync",
     "test:commands": "vitest run tests/commands",
     "test:patch": "vitest run tests/patch",
@@ -22,6 +22,8 @@
     "test:ai": "vitest run tests/ai",
     "test:perf:smoke": "vitest run tests/perf",
     "test:resources": "vitest run tests/resources",
+    "test:release:rc": "pnpm build:schema && pnpm check && pnpm test:snapshot:visual",
+    "test:release:strict": "pnpm build:schema && pnpm check && GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual",
     "check": "pnpm build && pnpm test",
     "example:basic-geojson": "tsx examples/basic-geojson/validate.ts"
   },
@@ -29,6 +31,7 @@
     "@playwright/test": "^1.56.0",
     "@types/node": "^22.10.0",
     "ajv": "^8.17.0",
+    "maplibre-gl": "^5.24.0",
     "typescript": "^5.7.0",
     "vitest": "^2.1.0"
   }
