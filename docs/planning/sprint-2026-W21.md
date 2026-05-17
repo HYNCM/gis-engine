@@ -74,3 +74,4 @@ decision_level: advisory
 | TASK-2026W23-001~009 | checkpoint done | vector example/fixtures/snapshot, MCP v0.2 coverage, 2.5D/3D boundary, checkpoint audit, release note draft |
 | POST-2026W21-010 | done | command conflict/replay/audit productization: `collectTrace`, MCP trace output, conflict audit fixture, audited AI edit example |
 | POST-2026W21-011 | done | `fill-extrusion-lite` beta adapter: MapLibre `fill-extrusion` mapping, capability report, fixture/example, snapshot smoke |
+| POST-2026W21-012 | done | release-capable `pnpm -s test:release:strict` evidence with 2 visual Playwright scenes |

@@ -19,7 +19,7 @@ decision_level: advisory
 
 ## 结论
 
-当前 v0.1 已具备 `MapSpec`、commands、diagnostics、snapshot 和 MapLibre adapter 闭环；2026-05-17 v0.2 checkpoint 已完成 generic vector tile、MCP output schema、strict capability report、expression 扩展、style/layer order 稳定化、visual MVT 场景和 2.5D/3D 边界。2026-05-18 已补齐 package dry-run、resource/perf deterministic evidence、command audit trace 产品化和 `fill-extrusion-lite` MapLibre beta mapping。下一阶段不应继续扩大 runtime 骨架，而应聚焦正式 runner 发布证据和 3D 边界深化。
+当前 v0.1 已具备 `MapSpec`、commands、diagnostics、snapshot 和 MapLibre adapter 闭环；2026-05-17 v0.2 checkpoint 已完成 generic vector tile、MCP output schema、strict capability report、expression 扩展、style/layer order 稳定化、visual MVT 场景和 2.5D/3D 边界。2026-05-18 已补齐 package dry-run、resource/perf deterministic evidence、command audit trace 产品化、`fill-extrusion-lite` MapLibre beta mapping 和 release-capable strict visual runner evidence。下一阶段不应继续扩大 runtime 骨架，而应聚焦 3D 边界深化和 nightly/release 大数据证据。
 
 ## 路线总览
 
@@ -34,9 +34,8 @@ decision_level: advisory
 
 | 排名 | 事项 | 得分 | 证据 | 行动 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | Formal release runner evidence | 8.00 | release checklist；checkpoint 已过工程门禁 | 在正式 runner 归档 strict visual 输出 | high |
-| 2 | SceneView3D 边界深化 | 5.30 | Cesium/Three.js signal、framework review | 继续细化 scene3d/camera/source/layer/snapshot 边界 spec | medium |
-| 3 | 大数据 perf/nightly evidence | 4.80 | resource/perf gap plan | 将 1k/10k/100k 场景放入 nightly/release runner | medium |
+| 1 | SceneView3D 边界深化 | 5.30 | Cesium/Three.js signal、framework review | 继续细化 scene3d/camera/source/layer/snapshot 边界 spec | medium |
+| 2 | 大数据 perf/nightly evidence | 4.80 | resource/perf gap plan | 将 1k/10k/100k 场景放入 nightly/release runner | medium |
 
 已完成并保留回归证据：
 
@@ -51,12 +50,12 @@ decision_level: advisory
 | Deterministic resource/perf evidence | snapshot/query lifecycle tests and create/query/snapshot/destroy smoke budgets |
 | Command conflict/replay/audit productization | `collectTrace` API、MCP trace output、conflict audit fixtures、AI map edit audit example |
 | fill-extrusion-lite beta adapter | MapLibre `fill-extrusion` mapping、capability report、schema/example fixture、snapshot smoke |
+| Release-capable strict visual evidence | `pnpm -s test:release:strict` passed outside the default macOS sandbox with both visual scenes |
 
 ## 本月行动
 
-1. 关闭正式 runner strict visual snapshot 证据。
-2. 继续保持 3D 为 extension/capability-gated，不提前进入核心 renderer 承诺。
-3. 将大数据 perf/nightly evidence 放入正式 runner 规划。
+1. 继续保持 3D 为 extension/capability-gated，不提前进入核心 renderer 承诺。
+2. 将大数据 perf/nightly evidence 放入正式 runner 规划。
 
 ## Feature Spec 建议
 

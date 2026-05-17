@@ -57,12 +57,12 @@ flowchart LR
 | command conflict/replay/audit | done | `collectTrace` API、MCP trace output、conflict audit fixture、AI edit audit example |
 | 2.5D/3D boundary | done as boundary | `fill-extrusion-lite` gate、`scene3d` unsupported diagnostics |
 | fill-extrusion-lite beta adapter | done | MapLibre `fill-extrusion` mapping、capability report、example/schema fixture、snapshot smoke |
+| release strict visual runner | done | `pnpm -s test:release:strict` passed in release-capable local runner |
 
 ## 关键路径
 
-1. Formal release runner evidence -> `pnpm test:release:strict` -> release evidence archive。
-2. SceneView3D boundary deepening -> camera/source/layer/snapshot rules。
-3. Large-data perf/nightly evidence -> release runner planning。
+1. SceneView3D boundary deepening -> camera/source/layer/snapshot rules。
+2. Large-data perf/nightly evidence -> release runner planning。
 
 ## 阻断规则
 
