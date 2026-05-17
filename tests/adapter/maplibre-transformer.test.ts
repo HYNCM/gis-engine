@@ -16,19 +16,19 @@ describe("MapSpecToMapLibreStyleTransformer", () => {
     });
   });
 
-  it("returns diagnostics for unsupported expressions", () => {
+  it("returns diagnostics for invalid expressions", () => {
     const spec = structuredClone(before) as MapSpec;
     spec.layers[0] = {
       ...spec.layers[0]!,
       paint: {
-        "fill-color": ["match", ["get", "kind"], "a", "#fff", "#000"]
+        "fill-color": ["coalesce", ["get", "kind"], "#fff"]
       }
     };
 
     const result = transformMapSpecToMapLibreStyle(spec);
 
     expect(result.style).toBeUndefined();
-    expect(result.diagnostics.some((diagnostic) => diagnostic.code === "CAPABILITY.UNSUPPORTED")).toBe(true);
+    expect(result.diagnostics.some((diagnostic) => diagnostic.code === "EXPR.UNKNOWN_OPERATOR")).toBe(true);
   });
 
   it("returns capability-only diagnostics for schema-valid unsupported layers", () => {

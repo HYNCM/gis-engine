@@ -54,29 +54,25 @@ function inferExpression(expr: unknown, path: string, options: NormalizedExpress
     };
   }
 
-  if (operator === "match") {
-    return {
-      type: "unknown",
-      diagnostics: [
-        {
-          severity: "error",
-          code: DiagnosticCodes.CapabilityUnsupported,
-          message: "\"match\" expressions are outside the v0.1 supported expression matrix.",
-          path: `${path}/0`
-        }
-      ]
-    };
-  }
-
   switch (operator) {
     case "literal":
       return inferLiteralExpression(expr, path);
     case "get":
       return inferGetExpression(expr, path, options);
+    case "case":
+      return inferCaseExpression(expr, path, options);
+    case "match":
+      return inferMatchExpression(expr, path, options);
     case "step":
       return inferStepExpression(expr, path, options);
     case "interpolate":
       return inferInterpolateExpression(expr, path, options);
+    case "zoom":
+      return inferZoomExpression(expr, path);
+    case "to-number":
+      return inferToNumberExpression(expr, path, options);
+    case "to-string":
+      return inferToStringExpression(expr, path, options);
     default:
       return {
         type: "unknown",
@@ -150,6 +146,76 @@ function inferGetExpression(expr: unknown[], path: string, options: NormalizedEx
   }
 
   return { type: "unknown", diagnostics };
+}
+
+function inferCaseExpression(expr: unknown[], path: string, options: NormalizedExpressionOptions): ExpressionInference {
+  if (expr.length < 4 || expr.length % 2 !== 0) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: "Expected \"case\" syntax: [\"case\", condition1, output1, ..., fallback].",
+          path
+        }
+      ]
+    };
+  }
+
+  const diagnostics: Diagnostic[] = [];
+  for (let conditionIndex = 1; conditionIndex < expr.length - 1; conditionIndex += 2) {
+    const condition = inferExpression(expr[conditionIndex], `${path}/${conditionIndex}`, options);
+    diagnostics.push(...condition.diagnostics);
+    if (condition.type !== "unknown" && condition.type !== "boolean") {
+      diagnostics.push({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionTypeMismatch,
+        message: "\"case\" conditions must evaluate to boolean values.",
+        path: `${path}/${conditionIndex}`
+      });
+    }
+  }
+
+  const outputs = collectOutputTypesAtIndexes(expr, path, options, outputIndexesForCase(expr.length));
+  diagnostics.push(...outputs.diagnostics);
+
+  return { type: outputs.type, diagnostics };
+}
+
+function inferMatchExpression(expr: unknown[], path: string, options: NormalizedExpressionOptions): ExpressionInference {
+  if (expr.length < 5 || expr.length % 2 !== 1) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: "Expected \"match\" syntax: [\"match\", input, label1, output1, ..., fallback].",
+          path
+        }
+      ]
+    };
+  }
+
+  const diagnostics: Diagnostic[] = [];
+  diagnostics.push(...inferExpression(expr[1], `${path}/1`, options).diagnostics);
+
+  for (let labelIndex = 2; labelIndex < expr.length - 1; labelIndex += 2) {
+    if (!isMatchLabel(expr[labelIndex])) {
+      diagnostics.push({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionTypeMismatch,
+        message: "\"match\" labels must be strings, numbers, booleans, or arrays of those literal values.",
+        path: `${path}/${labelIndex}`
+      });
+    }
+  }
+
+  const outputs = collectOutputTypesAtIndexes(expr, path, options, outputIndexesForMatch(expr.length));
+  diagnostics.push(...outputs.diagnostics);
+
+  return { type: outputs.type, diagnostics };
 }
 
 function inferStepExpression(expr: unknown[], path: string, options: NormalizedExpressionOptions): ExpressionInference {
@@ -240,11 +306,74 @@ function inferInterpolateExpression(expr: unknown[], path: string, options: Norm
   return { type: outputs.type, diagnostics };
 }
 
+function inferZoomExpression(expr: unknown[], path: string): ExpressionInference {
+  if (expr.length !== 1) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 0 arguments for "zoom", found ${expr.length - 1}.`,
+          path
+        }
+      ]
+    };
+  }
+
+  return { type: "number", diagnostics: [] };
+}
+
+function inferToNumberExpression(expr: unknown[], path: string, options: NormalizedExpressionOptions): ExpressionInference {
+  if (expr.length < 2) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: "Expected at least 1 argument for \"to-number\".",
+          path
+        }
+      ]
+    };
+  }
+
+  return { type: "number", diagnostics: collectArgumentDiagnostics(expr, path, options, 1) };
+}
+
+function inferToStringExpression(expr: unknown[], path: string, options: NormalizedExpressionOptions): ExpressionInference {
+  if (expr.length !== 2) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 1 argument for "to-string", found ${expr.length - 1}.`,
+          path
+        }
+      ]
+    };
+  }
+
+  return { type: "string", diagnostics: collectArgumentDiagnostics(expr, path, options, 1) };
+}
+
 function collectOutputTypes(expr: unknown[], path: string, options: NormalizedExpressionOptions, firstOutputIndex: number): ExpressionInference {
+  return collectOutputTypesAtIndexes(expr, path, options, outputIndexesFromStride(expr.length, firstOutputIndex));
+}
+
+function collectOutputTypesAtIndexes(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+  outputIndexes: number[]
+): ExpressionInference {
   const diagnostics: Diagnostic[] = [];
   let expectedType: ExprType | undefined;
 
-  for (let outputIndex = firstOutputIndex; outputIndex < expr.length; outputIndex += 2) {
+  for (const outputIndex of outputIndexes) {
     const output = inferExpression(expr[outputIndex], `${path}/${outputIndex}`, options);
     diagnostics.push(...output.diagnostics);
 
@@ -265,6 +394,43 @@ function collectOutputTypes(expr: unknown[], path: string, options: NormalizedEx
   }
 
   return { type: expectedType ?? "unknown", diagnostics };
+}
+
+function outputIndexesFromStride(length: number, firstOutputIndex: number): number[] {
+  const indexes: number[] = [];
+  for (let outputIndex = firstOutputIndex; outputIndex < length; outputIndex += 2) indexes.push(outputIndex);
+  return indexes;
+}
+
+function outputIndexesForCase(length: number): number[] {
+  const indexes: number[] = [];
+  for (let outputIndex = 2; outputIndex < length - 1; outputIndex += 2) indexes.push(outputIndex);
+  indexes.push(length - 1);
+  return indexes;
+}
+
+function outputIndexesForMatch(length: number): number[] {
+  const indexes: number[] = [];
+  for (let outputIndex = 3; outputIndex < length - 1; outputIndex += 2) indexes.push(outputIndex);
+  indexes.push(length - 1);
+  return indexes;
+}
+
+function collectArgumentDiagnostics(expr: unknown[], path: string, options: NormalizedExpressionOptions, firstArgumentIndex: number): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+  for (let argumentIndex = firstArgumentIndex; argumentIndex < expr.length; argumentIndex += 1) {
+    diagnostics.push(...inferExpression(expr[argumentIndex], `${path}/${argumentIndex}`, options).diagnostics);
+  }
+  return diagnostics;
+}
+
+function isMatchLabel(value: unknown): boolean {
+  if (isMatchLabelLiteral(value)) return true;
+  return Array.isArray(value) && value.length > 0 && value.every(isMatchLabelLiteral);
+}
+
+function isMatchLabelLiteral(value: unknown): boolean {
+  return typeof value === "string" || typeof value === "number" || typeof value === "boolean";
 }
 
 function inferLiteralType(value: unknown): ExprType {

@@ -15,9 +15,22 @@ describe("expression validator", () => {
     expect(report.diagnostics).toEqual([]);
   });
 
-  it("reports unknown operators separately from unsupported v0.1 operators", () => {
+  it("accepts the v0.2 expression contract subset", () => {
+    const spec = withPaintAndLayout({
+      "circle-color": ["case", true, "#16a34a", ["match", ["get", "kind"], "risk", "#dc2626", ["safe", "ok"], "#2563eb", "#64748b"]],
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 4, ["to-number", ["get", "size"], 3], 12, 14],
+      "circle-opacity": ["case", ["literal", true], 0.9, ["to-number", 0.5]],
+      "circle-stroke-color": ["to-string", "#111827"]
+    });
+
+    const report = validateSpec(spec);
+
+    expect(report.valid).toBe(true);
+    expect(report.diagnostics).toEqual([]);
+  });
+
+  it("reports unknown operators", () => {
     const unknown = validateSpec(withPaintAndLayout({ "circle-color": ["coalesce", ["get", "kind"], "#2563eb"] }));
-    const unsupported = validateSpec(withPaintAndLayout({ "circle-color": ["match", ["get", "kind"], "a", "#fff", "#000"] }));
 
     expect(unknown.diagnostics).toContainEqual(
       expect.objectContaining({
@@ -26,23 +39,20 @@ describe("expression validator", () => {
         path: "/layers/0/paint/circle-color/0"
       })
     );
-    expect(unsupported.diagnostics).toContainEqual(
-      expect.objectContaining({
-        severity: "error",
-        code: DiagnosticCodes.CapabilityUnsupported,
-        path: "/layers/0/paint/circle-color/0"
-      })
-    );
   });
 
-  it("reports invalid arity, mixed branches, and invalid interpolate colors", () => {
+  it("reports invalid arity, mixed branches, invalid interpolate colors, and invalid match labels", () => {
     const invalidArity = validateSpec(withPaintAndLayout({ "circle-color": ["step", ["get", "score"], "#fff"] }));
     const mixedBranches = validateSpec(withPaintAndLayout({ "circle-color": ["step", ["get", "score"], "#fff", 50, 4] }));
     const invalidColor = validateSpec(withPaintAndLayout({ "circle-color": ["interpolate", ["linear"], ["get", "score"], 0, "blueish", 100, "#000"] }));
+    const invalidMatch = validateSpec(withPaintAndLayout({ "circle-color": ["match", ["get", "kind"], { bad: true }, "#fff", "#000"] }));
+    const invalidCase = validateSpec(withPaintAndLayout({ "circle-color": ["case", 1, "#fff", "#000"] }));
 
     expect(invalidArity.diagnostics).toContainEqual(expect.objectContaining({ code: DiagnosticCodes.ExpressionInvalidArity }));
     expect(mixedBranches.diagnostics).toContainEqual(expect.objectContaining({ code: DiagnosticCodes.ExpressionTypeMismatch }));
     expect(invalidColor.diagnostics).toContainEqual(expect.objectContaining({ code: DiagnosticCodes.ExpressionInvalidColor }));
+    expect(invalidMatch.diagnostics).toContainEqual(expect.objectContaining({ code: DiagnosticCodes.ExpressionTypeMismatch }));
+    expect(invalidCase.diagnostics).toContainEqual(expect.objectContaining({ code: DiagnosticCodes.ExpressionTypeMismatch }));
   });
 });
 
