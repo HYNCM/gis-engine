@@ -1,0 +1,51 @@
+[
+  {
+    "traceId": "fixture-conflict-audit",
+    "commandId": "cmd-audit-radius",
+    "sequenceId": 0,
+    "status": "applied",
+    "startedAt": "2026-05-18T00:00:00.000Z",
+    "endedAt": "2026-05-18T00:00:00.001Z",
+    "baseRevision": "3",
+    "nextRevision": "4",
+    "author": {
+      "type": "agent",
+      "id": "agent-command-auditor",
+      "name": "command-auditor"
+    },
+    "reason": "Increase city marker prominence after review.",
+    "sourcePromptHash": "sha256:fixture-audit-radius",
+    "diagnostics": [],
+    "changedPaths": ["/layers/0/paint/circle-color", "/layers/0/paint/circle-radius", "/revision"]
+  },
+  {
+    "traceId": "fixture-conflict-audit",
+    "commandId": "cmd-stale-color",
+    "sequenceId": 1,
+    "status": "failed",
+    "startedAt": "2026-05-18T00:05:00.002Z",
+    "endedAt": "2026-05-18T00:05:00.003Z",
+    "baseRevision": "2",
+    "author": {
+      "type": "agent",
+      "id": "agent-command-auditor",
+      "name": "command-auditor"
+    },
+    "reason": "Demonstrate stale revision conflict handling.",
+    "sourcePromptHash": "sha256:fixture-stale-color",
+    "diagnostics": [
+      {
+        "severity": "error",
+        "code": "CONFLICT.BASE_REVISION",
+        "message": "Command baseRevision \"2\" does not match current revision \"4\".",
+        "path": "/revision",
+        "fix": {
+          "kind": "manual",
+          "confidence": "medium",
+          "message": "Reload the latest MapSpec, rebase the command, then retry."
+        }
+      }
+    ],
+    "changedPaths": []
+  }
+]

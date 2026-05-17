@@ -25,7 +25,7 @@ Traditional map SDKs are powerful, but AI agents need a stricter contract:
 | Workspace scaffold | Functional | Root workspace, `@gis-engine/engine`, and `@gis-engine/ai` build through `pnpm -r build`. |
 | `MapSpec` schema | Functional | TypeBox schemas cover GeoJSON, raster, PMTiles, generic vector tiles, command contracts, diagnostics, and strict capability reports. |
 | Runtime validation | Functional | `validateSpec` runs schema, semantic, expression, resource policy, experimental 2.5D, and reserved `scene3d` boundary checks. |
-| Command system | Functional | `applyCommands` returns transaction metadata, trace ids, command sequence ids, JSON Patch output, inverse patch, dry-run shape, deterministic layer order behavior, and `baseRevision` conflict rejection. |
+| Command system | Functional | `applyCommands` returns transaction metadata, trace ids, optional audit traces via `collectTrace`, command sequence ids, JSON Patch output, inverse patch, dry-run shape, deterministic layer order behavior, and `baseRevision` conflict rejection. |
 | Patch utilities | Functional | JSON Pointer normalization, apply, invert, changed path sorting, and validation utilities are covered by tests. |
 | Diagnostics | Functional | Diagnostic registry covers schema, source/layer references, expressions, resource URL policy, command failures, unsupported capabilities, and snapshot errors. |
 | Renderer adapter | Functional MVP | `MockAdapter` and `MapLibreAdapter` implement the renderer contract; MapLibre transformation covers GeoJSON, raster, PMTiles, and generic vector sources. |
@@ -83,6 +83,8 @@ GIS Engine does not provide automatic retry for command application or export fl
 GIS Engine also does not implement three-way merge. For cross-runtime, multi-tab, or multi-process concurrency, callers must refresh the latest spec, rebase their intended commands, and retry explicitly.
 
 Within a single runtime instance, `MapRuntime.apply()` uses a minimal single-flight serialization path so concurrent local calls are applied one at a time. This is not a full command queue and does not perform automatic rebase or merge.
+
+For review and audit flows, callers can pass `collectTrace: true` to `applyCommands` or MCP `apply_commands`. The returned traces preserve command provenance (`author`, `reason`, `sourcePromptHash`), changed JSON Pointer paths, and conflict diagnostics without storing raw prompts in `MapSpec`.
 
 The current `MapLibreAdapter` is still an MVP renderer binding. It transforms supported `MapSpec` sources/layers, passes adapter contract tests, and is exercised by real-browser visual snapshots, but it is not a complete replacement for MapLibre GL JS.
 

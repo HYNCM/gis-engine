@@ -107,6 +107,38 @@ const CommandResultSchema = {
   additionalProperties: false
 } as const;
 
+const CommandAuthorSchema = {
+  type: "object",
+  properties: {
+    type: { type: "string", enum: ["human", "agent", "system"] },
+    id: { type: "string" },
+    name: { type: "string" }
+  },
+  required: ["type"],
+  additionalProperties: false
+} as const;
+
+const CommandTraceSchema = {
+  type: "object",
+  properties: {
+    traceId: { type: "string" },
+    commandId: { type: "string" },
+    sequenceId: { type: "number" },
+    status: { type: "string", enum: ["applied", "skipped", "failed"] },
+    startedAt: { type: "string" },
+    endedAt: { type: "string" },
+    baseRevision: { type: "string" },
+    nextRevision: { type: "string" },
+    author: CommandAuthorSchema,
+    reason: { type: "string" },
+    sourcePromptHash: { type: "string" },
+    diagnostics: { type: "array", items: DiagnosticContractSchema },
+    changedPaths: { type: "array", items: { type: "string" } }
+  },
+  required: ["traceId", "commandId", "sequenceId", "status", "startedAt", "endedAt", "diagnostics", "changedPaths"],
+  additionalProperties: false
+} as const;
+
 export const ApplyCommandsToolResultSchema = {
   type: "object",
   properties: {
@@ -116,7 +148,8 @@ export const ApplyCommandsToolResultSchema = {
     dryRun: { type: "boolean" },
     committed: { type: "boolean" },
     rolledBack: { type: "boolean" },
-    traceId: { type: "string" }
+    traceId: { type: "string" },
+    traces: { type: "array", items: CommandTraceSchema }
   },
   required: ["spec", "results", "transaction", "dryRun", "committed", "rolledBack", "traceId"],
   additionalProperties: false

@@ -154,6 +154,7 @@ v0.1 默认不做自动合并。
 - 返回 `CONFLICT.BASE_REVISION`。
 - 返回当前 `revision`。
 - 如果能安全重放，提供 `SuggestedFix`，类型为 `command`，confidence 为 `medium`。
+- 如果调用方启用 `collectTrace`，返回 `status: "failed"` 的 `CommandTrace`，保留 author、reason 和 sourcePromptHash。
 - 不自动 retry。
 - 不做 three-way merge。
 
@@ -511,9 +512,8 @@ call queryFeatures and expect RENDER.DESTROYED
 当前下一步顺序：
 
 1. 在正式 runner 固化 `pnpm test:release:strict` 证据。
-2. 将 command conflict/replay/audit 语义产品化为 spec、fixtures 和示例。
-3. 继续推进 `fill-extrusion-lite` beta adapter 和 SceneView3D v1 边界。
-4. 将大数据 perf/nightly evidence 放入正式 runner 规划。
+2. 继续推进 `fill-extrusion-lite` beta adapter 和 SceneView3D v1 边界。
+3. 将大数据 perf/nightly evidence 放入正式 runner 规划。
 
 ## 11. 当前落地状态
 
@@ -523,6 +523,7 @@ call queryFeatures and expect RENDER.DESTROYED
 - 已创建 `packages/engine` 和 `packages/ai`。
 - 已创建 TypeBox schema、schema build 脚本和 Ajv validation 入口。
 - 已创建 JSON Patch 工具、`applyCommands`、command replay/dry-run/rollback 覆盖。
+- 已创建 command audit trace、conflict replay fixture、MCP `collectTrace` 和 AI map edit audit 示例。
 - 已创建 adapter contract suite、本地静态服务工具、MockAdapter 和 MapLibreAdapter MVP。
 - 已创建基础 GeoJSON、AI map edit、raster-basemap、pmtiles-local、vector-tile-url 示例。
 - 已创建 MCP server，且 tool descriptor 包含 input/output schemas。

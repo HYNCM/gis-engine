@@ -72,3 +72,4 @@ decision_level: advisory
 | TASK-2026W21-008 | done | `v0.2-gate-checklist.md` |
 | TASK-2026W21-009 | done | `resource-perf-gap-plan.md` plus deterministic snapshot/query lifecycle and create/query/snapshot/destroy perf smoke tests |
 | TASK-2026W23-001~009 | checkpoint done | vector example/fixtures/snapshot, MCP v0.2 coverage, 2.5D/3D boundary, checkpoint audit, release note draft |
+| POST-2026W21-010 | done | command conflict/replay/audit productization: `collectTrace`, MCP trace output, conflict audit fixture, audited AI edit example |

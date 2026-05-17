@@ -218,6 +218,7 @@ export interface CommandResult {
 - 是否应用成功。
 - 为什么失败或跳过。
 - 修改了哪些 `MapSpec` 路径。
+- 当启用 `collectTrace` 时，谁发起命令、为什么发起、源 prompt hash 是什么，以及冲突诊断如何进入 audit trace。
 - 是否产生 warning。
 - AI 可以如何修复。
 

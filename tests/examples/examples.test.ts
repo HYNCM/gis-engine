@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import basicGeojson from "../../examples/basic-geojson/map.json";
 import aiBefore from "../../examples/ai-map-edit/before.map.json";
 import aiCommands from "../../examples/ai-map-edit/commands.json";
+import aiAuditCommands from "../../examples/ai-map-edit/audit.commands.json";
 import pmtilesLocal from "../../examples/pmtiles-local/map.json";
 import rasterBasemap from "../../examples/raster-basemap/map.json";
 import vectorTileUrl from "../../examples/vector-tile-url/map.json";
@@ -106,5 +107,26 @@ describe("examples gate", () => {
       url: "./data/parcels.pmtiles"
     });
     expect(transform.diagnostics).toContainEqual(expect.objectContaining({ code: "CAPABILITY.UNSUPPORTED", severity: "warning" }));
+  });
+
+  it("keeps the AI map edit audit command example replayable with traces", () => {
+    const result = applyCommands(aiBefore as MapSpec, aiAuditCommands as MapCommand[], {
+      collectTrace: true,
+      traceId: "example-ai-map-edit-audit"
+    });
+
+    expect(result.spec.revision).toBe("2");
+    expect(result.traces?.[0]).toMatchObject({
+      traceId: "example-ai-map-edit-audit",
+      commandId: "cmd-highlight-pois-audited",
+      status: "applied",
+      author: {
+        type: "agent",
+        id: "agent-example",
+        name: "example-agent"
+      },
+      reason: "Show an auditable AI edit with provenance fields.",
+      sourcePromptHash: "sha256:ai-map-edit-audited"
+    });
   });
 });

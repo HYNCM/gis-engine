@@ -22,6 +22,8 @@ The current MCP tool names are:
 - `export_example_app`
 
 Each public tool descriptor exposes both `inputSchema` and `outputSchema`.
+`apply_commands` accepts `collectTrace: true` for review flows that need
+command provenance, changed paths, and conflict diagnostics in the result.
 
 ## MCP Server
 

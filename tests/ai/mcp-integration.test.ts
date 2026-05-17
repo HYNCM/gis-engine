@@ -74,6 +74,33 @@ describe("MCP Server Integration", () => {
     expect(spec.revision).toBe("2");
   });
 
+  it("returns command audit traces through apply_commands", async () => {
+    const result = await callGisEngineTool({
+      params: {
+        name: "apply_commands",
+        arguments: {
+          spec: before,
+          commands,
+          collectTrace: true,
+          traceId: "mcp-audit-1"
+        }
+      }
+    });
+
+    const payload = JSON.parse(result.content[0]!.text) as {
+      traceId: string;
+      traces?: Array<{ traceId: string; commandId: string; status: string; changedPaths: string[] }>;
+    };
+    expect(result.isError).toBeUndefined();
+    expect(payload.traceId).toBe("mcp-audit-1");
+    expect(payload.traces?.[0]).toMatchObject({
+      traceId: "mcp-audit-1",
+      commandId: "cmd-style-districts",
+      status: "applied",
+      changedPaths: ["/layers/0/paint/fill-color", "/layers/0/paint/fill-opacity", "/revision"]
+    });
+  });
+
   it("validates export_spec input and spec before exporting", async () => {
     const invalidSpec = { ...before, view: { ...before.view, center: [200, 100] } };
 

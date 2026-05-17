@@ -57,6 +57,7 @@ describe("schema sync gate", () => {
     expect(ApplyCommandsToolInputSchema.properties).toHaveProperty("commands");
     expect(ApplyCommandsToolInputSchema.properties).toHaveProperty("dryRun");
     expect(ApplyCommandsToolInputSchema.properties).toHaveProperty("transaction");
+    expect(ApplyCommandsToolInputSchema.properties).toHaveProperty("collectTrace");
     expect(ApplyCommandsToolInputSchema.properties).toHaveProperty("traceId");
   });
 

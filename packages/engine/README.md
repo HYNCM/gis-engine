@@ -1,7 +1,8 @@
 # @gis-engine/engine
 
 AI-native TypeScript runtime for `MapSpec` validation, command replay,
-diagnostics, snapshots, feature query, and renderer adapter integration.
+diagnostics, snapshots, feature query, optional command audit traces, and
+renderer adapter integration.
 
 ## Install
 
@@ -31,5 +32,6 @@ await map.apply({
 ## Package Scope
 
 This package owns the public runtime API, TypeBox schemas, JSON Patch command
-path, diagnostics, resource policy, snapshot contract, and renderer adapter
-contracts. AI/MCP orchestration lives in `@gis-engine/ai`.
+path, command audit trace collection, diagnostics, resource policy, snapshot
+contract, and renderer adapter contracts. AI/MCP orchestration lives in
+`@gis-engine/ai`.

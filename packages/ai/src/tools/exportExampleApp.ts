@@ -90,6 +90,13 @@ const manifests: Record<ExampleId, ExampleAppManifest> = {
         mediaType: "application/json",
         required: true,
         description: "MapCommands applied to the initial spec."
+      },
+      {
+        path: "examples/ai-map-edit/audit.commands.json",
+        role: "commands",
+        mediaType: "application/json",
+        required: false,
+        description: "Optional command replay example with author, reason, timestamp, and prompt-hash provenance."
       }
     ],
     notes: ["The manifest is descriptive only; export_example_app does not create or modify files."]

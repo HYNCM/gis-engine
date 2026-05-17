@@ -225,6 +225,22 @@ export interface CommandResult {
   traceId?: string;
 }
 
+export interface CommandTrace {
+  traceId: string;
+  commandId: string;
+  sequenceId: number;
+  status: CommandResult["status"];
+  startedAt: string;
+  endedAt: string;
+  baseRevision?: string;
+  nextRevision?: string;
+  author?: MapCommandBase["author"];
+  reason?: string;
+  sourcePromptHash?: string;
+  diagnostics: Diagnostic[];
+  changedPaths: string[];
+}
+
 export interface ValidationReport {
   valid: boolean;
   diagnostics: Diagnostic[];

@@ -1,0 +1,30 @@
+{
+  "version": "0.1",
+  "id": "conflict-audit",
+  "revision": "3",
+  "view": {
+    "mode": "map2d",
+    "center": [120.15, 30.28],
+    "zoom": 10
+  },
+  "sources": {
+    "cities": {
+      "type": "geojson",
+      "data": {
+        "type": "FeatureCollection",
+        "features": []
+      }
+    }
+  },
+  "layers": [
+    {
+      "id": "city-circles",
+      "type": "circle",
+      "source": "cities",
+      "paint": {
+        "circle-radius": 4,
+        "circle-color": "#2563eb"
+      }
+    }
+  ]
+}

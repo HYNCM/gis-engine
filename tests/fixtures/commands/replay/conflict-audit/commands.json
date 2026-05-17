@@ -1,0 +1,39 @@
+[
+  {
+    "id": "cmd-audit-radius",
+    "version": "0.1",
+    "type": "setPaint",
+    "baseRevision": "3",
+    "layerId": "city-circles",
+    "paint": {
+      "circle-radius": 7,
+      "circle-color": "#16a34a"
+    },
+    "author": {
+      "type": "agent",
+      "id": "agent-command-auditor",
+      "name": "command-auditor"
+    },
+    "reason": "Increase city marker prominence after review.",
+    "createdAt": "2026-05-18T00:00:00.000Z",
+    "sourcePromptHash": "sha256:fixture-audit-radius"
+  },
+  {
+    "id": "cmd-stale-color",
+    "version": "0.1",
+    "type": "setPaint",
+    "baseRevision": "2",
+    "layerId": "city-circles",
+    "paint": {
+      "circle-color": "#dc2626"
+    },
+    "author": {
+      "type": "agent",
+      "id": "agent-command-auditor",
+      "name": "command-auditor"
+    },
+    "reason": "Demonstrate stale revision conflict handling.",
+    "createdAt": "2026-05-18T00:05:00.000Z",
+    "sourcePromptHash": "sha256:fixture-stale-color"
+  }
+]

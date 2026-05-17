@@ -15,6 +15,7 @@ export interface ApplyCommandsToolInput {
   commands: MapCommand[];
   dryRun?: boolean;
   transaction?: "atomic" | "best-effort";
+  collectTrace?: boolean;
   traceId?: string;
 }
 
@@ -44,6 +45,7 @@ export function applyCommandsTool(input: unknown): ApplyCommandsToolResult {
     result: applyCommands(typedInput.spec, typedInput.commands, {
       dryRun: typedInput.dryRun ?? false,
       ...(typedInput.transaction ? { transaction: typedInput.transaction } : {}),
+      ...(typedInput.collectTrace ? { collectTrace: true } : {}),
       ...(typedInput.traceId ? { traceId: typedInput.traceId } : {})
     }),
     diagnostics: []

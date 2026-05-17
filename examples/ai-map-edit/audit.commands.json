@@ -1,0 +1,21 @@
+[
+  {
+    "id": "cmd-highlight-pois-audited",
+    "version": "0.1",
+    "type": "setPaint",
+    "baseRevision": "1",
+    "layerId": "poi-circles",
+    "paint": {
+      "circle-radius": ["step", ["get", "score"], 5, 80, 9],
+      "circle-color": ["step", ["get", "score"], "#2563eb", 80, "#dc2626"]
+    },
+    "author": {
+      "type": "agent",
+      "id": "agent-example",
+      "name": "example-agent"
+    },
+    "reason": "Show an auditable AI edit with provenance fields.",
+    "createdAt": "2026-05-18T00:00:00.000Z",
+    "sourcePromptHash": "sha256:ai-map-edit-audited"
+  }
+]

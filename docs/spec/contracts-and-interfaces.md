@@ -148,6 +148,7 @@ export interface ApplyCommandsResult {
   committed: boolean;
   rolledBack: boolean;
   traceId: string;
+  traces?: CommandTrace[];
 }
 ```
 
@@ -159,6 +160,7 @@ export interface ApplyCommandsResult {
 - `changedPaths` 必须稳定排序。
 - `skipped` 用于幂等命令，例如重复添加完全相同的 source。
 - `failed` 必须包含至少一个 error diagnostic。
+- `traces` 只在 `collectTrace: true` 时返回，用于审计，不进入 `MapSpec`。
 - patch path 必须是规范 JSON Pointer；`remove` 和 `replace` 必须记录旧值以生成 `inversePatch`。
 - v0.1 只声明并实现 `add`、`remove`、`replace`。`move`、`copy`、`test` 后置，避免类型承诺超过实现能力。
 
@@ -402,8 +404,12 @@ export interface MigrationResult {
 export interface CommandTrace {
   traceId: string;
   commandId: string;
+  sequenceId: number;
+  status: "applied" | "skipped" | "failed";
   startedAt: string;
   endedAt: string;
+  baseRevision?: string;
+  nextRevision?: string;
   author?: MapCommandBase["author"];
   reason?: string;
   sourcePromptHash?: string;
@@ -414,8 +420,10 @@ export interface CommandTrace {
 
 规则：
 
-- `apply` 默认记录内存 trace。
-- `exportSpec()` 不默认包含 trace，除非显式开启。
+- `applyCommands` 默认不返回 trace；调用方需要传 `collectTrace: true`。
+- MCP `apply_commands` 可传 `collectTrace: true` 返回同样的 trace。
+- `exportSpec()` 不默认包含 trace。
+- `startedAt` 和 `endedAt` 由 `createdAt` 和 `sequenceId` 派生，保持 replay 证据确定性。
 - `sourcePromptHash` 只保存 hash，不保存原始 prompt。
 - destructive command 可被 policy layer 拦截。
 
@@ -429,7 +437,7 @@ v0.1 使用 optimistic concurrency。
 - 不做自动 retry。
 - 不做 three-way merge。
 - 若命令可安全重放，可以返回 confidence 为 `medium` 的 `SuggestedFix`。
-- 所有冲突必须写入 trace。
+- 当调用方启用 `collectTrace` 时，所有冲突必须写入 trace，且 trace status 为 `failed`。
 
 ## Security Contract
 

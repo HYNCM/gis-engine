@@ -8,6 +8,7 @@ export const ApplyCommandsToolInputSchema = Type.Object(
     commands: Type.Array(MapCommandSchema),
     dryRun: Type.Optional(Type.Boolean()),
     transaction: Type.Optional(Type.Union([Type.Literal("atomic"), Type.Literal("best-effort")])),
+    collectTrace: Type.Optional(Type.Boolean()),
     traceId: Type.Optional(Type.String({ minLength: 1 }))
   },
   {

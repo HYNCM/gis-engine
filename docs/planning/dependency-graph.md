@@ -54,14 +54,14 @@ flowchart LR
 | expression contract -> validator -> MCP v0.2 coverage | done | `expression-v0.2.md`、schema tests、MCP vector/expression tests |
 | vector source schema -> transformer -> example/snapshot -> MCP coverage | done | vector source schema、MapLibre transformer、`examples/vector-tile-url`、snapshot smoke/visual |
 | style diff/layer order -> diagnostics -> checkpoint audit | done | command tests、missing `beforeLayerId` diagnostic、checkpoint audit |
+| command conflict/replay/audit | done | `collectTrace` API、MCP trace output、conflict audit fixture、AI edit audit example |
 | 2.5D/3D boundary | done as boundary | `fill-extrusion-lite` gate、`scene3d` unsupported diagnostics |
 
 ## 关键路径
 
 1. Formal release runner evidence -> `pnpm test:release:strict` -> release evidence archive。
-2. Command conflict/replay/audit product spec -> fixtures/examples -> coordinator monthly planning。
-3. fill-extrusion-lite beta adapter -> capability report -> visual evidence。
-4. SceneView3D boundary deepening -> camera/source/layer/snapshot rules。
+2. fill-extrusion-lite beta adapter -> capability report -> visual evidence。
+3. SceneView3D boundary deepening -> camera/source/layer/snapshot rules。
 
 ## 阻断规则
 

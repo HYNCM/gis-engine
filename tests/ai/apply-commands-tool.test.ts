@@ -40,6 +40,26 @@ describe("applyCommandsTool", () => {
     }
   });
 
+  it("returns command audit traces when requested", () => {
+    const result = applyCommandsTool({
+      spec: before,
+      commands,
+      collectTrace: true,
+      traceId: "tool-audit-1"
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.result.traces).toHaveLength(1);
+      expect(result.result.traces?.[0]).toMatchObject({
+        traceId: "tool-audit-1",
+        commandId: "cmd-style-districts",
+        status: "applied",
+        changedPaths: ["/layers/0/paint/fill-color", "/layers/0/paint/fill-opacity", "/revision"]
+      });
+    }
+  });
+
   it("maps unknown tool fields to schema diagnostics", () => {
     const result = applyCommandsTool({ spec: before, commands, unexpected: true });
 
