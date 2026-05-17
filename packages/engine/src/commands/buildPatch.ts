@@ -1,5 +1,5 @@
 import { DiagnosticCodes } from "../diagnostics/codes.js";
-import type { Diagnostic, JsonPatchOperation, MapCommand, MapSpec } from "../types.js";
+import type { Diagnostic, JsonPatchOperation, MapCommand, MapCommandBase, MapSpec, SuggestedFix } from "../types.js";
 import { joinPath } from "../spec/patch/index.js";
 
 export interface BuildPatchResult {
@@ -7,6 +7,8 @@ export interface BuildPatchResult {
   diagnostics: Diagnostic[];
   skipped?: boolean;
 }
+
+type BuildFailureDiagnostic = Omit<Diagnostic, "severity">;
 
 export function buildPatch(command: MapCommand, spec: MapSpec): BuildPatchResult {
   switch (command.type) {
@@ -20,7 +22,15 @@ export function buildPatch(command: MapCommand, spec: MapSpec): BuildPatchResult
       };
 
     case "removeSource":
-      if (!spec.sources[command.sourceId]) return failed(DiagnosticCodes.SourceNotFound, `Source "${command.sourceId}" does not exist.`);
+      if (!spec.sources[command.sourceId]) {
+        return failed({
+          code: DiagnosticCodes.SourceNotFound,
+          message: `Source "${command.sourceId}" does not exist.`,
+          path: "/sourceId",
+          relatedResources: [{ kind: "source", id: command.sourceId }],
+          fix: manualFix("Check the source id or skip this removeSource command when the source is already absent.", "high")
+        });
+      }
       return { patch: [{ op: "remove", path: joinPath("sources", command.sourceId) }], diagnostics: [] };
 
     case "addLayer": {
@@ -34,23 +44,23 @@ export function buildPatch(command: MapCommand, spec: MapSpec): BuildPatchResult
 
     case "removeLayer": {
       const index = spec.layers.findIndex((layer) => layer.id === command.layerId);
-      if (index < 0) return failed(DiagnosticCodes.LayerNotFound, `Layer "${command.layerId}" does not exist.`);
+      if (index < 0) return missingLayer(command.layerId, "/layerId", "Check the layer id or skip this removeLayer command when the layer is already absent.");
       return { patch: [{ op: "remove", path: `/layers/${index}` }], diagnostics: [] };
     }
 
     case "setPaint": {
       const index = spec.layers.findIndex((layer) => layer.id === command.layerId);
-      if (index < 0) return failed(DiagnosticCodes.LayerNotFound, `Layer "${command.layerId}" does not exist.`);
+      if (index < 0) return missingLayer(command.layerId, "/layerId", "Add the layer before setting paint, or update layerId to an existing layer.");
       const layer = spec.layers[index];
-      if (!layer) return failed(DiagnosticCodes.LayerNotFound, `Layer "${command.layerId}" does not exist.`);
+      if (!layer) return missingLayer(command.layerId, "/layerId", "Add the layer before setting paint, or update layerId to an existing layer.");
       return { patch: patchRecordMerge(`/layers/${index}/paint`, layer.paint, command.paint), diagnostics: [] };
     }
 
     case "setLayout": {
       const index = spec.layers.findIndex((layer) => layer.id === command.layerId);
-      if (index < 0) return failed(DiagnosticCodes.LayerNotFound, `Layer "${command.layerId}" does not exist.`);
+      if (index < 0) return missingLayer(command.layerId, "/layerId", "Add the layer before setting layout, or update layerId to an existing layer.");
       const layer = spec.layers[index];
-      if (!layer) return failed(DiagnosticCodes.LayerNotFound, `Layer "${command.layerId}" does not exist.`);
+      if (!layer) return missingLayer(command.layerId, "/layerId", "Add the layer before setting layout, or update layerId to an existing layer.");
       return { patch: patchRecordMerge(`/layers/${index}/layout`, layer.layout, command.layout), diagnostics: [] };
     }
 
@@ -78,16 +88,22 @@ export function buildPatch(command: MapCommand, spec: MapSpec): BuildPatchResult
       return reorderLayer(command.layerId, command.beforeLayerId, spec);
 
     default:
-      return failed(DiagnosticCodes.CommandUnsupported, `Unsupported command "${(command as { type: string }).type}".`);
+      return failed({
+        code: DiagnosticCodes.CommandUnsupported,
+        message: `Unsupported command "${(command as MapCommandBase).type}".`,
+        path: "/type",
+        relatedResources: [{ kind: "command", id: (command as MapCommandBase).id }],
+        fix: manualFix("Use one of the registered v0.1 command types.", "medium")
+      });
   }
 }
 
 function reorderLayer(layerId: string, beforeLayerId: string | undefined, spec: MapSpec): BuildPatchResult {
   const fromIndex = spec.layers.findIndex((layer) => layer.id === layerId);
-  if (fromIndex < 0) return failed(DiagnosticCodes.LayerNotFound, `Layer "${layerId}" does not exist.`);
+  if (fromIndex < 0) return missingLayer(layerId, "/layerId", "Add the layer before reordering it, or update layerId to an existing layer.");
 
   const layer = spec.layers[fromIndex];
-  if (!layer) return failed(DiagnosticCodes.LayerNotFound, `Layer "${layerId}" does not exist.`);
+  if (!layer) return missingLayer(layerId, "/layerId", "Add the layer before reordering it, or update layerId to an existing layer.");
   const remainingLayers = spec.layers.filter((candidate) => candidate.id !== layerId);
   const beforeIndex = beforeLayerId ? remainingLayers.findIndex((candidate) => candidate.id === beforeLayerId) : remainingLayers.length;
   const toIndex = beforeIndex >= 0 ? beforeIndex : remainingLayers.length;
@@ -118,9 +134,27 @@ function omitUndefined<T extends Record<string, unknown>>(value: T): Record<stri
   return Object.fromEntries(Object.entries(value).filter(([, entryValue]) => entryValue !== undefined));
 }
 
-function failed(code: Diagnostic["code"], message: string): BuildPatchResult {
+function missingLayer(layerId: string, path: string, fixMessage: string): BuildPatchResult {
+  return failed({
+    code: DiagnosticCodes.LayerNotFound,
+    message: `Layer "${layerId}" does not exist.`,
+    path,
+    relatedResources: [{ kind: "layer", id: layerId }],
+    fix: manualFix(fixMessage, "high")
+  });
+}
+
+function manualFix(message: string, confidence: SuggestedFix["confidence"]): SuggestedFix {
+  return {
+    kind: "manual",
+    confidence,
+    message
+  };
+}
+
+function failed(diagnostic: BuildFailureDiagnostic): BuildPatchResult {
   return {
     patch: [],
-    diagnostics: [{ severity: "error", code, message }]
+    diagnostics: [{ severity: "error", ...diagnostic }]
   };
 }

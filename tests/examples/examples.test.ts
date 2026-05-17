@@ -2,24 +2,84 @@ import { describe, expect, it } from "vitest";
 import basicGeojson from "../../examples/basic-geojson/map.json";
 import aiBefore from "../../examples/ai-map-edit/before.map.json";
 import aiCommands from "../../examples/ai-map-edit/commands.json";
+import pmtilesLocal from "../../examples/pmtiles-local/map.json";
+import rasterBasemap from "../../examples/raster-basemap/map.json";
 import { applyCommands, transformMapSpecToMapLibreStyle, validateSpec, type MapCommand, type MapSpec } from "@gis-engine/engine";
 
 describe("examples gate", () => {
-  it("validates the basic GeoJSON example and transforms it to MapLibre style", () => {
-    const report = validateSpec(basicGeojson);
-    const transform = transformMapSpecToMapLibreStyle(basicGeojson as MapSpec);
+  const examples: Array<{
+    id: string;
+    spec: () => MapSpec;
+    firstLayerId: string;
+    expectedRevision?: string;
+    assertTransform?: (style: NonNullable<ReturnType<typeof transformMapSpecToMapLibreStyle>["style"]>) => void;
+  }> = [
+    {
+      id: "basic-geojson",
+      spec: () => basicGeojson as MapSpec,
+      firstLayerId: "poi-circles"
+    },
+    {
+      id: "ai-map-edit",
+      spec: () => applyCommands(aiBefore as MapSpec, aiCommands as MapCommand[]).spec,
+      firstLayerId: "poi-circles",
+      expectedRevision: "2"
+    },
+    {
+      id: "raster-basemap",
+      spec: () => rasterBasemap as MapSpec,
+      firstLayerId: "basemap-raster",
+      assertTransform: (style) => {
+        expect(style.sources["local-raster"]).toMatchObject({
+          type: "raster",
+          tiles: ["./tiles/{z}/{x}/{y}.png"],
+          tileSize: 256
+        });
+      }
+    },
+    {
+      id: "pmtiles-local",
+      spec: () => pmtilesLocal as MapSpec,
+      firstLayerId: "parcel-fill",
+      assertTransform: (style) => {
+        expect(style.sources["local-parcels"]).toMatchObject({
+          type: "vector",
+          url: "./data/parcels.pmtiles"
+        });
+        expect(style.layers[0]).toMatchObject({
+          id: "parcel-fill",
+          "source-layer": "parcels"
+        });
+      }
+    }
+  ];
 
-    expect(report.valid).toBe(true);
-    expect(transform.diagnostics.filter((diagnostic) => diagnostic.severity === "error")).toEqual([]);
-    expect(transform.style?.layers[0]?.id).toBe("poi-circles");
+  it("covers the four bundled examples", () => {
+    expect(examples.map((example) => example.id)).toEqual(["basic-geojson", "ai-map-edit", "raster-basemap", "pmtiles-local"]);
   });
 
-  it("replays the AI map edit example and keeps it inside the MapLibre feature matrix", () => {
-    const result = applyCommands(aiBefore as MapSpec, aiCommands as MapCommand[]);
-    const transform = transformMapSpecToMapLibreStyle(result.spec);
+  it.each(examples)("validates and transforms $id", (example) => {
+    const spec = example.spec();
+    const report = validateSpec(spec);
+    const transform = transformMapSpecToMapLibreStyle(spec);
 
-    expect(result.committed).toBe(true);
-    expect(result.spec.revision).toBe("2");
+    expect(report.valid).toBe(true);
+    if (example.expectedRevision) expect(spec.revision).toBe(example.expectedRevision);
     expect(transform.diagnostics.filter((diagnostic) => diagnostic.severity === "error")).toEqual([]);
+    expect(transform.style?.layers[0]?.id).toBe(example.firstLayerId);
+    if (transform.style && example.assertTransform) example.assertTransform(transform.style);
+  });
+
+  it("keeps PMTiles coverage to URL path validation and transformation", () => {
+    const report = validateSpec(pmtilesLocal);
+    const transform = transformMapSpecToMapLibreStyle(pmtilesLocal as MapSpec);
+
+    expect(report.valid).toBe(true);
+    expect(pmtilesLocal.sources["local-parcels"].url).toBe("./data/parcels.pmtiles");
+    expect(transform.style?.sources["local-parcels"]).toMatchObject({
+      type: "vector",
+      url: "./data/parcels.pmtiles"
+    });
+    expect(transform.diagnostics).toContainEqual(expect.objectContaining({ code: "CAPABILITY.UNSUPPORTED", severity: "warning" }));
   });
 });

@@ -4,6 +4,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import {
   ApplyCommandsToolInputSchema,
+  MapCommandSchema,
   MapSpecSchema,
   applyCommands,
   validateSpec,
@@ -13,6 +14,9 @@ import {
 } from "@gis-engine/engine";
 import { applyCommandsTool } from "../tools/applyCommands.js";
 import { getContextSummary } from "../tools/contextSummary.js";
+import { explainSpecTool, ExplainSpecToolInputSchema } from "../tools/explainSpec.js";
+import { exportExampleAppTool, ExportExampleAppToolInputSchema } from "../tools/exportExampleApp.js";
+import { snapshotSpecTool, SnapshotSpecToolInputSchema } from "../tools/snapshotSpec.js";
 
 export const gisEngineTools = [
   {
@@ -39,7 +43,7 @@ export const gisEngineTools = [
       type: "object",
       properties: {
         spec: MapSpecSchema,
-        commands: { type: "array", items: { type: "object" } },
+        commands: { type: "array", items: MapCommandSchema },
         dryRun: { type: "boolean" },
         transaction: { type: "string", enum: ["atomic", "best-effort"] },
         traceId: { type: "string" }
@@ -60,6 +64,21 @@ export const gisEngineTools = [
       required: ["spec"],
       additionalProperties: false
     }
+  },
+  {
+    name: "snapshot_spec",
+    description: "Validate a MapSpec and produce a headless snapshot result without real WebGL.",
+    inputSchema: SnapshotSpecToolInputSchema
+  },
+  {
+    name: "explain_spec",
+    description: "Return a structured AI-facing summary with full validation diagnostics.",
+    inputSchema: ExplainSpecToolInputSchema
+  },
+  {
+    name: "export_example_app",
+    description: "Return a manifest and file list for a bundled example without writing files.",
+    inputSchema: ExportExampleAppToolInputSchema
   }
 ] as const;
 
@@ -98,6 +117,21 @@ export async function callGisEngineTool(request: { params: { name: string; argum
     if (name === "get_context_summary") {
       const { spec, capabilities } = requireContextSummaryInput(args);
       return toolTextResult(getContextSummary({ spec, ...(capabilities ? { capabilities } : {}) }));
+    }
+
+    if (name === "snapshot_spec") {
+      const result = await snapshotSpecTool(args);
+      return toolTextResult(result.ok ? result.result : result.diagnostics, !result.ok);
+    }
+
+    if (name === "explain_spec") {
+      const result = explainSpecTool(args);
+      return toolTextResult(result.ok ? result.result : result.diagnostics, !result.ok);
+    }
+
+    if (name === "export_example_app") {
+      const result = exportExampleAppTool(args);
+      return toolTextResult(result.ok ? result.result : result.diagnostics, !result.ok);
     }
 
     throw new Error(`Tool not found: ${name}`);

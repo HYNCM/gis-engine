@@ -4,6 +4,7 @@ import commands from "../fixtures/commands/replay/style-update/commands.json";
 import {
   MapRuntime,
   MapSpecValidationError,
+  MockAdapter,
   type AdapterApplyResult,
   type AdapterEventListener,
   type CapabilityReport,
@@ -264,4 +265,49 @@ describe("MapRuntime", () => {
     expect(adapter.loadCalls).toBe(2);
     expect(adapter.loadedSpec).toEqual(before);
   });
+
+  it("forwards queryFeatures to the committed adapter state", async () => {
+    const runtime = await MapRuntime.create(runtimeQuerySpec(), {
+      adapter: new MockAdapter(),
+      container: {} as HTMLElement
+    });
+
+    const result = await runtime.queryFeatures({ point: [1, 2], layers: ["runtime-points"] });
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.features).toEqual([
+      expect.objectContaining({
+        properties: { id: "runtime-point" }
+      })
+    ]);
+  });
 });
+
+function runtimeQuerySpec(): MapSpec {
+  return {
+    version: "0.1",
+    id: "runtime-query",
+    revision: "1",
+    view: {
+      mode: "map2d",
+      center: [0, 0],
+      zoom: 2
+    },
+    sources: {
+      points: {
+        type: "geojson",
+        data: {
+          type: "FeatureCollection",
+          features: [
+            {
+              type: "Feature",
+              properties: { id: "runtime-point" },
+              geometry: { type: "Point", coordinates: [1, 2] }
+            }
+          ]
+        }
+      }
+    },
+    layers: [{ id: "runtime-points", type: "circle", source: "points" }]
+  };
+}

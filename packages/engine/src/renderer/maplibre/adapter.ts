@@ -13,6 +13,7 @@ import type {
   SnapshotResult,
 } from "../../types.js";
 import type { AdapterApplyResult, AdapterEventListener, RenderContext, RendererAdapter, Unsubscribe } from "../adapter.js";
+import { queryInlineGeoJsonFeatures } from "../queryGeoJson.js";
 import { transformMapSpecToMapLibreStyle, type MapLibreStyle } from "./transformer.js";
 
 const TRANSPARENT_PNG_DATA_URL =
@@ -88,8 +89,8 @@ export class MapLibreAdapter implements RendererAdapter {
     }
   }
 
-  async queryFeatures(_options: QueryFeaturesOptions): Promise<FeatureQueryResult> {
-    return { features: [], diagnostics: [] };
+  async queryFeatures(options: QueryFeaturesOptions): Promise<FeatureQueryResult> {
+    return queryInlineGeoJsonFeatures(this.#spec, options, this.id);
   }
 
   async snapshot(_options: SnapshotOptions): Promise<SnapshotResult> {

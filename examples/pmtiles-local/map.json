@@ -1,0 +1,44 @@
+{
+  "version": "0.1",
+  "id": "pmtiles-local-example",
+  "view": {
+    "mode": "map2d",
+    "center": [120.15, 30.28],
+    "zoom": 12
+  },
+  "sources": {
+    "local-parcels": {
+      "type": "pmtiles",
+      "url": "./data/parcels.pmtiles",
+      "minzoom": 0,
+      "maxzoom": 14,
+      "attribution": "Local PMTiles URL path"
+    }
+  },
+  "layers": [
+    {
+      "id": "parcel-fill",
+      "type": "fill",
+      "source": "local-parcels",
+      "metadata": {
+        "source-layer": "parcels"
+      },
+      "paint": {
+        "fill-color": "#22c55e",
+        "fill-opacity": 0.36
+      }
+    },
+    {
+      "id": "parcel-outline",
+      "type": "line",
+      "source": "local-parcels",
+      "metadata": {
+        "source-layer": "parcels"
+      },
+      "paint": {
+        "line-color": "#166534",
+        "line-width": 1.2
+      }
+    }
+  ]
+}

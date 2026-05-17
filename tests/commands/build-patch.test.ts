@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import before from "../fixtures/commands/replay/style-update/before.map.json";
-import { applyCommands, type MapCommand, type MapSpec } from "@gis-engine/engine";
+import { applyCommands, buildPatch, DiagnosticCodes, type MapCommand, type MapSpec } from "@gis-engine/engine";
 
 describe("command patch generation", () => {
   it("merges paint properties without dropping existing paint", () => {
@@ -61,5 +61,69 @@ describe("command patch generation", () => {
 
     expect(result.spec.layers.map((layer) => layer.id)).toEqual(["district-line", "district-fill"]);
     expect(result.results[0]?.patch?.map((operation) => operation.op)).toEqual(["remove", "add", "replace"]);
+  });
+
+  it("returns field paths and suggested fixes for missing command targets", () => {
+    const removeSource = buildPatch(
+      {
+        id: "cmd-remove-missing-source",
+        version: "0.1",
+        type: "removeSource",
+        sourceId: "missing-source"
+      },
+      before as MapSpec
+    );
+    const setPaint = buildPatch(
+      {
+        id: "cmd-set-paint-missing-layer",
+        version: "0.1",
+        type: "setPaint",
+        layerId: "missing-layer",
+        paint: {
+          "fill-color": "#ef4444"
+        }
+      },
+      before as MapSpec
+    );
+
+    expect(removeSource.diagnostics).toEqual([
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.SourceNotFound,
+        path: "/sourceId",
+        relatedResources: [expect.objectContaining({ kind: "source", id: "missing-source" })],
+        fix: expect.objectContaining({ kind: "manual", confidence: "high" })
+      })
+    ]);
+    expect(setPaint.diagnostics).toEqual([
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.LayerNotFound,
+        path: "/layerId",
+        relatedResources: [expect.objectContaining({ kind: "layer", id: "missing-layer" })],
+        fix: expect.objectContaining({ kind: "manual", confidence: "high" })
+      })
+    ]);
+  });
+
+  it("returns a registered diagnostic for unsupported command types", () => {
+    const result = buildPatch(
+      {
+        id: "cmd-unsupported",
+        version: "0.1",
+        type: "rotateMap"
+      } as unknown as MapCommand,
+      before as MapSpec
+    );
+
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.CommandUnsupported,
+        path: "/type",
+        relatedResources: [expect.objectContaining({ kind: "command", id: "cmd-unsupported" })],
+        fix: expect.objectContaining({ kind: "manual" })
+      })
+    ]);
   });
 });

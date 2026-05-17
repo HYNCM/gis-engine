@@ -12,6 +12,7 @@ import type {
 import { DiagnosticCodes } from "../diagnostics/codes.js";
 import { applyJsonPatch } from "../spec/patch/index.js";
 import { validateSpec } from "../spec/validate.js";
+import { queryInlineGeoJsonFeatures } from "./queryGeoJson.js";
 import type { RendererAdapter, RenderContext, AdapterApplyResult, AdapterEventListener, Unsubscribe } from "./adapter.js";
 
 export class MockAdapter implements RendererAdapter {
@@ -73,11 +74,8 @@ export class MockAdapter implements RendererAdapter {
     }
   }
 
-  async queryFeatures(_options: QueryFeaturesOptions): Promise<FeatureQueryResult> {
-    return {
-      features: [],
-      diagnostics: []
-    };
+  async queryFeatures(options: QueryFeaturesOptions): Promise<FeatureQueryResult> {
+    return queryInlineGeoJsonFeatures(this.#spec, options, this.id);
   }
 
   async snapshot(_options: SnapshotOptions): Promise<SnapshotResult> {

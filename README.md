@@ -29,10 +29,10 @@ Traditional map SDKs are powerful, but AI agents need a stricter contract:
 | Patch utilities | Started | Minimal JSON Pointer normalization, apply, invert, changed path sorting, and validation utilities exist. |
 | Diagnostics | Started | Diagnostic code registry exists; more codes and expression-specific validation are still pending. |
 | Renderer adapter | Functional MVP | `RendererAdapter` contract exists; `MockAdapter` keeps real internal state; `MapLibreAdapter` MVP and style transformer are registered. |
-| Snapshot harness | Started | Adapter snapshot smoke returns data-url snapshots; pixel regression remains planned. |
-| AI tools | Functional | `applyCommandsTool`, `validate_spec`, `export_spec`, `get_context_summary`, and testable MCP handlers exist. |
+| Snapshot harness | Started | Adapter snapshot smoke returns data-url snapshots without requiring GPU/WebGL; real-browser visual snapshot remains planned. |
+| AI tools | Functional | MCP exposes `validate_spec`, `apply_commands`, `export_spec`, and `get_context_summary`; planned follow-up tools are `snapshot_spec`, `explain_spec`, and `export_example_app`. CamelCase aliases are intentionally not supported. |
 | Examples/fixtures | Started | Basic GeoJSON and AI map edit examples plus schema/command fixtures exist. |
-| CI | Started | GitHub Actions exists and runs schema build plus `pnpm check`; schema-sync and examples gates are included in `pnpm test`. |
+| CI | Started | GitHub Actions exists and runs schema build plus `pnpm check`; `pnpm check` must stay deterministic and must not depend on real GPU/WebGL. |
 
 ## Planned v0.1 Shape
 
@@ -66,6 +66,7 @@ const exported = map.exportSpec();
 - [Core capabilities](./docs/architecture/core-capabilities.md)
 - [Contracts and interfaces](./docs/spec/contracts-and-interfaces.md)
 - [v0.1 MVP acceptance criteria](./docs/engineering/v0.1-mvp-acceptance.md)
+- [v0.1 release checklist](./docs/engineering/v0.1-release-checklist.md)
 - [CI and test strategy](./docs/engineering/ci-test-strategy.md)
 - [Contract freeze checklist](./docs/engineering/contract-freeze.md)
 - [v0.1 implementation playbook](./docs/engineering/implementation-playbook.md)
@@ -80,6 +81,8 @@ v0.1 does not provide automatic retry for command application or export flows. C
 v0.1 also does not implement three-way merge. For cross-runtime, multi-tab, or multi-process concurrency, callers must refresh the latest spec, rebase their intended commands, and retry explicitly.
 
 Within a single runtime instance, `MapRuntime.apply()` uses a minimal single-flight serialization path so concurrent local calls are applied one at a time. This is not a full command queue and does not perform automatic rebase or merge.
+
+The current `MapLibreAdapter` is an MVP transformer/adapter binding with deterministic smoke snapshots. Binding it to a real browser MapLibre GL canvas is deferred to a future `RFC-QC-*` contract-quality-control change.
 
 ## Not Yet
 
