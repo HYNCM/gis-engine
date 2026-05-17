@@ -27,6 +27,7 @@ class RuntimeMockAdapter implements RendererAdapter {
   loadCalls = 0;
   loadedSpec: MapSpec | null = null;
   applyDiagnostics: AdapterApplyResult["diagnostics"] = [];
+  applyDelayMs = 0;
 
   async getCapabilities(): Promise<CapabilityReport> {
     return {
@@ -47,6 +48,9 @@ class RuntimeMockAdapter implements RendererAdapter {
   }
 
   async applyPatch(patch: JsonPatchOperation[], _context: RenderContext): Promise<AdapterApplyResult> {
+    if (this.applyDelayMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, this.applyDelayMs));
+    }
     this.patches.push(patch);
     return { diagnostics: this.applyDiagnostics };
   }
@@ -166,6 +170,76 @@ describe("MapRuntime", () => {
     expect(results[0]?.patch).toHaveLength(3);
     expect(runtime.exportSpec()).toEqual(before);
     expect(adapter.patches).toHaveLength(0);
+  });
+
+  it("does not synchronize batch-level dry runs", async () => {
+    const adapter = new RuntimeMockAdapter();
+    const runtime = await MapRuntime.create(before as MapSpec, {
+      adapter,
+      container: {} as HTMLElement
+    });
+
+    const results = await runtime.apply(commands as MapCommand[], { dryRun: true });
+
+    expect(results[0]?.status).toBe("applied");
+    expect(results[0]?.patch).toHaveLength(3);
+    expect(runtime.exportSpec()).toEqual(before);
+    expect(adapter.patches).toHaveLength(0);
+  });
+
+  it("only synchronizes non-dry-run commands in mixed batches", async () => {
+    const adapter = new RuntimeMockAdapter();
+    const runtime = await MapRuntime.create(before as MapSpec, {
+      adapter,
+      container: {} as HTMLElement
+    });
+    const previewCommand: MapCommand = { ...(commands as MapCommand[])[0]!, id: "cmd-preview-style", dryRun: true };
+    const viewCommand: MapCommand = {
+      id: "cmd-commit-view",
+      version: "0.1",
+      type: "setView",
+      baseRevision: "1",
+      view: { zoom: 12 }
+    };
+
+    const results = await runtime.apply([previewCommand, viewCommand], { transaction: "best-effort" });
+
+    expect(results.map((result) => result.status)).toEqual(["applied", "applied"]);
+    expect(runtime.exportSpec().revision).toBe("2");
+    expect(runtime.exportSpec().view.zoom).toBe(12);
+    expect(runtime.exportSpec().layers[0]?.paint).toEqual((before as MapSpec).layers[0]?.paint);
+    expect(adapter.patches).toHaveLength(1);
+    expect(adapter.patches[0]?.some((operation) => operation.path.startsWith("/layers/"))).toBe(false);
+    expect(adapter.patches[0]?.some((operation) => operation.path === "/view")).toBe(true);
+  });
+
+  it("serializes concurrent applies and rejects stale base revisions deterministically", async () => {
+    const adapter = new RuntimeMockAdapter();
+    adapter.applyDelayMs = 10;
+    const runtime = await MapRuntime.create(before as MapSpec, {
+      adapter,
+      container: {} as HTMLElement
+    });
+    const styleCommand = (commands as MapCommand[])[0]!;
+    const staleViewCommand: MapCommand = {
+      id: "cmd-stale-view",
+      version: "0.1",
+      type: "setView",
+      baseRevision: "1",
+      view: { zoom: 12 }
+    };
+
+    const [firstResults, secondResults] = await Promise.all([
+      runtime.apply(styleCommand),
+      runtime.apply(staleViewCommand)
+    ]);
+
+    expect(firstResults[0]?.status).toBe("applied");
+    expect(secondResults[0]?.status).toBe("failed");
+    expect(secondResults[0]?.diagnostics.some((diagnostic) => diagnostic.code === "CONFLICT.BASE_REVISION")).toBe(true);
+    expect(runtime.exportSpec().revision).toBe("2");
+    expect(runtime.exportSpec().view.zoom).toBe((before as MapSpec).view.zoom);
+    expect(adapter.patches).toHaveLength(1);
   });
 
   it("keeps the last committed spec and reloads the adapter when adapter apply fails", async () => {

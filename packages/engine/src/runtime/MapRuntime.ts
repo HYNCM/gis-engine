@@ -38,6 +38,7 @@ export class MapRuntime {
   #adapter: RendererAdapter;
   #container: HTMLElement;
   #destroyed = false;
+  #applyQueue: Promise<void> = Promise.resolve();
 
   private constructor(spec: MapSpec, options: MapRuntimeOptions) {
     this.#spec = structuredClone(spec);
@@ -55,6 +56,20 @@ export class MapRuntime {
   }
 
   async apply(commands: MapCommand | MapCommand[], options: ApplyOptions = {}): Promise<CommandResult[]> {
+    this.#assertAlive();
+
+    const queuedCommands = structuredClone(commands) as MapCommand | MapCommand[];
+    const queuedOptions = structuredClone(options) as ApplyOptions;
+    const run = this.#applyQueue.then(() => this.#applyImmediately(queuedCommands, queuedOptions));
+    this.#applyQueue = run.then(
+      () => undefined,
+      () => undefined
+    );
+
+    return run;
+  }
+
+  async #applyImmediately(commands: MapCommand | MapCommand[], options: ApplyOptions): Promise<CommandResult[]> {
     this.#assertAlive();
     const result = applyCommands(this.#spec, commands, options);
     const commandList = Array.isArray(commands) ? commands : [commands];

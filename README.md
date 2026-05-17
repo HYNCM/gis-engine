@@ -73,6 +73,14 @@ const exported = map.exportSpec();
 - [Framework review](./docs/reviews/framework-review.md)
 - [External AI review follow-up](./docs/reviews/external-ai-review-followup.md)
 
+## Known Limitations
+
+v0.1 does not provide automatic retry for command application or export flows. Callers that receive revision conflicts or transient adapter failures must decide whether and how to retry.
+
+v0.1 also does not implement three-way merge. For cross-runtime, multi-tab, or multi-process concurrency, callers must refresh the latest spec, rebase their intended commands, and retry explicitly.
+
+Within a single runtime instance, `MapRuntime.apply()` uses a minimal single-flight serialization path so concurrent local calls are applied one at a time. This is not a full command queue and does not perform automatic rebase or merge.
+
 ## Not Yet
 
 v0.1 will not attempt to replace Cesium or MapLibre. It will not ship full 3D Tiles, full WebGPU rendering, complete Mapbox expression compatibility, complete symbol collision/text shaping, GeoParquet analytics, or a full enterprise GIS platform.

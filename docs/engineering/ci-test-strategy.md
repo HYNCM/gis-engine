@@ -17,12 +17,14 @@ fixtures -> schema validation -> command replay -> renderer adapter -> snapshot 
   "scripts": {
     "build": "pnpm -r build",
     "build:schema": "pnpm --filter @gis-engine/engine build:schema",
-    "test": "pnpm test:schema && pnpm test:commands && pnpm test:adapter && pnpm test:snapshot && pnpm test:ai",
+    "test": "pnpm test:schema && pnpm test:commands && pnpm test:adapter && pnpm test:snapshot:smoke && pnpm test:ai",
     "test:schema": "vitest run tests/schema",
     "test:commands": "vitest run tests/commands",
     "test:adapter": "vitest run tests/adapter",
-    "test:snapshot": "playwright test tests/snapshot",
-    "test:snapshot:update": "SNAPSHOT_UPDATE=1 playwright test tests/snapshot",
+    "test:snapshot": "pnpm test:snapshot:smoke",
+    "test:snapshot:smoke": "vitest run tests/snapshot/smoke tests/adapter",
+    "test:snapshot:visual": "playwright test tests/snapshot/visual",
+    "test:snapshot:update": "GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 SNAPSHOT_UPDATE=1 pnpm test:snapshot:visual",
     "test:ai": "vitest run tests/ai",
     "test:perf:smoke": "vitest run tests/perf",
     "test:resources": "vitest run tests/resources",
@@ -35,19 +37,24 @@ fixtures -> schema validation -> command replay -> renderer adapter -> snapshot 
 
 ## Required Gates
 
-| Gate | Required for PR | Required for release |
-| --- | --- | --- |
-| schema sync | 是 | 是 |
-| schema fixtures | 是 | 是 |
-| command replay | 是 | 是 |
-| diagnostics codes | 是 | 是 |
-| MapLibre adapter contract | 是 | 是 |
-| WebGL2 lite contract | 否 | 是，如果声明 experimental |
-| snapshot regression | 是 | 是 |
-| AI tool contract | 是 | 是 |
-| resource release | 是 | 是 |
-| perf smoke | 否 | 是 |
-| migration tests | 变更 schema 时 | 是 |
+CI 分为 PR、main-nightly、release 三档。PR 目标是稳定阻断确定性问题，main-nightly 负责尽早发现视觉环境和 baseline 漂移，release 负责完整验收。
+
+| Gate | PR | main-nightly | release |
+| --- | --- | --- | --- |
+| schema sync | 必跑且阻断 | 必跑且阻断 | 必跑且阻断 |
+| schema fixtures | 必跑且阻断 | 必跑且阻断 | 必跑且阻断 |
+| command replay | 必跑且阻断 | 必跑且阻断 | 必跑且阻断 |
+| diagnostics codes | 必跑且阻断 | 必跑且阻断 | 必跑且阻断 |
+| MapLibre adapter contract | 必跑且阻断 | 必跑且阻断 | 必跑且阻断 |
+| snapshot smoke | 必跑且阻断 | 必跑且阻断 | 必跑且阻断 |
+| snapshot visual | 条件运行；无 GPU/WebGL 时生成 skipped report，不阻断 | 条件运行；环境可用时阻断，环境不可用时告警并归档 | 必跑且阻断；或 `GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1` 时必跑且阻断 |
+| WebGL2 lite contract | 否 | 如果声明 experimental 则运行 | 是，如果声明 experimental |
+| AI tool contract | 必跑且阻断 | 必跑且阻断 | 必跑且阻断 |
+| resource release | 必跑且阻断 | 必跑且阻断 | 必跑且阻断 |
+| perf smoke | 否 | 条件运行；失败告警 | 必跑且阻断 |
+| migration tests | 变更 schema 时必跑且阻断 | 变更 schema 时必跑且阻断 | 必跑且阻断 |
+
+`GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1` 会把 `snapshot:visual` 从可降级 gate 提升为强制 gate。该环境变量适用于 release、手动验收、baseline 更新和任何需要确认真实 MapLibre GL 渲染的 CI job。
 
 ## Fixtures
 
@@ -79,15 +86,21 @@ fixture 规则：
 
 ## Snapshot Harness
 
+Snapshot 分为两层：
+
+- `snapshot:smoke`：必跑。使用 Node/Vitest 和 adapter contract 验证 `load -> snapshot -> exportSpec` 的结构化结果、diagnostics 和状态一致性，不要求真实 WebGL。
+- `snapshot:visual`：条件跑。使用 Playwright、真实浏览器和真实 MapLibre GL canvas 验证像素健康度和可选 baseline diff。
+
 工具：
 
 - Playwright。
 - 固定 Chromium baseline。
 - Safari/WebKit 和 Firefox 做兼容 smoke。
 
-流程：
+`snapshot:visual` 流程：
 
 ```txt
+probe browser + GPU/WebGL capability
 start example server
 open fixture page
 wait for map idle
@@ -97,6 +110,12 @@ compare optional baseline
 collect browser console warnings/errors
 write SnapshotReport
 ```
+
+环境探测失败时：
+
+- PR：写入 `skipped: true` 和 `skipReason`，归档 report 与 console log，不阻断。
+- main-nightly：写入 `skipped: true` 和 `skipReason`，归档 report，并产生 CI warning。
+- release 或 `GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1`：探测失败等同 `snapshot:visual` 失败，必须阻断。
 
 默认判定：
 
@@ -121,6 +140,13 @@ SnapshotReport:
 ```ts
 export interface SnapshotReport {
   passed: boolean;
+  skipped: boolean;
+  skipReason?: {
+    code: "BROWSER_UNAVAILABLE" | "WEBGL_UNAVAILABLE" | "GPU_UNAVAILABLE" | "BASELINE_MISSING" | "UNSUPPORTED_ADAPTER";
+    message: string;
+  };
+  mode: "smoke" | "visual";
+  ciTier: "pr" | "main-nightly" | "release" | "local";
   width: number;
   height: number;
   pixelRatio: number;
@@ -128,6 +154,13 @@ export interface SnapshotReport {
   changedPixelsFromBackground: number;
   targetLayerPixels?: Record<string, number>;
   diagnostics: Diagnostic[];
+  consoleErrors: string[];
+  artifacts: {
+    actualImage?: string;
+    diffImage?: string;
+    reportJson?: string;
+    consoleLog?: string;
+  };
 }
 ```
 

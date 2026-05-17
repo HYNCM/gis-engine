@@ -230,6 +230,17 @@ export interface RendererAdapter {
 }
 ```
 
+### Mutation and preflight boundary
+
+规则：
+
+- `applyPatch` 是 mutating API。调用成功后，adapter 必须把内部 renderer state、`exportSpec()` 和可导出的 renderer style 推进到 patch 后状态。
+- `applyPatch` 返回 error diagnostic 或抛错时不得部分提交；adapter 必须保留上一次已提交的 spec/style。
+- `dryRun` 和 preflight 不通过 `RendererAdapter.applyPatch` 表达，也不要求给 `applyPatch` 增加 `dryRun` 参数。
+- Runtime 处理 `ApplyOptions.dryRun` 时必须停在 command/preflight 层，不穿透到 adapter mutation 路径。
+- MapLibre v0.1 preflight 只允许执行 schema validation、supported feature matrix/capability 检查，以及 `MapSpec -> MapLibre style` transformer 检查。
+- MapLibre preflight 不得调用真实 renderer mutation、snapshot、query、worker/tile/network/canvas 流程，也不得修改 adapter 的 committed `exportSpec()` 或 `exportStyle()`。
+
 ### CapabilityReport
 
 ```ts
@@ -253,6 +264,8 @@ Adapter contract tests 必须验证：
 - `load -> snapshot -> destroy` 成功。
 - `applyPatch` 后 `exportSpec()` 和 renderer state 一致。
 - unsupported layer 返回 `CAPABILITY.UNSUPPORTED`。
+- unsupported feature 的 preflight/apply failure 不改变 adapter 上一次已提交的 `exportSpec()` 或 renderer style。
+- runtime-level `dryRun` 不调用 adapter mutation 路径。
 - adapter error 转成 `RENDER.ADAPTER_ERROR`。
 - `destroy()` 返回资源释放报告。
 - contract harness 必须使用本地静态服务、固定 fixtures、无公网依赖。

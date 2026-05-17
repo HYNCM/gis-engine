@@ -30,4 +30,22 @@ describe("MapSpecToMapLibreStyleTransformer", () => {
     expect(result.style).toBeUndefined();
     expect(result.diagnostics.some((diagnostic) => diagnostic.code === "CAPABILITY.UNSUPPORTED")).toBe(true);
   });
+
+  it("returns capability-only diagnostics for schema-valid unsupported layers", () => {
+    const spec = structuredClone(before) as MapSpec;
+    spec.layers[0] = {
+      ...spec.layers[0]!,
+      type: "fill-extrusion-lite"
+    };
+
+    const result = transformMapSpecToMapLibreStyle(spec);
+
+    expect(result.style).toBeUndefined();
+    expect(result.diagnostics.filter((diagnostic) => diagnostic.severity === "error")).toEqual([
+      expect.objectContaining({
+        code: "CAPABILITY.UNSUPPORTED",
+        path: "/layers/0/type"
+      })
+    ]);
+  });
 });

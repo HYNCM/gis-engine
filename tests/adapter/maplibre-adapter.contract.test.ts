@@ -2,7 +2,16 @@ import { describe, expect, it } from "vitest";
 import before from "../fixtures/commands/replay/style-update/before.map.json";
 import commands from "../fixtures/commands/replay/style-update/commands.json";
 import after from "../fixtures/commands/replay/style-update/after.map.json";
-import { applyCommands, createAdapter, listAdapters, MapLibreAdapter, type MapCommand, type MapSpec } from "@gis-engine/engine";
+import {
+  applyCommands,
+  createAdapter,
+  listAdapters,
+  MapLibreAdapter,
+  MapRuntime,
+  transformMapSpecToMapLibreStyle,
+  type MapCommand,
+  type MapSpec
+} from "@gis-engine/engine";
 import { createAdapterContractSuite } from "./createAdapterContractSuite.js";
 
 createAdapterContractSuite("maplibre", () => new MapLibreAdapter());
@@ -24,6 +33,75 @@ describe("MapLibreAdapter MVP", () => {
     expect(adapterResult.diagnostics.filter((diagnostic) => diagnostic.severity === "error")).toEqual([]);
     expect(adapter.exportSpec()).toEqual(after);
     expect(adapter.exportStyle()?.layers[0]?.paint?.["fill-opacity"]).toBe(0.85);
+  });
+
+  it("keeps adapter state unchanged when MapRuntime applies a dry run", async () => {
+    const adapter = new MapLibreAdapter();
+    const runtime = await MapRuntime.create(before as MapSpec, {
+      adapter,
+      container: {} as HTMLElement
+    });
+    const committedSpec = adapter.exportSpec();
+    const committedStyle = adapter.exportStyle();
+
+    const results = await runtime.apply(commands as MapCommand[], { dryRun: true });
+
+    expect(results[0]?.status).toBe("applied");
+    expect(results[0]?.patch).toHaveLength(3);
+    expect(runtime.exportSpec()).toEqual(before);
+    expect(adapter.exportSpec()).toEqual(committedSpec);
+    expect(adapter.exportStyle()).toEqual(committedStyle);
+  });
+
+  it("keeps adapter state unchanged during unsupported feature preflight", async () => {
+    const adapter = new MapLibreAdapter();
+    await adapter.load(before as MapSpec, { container: {} as HTMLElement });
+    const committedSpec = adapter.exportSpec();
+    const committedStyle = adapter.exportStyle();
+    const unsupportedSpec = structuredClone(before) as MapSpec;
+    unsupportedSpec.layers[0] = {
+      ...unsupportedSpec.layers[0]!,
+      type: "fill-extrusion-lite"
+    };
+
+    const preflight = transformMapSpecToMapLibreStyle(unsupportedSpec);
+
+    expect(preflight.style).toBeUndefined();
+    expect(preflight.diagnostics.filter((diagnostic) => diagnostic.severity === "error")).toEqual([
+      expect.objectContaining({
+        code: "CAPABILITY.UNSUPPORTED",
+        path: "/layers/0/type"
+      })
+    ]);
+    expect(adapter.exportSpec()).toEqual(committedSpec);
+    expect(adapter.exportStyle()).toEqual(committedStyle);
+  });
+
+  it("keeps adapter state unchanged when applying an unsupported feature patch fails", async () => {
+    const adapter = new MapLibreAdapter();
+    await adapter.load(before as MapSpec, { container: {} as HTMLElement });
+    const committedSpec = adapter.exportSpec();
+    const committedStyle = adapter.exportStyle();
+
+    const adapterResult = await adapter.applyPatch(
+      [
+        {
+          op: "replace",
+          path: "/layers/0/type",
+          value: "fill-extrusion-lite"
+        }
+      ],
+      { container: {} as HTMLElement }
+    );
+
+    expect(adapterResult.diagnostics.filter((diagnostic) => diagnostic.severity === "error")).toEqual([
+      expect.objectContaining({
+        code: "CAPABILITY.UNSUPPORTED",
+        path: "/layers/0/type"
+      })
+    ]);
+    expect(adapter.exportSpec()).toEqual(committedSpec);
+    expect(adapter.exportStyle()).toEqual(committedStyle);
   });
 
   it("returns a stable data-url snapshot smoke result after load", async () => {

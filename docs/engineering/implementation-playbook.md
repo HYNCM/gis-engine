@@ -239,7 +239,18 @@ tests/utils/startStaticServer.ts
 - 测试结束必须 close。
 - 禁止依赖公网资源。
 
-## 5. Snapshot Baseline 管理
+## 5. Snapshot 分层与 Baseline 管理
+
+Snapshot harness 分为两层：
+
+1. `snapshot:smoke`：必跑。通过 Node/Vitest 覆盖 adapter contract、`load -> snapshot -> exportSpec`、diagnostics 和状态一致性，不依赖真实 GPU、WebGL 或浏览器 canvas。
+2. `snapshot:visual`：条件跑。通过 Playwright 打开真实 fixture page，使用真实 MapLibre GL canvas 做像素健康检查和可选 baseline diff。
+
+PR 默认只把 `snapshot:smoke` 作为阻断项。`snapshot:visual` 可以在 PR 中运行，但浏览器、GPU 或 WebGL 不可用时必须优雅降级为 skipped report，不阻断 PR。
+
+main-nightly 应运行 `snapshot:visual`。环境可用时失败必须阻断该 nightly job；环境不可用时生成 warning、`SnapshotReport` 和 artifacts。
+
+release 或设置 `GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1` 时，`snapshot:visual` 不允许降级；浏览器、GPU、WebGL 探测失败也必须视为失败。
 
 ### 目录和产物
 
@@ -251,14 +262,29 @@ test-results/snapshots/
   actual/
   diff/
   reports/
+  console/
 ```
 
 ### 判定策略
 
-Snapshot validation 分两层：
+Snapshot visual validation 分两层：
 
 1. Health check：必须通过。
 2. Baseline diff：有 baseline 时执行。
+
+Environment probe:
+
+- Playwright Chromium 可启动。
+- fixture server 可访问。
+- canvas 可创建。
+- WebGL 或 WebGL2 context 可用。
+- renderer 没有启动期 fatal error。
+
+Environment probe 失败时：
+
+- PR：`passed: false`、`skipped: true`，写入 `skipReason`，不阻断。
+- main-nightly：`passed: false`、`skipped: true`，写入 `skipReason`，输出 warning，归档 artifacts。
+- release 或 `GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1`：`passed: false`、`skipped: false`，阻断。
 
 Health check:
 
@@ -274,6 +300,37 @@ Baseline diff:
 - 单个像素颜色 delta 默认阈值为 `10`。
 - 没有 baseline 时不失败，但必须生成 actual image 和 warning。
 - 更新 baseline 必须显式运行 `pnpm test:snapshot:update`。
+
+### SnapshotReport
+
+所有 snapshot 路径都必须输出 `SnapshotReport`。Smoke report 可以省略像素字段或将其置为 `0`，但必须保留 `passed`、`skipped`、`diagnostics`、`consoleErrors` 和 `artifacts` 字段，方便 AI eval 和 CI 产物统一解析。
+
+```ts
+export interface SnapshotReport {
+  passed: boolean;
+  skipped: boolean;
+  skipReason?: {
+    code: "BROWSER_UNAVAILABLE" | "WEBGL_UNAVAILABLE" | "GPU_UNAVAILABLE" | "BASELINE_MISSING" | "UNSUPPORTED_ADAPTER";
+    message: string;
+  };
+  mode: "smoke" | "visual";
+  ciTier: "pr" | "main-nightly" | "release" | "local";
+  width: number;
+  height: number;
+  pixelRatio: number;
+  nonTransparentPixels: number;
+  changedPixelsFromBackground: number;
+  targetLayerPixels?: Record<string, number>;
+  diagnostics: Diagnostic[];
+  consoleErrors: string[];
+  artifacts: {
+    actualImage?: string;
+    diffImage?: string;
+    reportJson?: string;
+    consoleLog?: string;
+  };
+}
+```
 
 ### CI artifact
 
