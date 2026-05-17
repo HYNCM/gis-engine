@@ -17,17 +17,17 @@ decision_level: advisory
 
 ## 总体判断
 
-当前债务已经从“合同漂移”转为“长期能力边界”。两个 P1 合同缺口已关闭，v0.2 checkpoint 已完成；package 发布检查、deterministic resource/perf 证据、command audit trace 产品化、`fill-extrusion-lite` beta adapter、3-scene release-capable strict visual evidence 和 1k/10k/100k nightly perf harness 已补齐。剩余风险主要集中在 3D 后续边界。
+当前债务已经从“合同漂移”收敛为“v1 能力规划”。两个 P1 合同缺口已关闭，v0.2 checkpoint 已完成；package 发布检查、deterministic resource/perf 证据、command audit trace 产品化、`fill-extrusion-lite` beta adapter、3-scene release-capable strict visual evidence、1k/10k/100k nightly perf harness 和 SceneView3D boundary fixture 已补齐。
 
 ## 债务优先级
 
 | 排名 | 债务 | 得分 | 证据 | 建议修复 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | SceneView3D 仍为 reserved boundary | 4.90 | scene3d-boundary spec | v1 前继续细化 camera/source/layer/snapshot 规则 | medium |
+| 1 | SceneView3D 实现尚未进入 v1 RFC | 4.10 | scene3d-boundary spec、`extensions.scene3d` fixture | 新周期中先写 schema/resource/snapshot/query RFC，再实现 renderer | medium |
 
 ## 修复顺序
 
-1. 继续推进 SceneView3D v1 边界。
+1. 将 SceneView3D 实现移入独立 v1 RFC，不作为当前 v0.2 欠债处理。
 
 ## 结论
 

@@ -19,7 +19,7 @@ decision_level: advisory
 
 ## 结论
 
-当前 v0.1 已具备 `MapSpec`、commands、diagnostics、snapshot 和 MapLibre adapter 闭环；2026-05-17 v0.2 checkpoint 已完成 generic vector tile、MCP output schema、strict capability report、expression 扩展、style/layer order 稳定化、visual MVT 场景和 2.5D/3D 边界。2026-05-18 已补齐 package dry-run、resource/perf deterministic evidence、command audit trace 产品化、`fill-extrusion-lite` MapLibre beta mapping、3-scene release-capable strict visual runner evidence 和 1k/10k/100k nightly perf harness。下一阶段不应继续扩大 runtime 骨架，而应聚焦 3D 边界深化。
+当前 v0.1 已具备 `MapSpec`、commands、diagnostics、snapshot 和 MapLibre adapter 闭环；2026-05-17 v0.2 checkpoint 已完成 generic vector tile、MCP output schema、strict capability report、expression 扩展、style/layer order 稳定化、visual MVT 场景和 2.5D/3D 边界。2026-05-18 已补齐 package dry-run、resource/perf deterministic evidence、command audit trace 产品化、`fill-extrusion-lite` MapLibre beta mapping、3-scene release-capable strict visual runner evidence、1k/10k/100k nightly perf harness 和 `extensions.scene3d` 边界 fixture。当前 W21/W23 规划项已完成；下一阶段应启动单独的 v1 SceneView3D RFC，而不是继续把 3D 混进 v0.2 主线。
 
 ## 路线总览
 
@@ -34,7 +34,7 @@ decision_level: advisory
 
 | 排名 | 事项 | 得分 | 证据 | 行动 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | SceneView3D 边界深化 | 5.30 | Cesium/Three.js signal、framework review | 继续细化 scene3d/camera/source/layer/snapshot 边界 spec | medium |
+| 1 | v1 SceneView3D RFC | future | Scene3D boundary 已深化为 extension fixture 和 unsupported diagnostics | 新周期启动时再定义 camera/source/layer/snapshot schema | medium |
 
 已完成并保留回归证据：
 
@@ -51,10 +51,12 @@ decision_level: advisory
 | fill-extrusion-lite beta adapter | MapLibre `fill-extrusion` mapping、capability report、schema/example fixture、snapshot smoke |
 | Release-capable strict visual evidence | `pnpm -s test:release:strict` passed outside the default macOS sandbox with GeoJSON, generated local MVT, and gated `fill-extrusion-lite` visual scenes |
 | Large-data perf/nightly evidence | `pnpm -s test:perf:nightly` covers 1k/10k/100k inline GeoJSON create/query/snapshot/destroy |
+| SceneView3D boundary deepening | `extensions.scene3d` fixture、reserved enum unsupported diagnostics、v1 entry criteria |
 
 ## 本月行动
 
-1. 继续保持 3D 为 extension/capability-gated，不提前进入核心 renderer 承诺。
+1. W21/W23 当前规划项全部完成。
+2. 后续 3D 工作必须作为 v1 RFC 重新进入规划，不得直接进入 core renderer。
 
 ## Feature Spec 建议
 
@@ -64,5 +66,5 @@ decision_level: advisory
 | `docs/planning/feature-specs/style-diff-layer-order.md` | done | reorder、patch、exportSpec 一致性、视觉预期 |
 | `docs/planning/feature-specs/vector-tile-url-template.md` | done | vector tile source、PMTiles parity、安全策略 |
 | `docs/planning/feature-specs/fill-extrusion-lite-beta.md` | beta done / visual release evidence pending | experimental gate、MapLibre beta mapping、snapshot smoke、fallback diagnostics |
-| `docs/planning/feature-specs/scene3d-boundary.md` | boundary done / v1 pending | SceneView3D、terrain、glTF、3D Tiles 边界与 snapshot 规则 |
+| `docs/planning/feature-specs/scene3d-boundary.md` | boundary deepening done / v1 RFC pending | SceneView3D、terrain、glTF、3D Tiles 边界与 snapshot 规则 |
 | `docs/planning/feature-specs/command-conflict-replay-audit.md` | done | `baseRevision`、`traceId`、`author`、`reason`、`sourcePromptHash`、`SuggestedFix` |

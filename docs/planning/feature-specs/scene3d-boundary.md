@@ -31,6 +31,11 @@ Current validation returns `CAPABILITY.UNSUPPORTED` for:
 This keeps AI agents from mistaking reserved enum values for available runtime
 behavior.
 
+`extensions.scene3d` is the reserved namespace for future 3D contracts. It is
+currently accepted as an opaque extension payload when the document still uses
+`view.mode: "map2d"`, so teams can sketch camera/lights/depth/terrain/tileset
+shapes without widening the stable runtime surface.
+
 ## Future Entry Criteria
 
 - `extensions.scene3d` schema for camera, lights, depth, terrain, and tilesets.
@@ -49,6 +54,8 @@ behavior.
 ## Acceptance Criteria
 
 - Any current Scene3D request receives a stable structured diagnostic.
+- `extensions.scene3d` can be validated as an extension payload while
+  `view.mode` remains `map2d`.
 - The unsupported result is visible through `validate_spec` and
   `explain_spec`.
 - 3D implementation work must start with schema and resource-policy RFCs before

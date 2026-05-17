@@ -76,3 +76,4 @@ decision_level: advisory
 | POST-2026W21-011 | done | `fill-extrusion-lite` beta adapter: MapLibre `fill-extrusion` mapping, capability report, fixture/example, snapshot smoke |
 | POST-2026W21-012 | done | release-capable `pnpm -s test:release:strict` evidence with 3 visual Playwright scenes |
 | POST-2026W21-013 | done | `pnpm -s test:perf:nightly` 1k/10k/100k inline GeoJSON create/query/snapshot/destroy evidence |
+| POST-2026W21-014 | done | SceneView3D boundary deepening: `extensions.scene3d` fixture plus reserved enum unsupported diagnostics |

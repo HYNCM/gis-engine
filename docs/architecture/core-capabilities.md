@@ -20,7 +20,7 @@ v0.1 的必交付能力以 [v0.1 MVP 验收标准](../engineering/v0.1-mvp-accep
 
 | 能力 | 状态 | 说明 |
 | --- | --- | --- |
-| `MapSpec` schema | 已实现 | JSON Schema 和 TypeScript 类型同步维护，覆盖 vector、experimental 2.5D 和 reserved `scene3d` 边界 |
+| `MapSpec` schema | 已实现 | JSON Schema 和 TypeScript 类型同步维护，覆盖 vector、experimental 2.5D、reserved `scene3d` 边界和 `extensions.scene3d` 预留命名空间 |
 | TypeScript types | 已实现 | 使用 TypeBox schema 和 `Static<typeof Schema>` 保持同步 |
 | `validateSpec` | 已实现 | 校验结构、引用、类型、版本、capability、expression、resource policy 和 unsupported boundary |
 | `normalizeSpec` | 必做 | 补默认值、排序、标准化颜色和 source/layer 字段 |
