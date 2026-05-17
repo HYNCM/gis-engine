@@ -63,6 +63,72 @@ describe("command patch generation", () => {
     expect(result.results[0]?.patch?.map((operation) => operation.op)).toEqual(["remove", "add", "replace"]);
   });
 
+  it("reports missing layer order anchors instead of silently appending", () => {
+    const spec = structuredClone(before) as MapSpec;
+    const addLayer = buildPatch(
+      {
+        id: "cmd-add-before-missing",
+        version: "0.1",
+        type: "addLayer",
+        beforeLayerId: "missing-anchor",
+        layer: { id: "district-line", type: "line", source: "districts" }
+      },
+      spec
+    );
+    const reorderLayer = buildPatch(
+      {
+        id: "cmd-reorder-before-missing",
+        version: "0.1",
+        type: "reorderLayer",
+        layerId: "district-fill",
+        beforeLayerId: "missing-anchor"
+      },
+      spec
+    );
+
+    for (const result of [addLayer, reorderLayer]) {
+      expect(result.patch).toEqual([]);
+      expect(result.diagnostics).toEqual([
+        expect.objectContaining({
+          severity: "error",
+          code: DiagnosticCodes.LayerNotFound,
+          path: "/beforeLayerId",
+          relatedResources: [expect.objectContaining({ kind: "layer", id: "missing-anchor" })],
+          fix: expect.objectContaining({ kind: "manual", confidence: "high" })
+        })
+      ]);
+    }
+  });
+
+  it("skips no-op layer reorders", () => {
+    const spec = structuredClone(before) as MapSpec;
+    spec.layers.push({ id: "district-line", type: "line", source: "districts" });
+
+    const alreadyBeforeNext = buildPatch(
+      {
+        id: "cmd-noop-before-next",
+        version: "0.1",
+        type: "reorderLayer",
+        layerId: "district-fill",
+        beforeLayerId: "district-line"
+      },
+      spec
+    );
+    const beforeSelf = buildPatch(
+      {
+        id: "cmd-noop-before-self",
+        version: "0.1",
+        type: "reorderLayer",
+        layerId: "district-fill",
+        beforeLayerId: "district-fill"
+      },
+      spec
+    );
+
+    expect(alreadyBeforeNext).toEqual({ patch: [], diagnostics: [], skipped: true });
+    expect(beforeSelf).toEqual({ patch: [], diagnostics: [], skipped: true });
+  });
+
   it("returns field paths and suggested fixes for missing command targets", () => {
     const removeSource = buildPatch(
       {

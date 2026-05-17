@@ -37,8 +37,10 @@ export function buildPatch(command: MapCommand, spec: MapSpec): BuildPatchResult
       if (spec.layers.some((layer) => layer.id === command.layer.id)) {
         return { patch: [], diagnostics: [], skipped: true };
       }
-      const index = command.beforeLayerId ? spec.layers.findIndex((layer) => layer.id === command.beforeLayerId) : spec.layers.length;
-      const insertIndex = index >= 0 ? index : spec.layers.length;
+      const insertIndex = command.beforeLayerId ? spec.layers.findIndex((layer) => layer.id === command.beforeLayerId) : spec.layers.length;
+      if (insertIndex < 0) {
+        return missingBeforeLayer(command.beforeLayerId, "Add the anchor layer first, or omit beforeLayerId to append the new layer.");
+      }
       return { patch: [{ op: "add", path: `/layers/${insertIndex}`, value: command.layer }], diagnostics: [] };
     }
 
@@ -101,12 +103,16 @@ export function buildPatch(command: MapCommand, spec: MapSpec): BuildPatchResult
 function reorderLayer(layerId: string, beforeLayerId: string | undefined, spec: MapSpec): BuildPatchResult {
   const fromIndex = spec.layers.findIndex((layer) => layer.id === layerId);
   if (fromIndex < 0) return missingLayer(layerId, "/layerId", "Add the layer before reordering it, or update layerId to an existing layer.");
+  if (beforeLayerId === layerId) return { patch: [], diagnostics: [], skipped: true };
 
   const layer = spec.layers[fromIndex];
   if (!layer) return missingLayer(layerId, "/layerId", "Add the layer before reordering it, or update layerId to an existing layer.");
   const remainingLayers = spec.layers.filter((candidate) => candidate.id !== layerId);
-  const beforeIndex = beforeLayerId ? remainingLayers.findIndex((candidate) => candidate.id === beforeLayerId) : remainingLayers.length;
-  const toIndex = beforeIndex >= 0 ? beforeIndex : remainingLayers.length;
+  const toIndex = beforeLayerId ? remainingLayers.findIndex((candidate) => candidate.id === beforeLayerId) : remainingLayers.length;
+  if (toIndex < 0) return missingBeforeLayer(beforeLayerId, "Use an existing beforeLayerId, or omit beforeLayerId to move the layer to the end.");
+
+  const nextLayers = [...remainingLayers.slice(0, toIndex), layer, ...remainingLayers.slice(toIndex)];
+  if (hasSameLayerOrder(spec.layers, nextLayers)) return { patch: [], diagnostics: [], skipped: true };
 
   return {
     patch: [
@@ -115,6 +121,10 @@ function reorderLayer(layerId: string, beforeLayerId: string | undefined, spec: 
     ],
     diagnostics: []
   };
+}
+
+function hasSameLayerOrder(current: MapSpec["layers"], next: MapSpec["layers"]): boolean {
+  return current.length === next.length && current.every((layer, index) => layer.id === next[index]?.id);
 }
 
 function patchRecordMerge(path: string, current: Record<string, unknown> | undefined, next: Record<string, unknown>): JsonPatchOperation[] {
@@ -142,6 +152,10 @@ function missingLayer(layerId: string, path: string, fixMessage: string): BuildP
     relatedResources: [{ kind: "layer", id: layerId }],
     fix: manualFix(fixMessage, "high")
   });
+}
+
+function missingBeforeLayer(layerId: string | undefined, fixMessage: string): BuildPatchResult {
+  return missingLayer(layerId ?? "unknown", "/beforeLayerId", fixMessage);
 }
 
 function manualFix(message: string, confidence: SuggestedFix["confidence"]): SuggestedFix {
