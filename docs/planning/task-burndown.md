@@ -53,3 +53,15 @@ decision_level: advisory
 - 如果 vector tile adapter 行为不稳定，先保留 schema/transformer/diagnostics，不承诺真实网络加载。
 - 如果 visual snapshot 环境不可用，PR 可记录 skipped report；release 或 strict gate 不允许跳过。
 - fill-extrusion-lite / SceneView3D boundary 是 stretch work，不阻塞 v0.2 2D 主线。
+
+## 2026-05-17 执行快照
+
+| Planned task | Status | Evidence |
+| --- | --- | --- |
+| TASK-2026W23-003 | done | `examples/vector-tile-url/map.json`, schema fixture, snapshot smoke, visual MVT scene |
+| TASK-2026W23-004 | done | MCP output schemas, strict capability schema, v0.2 vector/expression tool tests |
+| TASK-2026W23-005 | done | deterministic `setPaint` / `setLayout` / `reorderLayer` command coverage |
+| TASK-2026W23-006 | done | missing `beforeLayerId` returns `LAYER.NOT_FOUND` at `/beforeLayerId` |
+| TASK-2026W23-007 | done | `pnpm test:snapshot:visual` includes GeoJSON and generated vector tile scenes |
+| TASK-2026W23-008 | done | `fill-extrusion-lite-beta.md`, `scene3d-boundary.md`, validation boundary diagnostics |
+| TASK-2026W23-009 | done | checkpoint audit, release note draft, `pnpm build:schema`, `pnpm check`, strict visual gate evidence |

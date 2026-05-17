@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import before from "../fixtures/commands/replay/style-update/before.map.json";
 import commands from "../fixtures/commands/replay/style-update/commands.json";
+import vectorTileUrl from "../fixtures/specs/valid/vector-tile-url.map.json";
+import type { MapSpec } from "@gis-engine/engine";
 import { callGisEngineTool, createGisEngineMcpServer, listGisEngineTools } from "@gis-engine/ai";
 
 describe("MCP Server Integration", () => {
@@ -119,6 +121,137 @@ describe("MCP Server Integration", () => {
     expect(summary.sources).toEqual([{ id: "districts", type: "geojson" }]);
     expect(summary.layers[0]).toMatchObject({ id: "district-fill", visibility: "visible" });
     expect(summary.validation).toMatchObject({ valid: true, diagnosticCounts: { error: 0 } });
+  });
+
+  it("covers v0.2 vector tile and expression contracts through MCP tools", async () => {
+    const validateResult = await callGisEngineTool({
+      params: {
+        name: "validate_spec",
+        arguments: { spec: vectorTileUrl }
+      }
+    });
+    const validation = JSON.parse(validateResult.content[0]!.text) as { valid: boolean; diagnostics: Array<{ code: string }> };
+    expect(validateResult.isError).toBeUndefined();
+    expect(validation.valid).toBe(true);
+    expect(validation.diagnostics).toEqual([]);
+
+    const explainResult = await callGisEngineTool({
+      params: {
+        name: "explain_spec",
+        arguments: {
+          spec: vectorTileUrl,
+          capabilities: {
+            renderer: "maplibre",
+            dimensions: ["2d"],
+            sources: ["geojson", "vector"],
+            layers: ["fill", "line"],
+            expressions: ["case", "match", "zoom", "to-number", "to-string"],
+            queries: ["point"],
+            snapshot: { supported: true, formats: ["data-url"] },
+            experimental: []
+          }
+        }
+      }
+    });
+    const explanation = JSON.parse(explainResult.content[0]!.text) as {
+      summary: {
+        sources: Array<{ id: string; type: string }>;
+        layers: Array<{ id: string; type: string; source?: string }>;
+        capabilities?: { sources: string[]; expressions: string[] };
+      };
+      validation: { valid: boolean };
+    };
+    expect(explainResult.isError).toBeUndefined();
+    expect(explanation.validation.valid).toBe(true);
+    expect(explanation.summary.sources).toEqual([{ id: "local-parcels", type: "vector" }]);
+    expect(explanation.summary.layers.map((layer) => layer.id)).toEqual(["parcel-fill", "parcel-outline"]);
+    expect(explanation.summary.capabilities?.sources).toContain("vector");
+    expect(explanation.summary.capabilities?.expressions).toEqual(expect.arrayContaining(["case", "match", "zoom", "to-number", "to-string"]));
+
+    const snapshotResult = await callGisEngineTool({
+      params: {
+        name: "snapshot_spec",
+        arguments: {
+          spec: vectorTileUrl,
+          renderer: "maplibre",
+          snapshot: { width: 320, height: 180, format: "data-url", targetLayers: ["parcel-fill"] }
+        }
+      }
+    });
+    const snapshot = JSON.parse(snapshotResult.content[0]!.text) as { passed: boolean; dataUrl?: string; validation: { valid: boolean } };
+    expect(snapshotResult.isError).toBeUndefined();
+    expect(snapshot.validation.valid).toBe(true);
+    expect(snapshot.passed).toBe(true);
+    expect(snapshot.dataUrl).toMatch(/^data:image\/png;base64,/);
+
+    const exportResult = await callGisEngineTool({
+      params: {
+        name: "export_spec",
+        arguments: { spec: vectorTileUrl }
+      }
+    });
+    const exported = JSON.parse(exportResult.content[0]!.text) as typeof vectorTileUrl;
+    expect(exportResult.isError).toBeUndefined();
+    expect(exported.sources["local-parcels"].type).toBe("vector");
+    expect(exported.layers[0]?.metadata?.["source-layer"]).toBe("parcels");
+  });
+
+  it("rejects invalid MCP capability reports with structured diagnostics", async () => {
+    const result = await callGisEngineTool({
+      params: {
+        name: "get_context_summary",
+        arguments: {
+          spec: vectorTileUrl,
+          capabilities: {
+            renderer: "maplibre",
+            dimensions: ["4d"],
+            sources: ["vector"],
+            layers: ["fill"],
+            expressions: ["case"],
+            queries: ["point"],
+            snapshot: { supported: true, formats: ["gif"] },
+            experimental: [],
+            unexpected: true
+          }
+        }
+      }
+    });
+    const diagnostics = JSON.parse(result.content[0]!.text) as Array<{ code: string; path?: string }>;
+    expect(result.isError).toBe(true);
+    expect(diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "SPEC.UNKNOWN_FIELD", path: "/capabilities" }),
+        expect.objectContaining({ code: "SPEC.INVALID_TYPE", path: "/capabilities/dimensions/0" }),
+        expect.objectContaining({ code: "SPEC.INVALID_TYPE", path: "/capabilities/snapshot/formats/0" })
+      ])
+    );
+  });
+
+  it("returns stable expression diagnostics for invalid v0.2 expressions through MCP", async () => {
+    const invalidSpec = structuredClone(vectorTileUrl) as MapSpec;
+    invalidSpec.layers[0] = {
+      ...invalidSpec.layers[0]!,
+      paint: {
+        "fill-color": ["match", ["get", "class"], { bad: "label" }, "#22c55e", "#f97316"],
+        "fill-opacity": ["case", "not-boolean", 0.4, 0.2]
+      }
+    };
+
+    const result = await callGisEngineTool({
+      params: {
+        name: "validate_spec",
+        arguments: { spec: invalidSpec }
+      }
+    });
+    const report = JSON.parse(result.content[0]!.text) as { valid: boolean; diagnostics: Array<{ code: string; path?: string }> };
+    expect(result.isError).toBeUndefined();
+    expect(report.valid).toBe(false);
+    expect(report.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "EXPR.TYPE_MISMATCH", path: "/layers/0/paint/fill-color/2" }),
+        expect.objectContaining({ code: "EXPR.TYPE_MISMATCH", path: "/layers/0/paint/fill-opacity/1" })
+      ])
+    );
   });
 
   it("returns structured diagnostics for invalid context and unknown tool requests", async () => {

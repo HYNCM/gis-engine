@@ -2,13 +2,40 @@ import { Type, type Static } from "@sinclair/typebox";
 
 const JsonValueSchema = Type.Unknown();
 
-const CapabilityRequestSchema = Type.Object(
+const DimensionSchema = Type.Union([Type.Literal("2d"), Type.Literal("2_5d"), Type.Literal("3d")]);
+const RendererSchema = Type.Union([Type.Literal("maplibre"), Type.Literal("webgl2-lite"), Type.Literal("scene3d")]);
+const SnapshotFormatSchema = Type.Union([Type.Literal("png"), Type.Literal("jpeg"), Type.Literal("data-url")]);
+
+export const CapabilityRequestSchema = Type.Object(
   {
-    dimensions: Type.Optional(Type.Array(Type.Union([Type.Literal("2d"), Type.Literal("2_5d"), Type.Literal("3d")]))),
-    renderer: Type.Optional(Type.Union([Type.Literal("maplibre"), Type.Literal("webgl2-lite"), Type.Literal("scene3d")])),
+    dimensions: Type.Optional(Type.Array(DimensionSchema)),
+    renderer: Type.Optional(RendererSchema),
     experimental: Type.Optional(Type.Array(Type.String()))
   },
   { additionalProperties: false }
+);
+
+export const CapabilityReportSchema = Type.Object(
+  {
+    renderer: Type.String({ minLength: 1 }),
+    dimensions: Type.Array(DimensionSchema),
+    sources: Type.Array(Type.String()),
+    layers: Type.Array(Type.String()),
+    expressions: Type.Array(Type.String()),
+    queries: Type.Array(Type.String()),
+    snapshot: Type.Object(
+      {
+        supported: Type.Boolean(),
+        formats: Type.Array(SnapshotFormatSchema)
+      },
+      { additionalProperties: false }
+    ),
+    experimental: Type.Array(Type.String())
+  },
+  {
+    $id: "https://gis-engine.dev/schemas/capabilities.v0.1.schema.json",
+    additionalProperties: false
+  }
 );
 
 const ViewSpecSchema = Type.Object(
@@ -130,3 +157,4 @@ export const MapSpecSchema = Type.Object(
 );
 
 export type MapSpecFromSchema = Static<typeof MapSpecSchema>;
+export type CapabilityReportFromSchema = Static<typeof CapabilityReportSchema>;

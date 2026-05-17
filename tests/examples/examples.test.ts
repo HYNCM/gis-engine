@@ -4,6 +4,7 @@ import aiBefore from "../../examples/ai-map-edit/before.map.json";
 import aiCommands from "../../examples/ai-map-edit/commands.json";
 import pmtilesLocal from "../../examples/pmtiles-local/map.json";
 import rasterBasemap from "../../examples/raster-basemap/map.json";
+import vectorTileUrl from "../../examples/vector-tile-url/map.json";
 import { applyCommands, transformMapSpecToMapLibreStyle, validateSpec, type MapCommand, type MapSpec } from "@gis-engine/engine";
 
 describe("examples gate", () => {
@@ -51,11 +52,35 @@ describe("examples gate", () => {
           "source-layer": "parcels"
         });
       }
+    },
+    {
+      id: "vector-tile-url",
+      spec: () => vectorTileUrl as MapSpec,
+      firstLayerId: "parcel-fill",
+      assertTransform: (style) => {
+        expect(style.sources["local-parcels"]).toMatchObject({
+          type: "vector",
+          tiles: ["./tiles/{z}/{x}/{y}.pbf"],
+          minzoom: 0,
+          maxzoom: 14
+        });
+        expect(style.layers[0]).toMatchObject({
+          id: "parcel-fill",
+          "source-layer": "parcels"
+        });
+        expect(style.layers[1]?.paint?.["line-width"]).toEqual(["step", ["zoom"], 0.5, 12, ["to-number", ["get", "stroke_width"], 1], 14, 2]);
+      }
     }
   ];
 
-  it("covers the four bundled examples", () => {
-    expect(examples.map((example) => example.id)).toEqual(["basic-geojson", "ai-map-edit", "raster-basemap", "pmtiles-local"]);
+  it("covers the bundled examples", () => {
+    expect(examples.map((example) => example.id)).toEqual([
+      "basic-geojson",
+      "ai-map-edit",
+      "raster-basemap",
+      "pmtiles-local",
+      "vector-tile-url"
+    ]);
   });
 
   it.each(examples)("validates and transforms $id", (example) => {

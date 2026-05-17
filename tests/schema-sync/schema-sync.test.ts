@@ -2,14 +2,25 @@ import { describe, expect, it } from "vitest";
 import Ajv from "ajv";
 import {
   ApplyCommandsToolInputSchema,
+  CapabilityReportSchema,
   DiagnosticCodes,
   DiagnosticSchema,
   MapCommandSchema,
   MapSpecSchema
 } from "@gis-engine/engine";
 import {
+  ApplyCommandsToolResultSchema,
+  ContextSummaryToolInputSchema,
+  ContextSummaryToolResultSchema,
   ExplainSpecToolInputSchema,
+  ExplainSpecToolResultSchema,
   ExportExampleAppToolInputSchema,
+  ExportExampleAppToolResultSchema,
+  ExportSpecToolInputSchema,
+  ExportSpecToolResultSchema,
+  SnapshotSpecToolResultSchema,
+  ValidateSpecToolInputSchema,
+  ValidateSpecToolResultSchema,
   SnapshotSpecToolInputSchema,
   exportExampleAppTool,
   gisEngineTools
@@ -17,15 +28,28 @@ import {
 
 describe("schema sync gate", () => {
   it("compiles all public schemas with Ajv", () => {
-    const ajv = new Ajv({ strict: false });
-
-    expect(() => ajv.compile(MapSpecSchema)).not.toThrow();
-    expect(() => ajv.compile(MapCommandSchema)).not.toThrow();
-    expect(() => ajv.compile(DiagnosticSchema)).not.toThrow();
-    expect(() => ajv.compile(ApplyCommandsToolInputSchema)).not.toThrow();
-    expect(() => ajv.compile(SnapshotSpecToolInputSchema)).not.toThrow();
-    expect(() => ajv.compile(ExplainSpecToolInputSchema)).not.toThrow();
-    expect(() => ajv.compile(ExportExampleAppToolInputSchema)).not.toThrow();
+    for (const schema of [
+      MapSpecSchema,
+      MapCommandSchema,
+      CapabilityReportSchema,
+      DiagnosticSchema,
+      ApplyCommandsToolInputSchema,
+      ApplyCommandsToolResultSchema,
+      ValidateSpecToolInputSchema,
+      ValidateSpecToolResultSchema,
+      ExportSpecToolInputSchema,
+      ExportSpecToolResultSchema,
+      ContextSummaryToolInputSchema,
+      ContextSummaryToolResultSchema,
+      SnapshotSpecToolInputSchema,
+      SnapshotSpecToolResultSchema,
+      ExplainSpecToolInputSchema,
+      ExplainSpecToolResultSchema,
+      ExportExampleAppToolInputSchema,
+      ExportExampleAppToolResultSchema
+    ]) {
+      expect(() => new Ajv({ strict: false }).compile(schema)).not.toThrow();
+    }
   });
 
   it("keeps apply_commands tool schema aligned with ApplyOptions", () => {
@@ -75,13 +99,65 @@ describe("schema sync gate", () => {
   it("keeps newly added AI tool input schemas in the MCP tool bundle", () => {
     const schemasByName = Object.fromEntries(gisEngineTools.map((tool) => [tool.name, tool.inputSchema]));
 
+    expect(schemasByName.validate_spec).toBe(ValidateSpecToolInputSchema);
+    expect(schemasByName.export_spec).toBe(ExportSpecToolInputSchema);
+    expect(schemasByName.get_context_summary).toBe(ContextSummaryToolInputSchema);
     expect(schemasByName.snapshot_spec).toBe(SnapshotSpecToolInputSchema);
     expect(schemasByName.explain_spec).toBe(ExplainSpecToolInputSchema);
     expect(schemasByName.export_example_app).toBe(ExportExampleAppToolInputSchema);
   });
 
+  it("keeps MCP tool output schemas in the public tool bundle", () => {
+    const schemasByName = Object.fromEntries(gisEngineTools.map((tool) => [tool.name, tool.outputSchema]));
+
+    expect(schemasByName.apply_commands).toBe(ApplyCommandsToolResultSchema);
+    expect(schemasByName.validate_spec).toBe(ValidateSpecToolResultSchema);
+    expect(schemasByName.export_spec).toBe(ExportSpecToolResultSchema);
+    expect(schemasByName.get_context_summary).toBe(ContextSummaryToolResultSchema);
+    expect(schemasByName.snapshot_spec).toBe(SnapshotSpecToolResultSchema);
+    expect(schemasByName.explain_spec).toBe(ExplainSpecToolResultSchema);
+    expect(schemasByName.export_example_app).toBe(ExportExampleAppToolResultSchema);
+
+    for (const tool of gisEngineTools) {
+      expect(() => new Ajv({ strict: false }).compile(tool.inputSchema)).not.toThrow();
+      expect(() => new Ajv({ strict: false }).compile(tool.outputSchema)).not.toThrow();
+    }
+  });
+
+  it("keeps capability reports strict for MCP context tools", () => {
+    const ajv = new Ajv({ allErrors: true, strict: false });
+    const validateCapabilityReport = ajv.compile(CapabilityReportSchema);
+
+    expect(
+      validateCapabilityReport({
+        renderer: "maplibre",
+        dimensions: ["2d"],
+        sources: ["geojson", "vector"],
+        layers: ["fill", "line"],
+        expressions: ["case", "match", "zoom"],
+        queries: ["point"],
+        snapshot: { supported: true, formats: ["data-url"] },
+        experimental: []
+      })
+    ).toBe(true);
+    expect(
+      validateCapabilityReport({
+        renderer: "maplibre",
+        dimensions: ["4d"],
+        sources: [],
+        layers: [],
+        expressions: [],
+        queries: [],
+        snapshot: { supported: true, formats: ["gif"] },
+        experimental: [],
+        unexpected: true
+      })
+    ).toBe(false);
+    expect(validateCapabilityReport.errors?.some((error) => error.keyword === "additionalProperties" || error.keyword === "enum")).toBe(true);
+  });
+
   it("keeps export_example_app side-effect free and scoped to examples", () => {
-    for (const exampleId of ["basic-geojson", "ai-map-edit", "raster-basemap", "pmtiles-local"]) {
+    for (const exampleId of ["basic-geojson", "ai-map-edit", "raster-basemap", "pmtiles-local", "vector-tile-url"]) {
       const result = exportExampleAppTool({ exampleId });
 
       expect(result.ok).toBe(true);

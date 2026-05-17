@@ -24,9 +24,9 @@ export class MockAdapter implements RendererAdapter {
   async getCapabilities(): Promise<CapabilityReport> {
     return {
       renderer: "mock",
-      dimensions: ["2d", "2_5d", "3d"],
-      sources: ["geojson", "raster", "pmtiles"],
-      layers: ["background", "raster", "fill", "line", "circle", "symbol-lite", "fill-extrusion-lite"],
+      dimensions: ["2d"],
+      sources: ["geojson", "raster", "pmtiles", "vector"],
+      layers: ["background", "raster", "fill", "line", "circle", "symbol-lite"],
       expressions: ["get", "step", "interpolate"],
       queries: ["point", "bbox"],
       snapshot: {

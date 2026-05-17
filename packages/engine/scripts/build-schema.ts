@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { Ajv } from "ajv/dist/ajv.js";
 import {
   ApplyCommandsToolInputSchema,
+  CapabilityReportSchema,
   DiagnosticSchema,
   MapCommandSchema,
   MapSpecSchema
@@ -12,6 +13,7 @@ const outDir = resolve("dist/schema");
 const schemas = [
   ["mapspec.v0.1.schema.json", MapSpecSchema],
   ["commands.v0.1.schema.json", MapCommandSchema],
+  ["capabilities.v0.1.schema.json", CapabilityReportSchema],
   ["diagnostics.v0.1.schema.json", DiagnosticSchema],
   ["ai-tools.v0.1.schema.json", ApplyCommandsToolInputSchema]
 ] as const;

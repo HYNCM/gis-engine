@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import fixture from "../../fixtures/specs/valid/basic-geojson.map.json";
+import basicGeoJson from "../../fixtures/specs/valid/basic-geojson.map.json";
+import vectorTileUrl from "../../fixtures/specs/valid/vector-tile-url.map.json";
 import {
   MapRuntime,
   type AdapterApplyResult,
@@ -29,8 +30,8 @@ class SnapshotSmokeAdapter implements RendererAdapter {
     return {
       renderer: this.id,
       dimensions: ["2d"],
-      sources: ["geojson"],
-      layers: ["background", "circle"],
+      sources: ["geojson", "vector"],
+      layers: ["background", "circle", "fill", "line"],
       expressions: [],
       queries: [],
       snapshot: {
@@ -80,7 +81,10 @@ class SnapshotSmokeAdapter implements RendererAdapter {
 }
 
 describe("snapshot smoke lifecycle", () => {
-  it("loads, snapshots, exports the spec, destroys, and validates a SnapshotReport", async () => {
+  it.each([
+    ["basic-geojson", basicGeoJson],
+    ["vector-tile-url", vectorTileUrl]
+  ])("loads, snapshots, exports %s, destroys, and validates a SnapshotReport", async (_name, fixture) => {
     const adapter = new SnapshotSmokeAdapter();
     const spec = fixture as MapSpec;
     const runtime = await MapRuntime.create(spec, {

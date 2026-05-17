@@ -5,7 +5,9 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import {
   ApplyCommandsToolInputSchema,
+  CapabilityReportSchema,
   DiagnosticCodes,
+  DiagnosticSchema,
   MapCommandSchema,
   MapSpecSchema,
   applyCommands,
@@ -22,7 +24,9 @@ import { exportExampleAppTool, ExportExampleAppToolInputSchema } from "../tools/
 import { toolInputErrorsToDiagnostics } from "../tools/schemaDiagnostics.js";
 import { snapshotSpecTool, SnapshotSpecToolInputSchema } from "../tools/snapshotSpec.js";
 
-const ValidateSpecToolInputSchema = {
+const DiagnosticContractSchema = stripNestedIds(DiagnosticSchema);
+
+export const ValidateSpecToolInputSchema = {
   type: "object",
   properties: {
     spec: MapSpecSchema
@@ -31,7 +35,7 @@ const ValidateSpecToolInputSchema = {
   additionalProperties: false
 } as const;
 
-const ExportSpecToolInputSchema = {
+export const ExportSpecToolInputSchema = {
   type: "object",
   properties: {
     spec: MapSpecSchema,
@@ -44,13 +48,188 @@ const ExportSpecToolInputSchema = {
   additionalProperties: false
 } as const;
 
-const ContextSummaryToolInputSchema = {
+export const ContextSummaryToolInputSchema = {
   type: "object",
   properties: {
     spec: MapSpecSchema,
-    capabilities: { type: "object", additionalProperties: true }
+    capabilities: CapabilityReportSchema
   },
   required: ["spec"],
+  additionalProperties: false
+} as const;
+
+const JsonPatchOperationSchema = {
+  type: "object",
+  properties: {
+    op: { type: "string", enum: ["add", "remove", "replace"] },
+    path: { type: "string" },
+    value: {}
+  },
+  required: ["op", "path"],
+  additionalProperties: false
+} as const;
+
+const ValidationReportSchema = {
+  type: "object",
+  properties: {
+    valid: { type: "boolean" },
+    diagnostics: { type: "array", items: DiagnosticContractSchema },
+    stats: {
+      type: "object",
+      properties: {
+        sourceCount: { type: "number" },
+        layerCount: { type: "number" },
+        visibleLayerCount: { type: "number" }
+      },
+      required: ["sourceCount", "layerCount", "visibleLayerCount"],
+      additionalProperties: false
+    }
+  },
+  required: ["valid", "diagnostics", "stats"],
+  additionalProperties: false
+} as const;
+
+const CommandResultSchema = {
+  type: "object",
+  properties: {
+    commandId: { type: "string" },
+    sequenceId: { type: "number" },
+    status: { type: "string", enum: ["applied", "skipped", "failed"] },
+    baseRevision: { type: "string" },
+    nextRevision: { type: "string" },
+    changedPaths: { type: "array", items: { type: "string" } },
+    patch: { type: "array", items: JsonPatchOperationSchema },
+    inversePatch: { type: "array", items: JsonPatchOperationSchema },
+    diagnostics: { type: "array", items: DiagnosticContractSchema },
+    traceId: { type: "string" }
+  },
+  required: ["commandId", "sequenceId", "status", "changedPaths", "diagnostics"],
+  additionalProperties: false
+} as const;
+
+export const ApplyCommandsToolResultSchema = {
+  type: "object",
+  properties: {
+    spec: MapSpecSchema,
+    results: { type: "array", items: CommandResultSchema },
+    transaction: { type: "string", enum: ["atomic", "best-effort"] },
+    dryRun: { type: "boolean" },
+    committed: { type: "boolean" },
+    rolledBack: { type: "boolean" },
+    traceId: { type: "string" }
+  },
+  required: ["spec", "results", "transaction", "dryRun", "committed", "rolledBack", "traceId"],
+  additionalProperties: false
+} as const;
+
+export const ValidateSpecToolResultSchema = ValidationReportSchema;
+export const ExportSpecToolResultSchema = MapSpecSchema;
+
+export const ContextSummaryToolResultSchema = {
+  type: "object",
+  properties: {
+    id: { type: "string" },
+    revision: { type: "string" },
+    view: MapSpecSchema.properties.view,
+    sources: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          type: { type: "string" }
+        },
+        required: ["id", "type"],
+        additionalProperties: false
+      }
+    },
+    layers: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          type: { type: "string" },
+          source: { type: "string" },
+          visibility: { type: "string", enum: ["visible", "none"] }
+        },
+        required: ["id", "type", "visibility"],
+        additionalProperties: false
+      }
+    },
+    validation: {
+      type: "object",
+      properties: {
+        valid: { type: "boolean" },
+        diagnosticCounts: {
+          type: "object",
+          properties: {
+            error: { type: "number" },
+            warning: { type: "number" },
+            info: { type: "number" }
+          },
+          required: ["error", "warning", "info"],
+          additionalProperties: false
+        }
+      },
+      required: ["valid", "diagnosticCounts"],
+      additionalProperties: false
+    },
+    capabilities: CapabilityReportSchema
+  },
+  required: ["view", "sources", "layers", "validation"],
+  additionalProperties: false
+} as const;
+
+export const SnapshotSpecToolResultSchema = {
+  type: "object",
+  properties: {
+    passed: { type: "boolean" },
+    diagnostics: { type: "array", items: DiagnosticContractSchema },
+    dataUrl: { type: "string" },
+    renderer: { type: "string", enum: ["maplibre", "mock"] },
+    validation: ValidationReportSchema
+  },
+  required: ["passed", "diagnostics", "renderer", "validation"],
+  additionalProperties: false
+} as const;
+
+export const ExplainSpecToolResultSchema = {
+  type: "object",
+  properties: {
+    summary: ContextSummaryToolResultSchema,
+    validation: ValidationReportSchema,
+    diagnostics: { type: "array", items: DiagnosticContractSchema }
+  },
+  required: ["summary", "validation", "diagnostics"],
+  additionalProperties: false
+} as const;
+
+export const ExportExampleAppToolResultSchema = {
+  type: "object",
+  properties: {
+    exampleId: { type: "string" },
+    title: { type: "string" },
+    description: { type: "string" },
+    writesFiles: { type: "boolean", const: false },
+    files: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          path: { type: "string" },
+          role: { type: "string", enum: ["spec", "data", "commands", "script"] },
+          mediaType: { type: "string" },
+          required: { type: "boolean" },
+          description: { type: "string" }
+        },
+        required: ["path", "role", "mediaType", "required", "description"],
+        additionalProperties: false
+      }
+    },
+    notes: { type: "array", items: { type: "string" } }
+  },
+  required: ["exampleId", "title", "description", "writesFiles", "files", "notes"],
   additionalProperties: false
 } as const;
 
@@ -74,6 +253,13 @@ interface ContextSummaryToolInput {
 type ToolInputResult<T> = { ok: true; input: T } | { ok: false; diagnostics: Diagnostic[] };
 
 const ajv = new Ajv({ allErrors: true, strict: false });
+
+function stripNestedIds(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stripNestedIds);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(Object.entries(value).filter(([key]) => key !== "$id").map(([key, entry]) => [key, stripNestedIds(entry)]));
+}
+
 const validateValidateSpecInput = ajv.compile(ValidateSpecToolInputSchema);
 const validateExportSpecInput = ajv.compile(ExportSpecToolInputSchema);
 const validateContextSummaryInput = ajv.compile(ContextSummaryToolInputSchema);
@@ -82,37 +268,44 @@ export const gisEngineTools = [
   {
     name: "apply_commands",
     description: "Apply a series of MapCommands to a MapSpec to modify the map state.",
-    inputSchema: ApplyCommandsToolInputSchema
+    inputSchema: ApplyCommandsToolInputSchema,
+    outputSchema: ApplyCommandsToolResultSchema
   },
   {
     name: "validate_spec",
     description: "Validate a MapSpec and return diagnostics.",
-    inputSchema: ValidateSpecToolInputSchema
+    inputSchema: ValidateSpecToolInputSchema,
+    outputSchema: ValidateSpecToolResultSchema
   },
   {
     name: "export_spec",
     description: "Return a validated, optionally command-modified MapSpec.",
-    inputSchema: ExportSpecToolInputSchema
+    inputSchema: ExportSpecToolInputSchema,
+    outputSchema: ExportSpecToolResultSchema
   },
   {
     name: "get_context_summary",
     description: "Return a compact summary of a MapSpec for AI planning and review.",
-    inputSchema: ContextSummaryToolInputSchema
+    inputSchema: ContextSummaryToolInputSchema,
+    outputSchema: ContextSummaryToolResultSchema
   },
   {
     name: "snapshot_spec",
     description: "Validate a MapSpec and produce a headless snapshot result without real WebGL.",
-    inputSchema: SnapshotSpecToolInputSchema
+    inputSchema: SnapshotSpecToolInputSchema,
+    outputSchema: SnapshotSpecToolResultSchema
   },
   {
     name: "explain_spec",
     description: "Return a structured AI-facing summary with full validation diagnostics.",
-    inputSchema: ExplainSpecToolInputSchema
+    inputSchema: ExplainSpecToolInputSchema,
+    outputSchema: ExplainSpecToolResultSchema
   },
   {
     name: "export_example_app",
     description: "Return a manifest and file list for a bundled example without writing files.",
-    inputSchema: ExportExampleAppToolInputSchema
+    inputSchema: ExportExampleAppToolInputSchema,
+    outputSchema: ExportExampleAppToolResultSchema
   }
 ] as const;
 

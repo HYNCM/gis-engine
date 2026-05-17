@@ -73,4 +73,11 @@ vector source may provide the MapLibre `source-layer` through
 - Resource policy diagnostics point at `/sources/{id}/tiles/{index}` or
   `/sources/{id}/url`.
 - `transformMapSpecToMapLibreStyle` emits a MapLibre vector source.
+- `examples/vector-tile-url/map.json` demonstrates URL-template vector sources,
+  `source-layer` metadata, and v0.2 expression subset usage.
+- `tests/fixtures/specs/valid/vector-tile-url.map.json` is included in schema
+  fixture validation.
+- Snapshot smoke covers the vector fixture without fetching remote tiles.
+- Visual release acceptance renders a generated local MVT through MapLibre and
+  validates nonblank canvas pixels.
 - `pnpm test:schema`, `pnpm test:adapter`, and `pnpm check` pass.

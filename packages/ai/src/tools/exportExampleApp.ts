@@ -2,7 +2,7 @@ import { Ajv } from "ajv/dist/ajv.js";
 import type { Diagnostic } from "@gis-engine/engine";
 import { toolInputErrorsToDiagnostics } from "./schemaDiagnostics.js";
 
-const exampleIds = ["basic-geojson", "ai-map-edit", "raster-basemap", "pmtiles-local"] as const;
+const exampleIds = ["basic-geojson", "ai-map-edit", "raster-basemap", "pmtiles-local", "vector-tile-url"] as const;
 
 export type ExampleId = (typeof exampleIds)[number];
 
@@ -125,6 +125,22 @@ const manifests: Record<ExampleId, ExampleAppManifest> = {
       }
     ],
     notes: ["PMTiles coverage validates and transforms the URL path only; it does not parse PMTiles binaries."]
+  },
+  "vector-tile-url": {
+    exampleId: "vector-tile-url",
+    title: "Vector Tile URL",
+    description: "A generic vector tile URL-template example with source-layer metadata and v0.2 expressions.",
+    writesFiles: false,
+    files: [
+      {
+        path: "examples/vector-tile-url/map.json",
+        role: "spec",
+        mediaType: "application/json",
+        required: true,
+        description: "MapSpec with a local vector tile URL template."
+      }
+    ],
+    notes: ["Vector tile coverage validates URL templates, source-layer metadata, expressions, and snapshot contracts without requiring network tile fetches."]
   }
 };
 

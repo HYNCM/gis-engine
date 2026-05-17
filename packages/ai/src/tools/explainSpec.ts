@@ -1,5 +1,6 @@
 import { Ajv } from "ajv/dist/ajv.js";
 import {
+  CapabilityReportSchema,
   MapSpecSchema,
   validateSpec,
   type CapabilityReport,
@@ -14,7 +15,7 @@ export const ExplainSpecToolInputSchema = {
   type: "object",
   properties: {
     spec: MapSpecSchema,
-    capabilities: { type: "object" }
+    capabilities: CapabilityReportSchema
   },
   required: ["spec"],
   additionalProperties: false

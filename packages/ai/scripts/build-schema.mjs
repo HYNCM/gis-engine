@@ -11,15 +11,38 @@ import {
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const outDir = resolve(scriptDir, "../dist/schema");
-const outFile = resolve(outDir, "ai-tools.v0.1.schema.json");
+const inputOutFile = resolve(outDir, "ai-tools.v0.1.schema.json");
+const contractOutFile = resolve(outDir, "ai-tool-contracts.v0.2.schema.json");
 
-const toolSchemas = Object.fromEntries(gisEngineTools.map((tool) => [tool.name, stripNestedIds(tool.inputSchema)]));
-const schema = {
+const toolInputSchemas = Object.fromEntries(gisEngineTools.map((tool) => [tool.name, stripNestedIds(tool.inputSchema)]));
+const toolOutputSchemas = Object.fromEntries(gisEngineTools.map((tool) => [tool.name, stripNestedIds(tool.outputSchema)]));
+const inputSchema = {
   $id: "https://gis-engine.dev/schemas/ai-tools.v0.1.schema.json",
   title: "GIS Engine AI tool input schema bundle",
   type: "object",
-  properties: toolSchemas,
-  required: Object.keys(toolSchemas),
+  properties: toolInputSchemas,
+  required: Object.keys(toolInputSchemas),
+  additionalProperties: false
+};
+const contractSchema = {
+  $id: "https://gis-engine.dev/schemas/ai-tool-contracts.v0.2.schema.json",
+  title: "GIS Engine AI tool input and output contract bundle",
+  type: "object",
+  properties: {
+    inputs: {
+      type: "object",
+      properties: toolInputSchemas,
+      required: Object.keys(toolInputSchemas),
+      additionalProperties: false
+    },
+    outputs: {
+      type: "object",
+      properties: toolOutputSchemas,
+      required: Object.keys(toolOutputSchemas),
+      additionalProperties: false
+    }
+  },
+  required: ["inputs", "outputs"],
   additionalProperties: false
 };
 
@@ -27,13 +50,15 @@ for (const toolSchema of [
   SnapshotSpecToolInputSchema,
   ExplainSpecToolInputSchema,
   ExportExampleAppToolInputSchema,
-  ...Object.values(toolSchemas)
+  ...Object.values(toolInputSchemas),
+  ...Object.values(toolOutputSchemas)
 ]) {
   new Ajv({ strict: false }).compile(toolSchema);
 }
 
 await mkdir(outDir, { recursive: true });
-await writeFile(outFile, `${JSON.stringify(schema, null, 2)}\n`);
+await writeFile(inputOutFile, `${JSON.stringify(inputSchema, null, 2)}\n`);
+await writeFile(contractOutFile, `${JSON.stringify(contractSchema, null, 2)}\n`);
 
 function stripNestedIds(value) {
   if (Array.isArray(value)) return value.map(stripNestedIds);
