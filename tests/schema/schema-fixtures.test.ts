@@ -3,12 +3,14 @@ import invalidSpec from "../fixtures/specs/invalid/layer-source-missing.map.json
 import expectedInvalidCodes from "../fixtures/specs/invalid/layer-source-missing.diagnostics.json";
 import basicGeoJson from "../fixtures/specs/valid/basic-geojson.map.json";
 import vectorTileUrl from "../fixtures/specs/valid/vector-tile-url.map.json";
+import fillExtrusionLite from "../fixtures/specs/valid/fill-extrusion-lite.map.json";
 import { validateSpec, type MapSpec } from "@gis-engine/engine";
 
 describe("MapSpec fixtures", () => {
   it.each([
     ["basic-geojson", basicGeoJson],
-    ["vector-tile-url", vectorTileUrl]
+    ["vector-tile-url", vectorTileUrl],
+    ["fill-extrusion-lite", fillExtrusionLite]
   ])("accepts valid fixture %s", (_name, spec) => {
     const report = validateSpec(spec);
     expect(report.valid).toBe(true);

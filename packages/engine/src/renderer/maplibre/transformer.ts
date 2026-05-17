@@ -34,7 +34,7 @@ export type MapLibreSource =
 
 export interface MapLibreLayer {
   id: string;
-  type: "background" | "raster" | "fill" | "line" | "circle" | "symbol";
+  type: "background" | "raster" | "fill" | "line" | "circle" | "symbol" | "fill-extrusion";
   source?: string;
   "source-layer"?: string;
   layout?: Record<string, unknown>;
@@ -46,7 +46,7 @@ export interface TransformResult {
   diagnostics: Diagnostic[];
 }
 
-const supportedLayerTypes = new Set(["background", "raster", "fill", "line", "circle", "symbol-lite"]);
+const supportedLayerTypes = new Set(["background", "raster", "fill", "line", "circle", "symbol-lite", "fill-extrusion-lite"]);
 
 export function transformMapSpecToMapLibreStyle(spec: MapSpec): TransformResult {
   const diagnostics: Diagnostic[] = [];
@@ -158,5 +158,6 @@ function sourceLayerFor(spec: MapSpec, layer: LayerSpec): string | undefined {
 function mapLayerType(layerType: LayerSpec["type"]): MapLibreLayer["type"] {
   if (layerType === "background" || layerType === "raster" || layerType === "fill" || layerType === "line" || layerType === "circle") return layerType;
   if (layerType === "symbol-lite") return "symbol";
+  if (layerType === "fill-extrusion-lite") return "fill-extrusion";
   throw new Error(`Unsupported MapLibre layer type: ${layerType}`);
 }

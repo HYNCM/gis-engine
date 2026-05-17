@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import before from "../fixtures/commands/replay/style-update/before.map.json";
+import fillExtrusionLite from "../fixtures/specs/valid/fill-extrusion-lite.map.json";
 import { transformMapSpecToMapLibreStyle, type MapSpec } from "@gis-engine/engine";
 
 describe("MapSpecToMapLibreStyleTransformer", () => {
@@ -76,5 +77,23 @@ describe("MapSpecToMapLibreStyleTransformer", () => {
         path: "/layers/0/type"
       })
     ]);
+  });
+
+  it("maps gated fill-extrusion-lite layers to MapLibre fill-extrusion", () => {
+    const result = transformMapSpecToMapLibreStyle(fillExtrusionLite as MapSpec);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.style?.pitch).toBe(50);
+    expect(result.style?.layers[0]).toMatchObject({
+      id: "district-extrusion",
+      type: "fill-extrusion",
+      source: "districts",
+      paint: {
+        "fill-extrusion-color": "#38bdf8",
+        "fill-extrusion-height": ["to-number", ["get", "height"], 0],
+        "fill-extrusion-base": 0,
+        "fill-extrusion-opacity": 0.75
+      }
+    });
   });
 });

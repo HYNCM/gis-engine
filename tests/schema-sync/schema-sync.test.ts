@@ -158,7 +158,7 @@ describe("schema sync gate", () => {
   });
 
   it("keeps export_example_app side-effect free and scoped to examples", () => {
-    for (const exampleId of ["basic-geojson", "ai-map-edit", "raster-basemap", "pmtiles-local", "vector-tile-url"]) {
+    for (const exampleId of ["basic-geojson", "ai-map-edit", "raster-basemap", "pmtiles-local", "vector-tile-url", "fill-extrusion-lite"]) {
       const result = exportExampleAppTool({ exampleId });
 
       expect(result.ok).toBe(true);

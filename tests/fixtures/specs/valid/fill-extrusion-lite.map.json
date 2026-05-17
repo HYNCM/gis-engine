@@ -1,0 +1,58 @@
+{
+  "version": "0.1",
+  "id": "fill-extrusion-lite",
+  "revision": "1",
+  "capabilities": {
+    "dimensions": ["2_5d"],
+    "experimental": ["fill-extrusion-lite"]
+  },
+  "view": {
+    "mode": "map2_5d",
+    "center": [120.15, 30.28],
+    "zoom": 13,
+    "pitch": 50,
+    "bearing": 20
+  },
+  "sources": {
+    "districts": {
+      "type": "geojson",
+      "data": {
+        "type": "FeatureCollection",
+        "features": [
+          {
+            "type": "Feature",
+            "properties": {
+              "height": 120,
+              "name": "Beta block"
+            },
+            "geometry": {
+              "type": "Polygon",
+              "coordinates": [
+                [
+                  [120.145, 30.275],
+                  [120.155, 30.275],
+                  [120.155, 30.285],
+                  [120.145, 30.285],
+                  [120.145, 30.275]
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "layers": [
+    {
+      "id": "district-extrusion",
+      "type": "fill-extrusion-lite",
+      "source": "districts",
+      "paint": {
+        "fill-extrusion-color": "#38bdf8",
+        "fill-extrusion-height": ["to-number", ["get", "height"], 0],
+        "fill-extrusion-base": 0,
+        "fill-extrusion-opacity": 0.75
+      }
+    }
+  ]
+}

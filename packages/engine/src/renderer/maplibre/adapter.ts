@@ -31,14 +31,14 @@ export class MapLibreAdapter implements RendererAdapter {
       renderer: this.id,
       dimensions: ["2d", "2_5d"],
       sources: ["geojson", "raster", "pmtiles", "vector"],
-      layers: ["background", "raster", "fill", "line", "circle", "symbol-lite"],
+      layers: ["background", "raster", "fill", "line", "circle", "symbol-lite", "fill-extrusion-lite"],
       expressions: ["get", "literal", "case", "match", "interpolate", "step", "zoom", "to-number", "to-string"],
       queries: ["point", "bbox"],
       snapshot: {
         supported: true,
         formats: ["png", "data-url"]
       },
-      experimental: []
+      experimental: ["fill-extrusion-lite"]
     };
   }
 

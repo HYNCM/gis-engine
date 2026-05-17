@@ -56,16 +56,17 @@ flowchart LR
 | style diff/layer order -> diagnostics -> checkpoint audit | done | command tests、missing `beforeLayerId` diagnostic、checkpoint audit |
 | command conflict/replay/audit | done | `collectTrace` API、MCP trace output、conflict audit fixture、AI edit audit example |
 | 2.5D/3D boundary | done as boundary | `fill-extrusion-lite` gate、`scene3d` unsupported diagnostics |
+| fill-extrusion-lite beta adapter | done | MapLibre `fill-extrusion` mapping、capability report、example/schema fixture、snapshot smoke |
 
 ## 关键路径
 
 1. Formal release runner evidence -> `pnpm test:release:strict` -> release evidence archive。
-2. fill-extrusion-lite beta adapter -> capability report -> visual evidence。
-3. SceneView3D boundary deepening -> camera/source/layer/snapshot rules。
+2. SceneView3D boundary deepening -> camera/source/layer/snapshot rules。
+3. Large-data perf/nightly evidence -> release runner planning。
 
 ## 阻断规则
 
 - public AI tool 或 public command surface 变更仍必须先通过 schema-sync、MCP contract tests 和 command replay tests。
 - release candidate 必须在正式 runner 执行 strict visual snapshot，或由 coordinator 明确 waiver 并创建 follow-up。
 - resource/perf 文档中声明的 PR 阻断项已有 deterministic Node-level evidence；nightly/release 大场景不得默认为 PR blocker。
-- `fill-extrusion-lite` 不得声明为 MapLibre MVP 支持，除非 adapter capability report 明确包含该 experimental 能力并补 visual evidence。
+- `fill-extrusion-lite` 只作为 experimental beta 暴露；release visual evidence 未归档前不得升格为稳定图层。

@@ -31,7 +31,7 @@ Traditional map SDKs are powerful, but AI agents need a stricter contract:
 | Renderer adapter | Functional MVP | `MockAdapter` and `MapLibreAdapter` implement the renderer contract; MapLibre transformation covers GeoJSON, raster, PMTiles, and generic vector sources. |
 | Snapshot harness | Functional | Node smoke snapshots are deterministic; Playwright visual snapshots cover a GeoJSON scene and a generated local MVT vector tile scene. |
 | AI tools | Functional | MCP exposes `validate_spec`, `apply_commands`, `export_spec`, `get_context_summary`, `snapshot_spec`, `explain_spec`, and `export_example_app` with input and output schemas. CamelCase aliases are intentionally not supported. |
-| Examples/fixtures | Functional | Basic GeoJSON, AI map edit, raster-basemap, pmtiles-local, and vector-tile-url examples plus schema/command/snapshot fixtures exist. |
+| Examples/fixtures | Functional | Basic GeoJSON, AI map edit, raster-basemap, pmtiles-local, vector-tile-url, and fill-extrusion-lite examples plus schema/command/snapshot fixtures exist. |
 | CI/test gates | Functional | `pnpm build:schema` and `pnpm check` are required finish gates; strict visual snapshots require a browser/WebGL-capable runner. |
 
 ## Current Runtime Shape
@@ -88,7 +88,7 @@ For review and audit flows, callers can pass `collectTrace: true` to `applyComma
 
 The current `MapLibreAdapter` is still an MVP renderer binding. It transforms supported `MapSpec` sources/layers, passes adapter contract tests, and is exercised by real-browser visual snapshots, but it is not a complete replacement for MapLibre GL JS.
 
-`fill-extrusion-lite` is an experimental 2.5D contract gated by `capabilities.experimental`. `scene3d` is reserved and returns structured unsupported diagnostics; terrain, glTF, and 3D Tiles are not implemented renderers yet.
+`fill-extrusion-lite` is an experimental 2.5D contract gated by `capabilities.experimental` and beta-mapped to MapLibre `fill-extrusion`. `scene3d` is reserved and returns structured unsupported diagnostics; terrain, glTF, and 3D Tiles are not implemented renderers yet.
 
 ## Not Yet
 

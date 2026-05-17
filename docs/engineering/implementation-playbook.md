@@ -512,7 +512,7 @@ call queryFeatures and expect RENDER.DESTROYED
 当前下一步顺序：
 
 1. 在正式 runner 固化 `pnpm test:release:strict` 证据。
-2. 继续推进 `fill-extrusion-lite` beta adapter 和 SceneView3D v1 边界。
+2. 继续推进 SceneView3D v1 边界。
 3. 将大数据 perf/nightly evidence 放入正式 runner 规划。
 
 ## 11. 当前落地状态
@@ -524,8 +524,8 @@ call queryFeatures and expect RENDER.DESTROYED
 - 已创建 TypeBox schema、schema build 脚本和 Ajv validation 入口。
 - 已创建 JSON Patch 工具、`applyCommands`、command replay/dry-run/rollback 覆盖。
 - 已创建 command audit trace、conflict replay fixture、MCP `collectTrace` 和 AI map edit audit 示例。
-- 已创建 adapter contract suite、本地静态服务工具、MockAdapter 和 MapLibreAdapter MVP。
-- 已创建基础 GeoJSON、AI map edit、raster-basemap、pmtiles-local、vector-tile-url 示例。
+- 已创建 adapter contract suite、本地静态服务工具、MockAdapter、MapLibreAdapter MVP 和 `fill-extrusion-lite` beta mapping。
+- 已创建基础 GeoJSON、AI map edit、raster-basemap、pmtiles-local、vector-tile-url、fill-extrusion-lite 示例。
 - 已创建 MCP server，且 tool descriptor 包含 input/output schemas。
 - 已创建 expression validator、resource URL policy 和 schema/command/adapter/AI/examples/snapshot tests。
 - 已创建 Playwright visual snapshot harness，覆盖 GeoJSON 和生成式本地 MVT 场景。
@@ -533,6 +533,6 @@ call queryFeatures and expect RENDER.DESTROYED
 仍未实现或仍为边界：
 
 - 正式 release runner 上的 strict visual snapshot 归档证据。
-- `fill-extrusion-lite` 的真实 adapter 渲染。
+- `fill-extrusion-lite` 的 release-runner visual snapshot 归档证据。
 - SceneView3D、terrain、glTF、3D Tiles adapter。
 - GeoParquet / FlatGeobuf / DuckDB WASM。

@@ -4,7 +4,7 @@
 
 当前核心能力必须服务一个目标：让 AI Agent 和开发者可以可靠创建、修改、验证、截图和导出地图。
 
-二维和三维能力采用分阶段交付：v0.1 稳定 2D 基座，v0.2 已补齐泛 vector tile、表达式、MCP output schema、visual snapshot 场景和 2.5D/3D 边界，v1 再引入 SceneView3D 和 3D Tiles adapter。完整维度矩阵见 [../research/competitive-analysis-ai-native-2d-3d.md](../research/competitive-analysis-ai-native-2d-3d.md)。
+二维和三维能力采用分阶段交付：v0.1 稳定 2D 基座，v0.2 已补齐泛 vector tile、表达式、MCP output schema、visual snapshot 场景、`fill-extrusion-lite` 2.5D beta mapping 和 3D 边界，v1 再引入 SceneView3D 和 3D Tiles adapter。完整维度矩阵见 [../research/competitive-analysis-ai-native-2d-3d.md](../research/competitive-analysis-ai-native-2d-3d.md)。
 
 v0.1 的必交付能力以 [v0.1 MVP 验收标准](../engineering/v0.1-mvp-acceptance.md) 为准，测试和 CI 以 [CI 与测试策略](../engineering/ci-test-strategy.md) 为准。
 
@@ -31,7 +31,7 @@ v0.1 的必交付能力以 [v0.1 MVP 验收标准](../engineering/v0.1-mvp-accep
 | feature query | 已实现 | 支持 point 和 bbox 查询 contract |
 | capability query | 已实现 | 查询当前 renderer/source/layer/expression/snapshot 支持矩阵，`CapabilityReportSchema` 严格校验 |
 | MCP tools | 已实现 | 在 `@gis-engine/ai` 中暴露 AI 可调用接口，工具描述包含 `inputSchema` 和 `outputSchema` |
-| MapLibre adapter | 已实现 MVP | v0.x 默认渲染后端，覆盖 GeoJSON、raster、PMTiles、vector transformer 和 adapter contract |
+| MapLibre adapter | 已实现 MVP + experimental 2.5D beta | v0.x 默认渲染后端，覆盖 GeoJSON、raster、PMTiles、vector transformer、`fill-extrusion-lite` beta mapping 和 adapter contract |
 | WebGL2 lite renderer | 实验 | 只做最小图层和数据源，验证长期路线 |
 
 ## 当前数据源
@@ -74,7 +74,7 @@ v0.1 的必交付能力以 [v0.1 MVP 验收标准](../engineering/v0.1-mvp-accep
 
 | 图层 | 说明 |
 | --- | --- |
-| `fill-extrusion-lite` | 已定义 2.5D experimental gate；必须显式请求 `capabilities.experimental` 和 2.5D 视图，不由当前 MapLibre MVP 渲染 |
+| `fill-extrusion-lite` | 已实现 MapLibre beta mapping；必须显式请求 `capabilities.experimental` 和 2.5D 视图，并继续标记为 experimental |
 
 ## Expression 子集
 

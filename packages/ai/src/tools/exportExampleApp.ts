@@ -2,7 +2,7 @@ import { Ajv } from "ajv/dist/ajv.js";
 import type { Diagnostic } from "@gis-engine/engine";
 import { toolInputErrorsToDiagnostics } from "./schemaDiagnostics.js";
 
-const exampleIds = ["basic-geojson", "ai-map-edit", "raster-basemap", "pmtiles-local", "vector-tile-url"] as const;
+const exampleIds = ["basic-geojson", "ai-map-edit", "raster-basemap", "pmtiles-local", "vector-tile-url", "fill-extrusion-lite"] as const;
 
 export type ExampleId = (typeof exampleIds)[number];
 
@@ -148,6 +148,22 @@ const manifests: Record<ExampleId, ExampleAppManifest> = {
       }
     ],
     notes: ["Vector tile coverage validates URL templates, source-layer metadata, expressions, and snapshot contracts without requiring network tile fetches."]
+  },
+  "fill-extrusion-lite": {
+    exampleId: "fill-extrusion-lite",
+    title: "Fill Extrusion Lite",
+    description: "An experimental 2.5D MapSpec that maps to MapLibre fill-extrusion when explicitly gated.",
+    writesFiles: false,
+    files: [
+      {
+        path: "examples/fill-extrusion-lite/map.json",
+        role: "spec",
+        mediaType: "application/json",
+        required: true,
+        description: "MapSpec with 2.5D capability gates and a fill-extrusion-lite layer."
+      }
+    ],
+    notes: ["fill-extrusion-lite is experimental and requires capabilities.experimental plus a 2.5D view request."]
   }
 };
 

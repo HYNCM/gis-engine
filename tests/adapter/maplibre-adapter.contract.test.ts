@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import before from "../fixtures/commands/replay/style-update/before.map.json";
 import commands from "../fixtures/commands/replay/style-update/commands.json";
 import after from "../fixtures/commands/replay/style-update/after.map.json";
+import fillExtrusionLite from "../fixtures/specs/valid/fill-extrusion-lite.map.json";
 import {
   applyCommands,
   createAdapter,
@@ -20,6 +21,14 @@ describe("MapLibreAdapter MVP", () => {
   it("is registered as a built-in adapter", () => {
     expect(listAdapters()).toContain("maplibre");
     expect(createAdapter("maplibre")).toBeInstanceOf(MapLibreAdapter);
+  });
+
+  it("declares fill-extrusion-lite as an experimental MapLibre beta capability", async () => {
+    const capabilities = await new MapLibreAdapter().getCapabilities();
+
+    expect(capabilities.dimensions).toContain("2_5d");
+    expect(capabilities.layers).toContain("fill-extrusion-lite");
+    expect(capabilities.experimental).toContain("fill-extrusion-lite");
   });
 
   it("keeps its internal style and spec in sync after patches", async () => {
@@ -113,5 +122,18 @@ describe("MapLibreAdapter MVP", () => {
     expect(snapshot.passed).toBe(true);
     expect(snapshot.dataUrl).toMatch(/^data:image\/png;base64,/);
     expect(snapshot.dataUrl!.length).toBeGreaterThan("data:image/png;base64,".length);
+  });
+
+  it("loads gated fill-extrusion-lite specs and keeps style export stable", async () => {
+    const adapter = new MapLibreAdapter();
+    await adapter.load(fillExtrusionLite as MapSpec, { container: {} as HTMLElement });
+
+    const snapshot = await adapter.snapshot({ format: "data-url" });
+
+    expect(adapter.exportStyle()?.layers[0]).toMatchObject({
+      id: "district-extrusion",
+      type: "fill-extrusion"
+    });
+    expect(snapshot.passed).toBe(true);
   });
 });

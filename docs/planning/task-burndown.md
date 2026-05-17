@@ -56,7 +56,7 @@ decision_level: advisory
 - W21 两个 P1 已完成；后续 public capability 变更仍必须跑 schema-sync、MCP contract 和 command replay gates。
 - vector tile adapter 当前承诺 schema/transformer/diagnostics、snapshot smoke 和本地生成 MVT visual 场景；不承诺解析生产远程 MVT 数据作为默认 PR gate。
 - 如果 visual snapshot 环境不可用，PR 可记录 skipped report；release 或 strict gate 不允许跳过。
-- fill-extrusion-lite / SceneView3D boundary 是 stretch work，不阻塞 v0.2 2D 主线。
+- fill-extrusion-lite 已作为 experimental beta adapter 落地；SceneView3D boundary 仍是不阻塞 v0.2 2D 主线的后续工作。
 
 ## 2026-05-17 执行快照
 
@@ -69,3 +69,4 @@ decision_level: advisory
 | TASK-2026W23-007 | done | `pnpm test:snapshot:visual` includes GeoJSON and generated vector tile scenes |
 | TASK-2026W23-008 | done | `fill-extrusion-lite-beta.md`, `scene3d-boundary.md`, validation boundary diagnostics |
 | TASK-2026W23-009 | done | checkpoint audit, release note draft, `pnpm build:schema`, `pnpm check`, strict visual gate evidence |
+| POST-2026W21-011 | done | `fill-extrusion-lite` MapLibre beta mapping, capability report, example/schema fixture, snapshot smoke |

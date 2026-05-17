@@ -6,6 +6,7 @@ import aiAuditCommands from "../../examples/ai-map-edit/audit.commands.json";
 import pmtilesLocal from "../../examples/pmtiles-local/map.json";
 import rasterBasemap from "../../examples/raster-basemap/map.json";
 import vectorTileUrl from "../../examples/vector-tile-url/map.json";
+import fillExtrusionLite from "../../examples/fill-extrusion-lite/map.json";
 import { applyCommands, transformMapSpecToMapLibreStyle, validateSpec, type MapCommand, type MapSpec } from "@gis-engine/engine";
 
 describe("examples gate", () => {
@@ -71,6 +72,17 @@ describe("examples gate", () => {
         });
         expect(style.layers[1]?.paint?.["line-width"]).toEqual(["step", ["zoom"], 0.5, 12, ["to-number", ["get", "stroke_width"], 1], 14, 2]);
       }
+    },
+    {
+      id: "fill-extrusion-lite",
+      spec: () => fillExtrusionLite as MapSpec,
+      firstLayerId: "district-extrusion",
+      assertTransform: (style) => {
+        expect(style.layers[0]).toMatchObject({
+          id: "district-extrusion",
+          type: "fill-extrusion"
+        });
+      }
     }
   ];
 
@@ -80,7 +92,8 @@ describe("examples gate", () => {
       "ai-map-edit",
       "raster-basemap",
       "pmtiles-local",
-      "vector-tile-url"
+      "vector-tile-url",
+      "fill-extrusion-lite"
     ]);
   });
 

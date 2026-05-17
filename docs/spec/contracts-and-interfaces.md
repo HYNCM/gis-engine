@@ -265,14 +265,15 @@ export interface CapabilityReport {
 
 - `CapabilityReportSchema` 是能力报告的单一外部契约，MCP context/explain 工具必须按此 schema 校验输入。
 - `renderer`、`sources`、`layers`、`expressions`、`queries`、`snapshot` 和 `experimental` 都必须显式给出，不允许任意 capability 对象绕过 schema。
-- `sources` 当前可声明 `geojson`、`raster`、`pmtiles`、`vector`；`layers` 当前可声明 `background`、`raster`、`fill`、`line`、`circle`、`symbol-lite`。
-- experimental 能力只能通过 `experimental` 暴露，例如未来 renderer 明确支持 `fill-extrusion-lite` 后才可声明。
+- `sources` 当前可声明 `geojson`、`raster`、`pmtiles`、`vector`；`layers` 当前可声明 `background`、`raster`、`fill`、`line`、`circle`、`symbol-lite` 和 experimental `fill-extrusion-lite`。
+- experimental 能力只能通过 `experimental` 暴露；MapLibre adapter 当前用该字段声明 beta `fill-extrusion-lite`。
 
 Adapter contract tests 必须验证：
 
 - `load -> snapshot -> destroy` 成功。
 - `applyPatch` 后 `exportSpec()` 和 renderer state 一致。
 - unsupported layer 返回 `CAPABILITY.UNSUPPORTED`。
+- gated `fill-extrusion-lite` 映射到 MapLibre `fill-extrusion`。
 - unsupported feature 的 preflight/apply failure 不改变 adapter 上一次已提交的 `exportSpec()` 或 renderer style。
 - runtime-level `dryRun` 不调用 adapter mutation 路径。
 - adapter error 转成 `RENDER.ADAPTER_ERROR`。
