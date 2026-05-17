@@ -47,16 +47,20 @@ export function validateResourceUrl(urlString: string, path: string, policy: Res
   const trimmedUrl = urlString.trim();
   if (trimmedUrl.length === 0) return [blocked(urlString, path, "Resource URL must not be empty.")];
 
-  if (isRelativeResourceUrl(trimmedUrl)) {
+  // Treat protocol-relative URLs (e.g. "//example.com/data.geojson") as remote URLs rather than local paths.
+  // Without this normalization, `//host/...` bypasses host allowlisting because it matches the "relative URL" rule.
+  const effectiveUrl = trimmedUrl.startsWith("//") ? `http:${trimmedUrl}` : trimmedUrl;
+
+  if (isRelativeResourceUrl(effectiveUrl)) {
     if (policy.allowRelativeUrls === false) {
       return [blocked(urlString, path, "Relative resource URLs are blocked by policy.")];
     }
-    return validatePathPrefix(trimmedUrl, urlString, path, policy);
+    return validatePathPrefix(effectiveUrl, urlString, path, policy);
   }
 
   let parsedUrl: URL;
   try {
-    parsedUrl = new URL(trimmedUrl);
+    parsedUrl = new URL(effectiveUrl);
   } catch {
     return [blocked(urlString, path, "Resource URL is invalid or blocked by policy.")];
   }

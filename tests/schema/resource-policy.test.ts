@@ -39,6 +39,19 @@ describe("ResourcePolicy validation", () => {
     expect(diagnostics).toEqual([]);
   });
 
+  it("treats protocol-relative URLs as remote and applies host allowlisting", () => {
+    const remote = validateSpec(withGeojsonData("//tiles.example.com/points.geojson"));
+    const localhost = validateSpec(withGeojsonData("//localhost:5173/data/points.geojson"));
+
+    expect(remote.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: DiagnosticCodes.SecurityUrlBlocked,
+        path: "/sources/points/data"
+      })
+    );
+    expect(localhost.valid).toBe(true);
+  });
+
   it("points diagnostics at raster tile and PMTiles URL fields", () => {
     const raster = validateSpec(withRasterTile("file:///tmp/{z}/{x}/{y}.png"));
     const pmtiles = validateSpec(withPmtilesUrl("file:///tmp/parcels.pmtiles"));
