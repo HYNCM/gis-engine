@@ -35,10 +35,10 @@ decision_level: advisory
 | 排名 | 事项 | 得分 | 证据 | 行动 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
 | 1 | Formal release runner evidence | 8.00 | release checklist；checkpoint 已过工程门禁 | 在正式 runner 归档 strict visual 输出 | high |
-| 2 | Resource/perf evidence expansion | 7.40 | daily audit P2；resource/perf gap plan | 补 deterministic create/query/snapshot/destroy evidence | medium |
-| 3 | 命令冲突 / 回放 / 审计产品化 | 7.05 | contracts、implementation playbook、types | 将 trace/replay/audit 从底层能力整理成可读 spec 和 fixtures | high |
-| 4 | fill-extrusion-lite beta adapter | 5.85 | core capabilities、3D roadmap | 仅在 capability gate 后实验性映射 MapLibre `fill-extrusion` | medium |
-| 5 | SceneView3D 边界深化 | 5.30 | Cesium/Three.js signal、framework review | 继续细化 scene3d/camera/source/layer/snapshot 边界 spec | medium |
+| 2 | 命令冲突 / 回放 / 审计产品化 | 7.05 | contracts、implementation playbook、types | 将 trace/replay/audit 从底层能力整理成可读 spec 和 fixtures | high |
+| 3 | fill-extrusion-lite beta adapter | 5.85 | core capabilities、3D roadmap | 仅在 capability gate 后实验性映射 MapLibre `fill-extrusion` | medium |
+| 4 | SceneView3D 边界深化 | 5.30 | Cesium/Three.js signal、framework review | 继续细化 scene3d/camera/source/layer/snapshot 边界 spec | medium |
+| 5 | 大数据 perf/nightly evidence | 4.80 | resource/perf gap plan | 将 1k/10k/100k 场景放入 nightly/release runner | medium |
 
 已完成并保留回归证据：
 
@@ -50,13 +50,14 @@ decision_level: advisory
 | style diff 与 layer order 稳定化 | command matrix、buildPatch、runtime/adapter tests |
 | PMTiles/vector tile URL template | vector source schema、resource policy、MapLibre transformer、examples、snapshot smoke/visual |
 | Package dry-run and file review | package metadata, public access, package READMEs, dry-run evidence |
+| Deterministic resource/perf evidence | snapshot/query lifecycle tests and create/query/snapshot/destroy smoke budgets |
 
 ## 本月行动
 
 1. 关闭正式 runner strict visual snapshot 证据。
-2. 把 resource/perf gap plan 拆成小的 deterministic tests，先覆盖 Node-level create/query/snapshot/destroy。
-3. 将 command conflict/replay/audit 从已有底层字段整理成用户可读 spec、fixtures 和示例。
-4. 继续保持 2.5D/3D 为 extension/capability-gated，不提前进入核心 renderer 承诺。
+2. 将 command conflict/replay/audit 从已有底层字段整理成用户可读 spec、fixtures 和示例。
+3. 继续保持 2.5D/3D 为 extension/capability-gated，不提前进入核心 renderer 承诺。
+4. 将大数据 perf/nightly evidence 放入正式 runner 规划。
 
 ## Feature Spec 建议
 

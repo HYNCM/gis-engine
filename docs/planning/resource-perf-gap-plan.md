@@ -24,8 +24,8 @@ lifecycle and performance depth.
 
 | Task | Scope | Acceptance |
 | --- | --- | --- |
-| RESOURCE-001 | destroy after `snapshot()` | destroyed runtime returns a stable diagnostic or resource report |
-| RESOURCE-002 | destroy after `queryFeatures()` | query path does not retain stale adapter state |
+| RESOURCE-001 | destroy after `snapshot()` | done: `tests/resources/resource-release.test.ts` covers snapshot before destroy and stable post-destroy failure |
+| RESOURCE-002 | destroy after `queryFeatures()` | done: `tests/resources/resource-release.test.ts` covers query before destroy and stable post-destroy failure |
 | RESOURCE-003 | adapter listener cleanup | listeners are removed or reported in `ResourceReport` |
 | RESOURCE-004 | unsupported resource verification | unverifiable WebGL/browser resources report `verifiable: false` when modeled |
 
@@ -33,18 +33,17 @@ lifecycle and performance depth.
 
 | Task | Scope | Acceptance |
 | --- | --- | --- |
-| PERF-001 | command replay baseline | 50-command replay stays under the existing smoke budget |
-| PERF-002 | create/render smoke | `createMap` with a small GeoJSON fixture completes under a deterministic local budget |
-| PERF-003 | query smoke | point/bbox query against inline GeoJSON completes under a deterministic local budget |
-| PERF-004 | snapshot smoke timing | headless snapshot completes under a deterministic local budget |
-| PERF-005 | destroy smoke timing | destroy completes and returns a clean resource report |
+| PERF-001 | command replay baseline | done: 50-command replay stays under the existing smoke budget |
+| PERF-002 | create/render smoke | done: `createMap` with a small GeoJSON fixture completes under a deterministic local budget |
+| PERF-003 | query smoke | done: point query against inline GeoJSON completes under a deterministic local budget |
+| PERF-004 | snapshot smoke timing | done: headless snapshot completes under a deterministic local budget |
+| PERF-005 | destroy smoke timing | done: destroy completes and returns a clean resource report |
 
 ## Sequencing
 
-1. Keep current perf smoke as the baseline guard.
-2. Add deterministic Node-level resource tests before browser-only resource
-   checks.
-3. Add small-fixture performance tests before 1k/10k/100k feature scenarios.
+1. Current perf smoke remains the baseline guard.
+2. Deterministic Node-level resource tests now cover snapshot/query lifecycle.
+3. Small-fixture performance tests now cover create/query/snapshot/destroy.
 4. Treat large-data performance as nightly/release evidence, not PR-blocking
    until the fixture and runner are stable.
 

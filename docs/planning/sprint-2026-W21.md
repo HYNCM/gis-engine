@@ -70,5 +70,5 @@ decision_level: advisory
 | TASK-2026W21-006 | done | `style-diff-layer-order.md`、command tests |
 | TASK-2026W21-007 | done | `vector-tile-url-template.md`、schema/resource policy/transformer |
 | TASK-2026W21-008 | done | `v0.2-gate-checklist.md` |
-| TASK-2026W21-009 | plan done | `resource-perf-gap-plan.md`，implementation follow-up still open |
+| TASK-2026W21-009 | done | `resource-perf-gap-plan.md` plus deterministic snapshot/query lifecycle and create/query/snapshot/destroy perf smoke tests |
 | TASK-2026W23-001~009 | checkpoint done | vector example/fixtures/snapshot, MCP v0.2 coverage, 2.5D/3D boundary, checkpoint audit, release note draft |

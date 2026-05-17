@@ -511,9 +511,9 @@ call queryFeatures and expect RENDER.DESTROYED
 当前下一步顺序：
 
 1. 在正式 runner 固化 `pnpm test:release:strict` 证据。
-2. 按 `resource-perf-gap-plan.md` 补 deterministic resource/perf tests。
-3. 将 command conflict/replay/audit 语义产品化为 spec、fixtures 和示例。
-4. 继续推进 `fill-extrusion-lite` beta adapter 和 SceneView3D v1 边界。
+2. 将 command conflict/replay/audit 语义产品化为 spec、fixtures 和示例。
+3. 继续推进 `fill-extrusion-lite` beta adapter 和 SceneView3D v1 边界。
+4. 将大数据 perf/nightly evidence 放入正式 runner 规划。
 
 ## 11. 当前落地状态
 
