@@ -21,6 +21,7 @@
     "test:snapshot:update": "GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 SNAPSHOT_UPDATE=1 pnpm test:snapshot:visual",
     "test:ai": "vitest run tests/ai",
     "test:perf:smoke": "vitest run tests/perf",
+    "test:perf:nightly": "vitest run tests/nightly-perf",
     "test:resources": "vitest run tests/resources",
     "test:release:rc": "pnpm build:schema && pnpm check && pnpm test:snapshot:visual",
     "test:release:strict": "pnpm build:schema && pnpm check && GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual",

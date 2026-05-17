@@ -512,7 +512,7 @@ call queryFeatures and expect RENDER.DESTROYED
 当前下一步顺序：
 
 1. 继续推进 SceneView3D v1 边界。
-2. 将大数据 perf/nightly evidence 放入正式 runner 规划。
+2. 在正式 release runner 加入 gated `fill-extrusion-lite` visual scene。
 
 ## 11. 当前落地状态
 
@@ -529,6 +529,7 @@ call queryFeatures and expect RENDER.DESTROYED
 - 已创建 expression validator、resource URL policy 和 schema/command/adapter/AI/examples/snapshot tests。
 - 已创建 Playwright visual snapshot harness，覆盖 GeoJSON 和生成式本地 MVT 场景。
 - 已归档 release-capable `pnpm -s test:release:strict` 证据。
+- 已创建 `pnpm test:perf:nightly`，覆盖 1k/10k/100k inline GeoJSON create/query/snapshot/destroy。
 
 仍未实现或仍为边界：
 

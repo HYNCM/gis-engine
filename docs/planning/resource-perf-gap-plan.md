@@ -46,6 +46,9 @@ lifecycle and performance depth.
 3. Small-fixture performance tests now cover create/query/snapshot/destroy.
 4. Treat large-data performance as nightly/release evidence, not PR-blocking
    until the fixture and runner are stable.
+5. 2026-05-18 follow-up: `pnpm test:perf:nightly` now runs synthetic
+   1k/10k/100k inline GeoJSON create/query/snapshot/destroy evidence outside
+   the default PR gate.
 
 ## Non-Goals
 

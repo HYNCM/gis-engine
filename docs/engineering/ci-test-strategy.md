@@ -33,6 +33,7 @@ fixtures -> schema validation -> command replay -> renderer adapter -> snapshot 
     "test:snapshot:update": "GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 SNAPSHOT_UPDATE=1 pnpm test:snapshot:visual",
     "test:ai": "vitest run tests/ai",
     "test:perf:smoke": "vitest run tests/perf",
+    "test:perf:nightly": "vitest run tests/nightly-perf",
     "test:resources": "vitest run tests/resources",
     "test:release:rc": "pnpm build:schema && pnpm check && pnpm test:snapshot:visual",
     "test:release:strict": "pnpm build:schema && pnpm check && GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual",
@@ -59,7 +60,7 @@ CI 分为 PR、main-nightly、release 三档。PR 目标是稳定阻断确定性
 | WebGL2 lite contract | 否 | 如果声明 experimental 则运行 | 是，如果声明 experimental |
 | AI tool contract | 必跑且阻断 | 必跑且阻断 | 必跑且阻断 |
 | resource release | 必跑且阻断 | 必跑且阻断 | 必跑且阻断 |
-| perf smoke | 否 | 条件运行；失败告警 | 必跑且阻断 |
+| perf smoke | 否 | `pnpm test:perf:nightly` 条件运行；失败告警 | `pnpm test:perf:nightly` 必跑且阻断 |
 | migration tests | 变更 schema 时必跑且阻断 | 变更 schema 时必跑且阻断 | 必跑且阻断 |
 
 `GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1` 会把 `snapshot:visual` 从可降级 gate 提升为强制 gate。该环境变量适用于 release、手动验收、baseline 更新和任何需要确认真实 MapLibre GL 渲染的 CI job。

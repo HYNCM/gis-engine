@@ -75,3 +75,4 @@ decision_level: advisory
 | POST-2026W21-010 | done | command conflict/replay/audit productization: `collectTrace`, MCP trace output, conflict audit fixture, audited AI edit example |
 | POST-2026W21-011 | done | `fill-extrusion-lite` beta adapter: MapLibre `fill-extrusion` mapping, capability report, fixture/example, snapshot smoke |
 | POST-2026W21-012 | done | release-capable `pnpm -s test:release:strict` evidence with 2 visual Playwright scenes |
+| POST-2026W21-013 | done | `pnpm -s test:perf:nightly` 1k/10k/100k inline GeoJSON create/query/snapshot/destroy evidence |

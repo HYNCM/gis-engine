@@ -27,7 +27,7 @@ explicit follow-up status.
 | Reviews and gates | [reviews/daily-audit-2026-05-17.md](./reviews/daily-audit-2026-05-17.md), [reviews/quality-gate-2026-05-17.md](./reviews/quality-gate-2026-05-17.md), [reviews/v0.2-checkpoint-audit-2026-05-17.md](./reviews/v0.2-checkpoint-audit-2026-05-17.md) |
 | Market research | [research/competitor-updates-2026-W20.md](./research/competitor-updates-2026-W20.md), [research/capability-scorecard.md](./research/capability-scorecard.md) |
 | Sprint snapshots | [planning/sprint-2026-W21.md](./planning/sprint-2026-W21.md), [planning/task-burndown.md](./planning/task-burndown.md), [planning/dependency-graph.md](./planning/dependency-graph.md) |
-| Release evidence | [planning/v0.2-release-note-draft.md](./planning/v0.2-release-note-draft.md), [planning/package-release-review-2026-05-18.md](./planning/package-release-review-2026-05-18.md), [planning/release-runner-evidence-2026-05-18.md](./planning/release-runner-evidence-2026-05-18.md) |
+| Release evidence | [planning/v0.2-release-note-draft.md](./planning/v0.2-release-note-draft.md), [planning/package-release-review-2026-05-18.md](./planning/package-release-review-2026-05-18.md), [planning/release-runner-evidence-2026-05-18.md](./planning/release-runner-evidence-2026-05-18.md), [planning/perf-nightly-evidence-2026-05-18.md](./planning/perf-nightly-evidence-2026-05-18.md) |
 
 ## Archive Criteria
 
