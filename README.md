@@ -60,6 +60,7 @@ const exported = map.exportSpec();
 
 ## Documentation
 
+- [Documentation map and lifecycle](./docs/README.md)
 - [Mainstream map engine research](./docs/research/mainstream-map-engines.md)
 - [Competitive analysis and AI-native 2D/3D standards](./docs/research/competitive-analysis-ai-native-2d-3d.md)
 - [Core framework](./docs/architecture/core-framework.md)
@@ -74,8 +75,6 @@ const exported = map.exportSpec();
 - [v0.2 checkpoint audit](./docs/reviews/v0.2-checkpoint-audit-2026-05-17.md)
 - [v0.2 release note draft](./docs/planning/v0.2-release-note-draft.md)
 - [v0.2 gate checklist](./docs/planning/v0.2-gate-checklist.md)
-- [Framework review](./docs/reviews/framework-review.md)
-- [External AI review follow-up](./docs/reviews/external-ai-review-followup.md)
 
 ## Known Limitations
 

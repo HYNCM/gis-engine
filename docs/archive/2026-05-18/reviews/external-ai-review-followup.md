@@ -10,22 +10,22 @@
 
 | 评审问题 | 当前状态 | 处理结果 |
 | --- | --- | --- |
-| 范围管理不足 | 原文有 v0/v1/v2，但 v0.1 完成条件不够可验收 | 新增 [v0.1 MVP 验收标准](../engineering/v0.1-mvp-acceptance.md) |
+| 范围管理不足 | 原文有 v0/v1/v2，但 v0.1 完成条件不够可验收 | 新增 [v0.1 MVP 验收标准](../../../engineering/v0.1-mvp-acceptance.md) |
 | 包拆分时机不明确 | 原文建议只公开两包，但缺少发布边界 | 在 v0.1 验收文档中固定 `engine` 与 `ai` 依赖方向 |
-| schema 与类型同步策略缺失 | 原文只说同步，没有工具路线 | 在 [Contracts and Interfaces](../spec/contracts-and-interfaces.md) 中指定 TypeBox + Ajv |
+| schema 与类型同步策略缺失 | 原文只说同步，没有工具路线 | 在 [Contracts and Interfaces](../../../spec/contracts-and-interfaces.md) 中指定 TypeBox + Ajv |
 | 命令模型细节欠缺 | 原文有 `CommandResult`，缺事务和 patch 语义 | 新增 command base、atomic/best-effort、RFC 6902 patch、baseRevision |
 | 诊断与修复模型不规范 | 原文有字段，没有 code 体系 | 新增 diagnostic namespace 和 `SuggestedFix` contract |
 | renderer adapter 接口模糊 | 原文只有职责描述 | 新增 `RendererAdapter` interface 和 capability report |
 | snapshot 验证细节不足 | 原文只有能力描述 | 新增 snapshot options、默认像素阈值和 harness 流程 |
 | expression 子集风险 | 原文列出子集，缺类型规则 | 新增 expression grammar 和 type validation rule |
 | 示例与数据复现不足 | 原文有示例方向，缺 fixture 结构 | 新增 examples 和 tests fixtures 目录约定 |
-| 测试与 CI 未落地 | 原文是测试计划 | 新增 [CI 与测试策略](../engineering/ci-test-strategy.md) |
+| 测试与 CI 未落地 | 原文是测试计划 | 新增 [CI 与测试策略](../../../engineering/ci-test-strategy.md) |
 | 迁移与版本管理未细化 | 原文只说 version | 新增 migration contract |
 | engine 与 ai 边界未固化 | 原文有方向 | 新增包依赖方向和 tool contract tests |
-| README 第一屏缺失 | 仓库无 README | 新增根目录 [README](../../README.md) |
+| README 第一屏缺失 | 仓库无 README | 新增根目录 [README](../../../../README.md) |
 | destroy 资源释放测试不足 | 原文提到释放 | 新增 resource release tests |
 | 审计与溯源不足 | 原文提 trace/audit | 新增 command audit fields 和 trace contract |
-| 二次评审要求实现级细化 | 原文已有 contract，但缺脚本位置、伪代码、baseline、policy | 新增 [implementation-playbook.md](../engineering/implementation-playbook.md) |
+| 二次评审要求实现级细化 | 原文已有 contract，但缺脚本位置、伪代码、baseline、policy | 新增 [implementation-playbook.md](../../../engineering/implementation-playbook.md) |
 
 ## 采纳后的工程标准
 
@@ -51,7 +51,7 @@ v0.1 不再只是一组愿景，而是一组 required gates：
 - `Static<typeof Schema>` 减少类型和 schema 分叉。
 - Ajv 能作为 runtime validator 和 CI validator。
 
-schema build、schema-sync 和 fixture 校验的实施目录已在 [implementation-playbook.md](../engineering/implementation-playbook.md) 中固定。
+schema build、schema-sync 和 fixture 校验的实施目录已在 [implementation-playbook.md](../../../engineering/implementation-playbook.md) 中固定。
 
 ### RFC 6902 JSON Patch 作为 patch 格式
 
