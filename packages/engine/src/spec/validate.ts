@@ -1,12 +1,13 @@
 import { Ajv, type ErrorObject } from "ajv/dist/ajv.js";
 import { DiagnosticCodes } from "../diagnostics/codes.js";
-import type { Diagnostic, MapSpec, ValidationReport } from "../types.js";
-import { MapSpecSchema } from "./schemas/index.js";
+import type { Diagnostic, MapSpec, SceneResourcePolicy, SceneView3DExtension, ValidationReport } from "../types.js";
+import { MapSpecSchema, SceneView3DExtensionSchema } from "./schemas/index.js";
 import { validateExpression } from "./expression-validator.js";
-import { validateResourcePolicy } from "./resource-policy.js";
+import { defaultResourcePolicy, validateResourcePolicy, validateResourceUrl, type ResourcePolicy } from "./resource-policy.js";
 
 const ajv = new Ajv({ allErrors: true, strict: false });
 const validateMapSpecSchema = ajv.compile(MapSpecSchema);
+const validateSceneView3DExtensionSchema = ajv.compile(SceneView3DExtensionSchema);
 
 export function validateSpec(spec: unknown): ValidationReport {
   const diagnostics: Diagnostic[] = [];
@@ -18,6 +19,7 @@ export function validateSpec(spec: unknown): ValidationReport {
   if (isMapSpecLike(spec)) {
     diagnostics.push(...validateSemanticRules(spec));
     diagnostics.push(...validateResourcePolicy(spec));
+    diagnostics.push(...validateSceneView3DExtension(spec));
   }
 
   return {
@@ -29,6 +31,52 @@ export function validateSpec(spec: unknown): ValidationReport {
       visibleLayerCount: isMapSpecLike(spec) ? spec.layers.filter((layer) => layer.layout?.visibility !== "none").length : 0
     }
   };
+}
+
+function validateSceneView3DExtension(spec: MapSpec): Diagnostic[] {
+  const scene = spec.extensions?.scene3d;
+  if (scene === undefined) return [];
+
+  if (!validateSceneView3DExtensionSchema(scene)) {
+    return scene3dSchemaErrorsToDiagnostics(validateSceneView3DExtensionSchema.errors ?? []);
+  }
+
+  const sceneExtension = scene as SceneView3DExtension;
+  const resourcePolicy = toSceneResourcePolicy(sceneExtension.resourcePolicy);
+  const diagnostics: Diagnostic[] = [];
+
+  for (const [sourceId, source] of Object.entries(sceneExtension.sources ?? {})) {
+    diagnostics.push(...validateResourceUrl(source.url, `/extensions/scene3d/sources/${escapePathSegment(sourceId)}/url`, resourcePolicy));
+  }
+
+  return diagnostics;
+}
+
+function scene3dSchemaErrorsToDiagnostics(errors: ErrorObject[]): Diagnostic[] {
+  return errors.map((error) => ({
+    severity: "error",
+    code: schemaKeywordToCode(error),
+    message: error.message ?? "SceneView3D extension schema validation failed",
+    path: `/extensions/scene3d${error.instancePath || ""}`
+  }));
+}
+
+function toSceneResourcePolicy(policy?: SceneResourcePolicy): ResourcePolicy {
+  const scenePolicy: ResourcePolicy = {
+    allowedSchemes: policy?.allowedSchemes ?? ["http:", "https:"],
+    allowedHosts: policy?.allowedHosts ?? defaultResourcePolicy.allowedHosts
+  };
+
+  const allowRelativeUrls = policy?.allowRelativeUrls ?? defaultResourcePolicy.allowRelativeUrls;
+  if (allowRelativeUrls !== undefined) scenePolicy.allowRelativeUrls = allowRelativeUrls;
+
+  const allowedPathPrefixes = policy?.allowedPathPrefixes ?? defaultResourcePolicy.allowedPathPrefixes;
+  if (allowedPathPrefixes !== undefined) scenePolicy.allowedPathPrefixes = allowedPathPrefixes;
+
+  const timeoutMs = policy?.timeoutMs ?? defaultResourcePolicy.timeoutMs;
+  if (timeoutMs !== undefined) scenePolicy.timeoutMs = timeoutMs;
+
+  return scenePolicy;
 }
 
 function schemaErrorsToDiagnostics(errors: ErrorObject[]): Diagnostic[] {
@@ -211,4 +259,8 @@ function isMapSpecLike(value: unknown): value is MapSpec {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<MapSpec>;
   return candidate.version === "0.1" && Boolean(candidate.view) && Boolean(candidate.sources) && Array.isArray(candidate.layers);
+}
+
+function escapePathSegment(segment: string): string {
+  return segment.replaceAll("~", "~0").replaceAll("/", "~1");
 }

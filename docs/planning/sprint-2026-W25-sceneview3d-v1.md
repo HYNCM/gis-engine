@@ -98,6 +98,7 @@ flowchart LR
 | --- | --- | --- |
 | TASK-2026W25-001 | done | RFC slices frozen into camera, lights, depth, terrain, sources, layers, snapshot, and resource policy schema modules |
 | TASK-2026W25-002 | done | `SceneView3DExtensionSchema`, generated JSON schema, public type assertions, and schema-sync validation against `scene3d-extension.map.json` |
+| TASK-2026W25-004 | partial | `validateSpec` applies scene source URL policy under `/extensions/scene3d/sources/*/url`; loader-level byte, texture, worker, and timeout enforcement remains with the renderer package |
 
 ## Non-Goals
 

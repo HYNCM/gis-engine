@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import scene3dExtensionSpec from "../fixtures/specs/valid/scene3d-extension.map.json";
 import { DiagnosticCodes, defaultResourcePolicy, validateResourceUrl, validateSpec, type MapSpec } from "@gis-engine/engine";
 
 describe("ResourcePolicy validation", () => {
@@ -73,6 +74,37 @@ describe("ResourcePolicy validation", () => {
       expect.objectContaining({
         code: DiagnosticCodes.SecurityUrlBlocked,
         path: "/sources/vector/tiles/0"
+      })
+    );
+  });
+
+  it("applies resource policy to SceneView3D extension source URLs", () => {
+    const blocked = withSceneSourceUrl("city-tiles", "file:///tmp/city/tileset.json");
+
+    expect(blocked.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: DiagnosticCodes.SecurityUrlBlocked,
+        path: "/extensions/scene3d/sources/city-tiles/url"
+      })
+    );
+  });
+
+  it("allows SceneView3D remote sources when the scene policy allowlists the host", () => {
+    const spec = structuredClone(scene3dExtensionSpec) as MapSpec;
+    const scene = spec.extensions?.scene3d as {
+      sources: Record<string, { url: string }>;
+      resourcePolicy: { allowedHosts: string[] };
+    };
+
+    scene.sources["city-tiles"]!.url = "https://tiles.example.com/city/tileset.json";
+    scene.resourcePolicy.allowedHosts = ["tiles.example.com"];
+
+    const report = validateSpec(spec);
+
+    expect(report.diagnostics).not.toContainEqual(
+      expect.objectContaining({
+        code: DiagnosticCodes.SecurityUrlBlocked,
+        path: "/extensions/scene3d/sources/city-tiles/url"
       })
     );
   });
@@ -164,4 +196,11 @@ function withVectorTile(tileUrl: string): MapSpec {
       }
     ]
   };
+}
+
+function withSceneSourceUrl(sourceId: string, url: string) {
+  const spec = structuredClone(scene3dExtensionSpec) as MapSpec;
+  const scene = spec.extensions?.scene3d as { sources: Record<string, { url: string }> };
+  scene.sources[sourceId]!.url = url;
+  return validateSpec(spec);
 }
