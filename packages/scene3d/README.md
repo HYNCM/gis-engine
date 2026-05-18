@@ -16,6 +16,9 @@ Current responsibilities:
   `SceneResourcePolicy` before partial rendering starts.
 - Provide `snapshotScene3DMock` and `queryScene3DMock` so snapshot/query
   contracts are testable before a production renderer exists.
+- Provide `evaluateScene3DReleaseVisualGate` so release runners can require
+  strict deterministic 3D evidence and only waive real renderer visuals with a
+  coordinator-approved follow-up.
 - Provide a stable scaffold for later MCP context and renderer adapter work.
 
 Current resource gate:
@@ -37,6 +40,18 @@ Current mock snapshot/query gate:
   scene layers and structured diagnostics for missing layer/source references.
 - These functions read only `extensions.scene3d`; they do not enable
   `view.mode: "scene3d"`.
+
+Current release visual gate:
+
+- `evaluateScene3DReleaseVisualGate` combines strict mock snapshot evidence,
+  deterministic query evidence, optional renderer visual evidence, and an
+  explicit coordinator waiver.
+- In `ciTier: "release"` mode, the gate fails unless renderer visual evidence
+  passes or a coordinator waiver records a reason and follow-up task id.
+- Waivers cannot bypass pending resources, blank-scene diagnostics, missing
+  layer/source diagnostics, or missing query evidence for pickable layers.
+- The direct runner is `pnpm test:release:scene3d`; the same gate is included in
+  `pnpm test:snapshot:smoke` and therefore in `pnpm check`.
 
 Current non-goal:
 

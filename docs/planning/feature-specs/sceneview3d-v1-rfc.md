@@ -227,8 +227,9 @@ A future migration must:
   query identity.
 - Resource policy tests cover blocked host, oversize asset, timeout, and worker
   cap.
-- Snapshot smoke can run without a real GPU, and visual snapshot runs in a
-  release-capable browser/WebGL environment.
+- Snapshot smoke can run without a real GPU, and the SceneView3D release visual
+  gate defines renderer visual evidence or coordinator waiver requirements for
+  release-capable browser/WebGL environments.
 - MCP tools expose extension-only 3D context after schema-sync and output-schema
   tests pass; current coverage is in `get_context_summary` and `explain_spec`.
 - Core 2D package still passes without importing 3D renderer dependencies.

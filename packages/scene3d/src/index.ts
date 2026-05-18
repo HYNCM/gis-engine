@@ -101,6 +101,68 @@ export interface Scene3DQueryResult {
   diagnostics: Diagnostic[];
 }
 
+export type Scene3DReleaseCiTier = "pr" | "main-nightly" | "release" | "local";
+export type Scene3DReleaseVisualGateDecision = "passed" | "failed" | "waived";
+
+export interface Scene3DRendererVisualEvidence {
+  passed: boolean;
+  renderer: string;
+  reportPath?: string;
+  diagnostics?: Diagnostic[];
+}
+
+export interface Scene3DReleaseVisualWaiver {
+  id: string;
+  approvedBy: "coordinator";
+  reason: string;
+  followUpTaskId: string;
+  expiresAt?: string;
+}
+
+export interface Scene3DReleaseVisualGateOptions {
+  ciTier?: Scene3DReleaseCiTier;
+  loadedSourceIds?: string[];
+  requireRendererVisual?: boolean;
+  rendererVisualEvidence?: Scene3DRendererVisualEvidence;
+  waiver?: Scene3DReleaseVisualWaiver;
+}
+
+export interface DiagnosticCounts {
+  error: number;
+  warning: number;
+  info: number;
+}
+
+export interface Scene3DReleaseVisualGateReport {
+  kind: "Scene3DReleaseVisualGateReport";
+  version: "0.1";
+  gate: "scene3d.release.visual";
+  ciTier: Scene3DReleaseCiTier;
+  decision: Scene3DReleaseVisualGateDecision;
+  accepted: boolean;
+  runtime: {
+    status: "extension-only";
+    stableViewMode: false;
+    rendererVisualRequired: boolean;
+  };
+  waiver?: Scene3DReleaseVisualWaiver & { accepted: boolean };
+  evidence: {
+    capabilities: CapabilityReport;
+    snapshot: {
+      passed: boolean;
+      pendingSourceIds: string[];
+      summary: Scene3DMockSnapshotSummary;
+      diagnosticCounts: DiagnosticCounts;
+    };
+    query: {
+      pickCount: number;
+      diagnosticCounts: DiagnosticCounts;
+    };
+    rendererVisual?: Scene3DRendererVisualEvidence;
+  };
+  diagnostics: Diagnostic[];
+}
+
 export function getScene3DV1Capabilities(): CapabilityReport {
   return {
     renderer: "scene3d",
@@ -300,6 +362,79 @@ export function queryScene3DMock(extension: SceneView3DExtension, options: Scene
   }
 
   return { picks, diagnostics };
+}
+
+export function evaluateScene3DReleaseVisualGate(
+  extension: SceneView3DExtension,
+  options: Scene3DReleaseVisualGateOptions = {}
+): Scene3DReleaseVisualGateReport {
+  const ciTier = options.ciTier ?? "local";
+  const rendererVisualRequired = options.requireRendererVisual ?? ciTier === "release";
+  const snapshotOptions: Scene3DMockSnapshotOptions = {
+    format: "data-url",
+    requireLoadedResources: true
+  };
+  if (options.loadedSourceIds) snapshotOptions.loadedSourceIds = options.loadedSourceIds;
+  const snapshot = snapshotScene3DMock(extension, snapshotOptions);
+  const query = queryScene3DMock(extension);
+  const diagnostics = [...snapshot.diagnostics, ...query.diagnostics, ...(options.rendererVisualEvidence?.diagnostics ?? [])];
+
+  if (snapshot.summary.pickableLayerCount > 0 && query.picks.length === 0) {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.CapabilityUnsupported,
+      message: "SceneView3D release visual gate requires deterministic query evidence for pickable scene layers.",
+      path: "/extensions/scene3d/layers",
+      fix: manualFix("Keep at least one visible pickable layer queryable before asking for release visual acceptance.", "medium")
+    });
+  }
+
+  const deterministicEvidencePassed = !diagnostics.some((diagnostic) => diagnostic.severity === "error");
+  const rendererVisualPassed = options.rendererVisualEvidence?.passed === true;
+  const waiverAccepted = isReleaseVisualWaiverComplete(options.waiver);
+  const needsRendererEvidence = rendererVisualRequired && !rendererVisualPassed;
+
+  let decision: Scene3DReleaseVisualGateDecision = "passed";
+  if (!deterministicEvidencePassed) {
+    decision = "failed";
+  } else if (needsRendererEvidence && waiverAccepted) {
+    decision = "waived";
+  } else if (needsRendererEvidence) {
+    decision = "failed";
+    diagnostics.push(missingReleaseVisualEvidenceDiagnostic());
+  }
+
+  const report: Scene3DReleaseVisualGateReport = {
+    kind: "Scene3DReleaseVisualGateReport",
+    version: "0.1",
+    gate: "scene3d.release.visual",
+    ciTier,
+    decision,
+    accepted: decision !== "failed",
+    runtime: {
+      status: "extension-only",
+      stableViewMode: false,
+      rendererVisualRequired
+    },
+    evidence: {
+      capabilities: getScene3DV1Capabilities(),
+      snapshot: {
+        passed: snapshot.passed,
+        pendingSourceIds: snapshot.pendingSourceIds,
+        summary: snapshot.summary,
+        diagnosticCounts: countDiagnostics(snapshot.diagnostics)
+      },
+      query: {
+        pickCount: query.picks.length,
+        diagnosticCounts: countDiagnostics(query.diagnostics)
+      }
+    },
+    diagnostics
+  };
+
+  if (options.rendererVisualEvidence) report.evidence.rendererVisual = options.rendererVisualEvidence;
+  if (options.waiver) report.waiver = { ...options.waiver, accepted: decision === "waived" };
+  return report;
 }
 
 function normalizeSceneResourcePolicy(policy?: SceneResourcePolicy): SceneResourceLoadReport["policy"] {
@@ -513,6 +648,35 @@ function relatedResource(resource: SceneResourceLoadEntry): Diagnostic["relatedR
   if (resource.sourceId) related.push({ kind: "source", id: resource.sourceId });
   if (resource.url) related.push({ kind: "url", id: resource.url });
   return related.length > 0 ? related : undefined;
+}
+
+function isReleaseVisualWaiverComplete(waiver: Scene3DReleaseVisualWaiver | undefined): waiver is Scene3DReleaseVisualWaiver {
+  return Boolean(
+    waiver &&
+      waiver.approvedBy === "coordinator" &&
+      waiver.id.length > 0 &&
+      waiver.reason.length > 0 &&
+      waiver.followUpTaskId.length > 0
+  );
+}
+
+function missingReleaseVisualEvidenceDiagnostic(): Diagnostic {
+  return {
+    severity: "error",
+    code: DiagnosticCodes.CapabilityUnsupported,
+    message:
+      "SceneView3D release visual evidence is required in release mode. Provide renderer visual evidence or a coordinator-approved waiver with follow-up task id.",
+    path: "/extensions/scene3d",
+    fix: manualFix("Run the release-capable 3D visual runner, or record a coordinator waiver that links the follow-up visual evidence task.", "high")
+  };
+}
+
+function countDiagnostics(diagnostics: Diagnostic[]): DiagnosticCounts {
+  const counts: DiagnosticCounts = { error: 0, warning: 0, info: 0 };
+  for (const diagnostic of diagnostics) {
+    counts[diagnostic.severity] += 1;
+  }
+  return counts;
 }
 
 function escapePathSegment(segment: string): string {

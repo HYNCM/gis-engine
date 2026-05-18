@@ -57,10 +57,13 @@ breaking/non-breaking note in the PR summary.
 - `SNAPSHOT.RESOURCE_PENDING` diagnostic code.
 - SceneView3D context summary shape in `get_context_summary` and
   `explain_spec` output schemas.
+- `evaluateScene3DReleaseVisualGate` as the release-runner 3D visual gate for
+  mock snapshot/query evidence, optional renderer visual evidence, and
+  coordinator waiver enforcement.
 - `view.mode: "scene3d"`, `capabilities.renderer: "scene3d"`, and
   `capabilities.dimensions: ["3d"]` remain reserved unsupported runtime
-  requests until the v1 renderer package passes resource, snapshot, and query
-  gates.
+  requests until the v1 renderer package passes resource, snapshot, query, and
+  release visual gates.
 
 ## RFC-QC Fast Track
 

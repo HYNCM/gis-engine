@@ -35,6 +35,7 @@ fixtures -> schema validation -> command replay -> renderer adapter -> snapshot 
     "test:perf:smoke": "vitest run tests/perf",
     "test:perf:nightly": "vitest run tests/nightly-perf",
     "test:resources": "vitest run tests/resources",
+    "test:release:scene3d": "vitest run tests/snapshot/smoke/scene3d-release-visual-gate.test.ts",
     "test:release:rc": "pnpm build:schema && pnpm check && pnpm test:snapshot:visual",
     "test:release:strict": "pnpm build:schema && pnpm check && GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual",
     "check": "pnpm build && pnpm test"
@@ -99,6 +100,13 @@ Snapshot 分为两层：
 
 - `snapshot:smoke`：必跑。使用 Node/Vitest 和 adapter contract 验证 `load -> snapshot -> exportSpec` 的结构化结果、diagnostics 和状态一致性，不要求真实 WebGL；当前覆盖 GeoJSON、vector tile 和 gated `fill-extrusion-lite`。
 - `snapshot:visual`：条件跑。使用 Playwright、真实浏览器和真实 MapLibre GL canvas 验证像素健康度和可选 baseline diff。当前覆盖 GeoJSON 基础场景、本地生成 MVT 的 vector tile release 场景和 gated `fill-extrusion-lite` beta 场景。
+- `scene3d.release.visual`：release-runner 3D smoke gate。当前没有稳定
+  SceneView3D renderer，因此 gate 以 `snapshotScene3DMock`、
+  `queryScene3DMock` 和可选 renderer visual evidence 组成；release 模式下
+  如果没有真实 renderer visual evidence，必须带 coordinator waiver 和 follow-up
+  task id，且 waiver 不能绕过 pending resource、blank scene、layer/source 或
+  query evidence 诊断。直接命令是 `pnpm test:release:scene3d`，默认也包含在
+  `pnpm test:snapshot:smoke` / `pnpm check` 中。
 
 工具：
 

@@ -26,7 +26,7 @@ Traditional map SDKs are powerful, but AI agents need a stricter contract:
 | --- | --- | --- |
 | Workspace scaffold | Functional | Root workspace, `@gis-engine/engine`, `@gis-engine/ai`, and `@gis-engine/scene3d` build through `pnpm -r build`. |
 | `MapSpec` schema | Functional | TypeBox schemas cover GeoJSON, raster, PMTiles, generic vector tiles, `SceneView3DExtensionSchema`, command contracts, diagnostics, and strict capability reports. |
-| Runtime validation | Functional | `validateSpec` runs schema, semantic, expression, resource policy, experimental 2.5D, `extensions.scene3d` schema/source URL/layer-reference checks, loader-level scene resource load plan checks, mock 3D snapshot/query contracts, and reserved `scene3d` runtime boundary checks. |
+| Runtime validation | Functional | `validateSpec` runs schema, semantic, expression, resource policy, experimental 2.5D, `extensions.scene3d` schema/source URL/layer-reference checks, loader-level scene resource load plan checks, mock 3D snapshot/query contracts, release visual gate rules, and reserved `scene3d` runtime boundary checks. |
 | Command system | Functional | `applyCommands` returns transaction metadata, trace ids, optional audit traces via `collectTrace`, command sequence ids, JSON Patch output, inverse patch, dry-run shape, deterministic layer order behavior, SceneView3D preparation command patches, and `baseRevision` conflict rejection. |
 | Patch utilities | Functional | JSON Pointer normalization, apply, invert, changed path sorting, and validation utilities are covered by tests. |
 | Diagnostics | Functional | Diagnostic registry covers schema, source/layer references, expressions, resource URL policy, command failures, unsupported capabilities, and snapshot errors. |
@@ -92,7 +92,7 @@ For review and audit flows, callers can pass `collectTrace: true` to `applyComma
 
 The current `MapLibreAdapter` is still an MVP renderer binding. It transforms supported `MapSpec` sources/layers, passes adapter contract tests, and is exercised by real-browser visual snapshots, but it is not a complete replacement for MapLibre GL JS.
 
-`fill-extrusion-lite` is an experimental 2.5D contract gated by `capabilities.experimental` and beta-mapped to MapLibre `fill-extrusion`. `@gis-engine/scene3d`, `SceneView3DExtensionSchema`, SceneView3D preparation commands, `validateSceneResourceLoadPlan`, `snapshotScene3DMock`, and `queryScene3DMock` now exist as the v1 3D contract scaffold, but `view.mode: "scene3d"` is still reserved and returns structured unsupported diagnostics; terrain, glTF, and 3D Tiles are not implemented renderers yet.
+`fill-extrusion-lite` is an experimental 2.5D contract gated by `capabilities.experimental` and beta-mapped to MapLibre `fill-extrusion`. `@gis-engine/scene3d`, `SceneView3DExtensionSchema`, SceneView3D preparation commands, `validateSceneResourceLoadPlan`, `snapshotScene3DMock`, `queryScene3DMock`, and `evaluateScene3DReleaseVisualGate` now exist as the v1 3D contract scaffold, but `view.mode: "scene3d"` is still reserved and returns structured unsupported diagnostics; terrain, glTF, and 3D Tiles are not implemented renderers yet.
 
 ## Not Yet
 

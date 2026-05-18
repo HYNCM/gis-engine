@@ -150,6 +150,22 @@ pending strict snapshot resources, missing scene layers, missing scene sources,
 and deterministic mock picks, but they do not enable stable 3D view mode or
 fetch external assets.
 
+## SceneView3D Release Visual Gate Contract
+
+`evaluateScene3DReleaseVisualGate` defines the release-runner gate for 3D visual
+readiness before a production renderer exists. The gate combines:
+
+- strict `snapshotScene3DMock` evidence with required scene sources marked
+  loaded;
+- deterministic `queryScene3DMock` evidence for pickable scene layers;
+- optional future renderer visual evidence;
+- optional coordinator waiver with `id`, `reason`, and `followUpTaskId`.
+
+In release mode, missing renderer visual evidence fails unless a
+coordinator-approved waiver is present. The waiver path cannot bypass pending
+resources, blank-scene diagnostics, missing layer/source diagnostics, or missing
+query evidence.
+
 ## SceneView3D MCP Context Contract
 
 `get_context_summary` and `explain_spec` include a `scene3d` block when

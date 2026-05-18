@@ -49,7 +49,9 @@ planning source and has been archived for traceability.
   `snapshotScene3DMock` and `queryScene3DMock`.
 - Follow-up implementation closed `TASK-2026W27-002` with extension-only
   SceneView3D context in MCP output schemas.
-- W27 work still needs strict visual gate definition and alpha gate evidence.
+- Follow-up implementation closed `TASK-2026W27-003` with
+  `evaluateScene3DReleaseVisualGate` and `pnpm test:release:scene3d`.
+- W27 work still needs alpha gate evidence and adapter feasibility follow-up.
 
 ## Verification
 

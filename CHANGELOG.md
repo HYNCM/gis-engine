@@ -8,7 +8,8 @@
 - Added `validateSceneResourceLoadPlan` for loader-level SceneView3D resource enforcement: 3D Tiles JSON size, model size, texture count/bytes, worker cap, timeout, missing source, and unsupported asset type diagnostics.
 - Added mock-level SceneView3D snapshot/query contracts through `snapshotScene3DMock` and `queryScene3DMock`, including pending-resource, blank-scene, missing-layer, hidden-layer, and deterministic pick coverage.
 - Added gated SceneView3D context to `get_context_summary` / `explain_spec` output schemas, exposing extension-only 3D source/layer/resource/snapshot/query summaries without enabling stable 3D runtime support.
-- Archived the superseded W21 sprint plan and refreshed active documentation to point at the W25/W27 SceneView3D v1 sprint path and remaining MCP/visual-gate work.
+- Added `evaluateScene3DReleaseVisualGate` and `pnpm test:release:scene3d` to define SceneView3D release visual evidence, coordinator waiver, and deterministic no-bypass rules before a stable renderer exists.
+- Archived the superseded W21 sprint plan and refreshed active documentation to point at the W25/W27 SceneView3D v1 sprint path and remaining alpha-gate / adapter-feasibility work.
 
 ## 0.2.0-checkpoint - 2026-05-17
 

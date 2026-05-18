@@ -104,6 +104,7 @@ flowchart LR
 | TASK-2026W25-006 | done | `@gis-engine/scene3d` scaffold exports v1 capabilities, explicit unsupported scaffold diagnostics, and a dependency guard against 3D renderer imports |
 | TASK-2026W27-001 | done | `snapshotScene3DMock` and `queryScene3DMock` provide GPU-free snapshot/query contracts with pending-resource, blank-scene, missing-layer, hidden-layer, and deterministic pick coverage |
 | TASK-2026W27-002 | done | `get_context_summary` and `explain_spec` output schemas expose extension-only SceneView3D source/layer/resource/snapshot/query summaries while keeping stable runtime support false |
+| TASK-2026W27-003 | done | `evaluateScene3DReleaseVisualGate`, `pnpm test:release:scene3d`, and `release-runner-scene3d-gate-2026-05-18.md` define release-mode visual evidence, coordinator waiver, and no-bypass deterministic evidence rules |
 
 ## Non-Goals
 
