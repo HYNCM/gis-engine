@@ -42,8 +42,9 @@ planning source and has been archived for traceability.
 
 ## Remaining Watch Items
 
-- `TASK-2026W25-004` still needs loader-level byte, texture, worker, and
-  timeout enforcement for 3D resources.
+- Follow-up implementation closed `TASK-2026W25-004` with
+  `validateSceneResourceLoadPlan` for loader-level byte, texture, worker,
+  timeout, missing-source, and unsupported-asset diagnostics.
 - W27 work still needs mock-level 3D snapshot/query contracts, MCP 3D context,
   strict visual gate definition, and alpha gate evidence.
 

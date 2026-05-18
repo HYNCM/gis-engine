@@ -48,6 +48,10 @@ breaking/non-breaking note in the PR summary.
   `setSceneLayerVisibility`.
 - `@gis-engine/scene3d` package boundary scaffold, including capability report
   shape, unsupported scaffold diagnostics, and dependency guard expectations.
+- `validateSceneResourceLoadPlan` as the loader-level 3D resource policy gate
+  for 3D Tiles JSON bytes, model bytes, texture budgets, worker cap, timeout,
+  missing source, and unsupported asset type diagnostics.
+- `SECURITY.UNSUPPORTED_ASSET_TYPE` diagnostic code.
 - `view.mode: "scene3d"`, `capabilities.renderer: "scene3d"`, and
   `capabilities.dimensions: ["3d"]` remain reserved unsupported runtime
   requests until the v1 renderer package passes resource, snapshot, and query

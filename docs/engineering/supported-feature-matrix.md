@@ -16,7 +16,7 @@ accepted.
 | Snapshot smoke | data-url adapter smoke | Required deterministic gate. Must run under Node/Vitest and must not require real browser canvas, GPU, or WebGL. |
 | Snapshot visual | Playwright + real browser MapLibre GL canvas | Conditional/release validation for pixel health and optional baseline diff. Current scenarios cover GeoJSON, generated local MVT, and gated `fill-extrusion-lite`. This is separate from `pnpm check` unless a release job explicitly requires visual snapshots. |
 | MapLibre adapter binding | Transformer + adapter contract MVP | Visual snapshot tests exercise real browser MapLibre GL canvas health. |
-| Experimental boundary | `fill-extrusion-lite`, `extensions.scene3d`, `@gis-engine/scene3d` scaffold | `fill-extrusion-lite` is beta-supported by the MapLibre adapter behind explicit gates. `extensions.scene3d` has a formal schema, source URL policy checks, layer-source validation, and command patches, but `view.mode: "scene3d"` still returns unsupported diagnostics. |
+| Experimental boundary | `fill-extrusion-lite`, `extensions.scene3d`, `@gis-engine/scene3d` scaffold | `fill-extrusion-lite` is beta-supported by the MapLibre adapter behind explicit gates. `extensions.scene3d` has a formal schema, source URL policy checks, layer-source validation, command patches, and a loader resource load plan gate, but `view.mode: "scene3d"` still returns unsupported diagnostics. |
 
 Explicitly out of scope for the current stable surface: full symbol placement,
 terrain rendering, globe, production 3D Tiles loading, glTF rendering, custom

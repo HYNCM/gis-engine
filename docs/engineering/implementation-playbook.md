@@ -512,10 +512,10 @@ call queryFeatures and expect RENDER.DESTROYED
 当前下一步顺序：
 
 当前 W21/W23 规划任务已全部完成。SceneView3D v1 已按 RFC 拆成 W25/W28
-专项 sprint，并已提前完成 schema foundation、fixtures、scene command patches
-和 `@gis-engine/scene3d` package boundary。下一步不再重新论证 3D 启动顺序，
-而是继续补齐 loader-level resource enforcement、snapshot/query contract 和
-MCP 3D context。
+专项 sprint，并已提前完成 schema foundation、fixtures、scene command patches、
+loader-level resource load plan gate 和 `@gis-engine/scene3d` package boundary。
+下一步不再重新论证 3D 启动顺序，而是继续补齐 snapshot/query contract 和 MCP
+3D context。
 
 ## 11. 当前落地状态
 
@@ -536,9 +536,10 @@ MCP 3D context。
 - 已创建 `extensions.scene3d` fixture、`SceneView3DExtensionSchema`、generated JSON schema 和 schema/type sync 覆盖，保持 3D 规划可验证但不扩大当前 runtime surface。
 - 已创建 SceneView3D v1 RFC，定义 camera/source/layer/snapshot/query/resource policy/command 入口。
 - 已创建 scene source URL policy、invalid fixtures、scene layer-source validation 和 SceneView3D command patch/replay/dry-run/rollback 覆盖。
+- 已创建 `validateSceneResourceLoadPlan`，以 deterministic load plan 形式覆盖 3D Tiles JSON/model/texture/worker/timeout/missing-source/unsupported-asset diagnostics。
 - 已创建 `@gis-engine/scene3d` package boundary scaffold，提供 capability report、unsupported scaffold diagnostics 和 3D renderer 依赖隔离守卫。
 
 仍未实现或仍为边界：
 
-- SceneView3D runtime、terrain/glTF/3D Tiles adapter、loader-level byte/texture/worker/timeout enforcement、3D snapshot/query contract。
+- SceneView3D runtime、terrain/glTF/3D Tiles adapter、真实网络 loader 接入、3D snapshot/query contract。
 - GeoParquet / FlatGeobuf / DuckDB WASM。

@@ -138,8 +138,11 @@ SceneView3D adds high-risk resources and therefore needs explicit controls:
 - Diagnostic codes for blocked URL, oversized resource, timeout, and unsupported
   asset type.
 
-The first implementation must return structured diagnostics instead of partial
-rendering when resource policy fails.
+The first implementation is `validateSceneResourceLoadPlan` in
+`@gis-engine/scene3d`. It validates deterministic loader plans for 3D Tiles JSON
+bytes, model bytes, texture count/bytes, worker cap, timeout, missing source,
+and unsupported asset type before a renderer is allowed to fetch or partially
+render resources.
 
 ## Snapshot Contract
 

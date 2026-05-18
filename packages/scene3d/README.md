@@ -12,12 +12,23 @@ Current responsibilities:
   `addSceneLayer`, `removeSceneLayer`, and `setSceneLayerVisibility` are
   preparation commands only.
 - Keep 3D runtime concerns outside `@gis-engine/engine`.
-- Provide a stable scaffold for later resource-policy, snapshot, query, and
-  renderer adapter work.
+- Provide `validateSceneResourceLoadPlan` so future renderer loaders can enforce
+  `SceneResourcePolicy` before partial rendering starts.
+- Provide a stable scaffold for later snapshot, query, and renderer adapter work.
+
+Current resource gate:
+
+- Enforces 3D Tiles JSON byte budget, glTF/model byte budget, texture count,
+  texture byte budget, worker cap, and request timeout.
+- Returns structured diagnostics such as `SECURITY.RESOURCE_TOO_LARGE`,
+  `SECURITY.RESOURCE_TIMEOUT`, `SECURITY.UNSUPPORTED_ASSET_TYPE`, and
+  `SRC.NOT_FOUND`.
+- Does not perform network fetches; renderer loaders submit a deterministic
+  resource load plan before loading.
 
 Current non-goal:
 
 - Do not treat `view.mode: "scene3d"` as stable runtime support.
 - Do not import CesiumJS, Three.js, glTF loaders, 3D Tiles parsers, WebGPU-only
-  runtime code, workers, or remote asset loading here until the v1 resource,
-  snapshot, and query gates are defined.
+  runtime code, workers, or remote asset loading here until the v1 snapshot,
+  query, and renderer gates are defined.

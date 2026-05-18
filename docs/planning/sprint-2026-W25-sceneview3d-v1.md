@@ -99,7 +99,7 @@ flowchart LR
 | TASK-2026W25-001 | done | RFC slices frozen into camera, lights, depth, terrain, sources, layers, snapshot, and resource policy schema modules |
 | TASK-2026W25-002 | done | `SceneView3DExtensionSchema`, generated JSON schema, public type assertions, and schema-sync validation against `scene3d-extension.map.json` |
 | TASK-2026W25-003 | done | valid `scene3d-extension.map.json` plus invalid blocked URL and unknown field fixtures with expected diagnostics |
-| TASK-2026W25-004 | partial | `validateSpec` applies scene source URL policy under `/extensions/scene3d/sources/*/url`; loader-level byte, texture, worker, and timeout enforcement remains with the renderer package |
+| TASK-2026W25-004 | done | `validateSpec` applies scene source URL policy under `/extensions/scene3d/sources/*/url`; `@gis-engine/scene3d` exposes `validateSceneResourceLoadPlan` for 3D Tiles JSON/model/texture/worker/timeout enforcement with structured diagnostics |
 | TASK-2026W25-005 | done | scene command schemas and `buildPatch` support for camera, sources, layers, visibility, deterministic patch replay, dry-run, rollback, and target diagnostics |
 | TASK-2026W25-006 | done | `@gis-engine/scene3d` scaffold exports v1 capabilities, explicit unsupported scaffold diagnostics, and a dependency guard against 3D renderer imports |
 
@@ -108,3 +108,5 @@ flowchart LR
 - No production CesiumJS or Three.js runtime import in the current 2D core.
 - No stable `view.mode: "scene3d"` acceptance before the v1 schema gate passes.
 - No unrestricted remote 3D Tiles, glTF, worker, or texture loading.
+- No real network fetch in the resource gate; renderer loaders must provide a
+  deterministic load plan.

@@ -25,6 +25,7 @@ export const DiagnosticCodes = {
   SecurityUrlBlocked: "SECURITY.URL_BLOCKED",
   SecurityResourceTimeout: "SECURITY.RESOURCE_TIMEOUT",
   SecurityResourceTooLarge: "SECURITY.RESOURCE_TOO_LARGE",
+  SecurityUnsupportedAssetType: "SECURITY.UNSUPPORTED_ASSET_TYPE",
   GeoInvalidCoordinates: "GEO.INVALID_COORDINATES",
   GeoEmptyBbox: "GEO.EMPTY_BBOX"
 } as const;

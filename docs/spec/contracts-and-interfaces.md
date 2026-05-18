@@ -115,6 +115,26 @@ SceneView3D commands are v1 preparation commands. They only mutate
 `extensions.scene3d`, must produce deterministic JSON Patch and inverse patch,
 and must not make `view.mode: "scene3d"` stable.
 
+## SceneView3D Resource Load Contract
+
+`@gis-engine/scene3d` exposes `validateSceneResourceLoadPlan` as the current
+loader-level resource gate. Renderer loaders must submit a deterministic load
+plan before fetching or partially rendering 3D resources.
+
+The gate validates:
+
+- 3D Tiles tileset JSON byte budget.
+- glTF/model byte budget.
+- Texture count and texture byte budget.
+- Worker count cap.
+- Request timeout.
+- Missing scene source ids.
+- Unsupported asset/load kinds.
+
+It returns a structured report with `valid`, normalized policy, aggregate
+totals, and `Diagnostic[]`. It does not fetch network resources and does not
+make `view.mode: "scene3d"` stable.
+
 ### 事务语义
 
 ```ts
@@ -207,7 +227,7 @@ export interface Diagnostic {
 | `COMMAND` | `COMMAND.INVALID_PATCH` | 命令错误 |
 | `CONFLICT` | `CONFLICT.BASE_REVISION` | 并发冲突 |
 | `MIGRATION` | `MIGRATION.UNSUPPORTED_VERSION` | 迁移错误 |
-| `SECURITY` | `SECURITY.URL_BLOCKED` | 安全策略错误 |
+| `SECURITY` | `SECURITY.URL_BLOCKED`, `SECURITY.RESOURCE_TOO_LARGE`, `SECURITY.RESOURCE_TIMEOUT`, `SECURITY.UNSUPPORTED_ASSET_TYPE` | 安全和资源策略错误 |
 
 ### SuggestedFix
 
