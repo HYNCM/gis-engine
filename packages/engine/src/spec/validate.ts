@@ -57,8 +57,14 @@ function scene3dSchemaErrorsToDiagnostics(errors: ErrorObject[]): Diagnostic[] {
     severity: "error",
     code: schemaKeywordToCode(error),
     message: error.message ?? "SceneView3D extension schema validation failed",
-    path: `/extensions/scene3d${error.instancePath || ""}`
+    path: `/extensions/scene3d${error.instancePath || ""}${additionalPropertyPath(error)}`
   }));
+}
+
+function additionalPropertyPath(error: ErrorObject): string {
+  if (error.keyword !== "additionalProperties") return "";
+  const additionalProperty = error.params.additionalProperty;
+  return typeof additionalProperty === "string" ? `/${escapePathSegment(additionalProperty)}` : "";
 }
 
 function toSceneResourcePolicy(policy?: SceneResourcePolicy): ResourcePolicy {

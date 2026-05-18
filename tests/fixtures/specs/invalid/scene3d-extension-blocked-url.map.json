@@ -1,0 +1,25 @@
+{
+  "version": "0.1",
+  "id": "scene3d-extension-blocked-url",
+  "view": {
+    "mode": "map2d",
+    "center": [120.15, 30.28],
+    "zoom": 11
+  },
+  "sources": {},
+  "layers": [],
+  "extensions": {
+    "scene3d": {
+      "camera": {
+        "position": [120.15, 30.28, 1200],
+        "target": [120.15, 30.28, 0]
+      },
+      "sources": {
+        "city-tiles": {
+          "type": "3d-tiles",
+          "url": "file:///tmp/city/tileset.json"
+        }
+      }
+    }
+  }
+}

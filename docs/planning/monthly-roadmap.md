@@ -19,7 +19,7 @@ decision_level: advisory
 
 ## 结论
 
-当前 v0.1 已具备 `MapSpec`、commands、diagnostics、snapshot 和 MapLibre adapter 闭环；2026-05-17 v0.2 checkpoint 已完成 generic vector tile、MCP output schema、strict capability report、expression 扩展、style/layer order 稳定化、visual MVT 场景和 2.5D/3D 边界。2026-05-18 已补齐 package dry-run、resource/perf deterministic evidence、command audit trace 产品化、`fill-extrusion-lite` MapLibre beta mapping、3-scene release-capable strict visual runner evidence、1k/10k/100k nightly perf harness、`extensions.scene3d` 边界 fixture、独立 v1 SceneView3D RFC、W25/W28 sprint DAG、`SceneView3DExtensionSchema` 和 scene source URL policy。当前 W21/W23 规划项已完成，W25-001/002 已提前关闭；3D 后续实现应继续执行 invalid fixtures、loader-level resource enforcement、snapshot/query 和 renderer package boundary。
+当前 v0.1 已具备 `MapSpec`、commands、diagnostics、snapshot 和 MapLibre adapter 闭环；2026-05-17 v0.2 checkpoint 已完成 generic vector tile、MCP output schema、strict capability report、expression 扩展、style/layer order 稳定化、visual MVT 场景和 2.5D/3D 边界。2026-05-18 已补齐 package dry-run、resource/perf deterministic evidence、command audit trace 产品化、`fill-extrusion-lite` MapLibre beta mapping、3-scene release-capable strict visual runner evidence、1k/10k/100k nightly perf harness、`extensions.scene3d` 边界 fixture、独立 v1 SceneView3D RFC、W25/W28 sprint DAG、`SceneView3DExtensionSchema`、scene source URL policy 和 invalid fixtures。当前 W21/W23 规划项已完成，W25-001/002/003 已提前关闭；3D 后续实现应继续执行 loader-level resource enforcement、snapshot/query 和 renderer package boundary。
 
 ## 路线总览
 
@@ -34,7 +34,7 @@ decision_level: advisory
 
 | 排名 | 事项 | 得分 | 证据 | 行动 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | SceneView3D v1 fixtures/package boundary | future | `SceneView3DExtensionSchema` 与 scene source URL policy 已落地并通过 checks | 继续执行 `TASK-2026W25-003/006`，补 invalid fixtures 和 `@gis-engine/scene3d` package boundary | medium |
+| 1 | SceneView3D v1 package boundary | future | `SceneView3DExtensionSchema`、scene source URL policy 和 invalid fixtures 已落地并通过 checks | 继续执行 `TASK-2026W25-006`，补 `@gis-engine/scene3d` package boundary | medium |
 
 已完成并保留回归证据：
 

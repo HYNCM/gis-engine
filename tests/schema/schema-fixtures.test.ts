@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import invalidSpec from "../fixtures/specs/invalid/layer-source-missing.map.json";
 import expectedInvalidCodes from "../fixtures/specs/invalid/layer-source-missing.diagnostics.json";
+import invalidScene3dBlockedUrl from "../fixtures/specs/invalid/scene3d-extension-blocked-url.map.json";
+import expectedScene3dBlockedUrlDiagnostics from "../fixtures/specs/invalid/scene3d-extension-blocked-url.diagnostics.json";
+import invalidScene3dUnknownField from "../fixtures/specs/invalid/scene3d-extension-unknown-field.map.json";
+import expectedScene3dUnknownFieldDiagnostics from "../fixtures/specs/invalid/scene3d-extension-unknown-field.diagnostics.json";
 import basicGeoJson from "../fixtures/specs/valid/basic-geojson.map.json";
 import vectorTileUrl from "../fixtures/specs/valid/vector-tile-url.map.json";
 import fillExtrusionLite from "../fixtures/specs/valid/fill-extrusion-lite.map.json";
@@ -23,6 +27,18 @@ describe("MapSpec fixtures", () => {
     const report = validateSpec(invalidSpec);
     expect(report.valid).toBe(false);
     expect(report.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(expectedInvalidCodes);
+  });
+
+  it.each([
+    ["scene3d-extension-blocked-url", invalidScene3dBlockedUrl, expectedScene3dBlockedUrlDiagnostics],
+    ["scene3d-extension-unknown-field", invalidScene3dUnknownField, expectedScene3dUnknownFieldDiagnostics]
+  ])("reports expected diagnostics for invalid fixture %s", (_name, spec, expectedDiagnostics) => {
+    const report = validateSpec(spec);
+
+    expect(report.valid).toBe(false);
+    for (const expected of expectedDiagnostics) {
+      expect(report.diagnostics).toContainEqual(expect.objectContaining(expected));
+    }
   });
 
   it("gates fill-extrusion-lite behind an explicit 2.5D experimental request", () => {
