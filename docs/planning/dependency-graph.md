@@ -69,10 +69,11 @@ W21 sprint 计划已归档，当前活跃关键路径从 W25 SceneView3D v1 DAG 
 | v1 SceneView3D mock snapshot/query | done | `snapshotScene3DMock` and `queryScene3DMock` cover pending resources, blank scenes, missing layers, hidden layers, and deterministic picks |
 | v1 SceneView3D MCP context | done | `get_context_summary` and `explain_spec` output schemas include extension-only 3D source/layer/resource/snapshot/query summaries |
 | v1 SceneView3D release visual gate | done | `evaluateScene3DReleaseVisualGate` defines release-mode renderer evidence, coordinator waiver, and deterministic no-bypass rules |
+| v1 SceneView3D alpha audit | done | conditional alpha pass for contract/resource/command/snapshot/query/MCP/release-gate readiness; stable runtime remains blocked |
 
 ## 关键路径
 
-1. v1 SceneView3D RFC -> W25/W28 sprint DAG -> TypeBox schema -> fixtures + URL resource policy + loader resource gate + package boundary + scene commands -> mock snapshot/query contracts -> MCP context -> release visual gate -> alpha audit。
+1. v1 SceneView3D RFC -> W25/W28 sprint DAG -> TypeBox schema -> fixtures + URL resource policy + loader resource gate + package boundary + scene commands -> mock snapshot/query contracts -> MCP context -> release visual gate -> alpha audit -> adapter feasibility。
 
 ```mermaid
 flowchart LR
@@ -87,8 +88,11 @@ flowchart LR
   G --> H
   H --> I["TASK-2026W27-002 MCP 3D context"]
   H --> J["TASK-2026W27-003 visual gate"]
+  G --> L["TASK-2026W27-004 adapter feasibility"]
   I --> K["TASK-2026W27-005 alpha audit"]
   J --> K
+  K --> M["renderer visual evidence follow-up"]
+  L --> M
 ```
 
 ## 阻断规则

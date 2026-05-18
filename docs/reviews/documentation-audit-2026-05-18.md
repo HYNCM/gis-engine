@@ -51,7 +51,9 @@ planning source and has been archived for traceability.
   SceneView3D context in MCP output schemas.
 - Follow-up implementation closed `TASK-2026W27-003` with
   `evaluateScene3DReleaseVisualGate` and `pnpm test:release:scene3d`.
-- W27 work still needs alpha gate evidence and adapter feasibility follow-up.
+- Follow-up implementation closed `TASK-2026W27-005` with the SceneView3D v1
+  alpha gate audit and release-note draft update.
+- W27 work still needs adapter feasibility follow-up.
 
 ## Verification
 
