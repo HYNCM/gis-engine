@@ -73,6 +73,34 @@ describe("schema sync gate", () => {
     expect(validateCommand.errors?.some((error) => error.keyword === "additionalProperties")).toBe(true);
   });
 
+  it("keeps SceneView3D command schemas strict", () => {
+    const ajv = new Ajv({ allErrors: true, strict: false });
+    const validateCommand = ajv.compile(MapCommandSchema);
+
+    expect(
+      validateCommand({
+        id: "cmd-scene-camera",
+        version: "0.1",
+        type: "setSceneCamera",
+        camera: {
+          position: [120.15, 30.28, 1200],
+          target: [120.15, 30.28, 0]
+        }
+      })
+    ).toBe(true);
+    expect(
+      validateCommand({
+        id: "cmd-scene-source",
+        version: "0.1",
+        type: "addSceneSource",
+        sourceId: "city",
+        source: { type: "3d-tiles", url: "./data/city/tileset.json" },
+        unexpected: true
+      })
+    ).toBe(false);
+    expect(validateCommand.errors?.some((error) => error.keyword === "additionalProperties")).toBe(true);
+  });
+
   it("locks diagnostic schema to registered diagnostic codes", () => {
     const diagnosticCodeSchema = DiagnosticSchema.properties.code;
     const schemaText = JSON.stringify(diagnosticCodeSchema);

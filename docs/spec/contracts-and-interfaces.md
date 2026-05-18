@@ -102,8 +102,18 @@ export type MapCommand =
   | SetLayoutCommand
   | ReorderLayerCommand
   | SetViewCommand
-  | FitBoundsCommand;
+  | FitBoundsCommand
+  | SetSceneCameraCommand
+  | AddSceneSourceCommand
+  | RemoveSceneSourceCommand
+  | AddSceneLayerCommand
+  | RemoveSceneLayerCommand
+  | SetSceneLayerVisibilityCommand;
 ```
+
+SceneView3D commands are v1 preparation commands. They only mutate
+`extensions.scene3d`, must produce deterministic JSON Patch and inverse patch,
+and must not make `view.mode: "scene3d"` stable.
 
 ### 事务语义
 

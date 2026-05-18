@@ -178,7 +178,8 @@ Rules:
 
 ## Command Contract
 
-Initial v1 command candidates:
+Initial v1 command support is available as v1 preparation commands under
+`extensions.scene3d`:
 
 - `setSceneCamera`
 - `addSceneSource`
@@ -195,6 +196,9 @@ All commands must follow the existing command contract:
 - `collectTrace`.
 - `dryRun`.
 - atomic/best-effort transaction behavior.
+
+These commands do not make `view.mode: "scene3d"` stable; they only prepare and
+audit scene extension state.
 
 ## Migration
 

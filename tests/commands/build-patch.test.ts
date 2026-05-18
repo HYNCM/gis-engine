@@ -172,6 +172,83 @@ describe("command patch generation", () => {
     ]);
   });
 
+  it("returns scene command diagnostics for missing scene targets", () => {
+    const missingScene = buildPatch(
+      {
+        id: "cmd-scene-source-missing-extension",
+        version: "0.1",
+        type: "addSceneSource",
+        sourceId: "city",
+        source: { type: "3d-tiles", url: "./data/city/tileset.json" }
+      },
+      before as MapSpec
+    );
+    const missingSource = buildPatch(
+      {
+        id: "cmd-scene-layer-missing-source",
+        version: "0.1",
+        type: "addSceneLayer",
+        layer: { id: "city", type: "tileset3d", source: "city" }
+      },
+      {
+        ...(before as MapSpec),
+        extensions: {
+          scene3d: {
+            camera: {
+              position: [120.15, 30.28, 1200],
+              target: [120.15, 30.28, 0]
+            }
+          }
+        }
+      }
+    );
+    const referencedSource = buildPatch(
+      {
+        id: "cmd-scene-remove-referenced-source",
+        version: "0.1",
+        type: "removeSceneSource",
+        sourceId: "city"
+      },
+      {
+        ...(before as MapSpec),
+        extensions: {
+          scene3d: {
+            camera: {
+              position: [120.15, 30.28, 1200],
+              target: [120.15, 30.28, 0]
+            },
+            sources: {
+              city: { type: "3d-tiles", url: "./data/city/tileset.json" }
+            },
+            layers: [{ id: "city", type: "tileset3d", source: "city" }]
+          }
+        }
+      }
+    );
+
+    expect(missingScene.diagnostics).toEqual([
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.SpecMissingField,
+        path: "/extensions/scene3d"
+      })
+    ]);
+    expect(missingSource.diagnostics).toEqual([
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.SourceNotFound,
+        path: "/layer/source"
+      })
+    ]);
+    expect(referencedSource.diagnostics).toEqual([
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.LayerSourceIncompatible,
+        path: "/sourceId"
+      })
+    ]);
+  });
+
   it("returns a registered diagnostic for unsupported command types", () => {
     const result = buildPatch(
       {

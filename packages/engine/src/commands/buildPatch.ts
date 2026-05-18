@@ -1,5 +1,5 @@
 import { DiagnosticCodes } from "../diagnostics/codes.js";
-import type { Diagnostic, JsonPatchOperation, MapCommand, MapCommandBase, MapSpec, SuggestedFix } from "../types.js";
+import type { Diagnostic, JsonPatchOperation, MapCommand, MapCommandBase, MapSpec, SceneView3DExtension, SuggestedFix } from "../types.js";
 import { joinPath } from "../spec/patch/index.js";
 
 export interface BuildPatchResult {
@@ -89,6 +89,24 @@ export function buildPatch(command: MapCommand, spec: MapSpec): BuildPatchResult
     case "reorderLayer":
       return reorderLayer(command.layerId, command.beforeLayerId, spec);
 
+    case "setSceneCamera":
+      return setSceneCamera(command.camera, spec);
+
+    case "addSceneSource":
+      return addSceneSource(command.sourceId, command.source, spec);
+
+    case "removeSceneSource":
+      return removeSceneSource(command.sourceId, spec);
+
+    case "addSceneLayer":
+      return addSceneLayer(command.layer, spec);
+
+    case "removeSceneLayer":
+      return removeSceneLayer(command.layerId, spec);
+
+    case "setSceneLayerVisibility":
+      return setSceneLayerVisibility(command.layerId, command.visible, spec);
+
     default:
       return failed({
         code: DiagnosticCodes.CommandUnsupported,
@@ -98,6 +116,129 @@ export function buildPatch(command: MapCommand, spec: MapSpec): BuildPatchResult
         fix: manualFix("Use one of the registered v0.1 command types.", "medium")
       });
   }
+}
+
+function setSceneCamera(camera: SceneView3DExtension["camera"], spec: MapSpec): BuildPatchResult {
+  const scene = getSceneExtension(spec);
+  if (!spec.extensions) {
+    return {
+      patch: [{ op: "add", path: "/extensions", value: { scene3d: { camera } } }],
+      diagnostics: []
+    };
+  }
+  if (!scene) {
+    return {
+      patch: [{ op: "add", path: "/extensions/scene3d", value: { camera } }],
+      diagnostics: []
+    };
+  }
+  return {
+    patch: [{ op: Object.hasOwn(scene, "camera") ? "replace" : "add", path: "/extensions/scene3d/camera", value: camera }],
+    diagnostics: []
+  };
+}
+
+function addSceneSource(sourceId: string, source: NonNullable<SceneView3DExtension["sources"]>[string], spec: MapSpec): BuildPatchResult {
+  const scene = getSceneExtension(spec);
+  if (!scene) return missingSceneExtension("Run setSceneCamera before adding SceneView3D sources.");
+  if (scene.sources?.[sourceId]) return { patch: [], diagnostics: [], skipped: true };
+
+  if (!scene.sources) {
+    return {
+      patch: [{ op: "add", path: "/extensions/scene3d/sources", value: { [sourceId]: source } }],
+      diagnostics: []
+    };
+  }
+
+  return {
+    patch: [{ op: "add", path: joinPath("extensions", "scene3d", "sources", sourceId), value: source }],
+    diagnostics: []
+  };
+}
+
+function removeSceneSource(sourceId: string, spec: MapSpec): BuildPatchResult {
+  const scene = getSceneExtension(spec);
+  if (!scene?.sources?.[sourceId]) {
+    return failed({
+      code: DiagnosticCodes.SourceNotFound,
+      message: `Scene source "${sourceId}" does not exist.`,
+      path: "/sourceId",
+      relatedResources: [{ kind: "source", id: sourceId }],
+      fix: manualFix("Check the scene source id or skip this removeSceneSource command when the source is already absent.", "high")
+    });
+  }
+  if (scene.layers?.some((layer) => layer.source === sourceId)) {
+    return failed({
+      code: DiagnosticCodes.LayerSourceIncompatible,
+      message: `Scene source "${sourceId}" is still referenced by one or more scene layers.`,
+      path: "/sourceId",
+      relatedResources: [{ kind: "source", id: sourceId }],
+      fix: manualFix("Remove or retarget scene layers before removing this scene source.", "high")
+    });
+  }
+  return { patch: [{ op: "remove", path: joinPath("extensions", "scene3d", "sources", sourceId) }], diagnostics: [] };
+}
+
+function addSceneLayer(layer: NonNullable<SceneView3DExtension["layers"]>[number], spec: MapSpec): BuildPatchResult {
+  const scene = getSceneExtension(spec);
+  if (!scene) return missingSceneExtension("Run setSceneCamera before adding SceneView3D layers.");
+  if (!scene.sources?.[layer.source]) {
+    return failed({
+      code: DiagnosticCodes.SourceNotFound,
+      message: `Scene layer "${layer.id}" references missing scene source "${layer.source}".`,
+      path: "/layer/source",
+      relatedResources: [
+        { kind: "layer", id: layer.id },
+        { kind: "source", id: layer.source }
+      ],
+      fix: manualFix("Add the scene source before adding this scene layer.", "high")
+    });
+  }
+  if (scene.layers?.some((candidate) => candidate.id === layer.id)) return { patch: [], diagnostics: [], skipped: true };
+
+  if (!scene.layers) {
+    return { patch: [{ op: "add", path: "/extensions/scene3d/layers", value: [layer] }], diagnostics: [] };
+  }
+
+  return { patch: [{ op: "add", path: `/extensions/scene3d/layers/${scene.layers.length}`, value: layer }], diagnostics: [] };
+}
+
+function removeSceneLayer(layerId: string, spec: MapSpec): BuildPatchResult {
+  const scene = getSceneExtension(spec);
+  const index = scene?.layers?.findIndex((layer) => layer.id === layerId) ?? -1;
+  if (index < 0) return missingLayer(layerId, "/layerId", "Check the scene layer id or skip this removeSceneLayer command when the layer is already absent.");
+  return { patch: [{ op: "remove", path: `/extensions/scene3d/layers/${index}` }], diagnostics: [] };
+}
+
+function setSceneLayerVisibility(layerId: string, visible: boolean, spec: MapSpec): BuildPatchResult {
+  const scene = getSceneExtension(spec);
+  const index = scene?.layers?.findIndex((layer) => layer.id === layerId) ?? -1;
+  if (index < 0) {
+    return missingLayer(layerId, "/layerId", "Add the scene layer before setting visibility, or update layerId to an existing scene layer.");
+  }
+  const layer = scene?.layers?.[index];
+  if (!layer) {
+    return missingLayer(layerId, "/layerId", "Add the scene layer before setting visibility, or update layerId to an existing scene layer.");
+  }
+  return {
+    patch: [{ op: Object.hasOwn(layer, "visible") ? "replace" : "add", path: `/extensions/scene3d/layers/${index}/visible`, value: visible }],
+    diagnostics: []
+  };
+}
+
+function getSceneExtension(spec: MapSpec): SceneView3DExtension | undefined {
+  const scene = spec.extensions?.scene3d;
+  return scene && typeof scene === "object" && !Array.isArray(scene) ? (scene as SceneView3DExtension) : undefined;
+}
+
+function missingSceneExtension(fixMessage: string): BuildPatchResult {
+  return failed({
+    code: DiagnosticCodes.SpecMissingField,
+    message: "SceneView3D extension is missing.",
+    path: "/extensions/scene3d",
+    relatedResources: [{ kind: "schema", id: "sceneview3d" }],
+    fix: manualFix(fixMessage, "high")
+  });
 }
 
 function reorderLayer(layerId: string, beforeLayerId: string | undefined, spec: MapSpec): BuildPatchResult {

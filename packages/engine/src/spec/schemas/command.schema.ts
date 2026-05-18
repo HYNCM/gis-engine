@@ -1,5 +1,6 @@
 import { Type, type Static } from "@sinclair/typebox";
 import { LayerSpecSchema, SourceSpecSchema } from "./map-spec.schema.js";
+import { SceneCameraSchema, SceneLayerSchema, SceneSourceSchema } from "./sceneview3d.schema.js";
 
 const CommandBaseSchema = Type.Object(
   {
@@ -78,6 +79,25 @@ export const MapCommandSchema = Type.Union([
       bounds: Type.Tuple([Type.Number(), Type.Number(), Type.Number(), Type.Number()]),
       padding: Type.Optional(Type.Number())
     })
+  ], { additionalProperties: false }),
+  Type.Composite([CommandBaseSchema, Type.Object({ type: Type.Literal("setSceneCamera"), camera: SceneCameraSchema })], {
+    additionalProperties: false
+  }),
+  Type.Composite([CommandBaseSchema, Type.Object({ type: Type.Literal("addSceneSource"), sourceId: Type.String(), source: SceneSourceSchema })], {
+    additionalProperties: false
+  }),
+  Type.Composite([CommandBaseSchema, Type.Object({ type: Type.Literal("removeSceneSource"), sourceId: Type.String() })], {
+    additionalProperties: false
+  }),
+  Type.Composite([CommandBaseSchema, Type.Object({ type: Type.Literal("addSceneLayer"), layer: SceneLayerSchema })], {
+    additionalProperties: false
+  }),
+  Type.Composite([CommandBaseSchema, Type.Object({ type: Type.Literal("removeSceneLayer"), layerId: Type.String() })], {
+    additionalProperties: false
+  }),
+  Type.Composite([
+    CommandBaseSchema,
+    Type.Object({ type: Type.Literal("setSceneLayerVisibility"), layerId: Type.String(), visible: Type.Boolean() })
   ], { additionalProperties: false })
 ], {
   $id: "https://gis-engine.dev/schemas/commands.v0.1.schema.json"

@@ -100,6 +100,7 @@ flowchart LR
 | TASK-2026W25-002 | done | `SceneView3DExtensionSchema`, generated JSON schema, public type assertions, and schema-sync validation against `scene3d-extension.map.json` |
 | TASK-2026W25-003 | done | valid `scene3d-extension.map.json` plus invalid blocked URL and unknown field fixtures with expected diagnostics |
 | TASK-2026W25-004 | partial | `validateSpec` applies scene source URL policy under `/extensions/scene3d/sources/*/url`; loader-level byte, texture, worker, and timeout enforcement remains with the renderer package |
+| TASK-2026W25-005 | done | scene command schemas and `buildPatch` support for camera, sources, layers, visibility, deterministic patch replay, dry-run, rollback, and target diagnostics |
 | TASK-2026W25-006 | done | `@gis-engine/scene3d` scaffold exports v1 capabilities, explicit unsupported scaffold diagnostics, and a dependency guard against 3D renderer imports |
 
 ## Non-Goals

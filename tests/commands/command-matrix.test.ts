@@ -197,6 +197,92 @@ const cases: CommandMatrixCase[] = [
     assertSpec: (spec) => {
       expect(spec.layers.map((layer) => layer.id)).toEqual(["points", "point-outline"]);
     }
+  },
+  {
+    name: "setSceneCamera",
+    spec: baseSpec(),
+    command: {
+      id: "cmd-set-scene-camera",
+      version: "0.1",
+      type: "setSceneCamera",
+      baseRevision: "1",
+      camera: sceneCamera()
+    },
+    assertSpec: (spec) => {
+      expect(spec.extensions?.scene3d).toEqual({ camera: sceneCamera() });
+    }
+  },
+  {
+    name: "addSceneSource",
+    spec: sceneSpec(),
+    command: {
+      id: "cmd-add-scene-source",
+      version: "0.1",
+      type: "addSceneSource",
+      baseRevision: "1",
+      sourceId: "city",
+      source: sceneTilesetSource()
+    },
+    assertSpec: (spec) => {
+      expect((spec.extensions?.scene3d as { sources?: Record<string, unknown> }).sources?.city).toEqual(sceneTilesetSource());
+    }
+  },
+  {
+    name: "addSceneLayer",
+    spec: sceneSpec({ sources: { city: sceneTilesetSource() } }),
+    command: {
+      id: "cmd-add-scene-layer",
+      version: "0.1",
+      type: "addSceneLayer",
+      baseRevision: "1",
+      layer: sceneTilesetLayer()
+    },
+    assertSpec: (spec) => {
+      expect((spec.extensions?.scene3d as { layers?: unknown[] }).layers).toEqual([sceneTilesetLayer()]);
+    }
+  },
+  {
+    name: "setSceneLayerVisibility",
+    spec: sceneSpec({ sources: { city: sceneTilesetSource() }, layers: [sceneTilesetLayer()] }),
+    command: {
+      id: "cmd-set-scene-layer-visibility",
+      version: "0.1",
+      type: "setSceneLayerVisibility",
+      baseRevision: "1",
+      layerId: "city",
+      visible: false
+    },
+    assertSpec: (spec) => {
+      expect((spec.extensions?.scene3d as { layers?: Array<{ visible?: boolean }> }).layers?.[0]?.visible).toBe(false);
+    }
+  },
+  {
+    name: "removeSceneLayer",
+    spec: sceneSpec({ sources: { city: sceneTilesetSource() }, layers: [sceneTilesetLayer()] }),
+    command: {
+      id: "cmd-remove-scene-layer",
+      version: "0.1",
+      type: "removeSceneLayer",
+      baseRevision: "1",
+      layerId: "city"
+    },
+    assertSpec: (spec) => {
+      expect((spec.extensions?.scene3d as { layers?: unknown[] }).layers).toEqual([]);
+    }
+  },
+  {
+    name: "removeSceneSource",
+    spec: sceneSpec({ sources: { city: sceneTilesetSource() } }),
+    command: {
+      id: "cmd-remove-scene-source",
+      version: "0.1",
+      type: "removeSceneSource",
+      baseRevision: "1",
+      sourceId: "city"
+    },
+    assertSpec: (spec) => {
+      expect((spec.extensions?.scene3d as { sources?: Record<string, unknown> }).sources).toEqual({});
+    }
   }
 ];
 
@@ -240,5 +326,39 @@ function baseSpec(overrides: Partial<MapSpec> = {}): MapSpec {
     sources: {},
     layers: [],
     ...overrides
+  };
+}
+
+function sceneSpec(scene: Record<string, unknown> = {}): MapSpec {
+  return baseSpec({
+    extensions: {
+      scene3d: {
+        camera: sceneCamera(),
+        ...scene
+      }
+    }
+  });
+}
+
+function sceneCamera() {
+  return {
+    position: [120.15, 30.28, 1200] as [number, number, number],
+    target: [120.15, 30.28, 0] as [number, number, number]
+  };
+}
+
+function sceneTilesetSource() {
+  return {
+    type: "3d-tiles" as const,
+    url: "./data/city/tileset.json"
+  };
+}
+
+function sceneTilesetLayer() {
+  return {
+    id: "city",
+    type: "tileset3d" as const,
+    source: "city",
+    pickable: true
   };
 }

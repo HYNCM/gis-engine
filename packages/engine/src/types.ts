@@ -303,6 +303,38 @@ export interface FitBoundsCommand extends MapCommandBase {
   padding?: number;
 }
 
+export interface SetSceneCameraCommand extends MapCommandBase {
+  type: "setSceneCamera";
+  camera: SceneCamera;
+}
+
+export interface AddSceneSourceCommand extends MapCommandBase {
+  type: "addSceneSource";
+  sourceId: string;
+  source: SceneSource;
+}
+
+export interface RemoveSceneSourceCommand extends MapCommandBase {
+  type: "removeSceneSource";
+  sourceId: string;
+}
+
+export interface AddSceneLayerCommand extends MapCommandBase {
+  type: "addSceneLayer";
+  layer: SceneLayer;
+}
+
+export interface RemoveSceneLayerCommand extends MapCommandBase {
+  type: "removeSceneLayer";
+  layerId: string;
+}
+
+export interface SetSceneLayerVisibilityCommand extends MapCommandBase {
+  type: "setSceneLayerVisibility";
+  layerId: string;
+  visible: boolean;
+}
+
 export type MapCommand =
   | AddSourceCommand
   | RemoveSourceCommand
@@ -312,7 +344,13 @@ export type MapCommand =
   | SetLayoutCommand
   | ReorderLayerCommand
   | SetViewCommand
-  | FitBoundsCommand;
+  | FitBoundsCommand
+  | SetSceneCameraCommand
+  | AddSceneSourceCommand
+  | RemoveSceneSourceCommand
+  | AddSceneLayerCommand
+  | RemoveSceneLayerCommand
+  | SetSceneLayerVisibilityCommand;
 
 export interface ApplyOptions {
   dryRun?: boolean;

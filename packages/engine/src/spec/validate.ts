@@ -49,6 +49,48 @@ function validateSceneView3DExtension(spec: MapSpec): Diagnostic[] {
     diagnostics.push(...validateResourceUrl(source.url, `/extensions/scene3d/sources/${escapePathSegment(sourceId)}/url`, resourcePolicy));
   }
 
+  diagnostics.push(...validateSceneLayerReferences(sceneExtension));
+
+  return diagnostics;
+}
+
+function validateSceneLayerReferences(sceneExtension: SceneView3DExtension): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+  const layerIds = new Set<string>();
+
+  for (const [index, layer] of (sceneExtension.layers ?? []).entries()) {
+    const layerPath = `/extensions/scene3d/layers/${index}`;
+
+    if (layerIds.has(layer.id)) {
+      diagnostics.push({
+        severity: "error",
+        code: DiagnosticCodes.LayerDuplicateId,
+        message: `Scene layer id "${layer.id}" is duplicated.`,
+        path: `${layerPath}/id`,
+        relatedResources: [{ kind: "layer", id: layer.id }]
+      });
+    }
+    layerIds.add(layer.id);
+
+    if (!sceneExtension.sources?.[layer.source]) {
+      diagnostics.push({
+        severity: "error",
+        code: DiagnosticCodes.SourceNotFound,
+        message: `Scene layer "${layer.id}" references missing scene source "${layer.source}".`,
+        path: `${layerPath}/source`,
+        relatedResources: [
+          { kind: "layer", id: layer.id },
+          { kind: "source", id: layer.source }
+        ],
+        fix: {
+          kind: "manual",
+          confidence: "medium",
+          message: "Add the missing scene source or update the scene layer source id."
+        }
+      });
+    }
+  }
+
   return diagnostics;
 }
 

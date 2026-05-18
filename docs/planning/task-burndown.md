@@ -73,3 +73,4 @@ decision_level: advisory
 | POST-2026W21-013 | done | `pnpm test:perf:nightly` synthetic 1k/10k/100k lifecycle evidence |
 | POST-2026W21-016 | done | SceneView3D v1 RFC split into `sprint-2026-W25-sceneview3d-v1.md` task DAG |
 | TASK-2026W25-001/002 | done | SceneView3D contract slices and `SceneView3DExtensionSchema` landed ahead of W25 |
+| TASK-2026W25-003/005/006 | done | SceneView3D invalid fixtures, scene command deterministic patch contract, and `@gis-engine/scene3d` package boundary |
