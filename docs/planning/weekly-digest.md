@@ -36,7 +36,7 @@ decision_level: advisory
 | code-reviewer | MCP 工具失败路径和 output schema P1 已关闭 | AI 工具可信度和可审计性提升 | high |
 | quality-guardian | `pnpm build:schema`、`pnpm check`、默认 visual snapshot 均通过 | 当前代码可通过 PR gate | high |
 | quality-guardian | strict visual snapshot 在默认沙箱内受 Chromium 权限限制，release-capable runner 已通过 | release runner 必须具备浏览器/WebGL 权限 | high |
-| product-strategist | v0.2 checkpoint 已完成核心 planned tasks；2026-05-18 已补齐 package/resource/perf/command audit/2.5D beta follow-up | 下一阶段可转向 release runner 与 v1 3D 边界 | high |
+| product-strategist | v0.2 checkpoint 已完成核心 planned tasks；2026-05-18 已补齐 package/resource/perf/command audit/2.5D beta follow-up，并将 SceneView3D RFC 拆成 W25/W28 DAG | 下一阶段从 v1 schema foundation 开始执行 | high |
 | task-distributor | W21/W23 planned tasks 已形成执行快照 | 依赖图需要从阻断模式更新为完成证据模式 | high |
 
 ## P0 / P1 状态

@@ -12,7 +12,7 @@ decision_level: advisory
 
 ## 当前结论
 
-原 W21/W23 计划中的 v0.2 checkpoint 关键任务已经提前完成并进入证据归档状态。下面的理想燃尽表保留为计划基线；真实状态以“2026-05-17 执行快照”为准。
+原 W21/W23 计划中的 v0.2 checkpoint 关键任务已经提前完成并进入证据归档状态。SceneView3D v1 RFC 也已拆成 W25/W28 专项 sprint。下面的理想燃尽表保留为计划基线；真实状态以“2026-05-17 执行快照”和“2026-05-18 follow-up”为准。
 
 ## 初始容量
 
@@ -56,7 +56,7 @@ decision_level: advisory
 - W21 两个 P1 已完成；后续 public capability 变更仍必须跑 schema-sync、MCP contract 和 command replay gates。
 - vector tile adapter 当前承诺 schema/transformer/diagnostics、snapshot smoke 和本地生成 MVT visual 场景；不承诺解析生产远程 MVT 数据作为默认 PR gate。
 - 如果 visual snapshot 环境不可用，PR 可记录 skipped report；release 或 strict gate 不允许跳过。
-- fill-extrusion-lite 已作为 experimental beta adapter 落地；SceneView3D boundary 仍是不阻塞 v0.2 2D 主线的后续工作。
+- fill-extrusion-lite 已作为 experimental beta adapter 落地并补齐 release visual evidence；SceneView3D 后续实现已转入 W25/W28 v1 专项 sprint，不阻塞 v0.2 2D 主线。
 
 ## 2026-05-17 执行快照
 
@@ -71,3 +71,4 @@ decision_level: advisory
 | TASK-2026W23-009 | done | checkpoint audit, release note draft, `pnpm build:schema`, `pnpm check`, strict visual gate evidence |
 | POST-2026W21-011 | done | `fill-extrusion-lite` MapLibre beta mapping, capability report, example/schema fixture, snapshot smoke |
 | POST-2026W21-013 | done | `pnpm test:perf:nightly` synthetic 1k/10k/100k lifecycle evidence |
+| POST-2026W21-016 | done | SceneView3D v1 RFC split into `sprint-2026-W25-sceneview3d-v1.md` task DAG |

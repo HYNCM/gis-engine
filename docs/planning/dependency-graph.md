@@ -60,14 +60,32 @@ flowchart LR
 | release strict visual runner | done | `pnpm -s test:release:strict` passed in release-capable local runner with 3 visual scenes |
 | large-data perf/nightly evidence | done | `pnpm -s test:perf:nightly` covers 1k/10k/100k inline GeoJSON lifecycle |
 | v1 SceneView3D RFC | drafted | camera/source/layer/snapshot/query/resource policy contract |
+| v1 SceneView3D sprint split | done | `sprint-2026-W25-sceneview3d-v1.md` defines schema/resource/snapshot/MCP/package DAG |
 
 ## 关键路径
 
-1. v1 SceneView3D RFC -> TypeBox schema + fixtures -> resource policy -> snapshot/query contracts -> renderer package。
+1. v1 SceneView3D RFC -> W25/W28 sprint DAG -> TypeBox schema + fixtures -> resource policy -> snapshot/query contracts -> renderer package。
+
+```mermaid
+flowchart LR
+  A["SceneView3D v1 RFC"] --> B["TASK-2026W25-001 contract slices"]
+  B --> C["TASK-2026W25-002 TypeBox schema"]
+  C --> D["TASK-2026W25-003 fixtures"]
+  C --> E["TASK-2026W25-004 resource policy"]
+  C --> F["TASK-2026W25-005 scene commands"]
+  B --> G["TASK-2026W25-006 scene3d package boundary"]
+  D --> H["TASK-2026W27-001 snapshot/query"]
+  E --> H
+  G --> H
+  H --> I["TASK-2026W27-002 MCP 3D context"]
+  H --> J["TASK-2026W27-003 visual gate"]
+  I --> K["TASK-2026W27-005 alpha audit"]
+  J --> K
+```
 
 ## 阻断规则
 
 - public AI tool 或 public command surface 变更仍必须先通过 schema-sync、MCP contract tests 和 command replay tests。
 - release candidate 必须在正式 runner 执行 strict visual snapshot，或由 coordinator 明确 waiver 并创建 follow-up。
 - resource/perf 文档中声明的 PR 阻断项已有 deterministic Node-level evidence；nightly/release 大场景不得默认为 PR blocker。
-- `fill-extrusion-lite` 只作为 experimental beta 暴露；release visual evidence 未归档前不得升格为稳定图层。
+- `fill-extrusion-lite` 只作为 experimental beta 暴露；即使已有 release visual evidence，也不得绕过 explicit capability gate 升格为稳定图层。
