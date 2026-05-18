@@ -4,7 +4,8 @@ period: 2026-W21
 generated_at: 2026-05-17T16:35:00Z
 repo_revision: "acdf28e"
 inputs:
-  - docs/planning/sprint-2026-W21.md
+  - docs/archive/2026-05-18/planning/sprint-2026-W21.md
+  - docs/planning/sprint-2026-W25-sceneview3d-v1.md
 decision_level: advisory
 ---
 
@@ -46,7 +47,8 @@ flowchart LR
 
 ## 当前状态
 
-截至 `acdf28e`，图中 W21/W23 的 v0.2 checkpoint 关键链路已完成：
+截至 `acdf28e`，图中 W21/W23 的 v0.2 checkpoint 关键链路已完成；原
+W21 sprint 计划已归档，当前活跃关键路径从 W25 SceneView3D v1 DAG 继续：
 
 | Chain | Status | Evidence |
 | --- | --- | --- |

@@ -1,6 +1,9 @@
 # Contract Freeze Checklist
 
-This file records the public API freeze boundary for the v0.1 base and the 2026-05-17 v0.2 checkpoint additions. Changes to these areas require an explicit breaking/non-breaking note in the PR summary.
+This file records the public API freeze boundary for the v0.1 base, the
+2026-05-17 v0.2 checkpoint additions, and the 2026-05-18 SceneView3D v1
+preparation surface. Changes to these areas require an explicit
+breaking/non-breaking note in the PR summary.
 
 ## Frozen Boundary
 
@@ -8,6 +11,7 @@ This file records the public API freeze boundary for the v0.1 base and the 2026-
 - `packages/engine/src/spec/schemas/*.ts`
 - `packages/engine/src/index.ts`
 - `packages/ai/src/tools/*`
+- `packages/scene3d/src/index.ts`
 - MCP tool names, input schema, output schema, and JSON result shape
 
 ## Current v0.1 Contract Additions
@@ -30,6 +34,24 @@ This file records the public API freeze boundary for the v0.1 base and the 2026-
 - Expanded expression contract: `case`, `match`, `zoom`, `to-number`, `to-string`.
 - `fill-extrusion-lite` experimental gate.
 - Reserved `scene3d` unsupported diagnostics.
+
+## Current SceneView3D v1 Prep Additions
+
+- `SceneView3DExtensionSchema` as the public v1 3D extension schema for
+  `extensions.scene3d`.
+- Scene source URL policy diagnostics under
+  `/extensions/scene3d/sources/{sourceId}/url`.
+- Scene layer-source reference diagnostics while 3D data remains under
+  `extensions.scene3d`.
+- SceneView3D preparation commands: `setSceneCamera`, `addSceneSource`,
+  `removeSceneSource`, `addSceneLayer`, `removeSceneLayer`, and
+  `setSceneLayerVisibility`.
+- `@gis-engine/scene3d` package boundary scaffold, including capability report
+  shape, unsupported scaffold diagnostics, and dependency guard expectations.
+- `view.mode: "scene3d"`, `capabilities.renderer: "scene3d"`, and
+  `capabilities.dimensions: ["3d"]` remain reserved unsupported runtime
+  requests until the v1 renderer package passes resource, snapshot, and query
+  gates.
 
 ## RFC-QC Fast Track
 

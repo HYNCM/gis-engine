@@ -4,7 +4,8 @@ period: 2026-W21
 generated_at: 2026-05-17T16:35:00Z
 repo_revision: "acdf28e"
 inputs:
-  - docs/planning/sprint-2026-W21.md
+  - docs/archive/2026-05-18/planning/sprint-2026-W21.md
+  - docs/planning/sprint-2026-W25-sceneview3d-v1.md
 decision_level: advisory
 ---
 
@@ -12,7 +13,11 @@ decision_level: advisory
 
 ## 当前结论
 
-原 W21/W23 计划中的 v0.2 checkpoint 关键任务已经提前完成并进入证据归档状态。SceneView3D v1 RFC 也已拆成 W25/W28 专项 sprint。下面的理想燃尽表保留为计划基线；真实状态以“2026-05-17 执行快照”和“2026-05-18 follow-up”为准。
+原 W21/W23 计划中的 v0.2 checkpoint 关键任务已经提前完成，原 sprint
+计划已移入 `docs/archive/2026-05-18/planning/sprint-2026-W21.md`。SceneView3D
+v1 RFC 已拆成 W25/W28 专项 sprint，且 W25 的 schema、fixtures、scene
+commands 和 package boundary 已提前完成。下面的 W21/W23 理想燃尽表仅保留
+为计划基线；真实状态以“2026-05-17 执行快照”和“2026-05-18 follow-up”为准。
 
 ## 初始容量
 

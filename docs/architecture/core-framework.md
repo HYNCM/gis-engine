@@ -25,7 +25,7 @@ v0.1 的可验收范围见 [../engineering/v0.1-mvp-acceptance.md](../engineerin
 
 ## v0 包结构
 
-首版包拆分必须克制。成熟后的 `scene3d`、`analysis`、`devtools`、`tiles`、`sources`、`layers` 暂时都作为内部目录或后续包处理。
+首版包拆分必须克制。`scene3d` 已作为 v1 3D contract scaffold 独立成包，但仍不包含生产 3D renderer。成熟后的 `analysis`、`devtools`、`tiles`、`sources`、`layers` 暂时都作为内部目录或后续包处理。
 
 ```txt
 packages/
@@ -45,27 +45,30 @@ packages/
       tools/
       mcp/
       prompts/
-  examples/
-  docs/
+  scene3d/
+    src/
+      index.ts
+examples/
+docs/
 ```
 
 公开包：
 
 - `@gis-engine/engine`：地图运行时、`MapSpec` 类型、schema、validator、command apply、snapshot、query、MapLibre adapter、实验 WebGL2 lite renderer。
 - `@gis-engine/ai`：MCP tools、AI 友好命令 schema、诊断解释、导出示例应用。
+- `@gis-engine/scene3d`：SceneView3D v1 包边界脚手架、capability report、未实现 renderer 的结构化诊断和 3D 依赖隔离守卫；不承诺 `view.mode: "scene3d"` 稳定运行。
 - `examples`：可运行样例，不作为 npm 包发布。
 - `docs`：架构、指南、研究和评审文档。
 
 暂缓独立发布：
 
-- `@gis-engine/scene3d`
 - `@gis-engine/analysis`
 - `@gis-engine/devtools`
 - `@gis-engine/tiles`
 - `@gis-engine/sources`
 - `@gis-engine/layers`
 
-这些边界在 v0.1 先以内部模块存在，等 API 和使用场景稳定后再拆包。
+这些边界在 v0.1/v0.2 先以内部模块存在，等 API 和使用场景稳定后再拆包。
 
 ## 架构分层
 
@@ -82,6 +85,8 @@ flowchart TD
   Runtime --> RendererAdapter["Renderer Adapter"]
   RendererAdapter --> MapLibre["MapLibre Adapter"]
   RendererAdapter --> WebGL2Lite["WebGL2 Lite Experimental"]
+  Scene3D["@gis-engine/scene3d scaffold"] --> Spec
+  Scene3D --> Diagnostics
   AI["@gis-engine/ai"] --> Validator
   AI --> Commands
   AI --> Diagnostics

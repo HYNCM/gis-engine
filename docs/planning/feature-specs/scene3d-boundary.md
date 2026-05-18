@@ -16,9 +16,8 @@ decision_level: advisory
 
 `SceneView3D` remains a v1 capability boundary. The current v0.2 line reserves
 names for `view.mode: "scene3d"`, `capabilities.renderer: "scene3d"`, and
-`capabilities.dimensions: ["3d"]`, but treats them as unsupported until a
-dedicated 3D package defines camera, terrain, source, query, and snapshot
-contracts.
+`capabilities.dimensions: ["3d"]`, but treats them as unsupported until the
+dedicated 3D package passes resource, snapshot, query, and renderer gates.
 
 ## Current Behavior
 
@@ -31,17 +30,27 @@ Current validation returns `CAPABILITY.UNSUPPORTED` for:
 This keeps AI agents from mistaking reserved enum values for available runtime
 behavior.
 
-`extensions.scene3d` is the reserved namespace for future 3D contracts. It is
-currently accepted as an opaque extension payload when the document still uses
-`view.mode: "map2d"`, so teams can sketch camera/lights/depth/terrain/tileset
-shapes without widening the stable runtime surface.
+`extensions.scene3d` is the reserved namespace for future 3D contracts. It now
+has a formal `SceneView3DExtensionSchema`, generated JSON schema, schema/type
+sync assertions, scene source URL policy checks, scene layer-source validation,
+and deterministic scene command patches. It is still an extension payload while
+the document uses `view.mode: "map2d"`; these contracts do not widen the stable
+runtime surface.
+
+Current preparation commands mutate only `extensions.scene3d`:
+
+- `setSceneCamera`
+- `addSceneSource`
+- `removeSceneSource`
+- `addSceneLayer`
+- `removeSceneLayer`
+- `setSceneLayerVisibility`
 
 ## Future Entry Criteria
 
-- `extensions.scene3d` schema for camera, lights, depth, terrain, and tilesets
-  following [sceneview3d-v1-rfc.md](./sceneview3d-v1-rfc.md).
+- Loader-level resource enforcement for 3D asset bytes, textures, workers, and
+  timeouts following [sceneview3d-v1-rfc.md](./sceneview3d-v1-rfc.md).
 - Renderer capability report with `dimensions: ["3d"]`.
-- 3D resource policy for tilesets, workers, textures, and model assets.
 - Snapshot contract that can detect blank scene, invalid camera, and unloaded
   tileset.
 - Query contract for pick results and 3D object identity.
@@ -55,9 +64,10 @@ shapes without widening the stable runtime surface.
 ## Acceptance Criteria
 
 - Any current Scene3D request receives a stable structured diagnostic.
-- `extensions.scene3d` can be validated as an extension payload while
+- `extensions.scene3d` can be validated by `SceneView3DExtensionSchema` while
   `view.mode` remains `map2d`.
 - The unsupported result is visible through `validate_spec` and
   `explain_spec`.
-- 3D implementation work must start with schema and resource-policy RFCs before
-  renderer code.
+- Further 3D implementation work must complete loader-level resource,
+  snapshot, query, and MCP context gates before renderer code is treated as
+  release-capable.

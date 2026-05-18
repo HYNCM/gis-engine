@@ -36,7 +36,7 @@ decision_level: advisory
 | code-reviewer | MCP 工具失败路径和 output schema P1 已关闭 | AI 工具可信度和可审计性提升 | high |
 | quality-guardian | `pnpm build:schema`、`pnpm check`、默认 visual snapshot 均通过 | 当前代码可通过 PR gate | high |
 | quality-guardian | strict visual snapshot 在默认沙箱内受 Chromium 权限限制，release-capable runner 已通过 | release runner 必须具备浏览器/WebGL 权限 | high |
-| product-strategist | v0.2 checkpoint 已完成核心 planned tasks；2026-05-18 已补齐 package/resource/perf/command audit/2.5D beta follow-up，并将 SceneView3D RFC 拆成 W25/W28 DAG，初始 schema foundation 已完成 | 下一阶段从 v1 resource policy、fixtures、package boundary 开始执行 | high |
+| product-strategist | v0.2 checkpoint 已完成核心 planned tasks；2026-05-18 已补齐 package/resource/perf/command audit/2.5D beta follow-up，并将 SceneView3D RFC 拆成 W25/W28 DAG；schema foundation、fixtures、scene commands 和 package boundary 已完成 | 下一阶段执行 loader-level resource enforcement、snapshot/query contract 和 MCP 3D context | high |
 | task-distributor | W21/W23 planned tasks 已形成执行快照 | 依赖图需要从阻断模式更新为完成证据模式 | high |
 
 ## P0 / P1 状态
@@ -54,11 +54,11 @@ decision_level: advisory
 1. v0.2 不直接扩 3D 实现，先写 2.5D/3D extension 边界。
 2. v0.2 的首要工程项已按合同对齐执行：command schema、MCP diagnostics/output schema、expression matrix、style diff/layer order。
 3. PMTiles/vector tile source 已从 backlog 升级并完成当前 checkpoint。
-4. 下一轮 sprint 可按 SceneView3D v1 RFC 拆 schema、resource policy、snapshot/query 和 renderer package，而不是在当前 v0.2 主线继续追加 3D 实现。
+4. 下一轮 sprint 不再从零拆分 SceneView3D；W25 已完成 schema、fixtures、scene commands 和 package boundary，后续应沿既有 DAG 继续执行 loader-level resource enforcement、snapshot/query 和 MCP 3D context。
 
 ## 下游交接
 
 - `code-reviewer -> task-distributor`: 两个 P1 审计缺口已关闭，P2 resource/perf 已补 deterministic 与 nightly evidence。
 - `competitive-intel -> product-strategist`: PMTiles/vector tile、MCP structured contract、3D boundary 已纳入并完成 checkpoint。
 - `quality-guardian -> coordinator`: PR gate 可放行；release gate 需要正式 runner 再跑 strict visual snapshot。
-- `product-strategist -> task-distributor`: W21/W23 当前规划项完成；新 3D 工作应按 v1 RFC 重新拆解。
+- `product-strategist -> task-distributor`: W21/W23 当前规划项完成；3D 工作已进入 W25/W28 SceneView3D DAG，下一批应聚焦 `TASK-2026W25-004` 剩余 loader-level enforcement 与 W27 snapshot/query。

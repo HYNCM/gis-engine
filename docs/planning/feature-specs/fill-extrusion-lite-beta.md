@@ -5,7 +5,7 @@ generated_at: 2026-05-17T16:20:00Z
 repo_revision: "acdf28e"
 inputs:
   - docs/planning/monthly-roadmap.md
-  - docs/planning/sprint-2026-W21.md
+  - docs/archive/2026-05-18/planning/sprint-2026-W21.md
   - packages/engine/src/spec/validate.ts
   - packages/engine/src/renderer/maplibre/transformer.ts
 decision_level: implementation
