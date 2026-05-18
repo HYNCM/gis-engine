@@ -59,10 +59,11 @@ flowchart LR
 | fill-extrusion-lite beta adapter | done | MapLibre `fill-extrusion` mapping、capability report、example/schema fixture、snapshot smoke |
 | release strict visual runner | done | `pnpm -s test:release:strict` passed in release-capable local runner with 3 visual scenes |
 | large-data perf/nightly evidence | done | `pnpm -s test:perf:nightly` covers 1k/10k/100k inline GeoJSON lifecycle |
+| v1 SceneView3D RFC | drafted | camera/source/layer/snapshot/query/resource policy contract |
 
 ## 关键路径
 
-1. Future v1 SceneView3D RFC -> camera/source/layer/snapshot schema -> renderer package。
+1. v1 SceneView3D RFC -> TypeBox schema + fixtures -> resource policy -> snapshot/query contracts -> renderer package。
 
 ## 阻断规则
 

@@ -511,7 +511,7 @@ call queryFeatures and expect RENDER.DESTROYED
 
 当前下一步顺序：
 
-当前 W21/W23 规划任务已全部完成。下一轮如要启动 3D，必须先开独立 v1 SceneView3D RFC，再进入实现。
+当前 W21/W23 规划任务已全部完成。下一轮如要启动 3D，必须按独立 v1 SceneView3D RFC 拆 schema、resource policy、snapshot/query 和 renderer package，再进入实现。
 
 ## 11. 当前落地状态
 
@@ -530,6 +530,7 @@ call queryFeatures and expect RENDER.DESTROYED
 - 已归档 release-capable `pnpm -s test:release:strict` 证据。
 - 已创建 `pnpm test:perf:nightly`，覆盖 1k/10k/100k inline GeoJSON create/query/snapshot/destroy。
 - 已创建 `extensions.scene3d` fixture，保持 3D 规划可记录但不扩大当前 runtime surface。
+- 已创建 SceneView3D v1 RFC，定义 camera/source/layer/snapshot/query/resource policy/command 入口。
 
 仍未实现或仍为边界：
 

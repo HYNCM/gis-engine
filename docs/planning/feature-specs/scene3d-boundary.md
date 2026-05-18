@@ -38,7 +38,8 @@ shapes without widening the stable runtime surface.
 
 ## Future Entry Criteria
 
-- `extensions.scene3d` schema for camera, lights, depth, terrain, and tilesets.
+- `extensions.scene3d` schema for camera, lights, depth, terrain, and tilesets
+  following [sceneview3d-v1-rfc.md](./sceneview3d-v1-rfc.md).
 - Renderer capability report with `dimensions: ["3d"]`.
 - 3D resource policy for tilesets, workers, textures, and model assets.
 - Snapshot contract that can detect blank scene, invalid camera, and unloaded
