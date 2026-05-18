@@ -135,6 +135,21 @@ It returns a structured report with `valid`, normalized policy, aggregate
 totals, and `Diagnostic[]`. It does not fetch network resources and does not
 make `view.mode: "scene3d"` stable.
 
+## SceneView3D Mock Snapshot And Query Contract
+
+`@gis-engine/scene3d` exposes two mock-level contracts before any production 3D
+renderer is introduced:
+
+- `snapshotScene3DMock` returns a `SnapshotResult`-compatible report plus scene
+  summary and pending source ids.
+- `queryScene3DMock` returns deterministic `ScenePickResult[]` for visible,
+  pickable scene layers.
+
+These contracts read only `extensions.scene3d`. They can report blank scenes,
+pending strict snapshot resources, missing scene layers, missing scene sources,
+and deterministic mock picks, but they do not enable stable 3D view mode or
+fetch external assets.
+
 ### 事务语义
 
 ```ts
@@ -222,7 +237,7 @@ export interface Diagnostic {
 | `EXPR` | `EXPR.TYPE_MISMATCH` | expression 错误 |
 | `VIEW` | `VIEW.OUT_OF_DATA_BOUNDS` | 视图错误 |
 | `RENDER` | `RENDER.ADAPTER_ERROR` | 渲染错误 |
-| `SNAPSHOT` | `SNAPSHOT.BLANK_CANVAS` | 截图验证错误 |
+| `SNAPSHOT` | `SNAPSHOT.BLANK_CANVAS`, `SNAPSHOT.RESOURCE_PENDING` | 截图验证错误 |
 | `CAPABILITY` | `CAPABILITY.UNSUPPORTED` | 能力协商错误 |
 | `COMMAND` | `COMMAND.INVALID_PATCH` | 命令错误 |
 | `CONFLICT` | `CONFLICT.BASE_REVISION` | 并发冲突 |

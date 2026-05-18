@@ -102,6 +102,7 @@ flowchart LR
 | TASK-2026W25-004 | done | `validateSpec` applies scene source URL policy under `/extensions/scene3d/sources/*/url`; `@gis-engine/scene3d` exposes `validateSceneResourceLoadPlan` for 3D Tiles JSON/model/texture/worker/timeout enforcement with structured diagnostics |
 | TASK-2026W25-005 | done | scene command schemas and `buildPatch` support for camera, sources, layers, visibility, deterministic patch replay, dry-run, rollback, and target diagnostics |
 | TASK-2026W25-006 | done | `@gis-engine/scene3d` scaffold exports v1 capabilities, explicit unsupported scaffold diagnostics, and a dependency guard against 3D renderer imports |
+| TASK-2026W27-001 | done | `snapshotScene3DMock` and `queryScene3DMock` provide GPU-free snapshot/query contracts with pending-resource, blank-scene, missing-layer, hidden-layer, and deterministic pick coverage |
 
 ## Non-Goals
 
@@ -110,3 +111,5 @@ flowchart LR
 - No unrestricted remote 3D Tiles, glTF, worker, or texture loading.
 - No real network fetch in the resource gate; renderer loaders must provide a
   deterministic load plan.
+- No stable runtime adapter from mock snapshot/query; they are contract gates
+  for later MCP and renderer work.

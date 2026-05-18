@@ -6,7 +6,8 @@
 - Added deterministic SceneView3D preparation commands for camera, scene sources, scene layers, scene layer visibility, dry-run, replay, rollback, and missing-target diagnostics. These commands mutate only `extensions.scene3d`; they do not make `view.mode: "scene3d"` stable.
 - Added the `@gis-engine/scene3d` package boundary scaffold with capability reporting, unsupported scaffold diagnostics, README guidance, and dependency guard tests that keep Cesium, Three.js, glTF loaders, 3D Tiles parsers, and WebGPU-only runtime code out of `@gis-engine/engine`.
 - Added `validateSceneResourceLoadPlan` for loader-level SceneView3D resource enforcement: 3D Tiles JSON size, model size, texture count/bytes, worker cap, timeout, missing source, and unsupported asset type diagnostics.
-- Archived the superseded W21 sprint plan and refreshed active documentation to point at the W25 SceneView3D v1 sprint and remaining loader-level resource/snapshot/query work.
+- Added mock-level SceneView3D snapshot/query contracts through `snapshotScene3DMock` and `queryScene3DMock`, including pending-resource, blank-scene, missing-layer, hidden-layer, and deterministic pick coverage.
+- Archived the superseded W21 sprint plan and refreshed active documentation to point at the W25/W27 SceneView3D v1 sprint path and remaining MCP/visual-gate work.
 
 ## 0.2.0-checkpoint - 2026-05-17
 

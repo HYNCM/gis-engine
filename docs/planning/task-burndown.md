@@ -16,7 +16,7 @@ decision_level: advisory
 原 W21/W23 计划中的 v0.2 checkpoint 关键任务已经提前完成，原 sprint
 计划已移入 `docs/archive/2026-05-18/planning/sprint-2026-W21.md`。SceneView3D
 v1 RFC 已拆成 W25/W28 专项 sprint，且 W25 的 schema、fixtures、scene
-commands、resource load plan gate 和 package boundary 已提前完成。下面的 W21/W23 理想燃尽表仅保留
+commands、resource load plan gate、package boundary 和 mock snapshot/query 已提前完成。下面的 W21/W23 理想燃尽表仅保留
 为计划基线；真实状态以“2026-05-17 执行快照”和“2026-05-18 follow-up”为准。
 
 ## 初始容量
@@ -79,3 +79,4 @@ commands、resource load plan gate 和 package boundary 已提前完成。下面
 | POST-2026W21-016 | done | SceneView3D v1 RFC split into `sprint-2026-W25-sceneview3d-v1.md` task DAG |
 | TASK-2026W25-001/002 | done | SceneView3D contract slices and `SceneView3DExtensionSchema` landed ahead of W25 |
 | TASK-2026W25-003/004/005/006 | done | SceneView3D invalid fixtures, loader-level resource load plan diagnostics, scene command deterministic patch contract, and `@gis-engine/scene3d` package boundary |
+| TASK-2026W27-001 | done | SceneView3D mock snapshot/query contracts with pending resource diagnostics, blank scene diagnostics, and deterministic pick results |

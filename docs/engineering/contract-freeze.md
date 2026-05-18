@@ -52,6 +52,9 @@ breaking/non-breaking note in the PR summary.
   for 3D Tiles JSON bytes, model bytes, texture budgets, worker cap, timeout,
   missing source, and unsupported asset type diagnostics.
 - `SECURITY.UNSUPPORTED_ASSET_TYPE` diagnostic code.
+- `snapshotScene3DMock` and `queryScene3DMock` as mock-level 3D snapshot/query
+  contracts.
+- `SNAPSHOT.RESOURCE_PENDING` diagnostic code.
 - `view.mode: "scene3d"`, `capabilities.renderer: "scene3d"`, and
   `capabilities.dimensions: ["3d"]` remain reserved unsupported runtime
   requests until the v1 renderer package passes resource, snapshot, and query

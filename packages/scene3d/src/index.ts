@@ -1,4 +1,15 @@
-import { DiagnosticCodes, type CapabilityReport, type Diagnostic, type SceneResourcePolicy, type SceneView3DExtension } from "@gis-engine/engine";
+import {
+  DiagnosticCodes,
+  type CapabilityReport,
+  type Diagnostic,
+  type SceneLayer,
+  type ScenePosition,
+  type SceneResourcePolicy,
+  type SceneView3DExtension,
+  type SnapshotOptions,
+  type SnapshotResult,
+  type SuggestedFix
+} from "@gis-engine/engine";
 
 export const scene3dPackageBoundary = {
   packageName: "@gis-engine/scene3d",
@@ -49,6 +60,44 @@ export interface SceneResourceLoadReport {
   valid: boolean;
   policy: Required<Pick<SceneResourcePolicy, "maxTilesetJsonBytes" | "maxModelBytes" | "maxTextureCount" | "maxTextureBytes" | "maxWorkers" | "timeoutMs">>;
   totals: SceneResourceLoadTotals;
+  diagnostics: Diagnostic[];
+}
+
+export interface Scene3DMockSnapshotOptions extends SnapshotOptions {
+  loadedSourceIds?: string[];
+  requireLoadedResources?: boolean;
+}
+
+export interface Scene3DMockSnapshotSummary {
+  sourceCount: number;
+  layerCount: number;
+  visibleLayerCount: number;
+  pickableLayerCount: number;
+  width: number;
+  height: number;
+  format: "png" | "data-url";
+}
+
+export interface Scene3DMockSnapshotResult extends SnapshotResult {
+  summary: Scene3DMockSnapshotSummary;
+  pendingSourceIds: string[];
+}
+
+export interface Scene3DQueryOptions {
+  layers?: string[];
+  includeHidden?: boolean;
+}
+
+export interface ScenePickResult {
+  objectId: string;
+  layerId: string;
+  sourceId: string;
+  position: ScenePosition;
+  properties: Record<string, unknown>;
+}
+
+export interface Scene3DQueryResult {
+  picks: ScenePickResult[];
   diagnostics: Diagnostic[];
 }
 
@@ -168,6 +217,91 @@ export function validateSceneResourceLoadPlan(extension: SceneView3DExtension, p
   };
 }
 
+export function snapshotScene3DMock(extension: SceneView3DExtension, options: Scene3DMockSnapshotOptions = {}): Scene3DMockSnapshotResult {
+  const diagnostics: Diagnostic[] = [];
+  const layers = extension.layers ?? [];
+  const visibleLayers = layers.filter((layer) => layer.visible !== false);
+  const pickableLayers = visibleLayers.filter((layer) => isPickableSceneLayer(layer));
+  const format = normalizeSnapshotFormat(options.format, diagnostics);
+  const summary: Scene3DMockSnapshotSummary = {
+    sourceCount: Object.keys(extension.sources ?? {}).length,
+    layerCount: layers.length,
+    visibleLayerCount: visibleLayers.length,
+    pickableLayerCount: pickableLayers.length,
+    width: options.width ?? extension.snapshot?.width ?? 800,
+    height: options.height ?? extension.snapshot?.height ?? 600,
+    format
+  };
+
+  if (visibleLayers.length === 0) {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.SnapshotBlankCanvas,
+      message: "SceneView3D mock snapshot has no visible scene layers.",
+      path: "/extensions/scene3d/layers",
+      fix: manualFix("Add a visible scene layer before snapshotting the 3D scene.", "medium")
+    });
+  }
+
+  diagnostics.push(...missingLayerSourceDiagnostics(extension));
+
+  const requireLoadedResources = options.requireLoadedResources ?? extension.snapshot?.requireLoadedResources ?? false;
+  const pendingSourceIds = collectPendingSourceIds(extension, options.loadedSourceIds, requireLoadedResources);
+  for (const sourceId of pendingSourceIds) {
+    diagnostics.push({
+      severity: requireLoadedResources ? "error" : "warning",
+      code: DiagnosticCodes.SnapshotResourcePending,
+      message: `Scene source "${sourceId}" is required for snapshot but is not marked as loaded.`,
+      path: `/extensions/scene3d/sources/${escapePathSegment(sourceId)}`,
+      relatedResources: [{ kind: "source", id: sourceId }],
+      fix: manualFix("Load the scene source before strict snapshot, or disable requireLoadedResources for non-strict mock checks.", "medium")
+    });
+  }
+
+  const passed = !diagnostics.some((diagnostic) => diagnostic.severity === "error");
+  const result: Scene3DMockSnapshotResult = {
+    passed,
+    diagnostics,
+    summary,
+    pendingSourceIds
+  };
+  if (format === "data-url") {
+    result.dataUrl = encodeMockDataUrl({ kind: "SceneView3DMockSnapshot", summary, pendingSourceIds });
+  }
+  return result;
+}
+
+export function queryScene3DMock(extension: SceneView3DExtension, options: Scene3DQueryOptions = {}): Scene3DQueryResult {
+  const diagnostics: Diagnostic[] = [];
+  const layers = selectSceneLayers(extension, options, diagnostics);
+  const picks: ScenePickResult[] = [];
+
+  for (const layer of layers) {
+    if (layer.visible === false && options.includeHidden !== true) continue;
+    if (!isPickableSceneLayer(layer)) continue;
+
+    const source = extension.sources?.[layer.source];
+    if (!source) {
+      diagnostics.push(sourceNotFoundForLayer(layer));
+      continue;
+    }
+
+    picks.push({
+      objectId: `${layer.source}:${layer.id}:mock`,
+      layerId: layer.id,
+      sourceId: layer.source,
+      position: extension.camera.target,
+      properties: {
+        mock: true,
+        layerType: layer.type,
+        sourceType: source.type
+      }
+    });
+  }
+
+  return { picks, diagnostics };
+}
+
 function normalizeSceneResourcePolicy(policy?: SceneResourcePolicy): SceneResourceLoadReport["policy"] {
   return {
     maxTilesetJsonBytes: policy?.maxTilesetJsonBytes ?? defaultSceneResourceLoadPolicy.maxTilesetJsonBytes,
@@ -176,6 +310,107 @@ function normalizeSceneResourcePolicy(policy?: SceneResourcePolicy): SceneResour
     maxTextureBytes: policy?.maxTextureBytes ?? defaultSceneResourceLoadPolicy.maxTextureBytes,
     maxWorkers: policy?.maxWorkers ?? defaultSceneResourceLoadPolicy.maxWorkers,
     timeoutMs: policy?.timeoutMs ?? defaultSceneResourceLoadPolicy.timeoutMs
+  };
+}
+
+function normalizeSnapshotFormat(format: SnapshotOptions["format"] | undefined, diagnostics: Diagnostic[]): "png" | "data-url" {
+  if (format === undefined || format === "data-url") return "data-url";
+  if (format === "png") return "png";
+
+  diagnostics.push({
+    severity: "error",
+    code: DiagnosticCodes.CapabilityUnsupported,
+    message: `SceneView3D mock snapshot does not support "${format}" format.`,
+    path: "/format",
+    fix: manualFix('Use "data-url" or "png" for mock SceneView3D snapshots.', "high")
+  });
+  return "data-url";
+}
+
+function collectPendingSourceIds(extension: SceneView3DExtension, loadedSourceIds: string[] | undefined, requireLoadedResources: boolean): string[] {
+  if (!requireLoadedResources) return [];
+
+  const loaded = new Set(loadedSourceIds ?? []);
+  return Object.keys(extension.sources ?? {}).filter((sourceId) => !loaded.has(sourceId));
+}
+
+function missingLayerSourceDiagnostics(extension: SceneView3DExtension): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+  for (const [index, layer] of (extension.layers ?? []).entries()) {
+    if (extension.sources?.[layer.source]) continue;
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.SourceNotFound,
+      message: `Scene layer "${layer.id}" references missing scene source "${layer.source}".`,
+      path: `/extensions/scene3d/layers/${index}/source`,
+      relatedResources: [
+        { kind: "layer", id: layer.id },
+        { kind: "source", id: layer.source }
+      ],
+      fix: manualFix("Add the missing scene source or update the scene layer source id.", "medium")
+    });
+  }
+  return diagnostics;
+}
+
+function selectSceneLayers(extension: SceneView3DExtension, options: Scene3DQueryOptions, diagnostics: Diagnostic[]): SceneLayer[] {
+  const allLayers = extension.layers ?? [];
+  if (!options.layers) return allLayers;
+
+  const selected: SceneLayer[] = [];
+  const seenLayerIds = new Set<string>();
+  for (const layerId of options.layers) {
+    if (seenLayerIds.has(layerId)) continue;
+    seenLayerIds.add(layerId);
+
+    const layer = allLayers.find((candidate) => candidate.id === layerId);
+    if (!layer) {
+      diagnostics.push({
+        severity: "error",
+        code: DiagnosticCodes.LayerNotFound,
+        message: `Scene layer "${layerId}" does not exist.`,
+        path: "/extensions/scene3d/layers",
+        relatedResources: [{ kind: "layer", id: layerId }],
+        fix: manualFix("Check the scene layer id or omit layers to query all pickable scene layers.", "high")
+      });
+      continue;
+    }
+    selected.push(layer);
+  }
+  return selected;
+}
+
+function isPickableSceneLayer(layer: SceneLayer): boolean {
+  if (layer.type === "terrain") return false;
+  return layer.pickable !== false;
+}
+
+function sourceNotFoundForLayer(layer: SceneLayer): Diagnostic {
+  return {
+    severity: "error",
+    code: DiagnosticCodes.SourceNotFound,
+    message: `Scene layer "${layer.id}" references missing scene source "${layer.source}".`,
+    path: "/extensions/scene3d/layers",
+    relatedResources: [
+      { kind: "layer", id: layer.id },
+      { kind: "source", id: layer.source }
+    ],
+    fix: manualFix("Add the missing scene source or update the scene layer source id.", "medium")
+  };
+}
+
+function encodeMockDataUrl(payload: unknown): string {
+  const json = JSON.stringify(payload);
+  const bytes = new TextEncoder().encode(json);
+  const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join("");
+  return `data:image/png;base64,${btoa(binary)}`;
+}
+
+function manualFix(message: string, confidence: SuggestedFix["confidence"]): SuggestedFix {
+  return {
+    kind: "manual",
+    confidence,
+    message
   };
 }
 

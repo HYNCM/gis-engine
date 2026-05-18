@@ -66,10 +66,11 @@ W21 sprint 计划已归档，当前活跃关键路径从 W25 SceneView3D v1 DAG 
 | v1 SceneView3D schema foundation | done | `SceneView3DExtensionSchema`, generated schema, public type assertions, schema-sync validation |
 | v1 SceneView3D resource gate | done | scene URL policy plus `validateSceneResourceLoadPlan` for 3D Tiles JSON/model/texture/worker/timeout diagnostics |
 | v1 SceneView3D scene commands | done | command schemas, deterministic JSON Patch, inverse patch, dry-run, replay, rollback, and target diagnostics |
+| v1 SceneView3D mock snapshot/query | done | `snapshotScene3DMock` and `queryScene3DMock` cover pending resources, blank scenes, missing layers, hidden layers, and deterministic picks |
 
 ## 关键路径
 
-1. v1 SceneView3D RFC -> W25/W28 sprint DAG -> TypeBox schema -> fixtures + URL resource policy + loader resource gate + package boundary + scene commands -> snapshot/query contracts -> MCP context。
+1. v1 SceneView3D RFC -> W25/W28 sprint DAG -> TypeBox schema -> fixtures + URL resource policy + loader resource gate + package boundary + scene commands -> mock snapshot/query contracts -> MCP context。
 
 ```mermaid
 flowchart LR

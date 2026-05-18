@@ -147,13 +147,17 @@ render resources.
 ## Snapshot Contract
 
 3D snapshot must return a `SnapshotReport` compatible with the existing report
-shape plus 3D-specific diagnostics.
+shape plus 3D-specific diagnostics. The current mock-level implementation is
+`snapshotScene3DMock`, which returns a `SnapshotResult`-compatible report,
+scene summary, deterministic data-url payload, and pending source ids without
+requiring a GPU.
 
 Minimum checks:
 
 - Scene canvas exists and is nonblank.
 - Camera is valid and inside allowed numeric bounds.
-- Required tilesets/models are loaded or explicitly reported as pending.
+- Required tilesets/models are loaded or explicitly reported as pending through
+  `SNAPSHOT.RESOURCE_PENDING`.
 - Depth rendering is available or downgraded with a structured diagnostic.
 - Console errors are empty.
 
@@ -178,6 +182,9 @@ Rules:
 - Query methods do not mutate camera, selection, or renderer state.
 - Picked objects must include stable object identity.
 - Results must be serializable and replayable in tests.
+- The current mock-level implementation is `queryScene3DMock`, which returns
+  deterministic picks for visible, pickable scene layers and reports missing
+  layer/source references with structured diagnostics.
 
 ## Command Contract
 

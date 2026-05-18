@@ -17,6 +17,7 @@ export const DiagnosticCodes = {
   RenderAdapterError: "RENDER.ADAPTER_ERROR",
   RenderDestroyed: "RENDER.DESTROYED",
   SnapshotBlankCanvas: "SNAPSHOT.BLANK_CANVAS",
+  SnapshotResourcePending: "SNAPSHOT.RESOURCE_PENDING",
   CapabilityUnsupported: "CAPABILITY.UNSUPPORTED",
   CommandInvalidPatch: "COMMAND.INVALID_PATCH",
   CommandUnsupported: "COMMAND.UNSUPPORTED",

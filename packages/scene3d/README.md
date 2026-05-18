@@ -14,7 +14,9 @@ Current responsibilities:
 - Keep 3D runtime concerns outside `@gis-engine/engine`.
 - Provide `validateSceneResourceLoadPlan` so future renderer loaders can enforce
   `SceneResourcePolicy` before partial rendering starts.
-- Provide a stable scaffold for later snapshot, query, and renderer adapter work.
+- Provide `snapshotScene3DMock` and `queryScene3DMock` so snapshot/query
+  contracts are testable before a production renderer exists.
+- Provide a stable scaffold for later MCP context and renderer adapter work.
 
 Current resource gate:
 
@@ -26,9 +28,19 @@ Current resource gate:
 - Does not perform network fetches; renderer loaders submit a deterministic
   resource load plan before loading.
 
+Current mock snapshot/query gate:
+
+- `snapshotScene3DMock` returns a deterministic `SnapshotResult`-compatible
+  report with scene summary, blank-scene diagnostics, and strict pending-source
+  diagnostics.
+- `queryScene3DMock` returns deterministic pick results for visible pickable
+  scene layers and structured diagnostics for missing layer/source references.
+- These functions read only `extensions.scene3d`; they do not enable
+  `view.mode: "scene3d"`.
+
 Current non-goal:
 
 - Do not treat `view.mode: "scene3d"` as stable runtime support.
 - Do not import CesiumJS, Three.js, glTF loaders, 3D Tiles parsers, WebGPU-only
-  runtime code, workers, or remote asset loading here until the v1 snapshot,
-  query, and renderer gates are defined.
+  runtime code, workers, or remote asset loading here until the v1 MCP context,
+  visual gate, and renderer gates are defined.

@@ -45,8 +45,10 @@ planning source and has been archived for traceability.
 - Follow-up implementation closed `TASK-2026W25-004` with
   `validateSceneResourceLoadPlan` for loader-level byte, texture, worker,
   timeout, missing-source, and unsupported-asset diagnostics.
-- W27 work still needs mock-level 3D snapshot/query contracts, MCP 3D context,
-  strict visual gate definition, and alpha gate evidence.
+- Follow-up implementation closed `TASK-2026W27-001` with
+  `snapshotScene3DMock` and `queryScene3DMock`.
+- W27 work still needs MCP 3D context, strict visual gate definition, and alpha
+  gate evidence.
 
 ## Verification
 
