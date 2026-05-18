@@ -61,10 +61,11 @@ flowchart LR
 | large-data perf/nightly evidence | done | `pnpm -s test:perf:nightly` covers 1k/10k/100k inline GeoJSON lifecycle |
 | v1 SceneView3D RFC | drafted | camera/source/layer/snapshot/query/resource policy contract |
 | v1 SceneView3D sprint split | done | `sprint-2026-W25-sceneview3d-v1.md` defines schema/resource/snapshot/MCP/package DAG |
+| v1 SceneView3D schema foundation | done | `SceneView3DExtensionSchema`, generated schema, public type assertions, schema-sync validation |
 
 ## 关键路径
 
-1. v1 SceneView3D RFC -> W25/W28 sprint DAG -> TypeBox schema + fixtures -> resource policy -> snapshot/query contracts -> renderer package。
+1. v1 SceneView3D RFC -> W25/W28 sprint DAG -> TypeBox schema -> fixtures + resource policy + package boundary -> snapshot/query contracts -> MCP context。
 
 ```mermaid
 flowchart LR

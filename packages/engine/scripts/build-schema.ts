@@ -6,7 +6,8 @@ import {
   CapabilityReportSchema,
   DiagnosticSchema,
   MapCommandSchema,
-  MapSpecSchema
+  MapSpecSchema,
+  SceneView3DExtensionSchema
 } from "../src/spec/schemas/index.js";
 
 const outDir = resolve("dist/schema");
@@ -14,6 +15,7 @@ const schemas = [
   ["mapspec.v0.1.schema.json", MapSpecSchema],
   ["commands.v0.1.schema.json", MapCommandSchema],
   ["capabilities.v0.1.schema.json", CapabilityReportSchema],
+  ["sceneview3d.v1.schema.json", SceneView3DExtensionSchema],
   ["diagnostics.v0.1.schema.json", DiagnosticSchema],
   ["ai-tools.v0.1.schema.json", ApplyCommandsToolInputSchema]
 ] as const;

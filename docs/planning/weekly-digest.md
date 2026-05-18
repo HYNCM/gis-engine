@@ -24,7 +24,7 @@ decision_level: advisory
 
 当前仓库位于 `acdf28e` 时，主线已经从 v0.1 闭环推进到 v0.2 checkpoint：generic vector tile source、MCP output schema、strict capability report、expression 扩展、deterministic layer order、visual MVT 场景和 2.5D/3D 边界均已完成。质量门禁显示 PR gate 可放行；初始审计发现的 2 个 P1 已关闭。
 
-2026-05-18 follow-up：package dry-run、resource/perf deterministic evidence、command audit trace 产品化、`fill-extrusion-lite` MapLibre beta mapping、3-scene release-capable strict visual evidence、1k/10k/100k perf nightly evidence、SceneView3D boundary deepening 和 v1 SceneView3D RFC 已补齐；W21/W23 当前规划项已完成。
+2026-05-18 follow-up：package dry-run、resource/perf deterministic evidence、command audit trace 产品化、`fill-extrusion-lite` MapLibre beta mapping、3-scene release-capable strict visual evidence、1k/10k/100k perf nightly evidence、SceneView3D boundary deepening、v1 SceneView3D RFC、W25/W28 DAG 和 `SceneView3DExtensionSchema` 已补齐；W21/W23 当前规划项已完成，W25-001/002 已提前关闭。
 
 ## 本周关键信号
 
@@ -36,7 +36,7 @@ decision_level: advisory
 | code-reviewer | MCP 工具失败路径和 output schema P1 已关闭 | AI 工具可信度和可审计性提升 | high |
 | quality-guardian | `pnpm build:schema`、`pnpm check`、默认 visual snapshot 均通过 | 当前代码可通过 PR gate | high |
 | quality-guardian | strict visual snapshot 在默认沙箱内受 Chromium 权限限制，release-capable runner 已通过 | release runner 必须具备浏览器/WebGL 权限 | high |
-| product-strategist | v0.2 checkpoint 已完成核心 planned tasks；2026-05-18 已补齐 package/resource/perf/command audit/2.5D beta follow-up，并将 SceneView3D RFC 拆成 W25/W28 DAG | 下一阶段从 v1 schema foundation 开始执行 | high |
+| product-strategist | v0.2 checkpoint 已完成核心 planned tasks；2026-05-18 已补齐 package/resource/perf/command audit/2.5D beta follow-up，并将 SceneView3D RFC 拆成 W25/W28 DAG，初始 schema foundation 已完成 | 下一阶段从 v1 resource policy、fixtures、package boundary 开始执行 | high |
 | task-distributor | W21/W23 planned tasks 已形成执行快照 | 依赖图需要从阻断模式更新为完成证据模式 | high |
 
 ## P0 / P1 状态

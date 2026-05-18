@@ -47,9 +47,67 @@
         "clearColor": "#e2e8f0"
       },
       "terrain": {
-        "type": "none"
+        "source": "terrain-dem",
+        "exaggeration": 1
       },
-      "tilesets": []
+      "sources": {
+        "terrain-dem": {
+          "type": "terrain-raster-dem",
+          "url": "./data/terrain/{z}/{x}/{y}.png",
+          "encoding": "mapbox"
+        },
+        "city-tiles": {
+          "type": "3d-tiles",
+          "url": "./data/city/tileset.json",
+          "maximumScreenSpaceError": 16
+        },
+        "station-model": {
+          "type": "gltf",
+          "url": "./data/models/station.glb",
+          "transform": {
+            "translate": [120.15, 30.28, 0],
+            "scale": 1
+          }
+        }
+      },
+      "layers": [
+        {
+          "id": "terrain",
+          "type": "terrain",
+          "source": "terrain-dem",
+          "visible": true
+        },
+        {
+          "id": "city",
+          "type": "tileset3d",
+          "source": "city-tiles",
+          "pickable": true
+        },
+        {
+          "id": "station",
+          "type": "model",
+          "source": "station-model",
+          "pickable": true
+        }
+      ],
+      "snapshot": {
+        "width": 800,
+        "height": 600,
+        "format": "data-url",
+        "requireLoadedResources": true
+      },
+      "resourcePolicy": {
+        "allowRelativeUrls": true,
+        "allowedSchemes": ["http:", "https:"],
+        "allowedHosts": ["localhost", "127.0.0.1"],
+        "maxTilesetJsonBytes": 1048576,
+        "maxModelBytes": 5242880,
+        "maxTextureCount": 64,
+        "maxTextureBytes": 16777216,
+        "maxWorkers": 2,
+        "timeoutMs": 10000,
+        "retryCount": 1
+      }
     }
   }
 }

@@ -6,7 +6,8 @@ import {
   DiagnosticCodes,
   DiagnosticSchema,
   MapCommandSchema,
-  MapSpecSchema
+  MapSpecSchema,
+  SceneView3DExtensionSchema
 } from "@gis-engine/engine";
 import {
   ApplyCommandsToolResultSchema,
@@ -25,6 +26,7 @@ import {
   exportExampleAppTool,
   gisEngineTools
 } from "@gis-engine/ai";
+import scene3dExtensionSpec from "../fixtures/specs/valid/scene3d-extension.map.json";
 
 describe("schema sync gate", () => {
   it("compiles all public schemas with Ajv", () => {
@@ -32,6 +34,7 @@ describe("schema sync gate", () => {
       MapSpecSchema,
       MapCommandSchema,
       CapabilityReportSchema,
+      SceneView3DExtensionSchema,
       DiagnosticSchema,
       ApplyCommandsToolInputSchema,
       ApplyCommandsToolResultSchema,
@@ -174,7 +177,22 @@ describe("schema sync gate", () => {
   it("keeps public schema ids versioned", () => {
     expect(MapSpecSchema.$id).toBe("https://gis-engine.dev/schemas/mapspec.v0.1.schema.json");
     expect(MapCommandSchema.$id).toBe("https://gis-engine.dev/schemas/commands.v0.1.schema.json");
+    expect(SceneView3DExtensionSchema.$id).toBe("https://gis-engine.dev/schemas/sceneview3d.v1.schema.json");
     expect(DiagnosticSchema.$id).toBe("https://gis-engine.dev/schemas/diagnostics.v0.1.schema.json");
     expect(ApplyCommandsToolInputSchema.$id).toBe("https://gis-engine.dev/schemas/ai-tools.v0.1.schema.json");
+  });
+
+  it("validates the reserved SceneView3D extension without enabling scene3d runtime", () => {
+    const ajv = new Ajv({ allErrors: true, strict: false });
+    const validateScene = ajv.compile(SceneView3DExtensionSchema);
+
+    expect(validateScene(scene3dExtensionSpec.extensions.scene3d)).toBe(true);
+    expect(
+      validateScene({
+        ...scene3dExtensionSpec.extensions.scene3d,
+        unexpected: true
+      })
+    ).toBe(false);
+    expect(validateScene.errors?.some((error) => error.keyword === "additionalProperties")).toBe(true);
   });
 });

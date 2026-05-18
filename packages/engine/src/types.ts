@@ -127,6 +127,115 @@ export interface MapSpec {
   extensions?: Record<string, unknown>;
 }
 
+export type SceneVector3 = [number, number, number];
+export type ScenePosition = SceneVector3;
+
+export interface SceneCamera {
+  type?: "perspective";
+  position: ScenePosition;
+  target: ScenePosition;
+  up?: SceneVector3;
+  fov?: number;
+  near?: number;
+  far?: number;
+}
+
+export type SceneLight =
+  | {
+      type: "ambient";
+      intensity?: number;
+    }
+  | {
+      type: "directional";
+      direction: SceneVector3;
+      intensity?: number;
+    };
+
+export interface SceneDepthOptions {
+  enabled?: boolean;
+  mode?: "standard" | "logarithmic";
+  clearColor?: string;
+}
+
+export interface SceneTransform {
+  translate?: SceneVector3;
+  rotate?: SceneVector3;
+  scale?: number | SceneVector3;
+}
+
+export interface SceneTerrain {
+  source: string;
+  exaggeration?: number;
+}
+
+export type SceneSource =
+  | {
+      type: "terrain-raster-dem";
+      url: string;
+      encoding?: "mapbox" | "terrarium";
+      attribution?: string;
+    }
+  | {
+      type: "3d-tiles";
+      url: string;
+      maximumScreenSpaceError?: number;
+      attribution?: string;
+    }
+  | {
+      type: "gltf";
+      url: string;
+      transform?: SceneTransform;
+      attribution?: string;
+    };
+
+export type SceneLayer =
+  | {
+      id: string;
+      type: "terrain";
+      source: string;
+      visible?: boolean;
+    }
+  | {
+      id: string;
+      type: "tileset3d" | "model";
+      source: string;
+      visible?: boolean;
+      pickable?: boolean;
+    };
+
+export interface SceneSnapshotOptions {
+  width?: number;
+  height?: number;
+  pixelRatio?: number;
+  format?: "png" | "data-url";
+  requireLoadedResources?: boolean;
+}
+
+export interface SceneResourcePolicy {
+  allowRelativeUrls?: boolean;
+  allowedSchemes?: Array<"http:" | "https:">;
+  allowedHosts?: string[];
+  allowedPathPrefixes?: string[];
+  maxTilesetJsonBytes?: number;
+  maxModelBytes?: number;
+  maxTextureCount?: number;
+  maxTextureBytes?: number;
+  maxWorkers?: number;
+  timeoutMs?: number;
+  retryCount?: number;
+}
+
+export interface SceneView3DExtension {
+  camera: SceneCamera;
+  lights?: SceneLight[];
+  depth?: SceneDepthOptions;
+  terrain?: SceneTerrain;
+  sources?: Record<string, SceneSource>;
+  layers?: SceneLayer[];
+  snapshot?: SceneSnapshotOptions;
+  resourcePolicy?: SceneResourcePolicy;
+}
+
 export interface MapCommandBase {
   id: string;
   version: "0.1";

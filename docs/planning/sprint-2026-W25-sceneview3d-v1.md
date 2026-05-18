@@ -92,6 +92,13 @@ flowchart LR
 - `pnpm -s test:release:strict` for release candidates or an explicit
   coordinator waiver with follow-up evidence.
 
+## Execution Snapshot
+
+| id | status | evidence |
+| --- | --- | --- |
+| TASK-2026W25-001 | done | RFC slices frozen into camera, lights, depth, terrain, sources, layers, snapshot, and resource policy schema modules |
+| TASK-2026W25-002 | done | `SceneView3DExtensionSchema`, generated JSON schema, public type assertions, and schema-sync validation against `scene3d-extension.map.json` |
+
 ## Non-Goals
 
 - No production CesiumJS or Three.js runtime import in the current 2D core.

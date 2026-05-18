@@ -35,6 +35,8 @@ pnpm test:schema-fixtures
 - 所有 valid fixtures 通过。
 - 所有 invalid fixtures 失败且返回预期 diagnostic code。
 - `metadata` 和 `extensions` 允许扩展字段，其他顶层字段默认禁止 unknown field。
+- `SceneView3DExtensionSchema` 是 v1 3D extension 的单一契约；它可以校验
+  `extensions.scene3d`，但不代表当前 runtime 已支持 `view.mode: "scene3d"`。
 
 ## MapSpec Contract
 
@@ -62,6 +64,9 @@ export interface MapSpec {
 - layer source 必须引用已存在 source。
 - `revision` 由 runtime 维护，用于并发冲突检测。
 - 实验字段只能进入 `extensions`。
+- `extensions.scene3d` 必须按 `SceneView3DExtensionSchema` 演进；当前
+  `MapSpec` 仍将其作为 extension payload，不把 3D sources/layers 提升到稳定
+  `sources` / `layers`。
 
 ## Command Contract
 
