@@ -19,7 +19,7 @@ decision_level: advisory
 
 ## 结论
 
-当前 v0.1 已具备 `MapSpec`、commands、diagnostics、snapshot 和 MapLibre adapter 闭环；2026-05-17 v0.2 checkpoint 已完成 generic vector tile、MCP output schema、strict capability report、expression 扩展、style/layer order 稳定化、visual MVT 场景和 2.5D/3D 边界。2026-05-18 已补齐 package dry-run、resource/perf deterministic evidence、command audit trace 产品化、`fill-extrusion-lite` MapLibre beta mapping、3-scene release-capable strict visual runner evidence、1k/10k/100k nightly perf harness、`extensions.scene3d` 边界 fixture、独立 v1 SceneView3D RFC、W25/W28 sprint DAG、`SceneView3DExtensionSchema`、scene source URL policy、invalid fixtures、`@gis-engine/scene3d` package boundary、scene command deterministic patch contract、loader-level resource load plan gate、mock 3D snapshot/query、MCP 3D context、release-runner 3D visual gate、adapter feasibility 和 alpha gate audit。当前 W21/W23 规划项已完成，W25-001/002/003/004/005/006 与 W27-001/002/003/004/005 已提前关闭；3D 后续实现应进入独立 adapter spike 和真实 renderer visual evidence。
+当前 v0.1 已具备 `MapSpec`、commands、diagnostics、snapshot 和 MapLibre adapter 闭环；2026-05-17 v0.2 checkpoint 已完成 generic vector tile、MCP output schema、strict capability report、expression 扩展、style/layer order 稳定化、visual MVT 场景和 2.5D/3D 边界。2026-05-18 已补齐 package dry-run、resource/perf deterministic evidence、command audit trace 产品化、`fill-extrusion-lite` MapLibre beta mapping、3-scene release-capable strict visual runner evidence、1k/10k/100k nightly perf harness、`extensions.scene3d` 边界 fixture、独立 v1 SceneView3D RFC、W25/W28 sprint DAG、`SceneView3DExtensionSchema`、scene source URL policy、invalid fixtures、`@gis-engine/scene3d` package boundary、scene command deterministic patch contract、loader-level resource load plan gate、mock 3D snapshot/query、MCP 3D context、release-runner 3D visual gate、adapter feasibility、alpha gate audit 和 `@gis-engine/scene3d-three-adapter` spike。当前 W21/W23 规划项已完成，W25-001/002/003/004/005/006、W27-001/002/003/004/005 与 W28-001 已提前关闭；3D 后续实现应补齐真实 renderer snapshot/query/visual evidence。
 
 ## 路线总览
 
@@ -34,7 +34,7 @@ decision_level: advisory
 
 | 排名 | 事项 | 得分 | 证据 | 行动 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | SceneView3D Three.js adapter spike | future | W27-004 建议先做 Three.js + 3DTilesRendererJS 隔离 adapter spike；真实 renderer visual evidence 仍缺 | 规划 W28 adapter package，不接入 core runtime | medium |
+| 1 | SceneView3D renderer evidence | future | W28-001 已创建独立 adapter spike package；真实 renderer visual evidence 仍缺 | 后续只在 adapter package 内实现 renderer snapshot/query/visual evidence，不接入 core runtime | medium |
 
 已完成并保留回归证据：
 
@@ -63,11 +63,12 @@ decision_level: advisory
 | SceneView3D release visual gate | `evaluateScene3DReleaseVisualGate`、`pnpm test:release:scene3d`、coordinator waiver and no-bypass deterministic evidence rules |
 | SceneView3D adapter feasibility | Official CesiumJS / Three.js / 3D Tiles evidence recommends a narrow Three.js + 3DTilesRendererJS adapter spike |
 | SceneView3D alpha gate audit | `sceneview3d-alpha-gate-audit-2026-05-18.md` conditional alpha pass; stable 3D runtime remains blocked |
+| SceneView3D Three.js adapter spike | `@gis-engine/scene3d-three-adapter` package, deterministic load plan, resource policy integration, dependency isolation tests |
 
 ## 本月行动
 
 1. W21/W23 当前规划项全部完成。
-2. SceneView3D v1 RFC 已拆成 [sprint-2026-W25-sceneview3d-v1.md](./sprint-2026-W25-sceneview3d-v1.md)，且 `TASK-2026W25-001/002/003/004/005/006` 与 `TASK-2026W27-001/002/003/004/005` 已完成；后续 3D 工作必须按该 DAG 继续执行，不得直接进入 core renderer。
+2. SceneView3D v1 RFC 已拆成 [sprint-2026-W25-sceneview3d-v1.md](./sprint-2026-W25-sceneview3d-v1.md)，且 `TASK-2026W25-001/002/003/004/005/006`、`TASK-2026W27-001/002/003/004/005` 与 `TASK-2026W28-001` 已完成；后续 3D 工作必须按该 DAG 继续执行，不得直接进入 core renderer。
 
 ## Feature Spec 建议
 

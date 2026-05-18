@@ -55,8 +55,11 @@ planning source and has been archived for traceability.
   alpha gate audit and release-note draft update.
 - Follow-up implementation closed `TASK-2026W27-004` with official-source
   CesiumJS / Three.js / 3DTilesRendererJS adapter feasibility evidence.
-- W27 planned SceneView3D preparation work is complete; next work should be a
-  W28 adapter spike task, not a direct core runtime merge.
+- Follow-up implementation closed `TASK-2026W28-001` with the isolated
+  `@gis-engine/scene3d-three-adapter` spike package and adapter tests.
+- W25/W27/W28 planned SceneView3D preparation work is complete; next work
+  should add real renderer evidence inside the adapter package, not as a direct
+  core runtime merge.
 
 ## Verification
 

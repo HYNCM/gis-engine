@@ -1,0 +1,37 @@
+{
+  "name": "@gis-engine/scene3d-three-adapter",
+  "version": "0.1.0",
+  "description": "Experimental Three.js adapter spike boundary for SceneView3D.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HYNCM/gis-engine.git",
+    "directory": "packages/scene3d-three-adapter"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@gis-engine/engine": "workspace:*",
+    "@gis-engine/scene3d": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}

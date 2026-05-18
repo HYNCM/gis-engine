@@ -57,6 +57,7 @@ docs/
 - `@gis-engine/engine`：地图运行时、`MapSpec` 类型、schema、validator、command apply、snapshot、query、MapLibre adapter、实验 WebGL2 lite renderer。
 - `@gis-engine/ai`：MCP tools、AI 友好命令 schema、诊断解释、导出示例应用。
 - `@gis-engine/scene3d`：SceneView3D v1 包边界脚手架、capability report、未实现 renderer 的结构化诊断和 3D 依赖隔离守卫；不承诺 `view.mode: "scene3d"` 稳定运行。
+- `@gis-engine/scene3d-three-adapter`：W28 Three.js adapter spike 包边界；当前只生成 deterministic load plan 并验证 resource policy，不导入 Three.js/3DTilesRendererJS，不承诺稳定 3D runtime。
 - `examples`：可运行样例，不作为 npm 包发布。
 - `docs`：架构、指南、研究和评审文档。
 
@@ -87,6 +88,8 @@ flowchart TD
   RendererAdapter --> WebGL2Lite["WebGL2 Lite Experimental"]
   Scene3D["@gis-engine/scene3d scaffold"] --> Spec
   Scene3D --> Diagnostics
+  Scene3DThree["@gis-engine/scene3d-three-adapter spike"] --> Scene3D
+  Scene3DThree --> Diagnostics
   AI["@gis-engine/ai"] --> Validator
   AI --> Commands
   AI --> Diagnostics

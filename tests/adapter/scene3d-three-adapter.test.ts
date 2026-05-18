@@ -1,0 +1,128 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { describe, expect, it } from "vitest";
+import scene3dExtensionSpec from "../fixtures/specs/valid/scene3d-extension.map.json";
+import { type SceneView3DExtension } from "@gis-engine/engine";
+import {
+  buildScene3DThreeAdapterLoadPlan,
+  evaluateScene3DThreeAdapterSpike,
+  getScene3DThreeAdapterCapabilities,
+  scene3dThreeAdapterBoundary
+} from "../../packages/scene3d-three-adapter/src/index.js";
+
+describe("SceneView3D Three.js adapter spike", () => {
+  it("exposes an isolated spike boundary without enabling stable runtime support", () => {
+    const capabilities = getScene3DThreeAdapterCapabilities();
+
+    expect(scene3dThreeAdapterBoundary).toEqual(
+      expect.objectContaining({
+        packageName: "@gis-engine/scene3d-three-adapter",
+        status: "spike",
+        stableViewMode: false,
+        targetRenderer: "three",
+        targetTilesRenderer: "3d-tiles-renderer"
+      })
+    );
+    expect(capabilities.renderer).toBe("scene3d-three-adapter");
+    expect(capabilities.experimental).toContain("sceneview3d-three-adapter-spike");
+  });
+
+  it("turns SceneView3D sources into a deterministic Three.js adapter load plan", () => {
+    const loadPlan = buildScene3DThreeAdapterLoadPlan(scene3dExtension(), {
+      estimates: {
+        tilesetJsonBytes: { "city-tiles": 512_000 },
+        modelBytes: { "station-model": 1_048_576 },
+        textureCount: { "terrain-dem": 1, "station-model": 4 },
+        textureBytes: { "terrain-dem": 262_144, "station-model": 2_097_152 },
+        elapsedMs: { "city-tiles": 120, "station-model": 250 },
+        workerCount: 1
+      }
+    });
+
+    expect(loadPlan).toEqual({
+      workerCount: 1,
+      resources: [
+        {
+          kind: "texture",
+          sourceId: "terrain-dem",
+          url: "./data/terrain/{z}/{x}/{y}.png",
+          textureCount: 1,
+          textureBytes: 262_144
+        },
+        {
+          kind: "tileset-json",
+          sourceId: "city-tiles",
+          url: "./data/city/tileset.json",
+          byteLength: 512_000,
+          elapsedMs: 120
+        },
+        {
+          kind: "model",
+          sourceId: "station-model",
+          url: "./data/models/station.glb",
+          byteLength: 1_048_576,
+          elapsedMs: 250
+        },
+        {
+          kind: "texture",
+          sourceId: "station-model",
+          url: "./data/models/station.glb",
+          textureCount: 4,
+          textureBytes: 2_097_152
+        }
+      ]
+    });
+  });
+
+  it("runs the adapter spike through the SceneResourcePolicy gate", () => {
+    const report = evaluateScene3DThreeAdapterSpike(scene3dExtension(), {
+      estimates: {
+        tilesetJsonBytes: { "city-tiles": 512_000 },
+        modelBytes: { "station-model": 1_048_576 },
+        textureCount: { "terrain-dem": 1, "station-model": 4 },
+        textureBytes: { "terrain-dem": 262_144, "station-model": 2_097_152 },
+        workerCount: 1
+      }
+    });
+
+    expect(report.kind).toBe("Scene3DThreeAdapterSpikeReport");
+    expect(report.runtimeSupported).toBe(false);
+    expect(report.stableViewMode).toBe(false);
+    expect(report.resourceReport.valid).toBe(true);
+    expect(report.resourceReport.diagnostics).toEqual([]);
+    expect(report.diagnosticCounts).toEqual({ error: 0, warning: 0, info: 1 });
+    expect(report.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "info",
+        code: "CAPABILITY.UNSUPPORTED",
+        path: "/extensions/scene3d"
+      })
+    );
+  });
+
+  it("keeps renderer dependencies out of package manifests during the spike", () => {
+    const enginePackage = readPackageJson("packages/engine/package.json");
+    const scene3dPackage = readPackageJson("packages/scene3d/package.json");
+    const threeAdapterPackage = readPackageJson("packages/scene3d-three-adapter/package.json");
+
+    for (const dependency of scene3dThreeAdapterBoundary.requiredRuntimePeerDependencies) {
+      expect(enginePackage.dependencies ?? {}).not.toHaveProperty(dependency);
+      expect(scene3dPackage.dependencies ?? {}).not.toHaveProperty(dependency);
+      expect(threeAdapterPackage.dependencies ?? {}).not.toHaveProperty(dependency);
+      expect(threeAdapterPackage.devDependencies ?? {}).not.toHaveProperty(dependency);
+      expect(threeAdapterPackage.peerDependencies ?? {}).not.toHaveProperty(dependency);
+    }
+  });
+});
+
+function scene3dExtension(): SceneView3DExtension {
+  return structuredClone(scene3dExtensionSpec.extensions.scene3d) as SceneView3DExtension;
+}
+
+function readPackageJson(path: string) {
+  return JSON.parse(readFileSync(resolve(path), "utf8")) as {
+    dependencies?: Record<string, string>;
+    devDependencies?: Record<string, string>;
+    peerDependencies?: Record<string, string>;
+  };
+}

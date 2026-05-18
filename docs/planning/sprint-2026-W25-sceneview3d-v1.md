@@ -45,6 +45,7 @@ Period: 2026-06-29 to 2026-07-10
 | TASK-2026W27-003 | Define release-runner 3D visual smoke gate | P1 | M | @quality-guardian | W27-001 | 18 |
 | TASK-2026W27-004 | Compare CesiumJS and Three.js adapter feasibility | P2 | M | @competitive-intel | W25-006 | 18 |
 | TASK-2026W27-005 | Run v1 alpha gate audit and release-note draft | P1 | S | @quality-guardian | W27-002,W27-003 | 12 |
+| TASK-2026W28-001 | Create isolated Three.js adapter spike package | P1 | M | @adapter-agent | W27-004,W27-005 | 24 |
 
 ## DAG
 
@@ -63,6 +64,8 @@ flowchart LR
   F --> J["TASK-2026W27-004 adapter feasibility"]
   H --> K["TASK-2026W27-005 alpha gate audit"]
   I --> K
+  J --> L["TASK-2026W28-001 Three.js adapter spike"]
+  K --> L
 ```
 
 ## Acceptance Criteria
@@ -107,6 +110,7 @@ flowchart LR
 | TASK-2026W27-003 | done | `evaluateScene3DReleaseVisualGate`, `pnpm test:release:scene3d`, and `release-runner-scene3d-gate-2026-05-18.md` define release-mode visual evidence, coordinator waiver, and no-bypass deterministic evidence rules |
 | TASK-2026W27-004 | done | `sceneview3d-adapter-feasibility-2026-05-18.md` compares CesiumJS and Three.js / 3DTilesRendererJS with official evidence and recommends a narrow Three.js adapter spike while keeping CesiumJS as the high-fidelity reference track |
 | TASK-2026W27-005 | done | `sceneview3d-alpha-gate-audit-2026-05-18.md` records a conditional alpha pass for contract/resource/command/snapshot/query/MCP/release-gate readiness and keeps stable `view.mode: "scene3d"` blocked |
+| TASK-2026W28-001 | done | `@gis-engine/scene3d-three-adapter` spike package exports capabilities, deterministic source load-plan generation, `validateSceneResourceLoadPlan` integration, and dependency isolation tests without importing Three.js/3DTilesRendererJS |
 
 ## Non-Goals
 

@@ -9,6 +9,7 @@
 - Added mock-level SceneView3D snapshot/query contracts through `snapshotScene3DMock` and `queryScene3DMock`, including pending-resource, blank-scene, missing-layer, hidden-layer, and deterministic pick coverage.
 - Added gated SceneView3D context to `get_context_summary` / `explain_spec` output schemas, exposing extension-only 3D source/layer/resource/snapshot/query summaries without enabling stable 3D runtime support.
 - Added `evaluateScene3DReleaseVisualGate` and `pnpm test:release:scene3d` to define SceneView3D release visual evidence, coordinator waiver, and deterministic no-bypass rules before a stable renderer exists.
+- Added the `@gis-engine/scene3d-three-adapter` W28 spike boundary with deterministic Three.js/3DTilesRendererJS load-plan evaluation, resource-policy validation, and dependency isolation tests; it does not enable stable 3D runtime rendering.
 - Archived the superseded W21 sprint plan and refreshed active documentation to point at the W25/W27 SceneView3D v1 sprint path and remaining alpha-gate / adapter-feasibility work.
 
 ## 0.2.0-checkpoint - 2026-05-17

@@ -71,10 +71,11 @@ W21 sprint 计划已归档，当前活跃关键路径从 W25 SceneView3D v1 DAG 
 | v1 SceneView3D release visual gate | done | `evaluateScene3DReleaseVisualGate` defines release-mode renderer evidence, coordinator waiver, and deterministic no-bypass rules |
 | v1 SceneView3D adapter feasibility | done | official CesiumJS / Three.js / 3DTilesRendererJS evidence recommends a narrow Three.js adapter spike while keeping CesiumJS as high-fidelity reference |
 | v1 SceneView3D alpha audit | done | conditional alpha pass for contract/resource/command/snapshot/query/MCP/release-gate readiness; stable runtime remains blocked |
+| v1 SceneView3D Three.js adapter spike | done | `@gis-engine/scene3d-three-adapter` generates deterministic load-plan/resource-policy evidence without real renderer dependencies |
 
 ## 关键路径
 
-1. v1 SceneView3D RFC -> W25/W28 sprint DAG -> TypeBox schema -> fixtures + URL resource policy + loader resource gate + package boundary + scene commands -> mock snapshot/query contracts -> MCP context -> release visual gate -> alpha audit + adapter feasibility -> renderer visual evidence follow-up。
+1. v1 SceneView3D RFC -> W25/W28 sprint DAG -> TypeBox schema -> fixtures + URL resource policy + loader resource gate + package boundary + scene commands -> mock snapshot/query contracts -> MCP context -> release visual gate -> alpha audit + adapter feasibility -> Three.js adapter spike -> renderer visual evidence follow-up。
 
 ```mermaid
 flowchart LR
@@ -92,8 +93,9 @@ flowchart LR
   G --> L["TASK-2026W27-004 adapter feasibility"]
   I --> K["TASK-2026W27-005 alpha audit"]
   J --> K
-  K --> M["renderer visual evidence follow-up"]
+  K --> M["TASK-2026W28-001 Three.js adapter spike"]
   L --> M
+  M --> N["renderer visual evidence follow-up"]
 ```
 
 ## 阻断规则

@@ -84,3 +84,4 @@ commands、resource load plan gate、package boundary、mock snapshot/query 和 
 | TASK-2026W27-003 | done | SceneView3D release visual gate evaluates mock snapshot/query evidence, optional renderer visual evidence, and coordinator waiver rules via `pnpm test:release:scene3d` |
 | TASK-2026W27-004 | done | CesiumJS vs Three.js / 3DTilesRendererJS adapter feasibility recommends a narrow Three.js spike and keeps CesiumJS as high-fidelity reference |
 | TASK-2026W27-005 | done | SceneView3D v1 alpha gate audit grants conditional contract alpha pass while keeping stable 3D runtime blocked |
+| TASK-2026W28-001 | done | `@gis-engine/scene3d-three-adapter` spike package creates deterministic load plans and resource-policy evidence without real renderer dependencies |

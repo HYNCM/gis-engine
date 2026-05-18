@@ -514,9 +514,9 @@ call queryFeatures and expect RENDER.DESTROYED
 当前 W21/W23 规划任务已全部完成。SceneView3D v1 已按 RFC 拆成 W25/W28
 专项 sprint，并已提前完成 schema foundation、fixtures、scene command patches、
 loader-level resource load plan gate、mock snapshot/query contract、MCP 3D
-context、release-runner 3D visual gate、adapter feasibility、alpha gate audit
-和 `@gis-engine/scene3d` package boundary。下一步不再重新论证 3D 启动顺序，
-而是规划独立 Three.js adapter spike。
+context、release-runner 3D visual gate、adapter feasibility、alpha gate audit、
+`@gis-engine/scene3d` package boundary 和独立 Three.js adapter spike。下一步不再
+重新论证 3D 启动顺序，而是补齐真实 renderer snapshot/query/visual evidence。
 
 ## 11. 当前落地状态
 
@@ -543,9 +543,10 @@ context、release-runner 3D visual gate、adapter feasibility、alpha gate audit
 - 已创建 `evaluateScene3DReleaseVisualGate` 和 `pnpm test:release:scene3d`，定义 release-mode renderer visual evidence、coordinator waiver 和 deterministic no-bypass 规则。
 - 已创建 SceneView3D adapter feasibility，建议先做 Three.js + 3DTilesRendererJS 独立 adapter spike，并保留 CesiumJS 为高保真 geospatial 参考线。
 - 已创建 SceneView3D v1 alpha gate audit，允许进入独立 adapter spike，但继续阻断稳定 `view.mode: "scene3d"` runtime。
+- 已创建 `@gis-engine/scene3d-three-adapter` W28 spike package，当前只生成 deterministic load plan 并通过 `validateSceneResourceLoadPlan`，不导入 Three.js/3DTilesRendererJS，也不启用真实 renderer。
 - 已创建 `@gis-engine/scene3d` package boundary scaffold，提供 capability report、unsupported scaffold diagnostics 和 3D renderer 依赖隔离守卫。
 
 仍未实现或仍为边界：
 
-- SceneView3D runtime、terrain/glTF/3D Tiles adapter、真实网络 loader 接入、真实 3D renderer visual evidence。
+- SceneView3D runtime、terrain/glTF/3D Tiles adapter 的真实渲染实现、真实网络 loader 接入、真实 3D renderer visual evidence。
 - GeoParquet / FlatGeobuf / DuckDB WASM。
