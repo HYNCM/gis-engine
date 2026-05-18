@@ -18,7 +18,7 @@ fixtures -> schema validation -> command replay -> renderer adapter -> snapshot 
 {
   "scripts": {
     "build": "pnpm -r build",
-    "build:schema": "pnpm --filter @gis-engine/engine build:schema && pnpm --filter @gis-engine/ai build:schema",
+    "build:schema": "pnpm --filter @gis-engine/engine build:schema && pnpm --filter @gis-engine/scene3d build && pnpm --filter @gis-engine/ai build:schema",
     "test": "pnpm test:schema && pnpm test:schema-sync && pnpm test:commands && pnpm test:patch && pnpm test:runtime && pnpm test:adapter && pnpm test:ai && pnpm test:examples && pnpm test:resources && pnpm test:perf:smoke && pnpm test:snapshot:smoke",
     "test:schema": "vitest run tests/schema/schema-fixtures.test.ts tests/schema/expression-validator.test.ts tests/schema/resource-policy.test.ts",
     "test:schema-sync": "vitest run tests/schema-sync",
