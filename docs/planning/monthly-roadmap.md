@@ -19,7 +19,7 @@ decision_level: advisory
 
 ## 结论
 
-当前 v0.1 已具备 `MapSpec`、commands、diagnostics、snapshot 和 MapLibre adapter 闭环；2026-05-17 v0.2 checkpoint 已完成 generic vector tile、MCP output schema、strict capability report、expression 扩展、style/layer order 稳定化、visual MVT 场景和 2.5D/3D 边界。2026-05-18 已补齐 package dry-run、resource/perf deterministic evidence、command audit trace 产品化、`fill-extrusion-lite` MapLibre beta mapping、3-scene release-capable strict visual runner evidence、1k/10k/100k nightly perf harness、`extensions.scene3d` 边界 fixture、独立 v1 SceneView3D RFC、W25/W28 sprint DAG、`SceneView3DExtensionSchema`、scene source URL policy、invalid fixtures、`@gis-engine/scene3d` package boundary、scene command deterministic patch contract、loader-level resource load plan gate 和 mock 3D snapshot/query。当前 W21/W23 规划项已完成，W25-001/002/003/004/005/006 与 W27-001 已提前关闭；3D 后续实现应继续执行 MCP 3D context。
+当前 v0.1 已具备 `MapSpec`、commands、diagnostics、snapshot 和 MapLibre adapter 闭环；2026-05-17 v0.2 checkpoint 已完成 generic vector tile、MCP output schema、strict capability report、expression 扩展、style/layer order 稳定化、visual MVT 场景和 2.5D/3D 边界。2026-05-18 已补齐 package dry-run、resource/perf deterministic evidence、command audit trace 产品化、`fill-extrusion-lite` MapLibre beta mapping、3-scene release-capable strict visual runner evidence、1k/10k/100k nightly perf harness、`extensions.scene3d` 边界 fixture、独立 v1 SceneView3D RFC、W25/W28 sprint DAG、`SceneView3DExtensionSchema`、scene source URL policy、invalid fixtures、`@gis-engine/scene3d` package boundary、scene command deterministic patch contract、loader-level resource load plan gate、mock 3D snapshot/query 和 MCP 3D context。当前 W21/W23 规划项已完成，W25-001/002/003/004/005/006 与 W27-001/002 已提前关闭；3D 后续实现应继续执行 release visual gate。
 
 ## 路线总览
 
@@ -34,7 +34,7 @@ decision_level: advisory
 
 | 排名 | 事项 | 得分 | 证据 | 行动 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | SceneView3D v1 MCP 3D context | future | scene command schemas、resource load plan gate、mock snapshot/query、patch/replay/dry-run/rollback tests 已落地并通过 checks | 进入 W27 MCP output schema context | medium |
+| 1 | SceneView3D v1 release visual gate | future | scene command schemas、resource load plan gate、mock snapshot/query、MCP 3D context、patch/replay/dry-run/rollback tests 已落地并通过 checks | 进入 W27 release-runner 3D visual smoke gate 定义 | medium |
 
 已完成并保留回归证据：
 
@@ -59,11 +59,12 @@ decision_level: advisory
 | SceneView3D scene commands | `setSceneCamera`、scene source/layer commands、visibility command、schema strictness、patch replay/dry-run/rollback |
 | SceneView3D loader resource gate | `validateSceneResourceLoadPlan` covers 3D Tiles JSON/model/texture/worker/timeout/missing-source/unsupported-asset diagnostics |
 | SceneView3D mock snapshot/query | `snapshotScene3DMock`、`queryScene3DMock`、pending resource diagnostics、blank-scene diagnostics、deterministic pick results |
+| SceneView3D MCP 3D context | `get_context_summary` / `explain_spec` output schema exposes extension-only source/layer/resource/snapshot/query summaries |
 
 ## 本月行动
 
 1. W21/W23 当前规划项全部完成。
-2. SceneView3D v1 RFC 已拆成 [sprint-2026-W25-sceneview3d-v1.md](./sprint-2026-W25-sceneview3d-v1.md)，且 `TASK-2026W25-001/002/003/004/005/006` 与 `TASK-2026W27-001` 已完成；后续 3D 工作必须按该 DAG 继续执行，不得直接进入 core renderer。
+2. SceneView3D v1 RFC 已拆成 [sprint-2026-W25-sceneview3d-v1.md](./sprint-2026-W25-sceneview3d-v1.md)，且 `TASK-2026W25-001/002/003/004/005/006` 与 `TASK-2026W27-001/002` 已完成；后续 3D 工作必须按该 DAG 继续执行，不得直接进入 core renderer。
 
 ## Feature Spec 建议
 

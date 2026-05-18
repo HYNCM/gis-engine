@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import before from "../fixtures/commands/replay/style-update/before.map.json";
 import commands from "../fixtures/commands/replay/style-update/commands.json";
+import scene3dExtensionSpec from "../fixtures/specs/valid/scene3d-extension.map.json";
 import vectorTileUrl from "../fixtures/specs/valid/vector-tile-url.map.json";
 import type { MapSpec } from "@gis-engine/engine";
 import { callGisEngineTool, createGisEngineMcpServer, listGisEngineTools } from "@gis-engine/ai";
@@ -148,6 +149,44 @@ describe("MCP Server Integration", () => {
     expect(summary.sources).toEqual([{ id: "districts", type: "geojson" }]);
     expect(summary.layers[0]).toMatchObject({ id: "district-fill", visibility: "visible" });
     expect(summary.validation).toMatchObject({ valid: true, diagnosticCounts: { error: 0 } });
+  });
+
+  it("exposes gated SceneView3D context without enabling stable 3D runtime", async () => {
+    const result = await callGisEngineTool({
+      params: {
+        name: "get_context_summary",
+        arguments: { spec: scene3dExtensionSpec }
+      }
+    });
+
+    const summary = JSON.parse(result.content[0]!.text) as {
+      scene3d?: {
+        status: string;
+        stableViewMode: boolean;
+        runtimeSupported: boolean;
+        sourceCount: number;
+        layerCount: number;
+        pickableLayerCount: number;
+        snapshot: { mockPassed: boolean; pendingSourceIds: string[] };
+        query: { pickCount: number };
+        capabilities: { renderer: string; dimensions: string[] };
+      };
+      validation: { valid: boolean };
+    };
+
+    expect(result.isError).toBeUndefined();
+    expect(summary.validation.valid).toBe(true);
+    expect(summary.scene3d).toMatchObject({
+      status: "extension-only",
+      stableViewMode: false,
+      runtimeSupported: false,
+      sourceCount: 3,
+      layerCount: 3,
+      pickableLayerCount: 2,
+      snapshot: { mockPassed: true, pendingSourceIds: [] },
+      query: { pickCount: 2 },
+      capabilities: { renderer: "scene3d", dimensions: ["3d"] }
+    });
   });
 
   it("covers v0.2 vector tile and expression contracts through MCP tools", async () => {

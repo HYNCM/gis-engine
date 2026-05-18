@@ -25,6 +25,7 @@ import { toolInputErrorsToDiagnostics } from "../tools/schemaDiagnostics.js";
 import { snapshotSpecTool, SnapshotSpecToolInputSchema } from "../tools/snapshotSpec.js";
 
 const DiagnosticContractSchema = stripNestedIds(DiagnosticSchema);
+const CapabilityReportContractSchema = stripNestedIds(CapabilityReportSchema);
 
 export const ValidateSpecToolInputSchema = {
   type: "object",
@@ -52,7 +53,7 @@ export const ContextSummaryToolInputSchema = {
   type: "object",
   properties: {
     spec: MapSpecSchema,
-    capabilities: CapabilityReportSchema
+    capabilities: CapabilityReportContractSchema
   },
   required: ["spec"],
   additionalProperties: false
@@ -158,6 +159,107 @@ export const ApplyCommandsToolResultSchema = {
 export const ValidateSpecToolResultSchema = ValidationReportSchema;
 export const ExportSpecToolResultSchema = MapSpecSchema;
 
+const DiagnosticCountsSchema = {
+  type: "object",
+  properties: {
+    error: { type: "number" },
+    warning: { type: "number" },
+    info: { type: "number" }
+  },
+  required: ["error", "warning", "info"],
+  additionalProperties: false
+} as const;
+
+const Scene3DContextSummarySchema = {
+  type: "object",
+  properties: {
+    status: { type: "string", const: "extension-only" },
+    stableViewMode: { type: "boolean", const: false },
+    runtimeSupported: { type: "boolean", const: false },
+    sourceCount: { type: "number" },
+    layerCount: { type: "number" },
+    visibleLayerCount: { type: "number" },
+    pickableLayerCount: { type: "number" },
+    sources: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          type: { type: "string" }
+        },
+        required: ["id", "type"],
+        additionalProperties: false
+      }
+    },
+    layers: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          type: { type: "string" },
+          source: { type: "string" },
+          visibility: { type: "string", enum: ["visible", "none"] },
+          pickable: { type: "boolean" }
+        },
+        required: ["id", "type", "source", "visibility", "pickable"],
+        additionalProperties: false
+      }
+    },
+    resourcePolicy: {
+      type: "object",
+      properties: {
+        present: { type: "boolean" },
+        maxTilesetJsonBytes: { type: "number" },
+        maxModelBytes: { type: "number" },
+        maxTextureCount: { type: "number" },
+        maxTextureBytes: { type: "number" },
+        maxWorkers: { type: "number" },
+        timeoutMs: { type: "number" }
+      },
+      required: ["present"],
+      additionalProperties: false
+    },
+    snapshot: {
+      type: "object",
+      properties: {
+        mockPassed: { type: "boolean" },
+        pendingSourceIds: { type: "array", items: { type: "string" } },
+        diagnosticCounts: DiagnosticCountsSchema
+      },
+      required: ["mockPassed", "pendingSourceIds", "diagnosticCounts"],
+      additionalProperties: false
+    },
+    query: {
+      type: "object",
+      properties: {
+        pickCount: { type: "number" },
+        diagnosticCounts: DiagnosticCountsSchema
+      },
+      required: ["pickCount", "diagnosticCounts"],
+      additionalProperties: false
+    },
+    capabilities: CapabilityReportSchema
+  },
+  required: [
+    "status",
+    "stableViewMode",
+    "runtimeSupported",
+    "sourceCount",
+    "layerCount",
+    "visibleLayerCount",
+    "pickableLayerCount",
+    "sources",
+    "layers",
+    "resourcePolicy",
+    "snapshot",
+    "query",
+    "capabilities"
+  ],
+  additionalProperties: false
+} as const;
+
 export const ContextSummaryToolResultSchema = {
   type: "object",
   properties: {
@@ -194,21 +296,13 @@ export const ContextSummaryToolResultSchema = {
       type: "object",
       properties: {
         valid: { type: "boolean" },
-        diagnosticCounts: {
-          type: "object",
-          properties: {
-            error: { type: "number" },
-            warning: { type: "number" },
-            info: { type: "number" }
-          },
-          required: ["error", "warning", "info"],
-          additionalProperties: false
-        }
+        diagnosticCounts: DiagnosticCountsSchema
       },
       required: ["valid", "diagnosticCounts"],
       additionalProperties: false
     },
-    capabilities: CapabilityReportSchema
+    capabilities: CapabilityReportContractSchema,
+    scene3d: Scene3DContextSummarySchema
   },
   required: ["view", "sources", "layers", "validation"],
   additionalProperties: false

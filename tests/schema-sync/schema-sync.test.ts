@@ -156,6 +156,11 @@ describe("schema sync gate", () => {
     }
   });
 
+  it("exposes SceneView3D context in MCP output schemas behind the extension boundary", () => {
+    expect(ContextSummaryToolResultSchema.properties).toHaveProperty("scene3d");
+    expect(ExplainSpecToolResultSchema.properties.summary).toBe(ContextSummaryToolResultSchema);
+  });
+
   it("keeps capability reports strict for MCP context tools", () => {
     const ajv = new Ajv({ allErrors: true, strict: false });
     const validateCapabilityReport = ajv.compile(CapabilityReportSchema);

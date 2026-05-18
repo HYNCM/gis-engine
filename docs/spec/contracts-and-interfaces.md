@@ -150,6 +150,20 @@ pending strict snapshot resources, missing scene layers, missing scene sources,
 and deterministic mock picks, but they do not enable stable 3D view mode or
 fetch external assets.
 
+## SceneView3D MCP Context Contract
+
+`get_context_summary` and `explain_spec` include a `scene3d` block when
+`extensions.scene3d` is present and shaped like a SceneView3D extension. The
+block is explicitly extension-only:
+
+- `status: "extension-only"`
+- `stableViewMode: false`
+- `runtimeSupported: false`
+
+It may expose source/layer counts, resource policy caps, mock snapshot summary,
+mock query summary, and SceneView3D capability metadata. It must not imply that
+`view.mode: "scene3d"` is supported by the current runtime.
+
 ### 事务语义
 
 ```ts

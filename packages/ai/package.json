@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@gis-engine/engine": "workspace:*",
+    "@gis-engine/scene3d": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "ajv": "^8.17.0"
   },

@@ -32,6 +32,9 @@ importers:
       '@gis-engine/engine':
         specifier: workspace:*
         version: link:../engine
+      '@gis-engine/scene3d':
+        specifier: workspace:*
+        version: link:../scene3d
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
         version: 1.29.0(zod@4.4.3)

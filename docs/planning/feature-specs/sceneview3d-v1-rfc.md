@@ -229,8 +229,8 @@ A future migration must:
   cap.
 - Snapshot smoke can run without a real GPU, and visual snapshot runs in a
   release-capable browser/WebGL environment.
-- MCP tools expose 3D context only after schema-sync and output-schema tests
-  pass.
+- MCP tools expose extension-only 3D context after schema-sync and output-schema
+  tests pass; current coverage is in `get_context_summary` and `explain_spec`.
 - Core 2D package still passes without importing 3D renderer dependencies.
 
 ## Non-Goals

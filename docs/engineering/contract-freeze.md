@@ -55,6 +55,8 @@ breaking/non-breaking note in the PR summary.
 - `snapshotScene3DMock` and `queryScene3DMock` as mock-level 3D snapshot/query
   contracts.
 - `SNAPSHOT.RESOURCE_PENDING` diagnostic code.
+- SceneView3D context summary shape in `get_context_summary` and
+  `explain_spec` output schemas.
 - `view.mode: "scene3d"`, `capabilities.renderer: "scene3d"`, and
   `capabilities.dimensions: ["3d"]` remain reserved unsupported runtime
   requests until the v1 renderer package passes resource, snapshot, and query

@@ -103,6 +103,7 @@ flowchart LR
 | TASK-2026W25-005 | done | scene command schemas and `buildPatch` support for camera, sources, layers, visibility, deterministic patch replay, dry-run, rollback, and target diagnostics |
 | TASK-2026W25-006 | done | `@gis-engine/scene3d` scaffold exports v1 capabilities, explicit unsupported scaffold diagnostics, and a dependency guard against 3D renderer imports |
 | TASK-2026W27-001 | done | `snapshotScene3DMock` and `queryScene3DMock` provide GPU-free snapshot/query contracts with pending-resource, blank-scene, missing-layer, hidden-layer, and deterministic pick coverage |
+| TASK-2026W27-002 | done | `get_context_summary` and `explain_spec` output schemas expose extension-only SceneView3D source/layer/resource/snapshot/query summaries while keeping stable runtime support false |
 
 ## Non-Goals
 
@@ -113,3 +114,4 @@ flowchart LR
   deterministic load plan.
 - No stable runtime adapter from mock snapshot/query; they are contract gates
   for later MCP and renderer work.
+- No MCP tool may present SceneView3D context as stable runtime support.
