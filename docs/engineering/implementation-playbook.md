@@ -514,9 +514,9 @@ call queryFeatures and expect RENDER.DESTROYED
 当前 W21/W23 规划任务已全部完成。SceneView3D v1 已按 RFC 拆成 W25/W28
 专项 sprint，并已提前完成 schema foundation、fixtures、scene command patches、
 loader-level resource load plan gate、mock snapshot/query contract、MCP 3D
-context、release-runner 3D visual gate、alpha gate audit 和
-`@gis-engine/scene3d` package boundary。下一步不再重新论证 3D 启动顺序，
-而是继续 adapter feasibility。
+context、release-runner 3D visual gate、adapter feasibility、alpha gate audit
+和 `@gis-engine/scene3d` package boundary。下一步不再重新论证 3D 启动顺序，
+而是规划独立 Three.js adapter spike。
 
 ## 11. 当前落地状态
 
@@ -541,7 +541,8 @@ context、release-runner 3D visual gate、alpha gate audit 和
 - 已创建 `snapshotScene3DMock` 和 `queryScene3DMock`，在无 GPU/无真实 renderer 的情况下覆盖 pending resource、blank scene、missing layer/source、hidden layer 和 deterministic pick contract。
 - 已在 `get_context_summary` / `explain_spec` MCP output schema 中暴露 extension-only SceneView3D context，包含 source/layer/resource/snapshot/query 摘要且保持 stable runtime support 为 false。
 - 已创建 `evaluateScene3DReleaseVisualGate` 和 `pnpm test:release:scene3d`，定义 release-mode renderer visual evidence、coordinator waiver 和 deterministic no-bypass 规则。
-- 已创建 SceneView3D v1 alpha gate audit，允许进入 adapter feasibility，但继续阻断稳定 `view.mode: "scene3d"` runtime。
+- 已创建 SceneView3D adapter feasibility，建议先做 Three.js + 3DTilesRendererJS 独立 adapter spike，并保留 CesiumJS 为高保真 geospatial 参考线。
+- 已创建 SceneView3D v1 alpha gate audit，允许进入独立 adapter spike，但继续阻断稳定 `view.mode: "scene3d"` runtime。
 - 已创建 `@gis-engine/scene3d` package boundary scaffold，提供 capability report、unsupported scaffold diagnostics 和 3D renderer 依赖隔离守卫。
 
 仍未实现或仍为边界：

@@ -53,7 +53,10 @@ planning source and has been archived for traceability.
   `evaluateScene3DReleaseVisualGate` and `pnpm test:release:scene3d`.
 - Follow-up implementation closed `TASK-2026W27-005` with the SceneView3D v1
   alpha gate audit and release-note draft update.
-- W27 work still needs adapter feasibility follow-up.
+- Follow-up implementation closed `TASK-2026W27-004` with official-source
+  CesiumJS / Three.js / 3DTilesRendererJS adapter feasibility evidence.
+- W27 planned SceneView3D preparation work is complete; next work should be a
+  W28 adapter spike task, not a direct core runtime merge.
 
 ## Verification
 
