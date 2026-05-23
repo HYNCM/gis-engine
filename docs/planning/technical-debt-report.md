@@ -23,13 +23,13 @@ decision_level: advisory
 
 | 排名 | 债务 | 得分 | 证据 | 建议修复 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | SceneView3D 真实 renderer visual evidence 尚未完成 | 1.80 | W28-001 已创建 adapter spike package，但仍未导入真实 renderer 或产生 browser visual evidence；stable runtime 仍 blocked | 在独立 adapter package 内补齐真实 renderer snapshot/query/visual evidence | medium |
+| 1 | SceneView3D 真实 browser visual runner 尚未完成 | 1.65 | W22-001 已创建 renderer evidence handoff API，但仍未接入真实 browser/WebGL capture runner；stable runtime 仍 blocked | 在独立 adapter package 内补齐真实 renderer snapshot/query/visual runner evidence | medium |
 
 ## 修复顺序
 
-1. 下一步只在 `@gis-engine/scene3d-three-adapter` 内补真实 renderer snapshot/query/visual evidence，不接入 core runtime。
+1. 下一步由 `qa-agent` 在 `@gis-engine/scene3d-three-adapter` 边界内补真实 browser visual runner evidence，不接入 core runtime。
 2. 后续真实 renderer loader 接入时，必须先调用 `validateSceneResourceLoadPlan`，不得绕过 byte、texture、worker、timeout diagnostics。
 
 ## 结论
 
-如果只做一件事，优先在独立 adapter package 内补齐真实 renderer visual evidence。schema foundation、scene commands、resource load plan gate、mock snapshot/query、MCP context、release visual waiver 规则、adapter feasibility、alpha gate audit 和 W28 adapter package 已经闭环，下一步不能绕过 resource load plan 或直接打开 stable `view.mode: "scene3d"`。
+如果只做一件事，优先在独立 adapter package 内补齐真实 browser visual runner evidence。schema foundation、scene commands、resource load plan gate、mock snapshot/query、MCP context、release visual waiver 规则、adapter feasibility、alpha gate audit、W28 adapter package 和 W22 renderer evidence handoff 已经闭环，下一步不能绕过 resource load plan 或直接打开 stable `view.mode: "scene3d"`。

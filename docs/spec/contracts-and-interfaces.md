@@ -135,6 +135,37 @@ It returns a structured report with `valid`, normalized policy, aggregate
 totals, and `Diagnostic[]`. It does not fetch network resources and does not
 make `view.mode: "scene3d"` stable.
 
+## SceneView3D Three Adapter Spike Boundary
+
+`@gis-engine/scene3d-three-adapter` is the current isolated adapter spike for a
+future Three.js and 3DTilesRendererJS renderer. It may translate
+`extensions.scene3d` sources into a deterministic `SceneResourceLoadPlan` and
+run that plan through `validateSceneResourceLoadPlan`.
+
+The spike exposes:
+
+- `scene3dThreeAdapterBoundary`, with `status: "spike"` and
+  `stableViewMode: false`.
+- `getScene3DThreeAdapterCapabilities`, returning an experimental capability
+  report for the adapter boundary.
+- `buildScene3DThreeAdapterLoadPlan`, producing deterministic entries for
+  terrain textures, glTF/model resources, and 3D Tiles tileset JSON.
+- `evaluateScene3DThreeAdapterSpike`, returning resource-policy evidence plus
+  an explicit `CAPABILITY.UNSUPPORTED` diagnostic for stable runtime rendering.
+- `createScene3DThreeAdapterRendererEvidence`, converting future browser/WebGL
+  capture metrics into `Scene3DRendererVisualEvidence` for
+  `evaluateScene3DReleaseVisualGate`.
+
+The spike must not import or declare Three.js, 3DTilesRendererJS, CesiumJS,
+glTF loaders, workers, or remote loading dependencies until real renderer
+snapshot/query/visual evidence is added and accepted. It does not make
+`view.mode: "scene3d"` stable.
+
+Renderer evidence is accepted only when resource-policy diagnostics are clean
+and the visual capture proves positive frame dimensions, nontransparent pixels,
+pixels changed from the background, and no browser console errors. Missing or
+blank captures must fail closed.
+
 ## SceneView3D Mock Snapshot And Query Contract
 
 `@gis-engine/scene3d` exposes two mock-level contracts before any production 3D

@@ -22,8 +22,10 @@ merge gates. The main risks were operational:
 - Missing repo alignment: the system must reflect the current GIS Engine
   contracts, scripts, MCP tool names, and snapshot gate semantics.
 
-The optimized design keeps six agents but narrows their responsibilities and
-turns every handoff into a structured artifact.
+The optimized design keeps six governance agents but adds an execution owner
+registry for implementation work. Governance agents plan, review, and gate;
+execution owners implement bounded slices and return evidence artifacts. This
+keeps planning authority separate from code ownership.
 
 ## Repository Rules
 
@@ -55,6 +57,8 @@ Use the current repo scripts unless a task explicitly changes them:
 ```bash
 pnpm build:schema
 pnpm check
+pnpm test:release:scene3d
+pnpm --filter @gis-engine/scene3d-three-adapter build
 pnpm test:snapshot:visual
 GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual
 ```
@@ -67,12 +71,13 @@ checked in the current run and the source/date are recorded.
 Every agent report should begin with this front matter:
 
 ```yaml
-agent: coordinator | competitive-intel | code-reviewer | product-strategist | task-distributor | quality-guardian
+agent: coordinator | competitive-intel | code-reviewer | product-strategist | task-distributor | quality-guardian | adapter-agent | qa-agent | engine-agent | ai-agent | docs-agent
 period: YYYY-Www | YYYY-MM | YYYY-MM-DD | ad-hoc
 generated_at: YYYY-MM-DDTHH:mm:ssZ
 repo_revision: "<git sha or unknown>"
 inputs:
   - path-or-url
+owner: "@agent-or-team"
 decision_level: info | advisory | blocking | emergency
 ```
 
@@ -95,9 +100,31 @@ Planning documents are evidence snapshots, not a distributed task database.
   writer that resolves and applies the merged state.
 - Do not let multiple agents concurrently edit the same planning markdown file.
   Batch updates into one serialized commit.
+- Execution owners must not write planning state directly. They produce code,
+  tests, evidence reports, or review findings; `coordinator` or
+  `task-distributor` serializes accepted status changes into planning markdown.
 - When a real issue tracker is available, it becomes the canonical task state.
   Markdown burndown and dependency files should then be generated snapshots that
   reference issue ids rather than hand-maintained status stores.
+
+## Execution Owner Registry
+
+Execution owners are not additional governance agents. They are bounded
+implementation owners assigned by `task-distributor` and reviewed by
+`code-reviewer` / `quality-guardian`.
+
+| Owner | Scope | May Write | Must Not Do | Handoff Artifact |
+| --- | --- | --- | --- | --- |
+| `adapter-agent` | Renderer adapter implementation and adapter-local capability evidence | `packages/scene3d-three-adapter/*`, adapter tests, adapter README | Enable stable `view.mode: "scene3d"` or add Three/Cesium dependencies to core packages | Adapter implementation report and resource/snapshot/query evidence |
+| `qa-agent` | Deterministic smoke, browser visual evidence, fixtures, release-runner reports | snapshot tests, visual fixtures, evidence reports under docs or test artifacts | Decide merge/release readiness | Visual evidence report and test output |
+| `engine-agent` | Public schemas, commands, diagnostics, resource policy, runtime contracts | `packages/engine/src/*`, schema fixtures, command/resource tests | Pull renderer dependencies into `@gis-engine/engine` | Contract delta report with schema/check evidence |
+| `ai-agent` | MCP tools, context summaries, output schemas, AI-facing diagnostics | `packages/ai/src/*`, AI/MCP tests | Invent undocumented tool names or omit output schemas | MCP contract report |
+| `docs-agent` | Documentation ledger, release notes, public status alignment | README, CHANGELOG, docs | Override technical or release gate decisions | Documentation audit report |
+
+For the current SceneView3D path, `adapter-agent` owns the
+`@gis-engine/scene3d-three-adapter` implementation, `qa-agent` owns real
+renderer visual evidence, `engine-agent` only participates if public contracts
+must change, and `ai-agent` only participates if MCP exposes new evidence.
 
 ## Agent 1: Coordinator
 
@@ -159,6 +186,15 @@ Emergency workflow:
 ## Agent 2: Competitive Intelligence
 
 Role: evidence-first competitor and standards analyst.
+
+Boundary:
+
+- This agent is on the critical path when external releases, standards, or
+  dependency behavior may change the roadmap.
+- For routine adapter implementation, use the latest dated feasibility report
+  instead of rechecking the market every run.
+- Any refreshed 3D adapter recommendation must record checked source URLs and
+  dates before it is used to change implementation direction.
 
 Monitoring scope:
 
@@ -334,6 +370,18 @@ Outputs:
 - Burndown: `docs/planning/task-burndown.md`
 - Dependency graph: `docs/planning/dependency-graph.md`
 
+Execution assignment:
+
+- Assign work to execution owners from the registry, not only to governance
+  agents.
+- Keep write scopes disjoint when multiple execution owners work in parallel.
+- For SceneView3D renderer evidence, the default owner split is:
+  `adapter-agent` for adapter-local evidence APIs, `qa-agent` for browser visual
+  capture, `engine-agent` for contract changes, `ai-agent` for MCP exposure,
+  and `docs-agent` for status and release note alignment.
+- Planning state is updated only after the owning execution report, review
+  finding, or gate output exists.
+
 State management:
 
 - Treat markdown task state as a run snapshot. It is not safe for multiple
@@ -397,6 +445,7 @@ Required checks:
 | --- | --- | --- |
 | schema build | `pnpm build:schema` when schema or tools change | required |
 | deterministic checks | `pnpm check` | required |
+| SceneView3D release visual | `pnpm test:release:scene3d` when SceneView3D evidence changes | required before SceneView3D beta/release claims |
 | visual snapshot | conditional, non-blocking if environment cannot support it | required or explicitly waived |
 | resource policy | required when URLs, tiles, workers, or examples change | required |
 | MCP contract | required when AI tools change | required |
@@ -416,6 +465,19 @@ Visual snapshot waiver:
 - Waived PRs must still pass deterministic gates and smoke snapshots. Release
   candidates must either run strict visual snapshots in a release-capable
   environment or record a coordinator-approved release waiver.
+
+SceneView3D renderer evidence rules:
+
+- `@gis-engine/scene3d-three-adapter` evidence must pass resource-policy checks
+  before renderer visual evidence can be accepted.
+- A renderer evidence report may satisfy the SceneView3D release visual gate
+  only when it names the renderer, report path, nonblank frame metrics, and any
+  diagnostics.
+- Waiver-only SceneView3D release gates may keep an alpha scaffold moving, but
+  cannot justify beta or stable runtime support.
+- Stable `view.mode: "scene3d"` remains blocked until `quality-guardian`
+  accepts real renderer snapshot/query/visual evidence and `coordinator`
+  records the promotion decision.
 
 Emergency bypass:
 
@@ -490,6 +552,19 @@ Emergency:
    emergency bypass rules above and must record every waived gate plus the
    follow-up task that closes it.
 
+Adapter Evidence Cycle:
+
+1. `product-strategist` confirms the capability boundary and promotion target.
+2. `task-distributor` assigns disjoint execution owners.
+3. `adapter-agent` implements adapter-local capability, load, snapshot, query,
+   or evidence APIs without changing core runtime stability.
+4. `qa-agent` produces deterministic smoke or browser visual evidence.
+5. `code-reviewer` audits the diff and evidence for architecture, resource, and
+   test gaps.
+6. `quality-guardian` runs the required gates and issues pass/block/waiver.
+7. `coordinator` updates planning state and decides whether the capability can
+   move from scaffold to beta.
+
 ## Invocation Examples
 
 ```txt
@@ -499,6 +574,9 @@ Emergency:
 @product-strategist 基于竞品分析和技术债规划 v0.2
 @task-distributor 将 v0.2 规划拆解为 sprint DAG
 @quality-guardian 检查待 merge PR 是否符合 AI 原生标准
+@task-distributor 将 SceneView3D renderer evidence 分配给 adapter-agent 和 qa-agent
+@adapter-agent 在 scene3d-three-adapter 内实现 renderer evidence handoff
+@qa-agent 生成 SceneView3D browser visual evidence report
 ```
 
 ## Non-Goals

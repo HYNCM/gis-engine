@@ -10,6 +10,7 @@ import {
   scene3dPackageBoundary,
   validateSceneResourceLoadPlan,
   type DiagnosticCounts,
+  type Scene3DRendererVisualEvidence,
   type SceneResourceLoadEntry,
   type SceneResourceLoadPlan,
   type SceneResourceLoadReport
@@ -51,6 +52,21 @@ export interface Scene3DThreeAdapterSpikeReport {
   resourceReport: SceneResourceLoadReport;
   diagnostics: Diagnostic[];
   diagnosticCounts: DiagnosticCounts;
+}
+
+export interface Scene3DThreeAdapterVisualCapture {
+  reportPath: string;
+  width: number;
+  height: number;
+  nonTransparentPixels: number;
+  changedPixelsFromBackground: number;
+  targetLayerPixels?: Record<string, number>;
+  consoleErrors?: string[];
+}
+
+export interface Scene3DThreeAdapterRendererEvidenceOptions {
+  capture?: Scene3DThreeAdapterVisualCapture;
+  diagnostics?: Diagnostic[];
 }
 
 interface RawSceneResourceLoadEntry {
@@ -109,6 +125,27 @@ export function evaluateScene3DThreeAdapterSpike(
     resourceReport,
     diagnostics,
     diagnosticCounts: countDiagnostics(diagnostics)
+  };
+}
+
+export function createScene3DThreeAdapterRendererEvidence(
+  spikeReport: Scene3DThreeAdapterSpikeReport,
+  options: Scene3DThreeAdapterRendererEvidenceOptions = {}
+): Scene3DRendererVisualEvidence {
+  const diagnostics = [...spikeReport.resourceReport.diagnostics, ...(options.diagnostics ?? [])];
+  const capture = options.capture;
+
+  if (!capture) {
+    diagnostics.push(missingRendererCaptureDiagnostic());
+  } else {
+    diagnostics.push(...validateRendererCapture(capture));
+  }
+
+  return {
+    passed: spikeReport.resourceReport.valid && diagnostics.every((diagnostic) => diagnostic.severity !== "error"),
+    renderer: "scene3d-three-adapter",
+    ...(capture ? { reportPath: capture.reportPath } : {}),
+    diagnostics
   };
 }
 
@@ -188,6 +225,70 @@ function unsupportedRuntimeDiagnostic(): Diagnostic {
       message: "Keep SceneView3D rendering behind the adapter spike until real snapshot/query/visual evidence passes."
     }
   };
+}
+
+function missingRendererCaptureDiagnostic(): Diagnostic {
+  return {
+    severity: "error",
+    code: DiagnosticCodes.CapabilityUnsupported,
+    message:
+      "The Three.js SceneView3D adapter does not have renderer visual capture evidence yet.",
+    path: "/rendererVisualEvidence",
+    fix: {
+      kind: "manual",
+      confidence: "high",
+      message:
+        "Run a release-capable Three.js adapter visual runner and provide frame metrics before treating renderer evidence as passing."
+    }
+  };
+}
+
+function validateRendererCapture(capture: Scene3DThreeAdapterVisualCapture): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+
+  if (capture.width <= 0 || capture.height <= 0) {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.RenderAdapterError,
+      message: "The Three.js SceneView3D adapter visual capture has invalid frame dimensions.",
+      path: "/rendererVisualEvidence/frame",
+      fix: {
+        kind: "manual",
+        confidence: "high",
+        message: "Capture a browser/WebGL frame with positive width and height."
+      }
+    });
+  }
+
+  if (capture.nonTransparentPixels <= 0 || capture.changedPixelsFromBackground <= 0) {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.SnapshotBlankCanvas,
+      message: "The Three.js SceneView3D adapter visual capture did not prove a nonblank frame.",
+      path: "/rendererVisualEvidence/pixels",
+      fix: {
+        kind: "manual",
+        confidence: "high",
+        message: "Render a frame with nontransparent pixels and pixels changed from the background."
+      }
+    });
+  }
+
+  if ((capture.consoleErrors ?? []).length > 0) {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.RenderAdapterError,
+      message: "The Three.js SceneView3D adapter visual runner reported browser console errors.",
+      path: "/rendererVisualEvidence/consoleErrors",
+      fix: {
+        kind: "manual",
+        confidence: "high",
+        message: "Fix browser console errors before accepting renderer visual evidence."
+      }
+    });
+  }
+
+  return diagnostics;
 }
 
 function countDiagnostics(diagnostics: Diagnostic[]): DiagnosticCounts {

@@ -3,8 +3,10 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import scene3dExtensionSpec from "../fixtures/specs/valid/scene3d-extension.map.json";
 import { type SceneView3DExtension } from "@gis-engine/engine";
+import { evaluateScene3DReleaseVisualGate } from "../../packages/scene3d/src/index.js";
 import {
   buildScene3DThreeAdapterLoadPlan,
+  createScene3DThreeAdapterRendererEvidence,
   evaluateScene3DThreeAdapterSpike,
   getScene3DThreeAdapterCapabilities,
   scene3dThreeAdapterBoundary
@@ -96,6 +98,98 @@ describe("SceneView3D Three.js adapter spike", () => {
         severity: "info",
         code: "CAPABILITY.UNSUPPORTED",
         path: "/extensions/scene3d"
+      })
+    );
+  });
+
+  it("does not create passing renderer evidence without visual capture metrics", () => {
+    const spikeReport = evaluateScene3DThreeAdapterSpike(scene3dExtension(), {
+      estimates: {
+        tilesetJsonBytes: { "city-tiles": 512_000 },
+        modelBytes: { "station-model": 1_048_576 },
+        textureCount: { "terrain-dem": 1, "station-model": 4 },
+        textureBytes: { "terrain-dem": 262_144, "station-model": 2_097_152 },
+        workerCount: 1
+      }
+    });
+
+    const evidence = createScene3DThreeAdapterRendererEvidence(spikeReport);
+
+    expect(evidence.passed).toBe(false);
+    expect(evidence.renderer).toBe("scene3d-three-adapter");
+    expect(evidence.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: "CAPABILITY.UNSUPPORTED",
+        path: "/rendererVisualEvidence"
+      })
+    );
+  });
+
+  it("creates release-gate compatible renderer evidence from a nonblank capture", () => {
+    const spikeReport = evaluateScene3DThreeAdapterSpike(scene3dExtension(), {
+      estimates: {
+        tilesetJsonBytes: { "city-tiles": 512_000 },
+        modelBytes: { "station-model": 1_048_576 },
+        textureCount: { "terrain-dem": 1, "station-model": 4 },
+        textureBytes: { "terrain-dem": 262_144, "station-model": 2_097_152 },
+        workerCount: 1
+      }
+    });
+    const evidence = createScene3DThreeAdapterRendererEvidence(spikeReport, {
+      capture: {
+        reportPath: "test-results/scene3d-three-adapter/report.json",
+        width: 800,
+        height: 600,
+        nonTransparentPixels: 240_000,
+        changedPixelsFromBackground: 120_000,
+        targetLayerPixels: {
+          "city-buildings": 42_000
+        },
+        consoleErrors: []
+      }
+    });
+    const releaseGate = evaluateScene3DReleaseVisualGate(scene3dExtension(), {
+      ciTier: "release",
+      loadedSourceIds: ["terrain-dem", "city-tiles", "station-model"],
+      rendererVisualEvidence: evidence
+    });
+
+    expect(evidence).toEqual({
+      passed: true,
+      renderer: "scene3d-three-adapter",
+      reportPath: "test-results/scene3d-three-adapter/report.json",
+      diagnostics: []
+    });
+    expect(releaseGate.decision).toBe("passed");
+    expect(releaseGate.accepted).toBe(true);
+  });
+
+  it("keeps renderer evidence failed when the resource policy gate fails", () => {
+    const spikeReport = evaluateScene3DThreeAdapterSpike(scene3dExtension(), {
+      estimates: {
+        tilesetJsonBytes: { "city-tiles": 2_000_000 },
+        modelBytes: { "station-model": 1_048_576 },
+        workerCount: 1
+      }
+    });
+    const evidence = createScene3DThreeAdapterRendererEvidence(spikeReport, {
+      capture: {
+        reportPath: "test-results/scene3d-three-adapter/report.json",
+        width: 800,
+        height: 600,
+        nonTransparentPixels: 240_000,
+        changedPixelsFromBackground: 120_000,
+        consoleErrors: []
+      }
+    });
+
+    expect(evidence.passed).toBe(false);
+    expect(evidence.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: "SECURITY.RESOURCE_TOO_LARGE",
+        path: "/extensions/scene3d/sources/city-tiles/url"
       })
     );
   });

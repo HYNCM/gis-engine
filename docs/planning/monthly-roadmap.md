@@ -64,11 +64,13 @@ decision_level: advisory
 | SceneView3D adapter feasibility | Official CesiumJS / Three.js / 3D Tiles evidence recommends a narrow Three.js + 3DTilesRendererJS adapter spike |
 | SceneView3D alpha gate audit | `sceneview3d-alpha-gate-audit-2026-05-18.md` conditional alpha pass; stable 3D runtime remains blocked |
 | SceneView3D Three.js adapter spike | `@gis-engine/scene3d-three-adapter` package, deterministic load plan, resource policy integration, dependency isolation tests |
+| SceneView3D renderer evidence handoff | `createScene3DThreeAdapterRendererEvidence` turns future browser/WebGL capture metrics into release-gate compatible renderer evidence while keeping missing, blank, or resource-policy-failing evidence blocked |
 
 ## 本月行动
 
 1. W21/W23 当前规划项全部完成。
 2. SceneView3D v1 RFC 已拆成 [sprint-2026-W25-sceneview3d-v1.md](./sprint-2026-W25-sceneview3d-v1.md)，且 `TASK-2026W25-001/002/003/004/005/006`、`TASK-2026W27-001/002/003/004/005` 与 `TASK-2026W28-001` 已完成；后续 3D 工作必须按该 DAG 继续执行，不得直接进入 core renderer。
+3. SceneView3D renderer evidence 已拆成 [sprint-2026-W22-scene3d-renderer-evidence.md](./sprint-2026-W22-scene3d-renderer-evidence.md)；`TASK-2026W22-001` 已完成，下一步由 `qa-agent` 实现真实 browser visual runner，再由 `quality-guardian` 做 beta readiness gate。
 
 ## Feature Spec 建议
 
