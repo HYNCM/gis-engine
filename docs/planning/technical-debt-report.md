@@ -23,7 +23,7 @@ decision_level: advisory
 
 | 排名 | 债务 | 得分 | 证据 | 建议修复 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | SceneView3D 真实 browser visual runner 尚未完成 | 1.65 | W22-001 已创建 renderer evidence handoff API，但仍未接入真实 browser/WebGL capture runner；stable runtime 仍 blocked | 在独立 adapter package 内补齐真实 renderer snapshot/query/visual runner evidence | medium |
+| 1 | SceneView3D 真实 browser visual runner 尚未完成 | 1.65 | W22-001/W22-003 已补齐 renderer evidence handoff API 和 adapter runtime shim，但仍未接入真实 browser/WebGL capture runner；stable runtime 仍 blocked | 在独立 adapter package 内补齐真实 renderer snapshot/query/visual runner evidence | medium |
 
 ## 修复顺序
 

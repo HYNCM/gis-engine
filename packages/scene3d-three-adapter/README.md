@@ -13,6 +13,10 @@ Current status:
 - Does not fetch remote assets, start workers, or create WebGL/WebGPU contexts.
 - Converts `extensions.scene3d` source declarations into deterministic resource
   load plans and runs them through `validateSceneResourceLoadPlan`.
+- Exposes `createScene3DThreeAdapterRuntime(extension, options)` as a thin
+  adapter-local shim for `load`, `snapshot`, `query`, and `destroy`, reusing
+  mock SceneView3D snapshot/query contracts while keeping `stableViewMode`
+  false.
 - Converts future release-runner visual capture metrics into
   `Scene3DRendererVisualEvidence` through
   `createScene3DThreeAdapterRendererEvidence`, while keeping missing or blank
@@ -35,6 +39,9 @@ Current evidence API:
   resource load plan from `extensions.scene3d`.
 - `evaluateScene3DThreeAdapterSpike(extension, options)` validates that plan
   against `validateSceneResourceLoadPlan` and keeps runtime support false.
+- `createScene3DThreeAdapterRuntime(extension, options)` returns a thin runtime
+  shim with adapter-local `load`, `snapshot`, `query`, `destroy`, and
+  `rendererEvidence` methods.
 - `createScene3DThreeAdapterRendererEvidence(spikeReport, options)` accepts a
   future browser/WebGL capture report and returns release-gate compatible
   renderer evidence. It fails when capture metrics are missing, blank, invalid,

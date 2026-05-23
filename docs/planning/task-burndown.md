@@ -86,3 +86,4 @@ commands、resource load plan gate、package boundary、mock snapshot/query 和 
 | TASK-2026W27-005 | done | SceneView3D v1 alpha gate audit grants conditional contract alpha pass while keeping stable 3D runtime blocked |
 | TASK-2026W28-001 | done | `@gis-engine/scene3d-three-adapter` spike package creates deterministic load plans and resource-policy evidence without real renderer dependencies |
 | TASK-2026W22-001 | done | `createScene3DThreeAdapterRendererEvidence` converts future browser/WebGL capture metrics into release-gate compatible renderer evidence and fails closed on missing, blank, or resource-policy-failing evidence |
+| TASK-2026W22-003 | done | `createScene3DThreeAdapterRuntime` keeps load, snapshot, query, and destroy adapter-local behind the spike boundary while reusing mock snapshot/query evidence |

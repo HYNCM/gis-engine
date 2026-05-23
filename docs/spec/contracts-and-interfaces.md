@@ -152,6 +152,9 @@ The spike exposes:
   terrain textures, glTF/model resources, and 3D Tiles tileset JSON.
 - `evaluateScene3DThreeAdapterSpike`, returning resource-policy evidence plus
   an explicit `CAPABILITY.UNSUPPORTED` diagnostic for stable runtime rendering.
+- `createScene3DThreeAdapterRuntime`, exposing adapter-local `load`,
+  `snapshot`, `query`, `destroy`, and `rendererEvidence` methods while
+  reusing mock SceneView3D snapshot/query contracts.
 - `createScene3DThreeAdapterRendererEvidence`, converting future browser/WebGL
   capture metrics into `Scene3DRendererVisualEvidence` for
   `evaluateScene3DReleaseVisualGate`.

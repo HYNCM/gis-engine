@@ -7,6 +7,7 @@ import { evaluateScene3DReleaseVisualGate } from "../../packages/scene3d/src/ind
 import {
   buildScene3DThreeAdapterLoadPlan,
   createScene3DThreeAdapterRendererEvidence,
+  createScene3DThreeAdapterRuntime,
   evaluateScene3DThreeAdapterSpike,
   getScene3DThreeAdapterCapabilities,
   scene3dThreeAdapterBoundary
@@ -163,6 +164,100 @@ describe("SceneView3D Three.js adapter spike", () => {
     });
     expect(releaseGate.decision).toBe("passed");
     expect(releaseGate.accepted).toBe(true);
+  });
+
+  it("keeps runtime load, snapshot, query, and destroy adapter-local behind the spike boundary", async () => {
+    const runtime = createScene3DThreeAdapterRuntime(scene3dExtension(), {
+      estimates: {
+        tilesetJsonBytes: { "city-tiles": 512_000 },
+        modelBytes: { "station-model": 1_048_576 },
+        textureCount: { "terrain-dem": 1, "station-model": 4 },
+        textureBytes: { "terrain-dem": 262_144, "station-model": 2_097_152 },
+        workerCount: 1
+      }
+    });
+
+    expect(runtime.stableViewMode).toBe(false);
+    expect(runtime.runtimeSupported).toBe(false);
+    expect(runtime.loadPlan.resources).toHaveLength(4);
+
+    const loadReport = await runtime.load();
+    expect(loadReport.loaded).toBe(true);
+    expect(loadReport.resourceReport.valid).toBe(true);
+    expect(loadReport.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "info",
+        code: "CAPABILITY.UNSUPPORTED",
+        path: "/extensions/scene3d"
+      })
+    );
+
+    const snapshot = await runtime.snapshot({
+      format: "data-url",
+      requireLoadedResources: true
+    });
+    expect(snapshot.passed).toBe(true);
+    expect(snapshot.summary).toEqual(
+      expect.objectContaining({
+        sourceCount: 3,
+        layerCount: 3,
+        visibleLayerCount: 3,
+        pickableLayerCount: 2,
+        format: "data-url"
+      })
+    );
+    expect(snapshot.dataUrl).toMatch(/^data:image\/png;base64,/);
+
+    const query = await runtime.query();
+    expect(query.diagnostics).toEqual([]);
+    expect(query.picks).toHaveLength(2);
+    expect(query.picks.map((pick) => pick.objectId)).toEqual([
+      "city-tiles:city:mock",
+      "station-model:station:mock"
+    ]);
+
+    const evidence = runtime.rendererEvidence({
+      capture: {
+        reportPath: "test-results/scene3d-three-adapter/report.json",
+        width: 800,
+        height: 600,
+        nonTransparentPixels: 240_000,
+        changedPixelsFromBackground: 120_000,
+        consoleErrors: []
+      }
+    });
+    const releaseGate = evaluateScene3DReleaseVisualGate(scene3dExtension(), {
+      ciTier: "release",
+      loadedSourceIds: ["terrain-dem", "city-tiles", "station-model"],
+      rendererVisualEvidence: evidence
+    });
+
+    expect(evidence.passed).toBe(true);
+    expect(releaseGate.accepted).toBe(true);
+
+    const destroyReport = await runtime.destroy();
+    expect(destroyReport).toEqual({
+      destroyed: true,
+      diagnostics: []
+    });
+
+    const destroyedSnapshot = await runtime.snapshot();
+    expect(destroyedSnapshot.passed).toBe(false);
+    expect(destroyedSnapshot.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "info",
+        code: "RENDER.DESTROYED"
+      })
+    );
+
+    const destroyedQuery = await runtime.query();
+    expect(destroyedQuery.picks).toEqual([]);
+    expect(destroyedQuery.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "info",
+        code: "RENDER.DESTROYED"
+      })
+    );
   });
 
   it("keeps renderer evidence failed when the resource policy gate fails", () => {

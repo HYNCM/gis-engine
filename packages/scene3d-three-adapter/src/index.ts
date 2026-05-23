@@ -2,14 +2,21 @@ import {
   DiagnosticCodes,
   type CapabilityReport,
   type Diagnostic,
+  type ResourceReport,
   type SceneSource,
   type SceneView3DExtension
 } from "@gis-engine/engine";
 import {
   getScene3DV1Capabilities,
   scene3dPackageBoundary,
+  queryScene3DMock,
+  snapshotScene3DMock,
   validateSceneResourceLoadPlan,
   type DiagnosticCounts,
+  type Scene3DMockSnapshotOptions,
+  type Scene3DMockSnapshotResult,
+  type Scene3DQueryOptions,
+  type Scene3DQueryResult,
   type Scene3DRendererVisualEvidence,
   type SceneResourceLoadEntry,
   type SceneResourceLoadPlan,
@@ -67,6 +74,30 @@ export interface Scene3DThreeAdapterVisualCapture {
 export interface Scene3DThreeAdapterRendererEvidenceOptions {
   capture?: Scene3DThreeAdapterVisualCapture;
   diagnostics?: Diagnostic[];
+}
+
+export interface Scene3DThreeAdapterRuntimeLoadReport {
+  kind: "Scene3DThreeAdapterRuntimeLoadReport";
+  version: "0.1";
+  adapter: "three";
+  stableViewMode: false;
+  runtimeSupported: false;
+  loaded: boolean;
+  diagnostics: Diagnostic[];
+  resourceReport: SceneResourceLoadReport;
+  spikeReport: Scene3DThreeAdapterSpikeReport;
+}
+
+export interface Scene3DThreeAdapterRuntime {
+  readonly stableViewMode: false;
+  readonly runtimeSupported: false;
+  readonly spikeReport: Scene3DThreeAdapterSpikeReport;
+  readonly loadPlan: SceneResourceLoadPlan;
+  load(): Promise<Scene3DThreeAdapterRuntimeLoadReport>;
+  snapshot(options?: Scene3DMockSnapshotOptions): Promise<Scene3DMockSnapshotResult>;
+  query(options?: Scene3DQueryOptions): Promise<Scene3DQueryResult>;
+  destroy(): Promise<ResourceReport>;
+  rendererEvidence(options?: Scene3DThreeAdapterRendererEvidenceOptions): Scene3DRendererVisualEvidence;
 }
 
 interface RawSceneResourceLoadEntry {
@@ -147,6 +178,107 @@ export function createScene3DThreeAdapterRendererEvidence(
     ...(capture ? { reportPath: capture.reportPath } : {}),
     diagnostics
   };
+}
+
+export function createScene3DThreeAdapterRuntime(
+  extension: SceneView3DExtension,
+  options: Scene3DThreeAdapterSpikeOptions = {}
+): Scene3DThreeAdapterRuntime {
+  return new Scene3DThreeAdapterRuntimeImpl(extension, options);
+}
+
+class Scene3DThreeAdapterRuntimeImpl implements Scene3DThreeAdapterRuntime {
+  readonly stableViewMode = false;
+  readonly runtimeSupported = false;
+  readonly loadPlan: SceneResourceLoadPlan;
+  readonly spikeReport: Scene3DThreeAdapterSpikeReport;
+  #extension: SceneView3DExtension;
+  #loaded = false;
+  #destroyed = false;
+
+  constructor(extension: SceneView3DExtension, options: Scene3DThreeAdapterSpikeOptions = {}) {
+    this.#extension = structuredClone(extension);
+    this.loadPlan = buildScene3DThreeAdapterLoadPlan(this.#extension, options);
+    this.spikeReport = evaluateScene3DThreeAdapterSpike(this.#extension, options);
+  }
+
+  async load(): Promise<Scene3DThreeAdapterRuntimeLoadReport> {
+    if (this.#destroyed) {
+      return {
+        kind: "Scene3DThreeAdapterRuntimeLoadReport",
+        version: "0.1",
+        adapter: "three",
+        stableViewMode: false,
+        runtimeSupported: false,
+        loaded: false,
+        diagnostics: [destroyedDiagnostic("load")],
+        resourceReport: this.spikeReport.resourceReport,
+        spikeReport: this.spikeReport
+      };
+    }
+
+    this.#loaded = true;
+    return {
+      kind: "Scene3DThreeAdapterRuntimeLoadReport",
+      version: "0.1",
+      adapter: "three",
+      stableViewMode: false,
+      runtimeSupported: false,
+      loaded: true,
+      diagnostics: [...this.spikeReport.diagnostics],
+      resourceReport: this.spikeReport.resourceReport,
+      spikeReport: this.spikeReport
+    };
+  }
+
+  async snapshot(options: Scene3DMockSnapshotOptions = {}): Promise<Scene3DMockSnapshotResult> {
+    if (this.#destroyed) return destroyedSnapshotResult(this.#extension, options);
+    if (!this.#loaded) return notLoadedSnapshotResult(this.#extension, options);
+
+    const snapshot = snapshotScene3DMock(this.#extension, {
+      ...options,
+      loadedSourceIds: options.loadedSourceIds ?? Object.keys(this.#extension.sources ?? {}),
+      requireLoadedResources: options.requireLoadedResources ?? true
+    });
+    const diagnostics = [...this.spikeReport.resourceReport.diagnostics, ...snapshot.diagnostics];
+    return {
+      ...snapshot,
+      passed: !diagnostics.some((diagnostic) => diagnostic.severity === "error"),
+      diagnostics
+    };
+  }
+
+  async query(options: Scene3DQueryOptions = {}): Promise<Scene3DQueryResult> {
+    if (this.#destroyed) {
+      return { picks: [], diagnostics: [destroyedDiagnostic("query")] };
+    }
+    if (!this.#loaded) {
+      return { picks: [], diagnostics: [notLoadedDiagnostic("query")] };
+    }
+
+    const query = queryScene3DMock(this.#extension, options);
+    return {
+      picks: query.picks,
+      diagnostics: [...this.spikeReport.resourceReport.diagnostics, ...query.diagnostics]
+    };
+  }
+
+  async destroy(): Promise<ResourceReport> {
+    if (this.#destroyed) {
+      return {
+        destroyed: true,
+        diagnostics: [destroyedDiagnostic("destroy")]
+      };
+    }
+
+    this.#destroyed = true;
+    this.#loaded = false;
+    return { destroyed: true, diagnostics: [] };
+  }
+
+  rendererEvidence(options: Scene3DThreeAdapterRendererEvidenceOptions = {}): Scene3DRendererVisualEvidence {
+    return createScene3DThreeAdapterRendererEvidence(this.spikeReport, options);
+  }
 }
 
 function sourceLoadEntries(
@@ -297,6 +429,58 @@ function countDiagnostics(diagnostics: Diagnostic[]): DiagnosticCounts {
     counts[diagnostic.severity] += 1;
   }
   return counts;
+}
+
+function destroyedDiagnostic(operation: string): Diagnostic {
+  return {
+    severity: "info",
+    code: DiagnosticCodes.RenderDestroyed,
+    message: `Scene3DThreeAdapter runtime has already been destroyed before ${operation}.`
+  };
+}
+
+function notLoadedDiagnostic(operation: string): Diagnostic {
+  return {
+    severity: "error",
+    code: DiagnosticCodes.RenderAdapterError,
+    message: `Scene3DThreeAdapter runtime must load before ${operation}.`
+  };
+}
+
+function destroyedSnapshotResult(
+  extension: SceneView3DExtension,
+  options: Scene3DMockSnapshotOptions
+): Scene3DMockSnapshotResult {
+  const snapshot = snapshotScene3DMock(extension, {
+    ...options,
+    loadedSourceIds: [],
+    requireLoadedResources: true
+  });
+  const { dataUrl, ...rest } = snapshot;
+  void dataUrl;
+  return {
+    ...rest,
+    passed: false,
+    diagnostics: [destroyedDiagnostic("snapshot")]
+  };
+}
+
+function notLoadedSnapshotResult(
+  extension: SceneView3DExtension,
+  options: Scene3DMockSnapshotOptions
+): Scene3DMockSnapshotResult {
+  const snapshot = snapshotScene3DMock(extension, {
+    ...options,
+    loadedSourceIds: [],
+    requireLoadedResources: true
+  });
+  const { dataUrl, ...rest } = snapshot;
+  void dataUrl;
+  return {
+    ...rest,
+    passed: false,
+    diagnostics: [notLoadedDiagnostic("snapshot")]
+  };
 }
 
 function compactEntry(entry: RawSceneResourceLoadEntry): SceneResourceLoadEntry {
