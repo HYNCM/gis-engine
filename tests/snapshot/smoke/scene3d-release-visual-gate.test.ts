@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import scene3dExtensionSpec from "../../fixtures/specs/valid/scene3d-extension.map.json";
 import { DiagnosticCodes, type SceneView3DExtension } from "@gis-engine/engine";
 import { evaluateScene3DReleaseVisualGate } from "../../../packages/scene3d/src/index.js";
+import { runScene3DThreeAdapterBrowserRunner } from "../scene3d-browser-runner.js";
 
 describe("SceneView3D release visual gate", () => {
   it("allows the extension-only release gate only with a coordinator waiver", () => {
@@ -97,6 +98,24 @@ describe("SceneView3D release visual gate", () => {
       renderer: "scene3d-browser-runner",
       reportPath: "test-results/scene3d/visual-report.json"
     });
+  });
+
+  it("runs the browser visual runner and feeds real renderer evidence into the release gate", async () => {
+    const runner = await runScene3DThreeAdapterBrowserRunner();
+    const report = evaluateScene3DReleaseVisualGate(scene3dExtension(), {
+      ciTier: "release",
+      loadedSourceIds: ["terrain-dem", "city-tiles", "station-model"],
+      rendererVisualEvidence: runner.rendererEvidence
+    });
+
+    expect(runner.report.status).toBe("passed");
+    expect(runner.report.renderer).toBe("scene3d-three-adapter-browser-runner");
+    expect(runner.capture.nonTransparentPixels).toBeGreaterThan(0);
+    expect(runner.capture.changedPixelsFromBackground).toBeGreaterThan(0);
+    expect(runner.rendererEvidence.passed).toBe(true);
+    expect(report.decision).toBe("passed");
+    expect(report.accepted).toBe(true);
+    expect(report.evidence.rendererVisual).toEqual(runner.rendererEvidence);
   });
 });
 

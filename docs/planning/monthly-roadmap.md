@@ -70,7 +70,7 @@ decision_level: advisory
 
 1. W21/W23 当前规划项全部完成。
 2. SceneView3D v1 RFC 已拆成 [sprint-2026-W25-sceneview3d-v1.md](./sprint-2026-W25-sceneview3d-v1.md)，且 `TASK-2026W25-001/002/003/004/005/006`、`TASK-2026W27-001/002/003/004/005` 与 `TASK-2026W28-001` 已完成；后续 3D 工作必须按该 DAG 继续执行，不得直接进入 core renderer。
-3. SceneView3D renderer evidence 已拆成 [sprint-2026-W22-scene3d-renderer-evidence.md](./sprint-2026-W22-scene3d-renderer-evidence.md)；`TASK-2026W22-001` 已完成，下一步由 `qa-agent` 实现真实 browser visual runner，再由 `quality-guardian` 做 beta readiness gate。
+3. SceneView3D renderer evidence 已拆成 [sprint-2026-W22-scene3d-renderer-evidence.md](./sprint-2026-W22-scene3d-renderer-evidence.md)；`TASK-2026W22-001/002/003/004/005` 已完成，beta readiness gate 也已跑通，后续 3D 工作只剩 stable runtime promotion 的后续决策，不得直接进入 core renderer。
 
 ## Feature Spec 建议
 

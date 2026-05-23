@@ -37,10 +37,10 @@ packages.
 | id | title | priority | owner | status | acceptance |
 | --- | --- | --- | --- | --- | --- |
 | TASK-2026W22-001 | Add adapter renderer evidence handoff API | P1 | `adapter-agent` | done | `createScene3DThreeAdapterRendererEvidence` converts future capture metrics into `Scene3DRendererVisualEvidence`, fails closed on missing/blank capture, and remains release-gate compatible |
-| TASK-2026W22-002 | Add release-capable browser visual runner | P1 | `qa-agent` | todo | local fixture renders through the adapter package, records frame metrics, and feeds real renderer evidence to `pnpm test:release:scene3d` |
+| TASK-2026W22-002 | Add release-capable browser visual runner | P1 | `qa-agent` | done | `runScene3DThreeAdapterBrowserRunner` renders a local fixture through the adapter package, records frame metrics, and feeds real renderer evidence to `pnpm test:release:scene3d` |
 | TASK-2026W22-003 | Add adapter query/snapshot runtime shim behind spike boundary | P1 | `adapter-agent` | done | `createScene3DThreeAdapterRuntime` keeps `load`, `snapshot`, `query`, and `destroy` adapter-local, reuses mock snapshot/query evidence, and keeps `stableViewMode: false` |
-| TASK-2026W22-004 | Review whether MCP should expose renderer evidence summaries | P2 | `ai-agent` | todo | decision recorded; if implemented, output schemas and MCP tests are updated |
-| TASK-2026W22-005 | Run SceneView3D beta readiness gate | P1 | `quality-guardian` | todo | resource, adapter, smoke, release scene3d, and visual evidence commands are recorded |
+| TASK-2026W22-004 | Review whether MCP should expose renderer evidence summaries | P2 | `ai-agent` | done | decision recorded; renderer evidence summaries stay out of MCP for now, while `scene3d` context remains extension-only |
+| TASK-2026W22-005 | Run SceneView3D beta readiness gate | P1 | `quality-guardian` | done | resource, adapter, smoke, release scene3d, and visual evidence commands are recorded and pass |
 
 ## Dependency Path
 

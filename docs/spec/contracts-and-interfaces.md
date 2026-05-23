@@ -212,7 +212,9 @@ block is explicitly extension-only:
 
 It may expose source/layer counts, resource policy caps, mock snapshot summary,
 mock query summary, and SceneView3D capability metadata. It must not imply that
-`view.mode: "scene3d"` is supported by the current runtime.
+`view.mode: "scene3d"` is supported by the current runtime. It must not expose
+renderer evidence summaries; those stay in release-gate and visual-runner
+artifacts until a future public AI use case is approved.
 
 ### 事务语义
 

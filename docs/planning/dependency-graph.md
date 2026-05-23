@@ -74,10 +74,13 @@ W21 sprint 计划已归档，当前活跃关键路径从 W25 SceneView3D v1 DAG 
 | v1 SceneView3D Three.js adapter spike | done | `@gis-engine/scene3d-three-adapter` generates deterministic load-plan/resource-policy evidence without real renderer dependencies |
 | SceneView3D renderer evidence handoff | done | `createScene3DThreeAdapterRendererEvidence` converts future nonblank browser capture metrics into `Scene3DRendererVisualEvidence` and keeps missing/blank/resource-policy-failing captures blocked |
 | SceneView3D adapter runtime shim | done | `createScene3DThreeAdapterRuntime` keeps load, snapshot, query, and destroy adapter-local while reusing mock SceneView3D evidence |
+| SceneView3D browser visual runner | done | `runScene3DThreeAdapterBrowserRunner` renders a local fixture in Chromium, records frame metrics, and produces release-capable renderer evidence |
+| SceneView3D MCP evidence summary decision | done | renderer evidence summaries stay out of MCP for now; `scene3d` context remains extension-only |
+| SceneView3D beta readiness gate | done | `pnpm test:release:scene3d` now exercises the browser runner and accepts release visual evidence |
 
 ## 关键路径
 
-1. v1 SceneView3D RFC -> W25/W28 sprint DAG -> TypeBox schema -> fixtures + URL resource policy + loader resource gate + package boundary + scene commands -> mock snapshot/query contracts -> MCP context -> release visual gate -> alpha audit + adapter feasibility -> Three.js adapter spike -> renderer evidence handoff -> adapter runtime shim -> browser visual runner follow-up。
+1. v1 SceneView3D RFC -> W25/W28 sprint DAG -> TypeBox schema -> fixtures + URL resource policy + loader resource gate + package boundary + scene commands -> mock snapshot/query contracts -> MCP context -> release visual gate -> alpha audit + adapter feasibility -> Three.js adapter spike -> renderer evidence handoff -> adapter runtime shim -> browser visual runner -> beta readiness gate; stable runtime promotion remains blocked.
 
 ```mermaid
 flowchart LR
@@ -99,7 +102,8 @@ flowchart LR
   L --> M
   M --> N["renderer evidence handoff"]
   N --> O["adapter runtime shim"]
-  O --> P["browser visual runner follow-up"]
+  O --> P["browser visual runner"]
+  P --> Q["beta readiness gate"]
 ```
 
 ## 阻断规则
