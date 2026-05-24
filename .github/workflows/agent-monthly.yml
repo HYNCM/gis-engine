@@ -43,6 +43,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - name: 安装 Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
       - name: 运行完整测试套件收集数据
         run: |
           pnpm build:schema
@@ -103,6 +106,9 @@ jobs:
           cache: "pnpm"
 
       - run: pnpm install --frozen-lockfile
+
+      - name: 安装 Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
 
       - name: 运行发布级门禁
         run: |
