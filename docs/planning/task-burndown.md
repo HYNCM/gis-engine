@@ -1,8 +1,8 @@
 ---
-agent: task-distributor
-period: 2026-W22
-generated_at: 2026-05-24T14:29:18Z
-repo_revision: "42d8c01"
+agent: coordinator
+period: 2026-W23
+generated_at: 2026-05-24T15:35:46Z
+repo_revision: "1b607fd"
 inputs:
   - docs/archive/2026-05-18/planning/sprint-2026-W21.md
   - docs/planning/sprint-2026-W25-sceneview3d-v1.md
@@ -11,6 +11,7 @@ inputs:
   - docs/reviews/sceneview3d-promotion-gate-2026-05-24.md
   - docs/planning/sprint-2026-W22-automation-hardening.md
   - docs/planning/feature-specs/sceneview3d-stable-renderer-contract.md
+owner: "@coordinator"
 decision_level: advisory
 ---
 
@@ -47,14 +48,36 @@ runtime，而是先冻结真实 renderer contract、Three.js/3DTilesRendererJS �
 lifecycle、snapshot/query 语义、resource policy 和 release gate。规划规格见
 [sceneview3d-stable-renderer-contract.md](./feature-specs/sceneview3d-stable-renderer-contract.md)。
 
-| id | title | priority | owner | status | acceptance |
-| --- | --- | --- | --- | --- | --- |
-| TASK-2026W23-SRC-001 | Define stable renderer adapter contract | P0 | `@adapter-agent` | todo | load/render/resize/camera/snapshot/query/destroy/diagnostics obligations are specified without changing stable `view.mode` |
-| TASK-2026W23-SRC-002 | Freeze Three.js and 3DTilesRendererJS dependency boundary | P0 | `@adapter-agent`, `@engine-agent` | todo | renderer dependencies remain adapter-local and core packages keep dependency-isolation checks |
-| TASK-2026W23-SRC-003 | Specify lifecycle and failure-state semantics | P1 | `@adapter-agent`, `@qa-agent` | todo | load/reload/resize/destroy/failure transitions are deterministic and structured |
-| TASK-2026W23-SRC-004 | Specify stable snapshot and query semantics | P1 | `@qa-agent`, `@adapter-agent` | todo | nonblank metrics, camera/dimension determinism, pick identity, no-hit, and hidden/missing layer behavior are defined |
-| TASK-2026W23-SRC-005 | Align SceneView3D resource policy and release gates | P1 | `@engine-agent`, `@quality-guardian`, `@docs-agent` | todo | resource-policy tests/docs and release gates name exact beta/stable renderer checks |
-| TASK-2026W23-SRC-006 | Issue stable runtime promotion readiness decision | P0 | `@quality-guardian`, `@coordinator` | blocked | future gate accepts the real renderer contract package or keeps stable `view.mode: "scene3d"` blocked |
+共享规划状态由 `@coordinator` 单写。下面的状态只表示执行 handoff 已可用；
+除 `TASK-2026W23-SRC-006` 按依赖保持 blocked 外，不声称任何 SRC 执行任务已经完成。
+
+| id | title | priority | owner | status | evidence target | acceptance | finish gates |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| TASK-2026W23-SRC-001 | Define stable renderer adapter contract | P0 | `@adapter-agent` | todo | adapter contract delta report plus focused adapter contract tests | load/render/resize/camera/snapshot/query/destroy/diagnostics obligations are specified without changing stable `view.mode` | `pnpm test:adapter -- tests/adapter/scene3d-three-adapter.test.ts`; `pnpm --filter @gis-engine/scene3d-three-adapter build`; code-reviewer boundary audit |
+| TASK-2026W23-SRC-002 | Freeze Three.js and 3DTilesRendererJS dependency boundary | P0 | `@adapter-agent`, `@engine-agent` | todo | dependency-boundary audit naming allowed package locations and import/package checks | renderer dependencies remain adapter-local and core packages keep dependency-isolation checks | `pnpm --filter @gis-engine/scene3d-three-adapter build`; dependency isolation check or audit evidence; `pnpm check` when package metadata/imports change |
+| TASK-2026W23-SRC-003 | Specify lifecycle and failure-state semantics | P1 | `@adapter-agent`, `@qa-agent` | todo | lifecycle matrix report with structured diagnostic outcomes | load/reload/resize/cancel/destroy/failure transitions are deterministic and structured | adapter lifecycle contract tests; `pnpm check` when runtime behavior or diagnostics change |
+| TASK-2026W23-SRC-004 | Specify stable snapshot and query semantics | P1 | `@qa-agent`, `@adapter-agent` | todo | snapshot/query report with browser metrics, fixture names, pick cases, and diagnostics | nonblank metrics, camera/dimension determinism, pick identity, no-hit, and hidden/missing layer behavior are defined | `pnpm test:release:scene3d`; `pnpm test:snapshot:visual`; strict visual snapshot before beta/stable renderer claim |
+| TASK-2026W23-SRC-005 | Align SceneView3D resource policy and release gates | P1 | `@engine-agent`, `@quality-guardian`, `@docs-agent` | todo | resource-policy test output, release-gate matrix, and docs alignment note | resource-policy tests/docs and release gates name exact PR, beta, and stable renderer checks | `pnpm test:resources`; `pnpm test:schema -- tests/schema/resource-policy.test.ts` when schema policy changes; `pnpm test:release:scene3d`; visual snapshot gate or coordinator waiver for non-rendering changes |
+| TASK-2026W23-SRC-006 | Issue stable runtime promotion readiness decision | P0 | `@quality-guardian`, `@coordinator` | blocked | quality-guardian gate report and coordinator decision note | future gate accepts the real renderer contract package or keeps stable `view.mode: "scene3d"` blocked with explicit blocker codes | `pnpm build:schema` if public schema/tool contracts changed; `pnpm check`; `pnpm test:release:scene3d`; strict visual snapshot evidence or release waiver; coordinator records Go/No-go decision |
+
+Next quality-gate triggers:
+
+- Adapter contract tests are required when SRC-001, SRC-003, SRC-004, adapter
+  lifecycle, snapshot/query, or renderer evidence handoff changes.
+- Resource policy tests are required when SRC-002, SRC-005, URL/tile/worker,
+  model/texture, timeout, example asset, or package-boundary behavior changes.
+- `pnpm test:release:scene3d` is required for SRC-004, SRC-005, SRC-006, and
+  any beta/stable renderer evidence claim.
+- `pnpm test:snapshot:visual` is required for rendering, fixture, style,
+  browser-runner, visual-evidence, or adapter-output changes; strict
+  `GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual` is required
+  before beta/stable renderer claims unless coordinator records a release
+  waiver.
+- `pnpm build:schema` is required when public TypeBox schemas, generated schema
+  artifacts, diagnostics, MCP schemas, command contracts, or public resource
+  policy contracts change.
+- `pnpm check` is required for final handoff, SRC-006, package metadata/import
+  boundary changes, and quality-guardian acceptance.
 
 ## W23 promotion readiness 计划快照
 

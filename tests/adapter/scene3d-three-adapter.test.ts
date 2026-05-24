@@ -2,7 +2,12 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import scene3dExtensionSpec from "../fixtures/specs/valid/scene3d-extension.map.json";
-import { type SceneView3DExtension } from "@gis-engine/engine";
+import {
+  Scene3DStableRuntimeBlockerCodes,
+  validateSpec,
+  type MapSpec,
+  type SceneView3DExtension
+} from "@gis-engine/engine";
 import { evaluateScene3DReleaseVisualGate } from "../../packages/scene3d/src/index.js";
 import {
   buildScene3DThreeAdapterLoadPlan,
@@ -11,6 +16,7 @@ import {
   createScene3DThreeAdapterRuntime,
   evaluateScene3DThreeAdapterSpike,
   getScene3DThreeAdapterCapabilities,
+  getScene3DThreeAdapterStableRendererContract,
   scene3dThreeAdapterBoundary
 } from "../../packages/scene3d-three-adapter/src/index.js";
 
@@ -29,6 +35,107 @@ describe("SceneView3D Three.js adapter spike", () => {
     );
     expect(capabilities.renderer).toBe("scene3d-three-adapter");
     expect(capabilities.experimental).toContain("sceneview3d-three-adapter-spike");
+  });
+
+  it("exports a machine-readable stable renderer handoff contract while keeping stable runtime blocked", () => {
+    const contract = getScene3DThreeAdapterStableRendererContract();
+
+    expect(contract).toEqual(
+      expect.objectContaining({
+        kind: "Scene3DThreeAdapterStableRendererContractSummary",
+        status: "adapter-contract-defined",
+        stableViewMode: false,
+        runtimeSupported: false,
+        stableRuntimeBlocked: true,
+        promotionDecisionTask: "TASK-2026W23-SRC-006"
+      })
+    );
+    expect(contract.guardrails).toEqual({
+      schemaFirst: true,
+      commandOnlyMutation: true,
+      structuredDiagnostics: true,
+      snapshotVerification: true,
+      resourcePolicyRequired: true,
+      adapterBoundaryRequired: true
+    });
+    expect(contract.obligations.map((obligation) => obligation.id)).toEqual([
+      "load",
+      "render",
+      "resize",
+      "camera",
+      "snapshot",
+      "query",
+      "destroy",
+      "diagnostics",
+      "resourceCleanup"
+    ]);
+    expect(contract.obligations.every((obligation) => obligation.required)).toBe(true);
+    expect(contract.obligations.find((obligation) => obligation.id === "snapshot")).toEqual(
+      expect.objectContaining({
+        requiredEvidence: expect.arrayContaining(["Scene3DMockSnapshotResult", "visual snapshot report"])
+      })
+    );
+    expect(contract.obligations.find((obligation) => obligation.id === "query")).toEqual(
+      expect.objectContaining({
+        requiredEvidence: expect.arrayContaining(["Scene3DQueryResult", "pick coverage report"])
+      })
+    );
+    expect(contract.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          severity: "error",
+          code: "CAPABILITY.UNSUPPORTED",
+          blockerCode: Scene3DStableRuntimeBlockerCodes.ViewMode,
+          path: "/view/mode"
+        }),
+        expect.objectContaining({
+          severity: "error",
+          code: "CAPABILITY.UNSUPPORTED",
+          blockerCode: Scene3DStableRuntimeBlockerCodes.Renderer,
+          path: "/capabilities/renderer"
+        }),
+        expect.objectContaining({
+          severity: "error",
+          code: "CAPABILITY.UNSUPPORTED",
+          blockerCode: Scene3DStableRuntimeBlockerCodes.Dimensions,
+          path: "/capabilities/dimensions"
+        })
+      ])
+    );
+  });
+
+  it("keeps stable scene3d view mode blocked even with the adapter contract present", () => {
+    const spec = structuredClone(scene3dExtensionSpec) as MapSpec;
+    spec.view.mode = "scene3d";
+    spec.capabilities = {
+      renderer: "scene3d",
+      dimensions: ["3d"],
+      experimental: ["sceneview3d-v1"]
+    };
+
+    const report = validateSpec(spec);
+
+    expect(getScene3DThreeAdapterStableRendererContract().stableRuntimeBlocked).toBe(true);
+    expect(report.valid).toBe(false);
+    expect(report.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "CAPABILITY.UNSUPPORTED",
+          blockerCode: Scene3DStableRuntimeBlockerCodes.ViewMode,
+          path: "/view/mode"
+        }),
+        expect.objectContaining({
+          code: "CAPABILITY.UNSUPPORTED",
+          blockerCode: Scene3DStableRuntimeBlockerCodes.Renderer,
+          path: "/capabilities/renderer"
+        }),
+        expect.objectContaining({
+          code: "CAPABILITY.UNSUPPORTED",
+          blockerCode: Scene3DStableRuntimeBlockerCodes.Dimensions,
+          path: "/capabilities/dimensions"
+        })
+      ])
+    );
   });
 
   it("turns SceneView3D sources into a deterministic Three.js adapter load plan", () => {
@@ -384,9 +491,20 @@ describe("SceneView3D Three.js adapter spike", () => {
   });
 
   it("keeps renderer dependencies out of package manifests during the spike", () => {
+    const contract = getScene3DThreeAdapterStableRendererContract();
     const enginePackage = readPackageJson("packages/engine/package.json");
     const scene3dPackage = readPackageJson("packages/scene3d/package.json");
     const threeAdapterPackage = readPackageJson("packages/scene3d-three-adapter/package.json");
+
+    expect(contract.dependencyBoundary).toEqual(
+      expect.objectContaining({
+        adapterLocalOnly: true,
+        allowedRendererPackage: "@gis-engine/scene3d-three-adapter",
+        runtimePackages: ["three", "3d-tiles-renderer"],
+        corePackagesMustRemainRendererFree: ["@gis-engine/engine", "@gis-engine/scene3d"],
+        currentPackageManifestStatus: "not-declared-during-spike"
+      })
+    );
 
     for (const dependency of scene3dThreeAdapterBoundary.requiredRuntimePeerDependencies) {
       expect(enginePackage.dependencies ?? {}).not.toHaveProperty(dependency);
@@ -395,6 +513,25 @@ describe("SceneView3D Three.js adapter spike", () => {
       expect(threeAdapterPackage.devDependencies ?? {}).not.toHaveProperty(dependency);
       expect(threeAdapterPackage.peerDependencies ?? {}).not.toHaveProperty(dependency);
     }
+  });
+
+  it("documents the adapter handoff contract and non-goals in the README", () => {
+    const readme = readFileSync(resolve("packages/scene3d-three-adapter/README.md"), "utf8");
+    const normalizedReadme = readme.replace(/\s+/g, " ");
+
+    expect(readme).toContain("Stable Renderer Handoff Contract");
+    expect(readme).toContain("load");
+    expect(readme).toContain("render");
+    expect(readme).toContain("resize");
+    expect(readme).toContain("camera");
+    expect(readme).toContain("snapshot");
+    expect(readme).toContain("query");
+    expect(readme).toContain("destroy");
+    expect(readme).toContain("diagnostics");
+    expect(readme).toContain("resource cleanup");
+    expect(normalizedReadme).toContain('stable `view.mode: "scene3d"` remains blocked');
+    expect(normalizedReadme).toContain("Three.js and 3DTilesRendererJS are adapter-local renderer dependencies");
+    expect(readme).toContain("Non-goals");
   });
 });
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import scene3dExtensionSpec from "../fixtures/specs/valid/scene3d-extension.map.json";
-import { DiagnosticCodes, type SceneView3DExtension } from "@gis-engine/engine";
+import { DiagnosticCodes, validateSpec, type MapSpec, type SceneView3DExtension } from "@gis-engine/engine";
 import { defaultSceneResourceLoadPolicy, validateSceneResourceLoadPlan } from "../../packages/scene3d/src/index.js";
 
 describe("SceneView3D loader resource policy", () => {
@@ -101,8 +101,51 @@ describe("SceneView3D loader resource policy", () => {
     expect(report.valid).toBe(true);
     expect(report.policy).toEqual(defaultSceneResourceLoadPolicy);
   });
+
+  it("requires external renderer asset URLs to pass SceneView3D resource policy before loader evidence is accepted", () => {
+    const spec = scene3dSpec();
+    const scene = spec.extensions!.scene3d!;
+    scene.sources!["city-tiles"]!.url = "https://cdn.example.com/city/tileset.json";
+    scene.sources!["station-model"]!.url = "https://assets.example.com/models/station.glb";
+
+    const blocked = validateSpec(spec);
+
+    expect(blocked.valid).toBe(false);
+    expect(blocked.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: DiagnosticCodes.SecurityUrlBlocked,
+          path: "/extensions/scene3d/sources/city-tiles/url"
+        }),
+        expect.objectContaining({
+          code: DiagnosticCodes.SecurityUrlBlocked,
+          path: "/extensions/scene3d/sources/station-model/url"
+        })
+      ])
+    );
+
+    scene.resourcePolicy!.allowedHosts = ["cdn.example.com", "assets.example.com"];
+    const allowlisted = validateSpec(spec);
+
+    expect(allowlisted.diagnostics).not.toContainEqual(
+      expect.objectContaining({
+        code: DiagnosticCodes.SecurityUrlBlocked,
+        path: "/extensions/scene3d/sources/city-tiles/url"
+      })
+    );
+    expect(allowlisted.diagnostics).not.toContainEqual(
+      expect.objectContaining({
+        code: DiagnosticCodes.SecurityUrlBlocked,
+        path: "/extensions/scene3d/sources/station-model/url"
+      })
+    );
+  });
 });
 
 function scene3dExtension(): SceneView3DExtension {
   return structuredClone(scene3dExtensionSpec.extensions.scene3d) as SceneView3DExtension;
+}
+
+function scene3dSpec(): MapSpec {
+  return structuredClone(scene3dExtensionSpec) as MapSpec;
 }

@@ -1,8 +1,8 @@
 ---
-agent: task-distributor
-period: 2026-W22
-generated_at: 2026-05-24T14:29:18Z
-repo_revision: "42d8c01"
+agent: coordinator
+period: 2026-W23
+generated_at: 2026-05-24T15:35:46Z
+repo_revision: "1b607fd"
 inputs:
   - docs/archive/2026-05-18/planning/sprint-2026-W21.md
   - docs/planning/sprint-2026-W25-sceneview3d-v1.md
@@ -11,6 +11,7 @@ inputs:
   - docs/reviews/sceneview3d-promotion-gate-2026-05-24.md
   - docs/planning/sprint-2026-W22-automation-hardening.md
   - docs/planning/feature-specs/sceneview3d-stable-renderer-contract.md
+owner: "@coordinator"
 decision_level: advisory
 ---
 
@@ -84,11 +85,11 @@ W21 sprint 计划已归档，当前活跃关键路径从 W23 promotion readiness
 | SceneView3D beta readiness gate | done | `pnpm test:release:scene3d` now exercises the browser runner and accepts release visual evidence |
 | SceneView3D promotion readiness | done | W23 rubric, browser matrix evidence, adapter promotion report, guardrail diagnostics, MCP decision, docs alignment, and go/no-go review completed; package accepted, stable runtime still blocked |
 | automation hardening | done | 2026-05-24 quality gate required report `decision_level` alignment, serialized scheduled commits, local/CI daily cadence alignment, and emergency interpolation fix before scheduled agent evidence is trusted |
-| SceneView3D stable renderer contract | planned | next phase defines real renderer contract, Three.js/3DTilesRendererJS dependency boundary, lifecycle, snapshot/query semantics, resource policy, and release gates before any stable runtime decision |
+| SceneView3D stable renderer contract | handoff-ready | `TASK-2026W23-SRC-001` through `TASK-2026W23-SRC-006` now define evidence targets, owners, acceptance criteria, and finish gates; execution tasks remain todo/blocked until owner evidence exists |
 
 ## 关键路径
 
-1. v1 SceneView3D RFC -> W25/W28 sprint DAG -> TypeBox schema -> fixtures + URL resource policy + loader resource gate + package boundary + scene commands -> mock snapshot/query contracts -> MCP context -> release visual gate -> alpha audit + adapter feasibility -> Three.js adapter spike -> renderer evidence handoff -> adapter runtime shim -> browser visual runner -> beta readiness gate -> promotion readiness -> stable renderer contract planning -> stable runtime decision; stable runtime promotion remains blocked until a future contract package is accepted.
+1. v1 SceneView3D RFC -> W25/W28 sprint DAG -> TypeBox schema -> fixtures + URL resource policy + loader resource gate + package boundary + scene commands -> mock snapshot/query contracts -> MCP context -> release visual gate -> alpha audit + adapter feasibility -> Three.js adapter spike -> renderer evidence handoff -> adapter runtime shim -> browser visual runner -> beta readiness gate -> promotion readiness -> stable renderer contract handoff -> stable runtime decision; W23 promotion-readiness package is Go, but stable runtime promotion remains No-go/blocked until a future contract package is accepted.
 2. 2026-05-24 automation hardening blocks scheduled agent evidence from being used as advisory/blocking input: generated report semantics -> serialized scheduled commits -> local/CI daily cadence + emergency interpolation -> automation hardening gate -> scheduled evidence may feed future coordinator/quality-guardian decisions.
 
 ```mermaid
@@ -114,7 +115,7 @@ flowchart LR
   O --> P["browser visual runner"]
   P --> Q["beta readiness gate"]
   Q --> R["promotion readiness"]
-  R --> S["stable renderer contract plan"]
+  R --> S["stable renderer contract handoff"]
   S --> T["stable runtime decision"]
 ```
 
@@ -134,15 +135,31 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  A["W23 promotion-readiness gate accepted"] --> B["TASK-2026W23-SRC-001 stable renderer contract"]
+  A["W23 promotion-readiness package: Go"] --> B["TASK-2026W23-SRC-001 stable renderer contract"]
+  B --> B1["adapter contract tests + adapter build"]
   B --> C["TASK-2026W23-SRC-002 Three.js / 3DTilesRendererJS adapter-local boundary"]
   B --> D["TASK-2026W23-SRC-003 lifecycle semantics"]
+  C --> C1["resource policy / dependency isolation checks"]
+  D --> D1["lifecycle diagnostics tests"]
   D --> E["TASK-2026W23-SRC-004 snapshot/query semantics"]
+  E --> E1["pnpm test:release:scene3d + visual snapshots"]
   C --> F["TASK-2026W23-SRC-005 resource policy + release gates"]
   E --> F
+  F --> F1["build:schema/check triggers documented"]
   F --> G["TASK-2026W23-SRC-006 future stable runtime decision"]
-  G -. "blocked until accepted" .-> H["stable view.mode: scene3d"]
+  G -. "No-go / blocked until accepted" .-> H["stable view.mode: scene3d"]
 ```
+
+## SceneView3D SRC Gate Matrix
+
+| Task | Depends On | Evidence Target | Required Finish Gate | Status Rule |
+| --- | --- | --- | --- | --- |
+| TASK-2026W23-SRC-001 | W23 promotion-readiness package Go | adapter contract delta report and focused adapter contract tests | `pnpm test:adapter -- tests/adapter/scene3d-three-adapter.test.ts`; `pnpm --filter @gis-engine/scene3d-three-adapter build` | stays todo until adapter-agent evidence exists |
+| TASK-2026W23-SRC-002 | SRC-001 | dependency-boundary audit for Three.js and 3DTilesRendererJS | adapter build; dependency isolation check or audit; `pnpm check` when package metadata/imports change | stays todo until adapter/core boundary evidence exists |
+| TASK-2026W23-SRC-003 | SRC-001 | lifecycle matrix with structured diagnostics | adapter lifecycle contract tests; `pnpm check` when runtime behavior or diagnostics change | stays todo until lifecycle evidence exists |
+| TASK-2026W23-SRC-004 | SRC-001, SRC-003 | snapshot/query evidence report with browser metrics and pick cases | `pnpm test:release:scene3d`; `pnpm test:snapshot:visual`; strict visual snapshot before beta/stable renderer claim | stays todo until qa-agent visual/query evidence exists |
+| TASK-2026W23-SRC-005 | SRC-002, SRC-004 | resource-policy test output, release-gate matrix, docs alignment note | `pnpm test:resources`; resource-policy schema tests when policy schemas change; `pnpm test:release:scene3d`; visual snapshot or coordinator waiver for non-rendering changes | stays todo until engine/quality/docs evidence exists |
+| TASK-2026W23-SRC-006 | SRC-001 through SRC-005 | quality-guardian gate report and coordinator decision note | `pnpm build:schema` if public schema/tool contracts changed; `pnpm check`; `pnpm test:release:scene3d`; strict visual snapshot evidence or release waiver | remains blocked until all prerequisite evidence is accepted |
 
 ## 阻断规则
 
@@ -152,3 +169,6 @@ flowchart LR
 - `fill-extrusion-lite` 只作为 experimental beta 暴露；即使已有 release visual evidence，也不得绕过 explicit capability gate 升格为稳定图层。
 - scheduled agent evidence 在 `TASK-2026W22-AH-005` 通过前不得作为 advisory/blocking 决策输入；只能作为 machine-generated `info` evidence/template。
 - stable `view.mode: "scene3d"` 在 `TASK-2026W23-SRC-006` 通过前仍保持 blocked；promotion-readiness package Go 不等于 stable runtime Go。
+- SRC execution owners must not write shared planning markdown directly. They
+  hand off code, tests, reports, or review findings; `@coordinator` serializes
+  accepted status updates into this graph and the burndown.

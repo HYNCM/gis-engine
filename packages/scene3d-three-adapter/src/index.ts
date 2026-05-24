@@ -1,5 +1,6 @@
 import {
   DiagnosticCodes,
+  Scene3DStableRuntimeBlockerCodes,
   type CapabilityReport,
   type Diagnostic,
   type ResourceReport,
@@ -34,6 +35,132 @@ export const scene3dThreeAdapterBoundary = {
 } as const;
 
 export type Scene3DThreeAdapterBoundary = typeof scene3dThreeAdapterBoundary;
+
+export type Scene3DThreeAdapterStableRendererContractOperation =
+  | "load"
+  | "render"
+  | "resize"
+  | "camera"
+  | "snapshot"
+  | "query"
+  | "destroy"
+  | "diagnostics"
+  | "resourceCleanup";
+
+export interface Scene3DThreeAdapterStableRendererContractObligation {
+  id: Scene3DThreeAdapterStableRendererContractOperation;
+  required: true;
+  adapterResponsibility: string;
+  requiredEvidence: readonly string[];
+  diagnosticPaths: readonly string[];
+}
+
+export interface Scene3DThreeAdapterStableRendererDependencyBoundary {
+  adapterLocalOnly: true;
+  allowedRendererPackage: "@gis-engine/scene3d-three-adapter";
+  runtimePackages: readonly ["three", "3d-tiles-renderer"];
+  corePackagesMustRemainRendererFree: readonly ["@gis-engine/engine", "@gis-engine/scene3d"];
+  forbiddenCoreDependencies: readonly string[];
+  currentPackageManifestStatus: "not-declared-during-spike";
+}
+
+export interface Scene3DThreeAdapterStableRendererContractSummary {
+  kind: "Scene3DThreeAdapterStableRendererContractSummary";
+  version: "0.1";
+  adapter: "three";
+  packageName: "@gis-engine/scene3d-three-adapter";
+  status: "adapter-contract-defined";
+  stableViewMode: false;
+  runtimeSupported: false;
+  stableRuntimeBlocked: true;
+  promotionDecisionTask: "TASK-2026W23-SRC-006";
+  dependencyBoundary: Scene3DThreeAdapterStableRendererDependencyBoundary;
+  obligations: readonly Scene3DThreeAdapterStableRendererContractObligation[];
+  guardrails: {
+    schemaFirst: true;
+    commandOnlyMutation: true;
+    structuredDiagnostics: true;
+    snapshotVerification: true;
+    resourcePolicyRequired: true;
+    adapterBoundaryRequired: true;
+  };
+  diagnostics: Diagnostic[];
+}
+
+export const scene3dThreeAdapterStableRendererContractObligations = [
+  {
+    id: "load",
+    required: true,
+    adapterResponsibility:
+      "Validate the SceneView3D extension and resource load plan before creating adapter-local Three.js or 3DTilesRendererJS resources.",
+    requiredEvidence: ["Scene3DThreeAdapterRuntimeLoadReport", "SceneResourceLoadReport"],
+    diagnosticPaths: ["/extensions/scene3d", "/extensions/scene3d/sources"]
+  },
+  {
+    id: "render",
+    required: true,
+    adapterResponsibility:
+      "Render terrain, 3D Tiles, and glTF layers through adapter-local renderer state without mutating MapSpec runtime state.",
+    requiredEvidence: ["Scene3DRendererVisualEvidence", "nonblank frame metrics"],
+    diagnosticPaths: ["/rendererVisualEvidence", "/renderer/render"]
+  },
+  {
+    id: "resize",
+    required: true,
+    adapterResponsibility:
+      "Apply width, height, and pixel ratio changes deterministically and report invalid viewport dimensions as diagnostics.",
+    requiredEvidence: ["snapshot.summary.width", "snapshot.summary.height"],
+    diagnosticPaths: ["/renderer/resize", "/snapshot/summary"]
+  },
+  {
+    id: "camera",
+    required: true,
+    adapterResponsibility:
+      "Apply SceneView3D camera position, target, up vector, field of view, and clipping values from schema-validated inputs.",
+    requiredEvidence: ["SceneView3D camera contract", "snapshot/query camera consistency"],
+    diagnosticPaths: ["/extensions/scene3d/camera", "/renderer/camera"]
+  },
+  {
+    id: "snapshot",
+    required: true,
+    adapterResponsibility:
+      "Return deterministic png or data-url snapshots with resource-pending diagnostics when required sources are not loaded.",
+    requiredEvidence: ["Scene3DMockSnapshotResult", "visual snapshot report"],
+    diagnosticPaths: ["/snapshot", "/snapshot/resources"]
+  },
+  {
+    id: "query",
+    required: true,
+    adapterResponsibility:
+      "Expose deterministic picking and 3D query results with layer, source, object id, position, and properties fields.",
+    requiredEvidence: ["Scene3DQueryResult", "pick coverage report"],
+    diagnosticPaths: ["/query", "/query/picks"]
+  },
+  {
+    id: "destroy",
+    required: true,
+    adapterResponsibility:
+      "Make destroy idempotent, stop future rendering work, and return stable diagnostics for post-destroy operations.",
+    requiredEvidence: ["ResourceReport", "post-destroy snapshot/query diagnostics"],
+    diagnosticPaths: ["/runtime/destroy", "/runtime/destroyed"]
+  },
+  {
+    id: "diagnostics",
+    required: true,
+    adapterResponsibility:
+      "Return structured Diagnostic objects for every load, render, snapshot, query, lifecycle, and resource-policy failure path.",
+    requiredEvidence: ["diagnostic code inventory", "adapter contract tests"],
+    diagnosticPaths: ["/diagnostics"]
+  },
+  {
+    id: "resourceCleanup",
+    required: true,
+    adapterResponsibility:
+      "Dispose renderer, scene graph, geometries, materials, textures, workers, event listeners, and object URLs owned by the adapter.",
+    requiredEvidence: ["resource cleanup report", "worker/texture disposal audit"],
+    diagnosticPaths: ["/resources/cleanup", "/runtime/destroy"]
+  }
+] as const satisfies readonly Scene3DThreeAdapterStableRendererContractObligation[];
 
 export interface Scene3DThreeAdapterLoadEstimates {
   tilesetJsonBytes?: Record<string, number>;
@@ -168,6 +295,38 @@ export function getScene3DThreeAdapterCapabilities(): CapabilityReport {
     ...capabilities,
     renderer: "scene3d-three-adapter",
     experimental: [...(capabilities.experimental ?? []), "sceneview3d-three-adapter-spike"]
+  };
+}
+
+export function getScene3DThreeAdapterStableRendererContract(): Scene3DThreeAdapterStableRendererContractSummary {
+  return {
+    kind: "Scene3DThreeAdapterStableRendererContractSummary",
+    version: "0.1",
+    adapter: "three",
+    packageName: scene3dThreeAdapterBoundary.packageName,
+    status: "adapter-contract-defined",
+    stableViewMode: false,
+    runtimeSupported: false,
+    stableRuntimeBlocked: true,
+    promotionDecisionTask: "TASK-2026W23-SRC-006",
+    dependencyBoundary: {
+      adapterLocalOnly: true,
+      allowedRendererPackage: scene3dThreeAdapterBoundary.packageName,
+      runtimePackages: scene3dThreeAdapterBoundary.requiredRuntimePeerDependencies,
+      corePackagesMustRemainRendererFree: ["@gis-engine/engine", "@gis-engine/scene3d"],
+      forbiddenCoreDependencies: scene3dThreeAdapterBoundary.forbiddenCoreDependencies,
+      currentPackageManifestStatus: "not-declared-during-spike"
+    },
+    obligations: scene3dThreeAdapterStableRendererContractObligations,
+    guardrails: {
+      schemaFirst: true,
+      commandOnlyMutation: true,
+      structuredDiagnostics: true,
+      snapshotVerification: true,
+      resourcePolicyRequired: true,
+      adapterBoundaryRequired: true
+    },
+    diagnostics: stableRuntimeBlockedDiagnostics()
   };
 }
 
@@ -497,6 +656,46 @@ function unsupportedRuntimeDiagnostic(): Diagnostic {
       kind: "manual",
       confidence: "medium",
       message: "Keep SceneView3D rendering behind the adapter spike until real snapshot/query/visual evidence passes."
+    }
+  };
+}
+
+function stableRuntimeBlockedDiagnostics(): Diagnostic[] {
+  return [
+    stableRuntimeBlockedDiagnostic(
+      "/view/mode",
+      Scene3DStableRuntimeBlockerCodes.ViewMode,
+      'Stable view.mode: "scene3d" remains blocked until the SceneView3D stable renderer contract is accepted.'
+    ),
+    stableRuntimeBlockedDiagnostic(
+      "/capabilities/renderer",
+      Scene3DStableRuntimeBlockerCodes.Renderer,
+      "The Three.js adapter contract is adapter-local evidence only and does not promote the core scene3d renderer."
+    ),
+    stableRuntimeBlockedDiagnostic(
+      "/capabilities/dimensions",
+      Scene3DStableRuntimeBlockerCodes.Dimensions,
+      "SceneView3D 3D capability remains blocked in the stable runtime until quality-guardian and coordinator accept promotion."
+    )
+  ];
+}
+
+function stableRuntimeBlockedDiagnostic(
+  path: string,
+  blockerCode: NonNullable<Diagnostic["blockerCode"]>,
+  message: string
+): Diagnostic {
+  return {
+    severity: "error",
+    code: DiagnosticCodes.CapabilityUnsupported,
+    blockerCode,
+    message,
+    path,
+    relatedResources: [{ kind: "adapter", id: scene3dThreeAdapterBoundary.packageName }],
+    fix: {
+      kind: "manual",
+      confidence: "high",
+      message: "Keep SceneView3D stable runtime blocked until the stable renderer contract and promotion gate are accepted."
     }
   };
 }
