@@ -24,13 +24,19 @@ import {
   type SceneResourceLoadReport
 } from "@gis-engine/scene3d";
 
+const scene3dThreeAdapterForbiddenCoreDependencies = [
+  ...scene3dPackageBoundary.forbiddenCoreDependencies,
+  "3d-tiles-renderer",
+  "@loaders.gl/core"
+] as const;
+
 export const scene3dThreeAdapterBoundary = {
   packageName: "@gis-engine/scene3d-three-adapter",
   status: "spike",
   stableViewMode: false,
   targetRenderer: "three",
   targetTilesRenderer: "3d-tiles-renderer",
-  forbiddenCoreDependencies: scene3dPackageBoundary.forbiddenCoreDependencies,
+  forbiddenCoreDependencies: scene3dThreeAdapterForbiddenCoreDependencies,
   requiredRuntimePeerDependencies: ["three", "3d-tiles-renderer"]
 } as const;
 
@@ -59,7 +65,7 @@ export interface Scene3DThreeAdapterStableRendererDependencyBoundary {
   adapterLocalOnly: true;
   allowedRendererPackage: "@gis-engine/scene3d-three-adapter";
   runtimePackages: readonly ["three", "3d-tiles-renderer"];
-  corePackagesMustRemainRendererFree: readonly ["@gis-engine/engine", "@gis-engine/scene3d"];
+  corePackagesMustRemainRendererFree: readonly ["@gis-engine/engine", "@gis-engine/scene3d", "@gis-engine/ai"];
   forbiddenCoreDependencies: readonly string[];
   currentPackageManifestStatus: "not-declared-during-spike";
 }
@@ -254,6 +260,65 @@ export interface Scene3DThreeAdapterPromotionEvidenceSummary {
   diagnosticCounts: DiagnosticCounts;
 }
 
+export type Scene3DThreeAdapterDependencyField =
+  | "dependencies"
+  | "devDependencies"
+  | "peerDependencies"
+  | "optionalDependencies";
+
+export interface Scene3DThreeAdapterPackageManifestEvidence {
+  packageName: string;
+  path: string;
+  dependencies?: Record<string, string>;
+  devDependencies?: Record<string, string>;
+  peerDependencies?: Record<string, string>;
+  optionalDependencies?: Record<string, string>;
+}
+
+export interface Scene3DThreeAdapterSourceImportEvidence {
+  packageName: string;
+  root: string;
+  imports: readonly string[];
+}
+
+export interface Scene3DThreeAdapterDependencyBoundaryAuditOptions {
+  manifests: readonly Scene3DThreeAdapterPackageManifestEvidence[];
+  sourceImports: readonly Scene3DThreeAdapterSourceImportEvidence[];
+}
+
+export interface Scene3DThreeAdapterDependencyBoundaryAudit {
+  kind: "Scene3DThreeAdapterDependencyBoundaryAudit";
+  version: "0.1";
+  adapter: "three";
+  packageName: "@gis-engine/scene3d-three-adapter";
+  stableViewMode: false;
+  runtimeSupported: false;
+  valid: boolean;
+  dependencyBoundary: Scene3DThreeAdapterStableRendererDependencyBoundary;
+  audit: {
+    adapterOwnedPackages: readonly string[];
+    rendererFreePackages: readonly string[];
+    rendererPackages: readonly string[];
+    dependencyFields: readonly Scene3DThreeAdapterDependencyField[];
+    manifestCount: number;
+    sourceImportRootCount: number;
+  };
+  diagnostics: Diagnostic[];
+  diagnosticCounts: DiagnosticCounts;
+}
+
+export const scene3dThreeAdapterDependencyBoundaryAuditPolicy = {
+  adapterOwnedPackages: [scene3dThreeAdapterBoundary.packageName],
+  rendererFreePackages: ["@gis-engine/engine", "@gis-engine/scene3d", "@gis-engine/ai"],
+  rendererPackages: scene3dThreeAdapterBoundary.forbiddenCoreDependencies,
+  dependencyFields: ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"]
+} as const satisfies {
+  adapterOwnedPackages: readonly string[];
+  rendererFreePackages: readonly string[];
+  rendererPackages: readonly string[];
+  dependencyFields: readonly Scene3DThreeAdapterDependencyField[];
+};
+
 export interface Scene3DThreeAdapterRuntimeLoadReport {
   kind: "Scene3DThreeAdapterRuntimeLoadReport";
   version: "0.1";
@@ -313,7 +378,7 @@ export function getScene3DThreeAdapterStableRendererContract(): Scene3DThreeAdap
       adapterLocalOnly: true,
       allowedRendererPackage: scene3dThreeAdapterBoundary.packageName,
       runtimePackages: scene3dThreeAdapterBoundary.requiredRuntimePeerDependencies,
-      corePackagesMustRemainRendererFree: ["@gis-engine/engine", "@gis-engine/scene3d"],
+      corePackagesMustRemainRendererFree: scene3dThreeAdapterDependencyBoundaryAuditPolicy.rendererFreePackages,
       forbiddenCoreDependencies: scene3dThreeAdapterBoundary.forbiddenCoreDependencies,
       currentPackageManifestStatus: "not-declared-during-spike"
     },
@@ -327,6 +392,59 @@ export function getScene3DThreeAdapterStableRendererContract(): Scene3DThreeAdap
       adapterBoundaryRequired: true
     },
     diagnostics: stableRuntimeBlockedDiagnostics()
+  };
+}
+
+export function auditScene3DThreeAdapterDependencyBoundary(
+  options: Scene3DThreeAdapterDependencyBoundaryAuditOptions
+): Scene3DThreeAdapterDependencyBoundaryAudit {
+  const contract = getScene3DThreeAdapterStableRendererContract();
+  const diagnostics: Diagnostic[] = [];
+  const manifestsByPackage = new Map(options.manifests.map((manifest) => [manifest.packageName, manifest]));
+  const importsByPackage = new Map(options.sourceImports.map((sourceImport) => [sourceImport.packageName, sourceImport]));
+
+  for (const packageName of scene3dThreeAdapterDependencyBoundaryAuditPolicy.rendererFreePackages) {
+    const manifest = manifestsByPackage.get(packageName);
+    if (!manifest) {
+      diagnostics.push(missingDependencyBoundaryEvidenceDiagnostic("manifest", packageName));
+    } else {
+      diagnostics.push(...manifestRendererDependencyDiagnostics(manifest, false));
+    }
+
+    const sourceImport = importsByPackage.get(packageName);
+    if (!sourceImport) {
+      diagnostics.push(missingDependencyBoundaryEvidenceDiagnostic("imports", packageName));
+    } else {
+      diagnostics.push(...sourceImportRendererDependencyDiagnostics(sourceImport));
+    }
+  }
+
+  const adapterManifest = manifestsByPackage.get(scene3dThreeAdapterBoundary.packageName);
+  if (!adapterManifest) {
+    diagnostics.push(missingDependencyBoundaryEvidenceDiagnostic("manifest", scene3dThreeAdapterBoundary.packageName));
+  } else {
+    diagnostics.push(...manifestRendererDependencyDiagnostics(adapterManifest, true));
+  }
+
+  return {
+    kind: "Scene3DThreeAdapterDependencyBoundaryAudit",
+    version: "0.1",
+    adapter: "three",
+    packageName: scene3dThreeAdapterBoundary.packageName,
+    stableViewMode: false,
+    runtimeSupported: false,
+    valid: !hasErrorDiagnostics(diagnostics),
+    dependencyBoundary: contract.dependencyBoundary,
+    audit: {
+      adapterOwnedPackages: scene3dThreeAdapterDependencyBoundaryAuditPolicy.adapterOwnedPackages,
+      rendererFreePackages: scene3dThreeAdapterDependencyBoundaryAuditPolicy.rendererFreePackages,
+      rendererPackages: scene3dThreeAdapterDependencyBoundaryAuditPolicy.rendererPackages,
+      dependencyFields: scene3dThreeAdapterDependencyBoundaryAuditPolicy.dependencyFields,
+      manifestCount: options.manifests.length,
+      sourceImportRootCount: options.sourceImports.length
+    },
+    diagnostics,
+    diagnosticCounts: countDiagnostics(diagnostics)
   };
 }
 
@@ -698,6 +816,93 @@ function stableRuntimeBlockedDiagnostic(
       message: "Keep SceneView3D stable runtime blocked until the stable renderer contract and promotion gate are accepted."
     }
   };
+}
+
+function missingDependencyBoundaryEvidenceDiagnostic(kind: "manifest" | "imports", packageName: string): Diagnostic {
+  return {
+    severity: "error",
+    code: DiagnosticCodes.CapabilityUnsupported,
+    message: `Scene3DThreeAdapter dependency boundary audit is missing ${kind} evidence for ${packageName}.`,
+    path: `/dependencyBoundary/${kind}/${jsonPointerSegment(packageName)}`,
+    relatedResources: [{ kind: "adapter", id: scene3dThreeAdapterBoundary.packageName }],
+    fix: {
+      kind: "manual",
+      confidence: "high",
+      message: "Provide package manifest and source import evidence before accepting the adapter dependency boundary."
+    }
+  };
+}
+
+function manifestRendererDependencyDiagnostics(
+  manifest: Scene3DThreeAdapterPackageManifestEvidence,
+  adapterSpikeManifest: boolean
+): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+  const rendererPackages: readonly string[] = scene3dThreeAdapterDependencyBoundaryAuditPolicy.rendererPackages;
+
+  for (const field of scene3dThreeAdapterDependencyBoundaryAuditPolicy.dependencyFields) {
+    for (const dependency of Object.keys(manifest[field] ?? {})) {
+      if (!rendererPackages.includes(dependency)) continue;
+      diagnostics.push({
+        severity: "error",
+        code: DiagnosticCodes.CapabilityUnsupported,
+        message: adapterSpikeManifest
+          ? `The spike adapter manifest must not declare ${dependency} until the real renderer package is promoted.`
+          : `${manifest.packageName} must remain free of SceneView3D renderer dependency ${dependency}.`,
+        path: `/dependencyBoundary/manifests/${jsonPointerSegment(manifest.packageName)}/${field}/${jsonPointerSegment(dependency)}`,
+        relatedResources: [
+          { kind: "adapter", id: scene3dThreeAdapterBoundary.packageName },
+          { kind: "adapter", id: manifest.packageName, path: manifest.path }
+        ],
+        fix: {
+          kind: "manual",
+          confidence: "high",
+          message: adapterSpikeManifest
+            ? "Keep Three.js and 3DTilesRendererJS undeclared during the spike evidence phase."
+            : "Move renderer dependencies into an approved adapter package and keep core packages renderer-free."
+        }
+      });
+    }
+  }
+
+  return diagnostics;
+}
+
+function sourceImportRendererDependencyDiagnostics(sourceImport: Scene3DThreeAdapterSourceImportEvidence): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+
+  for (const importSpecifier of sourceImport.imports) {
+    const rendererPackage = scene3dThreeAdapterDependencyBoundaryAuditPolicy.rendererPackages.find((dependency) =>
+      isPackageOrSubpath(importSpecifier, dependency)
+    );
+    if (!rendererPackage) continue;
+
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.CapabilityUnsupported,
+      message: `${sourceImport.packageName} must not import SceneView3D renderer package ${rendererPackage}.`,
+      path: `/dependencyBoundary/imports/${jsonPointerSegment(sourceImport.packageName)}/${jsonPointerSegment(importSpecifier)}`,
+      relatedResources: [
+        { kind: "adapter", id: scene3dThreeAdapterBoundary.packageName },
+        { kind: "adapter", id: sourceImport.packageName, path: sourceImport.root }
+      ],
+      fix: {
+        kind: "manual",
+        confidence: "high",
+        message: "Keep renderer implementation imports inside the SceneView3D Three.js adapter package."
+      }
+    });
+  }
+
+  return diagnostics;
+}
+
+function isPackageOrSubpath(importSpecifier: string, packageName: string): boolean {
+  return importSpecifier === packageName || importSpecifier.startsWith(`${packageName}/`);
+}
+
+function jsonPointerSegment(segment: string): string {
+  return segment.replace(/~/g, "~0").replace(/\//g, "~1");
 }
 
 function missingRendererCaptureDiagnostic(): Diagnostic {

@@ -26,10 +26,13 @@ Current status:
   keeping `stablePromotionAllowed` false.
 - Exposes `getScene3DThreeAdapterStableRendererContract()` as a machine-readable
   adapter handoff contract for the future stable renderer obligations.
+- Exposes `auditScene3DThreeAdapterDependencyBoundary()` as an adapter-local
+  dependency-boundary evidence helper for package manifests and source imports.
 
 The real renderer implementation must stay in this adapter package or a later
-adapter package. `@gis-engine/engine` and `@gis-engine/scene3d` must remain free
-of Three.js, CesiumJS, loader, worker, and remote asset dependencies.
+adapter package. `@gis-engine/engine`, `@gis-engine/scene3d`, and
+`@gis-engine/ai` must remain free of Three.js, CesiumJS, loader, worker, and
+remote asset dependencies.
 
 ## Stable Renderer Handoff Contract
 
@@ -62,7 +65,15 @@ policy enforcement, and adapter boundary preservation.
 Three.js and 3DTilesRendererJS are adapter-local renderer dependencies. They
 must stay inside `@gis-engine/scene3d-three-adapter` or a future renderer
 adapter package. They must not be imported by, declared by, or surfaced as
-runtime dependencies of `@gis-engine/engine` or `@gis-engine/scene3d`.
+runtime dependencies of `@gis-engine/engine`, `@gis-engine/scene3d`, or
+`@gis-engine/ai`.
+
+`auditScene3DThreeAdapterDependencyBoundary({ manifests, sourceImports })`
+turns package manifest and import-scan evidence into a structured audit report.
+The helper keeps `stableViewMode` and `runtimeSupported` false, returns
+`CAPABILITY.UNSUPPORTED` diagnostics for dependency leaks, and treats the current
+adapter spike manifest as renderer-free until the real renderer package is
+promoted.
 
 During the current spike, `three` and `3d-tiles-renderer` are intentionally not
 declared in this package manifest either. That keeps offline CI independent from
@@ -105,3 +116,7 @@ Current evidence API:
 - `getScene3DThreeAdapterStableRendererContract()` returns the stable renderer
   handoff obligations, dependency boundary, guardrails, and stable-runtime
   blocker diagnostics for the adapter-side SRC-001/SRC-002 slice.
+- `auditScene3DThreeAdapterDependencyBoundary({ manifests, sourceImports })`
+  returns dependency-boundary evidence for SRC-002, including renderer-free
+  package checks for `@gis-engine/engine`, `@gis-engine/scene3d`, and
+  `@gis-engine/ai`.

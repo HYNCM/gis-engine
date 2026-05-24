@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import scene3dExtensionSpec from "../fixtures/specs/valid/scene3d-extension.map.json";
@@ -10,6 +10,7 @@ import {
 } from "@gis-engine/engine";
 import { evaluateScene3DReleaseVisualGate } from "../../packages/scene3d/src/index.js";
 import {
+  auditScene3DThreeAdapterDependencyBoundary,
   buildScene3DThreeAdapterLoadPlan,
   createScene3DThreeAdapterPromotionEvidenceSummary,
   createScene3DThreeAdapterRendererEvidence,
@@ -494,25 +495,132 @@ describe("SceneView3D Three.js adapter spike", () => {
     const contract = getScene3DThreeAdapterStableRendererContract();
     const enginePackage = readPackageJson("packages/engine/package.json");
     const scene3dPackage = readPackageJson("packages/scene3d/package.json");
+    const aiPackage = readPackageJson("packages/ai/package.json");
     const threeAdapterPackage = readPackageJson("packages/scene3d-three-adapter/package.json");
+    const audit = auditScene3DThreeAdapterDependencyBoundary({
+      manifests: [enginePackage, scene3dPackage, aiPackage, threeAdapterPackage],
+      sourceImports: [
+        packageSourceImports("@gis-engine/engine", "packages/engine/src"),
+        packageSourceImports("@gis-engine/scene3d", "packages/scene3d/src"),
+        packageSourceImports("@gis-engine/ai", "packages/ai/src")
+      ]
+    });
 
     expect(contract.dependencyBoundary).toEqual(
       expect.objectContaining({
         adapterLocalOnly: true,
         allowedRendererPackage: "@gis-engine/scene3d-three-adapter",
         runtimePackages: ["three", "3d-tiles-renderer"],
-        corePackagesMustRemainRendererFree: ["@gis-engine/engine", "@gis-engine/scene3d"],
+        corePackagesMustRemainRendererFree: ["@gis-engine/engine", "@gis-engine/scene3d", "@gis-engine/ai"],
         currentPackageManifestStatus: "not-declared-during-spike"
       })
     );
+    expect(audit).toEqual(
+      expect.objectContaining({
+        kind: "Scene3DThreeAdapterDependencyBoundaryAudit",
+        stableViewMode: false,
+        runtimeSupported: false,
+        valid: true,
+        diagnostics: [],
+        diagnosticCounts: { error: 0, warning: 0, info: 0 }
+      })
+    );
+    expect(audit.audit).toEqual({
+      adapterOwnedPackages: ["@gis-engine/scene3d-three-adapter"],
+      rendererFreePackages: ["@gis-engine/engine", "@gis-engine/scene3d", "@gis-engine/ai"],
+      rendererPackages: [
+        "cesium",
+        "three",
+        "@loaders.gl/3d-tiles",
+        "@loaders.gl/gltf",
+        "three-stdlib",
+        "3d-tiles-renderer",
+        "@loaders.gl/core"
+      ],
+      dependencyFields: ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"],
+      manifestCount: 4,
+      sourceImportRootCount: 3
+    });
 
     for (const dependency of scene3dThreeAdapterBoundary.requiredRuntimePeerDependencies) {
       expect(enginePackage.dependencies ?? {}).not.toHaveProperty(dependency);
       expect(scene3dPackage.dependencies ?? {}).not.toHaveProperty(dependency);
+      expect(aiPackage.dependencies ?? {}).not.toHaveProperty(dependency);
       expect(threeAdapterPackage.dependencies ?? {}).not.toHaveProperty(dependency);
       expect(threeAdapterPackage.devDependencies ?? {}).not.toHaveProperty(dependency);
       expect(threeAdapterPackage.peerDependencies ?? {}).not.toHaveProperty(dependency);
     }
+  });
+
+  it("returns structured diagnostics when renderer dependencies leak across the boundary", () => {
+    const audit = auditScene3DThreeAdapterDependencyBoundary({
+      manifests: [
+        {
+          packageName: "@gis-engine/engine",
+          path: "packages/engine/package.json",
+          dependencies: {
+            three: "^0.180.0"
+          }
+        },
+        {
+          packageName: "@gis-engine/scene3d",
+          path: "packages/scene3d/package.json",
+          dependencies: {}
+        },
+        {
+          packageName: "@gis-engine/ai",
+          path: "packages/ai/package.json",
+          dependencies: {}
+        },
+        {
+          packageName: "@gis-engine/scene3d-three-adapter",
+          path: "packages/scene3d-three-adapter/package.json",
+          peerDependencies: {
+            "3d-tiles-renderer": "^0.4.0"
+          }
+        }
+      ],
+      sourceImports: [
+        {
+          packageName: "@gis-engine/engine",
+          root: "packages/engine/src",
+          imports: ["3d-tiles-renderer/core"]
+        },
+        {
+          packageName: "@gis-engine/scene3d",
+          root: "packages/scene3d/src",
+          imports: []
+        },
+        {
+          packageName: "@gis-engine/ai",
+          root: "packages/ai/src",
+          imports: []
+        }
+      ]
+    });
+
+    expect(audit.valid).toBe(false);
+    expect(audit.diagnosticCounts).toEqual({ error: 3, warning: 0, info: 0 });
+    expect(audit.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          severity: "error",
+          code: "CAPABILITY.UNSUPPORTED",
+          path: "/dependencyBoundary/manifests/@gis-engine~1engine/dependencies/three"
+        }),
+        expect.objectContaining({
+          severity: "error",
+          code: "CAPABILITY.UNSUPPORTED",
+          path: "/dependencyBoundary/imports/@gis-engine~1engine/3d-tiles-renderer~1core"
+        }),
+        expect.objectContaining({
+          severity: "error",
+          code: "CAPABILITY.UNSUPPORTED",
+          path:
+            "/dependencyBoundary/manifests/@gis-engine~1scene3d-three-adapter/peerDependencies/3d-tiles-renderer"
+        })
+      ])
+    );
   });
 
   it("documents the adapter handoff contract and non-goals in the README", () => {
@@ -540,9 +648,63 @@ function scene3dExtension(): SceneView3DExtension {
 }
 
 function readPackageJson(path: string) {
-  return JSON.parse(readFileSync(resolve(path), "utf8")) as {
+  const packageJson = JSON.parse(readFileSync(resolve(path), "utf8")) as {
+    name: string;
     dependencies?: Record<string, string>;
     devDependencies?: Record<string, string>;
     peerDependencies?: Record<string, string>;
+    optionalDependencies?: Record<string, string>;
   };
+
+  return {
+    packageName: packageJson.name,
+    path,
+    dependencies: packageJson.dependencies,
+    devDependencies: packageJson.devDependencies,
+    peerDependencies: packageJson.peerDependencies,
+    optionalDependencies: packageJson.optionalDependencies
+  };
+}
+
+function packageSourceImports(packageName: string, root: string) {
+  return {
+    packageName,
+    root,
+    imports: sourceFiles(root).flatMap((sourcePath) => importSpecifiers(readFileSync(sourcePath, "utf8")))
+  };
+}
+
+function sourceFiles(root: string): string[] {
+  const files: string[] = [];
+  const rootPath = resolve(root);
+
+  for (const entry of readdirSync(rootPath)) {
+    const entryPath = resolve(rootPath, entry);
+    const stats = statSync(entryPath);
+    if (stats.isDirectory()) {
+      files.push(...sourceFiles(entryPath));
+    } else if (/\.[cm]?tsx?$/.test(entryPath)) {
+      files.push(entryPath);
+    }
+  }
+
+  return files;
+}
+
+function importSpecifiers(source: string): string[] {
+  const imports: string[] = [];
+  const patterns = [
+    /\bfrom\s+["']([^"']+)["']/g,
+    /\bimport\s+["']([^"']+)["']/g,
+    /\bimport\s*\(\s*["']([^"']+)["']\s*\)/g
+  ];
+
+  for (const pattern of patterns) {
+    for (const match of source.matchAll(pattern)) {
+      const importSpecifier = match[1];
+      if (importSpecifier) imports.push(importSpecifier);
+    }
+  }
+
+  return imports;
 }
