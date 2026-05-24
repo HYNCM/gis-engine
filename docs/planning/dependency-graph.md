@@ -85,7 +85,7 @@ W21 sprint 计划已归档，当前活跃关键路径从 W23 promotion readiness
 | SceneView3D beta readiness gate | done | `pnpm test:release:scene3d` now exercises the browser runner and accepts release visual evidence |
 | SceneView3D promotion readiness | done | W23 rubric, browser matrix evidence, adapter promotion report, guardrail diagnostics, MCP decision, docs alignment, and go/no-go review completed; package accepted, stable runtime still blocked |
 | automation hardening | done | 2026-05-24 quality gate required report `decision_level` alignment, serialized scheduled commits, local/CI daily cadence alignment, and emergency interpolation fix before scheduled agent evidence is trusted |
-| SceneView3D stable renderer contract | handoff-ready | `TASK-2026W23-SRC-001` through `TASK-2026W23-SRC-006` now define evidence targets, owners, acceptance criteria, and finish gates; execution tasks remain todo/blocked until owner evidence exists |
+| SceneView3D stable renderer contract | handoff-ready | `TASK-2026W23-SRC-001` through `TASK-2026W23-SRC-006` now define evidence targets, owners, acceptance criteria, and finish gates; 2026-05-25 execution handoff lives at `docs/planning/sprint-2026-W23-scene3d-stable-renderer-contract.md`; execution tasks remain todo/blocked until owner evidence exists |
 
 ## 关键路径
 

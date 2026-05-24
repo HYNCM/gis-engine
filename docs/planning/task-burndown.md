@@ -46,7 +46,9 @@ W23 promotion-readiness package 已被 quality-guardian 接受为 Go；stable
 `view.mode: "scene3d"` runtime promotion 仍为 No-go。下一阶段不是启用 stable
 runtime，而是先冻结真实 renderer contract、Three.js/3DTilesRendererJS 依赖边界、
 lifecycle、snapshot/query 语义、resource policy 和 release gate。规划规格见
-[sceneview3d-stable-renderer-contract.md](./feature-specs/sceneview3d-stable-renderer-contract.md)。
+[sceneview3d-stable-renderer-contract.md](./feature-specs/sceneview3d-stable-renderer-contract.md)，
+2026-05-25 handoff 见
+[sprint-2026-W23-scene3d-stable-renderer-contract.md](./sprint-2026-W23-scene3d-stable-renderer-contract.md)。
 
 共享规划状态由 `@coordinator` 单写。下面的状态只表示执行 handoff 已可用；
 除 `TASK-2026W23-SRC-006` 按依赖保持 blocked 外，不声称任何 SRC 执行任务已经完成。
