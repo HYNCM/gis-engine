@@ -63,7 +63,9 @@ export class MapRuntime {
     const run = this.#applyQueue.then(() => this.#applyImmediately(queuedCommands, queuedOptions));
     this.#applyQueue = run.then(
       () => undefined,
-      () => undefined
+      (error) => {
+        console.error("[MapRuntime] apply queue error:", error);
+      }
     );
 
     return run;
@@ -78,16 +80,21 @@ export class MapRuntime {
       : [];
 
     if (!options.dryRun && patch.length > 0) {
+      let failureDiagnostics: Diagnostic[] | undefined;
       try {
         const adapterResult = await this.#adapter.applyPatch(patch, { container: this.#container });
         if (adapterResult.diagnostics.some((diagnostic) => diagnostic.severity === "error")) {
-          await this.#reloadLastCommittedSpec();
-          return markAdapterFailure(result.results, adapterResult.diagnostics);
+          failureDiagnostics = adapterResult.diagnostics;
         }
       } catch (error) {
-        await this.#reloadLastCommittedSpec();
-        return markAdapterFailure(result.results, [adapterErrorDiagnostic(error)]);
+        failureDiagnostics = [adapterErrorDiagnostic(error)];
       }
+
+      if (failureDiagnostics) {
+        await this.#reloadLastCommittedSpec();
+        return markAdapterFailure(result.results, failureDiagnostics);
+      }
+
       this.#spec = result.spec;
     }
 

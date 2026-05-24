@@ -1,0 +1,194 @@
+# Agent Weekly Cadence — 每周智能体规划周期
+#
+# 触发条件：
+#   1. 定时：每周一 00:00 UTC
+#   2. 手动触发
+#
+# 执行的智能体任务：
+#   - competitive-intel：分析竞品动向，更新 capability-scorecard
+#   - product-strategist：更新技术债务报告
+#   - coordinator：生成本周摘要和优先级
+#   - task-distributor：更新任务燃尽图和依赖图
+
+name: Agent Weekly Cadence
+
+on:
+  schedule:
+    - cron: "0 0 * * 1" # 每周一 00:00 UTC
+  workflow_dispatch:
+    inputs:
+      week:
+        description: "指定周数（YYYY-Www，如 2026-W22）"
+        required: false
+        type: string
+
+jobs:
+  # ── Job 1: 竞品情报 ──
+  competitive-intel:
+    name: "competitive-intel: 竞品分析"
+    runs-on: ubuntu-latest
+    outputs:
+      report_path: ${{ steps.report.outputs.path }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: 生成竞品分析报告
+        id: report
+        run: |
+          WEEK=$(date -u +%Y-W%V)
+          if [ -n "${{ github.event.inputs.week }}" ]; then
+            WEEK="${{ github.event.inputs.week }}"
+          fi
+          REPORT_PATH="docs/research/competitor-updates-${WEEK}.md"
+          echo "path=${REPORT_PATH}" >> $GITHUB_OUTPUT
+
+          echo "---" > "${REPORT_PATH}"
+          echo "agent: competitive-intel" >> "${REPORT_PATH}"
+          echo "period: ${WEEK}" >> "${REPORT_PATH}"
+          echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "${REPORT_PATH}"
+          echo "repo_revision: \"${{ github.sha }}\"" >> "${REPORT_PATH}"
+          echo "decision_level: advisory" >> "${REPORT_PATH}"
+          echo "---" >> "${REPORT_PATH}"
+          echo "" >> "${REPORT_PATH}"
+          echo "# Competitor Updates: ${WEEK}" >> "${REPORT_PATH}"
+          echo "" >> "${REPORT_PATH}"
+          echo "## Executive Summary" >> "${REPORT_PATH}"
+          echo "" >> "${REPORT_PATH}"
+          echo "> ⚠️ 本报告为自动化模板。请由 competitive-intel 智能体填充实质内容。" >> "${REPORT_PATH}"
+          echo "" >> "${REPORT_PATH}"
+          echo "## New Releases" >> "${REPORT_PATH}"
+          echo "" >> "${REPORT_PATH}"
+          echo "<!-- 待填充 -->" >> "${REPORT_PATH}"
+          echo "" >> "${REPORT_PATH}"
+          echo "## API / Spec Changes" >> "${REPORT_PATH}"
+          echo "" >> "${REPORT_PATH}"
+          echo "<!-- 待填充 -->" >> "${REPORT_PATH}"
+          echo "" >> "${REPORT_PATH}"
+          echo "## Recommended Follow-up Tasks" >> "${REPORT_PATH}"
+          echo "" >> "${REPORT_PATH}"
+          echo "<!-- 待填充 -->" >> "${REPORT_PATH}"
+
+      - name: 提交竞品报告
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: weekly competitor updates for ${{ steps.report.outputs.path }}"
+          file_pattern: "docs/research/competitor-updates-*.md"
+          commit_user_name: "competitive-intel[bot]"
+          commit_user_email: "competitive-intel[bot]@gis-engine.dev"
+
+  # ── Job 2: 产品策略 ──
+  product-strategist:
+    name: "product-strategist: 技术债务更新"
+    runs-on: ubuntu-latest
+    needs: [competitive-intel]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: 运行测试获取技术债务信号
+        run: |
+          pnpm check 2>&1 | tee /tmp/check-output.txt || true
+          echo "=== Test Summary ===" > /tmp/debt-signals.txt
+          echo "Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> /tmp/debt-signals.txt
+          echo "CI Status: ${{ needs.competitive-intel.result }}" >> /tmp/debt-signals.txt
+
+      - name: 生成技术债务报告模板
+        run: |
+          DATE=$(date -u +%Y-%m)
+          echo "---" > docs/planning/technical-debt-report.md
+          echo "agent: product-strategist" >> docs/planning/technical-debt-report.md
+          echo "period: ${DATE}" >> docs/planning/technical-debt-report.md
+          echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> docs/planning/technical-debt-report.md
+          echo "repo_revision: \"${{ github.sha }}\"" >> docs/planning/technical-debt-report.md
+          echo "decision_level: advisory" >> docs/planning/technical-debt-report.md
+          echo "---" >> docs/planning/technical-debt-report.md
+          echo "" >> docs/planning/technical-debt-report.md
+          echo "# Technical Debt Report: ${DATE}" >> docs/planning/technical-debt-report.md
+          echo "" >> docs/planning/technical-debt-report.md
+          echo "> ⚠️ 自动生成模板，请由 product-strategist 智能体更新实质内容。" >> docs/planning/technical-debt-report.md
+
+      - name: 提交技术债务报告
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: weekly technical debt report update"
+          file_pattern: "docs/planning/technical-debt-report.md"
+          commit_user_name: "product-strategist[bot]"
+          commit_user_email: "product-strategist[bot]@gis-engine.dev"
+
+  # ── Job 3: 协调者 ──
+  coordinator:
+    name: "coordinator: 周报摘要"
+    runs-on: ubuntu-latest
+    needs: [competitive-intel, product-strategist]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 生成周报模板
+        run: |
+          WEEK=$(date -u +%Y-W%V)
+          if [ -n "${{ github.event.inputs.week }}" ]; then
+            WEEK="${{ github.event.inputs.week }}"
+          fi
+
+          echo "---" > docs/planning/weekly-digest.md
+          echo "agent: coordinator" >> docs/planning/weekly-digest.md
+          echo "period: ${WEEK}" >> docs/planning/weekly-digest.md
+          echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> docs/planning/weekly-digest.md
+          echo "repo_revision: \"${{ github.sha }}\"" >> docs/planning/weekly-digest.md
+          echo "decision_level: advisory" >> docs/planning/weekly-digest.md
+          echo "---" >> docs/planning/weekly-digest.md
+          echo "" >> docs/planning/weekly-digest.md
+          echo "# Weekly Digest: ${WEEK}" >> docs/planning/weekly-digest.md
+          echo "" >> docs/planning/weekly-digest.md
+          echo "> ⚠️ 自动生成模板，请由 coordinator 智能体汇总各 agent 报告。" >> docs/planning/weekly-digest.md
+
+      - name: 提交周报
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: weekly digest for ${{ github.event.inputs.week || 'current week' }}"
+          file_pattern: "docs/planning/weekly-digest.md"
+          commit_user_name: "coordinator[bot]"
+          commit_user_email: "coordinator[bot]@gis-engine.dev"
+
+  # ── Job 4: 任务分配 ──
+  task-distributor:
+    name: "task-distributor: 燃尽图更新"
+    runs-on: ubuntu-latest
+    needs: [coordinator]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 生成依赖图快照
+        run: |
+          echo "> ⚠️ 请由 task-distributor 智能体更新依赖图和燃尽表。" > docs/planning/dependency-graph.md.new
+          cat docs/planning/dependency-graph.md >> docs/planning/dependency-graph.md.new
+          mv docs/planning/dependency-graph.md.new docs/planning/dependency-graph.md
+
+      - name: 提交依赖图更新
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: weekly task burndown and dependency graph update"
+          file_pattern: "docs/planning/task-burndown.md,docs/planning/dependency-graph.md"
+          commit_user_name: "task-distributor[bot]"
+          commit_user_email: "task-distributor[bot]@gis-engine.dev"

@@ -27,7 +27,17 @@
     "test:release:rc": "pnpm build:schema && pnpm check && pnpm test:snapshot:visual",
     "test:release:strict": "pnpm build:schema && pnpm check && GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual",
     "check": "pnpm build && pnpm test",
-    "example:basic-geojson": "tsx examples/basic-geojson/validate.ts"
+    "example:basic-geojson": "tsx examples/basic-geojson/validate.ts",
+    "agent": "node scripts/agent-runner.mjs",
+    "agent:daily": "node scripts/agent-runner.mjs all --daily",
+    "agent:weekly": "node scripts/agent-runner.mjs all --weekly",
+    "agent:code-review": "node scripts/agent-runner.mjs code-reviewer",
+    "agent:quality": "node scripts/agent-runner.mjs quality-guardian",
+    "agent:coordinator": "node scripts/agent-runner.mjs coordinator",
+    "docs:generate": "node scripts/doc-generator.mjs",
+    "docs:changelog": "node scripts/doc-generator.mjs changelog",
+    "docs:features": "node scripts/doc-generator.mjs features",
+    "docs:links": "node scripts/doc-generator.mjs links"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

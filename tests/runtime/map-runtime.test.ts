@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import before from "../fixtures/commands/replay/style-update/before.map.json";
 import commands from "../fixtures/commands/replay/style-update/commands.json";
 import {
@@ -29,6 +29,8 @@ class RuntimeMockAdapter implements RendererAdapter {
   loadedSpec: MapSpec | null = null;
   applyDiagnostics: AdapterApplyResult["diagnostics"] = [];
   applyDelayMs = 0;
+  failLoadAfterFirstCall = false;
+  loadError: Error | null = null;
 
   async getCapabilities(): Promise<CapabilityReport> {
     return {
@@ -45,6 +47,9 @@ class RuntimeMockAdapter implements RendererAdapter {
 
   async load(spec: MapSpec, _context: RenderContext): Promise<void> {
     this.loadCalls += 1;
+    if (this.failLoadAfterFirstCall && this.loadCalls > 1) {
+      throw this.loadError ?? new Error("RuntimeMockAdapter load failed.");
+    }
     this.loadedSpec = structuredClone(spec);
   }
 
@@ -264,6 +269,51 @@ describe("MapRuntime", () => {
     expect(runtime.exportSpec()).toEqual(before);
     expect(adapter.loadCalls).toBe(2);
     expect(adapter.loadedSpec).toEqual(before);
+  });
+
+  it("logs and recovers when a queued reload fails after an adapter error", async () => {
+    const adapter = new RuntimeMockAdapter();
+    adapter.failLoadAfterFirstCall = true;
+    adapter.loadError = new Error("reload failed");
+    adapter.applyDiagnostics = [
+      {
+        severity: "error",
+        code: "RENDER.ADAPTER_ERROR",
+        message: "adapter rejected patch"
+      }
+    ];
+    const runtime = await MapRuntime.create(before as MapSpec, {
+      adapter,
+      container: {} as HTMLElement
+    });
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      await expect(runtime.apply(commands as MapCommand[])).rejects.toThrow("reload failed");
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "[MapRuntime] apply queue error:",
+        expect.objectContaining({
+          message: "reload failed"
+        })
+      );
+
+      adapter.failLoadAfterFirstCall = false;
+      adapter.applyDiagnostics = [];
+      const viewCommand: MapCommand = {
+        id: "cmd-recover-view",
+        version: "0.1",
+        type: "setView",
+        baseRevision: "1",
+        view: { zoom: 8 }
+      };
+
+      const recoveryResults = await runtime.apply(viewCommand);
+
+      expect(recoveryResults[0]?.status).toBe("applied");
+      expect(runtime.exportSpec().view.zoom).toBe(8);
+      expect(adapter.loadCalls).toBe(2);
+    } finally {
+      consoleErrorSpy.mockRestore();
+    }
   });
 
   it("forwards queryFeatures to the committed adapter state", async () => {

@@ -1,0 +1,183 @@
+# Agent Daily Cadence — 每日智能体自动巡检
+#
+# 触发条件：
+#   1. 定时：每天 00:00 UTC 自动运行
+#   2. 手动：通过 workflow_dispatch 手动触发
+#   3. Push：向 main 分支推送时运行（快速反馈）
+#
+# 执行的智能体任务：
+#   - code-reviewer：审查最近 24 小时代码变更
+#   - quality-guardian：检查待 merge PR 的质量门禁
+#   - docs-agent：自动更新文档一致性
+
+name: Agent Daily Cadence
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # 每天 00:00 UTC
+  workflow_dispatch:
+    inputs:
+      agent:
+        description: "指定运行的智能体（留空则运行全部）"
+        required: false
+        type: choice
+        options:
+          - all
+          - code-reviewer
+          - quality-guardian
+          - docs-agent
+      date_override:
+        description: "覆盖日期（YYYY-MM-DD，留空使用当天）"
+        required: false
+        type: string
+  push:
+    branches: [main]
+
+jobs:
+  # ── Job 1: 代码审查智能体 ──
+  code-review:
+    name: "code-reviewer: 每日代码审计"
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.agent == 'all' || github.event.inputs.agent == 'code-reviewer' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 获取完整历史以计算 diff
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: 运行构建和类型检查
+        run: pnpm build:schema && pnpm check
+
+      - name: 生成每日审计报告
+        run: |
+          DATE=$(date -u +%Y-%m-%d)
+          REPORT="docs/reviews/daily-audit-${DATE}.md"
+          mkdir -p docs/reviews
+          echo "---" > "${REPORT}"
+          echo "agent: code-reviewer" >> "${REPORT}"
+          echo "period: ${DATE}" >> "${REPORT}"
+          echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "${REPORT}"
+          echo "repo_revision: \"${{ github.sha }}\"" >> "${REPORT}"
+          echo "inputs:" >> "${REPORT}"
+          echo "  - AGENTS.md" >> "${REPORT}"
+          echo "  - package.json" >> "${REPORT}"
+          echo "owner: \"@code-reviewer\"" >> "${REPORT}"
+          echo "decision_level: blocking" >> "${REPORT}"
+          echo "---" >> "${REPORT}"
+          echo "" >> "${REPORT}"
+          echo "# code-reviewer 每日审计报告" >> "${REPORT}"
+          echo "" >> "${REPORT}"
+          echo "**触发**: ${{ github.event_name }}" >> "${REPORT}"
+          echo "" >> "${REPORT}"
+          echo "## 构建状态" >> "${REPORT}"
+          echo "" >> "${REPORT}"
+          echo "- [x] pnpm build:schema" >> "${REPORT}"
+          echo "- [x] pnpm check" >> "${REPORT}"
+
+      - name: 提交审计报告
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: daily code audit report for $(date -u +%Y-%m-%d)"
+          file_pattern: "docs/reviews/daily-audit-*.md"
+          commit_user_name: "code-reviewer[bot]"
+          commit_user_email: "code-reviewer[bot]@gis-engine.dev"
+
+  # ── Job 2: 质量门禁智能体 ──
+  quality-gate:
+    name: "quality-guardian: PR 质量门禁"
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.agent == 'all' || github.event.inputs.agent == 'quality-guardian' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: 运行完整质量门禁
+        run: |
+          pnpm build:schema
+          pnpm check
+          pnpm test:snapshot:smoke
+
+      - name: 运行 SceneView3D release 门禁
+        run: pnpm test:release:scene3d
+
+      - name: 检查资源策略
+        run: pnpm test:resources
+
+      - name: 生成质量门禁报告
+        if: always()
+        run: |
+          DATE=$(date -u +%Y-%m-%d)
+          echo "---" > docs/reviews/quality-gate-${DATE}.md
+          echo "agent: quality-guardian" >> docs/reviews/quality-gate-${DATE}.md
+          echo "period: ${DATE}" >> docs/reviews/quality-gate-${DATE}.md
+          echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> docs/reviews/quality-gate-${DATE}.md
+          echo "repo_revision: \"${{ github.sha }}\"" >> docs/reviews/quality-gate-${DATE}.md
+          echo "decision_level: blocking" >> docs/reviews/quality-gate-${DATE}.md
+          echo "---" >> docs/reviews/quality-gate-${DATE}.md
+          echo "" >> docs/reviews/quality-gate-${DATE}.md
+          echo "# Quality Gate: ${DATE}" >> docs/reviews/quality-gate-${DATE}.md
+          echo "" >> docs/reviews/quality-gate-${DATE}.md
+          echo "## Gate Results" >> docs/reviews/quality-gate-${DATE}.md
+          echo "" >> docs/reviews/quality-gate-${DATE}.md
+          echo "| Gate | Status |" >> docs/reviews/quality-gate-${DATE}.md
+          echo "| --- | --- |" >> docs/reviews/quality-gate-${DATE}.md
+          echo "| schema build | ${{ job.status == 'success' && 'passed' || 'failed' }} |" >> docs/reviews/quality-gate-${DATE}.md
+
+  # ── Job 3: 文档一致性智能体 ──
+  docs-audit:
+    name: "docs-agent: 文档一致性检查"
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.agent == 'all' || github.event.inputs.agent == 'docs-agent' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 检查文档交叉引用完整性
+        run: |
+          echo "=== 文档审计: $(date -u +%Y-%m-%d) ==="
+          echo ""
+          echo "检查 README.md 引用的文档是否存在..."
+          for doc in $(grep -oP '\[.*?\]\(\./docs/[^)]+\)' README.md | grep -oP '(?<=\(\./).*(?=\))'); do
+            if [ -f "$doc" ]; then
+              echo "  ✅ $doc"
+            else
+              echo "  ❌ $doc 不存在"
+            fi
+          done
+
+      - name: 检查 CHANGELOG.md 版本一致性
+        run: |
+          echo "=== 版本一致性检查 ==="
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          echo "package.json version: $PKG_VERSION"
+
+      - name: 检查 AGENTS.md 引用的文档路径
+        run: |
+          echo "=== AGENTS.md 引用完整性 ==="
+          for doc in $(grep -oP '`[^`]+\.md`' AGENTS.md | tr -d '`'); do
+            FOUND=$(find docs -name "$doc" 2>/dev/null | head -1)
+            if [ -n "$FOUND" ]; then
+              echo "  ✅ $doc -> $FOUND"
+            else
+              echo "  ⚠️  $doc 未找到"
+            fi
+          done

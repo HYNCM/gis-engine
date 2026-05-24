@@ -1,0 +1,135 @@
+# Agent Monthly Cadence — 每月智能体路线图周期
+#
+# 触发条件：
+#   1. 定时：每月 1 日 00:00 UTC
+#   2. 手动触发
+#
+# 执行的智能体任务：
+#   - product-strategist：刷新月度路线图
+#   - coordinator：审批优先级和权衡
+#   - quality-guardian：验证发布就绪证据
+#   - task-distributor：创建 sprint 任务批次
+
+name: Agent Monthly Cadence
+
+on:
+  schedule:
+    - cron: "0 0 1 * *" # 每月 1 日 00:00 UTC
+  workflow_dispatch:
+    inputs:
+      month:
+        description: "指定月份（YYYY-MM）"
+        required: false
+        type: string
+
+jobs:
+  # ── Job 1: 月度路线图 ──
+  monthly-roadmap:
+    name: "product-strategist: 月度路线图"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: 运行完整测试套件收集数据
+        run: |
+          pnpm build:schema
+          pnpm check 2>&1 | tee /tmp/full-check.log || true
+          pnpm test:snapshot:smoke 2>&1 | tee /tmp/snapshot-smoke.log || true
+
+      - name: 统计本月代码变更
+        run: |
+          echo "=== 本月代码变更统计 ==="
+          echo "Commits in last 30 days:"
+          git log --oneline --since="30 days ago" | wc -l
+          echo ""
+          echo "Changed files:"
+          git diff --stat HEAD~30..HEAD 2>/dev/null || echo "(不足 30 天历史)"
+
+      - name: 生成月度路线图模板
+        run: |
+          MONTH=$(date -u +%Y-%m)
+          if [ -n "${{ github.event.inputs.month }}" ]; then
+            MONTH="${{ github.event.inputs.month }}"
+          fi
+
+          echo "---" > docs/planning/monthly-roadmap.md
+          echo "agent: product-strategist" >> docs/planning/monthly-roadmap.md
+          echo "period: ${MONTH}" >> docs/planning/monthly-roadmap.md
+          echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> docs/planning/monthly-roadmap.md
+          echo "repo_revision: \"${{ github.sha }}\"" >> docs/planning/monthly-roadmap.md
+          echo "decision_level: advisory" >> docs/planning/monthly-roadmap.md
+          echo "---" >> docs/planning/monthly-roadmap.md
+          echo "" >> docs/planning/monthly-roadmap.md
+          echo "# Monthly Roadmap: ${MONTH}" >> docs/planning/monthly-roadmap.md
+          echo "" >> docs/planning/monthly-roadmap.md
+          echo "> ⚠️ 自动生成模板，请由 product-strategist 智能体更新实质内容。" >> docs/planning/monthly-roadmap.md
+
+      - name: 提交路线图
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: monthly roadmap refresh for ${MONTH}"
+          file_pattern: "docs/planning/monthly-roadmap.md"
+          commit_user_name: "product-strategist[bot]"
+          commit_user_email: "product-strategist[bot]@gis-engine.dev"
+
+  # ── Job 2: 发布就绪验证 ──
+  release-readiness:
+    name: "quality-guardian: 发布就绪验证"
+    runs-on: ubuntu-latest
+    needs: [monthly-roadmap]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: 运行发布级门禁
+        run: |
+          pnpm build:schema
+          pnpm check
+          pnpm test:snapshot:smoke
+          pnpm test:release:scene3d
+
+      - name: 生成发布就绪报告
+        run: |
+          DATE=$(date -u +%Y-%m-%d)
+          echo "---" > docs/reviews/release-readiness-${DATE}.md
+          echo "agent: quality-guardian" >> docs/reviews/release-readiness-${DATE}.md
+          echo "period: $(date -u +%Y-%m)" >> docs/reviews/release-readiness-${DATE}.md
+          echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> docs/reviews/release-readiness-${DATE}.md
+          echo "repo_revision: \"${{ github.sha }}\"" >> docs/reviews/release-readiness-${DATE}.md
+          echo "decision_level: blocking" >> docs/reviews/release-readiness-${DATE}.md
+          echo "---" >> docs/reviews/release-readiness-${DATE}.md
+          echo "" >> docs/reviews/release-readiness-${DATE}.md
+          echo "# Release Readiness: ${DATE}" >> docs/reviews/release-readiness-${DATE}.md
+          echo "" >> docs/reviews/release-readiness-${DATE}.md
+          echo "> ⚠️ 自动生成，请由 quality-guardian 填充最终判定。" >> docs/reviews/release-readiness-${DATE}.md
+
+      - name: 提交通知
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: monthly release readiness report"
+          file_pattern: "docs/reviews/release-readiness-*.md"
+          commit_user_name: "quality-guardian[bot]"
+          commit_user_email: "quality-guardian[bot]@gis-engine.dev"

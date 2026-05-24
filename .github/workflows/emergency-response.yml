@@ -1,0 +1,148 @@
+# Emergency Response Workflow — 紧急响应流水线
+#
+# 触发条件：手动触发，当检测到 P0 阻断问题时
+#
+# 流程：
+#   1. coordinator 写入 docs/alerts/critical-gaps.md
+#   2. task-distributor 创建 P0/P1 修复任务
+#   3. quality-guardian 执行紧急门禁
+#   4. 修复完成后关闭紧急模式
+
+name: Emergency Response
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "紧急原因（如 security issue / release blocker）"
+        required: true
+        type: string
+      affected:
+        description: "影响的用户/系统"
+        required: true
+        type: string
+      owner:
+        description: "负责修复的 owner"
+        required: true
+        type: string
+      rollback_plan:
+        description: "回滚方案"
+        required: true
+        type: string
+
+jobs:
+  # ── 写入紧急告警 ──
+  create-alert:
+    name: "创建紧急告警文件"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 生成紧急告警
+        run: |
+          DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          mkdir -p docs/alerts
+
+          cat > docs/alerts/critical-gaps.md << 'ALERTEOF'
+          ---
+          agent: coordinator
+          period: emergency
+          generated_at: ${DATE}
+          repo_revision: "${{ github.sha }}"
+          inputs:
+            - manual_trigger
+          decision_level: emergency
+          ---
+
+          # Critical Gap Alert
+
+          - **触发时间**: ${DATE}
+          - **原因**: ${{ github.event.inputs.reason }}
+          - **影响**: ${{ github.event.inputs.affected }}
+          - **Owner**: ${{ github.event.inputs.owner }}
+          - **回滚方案**: ${{ github.event.inputs.rollback_plan }}
+          - **有效期**: 48 小时内
+
+          ## 紧急门禁要求
+
+          1. Schema 验证（如触及公共输入）
+          2. 确定性测试（触及区域相关）
+          3. 资源策略检查（如涉及 URL/tile/worker 变更）
+          4. Smoke snapshot（如可能影响渲染）
+
+          ## 后续任务
+
+          <!-- task-distributor 在此追加 P0/P1 follow-up tasks -->
+
+          ## 关闭条件
+
+          <!-- 修复完成后由 coordinator 填写 -->
+          ALERTEOF
+
+      - name: 提交告警
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "🚨 emergency alert: ${{ github.event.inputs.reason }}"
+          file_pattern: "docs/alerts/critical-gaps.md"
+          commit_user_name: "coordinator[bot]"
+          commit_user_email: "coordinator[bot]@gis-engine.dev"
+
+  # ── 紧急门禁 ──
+  emergency-gate:
+    name: "执行紧急门禁"
+    runs-on: ubuntu-latest
+    needs: [create-alert]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: 最小门禁检查
+        run: |
+          echo "=== Emergency Gate: $(date -u) ==="
+          echo "Reason: ${{ github.event.inputs.reason }}"
+          echo ""
+
+          # 1. Schema validation
+          echo "--- Schema Build ---"
+          pnpm build:schema
+
+          # 2. Type check
+          echo "--- Type Check ---"
+          pnpm check
+
+          # 3. Smoke snapshot (fast path)
+          echo "--- Smoke Snapshot ---"
+          pnpm test:snapshot:smoke
+
+          # 4. Resource policy
+          echo "--- Resource Policy ---"
+          pnpm test:resources
+
+      - name: 生成紧急门禁报告
+        if: always()
+        run: |
+          DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          echo "## Emergency Gate Report: ${DATE}" >> docs/alerts/critical-gaps.md
+          echo "" >> docs/alerts/critical-gaps.md
+          echo "| Gate | Status |" >> docs/alerts/critical-gaps.md
+          echo "| --- | --- |" >> docs/alerts/critical-gaps.md
+          echo "| schema build | ${{ job.status }} |" >> docs/alerts/critical-gaps.md
+
+      - name: 提交门禁结果
+        if: always()
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: emergency gate results appended"
+          file_pattern: "docs/alerts/critical-gaps.md"
+          commit_user_name: "quality-guardian[bot]"
+          commit_user_email: "quality-guardian[bot]@gis-engine.dev"

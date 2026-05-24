@@ -11,7 +11,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@gis-engine/engine": resolve(root, "packages/engine/src/index.ts"),
-      "@gis-engine/ai": resolve(root, "packages/ai/src/index.ts")
+      "@gis-engine/ai": resolve(root, "packages/ai/src/index.ts"),
+      "@gis-engine/scene3d": resolve(root, "packages/scene3d/src/index.ts"),
+      "@gis-engine/scene3d-three-adapter": resolve(root, "packages/scene3d-three-adapter/src/index.ts")
     }
   }
 });

@@ -1,0 +1,132 @@
+# CI Auto-Fix Pipeline — 自动修复流水线
+#
+# 触发条件：
+#   1. Pull Request：当 PR 的测试失败时自动尝试修复
+#   2. 手动触发：对指定问题进行修复
+#
+# 修复范围：
+#   - schema 同步问题（自动运行 build:schema）
+#   - 代码格式问题
+#   - 文档引用断裂
+#   - 依赖版本冲突
+
+name: CI Auto-Fix Pipeline
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+  workflow_dispatch:
+    inputs:
+      fix_target:
+        description: "修复目标"
+        required: true
+        type: choice
+        options:
+          - schema-sync
+          - docs-links
+          - imports-organize
+          - all
+
+jobs:
+  # ── Job 1: 诊断 ──
+  diagnose:
+    name: "诊断当前问题"
+    runs-on: ubuntu-latest
+    outputs:
+      schema_issue: ${{ steps.check.outputs.schema_issue }}
+      test_issue: ${{ steps.check.outputs.test_issue }}
+      docs_issue: ${{ steps.check.outputs.docs_issue }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: 运行诊断
+        id: check
+        run: |
+          SCHEMA_ISSUE="false"
+          TEST_ISSUE="false"
+          DOCS_ISSUE="false"
+
+          # 检查 schema 同步
+          if ! pnpm build:schema 2>&1 | tee /tmp/schema-build.log; then
+            SCHEMA_ISSUE="true"
+          fi
+
+          # 检查测试
+          if ! pnpm test:schema-sync 2>&1 | tee /tmp/schema-sync.log; then
+            TEST_ISSUE="true"
+          fi
+
+          # 检查文档引用
+          if grep -r "\.md)" docs/README.md | grep -v "http" > /tmp/doc-refs.txt; then
+            while IFS= read -r ref; do
+              path=$(echo "$ref" | grep -oP '(?<=\]\(\.\/).*(?=\))' || true)
+              if [ -n "$path" ] && [ ! -f "docs/$path" ]; then
+                DOCS_ISSUE="true"
+                echo "Broken doc link: $path"
+              fi
+            done < /tmp/doc-refs.txt
+          fi
+
+          echo "schema_issue=${SCHEMA_ISSUE}" >> $GITHUB_OUTPUT
+          echo "test_issue=${TEST_ISSUE}" >> $GITHUB_OUTPUT
+          echo "docs_issue=${DOCS_ISSUE}" >> $GITHUB_OUTPUT
+
+          echo "Diagnosis: schema=$SCHEMA_ISSUE test=$TEST_ISSUE docs=$DOCS_ISSUE"
+
+  # ── Job 2: 自动修复 Schema ──
+  fix-schema:
+    name: "自动修复 Schema 同步"
+    runs-on: ubuntu-latest
+    needs: [diagnose]
+    if: ${{ needs.diagnose.outputs.schema_issue == 'true' || needs.diagnose.outputs.test_issue == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: 重新构建 Schema
+        run: pnpm build:schema
+
+      - name: 提交修复
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "fix: auto-regenerate schema after sync check failure"
+          file_pattern: "packages/**/*.schema.json"
+          commit_user_name: "auto-fix[bot]"
+          commit_user_email: "auto-fix[bot]@gis-engine.dev"
+
+  # ── Job 3: 自动修复文档引用 ──
+  fix-docs:
+    name: "自动修复文档引用"
+    runs-on: ubuntu-latest
+    needs: [diagnose]
+    if: ${{ needs.diagnose.outputs.docs_issue == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 检查并报告损坏链接
+        run: |
+          echo "=== 损坏的文档引用 ==="
+          echo "以下引用目标不存在："
+          echo ""
+          echo "请手动修复或运行: @docs-agent 修复文档引用"

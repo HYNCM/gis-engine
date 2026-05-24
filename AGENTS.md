@@ -579,6 +579,234 @@ Adapter Evidence Cycle:
 @qa-agent 生成 SceneView3D browser visual evidence report
 ```
 
+## Automation Infrastructure
+
+The agent framework is backed by automated CI/CD infrastructure that triggers
+agents on schedule, runs gates, and produces evidence artifacts. This section
+defines the automation layer that turns the agent operating guide into an
+executable pipeline.
+
+### Automation Principles
+
+1. **Schedule-driven, not push-driven**: Agents run on cron schedules (daily,
+   weekly, monthly). Push events provide fast feedback but do not replace the
+   scheduled cadence.
+2. **Template-first, content-second**: Automation generates standardized
+   templates with gate results. AI agents (Copilot/Copilot Chat) fill in
+   substantive analysis and decisions.
+3. **Evidence-before-claim**: Automated gates must pass before an agent report
+   can move from `advisory` to `blocking`.
+4. **Human-in-the-loop for blocking decisions**: Automated pipelines can open
+   issues and suggest fixes, but merge/release decisions with
+   `decision_level: blocking` require explicit human or coordinator approval.
+5. **Single writer per artifact**: Only one agent or pipeline job writes to a
+   given planning artifact per cycle. Conflicts are resolved by `coordinator`.
+
+### Automation Artifacts
+
+| Artifact | Location | Purpose |
+| --- | --- | --- |
+| Daily workflow | `.github/workflows/agent-daily.yml` | Triggers code-reviewer, quality-guardian, and docs-agent daily |
+| Weekly workflow | `.github/workflows/agent-weekly.yml` | Triggers competitive-intel, product-strategist, coordinator, and task-distributor weekly |
+| Monthly workflow | `.github/workflows/agent-monthly.yml` | Triggers product-strategist roadmap refresh and quality-guardian release readiness |
+| Auto-fix pipeline | `.github/workflows/auto-fix.yml` | Diagnoses and auto-fixes schema sync, test, and doc link issues on PR |
+| Agent runner | `scripts/agent-runner.mjs` | CLI tool to invoke any agent locally or in CI |
+| Doc generator | `scripts/doc-generator.mjs` | Auto-generates changelog entries, feature matrix, API skeleton, and link audits |
+| Report templates | `.github/agent-templates/README.md` | Standardized report structure for each agent type |
+
+### GitHub Actions Workflow Summary
+
+```mermaid
+flowchart TD
+  subgraph Daily["Daily (00:00 UTC)"]
+    CR["code-reviewer: 审计最近 24h diff"]
+    QG["quality-guardian: 运行门禁"]
+    DA["docs-agent: 检查文档完整性"]
+  end
+
+  subgraph Weekly["Weekly (Monday 00:00 UTC)"]
+    CI["competitive-intel: 竞品报告 + scorecard"]
+    PS["product-strategist: 技术债务更新"]
+    CO["coordinator: 周报摘要 + 优先级"]
+    TD["task-distributor: 燃尽图 + 依赖图"]
+  end
+
+  subgraph Monthly["Monthly (1st 00:00 UTC)"]
+    MR["product-strategist: 月度路线图"]
+    RR["quality-guardian: 发布就绪验证"]
+  end
+
+  subgraph OnPR["On PR"]
+    AF["auto-fix: 诊断 + 自动修复"]
+  end
+
+  CR --> CO
+  CI --> CO
+  PS --> CO
+  CO --> TD
+  MR --> RR
+```
+
+### Agent Runner CLI
+
+The `scripts/agent-runner.mjs` script provides a unified CLI for invoking any
+agent. It handles front-matter generation, gate execution, and report output.
+
+```bash
+# Run a single agent
+node scripts/agent-runner.mjs code-reviewer --period 2026-05-24
+
+# Run all daily agents
+node scripts/agent-runner.mjs all --daily
+
+# Dry-run: generate template only, skip gates
+node scripts/agent-runner.mjs quality-guardian --dry-run
+
+# Run with explicit period override
+node scripts/agent-runner.mjs coordinator --period 2026-W22
+```
+
+Agent runner exit codes:
+- `0`: All gates passed or advisory-only agents completed.
+- `1`: Runtime error (invalid agent name, missing dependency).
+- `2`: Blocking gate failure (requires human intervention).
+
+### Doc Generator CLI
+
+The `scripts/doc-generator.mjs` script auto-generates documentation from code
+and test artifacts.
+
+```bash
+# Generate changelog entries from git log
+node scripts/doc-generator.mjs changelog
+
+# Update feature matrix from test coverage
+node scripts/doc-generator.mjs features
+
+# Generate API documentation skeleton from exports
+node scripts/doc-generator.mjs api
+
+# Check cross-reference integrity
+node scripts/doc-generator.mjs links
+
+# Run all generators
+node scripts/doc-generator.mjs all
+```
+
+### CI Auto-Fix Pipeline
+
+The auto-fix pipeline (`.github/workflows/auto-fix.yml`) runs on every PR and
+attempts to fix deterministic issues automatically:
+
+| Issue Class | Auto-Fix Action | Manual Follow-up Required |
+| --- | --- | --- |
+| Schema sync drift | Re-run `pnpm build:schema` and commit regenerated JSON | Review schema diff for unintended changes |
+| Missing test fixtures | Flag in PR comment | Create fixtures manually |
+| Broken doc links | Report in CI output | `@docs-agent` to update references |
+| Type-only regressions | Report with diagnostic codes | Developer fixes type errors |
+
+Auto-fix will NEVER:
+- Modify runtime logic or command semantics.
+- Bypass resource policy checks.
+- Change visual snapshot baselines.
+- Alter MCP tool contracts or output schemas.
+- Promote SceneView3D stable runtime without explicit approval.
+
+### Agent Invocation Mapping
+
+In Copilot Chat, agents can be invoked with `@mention` syntax. The mapping
+follows the AGENTS.md invocation examples:
+
+| @mention | Agent | Scope |
+| --- | --- | --- |
+| `@coordinator` | coordinator | 启动本周产品规划，汇总报告 |
+| `@competitive-intel` | competitive-intel | 竞品分析 + scorecard 更新 |
+| `@code-reviewer` | code-reviewer | 审查最近 24h 代码变更 |
+| `@product-strategist` | product-strategist | 路线图规划 + 优先级排序 |
+| `@task-distributor` | task-distributor | 任务拆解 + owner 分配 |
+| `@quality-guardian` | quality-guardian | 质量门禁检查 |
+| `@docs-agent` | docs-agent | 文档审计和更新 |
+| `@adapter-agent` | adapter-agent | 适配器实现和证据 |
+| `@qa-agent` | qa-agent | 视觉证据 + release runner |
+| `@ai-agent` | ai-agent | MCP 契约 + AI 工具 |
+| `@engine-agent` | engine-agent | Schema/命令/诊断契约 |
+
+### Automated Testing Integration
+
+The agent framework integrates with the existing test infrastructure:
+
+```
+┌─────────────────────────────────────────────────────┐
+│                 Agent Cadence Trigger                │
+│  (schedule / workflow_dispatch / push / PR)          │
+└─────────────────────┬───────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────┐
+│                 Gate Execution                       │
+│  pnpm build:schema → pnpm check → pnpm test:*       │
+│  → pnpm test:snapshot:smoke → pnpm test:release:*   │
+└─────────────────────┬───────────────────────────────┘
+                      │
+          ┌───────────┴───────────┐
+          ▼                       ▼
+   ┌──────────────┐       ┌──────────────┐
+   │  All Passed  │       │  Some Failed │
+   │  Generate    │       │  Diagnose +  │
+   │  Report      │       │  Auto-Fix    │
+   │  Template    │       │  or Flag     │
+   └──────┬───────┘       └──────┬───────┘
+          │                      │
+          ▼                      ▼
+   ┌──────────────┐       ┌──────────────┐
+   │ Agent fills  │       │ CI reports   │
+   │ substantive  │       │ failure +    │
+   │ content      │       │ opens issue  │
+   └──────────────┘       └──────────────┘
+```
+
+### Automated Documentation Flow
+
+```
+┌──────────────────────────────────────────────────┐
+│              Code / Test Changes                  │
+└─────────────────────┬────────────────────────────┘
+                      │
+                      ▼
+┌──────────────────────────────────────────────────┐
+│  doc-generator.mjs scans:                         │
+│  - git log → CHANGELOG entries                   │
+│  - test files → feature matrix                   │
+│  - package exports → API skeleton                │
+│  - markdown links → cross-reference audit        │
+└─────────────────────┬────────────────────────────┘
+                      │
+                      ▼
+┌──────────────────────────────────────────────────┐
+│  docs-agent reviews generated artifacts:          │
+│  - Validates accuracy                            │
+│  - Adds missing context                          │
+│  - Updates docs/README.md index                  │
+│  - Commits finalized documentation               │
+└──────────────────────────────────────────────────┘
+```
+
+### Bootstrap Checklist
+
+To activate the automation infrastructure for the first time:
+
+- [x] `.github/workflows/agent-daily.yml` — Daily agent cadence workflow
+- [x] `.github/workflows/agent-weekly.yml` — Weekly agent cadence workflow
+- [x] `.github/workflows/agent-monthly.yml` — Monthly agent cadence workflow
+- [x] `.github/workflows/auto-fix.yml` — CI auto-fix pipeline
+- [x] `scripts/agent-runner.mjs` — Agent invocation CLI
+- [x] `scripts/doc-generator.mjs` — Documentation auto-generator
+- [x] `.github/agent-templates/README.md` — Report templates
+- [ ] GitHub Actions enabled in repository settings
+- [ ] `secrets.GITHUB_TOKEN` has write permissions for auto-commit
+- [ ] Branch protection rules allow bot commits to `docs/reviews/` and `docs/planning/`
+- [ ] Playwright browsers installed in CI for visual snapshot jobs
+
 ## Non-Goals
 
 - Do not treat this guide as proof that autonomous recurring execution exists.
