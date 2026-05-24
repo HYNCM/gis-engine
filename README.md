@@ -2,8 +2,12 @@
 
 AI-native, TypeScript-first map runtime for building, validating, replaying, snapshotting, and exporting 2D and 3D-ready web map applications.
 
-GIS Engine has completed the 2026-05-17 v0.2 checkpoint and the
-2026-05-18 SceneView3D v1 preparation pass on top of the v0.1 runtime base.
+GIS Engine has completed the 2026-05-17 v0.2 checkpoint, the
+2026-05-18 SceneView3D v1 preparation pass, and the 2026-05-24 W23
+promotion-readiness plus automation-hardening follow-up on top of the v0.1
+runtime base. The W23 SceneView3D promotion-readiness package is Go, but stable
+`view.mode: "scene3d"` remains blocked until the stable renderer contract gate
+accepts real renderer evidence.
 The current implementation proves this loop:
 
 ```txt
@@ -35,6 +39,7 @@ Traditional map SDKs are powerful, but AI agents need a stricter contract:
 | AI tools | Functional | MCP exposes `validate_spec`, `apply_commands`, `export_spec`, `get_context_summary`, `snapshot_spec`, `explain_spec`, and `export_example_app` with input and output schemas. `get_context_summary` and `explain_spec` include gated extension-only SceneView3D context when `extensions.scene3d` exists. CamelCase aliases are intentionally not supported. |
 | Examples/fixtures | Functional | Basic GeoJSON, AI map edit, raster-basemap, pmtiles-local, vector-tile-url, fill-extrusion-lite, and scene3d-extension examples plus schema/command/snapshot fixtures exist. |
 | CI/test gates | Functional | `pnpm build:schema` and `pnpm check` are required finish gates; strict visual snapshots require a browser/WebGL-capable runner. |
+| SceneView3D promotion | Handoff-ready | W23 promotion-readiness evidence is accepted; the next active work is SRC-001 through SRC-006 for stable renderer contract, lifecycle, snapshot/query, resource-policy, release-gate, and final promotion-decision evidence. |
 
 ## Current Runtime Shape
 
@@ -79,6 +84,11 @@ const exported = map.exportSpec();
 - [SceneView3D release visual gate](./docs/planning/release-runner-scene3d-gate-2026-05-18.md)
 - [SceneView3D alpha gate audit](./docs/planning/sceneview3d-alpha-gate-audit-2026-05-18.md)
 - [SceneView3D renderer evidence sprint](./docs/planning/sprint-2026-W22-scene3d-renderer-evidence.md)
+- [SceneView3D promotion gate](./docs/reviews/sceneview3d-promotion-gate-2026-05-24.md)
+- [SceneView3D stable renderer contract plan](./docs/planning/feature-specs/sceneview3d-stable-renderer-contract.md)
+- [Task burndown](./docs/planning/task-burndown.md)
+- [Dependency graph](./docs/planning/dependency-graph.md)
+- [Automation hardening gate](./docs/reviews/automation-hardening-gate-2026-05-24.md)
 - [v0.2 checkpoint audit](./docs/reviews/v0.2-checkpoint-audit-2026-05-17.md)
 - [v0.2 release note draft](./docs/planning/v0.2-release-note-draft.md)
 - [v0.2 gate checklist](./docs/planning/v0.2-gate-checklist.md)
