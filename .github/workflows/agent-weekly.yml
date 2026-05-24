@@ -22,6 +22,9 @@ on:
         required: false
         type: string
 
+permissions:
+  contents: write
+
 jobs:
   # ── Job 1: 竞品情报 ──
   competitive-intel:

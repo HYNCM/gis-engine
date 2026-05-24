@@ -27,6 +27,9 @@ on:
           - imports-organize
           - all
 
+permissions:
+  contents: write
+
 jobs:
   # ── Job 1: 诊断 ──
   diagnose:

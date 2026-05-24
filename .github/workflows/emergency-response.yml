@@ -30,6 +30,9 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: write
+
 jobs:
   # ── 写入紧急告警 ──
   create-alert:
