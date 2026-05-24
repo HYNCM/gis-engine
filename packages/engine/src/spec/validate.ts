@@ -1,5 +1,9 @@
 import { Ajv, type ErrorObject } from "ajv/dist/ajv.js";
-import { DiagnosticCodes } from "../diagnostics/codes.js";
+import {
+  DiagnosticCodes,
+  Scene3DStableRuntimeBlockerCodes,
+  type Scene3DStableRuntimeBlockerCode
+} from "../diagnostics/codes.js";
 import type { Diagnostic, MapSpec, SceneResourcePolicy, SceneView3DExtension, ValidationReport } from "../types.js";
 import { MapSpecSchema, SceneView3DExtensionSchema } from "./schemas/index.js";
 import { validateExpression } from "./expression-validator.js";
@@ -260,30 +264,31 @@ function validateViewAndCapabilityBoundary(spec: MapSpec): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
 
   if (spec.view.mode === "scene3d") {
-    diagnostics.push(scene3dUnsupported("/view/mode"));
+    diagnostics.push(scene3dUnsupported("/view/mode", Scene3DStableRuntimeBlockerCodes.ViewMode));
   }
 
   if (spec.capabilities?.renderer === "scene3d") {
-    diagnostics.push(scene3dUnsupported("/capabilities/renderer"));
+    diagnostics.push(scene3dUnsupported("/capabilities/renderer", Scene3DStableRuntimeBlockerCodes.Renderer));
   }
 
   if (spec.capabilities?.dimensions?.includes("3d")) {
-    diagnostics.push(scene3dUnsupported("/capabilities/dimensions"));
+    diagnostics.push(scene3dUnsupported("/capabilities/dimensions", Scene3DStableRuntimeBlockerCodes.Dimensions));
   }
 
   return diagnostics;
 }
 
-function scene3dUnsupported(path: string): Diagnostic {
+function scene3dUnsupported(path: string, blockerCode: Scene3DStableRuntimeBlockerCode): Diagnostic {
   return {
     severity: "error",
     code: DiagnosticCodes.CapabilityUnsupported,
-    message: "SceneView3D is reserved for a future capability-gated package and is not supported by the current v0.2 contract.",
+    blockerCode,
+    message: "SceneView3D stable runtime promotion is blocked until the W23 promotion readiness gate issues a go/no-go decision.",
     path,
     fix: {
       kind: "manual",
       confidence: "medium",
-      message: 'Use "map2d" or "map2_5d" for current MapSpec documents, and keep SceneView3D fields under a documented extension until v1.0.'
+      message: 'Keep "scene3d" fields under the documented extension boundary until the stable runtime gate explicitly approves promotion.'
     }
   };
 }

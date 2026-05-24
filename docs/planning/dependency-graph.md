@@ -1,8 +1,8 @@
 ---
 agent: task-distributor
 period: 2026-W21
-generated_at: 2026-05-17T16:35:00Z
-repo_revision: "acdf28e"
+generated_at: 2026-05-23T12:47:05Z
+repo_revision: "cef340d"
 inputs:
   - docs/archive/2026-05-18/planning/sprint-2026-W21.md
   - docs/planning/sprint-2026-W25-sceneview3d-v1.md
@@ -47,8 +47,8 @@ flowchart LR
 
 ## 当前状态
 
-截至 `acdf28e`，图中 W21/W23 的 v0.2 checkpoint 关键链路已完成；原
-W21 sprint 计划已归档，当前活跃关键路径从 W25 SceneView3D v1 DAG 继续：
+截至 `cef340d`，图中 W21/W23 的 v0.2 checkpoint 关键链路已完成；原
+W21 sprint 计划已归档，当前活跃关键路径从 W23 promotion readiness 与 W25 SceneView3D v1 DAG 继续：
 
 | Chain | Status | Evidence |
 | --- | --- | --- |
@@ -77,10 +77,11 @@ W21 sprint 计划已归档，当前活跃关键路径从 W25 SceneView3D v1 DAG 
 | SceneView3D browser visual runner | done | `runScene3DThreeAdapterBrowserRunner` renders a local fixture in Chromium, records frame metrics, and produces release-capable renderer evidence |
 | SceneView3D MCP evidence summary decision | done | renderer evidence summaries stay out of MCP for now; `scene3d` context remains extension-only |
 | SceneView3D beta readiness gate | done | `pnpm test:release:scene3d` now exercises the browser runner and accepts release visual evidence |
+| SceneView3D promotion readiness | planned | W23 rubric, browser matrix evidence, adapter promotion report, guardrail diagnostics, MCP decision, docs alignment, and go/no-go review form the next decision package |
 
 ## 关键路径
 
-1. v1 SceneView3D RFC -> W25/W28 sprint DAG -> TypeBox schema -> fixtures + URL resource policy + loader resource gate + package boundary + scene commands -> mock snapshot/query contracts -> MCP context -> release visual gate -> alpha audit + adapter feasibility -> Three.js adapter spike -> renderer evidence handoff -> adapter runtime shim -> browser visual runner -> beta readiness gate; stable runtime promotion remains blocked.
+1. v1 SceneView3D RFC -> W25/W28 sprint DAG -> TypeBox schema -> fixtures + URL resource policy + loader resource gate + package boundary + scene commands -> mock snapshot/query contracts -> MCP context -> release visual gate -> alpha audit + adapter feasibility -> Three.js adapter spike -> renderer evidence handoff -> adapter runtime shim -> browser visual runner -> beta readiness gate -> promotion readiness -> stable runtime decision; stable runtime promotion remains blocked until the W23 package lands.
 
 ```mermaid
 flowchart LR
@@ -104,6 +105,8 @@ flowchart LR
   N --> O["adapter runtime shim"]
   O --> P["browser visual runner"]
   P --> Q["beta readiness gate"]
+  Q --> R["promotion readiness"]
+  R --> S["stable runtime decision"]
 ```
 
 ## 阻断规则

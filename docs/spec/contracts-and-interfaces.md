@@ -158,6 +158,10 @@ The spike exposes:
 - `createScene3DThreeAdapterRendererEvidence`, converting future browser/WebGL
   capture metrics into `Scene3DRendererVisualEvidence` for
   `evaluateScene3DReleaseVisualGate`.
+- `createScene3DThreeAdapterPromotionEvidenceSummary`, consolidating
+  load-plan, resource, runtime, snapshot, query, and renderer visual evidence
+  for W23 promotion readiness review while keeping `stablePromotionAllowed:
+  false`.
 
 The spike must not import or declare Three.js, 3DTilesRendererJS, CesiumJS,
 glTF loaders, workers, or remote loading dependencies until real renderer
@@ -168,6 +172,10 @@ Renderer evidence is accepted only when resource-policy diagnostics are clean
 and the visual capture proves positive frame dimensions, nontransparent pixels,
 pixels changed from the background, and no browser console errors. Missing or
 blank captures must fail closed.
+
+Promotion summaries are decision evidence only. They may report
+`decisionReady: true` when every adapter evidence component is present and
+error-free, but they still must not authorize stable `view.mode: "scene3d"`.
 
 ## SceneView3D Mock Snapshot And Query Contract
 
@@ -213,8 +221,9 @@ block is explicitly extension-only:
 It may expose source/layer counts, resource policy caps, mock snapshot summary,
 mock query summary, and SceneView3D capability metadata. It must not imply that
 `view.mode: "scene3d"` is supported by the current runtime. It must not expose
-renderer evidence summaries; those stay in release-gate and visual-runner
-artifacts until a future public AI use case is approved.
+renderer or promotion evidence summaries; those stay in release-gate,
+visual-runner, and adapter promotion artifacts until a future public AI use
+case is approved.
 
 ### 事务语义
 

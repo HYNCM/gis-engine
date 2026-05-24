@@ -1,4 +1,4 @@
-export { DiagnosticCodes } from "./diagnostics/codes.js";
+export { DiagnosticCodes, Scene3DStableRuntimeBlockerCodes } from "./diagnostics/codes.js";
 export { applyCommands, type ApplyCommandsResult } from "./commands/applyCommands.js";
 export { buildPatch, type BuildPatchResult } from "./commands/buildPatch.js";
 export { validateSpec } from "./spec/validate.js";

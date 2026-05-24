@@ -7,6 +7,7 @@ import {
   DiagnosticSchema,
   MapCommandSchema,
   MapSpecSchema,
+  Scene3DStableRuntimeBlockerCodes,
   SceneView3DExtensionSchema
 } from "@gis-engine/engine";
 import {
@@ -106,6 +107,15 @@ describe("schema sync gate", () => {
     const schemaText = JSON.stringify(diagnosticCodeSchema);
 
     for (const code of Object.values(DiagnosticCodes)) {
+      expect(schemaText).toContain(code);
+    }
+  });
+
+  it("locks SceneView3D stable-runtime blocker codes into diagnostics", () => {
+    const blockerCodeSchema = DiagnosticSchema.properties.blockerCode;
+    const schemaText = JSON.stringify(blockerCodeSchema);
+
+    for (const code of Object.values(Scene3DStableRuntimeBlockerCodes)) {
       expect(schemaText).toContain(code);
     }
   });

@@ -4,6 +4,7 @@ import { createRequire } from "node:module";
 import { type SceneView3DExtension } from "@gis-engine/engine";
 import {
   createScene3DThreeAdapterRendererEvidence,
+  createScene3DThreeAdapterPromotionEvidenceSummary,
   createScene3DThreeAdapterRuntime,
   type Scene3DThreeAdapterVisualCapture
 } from "../../packages/scene3d-three-adapter/src/index.js";
@@ -24,7 +25,7 @@ export interface Scene3DThreeAdapterBrowserRunnerOptions {
 }
 
 export interface Scene3DThreeAdapterBrowserRunnerResult {
-  report: SnapshotReport;
+  report: Scene3DThreeAdapterBrowserRunnerReport;
   rendererEvidence: ReturnType<typeof createScene3DThreeAdapterRendererEvidence>;
   runtimeLoadReport: Awaited<ReturnType<ReturnType<typeof createScene3DThreeAdapterRuntime>["load"]>>;
   snapshot: Awaited<ReturnType<ReturnType<typeof createScene3DThreeAdapterRuntime>["snapshot"]>>;
@@ -106,7 +107,20 @@ export async function runScene3DThreeAdapterBrowserRunner(
       capture,
       diagnostics: [...runtimeLoadReport.diagnostics, ...snapshot.diagnostics, ...query.diagnostics]
     });
-    const report = createSnapshotReport(browserRenderResult, consoleErrors, snapshot.summary, reportPath);
+    const promotionEvidenceSummary = createScene3DThreeAdapterPromotionEvidenceSummary(runtime.spikeReport, {
+      loadReport: runtimeLoadReport,
+      snapshot,
+      query,
+      rendererVisualEvidence: rendererEvidence
+    });
+    const report = createSnapshotReport(
+      browserRenderResult,
+      consoleErrors,
+      snapshot.summary,
+      reportPath,
+      promotionEvidenceSummary,
+      rendererEvidence.diagnostics ?? []
+    );
 
     return {
       report,
@@ -247,14 +261,16 @@ function createSnapshotReport(
   browserRenderResult: Scene3DThreeAdapterBrowserRenderResult,
   consoleErrors: string[],
   spec: SnapshotReport["spec"],
-  reportPath: string
-): SnapshotReport {
+  reportPath: string,
+  promotionEvidenceSummary: Scene3DThreeAdapterPromotionEvidenceSummary,
+  rendererDiagnostics: SnapshotReport["diagnostics"]
+): Scene3DThreeAdapterBrowserRunnerReport {
   const passed =
     browserRenderResult.ok &&
     browserRenderResult.nonTransparentPixels > 0 &&
     browserRenderResult.changedPixelsFromBackground > 0 &&
     consoleErrors.length === 0;
-  const report: SnapshotReport = {
+  const report: Scene3DThreeAdapterBrowserRunnerReport = {
     kind: "SnapshotReport",
     version: "0.1",
     suite: "snapshot.visual",
@@ -271,6 +287,12 @@ function createSnapshotReport(
     spec,
     diagnostics: visualDiagnostics(browserRenderResult, consoleErrors),
     consoleErrors,
+    promotionMatrix: createPromotionMatrixSummary(
+      browserRenderResult,
+      consoleErrors,
+      promotionEvidenceSummary,
+      rendererDiagnostics
+    ),
     artifacts: {
       actualImage: "captured:data-url",
       reportJson: `attached:${reportPath}`
@@ -291,6 +313,62 @@ function createSnapshotReport(
   }
 
   return report;
+}
+
+function createPromotionMatrixSummary(
+  browserRenderResult: Scene3DThreeAdapterBrowserRenderResult,
+  consoleErrors: string[],
+  promotionEvidenceSummary: Scene3DThreeAdapterPromotionEvidenceSummary,
+  rendererDiagnostics: SnapshotReport["diagnostics"]
+): Scene3DThreeAdapterPromotionMatrixSummary {
+  return {
+    kind: "Scene3DThreeAdapterPromotionMatrixSummary",
+    version: "0.1",
+    stableViewMode: false,
+    runtimeSupported: false,
+    frameMetrics: {
+      width: browserRenderResult.ok ? browserRenderResult.canvasWidth : 0,
+      height: browserRenderResult.ok ? browserRenderResult.canvasHeight : 0,
+      nonTransparentPixels: browserRenderResult.ok ? browserRenderResult.nonTransparentPixels : 0,
+      changedPixelsFromBackground: browserRenderResult.ok ? browserRenderResult.changedPixelsFromBackground : 0,
+      targetLayerPixels: browserRenderResult.ok ? browserRenderResult.targetLayerPixels : {}
+    },
+    consoleDiagnostics: {
+      errorCount: consoleErrors.length,
+      hasErrors: consoleErrors.length > 0,
+      messages: [...consoleErrors]
+    },
+    rendererDiagnostics: {
+      counts: countReportDiagnostics(rendererDiagnostics),
+      entries: [...rendererDiagnostics]
+    },
+    rendererVisualEvidence: {
+      passed: promotionEvidenceSummary.evidence.rendererVisual.passed,
+      ready:
+        browserRenderResult.ok &&
+        consoleErrors.length === 0 &&
+        promotionEvidenceSummary.evidence.rendererVisual.passed,
+      ...(promotionEvidenceSummary.evidence.rendererVisual.reportPath
+        ? { reportPath: promotionEvidenceSummary.evidence.rendererVisual.reportPath }
+        : {})
+    },
+    readiness: {
+      load: promotionEvidenceSummary.evidence.load.loaded,
+      snapshot: promotionEvidenceSummary.evidence.snapshot.passed,
+      query: promotionEvidenceSummary.evidence.query.pickCount > 0,
+      rendererVisual: promotionEvidenceSummary.evidence.rendererVisual.passed,
+      decisionReady: promotionEvidenceSummary.decisionReady,
+      stablePromotionAllowed: false
+    }
+  };
+}
+
+function countReportDiagnostics(diagnostics: SnapshotReport["diagnostics"]): Scene3DThreeAdapterDiagnosticCounts {
+  const counts: Scene3DThreeAdapterDiagnosticCounts = { error: 0, warning: 0, info: 0 };
+  for (const diagnostic of diagnostics) {
+    counts[diagnostic.severity] += 1;
+  }
+  return counts;
 }
 
 function visualDiagnostics(
@@ -328,4 +406,50 @@ export type Scene3DThreeAdapterBrowserRenderResult =
   | {
       ok: false;
       reason: string;
-    };
+  };
+
+export interface Scene3DThreeAdapterPromotionMatrixSummary {
+  kind: "Scene3DThreeAdapterPromotionMatrixSummary";
+  version: "0.1";
+  stableViewMode: false;
+  runtimeSupported: false;
+  frameMetrics: {
+    width: number;
+    height: number;
+    nonTransparentPixels: number;
+    changedPixelsFromBackground: number;
+    targetLayerPixels: Record<string, number>;
+  };
+  consoleDiagnostics: {
+    errorCount: number;
+    hasErrors: boolean;
+    messages: string[];
+  };
+  rendererDiagnostics: {
+    counts: Scene3DThreeAdapterDiagnosticCounts;
+    entries: SnapshotReport["diagnostics"];
+  };
+  rendererVisualEvidence: {
+    passed: boolean;
+    ready: boolean;
+    reportPath?: string;
+  };
+  readiness: {
+    load: boolean;
+    snapshot: boolean;
+    query: boolean;
+    rendererVisual: boolean;
+    decisionReady: boolean;
+    stablePromotionAllowed: false;
+  };
+}
+
+export interface Scene3DThreeAdapterBrowserRunnerReport extends SnapshotReport {
+  promotionMatrix: Scene3DThreeAdapterPromotionMatrixSummary;
+}
+
+export interface Scene3DThreeAdapterDiagnosticCounts {
+  error: number;
+  warning: number;
+  info: number;
+}

@@ -187,6 +187,8 @@ describe("MCP Server Integration", () => {
       query: { pickCount: 2 },
       capabilities: { renderer: "scene3d", dimensions: ["3d"] }
     });
+    expect(summary.scene3d).not.toHaveProperty("rendererEvidence");
+    expect(summary.scene3d).not.toHaveProperty("promotionEvidence");
   });
 
   it("covers v0.2 vector tile and expression contracts through MCP tools", async () => {

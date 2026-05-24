@@ -21,6 +21,9 @@ Current status:
   `Scene3DRendererVisualEvidence` through
   `createScene3DThreeAdapterRendererEvidence`, while keeping missing or blank
   captures as failing evidence.
+- Summarizes load-plan, resource, runtime, snapshot, query, and release visual
+  evidence through `createScene3DThreeAdapterPromotionEvidenceSummary`, while
+  keeping `stablePromotionAllowed` false.
 
 The real renderer implementation must stay in this adapter package or a later
 adapter package. `@gis-engine/engine` and `@gis-engine/scene3d` must remain free
@@ -46,3 +49,6 @@ Current evidence API:
   future browser/WebGL capture report and returns release-gate compatible
   renderer evidence. It fails when capture metrics are missing, blank, invalid,
   or when resource policy diagnostics contain errors.
+- `createScene3DThreeAdapterPromotionEvidenceSummary(spikeReport, options)`
+  creates the adapter-side promotion summary for W23 readiness review. It is
+  decision evidence only; it does not enable stable `view.mode: "scene3d"`.

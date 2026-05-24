@@ -13,6 +13,8 @@
 - Added `createScene3DThreeAdapterRuntime` so the adapter spike can keep `load`, `snapshot`, `query`, and `destroy` adapter-local while reusing mock SceneView3D evidence and still refusing stable runtime rendering.
 - Added `runScene3DThreeAdapterBrowserRunner` and a Playwright visual spec so a local Chromium fixture can render SceneView3D browser evidence and feed `pnpm test:release:scene3d`.
 - Added `createScene3DThreeAdapterRendererEvidence` so future browser/WebGL capture metrics can be converted into release-gate compatible renderer evidence without enabling stable SceneView3D runtime support.
+- Added `createScene3DThreeAdapterPromotionEvidenceSummary` so the Three adapter spike can summarize load-plan, resource, runtime, snapshot, query, and renderer visual evidence for promotion-readiness review while keeping stable promotion disabled.
+- Added the W23 SceneView3D promotion-readiness package, browser matrix evidence, stable-runtime blocker codes, and no-go gate report while keeping stable `view.mode: "scene3d"` blocked.
 - Archived the superseded W21 sprint plan and refreshed active documentation to point at completed SceneView3D alpha-gate, adapter-feasibility, release-gate, and Three adapter spike evidence; the remaining follow-up is real renderer visual evidence inside the adapter package.
 
 ## 0.2.0-checkpoint - 2026-05-17

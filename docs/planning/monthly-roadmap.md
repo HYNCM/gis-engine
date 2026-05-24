@@ -1,8 +1,8 @@
 ---
 agent: product-strategist
 period: 2026-05
-generated_at: 2026-05-17T16:35:00Z
-repo_revision: "acdf28e"
+generated_at: 2026-05-24T08:48:05Z
+repo_revision: "cef340d"
 inputs:
   - README.md
   - AGENTS.md
@@ -19,7 +19,7 @@ decision_level: advisory
 
 ## 结论
 
-当前 v0.1 已具备 `MapSpec`、commands、diagnostics、snapshot 和 MapLibre adapter 闭环；2026-05-17 v0.2 checkpoint 已完成 generic vector tile、MCP output schema、strict capability report、expression 扩展、style/layer order 稳定化、visual MVT 场景和 2.5D/3D 边界。2026-05-18 已补齐 package dry-run、resource/perf deterministic evidence、command audit trace 产品化、`fill-extrusion-lite` MapLibre beta mapping、3-scene release-capable strict visual runner evidence、1k/10k/100k nightly perf harness、`extensions.scene3d` 边界 fixture、独立 v1 SceneView3D RFC、W25/W28 sprint DAG、`SceneView3DExtensionSchema`、scene source URL policy、invalid fixtures、`@gis-engine/scene3d` package boundary、scene command deterministic patch contract、loader-level resource load plan gate、mock 3D snapshot/query、MCP 3D context、release-runner 3D visual gate、adapter feasibility、alpha gate audit 和 `@gis-engine/scene3d-three-adapter` spike。当前 W21/W23 规划项已完成，W25-001/002/003/004/005/006、W27-001/002/003/004/005 与 W28-001 已提前关闭；3D 后续实现应补齐真实 renderer snapshot/query/visual evidence。
+当前 v0.1 已具备 `MapSpec`、commands、diagnostics、snapshot 和 MapLibre adapter 闭环；2026-05-17 v0.2 checkpoint 已完成 generic vector tile、MCP output schema、strict capability report、expression 扩展、style/layer order 稳定化、visual MVT 场景和 2.5D/3D 边界。2026-05-18 已补齐 package dry-run、resource/perf deterministic evidence、command audit trace 产品化、`fill-extrusion-lite` MapLibre beta mapping、3-scene release-capable strict visual runner evidence、1k/10k/100k nightly perf harness、`extensions.scene3d` 边界 fixture、独立 v1 SceneView3D RFC、W25/W28 sprint DAG、`SceneView3DExtensionSchema`、scene source URL policy、invalid fixtures、`@gis-engine/scene3d` package boundary、scene command deterministic patch contract、loader-level resource load plan gate、mock 3D snapshot/query、MCP 3D context、release-runner 3D visual gate、adapter feasibility、alpha gate audit 和 `@gis-engine/scene3d-three-adapter` spike。当前 W21/W23 规划项已完成，W25-001/002/003/004/005/006、W27-001/002/003/004/005 与 W28-001 已提前关闭；W23 的 promotion readiness package 和 final gate 已完成，promotion evidence summaries 继续留在 extension-only context，不进入 public MCP context，stable `view.mode: "scene3d"` 仍保持 blocked。后续工作应只围绕后续 promotion step，不得直接进入 core renderer。
 
 ## 路线总览
 
@@ -34,7 +34,7 @@ decision_level: advisory
 
 | 排名 | 事项 | 得分 | 证据 | 行动 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | SceneView3D renderer evidence | future | W28-001 已创建独立 adapter spike package；真实 renderer visual evidence 仍缺 | 后续只在 adapter package 内实现 renderer snapshot/query/visual evidence，不接入 core runtime | medium |
+| 1 | SceneView3D promotion readiness | next | W22 evidence and beta gate are complete; W23 promotion-readiness package and gate are complete, but stable runtime remains blocked | execute the next explicit promotion step only after a future stable-runtime approval | medium |
 
 已完成并保留回归证据：
 
@@ -60,6 +60,7 @@ decision_level: advisory
 | SceneView3D loader resource gate | `validateSceneResourceLoadPlan` covers 3D Tiles JSON/model/texture/worker/timeout/missing-source/unsupported-asset diagnostics |
 | SceneView3D mock snapshot/query | `snapshotScene3DMock`、`queryScene3DMock`、pending resource diagnostics、blank-scene diagnostics、deterministic pick results |
 | SceneView3D MCP 3D context | `get_context_summary` / `explain_spec` output schema exposes extension-only source/layer/resource/snapshot/query summaries |
+| SceneView3D MCP promotion evidence decision | W23 keeps promotion evidence summaries out of public MCP context; `scene3d` stays extension-only |
 | SceneView3D release visual gate | `evaluateScene3DReleaseVisualGate`、`pnpm test:release:scene3d`、coordinator waiver and no-bypass deterministic evidence rules |
 | SceneView3D adapter feasibility | Official CesiumJS / Three.js / 3D Tiles evidence recommends a narrow Three.js + 3DTilesRendererJS adapter spike |
 | SceneView3D alpha gate audit | `sceneview3d-alpha-gate-audit-2026-05-18.md` conditional alpha pass; stable 3D runtime remains blocked |
@@ -70,7 +71,8 @@ decision_level: advisory
 
 1. W21/W23 当前规划项全部完成。
 2. SceneView3D v1 RFC 已拆成 [sprint-2026-W25-sceneview3d-v1.md](./sprint-2026-W25-sceneview3d-v1.md)，且 `TASK-2026W25-001/002/003/004/005/006`、`TASK-2026W27-001/002/003/004/005` 与 `TASK-2026W28-001` 已完成；后续 3D 工作必须按该 DAG 继续执行，不得直接进入 core renderer。
-3. SceneView3D renderer evidence 已拆成 [sprint-2026-W22-scene3d-renderer-evidence.md](./sprint-2026-W22-scene3d-renderer-evidence.md)；`TASK-2026W22-001/002/003/004/005` 已完成，beta readiness gate 也已跑通，后续 3D 工作只剩 stable runtime promotion 的后续决策，不得直接进入 core renderer。
+3. SceneView3D renderer evidence 已拆成 [sprint-2026-W22-scene3d-renderer-evidence.md](./sprint-2026-W22-scene3d-renderer-evidence.md)；`TASK-2026W22-001/002/003/004/005` 已完成，beta readiness gate 也已跑通。
+4. W23 已创建 [sprint-2026-W23-scene3d-promotion-readiness.md](./sprint-2026-W23-scene3d-promotion-readiness.md)，其 promotion readiness package 和 final gate 已完成，但 stable runtime 仍保持 blocked。
 
 ## Feature Spec 建议
 
@@ -82,4 +84,5 @@ decision_level: advisory
 | `docs/planning/feature-specs/fill-extrusion-lite-beta.md` | beta done / visual evidence done | experimental gate、MapLibre beta mapping、snapshot smoke、fallback diagnostics |
 | `docs/planning/feature-specs/scene3d-boundary.md` | boundary deepening done | SceneView3D、terrain、glTF、3D Tiles 边界与 snapshot 规则 |
 | `docs/planning/feature-specs/sceneview3d-v1-rfc.md` | RFC drafted / sprint split done | camera、sources、layers、resource policy、snapshot、query、commands |
+| `docs/planning/feature-specs/sceneview3d-promotion-readiness.md` | active rubric | W23 promotion evidence matrix、owner split、blockers、readiness states |
 | `docs/planning/feature-specs/command-conflict-replay-audit.md` | done | `baseRevision`、`traceId`、`author`、`reason`、`sourcePromptHash`、`SuggestedFix` |

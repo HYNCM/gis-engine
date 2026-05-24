@@ -1,5 +1,5 @@
 import { Type, type Static } from "@sinclair/typebox";
-import { DiagnosticCodes } from "../../diagnostics/codes.js";
+import { DiagnosticCodes, Scene3DStableRuntimeBlockerCodes } from "../../diagnostics/codes.js";
 
 const DiagnosticCodeSchema = Type.Union(Object.values(DiagnosticCodes).map((code) => Type.Literal(code)));
 
@@ -16,6 +16,7 @@ export const DiagnosticSchema = Type.Object(
   {
     severity: Type.Union([Type.Literal("error"), Type.Literal("warning"), Type.Literal("info")]),
     code: DiagnosticCodeSchema,
+    blockerCode: Type.Optional(Type.Union(Object.values(Scene3DStableRuntimeBlockerCodes).map((code) => Type.Literal(code)))),
     message: Type.String(),
     path: Type.Optional(Type.String()),
     relatedResources: Type.Optional(

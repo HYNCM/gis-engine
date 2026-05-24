@@ -1,4 +1,4 @@
-import type { DiagnosticCode } from "./diagnostics/codes.js";
+import type { DiagnosticCode, Scene3DStableRuntimeBlockerCode } from "./diagnostics/codes.js";
 
 export type JsonValue =
   | null
@@ -31,6 +31,7 @@ export interface RelatedResource {
 export interface Diagnostic {
   severity: "error" | "warning" | "info";
   code: DiagnosticCode;
+  blockerCode?: Scene3DStableRuntimeBlockerCode;
   message: string;
   path?: string;
   relatedResources?: RelatedResource[];

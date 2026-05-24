@@ -6,6 +6,7 @@ import { type SceneView3DExtension } from "@gis-engine/engine";
 import { evaluateScene3DReleaseVisualGate } from "../../packages/scene3d/src/index.js";
 import {
   buildScene3DThreeAdapterLoadPlan,
+  createScene3DThreeAdapterPromotionEvidenceSummary,
   createScene3DThreeAdapterRendererEvidence,
   createScene3DThreeAdapterRuntime,
   evaluateScene3DThreeAdapterSpike,
@@ -258,6 +259,99 @@ describe("SceneView3D Three.js adapter spike", () => {
         code: "RENDER.DESTROYED"
       })
     );
+  });
+
+  it("summarizes adapter promotion evidence without allowing stable promotion", async () => {
+    const runtime = createScene3DThreeAdapterRuntime(scene3dExtension(), {
+      estimates: {
+        tilesetJsonBytes: { "city-tiles": 512_000 },
+        modelBytes: { "station-model": 1_048_576 },
+        textureCount: { "terrain-dem": 1, "station-model": 4 },
+        textureBytes: { "terrain-dem": 262_144, "station-model": 2_097_152 },
+        workerCount: 1
+      }
+    });
+
+    const missingSummary = createScene3DThreeAdapterPromotionEvidenceSummary(runtime.spikeReport);
+    expect(missingSummary.decisionReady).toBe(false);
+    expect(missingSummary.stablePromotionAllowed).toBe(false);
+    expect(missingSummary.evidence.load.present).toBe(false);
+    expect(missingSummary.evidence.snapshot.present).toBe(false);
+    expect(missingSummary.evidence.query.present).toBe(false);
+    expect(missingSummary.evidence.rendererVisual.present).toBe(false);
+    expect(missingSummary.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: "CAPABILITY.UNSUPPORTED",
+        path: "/promotionEvidence/load"
+      })
+    );
+
+    const loadReport = await runtime.load();
+    const snapshot = await runtime.snapshot({
+      format: "data-url",
+      requireLoadedResources: true
+    });
+    const query = await runtime.query();
+    const rendererVisualEvidence = runtime.rendererEvidence({
+      capture: {
+        reportPath: "test-results/scene3d-three-adapter/report.json",
+        width: 800,
+        height: 600,
+        nonTransparentPixels: 240_000,
+        changedPixelsFromBackground: 120_000,
+        targetLayerPixels: {
+          "city-buildings": 42_000
+        },
+        consoleErrors: []
+      }
+    });
+    const summary = createScene3DThreeAdapterPromotionEvidenceSummary(runtime.spikeReport, {
+      loadReport,
+      snapshot,
+      query,
+      rendererVisualEvidence
+    });
+
+    expect(summary).toEqual(
+      expect.objectContaining({
+        kind: "Scene3DThreeAdapterPromotionEvidenceSummary",
+        stableViewMode: false,
+        runtimeSupported: false,
+        decisionReady: true,
+        stablePromotionAllowed: false
+      })
+    );
+    expect(summary.evidence.resourcePolicy).toEqual({
+      valid: true,
+      resourceCount: 4,
+      workerCount: 1,
+      diagnostics: { error: 0, warning: 0, info: 0 }
+    });
+    expect(summary.evidence.load).toEqual({
+      present: true,
+      loaded: true,
+      diagnostics: { error: 0, warning: 0, info: 1 }
+    });
+    expect(summary.evidence.snapshot).toEqual({
+      present: true,
+      passed: true,
+      pendingSourceCount: 0,
+      format: "data-url",
+      diagnostics: { error: 0, warning: 0, info: 0 }
+    });
+    expect(summary.evidence.query).toEqual({
+      present: true,
+      pickCount: 2,
+      diagnostics: { error: 0, warning: 0, info: 0 }
+    });
+    expect(summary.evidence.rendererVisual).toEqual({
+      present: true,
+      passed: true,
+      reportPath: "test-results/scene3d-three-adapter/report.json",
+      diagnostics: { error: 0, warning: 0, info: 0 }
+    });
+    expect(summary.diagnosticCounts.error).toBe(0);
   });
 
   it("keeps renderer evidence failed when the resource policy gate fails", () => {

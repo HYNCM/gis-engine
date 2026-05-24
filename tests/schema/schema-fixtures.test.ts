@@ -9,7 +9,7 @@ import basicGeoJson from "../fixtures/specs/valid/basic-geojson.map.json";
 import vectorTileUrl from "../fixtures/specs/valid/vector-tile-url.map.json";
 import fillExtrusionLite from "../fixtures/specs/valid/fill-extrusion-lite.map.json";
 import scene3dExtension from "../fixtures/specs/valid/scene3d-extension.map.json";
-import { validateSpec, type MapSpec } from "@gis-engine/engine";
+import { Scene3DStableRuntimeBlockerCodes, validateSpec, type MapSpec } from "@gis-engine/engine";
 
 describe("MapSpec fixtures", () => {
   it.each([
@@ -81,9 +81,21 @@ describe("MapSpec fixtures", () => {
     expect(report.valid).toBe(false);
     expect(report.diagnostics).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ code: "CAPABILITY.UNSUPPORTED", path: "/view/mode" }),
-        expect.objectContaining({ code: "CAPABILITY.UNSUPPORTED", path: "/capabilities/renderer" }),
-        expect.objectContaining({ code: "CAPABILITY.UNSUPPORTED", path: "/capabilities/dimensions" })
+        expect.objectContaining({
+          code: "CAPABILITY.UNSUPPORTED",
+          blockerCode: Scene3DStableRuntimeBlockerCodes.ViewMode,
+          path: "/view/mode"
+        }),
+        expect.objectContaining({
+          code: "CAPABILITY.UNSUPPORTED",
+          blockerCode: Scene3DStableRuntimeBlockerCodes.Renderer,
+          path: "/capabilities/renderer"
+        }),
+        expect.objectContaining({
+          code: "CAPABILITY.UNSUPPORTED",
+          blockerCode: Scene3DStableRuntimeBlockerCodes.Dimensions,
+          path: "/capabilities/dimensions"
+        })
       ])
     );
   });

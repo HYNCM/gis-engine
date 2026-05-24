@@ -76,6 +76,57 @@ export interface Scene3DThreeAdapterRendererEvidenceOptions {
   diagnostics?: Diagnostic[];
 }
 
+export interface Scene3DThreeAdapterPromotionEvidenceOptions {
+  loadReport?: Scene3DThreeAdapterRuntimeLoadReport;
+  snapshot?: Scene3DMockSnapshotResult;
+  query?: Scene3DQueryResult;
+  rendererVisualEvidence?: Scene3DRendererVisualEvidence;
+  diagnostics?: Diagnostic[];
+}
+
+export interface Scene3DThreeAdapterPromotionEvidenceSummary {
+  kind: "Scene3DThreeAdapterPromotionEvidenceSummary";
+  version: "0.1";
+  adapter: "three";
+  stableViewMode: false;
+  runtimeSupported: false;
+  decisionReady: boolean;
+  stablePromotionAllowed: false;
+  evidence: {
+    resourcePolicy: {
+      valid: boolean;
+      resourceCount: number;
+      workerCount: number;
+      diagnostics: DiagnosticCounts;
+    };
+    load: {
+      present: boolean;
+      loaded: boolean;
+      diagnostics: DiagnosticCounts;
+    };
+    snapshot: {
+      present: boolean;
+      passed: boolean;
+      pendingSourceCount: number;
+      format?: "png" | "data-url";
+      diagnostics: DiagnosticCounts;
+    };
+    query: {
+      present: boolean;
+      pickCount: number;
+      diagnostics: DiagnosticCounts;
+    };
+    rendererVisual: {
+      present: boolean;
+      passed: boolean;
+      reportPath?: string;
+      diagnostics: DiagnosticCounts;
+    };
+  };
+  diagnostics: Diagnostic[];
+  diagnosticCounts: DiagnosticCounts;
+}
+
 export interface Scene3DThreeAdapterRuntimeLoadReport {
   kind: "Scene3DThreeAdapterRuntimeLoadReport";
   version: "0.1";
@@ -177,6 +228,97 @@ export function createScene3DThreeAdapterRendererEvidence(
     renderer: "scene3d-three-adapter",
     ...(capture ? { reportPath: capture.reportPath } : {}),
     diagnostics
+  };
+}
+
+export function createScene3DThreeAdapterPromotionEvidenceSummary(
+  spikeReport: Scene3DThreeAdapterSpikeReport,
+  options: Scene3DThreeAdapterPromotionEvidenceOptions = {}
+): Scene3DThreeAdapterPromotionEvidenceSummary {
+  const loadDiagnostics = options.loadReport
+    ? [...options.loadReport.diagnostics]
+    : [missingPromotionEvidenceDiagnostic("load")];
+  if (options.loadReport && !options.loadReport.loaded) {
+    loadDiagnostics.push(incompletePromotionEvidenceDiagnostic("load", "Runtime load evidence is not loaded."));
+  }
+
+  const snapshotDiagnostics = options.snapshot
+    ? [...options.snapshot.diagnostics]
+    : [missingPromotionEvidenceDiagnostic("snapshot")];
+  if (options.snapshot && !options.snapshot.passed) {
+    snapshotDiagnostics.push(incompletePromotionEvidenceDiagnostic("snapshot", "Snapshot evidence did not pass."));
+  }
+
+  const queryDiagnostics = options.query ? [...options.query.diagnostics] : [missingPromotionEvidenceDiagnostic("query")];
+  const rendererVisualDiagnostics = options.rendererVisualEvidence
+    ? [...(options.rendererVisualEvidence.diagnostics ?? [])]
+    : [missingPromotionEvidenceDiagnostic("rendererVisual")];
+  if (options.rendererVisualEvidence && !options.rendererVisualEvidence.passed) {
+    rendererVisualDiagnostics.push(
+      incompletePromotionEvidenceDiagnostic("rendererVisual", "Renderer visual evidence did not pass.")
+    );
+  }
+
+  const diagnostics = [
+    ...spikeReport.diagnostics,
+    ...loadDiagnostics,
+    ...snapshotDiagnostics,
+    ...queryDiagnostics,
+    ...rendererVisualDiagnostics,
+    ...(options.diagnostics ?? [])
+  ];
+  const decisionReady =
+    spikeReport.resourceReport.valid &&
+    options.loadReport?.loaded === true &&
+    options.snapshot?.passed === true &&
+    options.query !== undefined &&
+    !hasErrorDiagnostics(queryDiagnostics) &&
+    options.rendererVisualEvidence?.passed === true &&
+    !hasErrorDiagnostics(diagnostics);
+
+  const rendererVisual = {
+    present: options.rendererVisualEvidence !== undefined,
+    passed: options.rendererVisualEvidence?.passed ?? false,
+    ...(options.rendererVisualEvidence?.reportPath ? { reportPath: options.rendererVisualEvidence.reportPath } : {}),
+    diagnostics: countDiagnostics(rendererVisualDiagnostics)
+  };
+
+  return {
+    kind: "Scene3DThreeAdapterPromotionEvidenceSummary",
+    version: "0.1",
+    adapter: "three",
+    stableViewMode: false,
+    runtimeSupported: false,
+    decisionReady,
+    stablePromotionAllowed: false,
+    evidence: {
+      resourcePolicy: {
+        valid: spikeReport.resourceReport.valid,
+        resourceCount: spikeReport.loadPlan.resources?.length ?? 0,
+        workerCount: spikeReport.loadPlan.workerCount ?? 0,
+        diagnostics: countDiagnostics(spikeReport.resourceReport.diagnostics)
+      },
+      load: {
+        present: options.loadReport !== undefined,
+        loaded: options.loadReport?.loaded ?? false,
+        diagnostics: countDiagnostics(loadDiagnostics)
+      },
+      snapshot: {
+        present: options.snapshot !== undefined,
+        passed: options.snapshot?.passed ?? false,
+        pendingSourceCount: options.snapshot?.pendingSourceIds.length ?? 0,
+        ...(options.snapshot ? { format: options.snapshot.summary.format } : {}),
+        diagnostics: countDiagnostics(snapshotDiagnostics)
+      },
+      query: {
+        present: options.query !== undefined,
+        pickCount: options.query?.picks.length ?? 0,
+        diagnostics: countDiagnostics(queryDiagnostics)
+      },
+      rendererVisual
+    },
+    diagnostics,
+    diagnosticCounts: countDiagnostics(diagnostics)
   };
 }
 
@@ -421,6 +563,38 @@ function validateRendererCapture(capture: Scene3DThreeAdapterVisualCapture): Dia
   }
 
   return diagnostics;
+}
+
+function missingPromotionEvidenceDiagnostic(component: string): Diagnostic {
+  return {
+    severity: "error",
+    code: DiagnosticCodes.CapabilityUnsupported,
+    message: `Scene3DThreeAdapter promotion evidence is missing ${component} evidence.`,
+    path: `/promotionEvidence/${component}`,
+    fix: {
+      kind: "manual",
+      confidence: "high",
+      message: "Collect load, snapshot, query, and renderer visual evidence before requesting a promotion decision."
+    }
+  };
+}
+
+function incompletePromotionEvidenceDiagnostic(component: string, message: string): Diagnostic {
+  return {
+    severity: "error",
+    code: DiagnosticCodes.RenderAdapterError,
+    message,
+    path: `/promotionEvidence/${component}`,
+    fix: {
+      kind: "manual",
+      confidence: "high",
+      message: "Fix the failing evidence component before requesting a promotion decision."
+    }
+  };
+}
+
+function hasErrorDiagnostics(diagnostics: Diagnostic[]): boolean {
+  return diagnostics.some((diagnostic) => diagnostic.severity === "error");
 }
 
 function countDiagnostics(diagnostics: Diagnostic[]): DiagnosticCounts {

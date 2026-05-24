@@ -1,8 +1,8 @@
 ---
 agent: task-distributor
 period: 2026-W21
-generated_at: 2026-05-17T16:35:00Z
-repo_revision: "acdf28e"
+generated_at: 2026-05-24T08:48:05Z
+repo_revision: "cef340d"
 inputs:
   - docs/archive/2026-05-18/planning/sprint-2026-W21.md
   - docs/planning/sprint-2026-W25-sceneview3d-v1.md
@@ -18,6 +18,26 @@ decision_level: advisory
 v1 RFC 已拆成 W25/W28 专项 sprint，且 W25 的 schema、fixtures、scene
 commands、resource load plan gate、package boundary、mock snapshot/query 和 MCP 3D context 已提前完成。下面的 W21/W23 理想燃尽表仅保留
 为计划基线；真实状态以“2026-05-17 执行快照”和“2026-05-18 follow-up”为准。
+
+## W23 promotion readiness 计划快照
+
+W23 将现有 SceneView3D 证据整理成 promotion-ready 决策包，不启用 stable
+`view.mode: "scene3d"`，不把 renderer 依赖带进 core runtime。以下任务由
+task-distributor 按 owner registry 分配。
+
+| Sprint | 日期 | Planned hours | P0/P1 hours | P2 hours |
+| --- | --- | ---: | ---: | ---: |
+| W23-W24 | 2026-06-01 ~ 2026-06-12 | 84 | 68 | 16 |
+
+| id | title | priority | owner | status | acceptance |
+| --- | --- | --- | --- | --- | --- |
+| TASK-2026W23-001 | Publish SceneView3D promotion readiness rubric | P0 | `@product-strategist` | done | `docs/planning/feature-specs/sceneview3d-promotion-readiness.md` defines evidence matrix, owners, blockers, states, and thresholds |
+| TASK-2026W23-002 | Expand browser runner with promotion matrix evidence | P1 | `@qa-agent` | done | runner records frame, console, renderer diagnostics, and promotion matrix readiness evidence |
+| TASK-2026W23-003 | Add adapter-side promotion evidence summary report | P1 | `@adapter-agent` | done | `createScene3DThreeAdapterPromotionEvidenceSummary` consolidates load-plan, resource-report, runtime, snapshot, query, and release evidence without enabling stable runtime |
+| TASK-2026W23-004 | Define stable-runtime guardrail diagnostics and blocker codes | P1 | `@engine-agent` | done | `CAPABILITY.UNSUPPORTED` diagnostics now carry SceneView3D stable-runtime blocker codes for view mode, renderer, and dimensions |
+| TASK-2026W23-005 | Decide whether promotion evidence summaries enter MCP context | P2 | `@ai-agent` | done | `docs/reviews/sceneview3d-mcp-promotion-evidence-decision-2026-05-23.md` keeps promotion summaries out of MCP context for W23 |
+| TASK-2026W23-006 | Update roadmap, debt report, and release checklist with the promotion decision | P2 | `@docs-agent` | done | public docs reflect the decision and residual risk; promotion evidence summaries stay out of public MCP context |
+| TASK-2026W23-007 | Run promotion gate review and issue go/no-go decision | P1 | `@quality-guardian` | done | gate report at `docs/reviews/sceneview3d-promotion-gate-2026-05-24.md` issues no-go for stable runtime while accepting the promotion-readiness package |
 
 ## 初始容量
 
