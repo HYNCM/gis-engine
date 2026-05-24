@@ -61,14 +61,14 @@ jobs:
           echo "period: ${WEEK}" >> "${REPORT_PATH}"
           echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "${REPORT_PATH}"
           echo "repo_revision: \"${{ github.sha }}\"" >> "${REPORT_PATH}"
-          echo "decision_level: advisory" >> "${REPORT_PATH}"
+          echo "decision_level: info" >> "${REPORT_PATH}"
           echo "---" >> "${REPORT_PATH}"
           echo "" >> "${REPORT_PATH}"
           echo "# Competitor Updates: ${WEEK}" >> "${REPORT_PATH}"
           echo "" >> "${REPORT_PATH}"
           echo "## Executive Summary" >> "${REPORT_PATH}"
           echo "" >> "${REPORT_PATH}"
-          echo "> ⚠️ 本报告为自动化模板。请由 competitive-intel 智能体填充实质内容。" >> "${REPORT_PATH}"
+          echo "> ⚠️ 本报告为 automation-generated evidence/template，不是已完成的 competitive-intel 审查；补充 dated evidence、影响、行动和置信度前不得作为 advisory/blocking 决策依据。" >> "${REPORT_PATH}"
           echo "" >> "${REPORT_PATH}"
           echo "## New Releases" >> "${REPORT_PATH}"
           echo "" >> "${REPORT_PATH}"
@@ -82,13 +82,15 @@ jobs:
           echo "" >> "${REPORT_PATH}"
           echo "<!-- 待填充 -->" >> "${REPORT_PATH}"
 
-      - name: 提交竞品报告
-        uses: stefanzweifel/git-auto-commit-action@v5
+          mkdir -p "weekly-artifacts/$(dirname "${REPORT_PATH}")"
+          cp "${REPORT_PATH}" "weekly-artifacts/${REPORT_PATH}"
+
+      - name: 上传竞品报告 artifact
+        uses: actions/upload-artifact@v4
         with:
-          commit_message: "docs: weekly competitor updates for ${{ steps.report.outputs.path }}"
-          file_pattern: "docs/research/competitor-updates-*.md"
-          commit_user_name: "competitive-intel[bot]"
-          commit_user_email: "competitive-intel[bot]@gis-engine.dev"
+          name: weekly-competitive-intel
+          path: weekly-artifacts/
+          if-no-files-found: error
 
   # ── Job 2: 产品策略 ──
   product-strategist:
@@ -127,20 +129,22 @@ jobs:
           echo "period: ${DATE}" >> docs/planning/technical-debt-report.md
           echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> docs/planning/technical-debt-report.md
           echo "repo_revision: \"${{ github.sha }}\"" >> docs/planning/technical-debt-report.md
-          echo "decision_level: advisory" >> docs/planning/technical-debt-report.md
+          echo "decision_level: info" >> docs/planning/technical-debt-report.md
           echo "---" >> docs/planning/technical-debt-report.md
           echo "" >> docs/planning/technical-debt-report.md
           echo "# Technical Debt Report: ${DATE}" >> docs/planning/technical-debt-report.md
           echo "" >> docs/planning/technical-debt-report.md
-          echo "> ⚠️ 自动生成模板，请由 product-strategist 智能体更新实质内容。" >> docs/planning/technical-debt-report.md
+          echo "> ⚠️ 本报告为 automation-generated evidence/template，不是已完成的 product-strategist 审查；补充证据、影响、行动和置信度前不得作为 advisory/blocking 决策依据。" >> docs/planning/technical-debt-report.md
 
-      - name: 提交技术债务报告
-        uses: stefanzweifel/git-auto-commit-action@v5
+          mkdir -p weekly-artifacts/docs/planning
+          cp docs/planning/technical-debt-report.md weekly-artifacts/docs/planning/technical-debt-report.md
+
+      - name: 上传技术债务报告 artifact
+        uses: actions/upload-artifact@v4
         with:
-          commit_message: "docs: weekly technical debt report update"
-          file_pattern: "docs/planning/technical-debt-report.md"
-          commit_user_name: "product-strategist[bot]"
-          commit_user_email: "product-strategist[bot]@gis-engine.dev"
+          name: weekly-product-strategist
+          path: weekly-artifacts/
+          if-no-files-found: error
 
   # ── Job 3: 协调者 ──
   coordinator:
@@ -162,20 +166,22 @@ jobs:
           echo "period: ${WEEK}" >> docs/planning/weekly-digest.md
           echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> docs/planning/weekly-digest.md
           echo "repo_revision: \"${{ github.sha }}\"" >> docs/planning/weekly-digest.md
-          echo "decision_level: advisory" >> docs/planning/weekly-digest.md
+          echo "decision_level: info" >> docs/planning/weekly-digest.md
           echo "---" >> docs/planning/weekly-digest.md
           echo "" >> docs/planning/weekly-digest.md
           echo "# Weekly Digest: ${WEEK}" >> docs/planning/weekly-digest.md
           echo "" >> docs/planning/weekly-digest.md
-          echo "> ⚠️ 自动生成模板，请由 coordinator 智能体汇总各 agent 报告。" >> docs/planning/weekly-digest.md
+          echo "> ⚠️ 本报告为 automation-generated evidence/template，不是已完成的 coordinator 周报；汇总各 agent 的实质报告前不得作为 advisory/blocking 决策依据。" >> docs/planning/weekly-digest.md
 
-      - name: 提交周报
-        uses: stefanzweifel/git-auto-commit-action@v5
+          mkdir -p weekly-artifacts/docs/planning
+          cp docs/planning/weekly-digest.md weekly-artifacts/docs/planning/weekly-digest.md
+
+      - name: 上传周报 artifact
+        uses: actions/upload-artifact@v4
         with:
-          commit_message: "docs: weekly digest for ${{ github.event.inputs.week || 'current week' }}"
-          file_pattern: "docs/planning/weekly-digest.md"
-          commit_user_name: "coordinator[bot]"
-          commit_user_email: "coordinator[bot]@gis-engine.dev"
+          name: weekly-coordinator
+          path: weekly-artifacts/
+          if-no-files-found: error
 
   # ── Job 4: 任务分配 ──
   task-distributor:
@@ -191,10 +197,39 @@ jobs:
           cat docs/planning/dependency-graph.md >> docs/planning/dependency-graph.md.new
           mv docs/planning/dependency-graph.md.new docs/planning/dependency-graph.md
 
-      - name: 提交依赖图更新
+          mkdir -p weekly-artifacts/docs/planning
+          cp docs/planning/dependency-graph.md weekly-artifacts/docs/planning/dependency-graph.md
+          cp docs/planning/task-burndown.md weekly-artifacts/docs/planning/task-burndown.md
+
+      - name: 上传任务规划 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-task-distributor
+          path: weekly-artifacts/
+          if-no-files-found: error
+
+  # ── Job 5: 单写入者序列化提交 ──
+  coordinator-commit:
+    name: "coordinator: 序列化提交 weekly artifacts"
+    runs-on: ubuntu-latest
+    needs:
+      - competitive-intel
+      - product-strategist
+      - coordinator
+      - task-distributor
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 下载 weekly artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: .
+          merge-multiple: true
+
+      - name: 提交 weekly artifacts
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "docs: weekly task burndown and dependency graph update"
-          file_pattern: "docs/planning/task-burndown.md,docs/planning/dependency-graph.md"
-          commit_user_name: "task-distributor[bot]"
-          commit_user_email: "task-distributor[bot]@gis-engine.dev"
+          commit_message: "docs: weekly agent artifacts for ${{ github.event.inputs.week || 'current week' }}"
+          file_pattern: "docs/research/competitor-updates-*.md docs/planning/technical-debt-report.md docs/planning/weekly-digest.md docs/planning/task-burndown.md docs/planning/dependency-graph.md"
+          commit_user_name: "coordinator[bot]"
+          commit_user_email: "coordinator[bot]@gis-engine.dev"

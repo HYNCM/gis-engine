@@ -42,16 +42,21 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: 生成紧急告警
+        env:
+          ALERT_REASON: ${{ github.event.inputs.reason }}
+          ALERT_AFFECTED: ${{ github.event.inputs.affected }}
+          ALERT_OWNER: ${{ github.event.inputs.owner }}
+          ALERT_ROLLBACK_PLAN: ${{ github.event.inputs.rollback_plan }}
         run: |
           DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           mkdir -p docs/alerts
 
-          cat > docs/alerts/critical-gaps.md << 'ALERTEOF'
+          cat > docs/alerts/critical-gaps.md << ALERTEOF
           ---
           agent: coordinator
           period: emergency
           generated_at: ${DATE}
-          repo_revision: "${{ github.sha }}"
+          repo_revision: "${GITHUB_SHA}"
           inputs:
             - manual_trigger
           decision_level: emergency
@@ -60,10 +65,10 @@ jobs:
           # Critical Gap Alert
 
           - **触发时间**: ${DATE}
-          - **原因**: ${{ github.event.inputs.reason }}
-          - **影响**: ${{ github.event.inputs.affected }}
-          - **Owner**: ${{ github.event.inputs.owner }}
-          - **回滚方案**: ${{ github.event.inputs.rollback_plan }}
+          - **原因**: ${ALERT_REASON}
+          - **影响**: ${ALERT_AFFECTED}
+          - **Owner**: ${ALERT_OWNER}
+          - **回滚方案**: ${ALERT_ROLLBACK_PLAN}
           - **有效期**: 48 小时内
 
           ## 紧急门禁要求

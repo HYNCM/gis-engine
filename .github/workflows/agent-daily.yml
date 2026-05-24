@@ -79,10 +79,12 @@ jobs:
           echo "  - AGENTS.md" >> "${REPORT}"
           echo "  - package.json" >> "${REPORT}"
           echo "owner: \"@code-reviewer\"" >> "${REPORT}"
-          echo "decision_level: blocking" >> "${REPORT}"
+          echo "decision_level: info" >> "${REPORT}"
           echo "---" >> "${REPORT}"
           echo "" >> "${REPORT}"
           echo "# code-reviewer 每日审计报告" >> "${REPORT}"
+          echo "" >> "${REPORT}"
+          echo "> ⚠️ 本报告为 automation-generated machine evidence/template，不是已完成的 code-reviewer 审查；补充实质 diff 审计前不得作为 advisory/blocking 决策依据。" >> "${REPORT}"
           echo "" >> "${REPORT}"
           echo "**触发**: ${{ github.event_name }}" >> "${REPORT}"
           echo "" >> "${REPORT}"
@@ -143,10 +145,12 @@ jobs:
           echo "period: ${DATE}" >> docs/reviews/quality-gate-${DATE}.md
           echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> docs/reviews/quality-gate-${DATE}.md
           echo "repo_revision: \"${{ github.sha }}\"" >> docs/reviews/quality-gate-${DATE}.md
-          echo "decision_level: blocking" >> docs/reviews/quality-gate-${DATE}.md
+          echo "decision_level: info" >> docs/reviews/quality-gate-${DATE}.md
           echo "---" >> docs/reviews/quality-gate-${DATE}.md
           echo "" >> docs/reviews/quality-gate-${DATE}.md
           echo "# Quality Gate: ${DATE}" >> docs/reviews/quality-gate-${DATE}.md
+          echo "" >> docs/reviews/quality-gate-${DATE}.md
+          echo "> ⚠️ 本报告为 automation-generated machine evidence/template，不是已完成的 quality-guardian gate；补充完整门禁判定前不得作为 blocking merge/release 决策依据。" >> docs/reviews/quality-gate-${DATE}.md
           echo "" >> docs/reviews/quality-gate-${DATE}.md
           echo "## Gate Results" >> docs/reviews/quality-gate-${DATE}.md
           echo "" >> docs/reviews/quality-gate-${DATE}.md

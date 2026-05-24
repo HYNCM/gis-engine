@@ -33,7 +33,7 @@ const AGENT_REGISTRY = {
     outputDir: "docs/planning",
     outputFile: "weekly-digest.md",
     gates: [], // coordinator 不直接跑测试，而是汇总
-    decisionLevel: "advisory",
+    gateDecisionLevel: "advisory",
   },
   "competitive-intel": {
     role: "evidence-first competitor and standards analyst",
@@ -41,7 +41,7 @@ const AGENT_REGISTRY = {
     outputDir: "docs/research",
     outputFile: (period) => `competitor-updates-${period}.md`,
     gates: [],
-    decisionLevel: "advisory",
+    gateDecisionLevel: "advisory",
   },
   "code-reviewer": {
     role: "daily diff and PR auditor",
@@ -49,7 +49,7 @@ const AGENT_REGISTRY = {
     outputDir: "docs/reviews",
     outputFile: (period) => `daily-audit-${period}.md`,
     gates: ["pnpm build:schema", "pnpm check"],
-    decisionLevel: "blocking",
+    gateDecisionLevel: "blocking",
   },
   "product-strategist": {
     role: "roadmap and feature-priority owner",
@@ -57,7 +57,7 @@ const AGENT_REGISTRY = {
     outputDir: "docs/planning",
     outputFile: "monthly-roadmap.md",
     gates: [],
-    decisionLevel: "advisory",
+    gateDecisionLevel: "advisory",
   },
   "task-distributor": {
     role: "planning-to-execution decomposition agent",
@@ -65,7 +65,7 @@ const AGENT_REGISTRY = {
     outputDir: "docs/planning",
     outputFile: "task-burndown.md",
     gates: [],
-    decisionLevel: "advisory",
+    gateDecisionLevel: "advisory",
   },
   "quality-guardian": {
     role: "final merge and release gate",
@@ -78,15 +78,16 @@ const AGENT_REGISTRY = {
       "pnpm test:snapshot:smoke",
       "pnpm test:release:scene3d",
     ],
-    decisionLevel: "blocking",
+    gateDecisionLevel: "blocking",
   },
   "docs-agent": {
     role: "documentation ledger and release notes",
     period: "weekly",
+    cadences: ["daily", "weekly"],
     outputDir: "docs/reviews",
     outputFile: (period) => `documentation-audit-${period}.md`,
     gates: [],
-    decisionLevel: "advisory",
+    gateDecisionLevel: "advisory",
   },
   "adapter-agent": {
     role: "renderer adapter implementation",
@@ -97,7 +98,7 @@ const AGENT_REGISTRY = {
       "pnpm --filter @gis-engine/scene3d-three-adapter build",
       "pnpm test:adapter",
     ],
-    decisionLevel: "advisory",
+    gateDecisionLevel: "advisory",
   },
   "qa-agent": {
     role: "visual evidence and release runner",
@@ -109,7 +110,7 @@ const AGENT_REGISTRY = {
       "pnpm test:release:scene3d",
       "pnpm test:perf:nightly",
     ],
-    decisionLevel: "advisory",
+    gateDecisionLevel: "advisory",
   },
   "ai-agent": {
     role: "MCP tools and AI contracts",
@@ -117,7 +118,7 @@ const AGENT_REGISTRY = {
     outputDir: "docs/reviews",
     outputFile: (period) => `ai-contract-audit-${period}.md`,
     gates: ["pnpm test:ai"],
-    decisionLevel: "advisory",
+    gateDecisionLevel: "advisory",
   },
   "engine-agent": {
     role: "public schemas, commands, diagnostics",
@@ -132,7 +133,7 @@ const AGENT_REGISTRY = {
       "pnpm test:patch",
       "pnpm test:runtime",
     ],
-    decisionLevel: "advisory",
+    gateDecisionLevel: "advisory",
   },
 };
 
@@ -174,9 +175,33 @@ function getGitSha() {
   }
 }
 
+/** 自动化模板默认只是 info；只有失败的 blocking 机器门禁可升级为 blocking。 */
+function getReportDecisionLevel(agentDef, gateResults) {
+  if (!gateResults || gateResults.length === 0) {
+    return "info";
+  }
+  if (
+    agentDef.gateDecisionLevel === "blocking" &&
+    gateResults.some((result) => result.status === "failed")
+  ) {
+    return "blocking";
+  }
+  return "info";
+}
+
+/** 避免门禁输出破坏 Markdown 表格或详情块。 */
+function formatGateOutput(output) {
+  const trimmed = String(output || "").trim();
+  if (!trimmed) {
+    return "(no output captured)";
+  }
+  return trimmed.replace(/```/g, "'''");
+}
+
 /** 生成 YAML front matter */
-function generateFrontMatter(agentName, agentDef, period) {
+function generateFrontMatter(agentName, agentDef, period, gateResults) {
   const now = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
+  const decisionLevel = getReportDecisionLevel(agentDef, gateResults);
   return [
     "---",
     `agent: ${agentName}`,
@@ -187,7 +212,7 @@ function generateFrontMatter(agentName, agentDef, period) {
     `  - AGENTS.md`,
     `  - README.md`,
     `owner: "@${agentName}"`,
-    `decision_level: ${agentDef.decisionLevel}`,
+    `decision_level: ${decisionLevel}`,
     "---",
     "",
   ].join("\n");
@@ -218,19 +243,22 @@ function runGates(gates) {
 
 /** 生成报告内容 */
 function generateReport(agentName, agentDef, period, gateResults) {
-  const lines = [generateFrontMatter(agentName, agentDef, period)];
+  const lines = [generateFrontMatter(agentName, agentDef, period, gateResults)];
 
   lines.push(`# ${agentDef.role}: ${period}`);
   lines.push("");
-  lines.push(`## 执行摘要`);
+  lines.push("## Automation Notice");
   lines.push("");
   lines.push(
-    `> ⚠️ 此报告由 agent-runner 自动生成模板。请由 **${agentName}** 智能体审查并填充实质内容。`
+    `This file is automation-generated evidence/template output from \`scripts/agent-runner.mjs\`. It is not a completed ${agentName} specialist review.`
+  );
+  lines.push(
+    "Treat the front matter `decision_level` as `info` unless this file records a failed blocking gate below. An agent or human must add substantive analysis before this report can support advisory, release, or merge decisions."
   );
   lines.push("");
 
   if (gateResults && gateResults.length > 0) {
-    lines.push("## 门禁结果");
+    lines.push("## Machine Gate Evidence");
     lines.push("");
     lines.push("| Gate | Status |");
     lines.push("| --- | --- |");
@@ -238,16 +266,40 @@ function generateReport(agentName, agentDef, period, gateResults) {
       lines.push(`| \`${r.gate}\` | ${r.status === "passed" ? "✅" : "❌"} |`);
     }
     lines.push("");
+    lines.push("<details>");
+    lines.push("<summary>Captured gate output excerpts</summary>");
+    lines.push("");
+    for (const r of gateResults) {
+      lines.push(`### ${r.gate}`);
+      lines.push("");
+      lines.push(`Status: \`${r.status}\``);
+      lines.push("");
+      lines.push("```txt");
+      lines.push(formatGateOutput(r.output));
+      lines.push("```");
+      lines.push("");
+    }
+    lines.push("</details>");
+    lines.push("");
+  } else {
+    lines.push("## Machine Gate Evidence");
+    lines.push("");
+    lines.push("No gates were run by this invocation. This report is template-only evidence.");
+    lines.push("");
   }
 
-  lines.push("## 发现与建议");
+  lines.push("## Specialist Analysis Required");
   lines.push("");
-  lines.push("<!-- 待智能体填充 -->");
+  lines.push(
+    "<!-- Add evidence-backed findings, impact, required actions, owners, and confidence before using this as an advisory or blocking agent report. -->"
+  );
   lines.push("");
 
-  lines.push("## 下游交接");
+  lines.push("## Handoff Required");
   lines.push("");
-  lines.push("<!-- 待智能体填充 -->");
+  lines.push(
+    "<!-- Add accepted follow-up tasks, downstream owners, and target artifacts after specialist review. -->"
+  );
   lines.push("");
 
   return lines.join("\n");
@@ -270,9 +322,9 @@ Agent Runner — GIS Engine 多智能体调用脚本
 
 选项:
   --period <str>   指定周期 (如 2026-05-24, 2026-W22, 2026-05)
-  --dry-run        仅生成报告模板，不运行门禁
+  --dry-run        预览报告目标，不运行门禁或写文件
   --all            运行所有智能体（与 --daily / --weekly 搭配使用）
-  --daily          筛选每日智能体
+  --daily          筛选每日 cadence 智能体（code-reviewer、quality-guardian、docs-agent）
   --weekly         筛选每周智能体
 
 示例:
@@ -301,14 +353,15 @@ Agent Runner — GIS Engine 多智能体调用脚本
 
   // 确定要运行的智能体列表
   let agentsToRun = [];
+  let periodType = "all";
   if (agentName === "all" || options.all) {
     // 按当前周期筛选
-    let periodType = "all";
     if (options.daily) periodType = "daily";
     else if (options.weekly) periodType = "weekly";
-    agentsToRun = Object.entries(AGENT_REGISTRY).filter(
-      ([, def]) => periodType === "all" || def.period === periodType
-    );
+    agentsToRun = Object.entries(AGENT_REGISTRY).filter(([, def]) => {
+      if (periodType === "all") return true;
+      return def.period === periodType || def.cadences?.includes(periodType);
+    });
   } else {
     const def = AGENT_REGISTRY[agentName];
     if (!def) {
@@ -331,8 +384,8 @@ Agent Runner — GIS Engine 多智能体调用脚本
     // 确定周期
     let period = options.period;
     if (!period) {
-      if (def.period === "daily") period = getDateStr();
-      else if (def.period === "weekly") period = getWeekStr();
+      if (periodType === "daily" || def.period === "daily") period = getDateStr();
+      else if (periodType === "weekly" || def.period === "weekly") period = getWeekStr();
       else if (def.period === "monthly") period = getMonthStr();
       else period = getDateStr();
     }
@@ -349,22 +402,20 @@ Agent Runner — GIS Engine 多智能体调用脚本
       for (const r of gateResults) {
         const icon = r.status === "passed" ? "✅" : "❌";
         console.log(`     ${icon} ${r.gate}`);
-        if (def.decisionLevel === "blocking" && r.status === "failed") {
+        if (def.gateDecisionLevel === "blocking" && r.status === "failed") {
           hasBlockingFailure = true;
         }
       }
     }
 
-    // 生成报告
-    const report = generateReport(name, def, period, gateResults);
-
-    // 写入输出文件（dry-run 模式下不覆盖已有内容）
+    // 写入输出文件
     const outputFile =
       typeof def.outputFile === "function" ? def.outputFile(period) : def.outputFile;
     const outputPath = join(ROOT, def.outputDir, outputFile);
-    if (options.dryRun && existsSync(outputPath)) {
-      console.log(`   📄 (dry-run) 跳过已有文件: ${outputPath}`);
+    if (options.dryRun) {
+      console.log(`   📄 (dry-run) 将生成报告: ${outputPath}`);
     } else {
+      const report = generateReport(name, def, period, gateResults);
       mkdirSync(dirname(outputPath), { recursive: true });
       writeFileSync(outputPath, report, "utf-8");
       console.log(`   📄 报告已生成: ${outputPath}`);

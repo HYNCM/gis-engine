@@ -14,7 +14,7 @@
 | {{PERIOD}} | 报告周期 | 2026-05-24, 2026-W22 |
 | {{GENERATED_AT}} | 生成时间 ISO 8601 | 2026-05-24T08:00:00Z |
 | {{REPO_REVISION}} | 仓库版本 | cef340d |
-| {{DECISION_LEVEL}} | 决策级别 | info, advisory, blocking, emergency |
+| {{DECISION_LEVEL}} | 决策级别；agent-runner 自动生成的模板默认为 info，只有记录了失败的 blocking 机器门禁时才可标为 blocking | info, blocking |
 | {{GATE_RESULTS}} | 门禁运行结果 | 见下方格式 |
 | {{TIMESTAMP}} | Unix 时间戳 | 1716537600 |
 
@@ -28,6 +28,8 @@
 ```
 
 ## 报告类型
+
+agent-runner 生成的文件是 automation-generated evidence/template，不等同于已完成的 specialist review。报告必须由对应智能体或人工补充实质分析、影响、行动项和置信度后，才能作为 advisory、blocking、merge 或 release 决策依据。
 
 ### 1. 每日审计报告 (code-reviewer)
 
