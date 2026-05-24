@@ -25,6 +25,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: agent-monthly-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   # ── Job 1: 月度路线图 ──
   monthly-roadmap:
@@ -65,10 +69,12 @@ jobs:
           git diff --stat HEAD~30..HEAD 2>/dev/null || echo "(不足 30 天历史)"
 
       - name: 生成月度路线图模板
+        env:
+          MONTH_OVERRIDE: ${{ github.event.inputs.month }}
         run: |
           MONTH=$(date -u +%Y-%m)
-          if [ -n "${{ github.event.inputs.month }}" ]; then
-            MONTH="${{ github.event.inputs.month }}"
+          if [ -n "${MONTH_OVERRIDE}" ]; then
+            MONTH="${MONTH_OVERRIDE}"
           fi
 
           echo "---" > docs/planning/monthly-roadmap.md
@@ -76,20 +82,22 @@ jobs:
           echo "period: ${MONTH}" >> docs/planning/monthly-roadmap.md
           echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> docs/planning/monthly-roadmap.md
           echo "repo_revision: \"${{ github.sha }}\"" >> docs/planning/monthly-roadmap.md
-          echo "decision_level: advisory" >> docs/planning/monthly-roadmap.md
+          echo "decision_level: info" >> docs/planning/monthly-roadmap.md
           echo "---" >> docs/planning/monthly-roadmap.md
           echo "" >> docs/planning/monthly-roadmap.md
           echo "# Monthly Roadmap: ${MONTH}" >> docs/planning/monthly-roadmap.md
           echo "" >> docs/planning/monthly-roadmap.md
-          echo "> ⚠️ 自动生成模板，请由 product-strategist 智能体更新实质内容。" >> docs/planning/monthly-roadmap.md
+          echo "> ⚠️ 本报告为 automation-generated evidence/template，不是已完成的 product-strategist 路线图；补充证据、影响、行动和置信度前不得作为 advisory/blocking 决策依据。" >> docs/planning/monthly-roadmap.md
 
-      - name: 提交路线图
-        uses: stefanzweifel/git-auto-commit-action@v5
+          mkdir -p monthly-artifacts/docs/planning
+          cp docs/planning/monthly-roadmap.md monthly-artifacts/docs/planning/monthly-roadmap.md
+
+      - name: 上传路线图 artifact
+        uses: actions/upload-artifact@v4
         with:
-          commit_message: "docs: monthly roadmap refresh for ${MONTH}"
-          file_pattern: "docs/planning/monthly-roadmap.md"
-          commit_user_name: "product-strategist[bot]"
-          commit_user_email: "product-strategist[bot]@gis-engine.dev"
+          name: monthly-roadmap
+          path: monthly-artifacts/
+          if-no-files-found: error
 
   # ── Job 2: 发布就绪验证 ──
   release-readiness:
@@ -123,22 +131,50 @@ jobs:
       - name: 生成发布就绪报告
         run: |
           DATE=$(date -u +%Y-%m-%d)
+          mkdir -p docs/reviews
           echo "---" > docs/reviews/release-readiness-${DATE}.md
           echo "agent: quality-guardian" >> docs/reviews/release-readiness-${DATE}.md
           echo "period: $(date -u +%Y-%m)" >> docs/reviews/release-readiness-${DATE}.md
           echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> docs/reviews/release-readiness-${DATE}.md
           echo "repo_revision: \"${{ github.sha }}\"" >> docs/reviews/release-readiness-${DATE}.md
-          echo "decision_level: blocking" >> docs/reviews/release-readiness-${DATE}.md
+          echo "decision_level: info" >> docs/reviews/release-readiness-${DATE}.md
           echo "---" >> docs/reviews/release-readiness-${DATE}.md
           echo "" >> docs/reviews/release-readiness-${DATE}.md
           echo "# Release Readiness: ${DATE}" >> docs/reviews/release-readiness-${DATE}.md
           echo "" >> docs/reviews/release-readiness-${DATE}.md
-          echo "> ⚠️ 自动生成，请由 quality-guardian 填充最终判定。" >> docs/reviews/release-readiness-${DATE}.md
+          echo "> ⚠️ 本报告为 automation-generated machine evidence/template，不是已完成的 quality-guardian release gate；补充完整门禁判定前不得作为 blocking release 决策依据。" >> docs/reviews/release-readiness-${DATE}.md
 
-      - name: 提交通知
+          mkdir -p monthly-artifacts/docs/reviews
+          cp docs/reviews/release-readiness-${DATE}.md monthly-artifacts/docs/reviews/release-readiness-${DATE}.md
+
+      - name: 上传发布就绪 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: monthly-release-readiness
+          path: monthly-artifacts/
+          if-no-files-found: error
+
+  # ── Job 3: 单写入者序列化提交 ──
+  coordinator-commit:
+    name: "coordinator: 序列化提交 monthly artifacts"
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    needs:
+      - monthly-roadmap
+      - release-readiness
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 下载 monthly artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: .
+          merge-multiple: true
+
+      - name: 提交 monthly artifacts
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "docs: monthly release readiness report"
-          file_pattern: "docs/reviews/release-readiness-*.md"
-          commit_user_name: "quality-guardian[bot]"
-          commit_user_email: "quality-guardian[bot]@gis-engine.dev"
+          commit_message: "docs: monthly agent artifacts"
+          file_pattern: "docs/planning/monthly-roadmap.md docs/reviews/release-readiness-*.md"
+          commit_user_name: "coordinator[bot]"
+          commit_user_email: "coordinator[bot]@gis-engine.dev"

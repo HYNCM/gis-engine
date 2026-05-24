@@ -1,11 +1,16 @@
 ---
 agent: task-distributor
-period: 2026-W21
-generated_at: 2026-05-23T12:47:05Z
-repo_revision: "cef340d"
+period: 2026-W22
+generated_at: 2026-05-24T14:29:18Z
+repo_revision: "42d8c01"
 inputs:
   - docs/archive/2026-05-18/planning/sprint-2026-W21.md
   - docs/planning/sprint-2026-W25-sceneview3d-v1.md
+  - docs/reviews/quality-gate-2026-05-24.md
+  - docs/reviews/automation-hardening-gate-2026-05-24.md
+  - docs/reviews/sceneview3d-promotion-gate-2026-05-24.md
+  - docs/planning/sprint-2026-W22-automation-hardening.md
+  - docs/planning/feature-specs/sceneview3d-stable-renderer-contract.md
 decision_level: advisory
 ---
 
@@ -77,11 +82,14 @@ W21 sprint 计划已归档，当前活跃关键路径从 W23 promotion readiness
 | SceneView3D browser visual runner | done | `runScene3DThreeAdapterBrowserRunner` renders a local fixture in Chromium, records frame metrics, and produces release-capable renderer evidence |
 | SceneView3D MCP evidence summary decision | done | renderer evidence summaries stay out of MCP for now; `scene3d` context remains extension-only |
 | SceneView3D beta readiness gate | done | `pnpm test:release:scene3d` now exercises the browser runner and accepts release visual evidence |
-| SceneView3D promotion readiness | planned | W23 rubric, browser matrix evidence, adapter promotion report, guardrail diagnostics, MCP decision, docs alignment, and go/no-go review form the next decision package |
+| SceneView3D promotion readiness | done | W23 rubric, browser matrix evidence, adapter promotion report, guardrail diagnostics, MCP decision, docs alignment, and go/no-go review completed; package accepted, stable runtime still blocked |
+| automation hardening | done | 2026-05-24 quality gate required report `decision_level` alignment, serialized scheduled commits, local/CI daily cadence alignment, and emergency interpolation fix before scheduled agent evidence is trusted |
+| SceneView3D stable renderer contract | planned | next phase defines real renderer contract, Three.js/3DTilesRendererJS dependency boundary, lifecycle, snapshot/query semantics, resource policy, and release gates before any stable runtime decision |
 
 ## 关键路径
 
-1. v1 SceneView3D RFC -> W25/W28 sprint DAG -> TypeBox schema -> fixtures + URL resource policy + loader resource gate + package boundary + scene commands -> mock snapshot/query contracts -> MCP context -> release visual gate -> alpha audit + adapter feasibility -> Three.js adapter spike -> renderer evidence handoff -> adapter runtime shim -> browser visual runner -> beta readiness gate -> promotion readiness -> stable runtime decision; stable runtime promotion remains blocked until the W23 package lands.
+1. v1 SceneView3D RFC -> W25/W28 sprint DAG -> TypeBox schema -> fixtures + URL resource policy + loader resource gate + package boundary + scene commands -> mock snapshot/query contracts -> MCP context -> release visual gate -> alpha audit + adapter feasibility -> Three.js adapter spike -> renderer evidence handoff -> adapter runtime shim -> browser visual runner -> beta readiness gate -> promotion readiness -> stable renderer contract planning -> stable runtime decision; stable runtime promotion remains blocked until a future contract package is accepted.
+2. 2026-05-24 automation hardening blocks scheduled agent evidence from being used as advisory/blocking input: generated report semantics -> serialized scheduled commits -> local/CI daily cadence + emergency interpolation -> automation hardening gate -> scheduled evidence may feed future coordinator/quality-guardian decisions.
 
 ```mermaid
 flowchart LR
@@ -106,7 +114,34 @@ flowchart LR
   O --> P["browser visual runner"]
   P --> Q["beta readiness gate"]
   Q --> R["promotion readiness"]
-  R --> S["stable runtime decision"]
+  R --> S["stable renderer contract plan"]
+  S --> T["stable runtime decision"]
+```
+
+```mermaid
+flowchart LR
+  A["2026-05-24 quality gate required follow-up"] --> B["TASK-2026W22-AH-001 report decision_level semantics"]
+  B --> C["TASK-2026W22-AH-002 serialized scheduled commits"]
+  B --> D["TASK-2026W22-AH-003 local/CI daily cadence"]
+  B --> E["TASK-2026W22-AH-004 emergency interpolation"]
+  C --> F["TASK-2026W22-AH-005 automation hardening quality gate"]
+  D --> F
+  E --> F
+  F --> G["scheduled agent evidence can support advisory/blocking review"]
+  G --> H["future coordinator weekly digest"]
+  G --> I["future quality-guardian release gate"]
+```
+
+```mermaid
+flowchart LR
+  A["W23 promotion-readiness gate accepted"] --> B["TASK-2026W23-SRC-001 stable renderer contract"]
+  B --> C["TASK-2026W23-SRC-002 Three.js / 3DTilesRendererJS adapter-local boundary"]
+  B --> D["TASK-2026W23-SRC-003 lifecycle semantics"]
+  D --> E["TASK-2026W23-SRC-004 snapshot/query semantics"]
+  C --> F["TASK-2026W23-SRC-005 resource policy + release gates"]
+  E --> F
+  F --> G["TASK-2026W23-SRC-006 future stable runtime decision"]
+  G -. "blocked until accepted" .-> H["stable view.mode: scene3d"]
 ```
 
 ## 阻断规则
@@ -115,3 +150,5 @@ flowchart LR
 - release candidate 必须在正式 runner 执行 strict visual snapshot，或由 coordinator 明确 waiver 并创建 follow-up。
 - resource/perf 文档中声明的 PR 阻断项已有 deterministic Node-level evidence；nightly/release 大场景不得默认为 PR blocker。
 - `fill-extrusion-lite` 只作为 experimental beta 暴露；即使已有 release visual evidence，也不得绕过 explicit capability gate 升格为稳定图层。
+- scheduled agent evidence 在 `TASK-2026W22-AH-005` 通过前不得作为 advisory/blocking 决策输入；只能作为 machine-generated `info` evidence/template。
+- stable `view.mode: "scene3d"` 在 `TASK-2026W23-SRC-006` 通过前仍保持 blocked；promotion-readiness package Go 不等于 stable runtime Go。

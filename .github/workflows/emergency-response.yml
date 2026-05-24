@@ -33,6 +33,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: emergency-response-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   # ── 写入紧急告警 ──
   create-alert:
@@ -51,49 +55,65 @@ jobs:
           DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           mkdir -p docs/alerts
 
-          cat > docs/alerts/critical-gaps.md << ALERTEOF
-          ---
-          agent: coordinator
-          period: emergency
-          generated_at: ${DATE}
-          repo_revision: "${GITHUB_SHA}"
-          inputs:
-            - manual_trigger
-          decision_level: emergency
-          ---
+          {
+            cat << ALERTEOF
+---
+agent: coordinator
+period: emergency
+generated_at: ${DATE}
+repo_revision: "${GITHUB_SHA}"
+inputs:
+  - manual_trigger
+decision_level: emergency
+---
 
-          # Critical Gap Alert
+# Critical Gap Alert
 
-          - **触发时间**: ${DATE}
-          - **原因**: ${ALERT_REASON}
-          - **影响**: ${ALERT_AFFECTED}
-          - **Owner**: ${ALERT_OWNER}
-          - **回滚方案**: ${ALERT_ROLLBACK_PLAN}
-          - **有效期**: 48 小时内
+- **触发时间**: ${DATE}
+- **原因**:
+ALERTEOF
+            printf '%s\n' "${ALERT_REASON}" | sed 's/^/  /'
+            cat << ALERTEOF
+- **影响**:
+ALERTEOF
+            printf '%s\n' "${ALERT_AFFECTED}" | sed 's/^/  /'
+            cat << ALERTEOF
+- **Owner**:
+ALERTEOF
+            printf '%s\n' "${ALERT_OWNER}" | sed 's/^/  /'
+            cat << ALERTEOF
+- **回滚方案**:
+ALERTEOF
+            printf '%s\n' "${ALERT_ROLLBACK_PLAN}" | sed 's/^/  /'
+            cat << ALERTEOF
+- **有效期**: 48 小时内
 
-          ## 紧急门禁要求
+## 紧急门禁要求
 
-          1. Schema 验证（如触及公共输入）
-          2. 确定性测试（触及区域相关）
-          3. 资源策略检查（如涉及 URL/tile/worker 变更）
-          4. Smoke snapshot（如可能影响渲染）
+1. Schema 验证（如触及公共输入）
+2. 确定性测试（触及区域相关）
+3. 资源策略检查（如涉及 URL/tile/worker 变更）
+4. Smoke snapshot（如可能影响渲染）
 
-          ## 后续任务
+## 后续任务
 
-          <!-- task-distributor 在此追加 P0/P1 follow-up tasks -->
+<!-- task-distributor 在此追加 P0/P1 follow-up tasks -->
 
-          ## 关闭条件
+## 关闭条件
 
-          <!-- 修复完成后由 coordinator 填写 -->
-          ALERTEOF
+<!-- 修复完成后由 coordinator 填写 -->
+ALERTEOF
+          } > docs/alerts/critical-gaps.md
 
-      - name: 提交告警
-        uses: stefanzweifel/git-auto-commit-action@v5
+          mkdir -p emergency-artifacts/docs/alerts
+          cp docs/alerts/critical-gaps.md emergency-artifacts/docs/alerts/critical-gaps.md
+
+      - name: 上传紧急告警 artifact
+        uses: actions/upload-artifact@v4
         with:
-          commit_message: "🚨 emergency alert: ${{ github.event.inputs.reason }}"
-          file_pattern: "docs/alerts/critical-gaps.md"
-          commit_user_name: "coordinator[bot]"
-          commit_user_email: "coordinator[bot]@gis-engine.dev"
+          name: emergency-alert
+          path: emergency-artifacts/
+          if-no-files-found: error
 
   # ── 紧急门禁 ──
   emergency-gate:
@@ -102,6 +122,12 @@ jobs:
     needs: [create-alert]
     steps:
       - uses: actions/checkout@v4
+
+      - name: 下载紧急告警 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: emergency-alert
+          path: .
 
       - uses: pnpm/action-setup@v4
         with:
@@ -118,9 +144,11 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
 
       - name: 最小门禁检查
+        env:
+          ALERT_REASON: ${{ github.event.inputs.reason }}
         run: |
           echo "=== Emergency Gate: $(date -u) ==="
-          echo "Reason: ${{ github.event.inputs.reason }}"
+          echo "Reason: ${ALERT_REASON}"
           echo ""
 
           # 1. Schema validation
@@ -149,11 +177,46 @@ jobs:
           echo "| --- | --- |" >> docs/alerts/critical-gaps.md
           echo "| schema build | ${{ job.status }} |" >> docs/alerts/critical-gaps.md
 
-      - name: 提交门禁结果
+          mkdir -p emergency-artifacts/docs/alerts
+          cp docs/alerts/critical-gaps.md emergency-artifacts/docs/alerts/critical-gaps.md
+
+      - name: 上传紧急门禁 artifact
         if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: emergency-gate
+          path: emergency-artifacts/
+          if-no-files-found: error
+
+  # ── 单写入者序列化提交 ──
+  coordinator-commit:
+    name: "coordinator: 序列化提交 emergency artifacts"
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    needs:
+      - create-alert
+      - emergency-gate
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 下载紧急门禁 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: emergency-gate
+          path: .
+        continue-on-error: true
+
+      - name: 下载紧急告警 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: emergency-alert
+          path: .
+        continue-on-error: true
+
+      - name: 提交 emergency artifacts
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "docs: emergency gate results appended"
+          commit_message: "docs: emergency response artifacts"
           file_pattern: "docs/alerts/critical-gaps.md"
-          commit_user_name: "quality-guardian[bot]"
-          commit_user_email: "quality-guardian[bot]@gis-engine.dev"
+          commit_user_name: "coordinator[bot]"
+          commit_user_email: "coordinator[bot]@gis-engine.dev"

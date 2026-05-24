@@ -18,7 +18,7 @@
  */
 
 import { execSync } from "node:child_process";
-import { existsSync, mkdirSync, writeFileSync, readFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -148,14 +148,13 @@ function getDateStr() {
 /** 获取当前周字符串 */
 function getWeekStr() {
   const d = new Date();
-  const year = d.getFullYear();
-  // ISO week number
-  const start = new Date(year, 0, 1);
-  const diff = d - start;
-  const week = Math.ceil(
-    ((diff / 86400000) + start.getDay() + 1) / 7
-  );
-  return `${year}-W${String(week).padStart(2, "0")}`;
+  const utcDate = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const day = utcDate.getUTCDay() || 7;
+  utcDate.setUTCDate(utcDate.getUTCDate() + 4 - day);
+  const isoYear = utcDate.getUTCFullYear();
+  const yearStart = new Date(Date.UTC(isoYear, 0, 1));
+  const week = Math.ceil(((utcDate - yearStart) / 86400000 + 1) / 7);
+  return `${isoYear}-W${String(week).padStart(2, "0")}`;
 }
 
 /** 获取当前月字符串 */
@@ -175,17 +174,8 @@ function getGitSha() {
   }
 }
 
-/** 自动化模板默认只是 info；只有失败的 blocking 机器门禁可升级为 blocking。 */
-function getReportDecisionLevel(agentDef, gateResults) {
-  if (!gateResults || gateResults.length === 0) {
-    return "info";
-  }
-  if (
-    agentDef.gateDecisionLevel === "blocking" &&
-    gateResults.some((result) => result.status === "failed")
-  ) {
-    return "blocking";
-  }
+/** 自动化生成的报告只是机器证据/模板，不能声明 advisory 或 blocking。 */
+function getReportDecisionLevel() {
   return "info";
 }
 
@@ -201,7 +191,7 @@ function formatGateOutput(output) {
 /** 生成 YAML front matter */
 function generateFrontMatter(agentName, agentDef, period, gateResults) {
   const now = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
-  const decisionLevel = getReportDecisionLevel(agentDef, gateResults);
+  const decisionLevel = getReportDecisionLevel();
   return [
     "---",
     `agent: ${agentName}`,
@@ -253,7 +243,7 @@ function generateReport(agentName, agentDef, period, gateResults) {
     `This file is automation-generated evidence/template output from \`scripts/agent-runner.mjs\`. It is not a completed ${agentName} specialist review.`
   );
   lines.push(
-    "Treat the front matter `decision_level` as `info` unless this file records a failed blocking gate below. An agent or human must add substantive analysis before this report can support advisory, release, or merge decisions."
+    "Treat the front matter `decision_level` as `info`. CI exit codes and job status may indicate failed machine gates, but an agent or human must add substantive analysis before this report can support advisory, release, or merge decisions."
   );
   lines.push("");
 

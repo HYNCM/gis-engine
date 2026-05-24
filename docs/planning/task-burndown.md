@@ -1,11 +1,16 @@
 ---
 agent: task-distributor
-period: 2026-W21
-generated_at: 2026-05-24T08:48:05Z
-repo_revision: "cef340d"
+period: 2026-W22
+generated_at: 2026-05-24T14:29:18Z
+repo_revision: "42d8c01"
 inputs:
   - docs/archive/2026-05-18/planning/sprint-2026-W21.md
   - docs/planning/sprint-2026-W25-sceneview3d-v1.md
+  - docs/reviews/quality-gate-2026-05-24.md
+  - docs/reviews/automation-hardening-gate-2026-05-24.md
+  - docs/reviews/sceneview3d-promotion-gate-2026-05-24.md
+  - docs/planning/sprint-2026-W22-automation-hardening.md
+  - docs/planning/feature-specs/sceneview3d-stable-renderer-contract.md
 decision_level: advisory
 ---
 
@@ -18,6 +23,38 @@ decision_level: advisory
 v1 RFC 已拆成 W25/W28 专项 sprint，且 W25 的 schema、fixtures、scene
 commands、resource load plan gate、package boundary、mock snapshot/query 和 MCP 3D context 已提前完成。下面的 W21/W23 理想燃尽表仅保留
 为计划基线；真实状态以“2026-05-17 执行快照”和“2026-05-18 follow-up”为准。
+
+## 2026-05-24 automation hardening follow-up
+
+2026-05-24 quality gate 对 current HEAD 条件通过，但 scheduled agent evidence
+在作为 advisory/blocking 输入前必须完成 automation-hardening。该 follow-up
+由 [sprint-2026-W22-automation-hardening.md](./sprint-2026-W22-automation-hardening.md)
+承接，不修改 runtime/source/workflow 的当前文档账本状态。
+
+| id | title | priority | owner | status | acceptance | finish gates |
+| --- | --- | --- | --- | --- | --- | --- |
+| TASK-2026W22-AH-001 | Align generated report decision levels | P1 | `@engine-agent`, `@docs-agent` | done | generated template reports stay `decision_level: info` unless a real blocking gate failure is recorded | `node --check scripts/agent-runner.mjs`; `rg -n "decision_level: info\\|automation-generated" scripts .github docs` |
+| TASK-2026W22-AH-002 | Serialize scheduled artifact commits | P1 | `@coordinator`, `@task-distributor` | done | scheduled planning/review artifacts are committed by one serialized writer or left as uploaded artifacts for coordinator handoff | workflow syntax review; `rg -n "git-auto-commit-action\\|upload-artifact\\|download-artifact" .github/workflows/agent-*.yml` |
+| TASK-2026W22-AH-003 | Align local and CI daily cadence | P2 | `@docs-agent` | done | local `pnpm agent:daily` and CI daily cadence match, or their docs explicitly define the difference | `node scripts/agent-runner.mjs all --daily --dry-run`; cadence `rg` check |
+| TASK-2026W22-AH-004 | Fix emergency alert variable interpolation | P2 | `@coordinator` | done | emergency front matter and body expand trusted local timestamps while preserving safe GitHub input handling | workflow syntax review; heredoc/interpolation `rg` check |
+| TASK-2026W22-AH-005 | Re-run automation hardening quality gate | P1 | `@quality-guardian` | done | quality gate states whether scheduled agent evidence can support advisory/blocking decisions | `pnpm -s build:schema`; `pnpm -s check`; `node --check scripts/agent-runner.mjs`; `node --check scripts/doc-generator.mjs` |
+
+## SceneView3D stable renderer contract planning
+
+W23 promotion-readiness package 已被 quality-guardian 接受为 Go；stable
+`view.mode: "scene3d"` runtime promotion 仍为 No-go。下一阶段不是启用 stable
+runtime，而是先冻结真实 renderer contract、Three.js/3DTilesRendererJS 依赖边界、
+lifecycle、snapshot/query 语义、resource policy 和 release gate。规划规格见
+[sceneview3d-stable-renderer-contract.md](./feature-specs/sceneview3d-stable-renderer-contract.md)。
+
+| id | title | priority | owner | status | acceptance |
+| --- | --- | --- | --- | --- | --- |
+| TASK-2026W23-SRC-001 | Define stable renderer adapter contract | P0 | `@adapter-agent` | todo | load/render/resize/camera/snapshot/query/destroy/diagnostics obligations are specified without changing stable `view.mode` |
+| TASK-2026W23-SRC-002 | Freeze Three.js and 3DTilesRendererJS dependency boundary | P0 | `@adapter-agent`, `@engine-agent` | todo | renderer dependencies remain adapter-local and core packages keep dependency-isolation checks |
+| TASK-2026W23-SRC-003 | Specify lifecycle and failure-state semantics | P1 | `@adapter-agent`, `@qa-agent` | todo | load/reload/resize/destroy/failure transitions are deterministic and structured |
+| TASK-2026W23-SRC-004 | Specify stable snapshot and query semantics | P1 | `@qa-agent`, `@adapter-agent` | todo | nonblank metrics, camera/dimension determinism, pick identity, no-hit, and hidden/missing layer behavior are defined |
+| TASK-2026W23-SRC-005 | Align SceneView3D resource policy and release gates | P1 | `@engine-agent`, `@quality-guardian`, `@docs-agent` | todo | resource-policy tests/docs and release gates name exact beta/stable renderer checks |
+| TASK-2026W23-SRC-006 | Issue stable runtime promotion readiness decision | P0 | `@quality-guardian`, `@coordinator` | blocked | future gate accepts the real renderer contract package or keeps stable `view.mode: "scene3d"` blocked |
 
 ## W23 promotion readiness 计划快照
 

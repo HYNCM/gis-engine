@@ -36,6 +36,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: agent-daily-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   # ── Job 1: 代码审查智能体 ──
   code-review:
@@ -93,14 +97,16 @@ jobs:
           echo "- [x] pnpm build:schema" >> "${REPORT}"
           echo "- [x] pnpm check" >> "${REPORT}"
 
-      - name: 提交审计报告
+          mkdir -p daily-artifacts/docs/reviews
+          cp "${REPORT}" "daily-artifacts/${REPORT}"
+
+      - name: 上传每日审计报告 artifact
         if: ${{ github.event_name != 'push' }}
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: actions/upload-artifact@v4
         with:
-          commit_message: "docs: daily code audit report for $(date -u +%Y-%m-%d)"
-          file_pattern: "docs/reviews/daily-audit-*.md"
-          commit_user_name: "code-reviewer[bot]"
-          commit_user_email: "code-reviewer[bot]@gis-engine.dev"
+          name: daily-code-review
+          path: daily-artifacts/
+          if-no-files-found: error
 
   # ── Job 2: 质量门禁智能体 ──
   quality-gate:
@@ -139,6 +145,7 @@ jobs:
       - name: 生成质量门禁报告
         if: always()
         run: |
+          mkdir -p docs/reviews
           DATE=$(date -u +%Y-%m-%d)
           echo "---" > docs/reviews/quality-gate-${DATE}.md
           echo "agent: quality-guardian" >> docs/reviews/quality-gate-${DATE}.md
@@ -157,6 +164,17 @@ jobs:
           echo "| Gate | Status |" >> docs/reviews/quality-gate-${DATE}.md
           echo "| --- | --- |" >> docs/reviews/quality-gate-${DATE}.md
           echo "| schema build | ${{ job.status == 'success' && 'passed' || 'failed' }} |" >> docs/reviews/quality-gate-${DATE}.md
+
+          mkdir -p daily-artifacts/docs/reviews
+          cp docs/reviews/quality-gate-${DATE}.md daily-artifacts/docs/reviews/quality-gate-${DATE}.md
+
+      - name: 上传质量门禁报告 artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: daily-quality-gate
+          path: daily-artifacts/
+          if-no-files-found: error
 
   # ── Job 3: 文档一致性智能体 ──
   docs-audit:
@@ -196,3 +214,62 @@ jobs:
               echo "  ⚠️  $doc 未找到"
             fi
           done
+
+      - name: 生成文档审计报告
+        if: ${{ github.event_name != 'push' }}
+        run: |
+          DATE=$(date -u +%Y-%m-%d)
+          mkdir -p docs/reviews
+          REPORT="docs/reviews/documentation-audit-${DATE}.md"
+          echo "---" > "${REPORT}"
+          echo "agent: docs-agent" >> "${REPORT}"
+          echo "period: ${DATE}" >> "${REPORT}"
+          echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "${REPORT}"
+          echo "repo_revision: \"${{ github.sha }}\"" >> "${REPORT}"
+          echo "inputs:" >> "${REPORT}"
+          echo "  - AGENTS.md" >> "${REPORT}"
+          echo "  - README.md" >> "${REPORT}"
+          echo "owner: \"@docs-agent\"" >> "${REPORT}"
+          echo "decision_level: info" >> "${REPORT}"
+          echo "---" >> "${REPORT}"
+          echo "" >> "${REPORT}"
+          echo "# Documentation Audit: ${DATE}" >> "${REPORT}"
+          echo "" >> "${REPORT}"
+          echo "> ⚠️ 本报告为 automation-generated machine evidence/template，不是已完成的 docs-agent 审查；补充实质文档审计前不得作为 advisory/blocking 决策依据。" >> "${REPORT}"
+
+          mkdir -p daily-artifacts/docs/reviews
+          cp "${REPORT}" "daily-artifacts/${REPORT}"
+
+      - name: 上传文档审计报告 artifact
+        if: ${{ github.event_name != 'push' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: daily-docs-agent
+          path: daily-artifacts/
+          if-no-files-found: error
+
+  # ── Job 4: 单写入者序列化提交 ──
+  coordinator-commit:
+    name: "coordinator: 序列化提交 daily artifacts"
+    runs-on: ubuntu-latest
+    if: ${{ always() && github.event_name != 'push' }}
+    needs:
+      - code-review
+      - quality-gate
+      - docs-audit
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 下载 daily artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: .
+          merge-multiple: true
+
+      - name: 提交 daily artifacts
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: daily agent artifacts"
+          file_pattern: "docs/reviews/daily-audit-*.md docs/reviews/quality-gate-*.md docs/reviews/documentation-audit-*.md"
+          commit_user_name: "coordinator[bot]"
+          commit_user_email: "coordinator[bot]@gis-engine.dev"

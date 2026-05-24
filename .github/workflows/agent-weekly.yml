@@ -25,6 +25,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: agent-weekly-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   # ── Job 1: 竞品情报 ──
   competitive-intel:
@@ -48,10 +52,12 @@ jobs:
 
       - name: 生成竞品分析报告
         id: report
+        env:
+          WEEK_OVERRIDE: ${{ github.event.inputs.week }}
         run: |
-          WEEK=$(date -u +%Y-W%V)
-          if [ -n "${{ github.event.inputs.week }}" ]; then
-            WEEK="${{ github.event.inputs.week }}"
+          WEEK=$(date -u +%G-W%V)
+          if [ -n "${WEEK_OVERRIDE}" ]; then
+            WEEK="${WEEK_OVERRIDE}"
           fi
           REPORT_PATH="docs/research/competitor-updates-${WEEK}.md"
           echo "path=${REPORT_PATH}" >> $GITHUB_OUTPUT
@@ -155,10 +161,12 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: 生成周报模板
+        env:
+          WEEK_OVERRIDE: ${{ github.event.inputs.week }}
         run: |
-          WEEK=$(date -u +%Y-W%V)
-          if [ -n "${{ github.event.inputs.week }}" ]; then
-            WEEK="${{ github.event.inputs.week }}"
+          WEEK=$(date -u +%G-W%V)
+          if [ -n "${WEEK_OVERRIDE}" ]; then
+            WEEK="${WEEK_OVERRIDE}"
           fi
 
           echo "---" > docs/planning/weekly-digest.md
