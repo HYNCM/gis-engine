@@ -1,3 +1,4 @@
+> ⚠️ 请由 task-distributor 智能体更新依赖图和燃尽表。
 ---
 agent: coordinator
 period: 2026-W23
