@@ -355,7 +355,8 @@ describe("SceneView3D Three.js adapter spike", () => {
     expect(destroyedSnapshot.diagnostics).toContainEqual(
       expect.objectContaining({
         severity: "info",
-        code: "RENDER.DESTROYED"
+        code: "RENDER.DESTROYED",
+        path: "/runtime/destroyed/snapshot"
       })
     );
 
@@ -364,7 +365,8 @@ describe("SceneView3D Three.js adapter spike", () => {
     expect(destroyedQuery.diagnostics).toContainEqual(
       expect.objectContaining({
         severity: "info",
-        code: "RENDER.DESTROYED"
+        code: "RENDER.DESTROYED",
+        path: "/runtime/destroyed/query"
       })
     );
   });

@@ -60,10 +60,14 @@ describe("SceneView3D stable renderer contract QA slice", () => {
     const preLoadSnapshot = await runtime.snapshot(deterministicSnapshotOptions);
     expect(preLoadSnapshot.passed).toBe(false);
     expectStructuredDiagnostics(preLoadSnapshot.diagnostics, [DiagnosticCodes.RenderAdapterError]);
+    expect(preLoadSnapshot.diagnostics).toContainEqual(
+      expect.objectContaining({ path: "/runtime/not-loaded/snapshot" })
+    );
 
     const preLoadQuery = await runtime.query();
     expect(preLoadQuery.picks).toEqual([]);
     expectStructuredDiagnostics(preLoadQuery.diagnostics, [DiagnosticCodes.RenderAdapterError]);
+    expect(preLoadQuery.diagnostics).toContainEqual(expect.objectContaining({ path: "/runtime/not-loaded/query" }));
 
     const loadReport = await runtime.load();
     const reloadReport = await runtime.load();
@@ -120,6 +124,9 @@ describe("SceneView3D stable renderer contract QA slice", () => {
     expect(destroyReport).toEqual({ destroyed: true, diagnostics: [] });
     expect(repeatedDestroyReport.destroyed).toBe(true);
     expectStructuredDiagnostics(repeatedDestroyReport.diagnostics, [DiagnosticCodes.RenderDestroyed]);
+    expect(repeatedDestroyReport.diagnostics).toContainEqual(
+      expect.objectContaining({ path: "/runtime/destroyed/destroy" })
+    );
 
     const afterDestroyLoad = await runtime.load();
     const afterDestroySnapshot = await runtime.snapshot(deterministicSnapshotOptions);
@@ -130,6 +137,11 @@ describe("SceneView3D stable renderer contract QA slice", () => {
     expectStructuredDiagnostics(afterDestroyLoad.diagnostics, [DiagnosticCodes.RenderDestroyed]);
     expectStructuredDiagnostics(afterDestroySnapshot.diagnostics, [DiagnosticCodes.RenderDestroyed]);
     expectStructuredDiagnostics(afterDestroyQuery.diagnostics, [DiagnosticCodes.RenderDestroyed]);
+    expect(afterDestroyLoad.diagnostics).toContainEqual(expect.objectContaining({ path: "/runtime/destroyed/load" }));
+    expect(afterDestroySnapshot.diagnostics).toContainEqual(
+      expect.objectContaining({ path: "/runtime/destroyed/snapshot" })
+    );
+    expect(afterDestroyQuery.diagnostics).toContainEqual(expect.objectContaining({ path: "/runtime/destroyed/query" }));
 
     const cancelledBeforeLoadRuntime = createStableContractRuntime();
     await cancelledBeforeLoadRuntime.destroy();

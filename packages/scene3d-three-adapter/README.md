@@ -28,6 +28,9 @@ Current status:
   adapter handoff contract for the future stable renderer obligations.
 - Exposes `auditScene3DThreeAdapterDependencyBoundary()` as an adapter-local
   dependency-boundary evidence helper for package manifests and source imports.
+- Reports pre-load and post-destroy lifecycle failures with stable diagnostic
+  paths under `/runtime/not-loaded/{operation}` and
+  `/runtime/destroyed/{operation}`.
 
 The real renderer implementation must stay in this adapter package or a later
 adapter package. `@gis-engine/engine`, `@gis-engine/scene3d`, and

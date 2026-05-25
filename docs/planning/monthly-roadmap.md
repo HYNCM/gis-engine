@@ -1,11 +1,13 @@
 ---
 agent: product-strategist
 period: 2026-05
-generated_at: 2026-05-24T08:48:05Z
-repo_revision: "cef340d"
+generated_at: 2026-05-25T01:57:26Z
+repo_revision: "d3c0137"
 inputs:
   - README.md
   - AGENTS.md
+  - docs/research/competitor-updates-2026-W22.md
+  - docs/research/capability-scorecard.md
   - docs/research/competitor-updates-2026-W20.md
   - docs/reviews/daily-audit-2026-05-17.md
   - docs/reviews/quality-gate-2026-05-17.md
@@ -19,7 +21,21 @@ decision_level: advisory
 
 ## 结论
 
-当前 v0.1 已具备 `MapSpec`、commands、diagnostics、snapshot 和 MapLibre adapter 闭环；2026-05-17 v0.2 checkpoint 已完成 generic vector tile、MCP output schema、strict capability report、expression 扩展、style/layer order 稳定化、visual MVT 场景和 2.5D/3D 边界。2026-05-18 已补齐 package dry-run、resource/perf deterministic evidence、command audit trace 产品化、`fill-extrusion-lite` MapLibre beta mapping、3-scene release-capable strict visual runner evidence、1k/10k/100k nightly perf harness、`extensions.scene3d` 边界 fixture、独立 v1 SceneView3D RFC、W25/W28 sprint DAG、`SceneView3DExtensionSchema`、scene source URL policy、invalid fixtures、`@gis-engine/scene3d` package boundary、scene command deterministic patch contract、loader-level resource load plan gate、mock 3D snapshot/query、MCP 3D context、release-runner 3D visual gate、adapter feasibility、alpha gate audit 和 `@gis-engine/scene3d-three-adapter` spike。当前 W21/W23 规划项已完成，W25-001/002/003/004/005/006、W27-001/002/003/004/005 与 W28-001 已提前关闭；W23 的 promotion readiness package 和 final gate 已完成，promotion evidence summaries 继续留在 extension-only context，不进入 public MCP context，stable `view.mode: "scene3d"` 仍保持 blocked。后续工作应只围绕后续 promotion step，不得直接进入 core renderer。
+当前 v0.1 已具备 `MapSpec`、commands、diagnostics、snapshot 和 MapLibre adapter 闭环；2026-05-17 v0.2 checkpoint 已完成 generic vector tile、MCP output schema、strict capability report、expression 扩展、style/layer order 稳定化、visual MVT 场景和 2.5D/3D 边界。2026-05-18 已补齐 package dry-run、resource/perf deterministic evidence、command audit trace 产品化、`fill-extrusion-lite` MapLibre beta mapping、3-scene release-capable strict visual runner evidence、1k/10k/100k nightly perf harness、`extensions.scene3d` 边界 fixture、独立 v1 SceneView3D RFC、W25/W28 sprint DAG、`SceneView3DExtensionSchema`、scene source URL policy、invalid fixtures、`@gis-engine/scene3d` package boundary、scene command deterministic patch contract、loader-level resource load plan gate、mock 3D snapshot/query、MCP 3D context、release-runner 3D visual gate、adapter feasibility、alpha gate audit 和 `@gis-engine/scene3d-three-adapter` spike。当前 W21/W23 规划项已完成，W25-001/002/003/004/005/006、W27-001/002/003/004/005 与 W28-001 已提前关闭；W23 的 promotion readiness package 和 final gate 已完成，promotion evidence summaries 继续留在 extension-only context，不进入 public MCP context，stable `view.mode: "scene3d"` 仍保持 blocked。
+
+2026-05-25 W22 竞品核验显示：Mapbox 已把 PMTiles vector source 写入官方 GL JS 示例，MapLibre v5/v6 release drift 需要升级前兼容性审计，CesiumJS/Three.js/3DTilesRendererJS 继续强化 3D 生态预期，MCP tool spec 的 output schema 与本仓库 AI 契约方向一致。路线因此不改成“大跳 3D runtime”，而是进入 W22 competitive signal response：保护 PMTiles/vector source 证据、补 MapLibre version-drift audit，并继续在 adapter-local 边界内推进 SceneView3D lifecycle/snapshot/query/release evidence。
+
+本轮已执行的第一块切片是 `TASK-2026W22-CSI-003`：SceneView3D Three adapter pre-load/post-destroy lifecycle diagnostics 现在有稳定路径，便于 AI 工具和质量门禁解释失败状态。后续工作应只围绕明确 promotion step，不得直接进入 core renderer。
+
+## 2026-W22 Iteration Path
+
+| Priority | Track | Plan | Exit Condition |
+| --- | --- | --- | --- |
+| P0 | SceneView3D governance | Keep stable `view.mode: "scene3d"` blocked until SRC-006 | quality-guardian and coordinator record explicit Go/No-go after SRC-001 through SRC-005 evidence is accepted |
+| P1 | SceneView3D lifecycle evidence | Close path-stable lifecycle diagnostics and keep adapter-local runtime semantics deterministic | adapter tests and smoke lifecycle contract pass |
+| P1 | MapLibre/vector compatibility | Add a version-drift audit checklist before changing `maplibre-gl` | checklist names transformer, resource-policy, smoke/visual snapshot, and release-runner implications |
+| P1 | Cloud-native examples | Keep PMTiles/vector source examples release-gated | schema fixtures, examples, resource policy, smoke snapshots, and visual snapshots remain aligned |
+| P2 | Public docs/DX | Convert gate state into concise user-facing upgrade and capability notes | docs reflect extension-only 3D status and 2D source support without overclaiming |
 
 ## 路线总览
 

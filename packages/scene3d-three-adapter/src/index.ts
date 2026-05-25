@@ -1013,7 +1013,14 @@ function destroyedDiagnostic(operation: string): Diagnostic {
   return {
     severity: "info",
     code: DiagnosticCodes.RenderDestroyed,
-    message: `Scene3DThreeAdapter runtime has already been destroyed before ${operation}.`
+    message: `Scene3DThreeAdapter runtime has already been destroyed before ${operation}.`,
+    path: `/runtime/destroyed/${operation}`,
+    relatedResources: [{ kind: "adapter", id: scene3dThreeAdapterBoundary.packageName }],
+    fix: {
+      kind: "manual",
+      confidence: "high",
+      message: "Create and load a fresh Scene3DThreeAdapter runtime before invoking lifecycle operations."
+    }
   };
 }
 
@@ -1021,7 +1028,14 @@ function notLoadedDiagnostic(operation: string): Diagnostic {
   return {
     severity: "error",
     code: DiagnosticCodes.RenderAdapterError,
-    message: `Scene3DThreeAdapter runtime must load before ${operation}.`
+    message: `Scene3DThreeAdapter runtime must load before ${operation}.`,
+    path: `/runtime/not-loaded/${operation}`,
+    relatedResources: [{ kind: "adapter", id: scene3dThreeAdapterBoundary.packageName }],
+    fix: {
+      kind: "manual",
+      confidence: "high",
+      message: "Call runtime.load() and verify the load report before invoking snapshot, query, or renderer evidence operations."
+    }
   };
 }
 
