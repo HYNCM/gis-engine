@@ -7,7 +7,9 @@ inputs:
   - docs/planning/sprint-2026-W22-competitive-signal-response.md
   - docs/research/competitor-updates-2026-W22.md
   - docs/research/capability-scorecard.md
+  - docs/engineering/maplibre-version-drift-audit.md
   - docs/reviews/sceneview3d-lifecycle-diagnostics-2026-05-25.md
+  - docs/reviews/sceneview3d-src-evidence-decision-2026-05-25.md
   - docs/archive/2026-05-18/planning/sprint-2026-W21.md
   - docs/planning/sprint-2026-W25-sceneview3d-v1.md
   - docs/reviews/quality-gate-2026-05-24.md
@@ -33,8 +35,9 @@ commands、resource load plan gate、package boundary、mock snapshot/query 和 
 
 W22 竞品核验已转为执行 sprint：
 [sprint-2026-W22-competitive-signal-response.md](./sprint-2026-W22-competitive-signal-response.md)。
-本轮已完成竞品报告、scorecard、路线图校准和第一块 adapter lifecycle
-diagnostics 执行切片。后续仍保持 stable `view.mode: "scene3d"` blocked。
+本轮已完成竞品报告、scorecard、路线图校准、adapter lifecycle diagnostics
+执行切片、MapLibre version-drift 升级前清单，以及 SRC 证据接受/No-go 决策。
+后续仍保持 stable `view.mode: "scene3d"` blocked。
 
 | id | title | priority | owner | status | acceptance | finish gates |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -42,8 +45,8 @@ diagnostics 执行切片。后续仍保持 stable `view.mode: "scene3d"` blocked
 | TASK-2026W22-CSI-002 | Refresh capability scorecard | P1 | `@product-strategist` | done | W22 score deltas recorded without stable 3D overclaim | scorecard updated |
 | TASK-2026W22-CSI-003 | Add path-stable SceneView3D lifecycle diagnostics | P1 | `@adapter-agent` | done | pre-load and post-destroy diagnostics include stable paths | adapter tests; smoke lifecycle test; adapter build; lifecycle diagnostics review |
 | TASK-2026W22-CSI-004 | Record W22 coordinator digest and roadmap adjustment | P1 | `@coordinator` | done | digest and roadmap name plan and execution evidence | docs updated |
-| TASK-2026W22-CSI-005 | Add MapLibre version-drift audit checklist | P1 | `@engine-agent`, `@docs-agent` | todo | checklist covers transformer, source URL, resource policy, smoke/visual snapshot, release runner | docs review; relevant tests when implemented |
-| TASK-2026W22-CSI-006 | Decide whether SRC evidence can close planning status | P1 | `@quality-guardian`, `@coordinator` | todo | accepted SRC evidence is recorded without promoting stable runtime | `pnpm check`; release gates as required |
+| TASK-2026W22-CSI-005 | Add MapLibre version-drift audit checklist | P1 | `@engine-agent`, `@docs-agent` | done | checklist covers transformer, source URL, resource policy, smoke/visual snapshot, release runner, dependency boundary, rollback decision | docs review; relevant tests when implemented |
+| TASK-2026W22-CSI-006 | Decide whether SRC evidence can close planning status | P1 | `@quality-guardian`, `@coordinator` | done | accepted prerequisite SRC evidence is recorded without promoting stable runtime | `pnpm check`; release gates as required |
 
 ## 2026-05-24 automation hardening follow-up
 

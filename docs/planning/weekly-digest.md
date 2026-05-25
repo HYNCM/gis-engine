@@ -10,8 +10,10 @@ inputs:
   - docs/planning/monthly-roadmap.md
   - docs/planning/sprint-2026-W22-competitive-signal-response.md
   - docs/planning/feature-specs/sceneview3d-stable-renderer-contract.md
+  - docs/engineering/maplibre-version-drift-audit.md
   - docs/reviews/sceneview3d-stable-renderer-gate-2026-05-25.md
   - docs/reviews/sceneview3d-lifecycle-diagnostics-2026-05-25.md
+  - docs/reviews/sceneview3d-src-evidence-decision-2026-05-25.md
   - packages/scene3d-three-adapter/src/index.ts
   - tests/adapter/scene3d-three-adapter.test.ts
   - tests/snapshot/smoke/scene3d-stable-renderer-contract.test.ts
@@ -34,9 +36,10 @@ Engine direction:
 - MCP input/output schema discipline remains a release requirement for
   AI-native map editing.
 
-The first execution slice is complete: SceneView3D Three adapter lifecycle
-diagnostics now expose stable pre-load and post-destroy paths, with focused
-adapter and smoke tests.
+The execution loop is complete for W22: SceneView3D Three adapter lifecycle
+diagnostics now expose stable pre-load and post-destroy paths, MapLibre version
+drift has a pre-upgrade audit checklist, and the SRC evidence decision accepts
+prerequisite evidence while keeping stable runtime promotion blocked.
 
 ## Current Signals
 
@@ -57,6 +60,8 @@ adapter and smoke tests.
    smoke-snapshot, and visual-snapshot evidence.
 4. Count the lifecycle diagnostics patch as the first W22 execution slice under
    `TASK-2026W22-CSI-003`.
+5. Accept existing SRC evidence only as prerequisite contract evidence; stable
+   runtime promotion remains No-go.
 
 ## Execution Status
 
@@ -66,15 +71,14 @@ adapter and smoke tests.
 | TASK-2026W22-CSI-002 | done | `docs/research/capability-scorecard.md` |
 | TASK-2026W22-CSI-003 | done | `packages/scene3d-three-adapter/src/index.ts`, adapter tests, smoke lifecycle tests, `docs/reviews/sceneview3d-lifecycle-diagnostics-2026-05-25.md` |
 | TASK-2026W22-CSI-004 | done | this digest and `docs/planning/monthly-roadmap.md` |
-| TASK-2026W22-CSI-005 | todo | MapLibre version-drift audit checklist |
-| TASK-2026W22-CSI-006 | todo | coordinator/quality-guardian SRC acceptance decision |
+| TASK-2026W22-CSI-005 | done | `docs/engineering/maplibre-version-drift-audit.md` |
+| TASK-2026W22-CSI-006 | done | `docs/reviews/sceneview3d-src-evidence-decision-2026-05-25.md` |
 
 ## Next Handoff
 
-- `@engine-agent` / `@docs-agent`: create the MapLibre version-drift audit
-  checklist before any `maplibre-gl` package movement.
-- `@quality-guardian` / `@coordinator`: decide which existing SRC evidence can
-  be accepted into planning state, while keeping SRC-006 blocked unless the full
-  gate passes.
+- `@engine-agent` / `@docs-agent`: use the MapLibre version-drift checklist
+  before any `maplibre-gl` package movement.
+- `@quality-guardian` / `@coordinator`: keep SRC-006 no-go until a future full
+  gate provides real renderer visual evidence or an approved release waiver.
 - `@adapter-agent` / `@qa-agent`: keep lifecycle, snapshot, query, and visual
   evidence disjoint and adapter-local.

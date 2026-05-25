@@ -8,8 +8,10 @@ inputs:
   - docs/research/capability-scorecard.md
   - docs/planning/monthly-roadmap.md
   - docs/planning/feature-specs/sceneview3d-stable-renderer-contract.md
+  - docs/engineering/maplibre-version-drift-audit.md
   - docs/reviews/sceneview3d-stable-renderer-gate-2026-05-25.md
   - docs/reviews/sceneview3d-lifecycle-diagnostics-2026-05-25.md
+  - docs/reviews/sceneview3d-src-evidence-decision-2026-05-25.md
 owner: "@task-distributor"
 decision_level: advisory
 ---
@@ -33,18 +35,17 @@ Stable `view.mode: "scene3d"` remains blocked until SRC-006 is accepted.
 | TASK-2026W22-CSI-002 | Refresh capability scorecard | Planning | P1 | S | `@product-strategist` | done | dated score deltas; no unsupported stable 3D claim | `docs/research/capability-scorecard.md` reflects W22 scores and keeps stable SceneView3D blocked | CSI-001 | 2026-05-25 | 1 |
 | TASK-2026W22-CSI-003 | Add path-stable SceneView3D lifecycle diagnostics | SceneView3D stable renderer contract | P1 | S | `@adapter-agent` | done | structured diagnostics; adapter boundary; focused tests | pre-load and post-destroy runtime diagnostics include stable paths and adapter resources; adapter/smoke tests and review report cover paths | SRC-001, SRC-003 | 2026-05-25 | 3 |
 | TASK-2026W22-CSI-004 | Record W22 coordinator digest and roadmap adjustment | Planning | P1 | S | `@coordinator` | done | single-writer planning update; current sources | weekly digest and roadmap name the W22 response path and execution evidence | CSI-001, CSI-002, CSI-003 | 2026-05-25 | 2 |
-| TASK-2026W22-CSI-005 | Add MapLibre version-drift audit checklist | 2D adapter compatibility | P1 | M | `@engine-agent`, `@docs-agent` | todo | schema/resource/snapshot gates; package version boundary | checklist names transformer, vector source, resource policy, smoke snapshot, visual snapshot, and release runner implications before any MapLibre upgrade | CSI-001 | 2026-05-27 | 4 |
-| TASK-2026W22-CSI-006 | Decide whether SRC evidence can close planning status | SceneView3D governance | P1 | M | `@quality-guardian`, `@coordinator` | todo | use owner evidence; do not over-promote stable runtime | coordinator records which SRC-001 through SRC-005 slices are accepted, and keeps SRC-006 blocked or records a future Go/No-go | CSI-003; existing SRC reports | 2026-05-29 | 4 |
+| TASK-2026W22-CSI-005 | Add MapLibre version-drift audit checklist | 2D adapter compatibility | P1 | M | `@engine-agent`, `@docs-agent` | done | schema/resource/snapshot gates; package version boundary | `docs/engineering/maplibre-version-drift-audit.md` names transformer, vector source, resource policy, smoke snapshot, visual snapshot, release runner, dependency boundary, and rollback decision checks before any MapLibre upgrade | CSI-001 | 2026-05-27 | 4 |
+| TASK-2026W22-CSI-006 | Decide whether SRC evidence can close planning status | SceneView3D governance | P1 | M | `@quality-guardian`, `@coordinator` | done | use owner evidence; do not over-promote stable runtime | `docs/reviews/sceneview3d-src-evidence-decision-2026-05-25.md` accepts prerequisite evidence while keeping stable `view.mode: "scene3d"` no-go | CSI-003; existing SRC reports | 2026-05-29 | 4 |
 
 ## Execution Notes
 
 - CSI-001 through CSI-004 are intentionally small: they convert the current
   competitor sweep into repo evidence and close one lifecycle-diagnostics slice.
-- CSI-005 is the next 2D follow-up. It should not upgrade `maplibre-gl`; it
-  should first define the audit checklist for a future upgrade.
-- CSI-006 is governance work. It may update shared planning state only after
-  `@quality-guardian` accepts the relevant evidence. Stable runtime remains
-  blocked unless SRC-006 explicitly passes.
+- CSI-005 is complete. It did not upgrade `maplibre-gl`; it defines the audit
+  checklist for a future upgrade.
+- CSI-006 is complete for this W22 decision snapshot. It accepts existing SRC
+  prerequisite evidence for planning input and keeps stable runtime blocked.
 
 ## Finish Gates
 
