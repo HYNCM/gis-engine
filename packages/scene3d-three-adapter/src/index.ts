@@ -61,6 +61,42 @@ export interface Scene3DThreeAdapterStableRendererContractObligation {
   diagnosticPaths: readonly string[];
 }
 
+export type Scene3DThreeAdapterLifecycleState = "not-loaded" | "loaded" | "failed" | "destroyed";
+
+export type Scene3DThreeAdapterLifecycleOperation =
+  | "load"
+  | "reload"
+  | "resize"
+  | "snapshot"
+  | "query"
+  | "failure"
+  | "cancel"
+  | "destroy"
+  | "resourceCleanup";
+
+export interface Scene3DThreeAdapterLifecycleSemantic {
+  operation: Scene3DThreeAdapterLifecycleOperation;
+  from: readonly Scene3DThreeAdapterLifecycleState[];
+  to: Scene3DThreeAdapterLifecycleState | readonly Scene3DThreeAdapterLifecycleState[];
+  deterministic: true;
+  idempotent: boolean;
+  stableRuntimeBlocked: true;
+  diagnosticCodes: readonly Diagnostic["code"][];
+  diagnosticPaths: readonly string[];
+  evidence: string;
+}
+
+export interface Scene3DThreeAdapterLifecycleSemanticsReport {
+  kind: "Scene3DThreeAdapterLifecycleSemanticsReport";
+  version: "0.1";
+  adapter: "three";
+  stableViewMode: false;
+  runtimeSupported: false;
+  stableRuntimeBlocked: true;
+  semantics: readonly Scene3DThreeAdapterLifecycleSemantic[];
+  diagnostics: Diagnostic[];
+}
+
 export interface Scene3DThreeAdapterStableRendererDependencyBoundary {
   adapterLocalOnly: true;
   allowedRendererPackage: "@gis-engine/scene3d-three-adapter";
@@ -82,6 +118,7 @@ export interface Scene3DThreeAdapterStableRendererContractSummary {
   promotionDecisionTask: "TASK-2026W23-SRC-006";
   dependencyBoundary: Scene3DThreeAdapterStableRendererDependencyBoundary;
   obligations: readonly Scene3DThreeAdapterStableRendererContractObligation[];
+  lifecycleSemantics: readonly Scene3DThreeAdapterLifecycleSemantic[];
   guardrails: {
     schemaFirst: true;
     commandOnlyMutation: true;
@@ -167,6 +204,117 @@ export const scene3dThreeAdapterStableRendererContractObligations = [
     diagnosticPaths: ["/resources/cleanup", "/runtime/destroy"]
   }
 ] as const satisfies readonly Scene3DThreeAdapterStableRendererContractObligation[];
+
+export const scene3dThreeAdapterLifecycleSemantics = [
+  {
+    operation: "load",
+    from: ["not-loaded"],
+    to: "loaded",
+    deterministic: true,
+    idempotent: false,
+    stableRuntimeBlocked: true,
+    diagnosticCodes: [DiagnosticCodes.CapabilityUnsupported, DiagnosticCodes.RenderAdapterError],
+    diagnosticPaths: ["/extensions/scene3d", "/runtime/failed/load"],
+    evidence: "runtime.load validates the resource load plan before entering the loaded state."
+  },
+  {
+    operation: "reload",
+    from: ["loaded"],
+    to: "loaded",
+    deterministic: true,
+    idempotent: true,
+    stableRuntimeBlocked: true,
+    diagnosticCodes: [DiagnosticCodes.CapabilityUnsupported],
+    diagnosticPaths: ["/extensions/scene3d"],
+    evidence: "repeated runtime.load calls return the same adapter-local load report."
+  },
+  {
+    operation: "resize",
+    from: ["loaded"],
+    to: "loaded",
+    deterministic: true,
+    idempotent: true,
+    stableRuntimeBlocked: true,
+    diagnosticCodes: [DiagnosticCodes.RenderAdapterError],
+    diagnosticPaths: ["/renderer/resize/width", "/renderer/resize/height"],
+    evidence: "snapshot width and height act as the adapter-local resize contract and reject invalid dimensions."
+  },
+  {
+    operation: "snapshot",
+    from: ["not-loaded", "loaded", "failed", "destroyed"],
+    to: ["not-loaded", "loaded", "failed", "destroyed"],
+    deterministic: true,
+    idempotent: true,
+    stableRuntimeBlocked: true,
+    diagnosticCodes: [
+      DiagnosticCodes.RenderAdapterError,
+      DiagnosticCodes.RenderDestroyed,
+      DiagnosticCodes.SnapshotResourcePending
+    ],
+    diagnosticPaths: ["/runtime/not-loaded/snapshot", "/runtime/failed/snapshot", "/runtime/destroyed/snapshot"],
+    evidence: "snapshot returns deterministic summaries and stable lifecycle diagnostics for pre-load, failed, and destroyed states."
+  },
+  {
+    operation: "query",
+    from: ["not-loaded", "loaded", "failed", "destroyed"],
+    to: ["not-loaded", "loaded", "failed", "destroyed"],
+    deterministic: true,
+    idempotent: true,
+    stableRuntimeBlocked: true,
+    diagnosticCodes: [DiagnosticCodes.RenderAdapterError, DiagnosticCodes.RenderDestroyed],
+    diagnosticPaths: ["/runtime/not-loaded/query", "/runtime/failed/query", "/runtime/destroyed/query"],
+    evidence: "query returns deterministic picks after load and empty results with stable diagnostics before load, after failure, or after destroy."
+  },
+  {
+    operation: "failure",
+    from: ["not-loaded", "loaded"],
+    to: "failed",
+    deterministic: true,
+    idempotent: true,
+    stableRuntimeBlocked: true,
+    diagnosticCodes: [
+      DiagnosticCodes.RenderAdapterError,
+      DiagnosticCodes.SecurityResourceTooLarge,
+      DiagnosticCodes.SecurityResourceTimeout,
+      DiagnosticCodes.SecurityUnsupportedAssetType
+    ],
+    diagnosticPaths: ["/runtime/failed/load", "/extensions/scene3d/sources"],
+    evidence: "resource-policy errors keep the runtime unloaded and move later snapshot/query calls into the failed state."
+  },
+  {
+    operation: "cancel",
+    from: ["not-loaded", "loaded", "failed"],
+    to: "destroyed",
+    deterministic: true,
+    idempotent: true,
+    stableRuntimeBlocked: true,
+    diagnosticCodes: [DiagnosticCodes.RenderDestroyed],
+    diagnosticPaths: ["/runtime/destroy", "/runtime/destroyed/load"],
+    evidence: "destroy-before-load and destroy-after-failure are deterministic cancellation paths."
+  },
+  {
+    operation: "destroy",
+    from: ["not-loaded", "loaded", "failed", "destroyed"],
+    to: "destroyed",
+    deterministic: true,
+    idempotent: true,
+    stableRuntimeBlocked: true,
+    diagnosticCodes: [DiagnosticCodes.RenderDestroyed],
+    diagnosticPaths: ["/runtime/destroy", "/runtime/destroyed/destroy"],
+    evidence: "destroy is idempotent and post-destroy operations cannot revive adapter resources."
+  },
+  {
+    operation: "resourceCleanup",
+    from: ["not-loaded", "loaded", "failed", "destroyed"],
+    to: "destroyed",
+    deterministic: true,
+    idempotent: true,
+    stableRuntimeBlocked: true,
+    diagnosticCodes: [DiagnosticCodes.RenderDestroyed],
+    diagnosticPaths: ["/resources/cleanup", "/runtime/destroy"],
+    evidence: "destroy returns deterministic cleanup counters for planned resources and workers."
+  }
+] as const satisfies readonly Scene3DThreeAdapterLifecycleSemantic[];
 
 export interface Scene3DThreeAdapterLoadEstimates {
   tilesetJsonBytes?: Record<string, number>;
@@ -383,6 +531,7 @@ export function getScene3DThreeAdapterStableRendererContract(): Scene3DThreeAdap
       currentPackageManifestStatus: "not-declared-during-spike"
     },
     obligations: scene3dThreeAdapterStableRendererContractObligations,
+    lifecycleSemantics: scene3dThreeAdapterLifecycleSemantics,
     guardrails: {
       schemaFirst: true,
       commandOnlyMutation: true,
@@ -391,6 +540,19 @@ export function getScene3DThreeAdapterStableRendererContract(): Scene3DThreeAdap
       resourcePolicyRequired: true,
       adapterBoundaryRequired: true
     },
+    diagnostics: stableRuntimeBlockedDiagnostics()
+  };
+}
+
+export function getScene3DThreeAdapterLifecycleSemantics(): Scene3DThreeAdapterLifecycleSemanticsReport {
+  return {
+    kind: "Scene3DThreeAdapterLifecycleSemanticsReport",
+    version: "0.1",
+    adapter: "three",
+    stableViewMode: false,
+    runtimeSupported: false,
+    stableRuntimeBlocked: true,
+    semantics: scene3dThreeAdapterLifecycleSemantics,
     diagnostics: stableRuntimeBlockedDiagnostics()
   };
 }
@@ -613,6 +775,7 @@ class Scene3DThreeAdapterRuntimeImpl implements Scene3DThreeAdapterRuntime {
   readonly spikeReport: Scene3DThreeAdapterSpikeReport;
   #extension: SceneView3DExtension;
   #loaded = false;
+  #failed = false;
   #destroyed = false;
 
   constructor(extension: SceneView3DExtension, options: Scene3DThreeAdapterSpikeOptions = {}) {
@@ -636,7 +799,24 @@ class Scene3DThreeAdapterRuntimeImpl implements Scene3DThreeAdapterRuntime {
       };
     }
 
+    if (!this.spikeReport.resourceReport.valid) {
+      this.#loaded = false;
+      this.#failed = true;
+      return {
+        kind: "Scene3DThreeAdapterRuntimeLoadReport",
+        version: "0.1",
+        adapter: "three",
+        stableViewMode: false,
+        runtimeSupported: false,
+        loaded: false,
+        diagnostics: [...this.spikeReport.diagnostics, failedDiagnostic("load")],
+        resourceReport: this.spikeReport.resourceReport,
+        spikeReport: this.spikeReport
+      };
+    }
+
     this.#loaded = true;
+    this.#failed = false;
     return {
       kind: "Scene3DThreeAdapterRuntimeLoadReport",
       version: "0.1",
@@ -652,6 +832,7 @@ class Scene3DThreeAdapterRuntimeImpl implements Scene3DThreeAdapterRuntime {
 
   async snapshot(options: Scene3DMockSnapshotOptions = {}): Promise<Scene3DMockSnapshotResult> {
     if (this.#destroyed) return destroyedSnapshotResult(this.#extension, options);
+    if (this.#failed) return failedSnapshotResult(this.#extension, options, this.spikeReport.resourceReport.diagnostics);
     if (!this.#loaded) return notLoadedSnapshotResult(this.#extension, options);
 
     const snapshot = snapshotScene3DMock(this.#extension, {
@@ -659,7 +840,11 @@ class Scene3DThreeAdapterRuntimeImpl implements Scene3DThreeAdapterRuntime {
       loadedSourceIds: options.loadedSourceIds ?? Object.keys(this.#extension.sources ?? {}),
       requireLoadedResources: options.requireLoadedResources ?? true
     });
-    const diagnostics = [...this.spikeReport.resourceReport.diagnostics, ...snapshot.diagnostics];
+    const diagnostics = [
+      ...this.spikeReport.resourceReport.diagnostics,
+      ...snapshot.diagnostics,
+      ...viewportDimensionDiagnostics(options.width ?? this.#extension.snapshot?.width, options.height ?? this.#extension.snapshot?.height)
+    ];
     return {
       ...snapshot,
       passed: !diagnostics.some((diagnostic) => diagnostic.severity === "error"),
@@ -670,6 +855,12 @@ class Scene3DThreeAdapterRuntimeImpl implements Scene3DThreeAdapterRuntime {
   async query(options: Scene3DQueryOptions = {}): Promise<Scene3DQueryResult> {
     if (this.#destroyed) {
       return { picks: [], diagnostics: [destroyedDiagnostic("query")] };
+    }
+    if (this.#failed) {
+      return {
+        picks: [],
+        diagnostics: [failedDiagnostic("query"), ...this.spikeReport.resourceReport.diagnostics]
+      };
     }
     if (!this.#loaded) {
       return { picks: [], diagnostics: [notLoadedDiagnostic("query")] };
@@ -684,15 +875,15 @@ class Scene3DThreeAdapterRuntimeImpl implements Scene3DThreeAdapterRuntime {
 
   async destroy(): Promise<ResourceReport> {
     if (this.#destroyed) {
-      return {
-        destroyed: true,
-        diagnostics: [destroyedDiagnostic("destroy")]
-      };
+      return destroyResourceReport(this.loadPlan, [destroyedDiagnostic("destroy")], false, false, true);
     }
 
+    const loadedBeforeDestroy = this.#loaded;
+    const failedBeforeDestroy = this.#failed;
     this.#destroyed = true;
     this.#loaded = false;
-    return { destroyed: true, diagnostics: [] };
+    this.#failed = false;
+    return destroyResourceReport(this.loadPlan, [], loadedBeforeDestroy, failedBeforeDestroy, false);
   }
 
   rendererEvidence(options: Scene3DThreeAdapterRendererEvidenceOptions = {}): Scene3DRendererVisualEvidence {
@@ -1039,6 +1230,51 @@ function notLoadedDiagnostic(operation: string): Diagnostic {
   };
 }
 
+function failedDiagnostic(operation: string): Diagnostic {
+  return {
+    severity: "error",
+    code: DiagnosticCodes.RenderAdapterError,
+    message: `Scene3DThreeAdapter runtime is in a failed load state before ${operation}.`,
+    path: `/runtime/failed/${operation}`,
+    relatedResources: [{ kind: "adapter", id: scene3dThreeAdapterBoundary.packageName }],
+    fix: {
+      kind: "manual",
+      confidence: "high",
+      message: "Inspect the resource-policy diagnostics, create a corrected runtime, and load it before retrying."
+    }
+  };
+}
+
+function viewportDimensionDiagnostics(width: number | undefined, height: number | undefined): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+  if (width !== undefined && !isPositiveFinite(width)) {
+    diagnostics.push(invalidViewportDimensionDiagnostic("width", width));
+  }
+  if (height !== undefined && !isPositiveFinite(height)) {
+    diagnostics.push(invalidViewportDimensionDiagnostic("height", height));
+  }
+  return diagnostics;
+}
+
+function invalidViewportDimensionDiagnostic(dimension: "width" | "height", value: number): Diagnostic {
+  return {
+    severity: "error",
+    code: DiagnosticCodes.RenderAdapterError,
+    message: `Scene3DThreeAdapter snapshot ${dimension} must be a positive finite number; received ${value}.`,
+    path: `/renderer/resize/${dimension}`,
+    relatedResources: [{ kind: "adapter", id: scene3dThreeAdapterBoundary.packageName }],
+    fix: {
+      kind: "manual",
+      confidence: "high",
+      message: "Provide positive finite viewport dimensions before requesting a renderer snapshot."
+    }
+  };
+}
+
+function isPositiveFinite(value: number): boolean {
+  return Number.isFinite(value) && value > 0;
+}
+
 function destroyedSnapshotResult(
   extension: SceneView3DExtension,
   options: Scene3DMockSnapshotOptions
@@ -1057,6 +1293,25 @@ function destroyedSnapshotResult(
   };
 }
 
+function failedSnapshotResult(
+  extension: SceneView3DExtension,
+  options: Scene3DMockSnapshotOptions,
+  diagnostics: Diagnostic[]
+): Scene3DMockSnapshotResult {
+  const snapshot = snapshotScene3DMock(extension, {
+    ...options,
+    loadedSourceIds: [],
+    requireLoadedResources: true
+  });
+  const { dataUrl, ...rest } = snapshot;
+  void dataUrl;
+  return {
+    ...rest,
+    passed: false,
+    diagnostics: [failedDiagnostic("snapshot"), ...diagnostics]
+  };
+}
+
 function notLoadedSnapshotResult(
   extension: SceneView3DExtension,
   options: Scene3DMockSnapshotOptions
@@ -1072,6 +1327,28 @@ function notLoadedSnapshotResult(
     ...rest,
     passed: false,
     diagnostics: [notLoadedDiagnostic("snapshot")]
+  };
+}
+
+function destroyResourceReport(
+  loadPlan: SceneResourceLoadPlan,
+  diagnostics: Diagnostic[],
+  loadedBeforeDestroy: boolean,
+  failedBeforeDestroy: boolean,
+  alreadyDestroyed: boolean
+): ResourceReport {
+  return {
+    destroyed: true,
+    diagnostics,
+    resources: {
+      adapter: scene3dThreeAdapterBoundary.packageName,
+      stableRuntimeBlocked: true,
+      loadedBeforeDestroy,
+      failedBeforeDestroy,
+      alreadyDestroyed,
+      plannedResourceCount: loadPlan.resources?.length ?? 0,
+      plannedWorkerCount: loadPlan.workerCount ?? 0
+    }
   };
 }
 

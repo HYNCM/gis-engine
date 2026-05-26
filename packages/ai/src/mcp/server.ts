@@ -170,6 +170,36 @@ const DiagnosticCountsSchema = {
   additionalProperties: false
 } as const;
 
+const CapabilityDomainSummarySchema = {
+  type: "object",
+  properties: {
+    id: { type: "string", enum: ["feature-display", "spatial-analysis", "scene-browsing"] },
+    status: { type: "string", enum: ["supported", "experimental", "blocked"] },
+    supported: { type: "array", items: { type: "string" } },
+    experimental: { type: "array", items: { type: "string" } },
+    blocked: { type: "array", items: { type: "string" } },
+    tools: {
+      type: "array",
+      items: {
+        type: "string",
+        enum: ["validate_spec", "apply_commands", "export_spec", "get_context_summary", "snapshot_spec", "explain_spec", "export_example_app"]
+      }
+    },
+    evidence: { type: "array", items: { type: "string" } }
+  },
+  required: ["id", "status", "supported", "experimental", "blocked", "tools", "evidence"],
+  additionalProperties: false
+} as const;
+
+const CapabilitySummarySchema = {
+  type: "object",
+  properties: {
+    domains: { type: "array", items: CapabilityDomainSummarySchema }
+  },
+  required: ["domains"],
+  additionalProperties: false
+} as const;
+
 const Scene3DContextSummarySchema = {
   type: "object",
   properties: {
@@ -301,10 +331,11 @@ export const ContextSummaryToolResultSchema = {
       required: ["valid", "diagnosticCounts"],
       additionalProperties: false
     },
+    capabilitySummary: CapabilitySummarySchema,
     capabilities: CapabilityReportContractSchema,
     scene3d: Scene3DContextSummarySchema
   },
-  required: ["view", "sources", "layers", "validation"],
+  required: ["view", "sources", "layers", "validation", "capabilitySummary"],
   additionalProperties: false
 } as const;
 
@@ -412,7 +443,7 @@ export const gisEngineTools = [
   },
   {
     name: "get_context_summary",
-    description: "Return a compact summary of a MapSpec for AI planning and review.",
+    description: "Return a compact MapSpec summary plus AI orchestration capability boundaries for planning and review.",
     inputSchema: ContextSummaryToolInputSchema,
     outputSchema: ContextSummaryToolResultSchema
   },
@@ -424,7 +455,7 @@ export const gisEngineTools = [
   },
   {
     name: "explain_spec",
-    description: "Return a structured AI-facing summary with full validation diagnostics.",
+    description: "Return a structured AI-facing summary, capability boundaries, and full validation diagnostics.",
     inputSchema: ExplainSpecToolInputSchema,
     outputSchema: ExplainSpecToolResultSchema
   },

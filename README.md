@@ -11,7 +11,7 @@ accepts real renderer evidence.
 The current implementation proves this loop:
 
 ```txt
-MapSpec -> validate -> render/transform -> command modify -> snapshot -> export
+Natural-language planner -> MCP capability summary -> MapSpec -> validate -> command modify -> snapshot -> export
 ```
 
 ## Why This Exists
@@ -36,7 +36,7 @@ Traditional map SDKs are powerful, but AI agents need a stricter contract:
 | Diagnostics | Functional | Diagnostic registry covers schema, source/layer references, expressions, resource URL policy, command failures, unsupported capabilities, and snapshot errors. |
 | Renderer adapter | Functional MVP | `MockAdapter` and `MapLibreAdapter` implement the renderer contract; MapLibre transformation covers GeoJSON, raster, PMTiles, and generic vector sources. |
 | Snapshot harness | Functional | Node smoke snapshots are deterministic; Playwright visual snapshots cover a GeoJSON scene and a generated local MVT vector tile scene. |
-| AI tools | Functional | MCP exposes `validate_spec`, `apply_commands`, `export_spec`, `get_context_summary`, `snapshot_spec`, `explain_spec`, and `export_example_app` with input and output schemas. `get_context_summary` and `explain_spec` include gated extension-only SceneView3D context when `extensions.scene3d` exists. CamelCase aliases are intentionally not supported. |
+| AI tools | Functional | MCP exposes `validate_spec`, `apply_commands`, `export_spec`, `get_context_summary`, `snapshot_spec`, `explain_spec`, and `export_example_app` with input and output schemas. `get_context_summary` and `explain_spec` include `capabilitySummary` for feature display, spatial analysis, and scene browsing, plus gated extension-only SceneView3D context when `extensions.scene3d` exists. CamelCase aliases are intentionally not supported. |
 | Examples/fixtures | Functional | Basic GeoJSON, AI map edit, raster-basemap, pmtiles-local, vector-tile-url, fill-extrusion-lite, and scene3d-extension examples plus schema/command/snapshot fixtures exist. |
 | CI/test gates | Functional | `pnpm build:schema` and `pnpm check` are required finish gates; strict visual snapshots require a browser/WebGL-capable runner. |
 | SceneView3D promotion | Handoff-ready | W23 promotion-readiness evidence is accepted; the next active work is SRC-001 through SRC-006 for stable renderer contract, lifecycle, snapshot/query, resource-policy, release-gate, and final promotion-decision evidence. |

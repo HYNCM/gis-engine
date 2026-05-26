@@ -93,6 +93,11 @@ describe("SceneView3D release visual gate", () => {
 
     expect(report.decision).toBe("passed");
     expect(report.accepted).toBe(true);
+    expect(report.runtime).toEqual({
+      status: "extension-only",
+      stableViewMode: false,
+      rendererVisualRequired: true
+    });
     expect(report.evidence.rendererVisual).toEqual({
       passed: true,
       renderer: "scene3d-browser-runner",
@@ -113,8 +118,51 @@ describe("SceneView3D release visual gate", () => {
     expect(runner.capture.nonTransparentPixels).toBeGreaterThan(0);
     expect(runner.capture.changedPixelsFromBackground).toBeGreaterThan(0);
     expect(runner.rendererEvidence.passed).toBe(true);
+    expect(runner.snapshot.passed).toBe(true);
+    expect(runner.snapshot.pendingSourceIds).toEqual([]);
+    expect(runner.query.picks.map((pick) => pick.objectId)).toEqual([
+      "city-tiles:city:mock",
+      "station-model:station:mock"
+    ]);
+    expect(runner.report.promotionMatrix).toEqual(
+      expect.objectContaining({
+        stableViewMode: false,
+        runtimeSupported: false,
+        snapshotQueryEvidence: {
+          fixture: "tests/fixtures/specs/valid/scene3d-extension.map.json",
+          snapshot: {
+            passed: true,
+            format: "data-url",
+            width: runner.snapshot.summary.width,
+            height: runner.snapshot.summary.height,
+            pendingSourceIds: [],
+            diagnosticCounts: {
+              error: 0,
+              warning: 0,
+              info: 0
+            }
+          },
+          query: {
+            pickCount: 2,
+            objectIds: ["city-tiles:city:mock", "station-model:station:mock"],
+            layerIds: ["city", "station"],
+            sourceIds: ["city-tiles", "station-model"],
+            diagnosticCounts: {
+              error: 0,
+              warning: 0,
+              info: 0
+            }
+          }
+        },
+        readiness: expect.objectContaining({
+          decisionReady: true,
+          stablePromotionAllowed: false
+        })
+      })
+    );
     expect(report.decision).toBe("passed");
     expect(report.accepted).toBe(true);
+    expect(report.runtime.stableViewMode).toBe(false);
     expect(report.evidence.rendererVisual).toEqual(runner.rendererEvidence);
   });
 });

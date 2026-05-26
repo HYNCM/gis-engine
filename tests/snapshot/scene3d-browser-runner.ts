@@ -8,6 +8,7 @@ import {
   createScene3DThreeAdapterRuntime,
   type Scene3DThreeAdapterVisualCapture
 } from "../../packages/scene3d-three-adapter/src/index.js";
+import { type Scene3DMockSnapshotResult, type Scene3DQueryResult } from "../../packages/scene3d/src/index.js";
 import { type SnapshotReport } from "./report.js";
 
 const defaultWidth = 320;
@@ -119,6 +120,8 @@ export async function runScene3DThreeAdapterBrowserRunner(
       snapshot.summary,
       reportPath,
       promotionEvidenceSummary,
+      snapshot,
+      query,
       rendererEvidence.diagnostics ?? []
     );
 
@@ -263,6 +266,8 @@ function createSnapshotReport(
   spec: SnapshotReport["spec"],
   reportPath: string,
   promotionEvidenceSummary: Scene3DThreeAdapterPromotionEvidenceSummary,
+  snapshot: Scene3DMockSnapshotResult,
+  query: Scene3DQueryResult,
   rendererDiagnostics: SnapshotReport["diagnostics"]
 ): Scene3DThreeAdapterBrowserRunnerReport {
   const passed =
@@ -291,6 +296,8 @@ function createSnapshotReport(
       browserRenderResult,
       consoleErrors,
       promotionEvidenceSummary,
+      snapshot,
+      query,
       rendererDiagnostics
     ),
     artifacts: {
@@ -319,6 +326,8 @@ function createPromotionMatrixSummary(
   browserRenderResult: Scene3DThreeAdapterBrowserRenderResult,
   consoleErrors: string[],
   promotionEvidenceSummary: Scene3DThreeAdapterPromotionEvidenceSummary,
+  snapshot: Scene3DMockSnapshotResult,
+  query: Scene3DQueryResult,
   rendererDiagnostics: SnapshotReport["diagnostics"]
 ): Scene3DThreeAdapterPromotionMatrixSummary {
   return {
@@ -351,6 +360,24 @@ function createPromotionMatrixSummary(
       ...(promotionEvidenceSummary.evidence.rendererVisual.reportPath
         ? { reportPath: promotionEvidenceSummary.evidence.rendererVisual.reportPath }
         : {})
+    },
+    snapshotQueryEvidence: {
+      fixture: "tests/fixtures/specs/valid/scene3d-extension.map.json",
+      snapshot: {
+        passed: snapshot.passed,
+        format: snapshot.summary.format,
+        width: snapshot.summary.width,
+        height: snapshot.summary.height,
+        pendingSourceIds: [...snapshot.pendingSourceIds],
+        diagnosticCounts: promotionEvidenceSummary.evidence.snapshot.diagnostics
+      },
+      query: {
+        pickCount: query.picks.length,
+        objectIds: query.picks.map((pick) => pick.objectId),
+        layerIds: query.picks.map((pick) => pick.layerId),
+        sourceIds: query.picks.map((pick) => pick.sourceId),
+        diagnosticCounts: promotionEvidenceSummary.evidence.query.diagnostics
+      }
     },
     readiness: {
       load: promotionEvidenceSummary.evidence.load.loaded,
@@ -433,6 +460,24 @@ export interface Scene3DThreeAdapterPromotionMatrixSummary {
     passed: boolean;
     ready: boolean;
     reportPath?: string;
+  };
+  snapshotQueryEvidence: {
+    fixture: "tests/fixtures/specs/valid/scene3d-extension.map.json";
+    snapshot: {
+      passed: boolean;
+      format: "png" | "data-url";
+      width: number;
+      height: number;
+      pendingSourceIds: string[];
+      diagnosticCounts: Scene3DThreeAdapterDiagnosticCounts;
+    };
+    query: {
+      pickCount: number;
+      objectIds: string[];
+      layerIds: string[];
+      sourceIds: string[];
+      diagnosticCounts: Scene3DThreeAdapterDiagnosticCounts;
+    };
   };
   readiness: {
     load: boolean;

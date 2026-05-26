@@ -19,6 +19,8 @@ import {
   createScene3DThreeAdapterRendererEvidence,
   createScene3DThreeAdapterRuntime,
   evaluateScene3DThreeAdapterSpike,
+  getScene3DThreeAdapterLifecycleSemantics,
+  getScene3DThreeAdapterStableRendererContract,
   type Scene3DThreeAdapterRuntime
 } from "../../../packages/scene3d-three-adapter/src/index.js";
 
@@ -40,18 +42,21 @@ const adapterEstimates = {
 
 describe("SceneView3D stable renderer contract QA slice", () => {
   it("records deterministic lifecycle, failure, cancellation, and cleanup semantics without promoting stable runtime", async () => {
-    const contract = stableLifecycleSemanticContract();
+    const contract = getScene3DThreeAdapterLifecycleSemantics().semantics;
     expect(contract.map((entry) => entry.operation)).toEqual([
       "load",
       "reload",
       "resize",
-      "destroy",
+      "snapshot",
+      "query",
       "failure",
-      "cancellation",
-      "resource cleanup"
+      "cancel",
+      "destroy",
+      "resourceCleanup"
     ]);
     expect(contract.every((entry) => entry.deterministic)).toBe(true);
-    expect(contract.every((entry) => entry.requiredDiagnostics.length > 0)).toBe(true);
+    expect(contract.every((entry) => entry.diagnosticCodes.length > 0)).toBe(true);
+    expect(contract.every((entry) => entry.diagnosticPaths.length > 0)).toBe(true);
 
     const runtime = createStableContractRuntime();
     expect(runtime.stableViewMode).toBe(false);
@@ -105,6 +110,20 @@ describe("SceneView3D stable renderer contract QA slice", () => {
       })
     );
 
+    const invalidResizeSnapshot = await runtime.snapshot({
+      ...deterministicSnapshotOptions,
+      width: -1,
+      height: 0
+    });
+    expect(invalidResizeSnapshot.passed).toBe(false);
+    expectStructuredDiagnostics(invalidResizeSnapshot.diagnostics, [DiagnosticCodes.RenderAdapterError]);
+    expect(invalidResizeSnapshot.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: "/renderer/resize/width" }),
+        expect.objectContaining({ path: "/renderer/resize/height" })
+      ])
+    );
+
     const query = await runtime.query({ layers: ["city", "station"] });
     const repeatedQuery = await runtime.query({ layers: ["city", "station"] });
     expect(repeatedQuery).toEqual(query);
@@ -116,13 +135,45 @@ describe("SceneView3D stable renderer contract QA slice", () => {
       }
     });
     const failureLoadReport = await failingRuntime.load();
+    expect(failureLoadReport.loaded).toBe(false);
     expect(failureLoadReport.resourceReport.valid).toBe(false);
-    expectStructuredDiagnostics(failureLoadReport.diagnostics, [DiagnosticCodes.SecurityResourceTooLarge]);
+    expectStructuredDiagnostics(failureLoadReport.diagnostics, [
+      DiagnosticCodes.SecurityResourceTooLarge,
+      DiagnosticCodes.RenderAdapterError
+    ]);
+    expect(failureLoadReport.diagnostics).toContainEqual(expect.objectContaining({ path: "/runtime/failed/load" }));
+    const failureSnapshot = await failingRuntime.snapshot(deterministicSnapshotOptions);
+    const failureQuery = await failingRuntime.query();
+    expect(failureSnapshot.passed).toBe(false);
+    expect(failureQuery.picks).toEqual([]);
+    expect(failureSnapshot.diagnostics).toContainEqual(
+      expect.objectContaining({ path: "/runtime/failed/snapshot" })
+    );
+    expect(failureQuery.diagnostics).toContainEqual(expect.objectContaining({ path: "/runtime/failed/query" }));
 
     const destroyReport = await runtime.destroy();
     const repeatedDestroyReport = await runtime.destroy();
-    expect(destroyReport).toEqual({ destroyed: true, diagnostics: [] });
+    expect(destroyReport).toEqual(
+      expect.objectContaining({
+        destroyed: true,
+        diagnostics: [],
+        resources: expect.objectContaining({
+          stableRuntimeBlocked: true,
+          loadedBeforeDestroy: true,
+          failedBeforeDestroy: false,
+          plannedResourceCount: 4,
+          plannedWorkerCount: 1
+        })
+      })
+    );
     expect(repeatedDestroyReport.destroyed).toBe(true);
+    expect(repeatedDestroyReport.resources).toEqual(
+      expect.objectContaining({
+        alreadyDestroyed: true,
+        loadedBeforeDestroy: false,
+        failedBeforeDestroy: false
+      })
+    );
     expectStructuredDiagnostics(repeatedDestroyReport.diagnostics, [DiagnosticCodes.RenderDestroyed]);
     expect(repeatedDestroyReport.diagnostics).toContainEqual(
       expect.objectContaining({ path: "/runtime/destroyed/destroy" })
@@ -144,7 +195,14 @@ describe("SceneView3D stable renderer contract QA slice", () => {
     expect(afterDestroyQuery.diagnostics).toContainEqual(expect.objectContaining({ path: "/runtime/destroyed/query" }));
 
     const cancelledBeforeLoadRuntime = createStableContractRuntime();
-    await cancelledBeforeLoadRuntime.destroy();
+    const cancelReport = await cancelledBeforeLoadRuntime.destroy();
+    expect(cancelReport.resources).toEqual(
+      expect.objectContaining({
+        loadedBeforeDestroy: false,
+        failedBeforeDestroy: false,
+        plannedResourceCount: 4
+      })
+    );
     const cancelledLoad = await cancelledBeforeLoadRuntime.load();
     const cancelledQuery = await cancelledBeforeLoadRuntime.query();
     expect(cancelledLoad.loaded).toBe(false);
@@ -154,6 +212,31 @@ describe("SceneView3D stable renderer contract QA slice", () => {
   });
 
   it("defines stable snapshot and query semantics for metrics, camera, picks, no-hit, hidden, and missing-layer states", () => {
+    const stableRendererContract = getScene3DThreeAdapterStableRendererContract();
+    expect(stableRendererContract.stableRuntimeBlocked).toBe(true);
+    expect(stableRendererContract.stableViewMode).toBe(false);
+    expect(stableRendererContract.runtimeSupported).toBe(false);
+    expect(
+      stableRendererContract.obligations
+        .filter((obligation) => obligation.id === "snapshot" || obligation.id === "query")
+        .map((obligation) => ({
+          id: obligation.id,
+          requiredEvidence: obligation.requiredEvidence,
+          diagnosticPaths: obligation.diagnosticPaths
+        }))
+    ).toEqual([
+      {
+        id: "snapshot",
+        requiredEvidence: ["Scene3DMockSnapshotResult", "visual snapshot report"],
+        diagnosticPaths: ["/snapshot", "/snapshot/resources"]
+      },
+      {
+        id: "query",
+        requiredEvidence: ["Scene3DQueryResult", "pick coverage report"],
+        diagnosticPaths: ["/query", "/query/picks"]
+      }
+    ]);
+
     const extension = scene3dExtension();
     const snapshot = snapshotScene3DMock(extension, deterministicSnapshotOptions);
     const repeatedSnapshot = snapshotScene3DMock(extension, deterministicSnapshotOptions);
@@ -323,60 +406,6 @@ describe("SceneView3D stable renderer contract QA slice", () => {
     );
   });
 });
-
-interface LifecycleSemanticContractEntry {
-  operation: "load" | "reload" | "resize" | "destroy" | "failure" | "cancellation" | "resource cleanup";
-  deterministic: true;
-  requiredDiagnostics: Diagnostic["code"][];
-  currentEvidence: string;
-}
-
-function stableLifecycleSemanticContract(): LifecycleSemanticContractEntry[] {
-  return [
-    {
-      operation: "load",
-      deterministic: true,
-      requiredDiagnostics: [DiagnosticCodes.CapabilityUnsupported, DiagnosticCodes.RenderAdapterError],
-      currentEvidence: "runtime.load reports stableViewMode=false and structured unsupported-runtime diagnostics"
-    },
-    {
-      operation: "reload",
-      deterministic: true,
-      requiredDiagnostics: [DiagnosticCodes.CapabilityUnsupported],
-      currentEvidence: "repeated runtime.load calls return the same adapter-local load diagnostics"
-    },
-    {
-      operation: "resize",
-      deterministic: true,
-      requiredDiagnostics: [DiagnosticCodes.RenderAdapterError],
-      currentEvidence: "snapshot width and height are deterministic, but a stable renderer still needs an explicit resize contract"
-    },
-    {
-      operation: "destroy",
-      deterministic: true,
-      requiredDiagnostics: [DiagnosticCodes.RenderDestroyed],
-      currentEvidence: "runtime.destroy is idempotent and post-destroy operations return RENDER.DESTROYED diagnostics"
-    },
-    {
-      operation: "failure",
-      deterministic: true,
-      requiredDiagnostics: [DiagnosticCodes.SecurityResourceTooLarge, DiagnosticCodes.RenderAdapterError],
-      currentEvidence: "resource-policy failures are structured and keep promotion evidence from becoming stable"
-    },
-    {
-      operation: "cancellation",
-      deterministic: true,
-      requiredDiagnostics: [DiagnosticCodes.RenderDestroyed, DiagnosticCodes.CapabilityUnsupported],
-      currentEvidence: "destroy-before-load is deterministic cleanup evidence; stable renderer cancellation remains an explicit blocker"
-    },
-    {
-      operation: "resource cleanup",
-      deterministic: true,
-      requiredDiagnostics: [DiagnosticCodes.RenderDestroyed],
-      currentEvidence: "destroy clears loaded state and later load/snapshot/query calls do not revive resources"
-    }
-  ];
-}
 
 function createStableContractRuntime(): Scene3DThreeAdapterRuntime {
   return createScene3DThreeAdapterRuntime(scene3dExtension(), { estimates: adapterEstimates });

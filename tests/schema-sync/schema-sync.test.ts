@@ -168,6 +168,8 @@ describe("schema sync gate", () => {
 
   it("exposes SceneView3D context in MCP output schemas behind the extension boundary", () => {
     expect(ContextSummaryToolResultSchema.properties).toHaveProperty("scene3d");
+    expect(ContextSummaryToolResultSchema.properties).toHaveProperty("capabilitySummary");
+    expect(ContextSummaryToolResultSchema.required).toContain("capabilitySummary");
     expect(ExplainSpecToolResultSchema.properties.summary).toBe(ContextSummaryToolResultSchema);
   });
 

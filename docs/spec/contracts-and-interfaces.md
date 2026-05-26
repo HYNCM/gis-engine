@@ -225,6 +225,27 @@ renderer or promotion evidence summaries; those stay in release-gate,
 visual-runner, and adapter promotion artifacts until a future public AI use
 case is approved.
 
+## AI Orchestration Capability Summary
+
+`get_context_summary` and `explain_spec` must include a `capabilitySummary`
+block for natural-language planning. The block groups current public capability
+boundaries by domain:
+
+- `feature-display`: supported MapSpec source/layer display, command-only
+  mutation tools, snapshot evidence, and any experimental display gates such as
+  `fill-extrusion-lite`.
+- `spatial-analysis`: read-only point/bbox query readiness when declared by
+  adapter capabilities, plus explicit blockers for analysis workflows that do
+  not have public MCP tools yet.
+- `scene-browsing`: extension-only SceneView3D planning evidence, mock
+  snapshot/query readiness, and an explicit stable runtime blocker for
+  `view.mode: "scene3d"`.
+
+The summary is discovery metadata only. It must reference existing snake_case
+tool names and evidence fields; it must not introduce alias tool names or claim
+that a natural-language model can execute unsupported geoprocessing or stable
+SceneView3D runtime browsing.
+
 ### 事务语义
 
 ```ts

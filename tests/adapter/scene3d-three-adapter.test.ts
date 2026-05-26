@@ -17,6 +17,7 @@ import {
   createScene3DThreeAdapterRuntime,
   evaluateScene3DThreeAdapterSpike,
   getScene3DThreeAdapterCapabilities,
+  getScene3DThreeAdapterLifecycleSemantics,
   getScene3DThreeAdapterStableRendererContract,
   scene3dThreeAdapterBoundary
 } from "../../packages/scene3d-three-adapter/src/index.js";
@@ -81,6 +82,23 @@ describe("SceneView3D Three.js adapter spike", () => {
         requiredEvidence: expect.arrayContaining(["Scene3DQueryResult", "pick coverage report"])
       })
     );
+    expect(contract.lifecycleSemantics.map((semantic) => semantic.operation)).toEqual([
+      "load",
+      "reload",
+      "resize",
+      "snapshot",
+      "query",
+      "failure",
+      "cancel",
+      "destroy",
+      "resourceCleanup"
+    ]);
+    expect(contract.lifecycleSemantics.find((semantic) => semantic.operation === "failure")).toEqual(
+      expect.objectContaining({
+        to: "failed",
+        diagnosticPaths: expect.arrayContaining(["/runtime/failed/load", "/extensions/scene3d/sources"])
+      })
+    );
     expect(contract.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -102,6 +120,40 @@ describe("SceneView3D Three.js adapter spike", () => {
           path: "/capabilities/dimensions"
         })
       ])
+    );
+  });
+
+  it("exports lifecycle and failure-state semantics as adapter-local contract evidence", () => {
+    const report = getScene3DThreeAdapterLifecycleSemantics();
+
+    expect(report).toEqual(
+      expect.objectContaining({
+        kind: "Scene3DThreeAdapterLifecycleSemanticsReport",
+        stableViewMode: false,
+        runtimeSupported: false,
+        stableRuntimeBlocked: true
+      })
+    );
+    expect(report.semantics.every((semantic) => semantic.deterministic)).toBe(true);
+    expect(report.semantics.find((semantic) => semantic.operation === "resize")).toEqual(
+      expect.objectContaining({
+        diagnosticCodes: expect.arrayContaining(["RENDER.ADAPTER_ERROR"]),
+        diagnosticPaths: ["/renderer/resize/width", "/renderer/resize/height"]
+      })
+    );
+    expect(report.semantics.find((semantic) => semantic.operation === "cancel")).toEqual(
+      expect.objectContaining({
+        to: "destroyed",
+        idempotent: true,
+        diagnosticPaths: expect.arrayContaining(["/runtime/destroy", "/runtime/destroyed/load"])
+      })
+    );
+    expect(report.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: "CAPABILITY.UNSUPPORTED",
+        path: "/capabilities/renderer"
+      })
     );
   });
 
@@ -345,10 +397,20 @@ describe("SceneView3D Three.js adapter spike", () => {
     expect(releaseGate.accepted).toBe(true);
 
     const destroyReport = await runtime.destroy();
-    expect(destroyReport).toEqual({
-      destroyed: true,
-      diagnostics: []
-    });
+    expect(destroyReport).toEqual(
+      expect.objectContaining({
+        destroyed: true,
+        diagnostics: [],
+        resources: expect.objectContaining({
+          adapter: "@gis-engine/scene3d-three-adapter",
+          stableRuntimeBlocked: true,
+          loadedBeforeDestroy: true,
+          failedBeforeDestroy: false,
+          plannedResourceCount: 4,
+          plannedWorkerCount: 1
+        })
+      })
+    );
 
     const destroyedSnapshot = await runtime.snapshot();
     expect(destroyedSnapshot.passed).toBe(false);
@@ -368,6 +430,99 @@ describe("SceneView3D Three.js adapter spike", () => {
         code: "RENDER.DESTROYED",
         path: "/runtime/destroyed/query"
       })
+    );
+  });
+
+  it("keeps failed loads unloaded and reports stable failed-state diagnostics", async () => {
+    const runtime = createScene3DThreeAdapterRuntime(scene3dExtension(), {
+      estimates: {
+        tilesetJsonBytes: { "city-tiles": 2_000_000 },
+        modelBytes: { "station-model": 1_048_576 },
+        workerCount: 1
+      }
+    });
+
+    const loadReport = await runtime.load();
+    expect(loadReport.loaded).toBe(false);
+    expect(loadReport.resourceReport.valid).toBe(false);
+    expect(loadReport.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          severity: "error",
+          code: "SECURITY.RESOURCE_TOO_LARGE",
+          path: "/extensions/scene3d/sources/city-tiles/url"
+        }),
+        expect.objectContaining({
+          severity: "error",
+          code: "RENDER.ADAPTER_ERROR",
+          path: "/runtime/failed/load"
+        })
+      ])
+    );
+
+    const snapshot = await runtime.snapshot({ format: "data-url" });
+    expect(snapshot.passed).toBe(false);
+    expect(snapshot.dataUrl).toBeUndefined();
+    expect(snapshot.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: "RENDER.ADAPTER_ERROR",
+        path: "/runtime/failed/snapshot"
+      })
+    );
+
+    const query = await runtime.query();
+    expect(query.picks).toEqual([]);
+    expect(query.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: "RENDER.ADAPTER_ERROR",
+        path: "/runtime/failed/query"
+      })
+    );
+
+    const destroyReport = await runtime.destroy();
+    expect(destroyReport.resources).toEqual(
+      expect.objectContaining({
+        loadedBeforeDestroy: false,
+        failedBeforeDestroy: true,
+        alreadyDestroyed: false
+      })
+    );
+  });
+
+  it("reports invalid resize dimensions with stable renderer paths", async () => {
+    const runtime = createScene3DThreeAdapterRuntime(scene3dExtension(), {
+      estimates: {
+        tilesetJsonBytes: { "city-tiles": 512_000 },
+        modelBytes: { "station-model": 1_048_576 },
+        textureCount: { "terrain-dem": 1, "station-model": 4 },
+        textureBytes: { "terrain-dem": 262_144, "station-model": 2_097_152 },
+        workerCount: 1
+      }
+    });
+    await runtime.load();
+
+    const snapshot = await runtime.snapshot({
+      width: 0,
+      height: Number.NaN,
+      format: "data-url"
+    });
+
+    expect(snapshot.passed).toBe(false);
+    expect(snapshot.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          severity: "error",
+          code: "RENDER.ADAPTER_ERROR",
+          path: "/renderer/resize/width"
+        }),
+        expect.objectContaining({
+          severity: "error",
+          code: "RENDER.ADAPTER_ERROR",
+          path: "/renderer/resize/height"
+        })
+      ])
     );
   });
 

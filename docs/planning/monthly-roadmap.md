@@ -27,11 +27,20 @@ decision_level: advisory
 
 本轮已执行的第一块切片是 `TASK-2026W22-CSI-003`：SceneView3D Three adapter pre-load/post-destroy lifecycle diagnostics 现在有稳定路径，便于 AI 工具和质量门禁解释失败状态。后续工作应只围绕明确 promotion step，不得直接进入 core renderer。
 
+2026-05-27 目标校准：最终产品目标是让使用者通过自然语言调用 AI
+生成地图应用，覆盖地理信息要素展示、空间分析和场景浏览。当前路线因此新增
+AI-facing 能力摘要：`get_context_summary` / `explain_spec` 输出
+`capabilitySummary`，按 `feature-display`、`spatial-analysis` 和
+`scene-browsing` 暴露 supported / experimental / blocked 边界、可调用 MCP
+工具和证据字段。Scene browsing 仍只作为 `extensions.scene3d`
+extension-only 规划证据；stable `view.mode: "scene3d"` 继续 blocked。
+
 ## 2026-W22 Iteration Path
 
 | Priority | Track | Plan | Exit Condition |
 | --- | --- | --- | --- |
 | P0 | SceneView3D governance | Keep stable `view.mode: "scene3d"` blocked until SRC-006 | quality-guardian and coordinator record explicit Go/No-go after SRC-001 through SRC-005 evidence is accepted |
+| P0 | AI natural-language app generation | Make feature display, spatial analysis, and scene browsing capability boundaries machine-readable | `get_context_summary` and `explain_spec` expose `capabilitySummary` with schema-tested MCP output |
 | P1 | SceneView3D lifecycle evidence | Close path-stable lifecycle diagnostics and keep adapter-local runtime semantics deterministic | adapter tests and smoke lifecycle contract pass |
 | P1 | MapLibre/vector compatibility | Add a version-drift audit checklist before changing `maplibre-gl` | checklist names transformer, resource-policy, smoke/visual snapshot, and release-runner implications |
 | P1 | Cloud-native examples | Keep PMTiles/vector source examples release-gated | schema fixtures, examples, resource policy, smoke snapshots, and visual snapshots remain aligned |
@@ -82,6 +91,7 @@ decision_level: advisory
 | SceneView3D alpha gate audit | `sceneview3d-alpha-gate-audit-2026-05-18.md` conditional alpha pass; stable 3D runtime remains blocked |
 | SceneView3D Three.js adapter spike | `@gis-engine/scene3d-three-adapter` package, deterministic load plan, resource policy integration, dependency isolation tests |
 | SceneView3D renderer evidence handoff | `createScene3DThreeAdapterRendererEvidence` turns future browser/WebGL capture metrics into release-gate compatible renderer evidence while keeping missing, blank, or resource-policy-failing evidence blocked |
+| AI orchestration capability summary | `get_context_summary` / `explain_spec` expose `feature-display`, `spatial-analysis`, and `scene-browsing` domains with tool names, evidence, and blocked boundaries |
 
 ## 本月行动
 

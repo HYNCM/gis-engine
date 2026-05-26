@@ -52,6 +52,32 @@ test("renders a release-capable SceneView3D browser runner snapshot", async ({},
     ready: true,
     reportPath: "test-results/scene3d-three-adapter/browser-runner-report.json"
   });
+  expect(matrix.snapshotQueryEvidence).toEqual({
+    fixture: "tests/fixtures/specs/valid/scene3d-extension.map.json",
+    snapshot: {
+      passed: true,
+      format: "data-url",
+      width: runner.snapshot.summary.width,
+      height: runner.snapshot.summary.height,
+      pendingSourceIds: [],
+      diagnosticCounts: {
+        error: 0,
+        warning: 0,
+        info: 0
+      }
+    },
+    query: {
+      pickCount: 2,
+      objectIds: ["city-tiles:city:mock", "station-model:station:mock"],
+      layerIds: ["city", "station"],
+      sourceIds: ["city-tiles", "station-model"],
+      diagnosticCounts: {
+        error: 0,
+        warning: 0,
+        info: 0
+      }
+    }
+  });
   expect(matrix.readiness).toEqual({
     load: true,
     snapshot: true,

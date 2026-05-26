@@ -143,12 +143,19 @@ describe("MCP Server Integration", () => {
       sources: Array<{ id: string; type: string }>;
       layers: Array<{ id: string; visibility: string }>;
       validation: { valid: boolean; diagnosticCounts: { error: number } };
+      capabilitySummary: { domains: Array<{ id: string; status: string; tools: string[]; blocked: string[] }> };
     };
     expect(summary.id).toBe("style-update");
     expect(summary.revision).toBe("1");
     expect(summary.sources).toEqual([{ id: "districts", type: "geojson" }]);
     expect(summary.layers[0]).toMatchObject({ id: "district-fill", visibility: "visible" });
     expect(summary.validation).toMatchObject({ valid: true, diagnosticCounts: { error: 0 } });
+    expect(summary.capabilitySummary.domains.map((domain) => domain.id)).toEqual(["feature-display", "spatial-analysis", "scene-browsing"]);
+    expect(summary.capabilitySummary.domains.find((domain) => domain.id === "feature-display")).toMatchObject({
+      status: "supported"
+    });
+    expect(summary.capabilitySummary.domains.find((domain) => domain.id === "feature-display")?.tools.join(" ")).toContain("apply_commands");
+    expect(summary.capabilitySummary.domains.find((domain) => domain.id === "spatial-analysis")?.blocked.join(" ")).toContain("buffer");
   });
 
   it("exposes gated SceneView3D context without enabling stable 3D runtime", async () => {
@@ -171,6 +178,7 @@ describe("MCP Server Integration", () => {
         query: { pickCount: number };
         capabilities: { renderer: string; dimensions: string[] };
       };
+      capabilitySummary: { domains: Array<{ id: string; status: string; blocked: string[]; evidence: string[] }> };
       validation: { valid: boolean };
     };
 
@@ -189,6 +197,10 @@ describe("MCP Server Integration", () => {
     });
     expect(summary.scene3d).not.toHaveProperty("rendererEvidence");
     expect(summary.scene3d).not.toHaveProperty("promotionEvidence");
+    const sceneDomain = summary.capabilitySummary.domains.find((domain) => domain.id === "scene-browsing");
+    expect(sceneDomain).toMatchObject({ status: "experimental" });
+    expect(sceneDomain?.blocked.join(" ")).toContain('stable view.mode: "scene3d" runtime rendering is blocked');
+    expect(sceneDomain?.evidence).toEqual(expect.arrayContaining(["scene3d.status=extension-only", "scene3d.stableViewMode=false"]));
   });
 
   it("covers v0.2 vector tile and expression contracts through MCP tools", async () => {
@@ -226,6 +238,7 @@ describe("MCP Server Integration", () => {
         sources: Array<{ id: string; type: string }>;
         layers: Array<{ id: string; type: string; source?: string }>;
         capabilities?: { sources: string[]; expressions: string[] };
+        capabilitySummary: { domains: Array<{ id: string; supported: string[] }> };
       };
       validation: { valid: boolean };
     };
@@ -235,6 +248,9 @@ describe("MCP Server Integration", () => {
     expect(explanation.summary.layers.map((layer) => layer.id)).toEqual(["parcel-fill", "parcel-outline"]);
     expect(explanation.summary.capabilities?.sources).toContain("vector");
     expect(explanation.summary.capabilities?.expressions).toEqual(expect.arrayContaining(["case", "match", "zoom", "to-number", "to-string"]));
+    expect(explanation.summary.capabilitySummary.domains.find((domain) => domain.id === "spatial-analysis")?.supported.join(" ")).toContain(
+      "declared query capabilities: point"
+    );
 
     const snapshotResult = await callGisEngineTool({
       params: {
