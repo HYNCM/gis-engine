@@ -1,8 +1,8 @@
 ---
 agent: task-distributor
 period: 2026-W23
-generated_at: 2026-05-29T06:47:19Z
-repo_revision: "36099f4966f7028b092f3d2f3a1327825b32686f"
+generated_at: 2026-05-29T07:05:30Z
+repo_revision: "957094d07fa61a77c8630f9f58b0db57cd1a3d49"
 inputs:
   - docs/research/competitor-updates-2026-W22.md
   - docs/research/capability-scorecard.md
@@ -11,6 +11,7 @@ inputs:
   - docs/planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md
   - docs/reviews/nla-002-generation-command-contract-2026-05-29.md
   - docs/reviews/nla-003-mcp-orchestration-evidence-2026-05-29.md
+  - docs/reviews/nla-004-generation-scenarios-2026-05-29.md
 owner: "@task-distributor"
 decision_level: advisory
 ---
@@ -48,7 +49,7 @@ continues to use `extensions.scene3d` and adapter-local evidence only.
 | TASK-2026W23-NLA-001 | Freeze natural-language map app product boundary | P0 | S | `@coordinator`, `@product-strategist` | done | SRC-006 No-go | feature display, spatial analysis, and scene browsing boundaries are documented without stable 3D promotion | product spec and scorecard update |
 | TASK-2026W23-NLA-002 | Define generation `MapSpec` and command skeleton contract | P0 | M | `@engine-agent` | done | NLA-001 | `docs/reviews/nla-002-generation-command-contract-2026-05-29.md`; generation request/result schemas and command skeleton keep TypeBox/Ajv and `applyCommands` on the path | `pnpm build:schema`; `pnpm test:commands`; `pnpm test:schema-sync`; `pnpm check` |
 | TASK-2026W23-NLA-003 | Design MCP orchestration without new tool aliases | P0 | M | `@ai-agent` | done | NLA-001, NLA-002 | `docs/reviews/nla-003-mcp-orchestration-evidence-2026-05-29.md`; generation evidence bundle composes existing tools without registering aliases and keeps schema coverage | `pnpm test:ai`; `pnpm test:schema-sync`; `pnpm build:schema`; `pnpm check` |
-| TASK-2026W23-NLA-004 | Define feature-display and spatial-analysis minimum generated scenarios | P1 | M | `@engine-agent`, `@ai-agent` | todo | NLA-002, NLA-003 | covers layer/source/style edits, query/readiness evidence, dry-run/replay/rollback, and blocked analysis diagnostics | command replay tests; AI integration tests |
+| TASK-2026W23-NLA-004 | Define feature-display and spatial-analysis minimum generated scenarios | P1 | M | `@engine-agent`, `@ai-agent` | done | NLA-002, NLA-003 | `docs/reviews/nla-004-generation-scenarios-2026-05-29.md`; covers source/layer/style edits, query readiness, dry-run/replay/rollback, and blocked analysis diagnostics | `pnpm test:commands`; `pnpm test:ai`; `pnpm build:schema`; `pnpm test:schema-sync`; `pnpm check` |
 | TASK-2026W23-NLA-005 | Keep scene browsing extension-only in generation flow | P1 | S | `@adapter-agent` | todo | NLA-001 | scene browsing may use `extensions.scene3d` evidence, but stable `view.mode: "scene3d"` remains blocked and renderer deps stay adapter-local | adapter tests/build when touched; `pnpm test:release:scene3d` for evidence claims |
 | TASK-2026W23-NLA-006 | Add end-to-end prompt evidence scenarios | P1 | L | `@qa-agent` | todo | NLA-003, NLA-004, NLA-005 | prompt-to-MapSpec/commands/snapshot/export evidence covers feature display, spatial analysis readiness, and scene browsing blocked/extension-only behavior | snapshot smoke/visual as affected; `pnpm check` |
 | TASK-2026W23-NLA-007 | Align docs, examples, and release wording | P2 | M | `@docs-agent` | todo | NLA-004, NLA-005, NLA-006 | docs explain generation flow, supported boundaries, diagnostics, and export evidence without stable 3D overclaim | docs audit; link check when available |

@@ -1,8 +1,8 @@
 ---
 agent: coordinator
 period: 2026-W23
-generated_at: 2026-05-29T06:47:19Z
-repo_revision: "36099f4966f7028b092f3d2f3a1327825b32686f"
+generated_at: 2026-05-29T07:05:30Z
+repo_revision: "957094d07fa61a77c8630f9f58b0db57cd1a3d49"
 inputs:
   - docs/archive/2026-05-18/planning/sprint-2026-W21.md
   - docs/planning/sprint-2026-W25-sceneview3d-v1.md
@@ -20,6 +20,7 @@ inputs:
   - docs/planning/sprint-2026-W23-ai-map-app-generation.md
   - docs/reviews/nla-002-generation-command-contract-2026-05-29.md
   - docs/reviews/nla-003-mcp-orchestration-evidence-2026-05-29.md
+  - docs/reviews/nla-004-generation-scenarios-2026-05-29.md
 owner: "@coordinator"
 decision_level: advisory
 ---
@@ -99,6 +100,7 @@ W21 sprint 计划已归档，当前活跃关键路径从 W23 promotion readiness
 | AI natural-language map app generation planning | active | W23 product spec, spatial-analysis readiness spec, and sprint DAG define prompt -> capabilitySummary -> MapSpec -> commands -> diagnostics -> snapshot/export evidence |
 | NLA-002 generation command contract | done | `docs/reviews/nla-002-generation-command-contract-2026-05-29.md`; `MapGenerationRequestSchema`, `MapGenerationCommandSkeletonSchema`, `setCapabilities`, `setInteractions`, and command skeleton tests keep generation schema-first and command-only |
 | NLA-003 MCP orchestration evidence | done | `docs/reviews/nla-003-mcp-orchestration-evidence-2026-05-29.md`; `GenerationEvidenceBundleSchema` composes the existing seven MCP tool contracts without adding `generate_map_app` or other aliases |
+| NLA-004 generation scenarios | done | `docs/reviews/nla-004-generation-scenarios-2026-05-29.md`; feature-display and spatial-analysis scenarios cover style edits, query readiness, dry-run/replay/rollback, and blocked analysis diagnostics |
 
 ## 关键路径
 

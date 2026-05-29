@@ -24,8 +24,10 @@ export { DiagnosticSchema } from "./diagnostics.schema.js";
 export { ApplyCommandsToolInputSchema } from "./tool.schema.js";
 export {
   MapGenerationCommandSkeletonSchema,
+  MapGenerationAnalysisOperationSchema,
   MapGenerationRequestSchema,
   MapGenerationTargetDomainSchema,
+  type MapGenerationAnalysisOperation,
   type MapGenerationCommandSkeletonFromSchema,
   type MapGenerationRequestFromSchema,
   type MapGenerationTargetDomain

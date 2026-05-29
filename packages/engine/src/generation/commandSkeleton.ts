@@ -2,7 +2,12 @@ import { Ajv, type ErrorObject } from "ajv/dist/ajv.js";
 import { DiagnosticCodes, Scene3DStableRuntimeBlockerCodes, type Scene3DStableRuntimeBlockerCode } from "../diagnostics/codes.js";
 import { applyCommands } from "../commands/applyCommands.js";
 import { validateSpec } from "../spec/validate.js";
-import { MapGenerationRequestSchema, type MapGenerationRequestFromSchema, type MapGenerationTargetDomain } from "../spec/schemas/index.js";
+import {
+  MapGenerationRequestSchema,
+  type MapGenerationAnalysisOperation,
+  type MapGenerationRequestFromSchema,
+  type MapGenerationTargetDomain
+} from "../spec/schemas/index.js";
 import type { Diagnostic, MapCommand, MapSpec, SceneView3DExtension } from "../types.js";
 
 export interface MapGenerationCommandSkeleton {
@@ -135,6 +140,29 @@ function buildGenerationCommands(request: MapGenerationRequestFromSchema): MapCo
     });
   }
 
+  for (const styleEdit of request.styleEdits ?? []) {
+    if (styleEdit.paint) {
+      commands.push({
+        ...commandBase,
+        id: `gen-set-paint-${sanitizeCommandPart(styleEdit.layerId)}`,
+        type: "setPaint",
+        reason: "Apply AI generation paint style edit.",
+        layerId: styleEdit.layerId,
+        paint: styleEdit.paint
+      });
+    }
+    if (styleEdit.layout) {
+      commands.push({
+        ...commandBase,
+        id: `gen-set-layout-${sanitizeCommandPart(styleEdit.layerId)}`,
+        type: "setLayout",
+        reason: "Apply AI generation layout style edit.",
+        layerId: styleEdit.layerId,
+        layout: styleEdit.layout
+      });
+    }
+  }
+
   if (request.interactions) {
     commands.push({
       ...commandBase,
@@ -182,7 +210,10 @@ function buildGenerationCommands(request: MapGenerationRequestFromSchema): MapCo
 function generationBoundaryDiagnostics(request: MapGenerationRequestFromSchema, targetDomains: MapGenerationTargetDomain[]): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
 
-  if (targetDomains.includes("spatial-analysis")) {
+  diagnostics.push(...styleEditDiagnostics(request));
+  diagnostics.push(...analysisDiagnostics(request, targetDomains));
+
+  if (targetDomains.includes("spatial-analysis") && !request.analysis?.operations) {
     diagnostics.push({
       severity: "warning",
       code: DiagnosticCodes.CapabilityUnsupported,
@@ -224,6 +255,52 @@ function generationBoundaryDiagnostics(request: MapGenerationRequestFromSchema, 
 
   diagnostics.push(...unsupportedScene3DCommandDiagnostics(request.scene3d));
   return diagnostics;
+}
+
+function styleEditDiagnostics(request: MapGenerationRequestFromSchema): Diagnostic[] {
+  return (request.styleEdits ?? []).flatMap((styleEdit, index): Diagnostic[] =>
+    styleEdit.paint || styleEdit.layout
+      ? []
+      : [
+          {
+            severity: "error",
+            code: DiagnosticCodes.SpecMissingField,
+            message: "Generation styleEdits entries require paint, layout, or both.",
+            path: `/styleEdits/${index}`,
+            relatedResources: [{ kind: "layer", id: styleEdit.layerId }],
+            fix: {
+              kind: "manual",
+              confidence: "high",
+              message: "Add a paint or layout object, or remove the empty style edit."
+            }
+          }
+        ]
+  );
+}
+
+function analysisDiagnostics(request: MapGenerationRequestFromSchema, targetDomains: MapGenerationTargetDomain[]): Diagnostic[] {
+  if (!targetDomains.includes("spatial-analysis")) return [];
+  return (request.analysis?.operations ?? []).flatMap((operation, index): Diagnostic[] =>
+    isQueryReadinessOperation(operation)
+      ? []
+      : [
+          {
+            severity: "error",
+            code: DiagnosticCodes.CapabilityUnsupported,
+            message: `Spatial-analysis operation "${operation}" is not exposed as a public generation or MCP command yet.`,
+            path: `/analysis/operations/${index}`,
+            fix: {
+              kind: "manual",
+              confidence: "high",
+              message: "Use point-query or bbox-query readiness, or wait for a future geoprocessing command contract."
+            }
+          }
+        ]
+  );
+}
+
+function isQueryReadinessOperation(operation: MapGenerationAnalysisOperation): boolean {
+  return operation === "point-query" || operation === "bbox-query";
 }
 
 function unsupportedScene3DCommandDiagnostics(scene3d: SceneView3DExtension | undefined): Diagnostic[] {

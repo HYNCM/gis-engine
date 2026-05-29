@@ -22,6 +22,34 @@ export const MapGenerationTargetDomainSchema = Type.Union([
   Type.Literal("scene-browsing")
 ]);
 
+export const MapGenerationAnalysisOperationSchema = Type.Union([
+  Type.Literal("point-query"),
+  Type.Literal("bbox-query"),
+  Type.Literal("buffer"),
+  Type.Literal("intersection"),
+  Type.Literal("overlay"),
+  Type.Literal("routing"),
+  Type.Literal("aggregation")
+]);
+
+const PaintLayoutSchema = Type.Record(Type.String(), Type.Unknown());
+
+const MapGenerationStyleEditSchema = Type.Object(
+  {
+    layerId: Type.String({ minLength: 1 }),
+    paint: Type.Optional(PaintLayoutSchema),
+    layout: Type.Optional(PaintLayoutSchema)
+  },
+  { additionalProperties: false }
+);
+
+const MapGenerationAnalysisRequestSchema = Type.Object(
+  {
+    operations: Type.Array(MapGenerationAnalysisOperationSchema, { minItems: 1 })
+  },
+  { additionalProperties: false }
+);
+
 export const MapGenerationRequestSchema = Type.Object(
   {
     mapId: Type.Optional(Type.String({ minLength: 1 })),
@@ -34,7 +62,9 @@ export const MapGenerationRequestSchema = Type.Object(
     view: Type.Optional(ViewSpecSchema),
     sources: Type.Optional(Type.Record(Type.String(), SourceSpecSchema)),
     layers: Type.Optional(Type.Array(LayerSpecSchema)),
+    styleEdits: Type.Optional(Type.Array(MapGenerationStyleEditSchema)),
     interactions: Type.Optional(InteractionSpecSchema),
+    analysis: Type.Optional(MapGenerationAnalysisRequestSchema),
     scene3d: Type.Optional(NestedSceneView3DExtensionSchema)
   },
   {
@@ -60,6 +90,7 @@ export const MapGenerationCommandSkeletonSchema = Type.Object(
 );
 
 export type MapGenerationTargetDomain = Static<typeof MapGenerationTargetDomainSchema>;
+export type MapGenerationAnalysisOperation = Static<typeof MapGenerationAnalysisOperationSchema>;
 export type MapGenerationRequestFromSchema = Static<typeof MapGenerationRequestSchema>;
 export type MapGenerationCommandSkeletonFromSchema = Static<typeof MapGenerationCommandSkeletonSchema>;
 

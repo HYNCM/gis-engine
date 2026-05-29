@@ -113,6 +113,79 @@ describe("map generation command skeleton contract", () => {
     );
   });
 
+  it("turns generation style edits into setPaint and setLayout commands", () => {
+    const skeleton = createMapGenerationCommandSkeleton({
+      mapId: "nla-style-edits",
+      sources: {
+        districts: {
+          type: "geojson",
+          data: {
+            type: "FeatureCollection",
+            features: []
+          }
+        }
+      },
+      layers: [
+        {
+          id: "district-fill",
+          type: "fill",
+          source: "districts",
+          paint: {
+            "fill-color": "#22c55e"
+          }
+        }
+      ],
+      styleEdits: [
+        {
+          layerId: "district-fill",
+          paint: {
+            "fill-opacity": 0.45
+          },
+          layout: {
+            visibility: "visible"
+          }
+        }
+      ]
+    });
+
+    expect(skeleton.status).toBe("ready");
+    expect(skeleton.commands.map((command) => command.type)).toEqual(["addSource", "addLayer", "setPaint", "setLayout"]);
+    expect(skeleton.spec.layers[0]?.paint).toEqual({
+      "fill-color": "#22c55e",
+      "fill-opacity": 0.45
+    });
+    expect(skeleton.spec.layers[0]?.layout).toEqual({
+      visibility: "visible"
+    });
+  });
+
+  it("blocks unsupported spatial-analysis operations with stable diagnostics", () => {
+    const skeleton = createMapGenerationCommandSkeleton({
+      mapId: "blocked-analysis",
+      targetDomains: ["spatial-analysis"],
+      analysis: {
+        operations: ["point-query", "buffer", "routing"]
+      }
+    });
+
+    expect(skeleton.status).toBe("blocked");
+    expect(skeleton.commands).toEqual([]);
+    expect(skeleton.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          severity: "error",
+          code: "CAPABILITY.UNSUPPORTED",
+          path: "/analysis/operations/1"
+        }),
+        expect.objectContaining({
+          severity: "error",
+          code: "CAPABILITY.UNSUPPORTED",
+          path: "/analysis/operations/2"
+        })
+      ])
+    );
+  });
+
   it("keeps scene browsing generation under extensions.scene3d command evidence", () => {
     const skeleton = createMapGenerationCommandSkeleton({
       mapId: "scene-extension-only",
