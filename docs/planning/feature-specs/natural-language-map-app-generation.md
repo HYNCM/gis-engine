@@ -139,6 +139,10 @@ Every generated app handoff should name:
   evidence runs bounded point/bbox query cases and reports counts, layer ids,
   source ids, capability metadata, and diagnostics without exporting feature
   payloads or adding a public spatial-query MCP tool.
+- `TASK-2026W23-NLQ-004` hardens generated-app export manifests by allowing
+  `export_example_app` to return a compact `generationEvidence` summary for
+  status, diagnostics, command replay, planner, spatial query, snapshot, and
+  export counts while still writing no files and exposing no file content.
 - Spatial-analysis requests remain readiness-only, and stable
   `view.mode: "scene3d"` generation remains blocked with structured blocker
   diagnostics.

@@ -276,6 +276,11 @@ runtime mutation path.
   adapter query capability metadata, visible inline-GeoJSON queryable
   layer/source ids, and deterministic query case counts. It must not expose full
   feature payloads.
+- `export_example_app` may carry a compact `generationEvidence` summary on the
+  returned manifest. The summary can include status, tool sequence, diagnostic
+  counts, command/planner/spatial-query/snapshot/export status, and file-count
+  metadata, but it must not write files, include raw prompts, include feature
+  payloads, or include snapshot data URLs.
 - The bundle may return `status: "blocked"` even when the underlying `MapSpec`
   is schema-valid. Generation boundary diagnostics, capability blockers, failed
   planner evidence, failed command replay, failed spatial query evidence, or

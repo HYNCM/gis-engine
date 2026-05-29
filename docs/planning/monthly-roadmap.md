@@ -15,6 +15,7 @@ inputs:
   - docs/reviews/nlq-001-prompt-planner-boundary-2026-05-29.md
   - docs/reviews/nlq-002-planner-provenance-evidence-2026-05-29.md
   - docs/reviews/nlq-003-spatial-query-evidence-2026-05-29.md
+  - docs/reviews/nlq-004-export-manifest-evidence-2026-05-29.md
   - docs/research/competitor-updates-2026-W20.md
   - docs/reviews/daily-audit-2026-05-17.md
   - docs/reviews/quality-gate-2026-05-17.md
@@ -82,6 +83,12 @@ diagnostics。下一步转入 spatial query evidence。
 提供 feature count、layer/source ids 和 diagnostic counts；buffer、overlay、
 routing、aggregation、intersection 继续保持 blocked。下一步转入 generated-app
 export manifest hardening。
+
+2026-05-29 NLQ-004 执行结果：`export_example_app` 已支持 compact
+`generationEvidence` manifest summary，`createGenerationEvidenceBundle()` 会把
+planner、spatial query、snapshot、export 和 diagnostic summary 自动带入
+example manifest；仍不写文件、不返回文件内容、不新增 MCP 工具名。下一步转入
+cloud-native source readiness matrix。
 
 ## 2026-W22 Iteration Path
 

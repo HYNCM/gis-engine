@@ -453,7 +453,44 @@ describe("MCP Server Integration", () => {
     const result = await callGisEngineTool({
       params: {
         name: "export_example_app",
-        arguments: { exampleId: "pmtiles-local" }
+        arguments: {
+          exampleId: "pmtiles-local",
+          generationEvidence: {
+            promptHash: "sha256:manifest-summary",
+            status: "ready",
+            targetDomains: ["feature-display", "spatial-analysis"],
+            toolSequence: ["get_context_summary", "validate_spec", "apply_commands", "snapshot_spec", "export_spec", "export_example_app"],
+            diagnosticCounts: { error: 0, warning: 0, info: 0 },
+            command: {
+              usedApplyCommands: true,
+              commandCount: 2,
+              committed: true,
+              rolledBack: false
+            },
+            planner: {
+              provided: true,
+              confidenceLevel: "high",
+              unsupportedIntentCount: 0
+            },
+            spatialQuery: {
+              requested: true,
+              ready: true,
+              status: "ready",
+              caseCount: 2,
+              blockedOperations: []
+            },
+            snapshot: {
+              requested: true,
+              renderer: "mock",
+              passed: true
+            },
+            export: {
+              ready: true,
+              sourceCount: 1,
+              layerCount: 1
+            }
+          }
+        }
       }
     });
 
@@ -462,11 +499,22 @@ describe("MCP Server Integration", () => {
       writesFiles: boolean;
       files: Array<Record<string, unknown>>;
       notes: string[];
+      generationEvidence?: {
+        status: string;
+        spatialQuery: { caseCount: number };
+        snapshot: { renderer: string; passed: boolean };
+      };
     };
     expect(result.isError).toBeUndefined();
     expect(manifest).toMatchObject({ exampleId: "pmtiles-local", writesFiles: false });
     expect(manifest.files.map((file) => file.path)).toEqual(["examples/pmtiles-local/map.json"]);
     expect(manifest.files.every((file) => !("content" in file))).toBe(true);
     expect(manifest.notes.join(" ")).toContain("does not parse PMTiles binaries");
+    expect(manifest.notes.join(" ")).toContain("writes no files");
+    expect(manifest.generationEvidence).toMatchObject({
+      status: "ready",
+      spatialQuery: { caseCount: 2 },
+      snapshot: { renderer: "mock", passed: true }
+    });
   });
 });

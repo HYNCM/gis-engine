@@ -9,7 +9,14 @@ export {
   type Scene3DContextSummary
 } from "./tools/contextSummary.js";
 export { explainSpecTool, ExplainSpecToolInputSchema, type ExplainSpecToolInput, type ExplainSpecToolResult } from "./tools/explainSpec.js";
-export { exportExampleAppTool, ExportExampleAppToolInputSchema, type ExampleAppManifest, type ExportExampleAppToolInput } from "./tools/exportExampleApp.js";
+export {
+  ExampleAppGenerationEvidenceSummarySchema,
+  exportExampleAppTool,
+  ExportExampleAppToolInputSchema,
+  type ExampleAppGenerationEvidenceSummary,
+  type ExampleAppManifest,
+  type ExportExampleAppToolInput
+} from "./tools/exportExampleApp.js";
 export {
   GenerationEvidenceBundleInputSchema,
   GenerationEvidenceBundleSchema,

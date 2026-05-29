@@ -20,7 +20,11 @@ import {
 import { applyCommandsTool } from "../tools/applyCommands.js";
 import { getContextSummary } from "../tools/contextSummary.js";
 import { explainSpecTool, ExplainSpecToolInputSchema } from "../tools/explainSpec.js";
-import { exportExampleAppTool, ExportExampleAppToolInputSchema } from "../tools/exportExampleApp.js";
+import {
+  ExampleAppGenerationEvidenceSummarySchema,
+  exportExampleAppTool,
+  ExportExampleAppToolInputSchema
+} from "../tools/exportExampleApp.js";
 import { toolInputErrorsToDiagnostics } from "../tools/schemaDiagnostics.js";
 import { snapshotSpecTool, SnapshotSpecToolInputSchema } from "../tools/snapshotSpec.js";
 
@@ -385,7 +389,8 @@ export const ExportExampleAppToolResultSchema = {
         additionalProperties: false
       }
     },
-    notes: { type: "array", items: { type: "string" } }
+    notes: { type: "array", items: { type: "string" } },
+    generationEvidence: ExampleAppGenerationEvidenceSummarySchema
   },
   required: ["exampleId", "title", "description", "writesFiles", "files", "notes"],
   additionalProperties: false

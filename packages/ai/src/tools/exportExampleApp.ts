@@ -6,10 +6,107 @@ const exampleIds = ["basic-geojson", "ai-map-edit", "raster-basemap", "pmtiles-l
 
 export type ExampleId = (typeof exampleIds)[number];
 
+const DiagnosticCountsSchema = {
+  type: "object",
+  properties: {
+    error: { type: "number" },
+    warning: { type: "number" },
+    info: { type: "number" }
+  },
+  required: ["error", "warning", "info"],
+  additionalProperties: false
+} as const;
+
+export const ExampleAppGenerationEvidenceSummarySchema = {
+  type: "object",
+  properties: {
+    promptHash: { type: "string" },
+    status: { type: "string", enum: ["ready", "blocked"] },
+    targetDomains: {
+      type: "array",
+      items: { type: "string", enum: ["feature-display", "spatial-analysis", "scene-browsing"] }
+    },
+    toolSequence: {
+      type: "array",
+      items: {
+        type: "string",
+        enum: ["validate_spec", "apply_commands", "export_spec", "get_context_summary", "snapshot_spec", "explain_spec", "export_example_app"]
+      }
+    },
+    diagnosticCounts: DiagnosticCountsSchema,
+    command: {
+      type: "object",
+      properties: {
+        usedApplyCommands: { type: "boolean" },
+        commandCount: { type: "number" },
+        committed: { type: "boolean" },
+        rolledBack: { type: "boolean" }
+      },
+      required: ["usedApplyCommands", "commandCount", "committed", "rolledBack"],
+      additionalProperties: false
+    },
+    planner: {
+      type: "object",
+      properties: {
+        provided: { type: "boolean" },
+        confidenceLevel: { type: "string", enum: ["high", "medium", "low", "unknown"] },
+        unsupportedIntentCount: { type: "number" }
+      },
+      required: ["provided", "confidenceLevel", "unsupportedIntentCount"],
+      additionalProperties: false
+    },
+    spatialQuery: {
+      type: "object",
+      properties: {
+        requested: { type: "boolean" },
+        ready: { type: "boolean" },
+        status: { type: "string", enum: ["ready", "blocked", "not-requested"] },
+        caseCount: { type: "number" },
+        blockedOperations: { type: "array", items: { type: "string" } }
+      },
+      required: ["requested", "ready", "status", "caseCount", "blockedOperations"],
+      additionalProperties: false
+    },
+    snapshot: {
+      type: "object",
+      properties: {
+        requested: { type: "boolean" },
+        renderer: { type: "string", enum: ["maplibre", "mock"] },
+        passed: { type: "boolean" }
+      },
+      required: ["requested", "renderer", "passed"],
+      additionalProperties: false
+    },
+    export: {
+      type: "object",
+      properties: {
+        ready: { type: "boolean" },
+        sourceCount: { type: "number" },
+        layerCount: { type: "number" }
+      },
+      required: ["ready", "sourceCount", "layerCount"],
+      additionalProperties: false
+    }
+  },
+  required: [
+    "status",
+    "targetDomains",
+    "toolSequence",
+    "diagnosticCounts",
+    "command",
+    "planner",
+    "spatialQuery",
+    "snapshot",
+    "export"
+  ],
+  additionalProperties: false
+} as const;
+
 export const ExportExampleAppToolInputSchema = {
   type: "object",
   properties: {
-    exampleId: { type: "string", enum: exampleIds }
+    exampleId: { type: "string", enum: exampleIds },
+    generationEvidence: ExampleAppGenerationEvidenceSummarySchema
   },
   required: ["exampleId"],
   additionalProperties: false
@@ -17,6 +114,43 @@ export const ExportExampleAppToolInputSchema = {
 
 export interface ExportExampleAppToolInput {
   exampleId: ExampleId;
+  generationEvidence?: ExampleAppGenerationEvidenceSummary;
+}
+
+export interface ExampleAppGenerationEvidenceSummary {
+  promptHash?: string;
+  status: "ready" | "blocked";
+  targetDomains: Array<"feature-display" | "spatial-analysis" | "scene-browsing">;
+  toolSequence: Array<"validate_spec" | "apply_commands" | "export_spec" | "get_context_summary" | "snapshot_spec" | "explain_spec" | "export_example_app">;
+  diagnosticCounts: Record<Diagnostic["severity"], number>;
+  command: {
+    usedApplyCommands: boolean;
+    commandCount: number;
+    committed: boolean;
+    rolledBack: boolean;
+  };
+  planner: {
+    provided: boolean;
+    confidenceLevel: "high" | "medium" | "low" | "unknown";
+    unsupportedIntentCount: number;
+  };
+  spatialQuery: {
+    requested: boolean;
+    ready: boolean;
+    status: "ready" | "blocked" | "not-requested";
+    caseCount: number;
+    blockedOperations: string[];
+  };
+  snapshot: {
+    requested: boolean;
+    renderer: "maplibre" | "mock";
+    passed: boolean;
+  };
+  export: {
+    ready: boolean;
+    sourceCount: number;
+    layerCount: number;
+  };
 }
 
 export interface ExampleAppFile {
@@ -34,6 +168,7 @@ export interface ExampleAppManifest {
   writesFiles: false;
   files: ExampleAppFile[];
   notes: string[];
+  generationEvidence?: ExampleAppGenerationEvidenceSummary;
 }
 
 export type ExportExampleAppToolResponse =
@@ -179,9 +314,15 @@ export function exportExampleAppTool(input: unknown): ExportExampleAppToolRespon
   }
 
   const typedInput = input as ExportExampleAppToolInput;
+  const result = structuredClone(manifests[typedInput.exampleId]);
+  if (typedInput.generationEvidence) {
+    result.generationEvidence = structuredClone(typedInput.generationEvidence);
+    result.notes.push("Generation evidence summary is caller-provided metadata; export_example_app still writes no files.");
+  }
+
   return {
     ok: true,
-    result: structuredClone(manifests[typedInput.exampleId]),
+    result,
     diagnostics: []
   };
 }

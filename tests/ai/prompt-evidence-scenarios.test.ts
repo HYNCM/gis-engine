@@ -105,7 +105,27 @@ describe("prompt-level generation evidence scenarios", () => {
         expect(evidence.exampleEvidence).toMatchObject({
           exampleId: "ai-map-edit",
           writesFiles: false,
-          fileCount: 3
+          fileCount: 3,
+          generationEvidence: {
+            status: "ready",
+            targetDomains: ["feature-display"],
+            command: {
+              usedApplyCommands: true,
+              commandCount: 6,
+              committed: true,
+              rolledBack: false
+            },
+            snapshot: {
+              requested: true,
+              renderer: "maplibre",
+              passed: true
+            },
+            export: {
+              ready: true,
+              sourceCount: 1,
+              layerCount: 2
+            }
+          }
         });
         expect(findDomain(evidence, "feature-display")).toMatchObject({
           status: "supported"
@@ -228,6 +248,21 @@ describe("prompt-level generation evidence scenarios", () => {
           ["prompt-incident-point", "point-query", 1, true],
           ["prompt-incident-bbox", "bbox-query", 2, true]
         ]);
+        expect(evidence.exampleEvidence.generationEvidence).toMatchObject({
+          status: "ready",
+          spatialQuery: {
+            requested: true,
+            ready: true,
+            status: "ready",
+            caseCount: 2,
+            blockedOperations: []
+          },
+          snapshot: {
+            requested: true,
+            renderer: "mock",
+            passed: true
+          }
+        });
         expect(evidence.exportEvidence).toMatchObject({
           ready: true,
           sourceCount: 1,

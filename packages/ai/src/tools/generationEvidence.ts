@@ -27,7 +27,13 @@ import {
 } from "@gis-engine/engine";
 import { applyCommandsTool } from "./applyCommands.js";
 import { getContextSummary, type ContextSummary, type GisEngineToolName } from "./contextSummary.js";
-import { exportExampleAppTool, ExportExampleAppToolInputSchema, type ExampleId } from "./exportExampleApp.js";
+import {
+  ExampleAppGenerationEvidenceSummarySchema,
+  exportExampleAppTool,
+  ExportExampleAppToolInputSchema,
+  type ExampleAppGenerationEvidenceSummary,
+  type ExampleId
+} from "./exportExampleApp.js";
 import { toolInputErrorsToDiagnostics } from "./schemaDiagnostics.js";
 import { snapshotSpecTool, SnapshotSpecToolInputSchema } from "./snapshotSpec.js";
 import {
@@ -280,7 +286,8 @@ export const GenerationEvidenceBundleSchema = {
         exampleId: ExportExampleAppToolInputSchema.properties.exampleId,
         writesFiles: { type: "boolean", const: false },
         fileCount: { type: "number" },
-        diagnosticCounts: DiagnosticCountsSchema
+        diagnosticCounts: DiagnosticCountsSchema,
+        generationEvidence: ExampleAppGenerationEvidenceSummarySchema
       },
       required: ["exampleId", "writesFiles", "fileCount", "diagnosticCounts"],
       additionalProperties: false
@@ -429,6 +436,7 @@ export interface GenerationExampleEvidence {
   writesFiles: false;
   fileCount: number;
   diagnosticCounts: Record<Diagnostic["severity"], number>;
+  generationEvidence?: ExampleAppGenerationEvidenceSummary;
 }
 
 export interface GenerationEvidenceBundle {
@@ -473,24 +481,46 @@ export async function createGenerationEvidenceBundle(input: unknown): Promise<Ge
   const spatialQueryEvidence = await buildSpatialQueryEvidence(typedInput);
   const snapshotEvidence = await buildSnapshotEvidence(typedInput);
   const exportEvidence = buildExportEvidence(typedInput.skeleton, validation);
-  const exampleEvidence = buildExampleEvidence(typedInput.exampleId ?? "ai-map-edit");
-  const diagnostics = [
+  const diagnosticsBeforeExample = [
     ...plannerEvidence.diagnostics,
     ...typedInput.skeleton.diagnostics,
     ...validation.diagnostics,
     ...commandEvidenceDiagnostics(typedInput.skeleton, commandEvidence),
     ...spatialQueryEvidence.diagnostics,
-    ...snapshotEvidenceDiagnostics(snapshotEvidence),
-    ...exampleEvidence.diagnostics
+    ...snapshotEvidenceDiagnostics(snapshotEvidence)
   ];
-  const visibleDiagnostics = diagnostics.filter((diagnostic) => diagnostic.severity === "error" || diagnostic.severity === "warning");
-  const status =
+  const visibleDiagnosticsBeforeExample = diagnosticsBeforeExample.filter(
+    (diagnostic) => diagnostic.severity === "error" || diagnostic.severity === "warning"
+  );
+  const statusBeforeExample =
     typedInput.skeleton.status === "blocked" ||
     !validation.valid ||
     plannerEvidence.diagnosticCounts.error > 0 ||
     commandEvidence.diagnosticCounts.error > 0 ||
     spatialQueryEvidence.diagnosticCounts.error > 0 ||
     snapshotEvidence.diagnosticCounts.error > 0
+      ? "blocked"
+      : "ready";
+  const exampleEvidence = buildExampleEvidence(
+    typedInput.exampleId ?? "ai-map-edit",
+    buildExampleManifestGenerationEvidenceSummary({
+      input: typedInput,
+      commandEvidence,
+      plannerEvidence,
+      spatialQueryEvidence,
+      snapshotEvidence,
+      exportEvidence,
+      status: statusBeforeExample,
+      diagnostics: visibleDiagnosticsBeforeExample
+    })
+  );
+  const diagnostics = [
+    ...diagnosticsBeforeExample,
+    ...exampleEvidence.diagnostics
+  ];
+  const visibleDiagnostics = diagnostics.filter((diagnostic) => diagnostic.severity === "error" || diagnostic.severity === "warning");
+  const status =
+    statusBeforeExample === "blocked" || exampleEvidence.diagnosticCounts.error > 0
       ? "blocked"
       : "ready";
 
@@ -1097,8 +1127,58 @@ function buildExportEvidence(skeleton: MapGenerationCommandSkeleton, validation:
   };
 }
 
-function buildExampleEvidence(exampleId: ExampleId): GenerationExampleEvidence & { diagnostics: Diagnostic[] } {
-  const response = exportExampleAppTool({ exampleId });
+function buildExampleManifestGenerationEvidenceSummary(input: {
+  input: GenerationEvidenceBundleInput;
+  commandEvidence: GenerationCommandEvidence;
+  plannerEvidence: GenerationPlannerEvidence;
+  spatialQueryEvidence: GenerationSpatialQueryEvidence;
+  snapshotEvidence: GenerationSnapshotEvidence;
+  exportEvidence: GenerationExportEvidence;
+  status: "ready" | "blocked";
+  diagnostics: Diagnostic[];
+}): ExampleAppGenerationEvidenceSummary {
+  return {
+    promptHash: input.input.promptHash,
+    status: input.status,
+    targetDomains: input.input.skeleton.targetDomains,
+    toolSequence: ["get_context_summary", "validate_spec", "apply_commands", "snapshot_spec", "export_spec", "export_example_app"],
+    diagnosticCounts: countDiagnostics(input.diagnostics),
+    command: {
+      usedApplyCommands: input.commandEvidence.usedApplyCommands,
+      commandCount: input.commandEvidence.commandCount,
+      committed: input.commandEvidence.committed,
+      rolledBack: input.commandEvidence.rolledBack
+    },
+    planner: {
+      provided: input.plannerEvidence.provided,
+      confidenceLevel: input.plannerEvidence.confidence.level,
+      unsupportedIntentCount: input.plannerEvidence.unsupportedIntentFields.length
+    },
+    spatialQuery: {
+      requested: input.spatialQueryEvidence.requested,
+      ready: input.spatialQueryEvidence.ready,
+      status: input.spatialQueryEvidence.status,
+      caseCount: input.spatialQueryEvidence.cases.length,
+      blockedOperations: input.spatialQueryEvidence.blockedOperations
+    },
+    snapshot: {
+      requested: input.snapshotEvidence.requested,
+      renderer: input.snapshotEvidence.renderer,
+      passed: input.snapshotEvidence.passed
+    },
+    export: {
+      ready: input.exportEvidence.ready,
+      sourceCount: input.exportEvidence.sourceCount,
+      layerCount: input.exportEvidence.layerCount
+    }
+  };
+}
+
+function buildExampleEvidence(
+  exampleId: ExampleId,
+  generationEvidence: ExampleAppGenerationEvidenceSummary
+): GenerationExampleEvidence & { diagnostics: Diagnostic[] } {
+  const response = exportExampleAppTool({ exampleId, generationEvidence });
   if (!response.ok) {
     return {
       exampleId,
@@ -1113,6 +1193,7 @@ function buildExampleEvidence(exampleId: ExampleId): GenerationExampleEvidence &
     exampleId,
     writesFiles: response.result.writesFiles,
     fileCount: response.result.files.length,
+    ...(response.result.generationEvidence ? { generationEvidence: response.result.generationEvidence } : {}),
     diagnosticCounts: zeroDiagnosticCounts(),
     diagnostics: []
   };

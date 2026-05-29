@@ -29,6 +29,7 @@ inputs:
   - docs/reviews/nlq-001-prompt-planner-boundary-2026-05-29.md
   - docs/reviews/nlq-002-planner-provenance-evidence-2026-05-29.md
   - docs/reviews/nlq-003-spatial-query-evidence-2026-05-29.md
+  - docs/reviews/nlq-004-export-manifest-evidence-2026-05-29.md
 owner: "@coordinator"
 decision_level: advisory
 ---
@@ -117,11 +118,12 @@ W21 sprint 计划已归档，当前活跃关键路径从 W23 promotion readiness
 | NLQ-001 typed prompt planner boundary | done | `docs/reviews/nlq-001-prompt-planner-boundary-2026-05-29.md`; `planMapGenerationRequest()` accepts prompt hash plus structured intent, emits `MapGenerationRequest`-compatible handoff data, and rejects raw prompt retention by default |
 | NLQ-002 planner provenance evidence | done | `docs/reviews/nlq-002-planner-provenance-evidence-2026-05-29.md`; `GenerationEvidenceBundleSchema` now exposes planner confidence, trace provenance, source prompt hashes, unsupported intent fields, and planner diagnostics |
 | NLQ-003 spatial query evidence | done | `docs/reviews/nlq-003-spatial-query-evidence-2026-05-29.md`; `analysisEvidence` and `spatialQueryEvidence` expose deterministic point/bbox query readiness while keeping geoprocessing operations blocked |
+| NLQ-004 export manifest evidence | done | `docs/reviews/nlq-004-export-manifest-evidence-2026-05-29.md`; `export_example_app` can carry compact generation evidence summaries without side-effect file writes |
 
 ## 关键路径
 
 1. Natural-language app generation -> AI capability summary -> `MapGenerationCommandSkeleton` -> command-only edits -> snapshot/export evidence. This is the completed W23 product spine for feature display, spatial analysis readiness, and scene browsing boundaries.
-2. Generation quality hardening -> typed prompt planner boundary -> planner provenance evidence -> spatial query evidence -> export manifest / cloud-native readiness / SceneView3D blocker transparency. NLQ-001 through NLQ-003 are done; the remaining W23 batch must not add MCP aliases or stable 3D runtime support.
+2. Generation quality hardening -> typed prompt planner boundary -> planner provenance evidence -> spatial query evidence -> export manifest -> cloud-native readiness / SceneView3D blocker transparency. NLQ-001 through NLQ-004 are done; the remaining W23 batch must not add MCP aliases or stable 3D runtime support.
 3. v1 SceneView3D RFC -> W25/W28 sprint DAG -> TypeBox schema -> fixtures + URL resource policy + loader resource gate + package boundary + scene commands -> mock snapshot/query contracts -> MCP context -> release visual gate -> alpha audit + adapter feasibility -> Three.js adapter spike -> renderer evidence handoff -> adapter runtime shim -> browser visual runner -> beta readiness gate -> promotion readiness -> stable renderer contract handoff -> stable runtime decision; W23 promotion-readiness package is Go, SRC-001 through SRC-005 prerequisite evidence is done, and SRC-006 records a No-go decision that keeps stable runtime blocked.
 4. 2026-05-24 automation hardening blocks scheduled agent evidence from being used as advisory/blocking input: generated report semantics -> serialized scheduled commits -> local/CI daily cadence + emergency interpolation -> automation hardening gate -> scheduled evidence may feed future coordinator/quality-guardian decisions.
 

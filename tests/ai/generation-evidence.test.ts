@@ -103,7 +103,40 @@ describe("generation evidence bundle", () => {
     expect(response.result.exampleEvidence).toMatchObject({
       exampleId: "ai-map-edit",
       writesFiles: false,
-      fileCount: 3
+      fileCount: 3,
+      generationEvidence: {
+        status: "ready",
+        targetDomains: ["feature-display"],
+        diagnosticCounts: { error: 0, warning: 0, info: 0 },
+        command: {
+          usedApplyCommands: true,
+          commandCount: 3,
+          committed: true,
+          rolledBack: false
+        },
+        planner: {
+          provided: false,
+          confidenceLevel: "unknown",
+          unsupportedIntentCount: 0
+        },
+        spatialQuery: {
+          requested: false,
+          ready: false,
+          status: "not-requested",
+          caseCount: 0,
+          blockedOperations: []
+        },
+        snapshot: {
+          requested: true,
+          renderer: "maplibre",
+          passed: true
+        },
+        export: {
+          ready: true,
+          sourceCount: 1,
+          layerCount: 1
+        }
+      }
     });
     expect(response.result.summary.capabilitySummary.domains.map((domain) => domain.id)).toEqual([
       "feature-display",
@@ -338,6 +371,31 @@ describe("generation evidence bundle", () => {
         diagnosticCounts: { error: 0, warning: 0, info: 0 }
       })
     ]);
+    expect(response.result.exampleEvidence.generationEvidence).toMatchObject({
+      status: "ready",
+      planner: {
+        provided: true,
+        confidenceLevel: "high",
+        unsupportedIntentCount: 0
+      },
+      spatialQuery: {
+        requested: true,
+        ready: true,
+        status: "ready",
+        caseCount: 2,
+        blockedOperations: []
+      },
+      snapshot: {
+        requested: true,
+        renderer: "maplibre",
+        passed: true
+      },
+      export: {
+        ready: true,
+        sourceCount: 1,
+        layerCount: 1
+      }
+    });
     expect(response.result.toolSequence).not.toContain("spatial_query");
   });
 
