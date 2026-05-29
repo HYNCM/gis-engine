@@ -278,8 +278,11 @@ runtime mutation path.
   feature payloads.
 - `export_example_app` may carry a compact `generationEvidence` summary on the
   returned manifest. The summary can include status, tool sequence, diagnostic
-  counts, command/planner/spatial-query/snapshot/export status, and file-count
-  metadata, but it must not write files, include raw prompts, include feature
+  counts, command/planner/spatial-query/scene-browsing/snapshot/export status,
+  and file-count metadata. Scene browsing manifest evidence may include
+  extension-only source/layer ids, mock snapshot/query counts, and
+  `SCENE3D.STABLE_RUNTIME_*` blocker codes, but it must not write files,
+  include raw prompts, include full feature payloads, include camera/resource
   payloads, or include snapshot data URLs.
 - Cloud-native data source readiness is documented before implementation:
   `geojson`, `raster`, `pmtiles`, and `vector` are the only public `SourceSpec`

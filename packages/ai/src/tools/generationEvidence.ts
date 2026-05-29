@@ -11,6 +11,7 @@ import {
   MapLibreAdapter,
   MapRuntime,
   MockAdapter,
+  Scene3DStableRuntimeBlockerCodes,
   validateSpec,
   type CapabilityReport,
   type Diagnostic,
@@ -46,6 +47,8 @@ const DiagnosticContractSchema = stripNestedIds(DiagnosticSchema);
 const ContextSummaryContractSchema = stripNestedIds(ContextSummaryToolResultSchema);
 const SnapshotSpecContractSchema = stripNestedIds(SnapshotSpecToolResultSchema);
 const ValidationReportContractSchema = stripNestedIds(ValidateSpecToolResultSchema);
+type Scene3DStableRuntimeBlockerCode =
+  (typeof Scene3DStableRuntimeBlockerCodes)[keyof typeof Scene3DStableRuntimeBlockerCodes];
 
 const GisEngineToolNameSchema = {
   type: "string",
@@ -505,6 +508,7 @@ export async function createGenerationEvidenceBundle(input: unknown): Promise<Ge
     typedInput.exampleId ?? "ai-map-edit",
     buildExampleManifestGenerationEvidenceSummary({
       input: typedInput,
+      summary,
       commandEvidence,
       plannerEvidence,
       spatialQueryEvidence,
@@ -1129,6 +1133,7 @@ function buildExportEvidence(skeleton: MapGenerationCommandSkeleton, validation:
 
 function buildExampleManifestGenerationEvidenceSummary(input: {
   input: GenerationEvidenceBundleInput;
+  summary: ContextSummary;
   commandEvidence: GenerationCommandEvidence;
   plannerEvidence: GenerationPlannerEvidence;
   spatialQueryEvidence: GenerationSpatialQueryEvidence;
@@ -1161,6 +1166,7 @@ function buildExampleManifestGenerationEvidenceSummary(input: {
       caseCount: input.spatialQueryEvidence.cases.length,
       blockedOperations: input.spatialQueryEvidence.blockedOperations
     },
+    sceneBrowsing: buildSceneBrowsingManifestSummary(input.input, input.summary, input.status, input.diagnostics),
     snapshot: {
       requested: input.snapshotEvidence.requested,
       renderer: input.snapshotEvidence.renderer,
@@ -1171,6 +1177,37 @@ function buildExampleManifestGenerationEvidenceSummary(input: {
       sourceCount: input.exportEvidence.sourceCount,
       layerCount: input.exportEvidence.layerCount
     }
+  };
+}
+
+function buildSceneBrowsingManifestSummary(
+  input: GenerationEvidenceBundleInput,
+  summary: ContextSummary,
+  status: "ready" | "blocked",
+  diagnostics: Diagnostic[]
+): ExampleAppGenerationEvidenceSummary["sceneBrowsing"] {
+  const diagnosticBlockerCodes = uniqueScene3DStableRuntimeBlockerCodes(
+    diagnostics.map((diagnostic) => diagnostic.blockerCode).filter(isScene3DStableRuntimeBlockerCode)
+  );
+  const requested = input.skeleton.targetDomains.includes("scene-browsing") || summary.scene3d !== undefined || diagnosticBlockerCodes.length > 0;
+  const stableRuntimeBlockerCodes = requested
+    ? uniqueScene3DStableRuntimeBlockerCodes([...diagnosticBlockerCodes, ...Object.values(Scene3DStableRuntimeBlockerCodes)])
+    : [];
+
+  return {
+    requested,
+    status: !requested ? "not-requested" : status === "blocked" || diagnosticBlockerCodes.length > 0 ? "blocked" : "experimental",
+    extensionPresent: summary.scene3d !== undefined,
+    stableViewMode: false,
+    runtimeSupported: false,
+    sourceCount: summary.scene3d?.sourceCount ?? 0,
+    layerCount: summary.scene3d?.layerCount ?? 0,
+    sourceIds: summary.scene3d?.sources.map((source) => source.id) ?? [],
+    layerIds: summary.scene3d?.layers.map((layer) => layer.id) ?? [],
+    pickableLayerCount: summary.scene3d?.pickableLayerCount ?? 0,
+    mockSnapshotPassed: summary.scene3d?.snapshot.mockPassed ?? false,
+    mockQueryPickCount: summary.scene3d?.query.pickCount ?? 0,
+    stableRuntimeBlockerCodes
   };
 }
 
@@ -1276,6 +1313,14 @@ function zeroDiagnosticCounts(): Record<Diagnostic["severity"], number> {
 
 function unique(values: string[]): string[] {
   return Array.from(new Set(values)).sort();
+}
+
+function isScene3DStableRuntimeBlockerCode(value: unknown): value is Scene3DStableRuntimeBlockerCode {
+  return typeof value === "string" && Object.values(Scene3DStableRuntimeBlockerCodes).includes(value as Scene3DStableRuntimeBlockerCode);
+}
+
+function uniqueScene3DStableRuntimeBlockerCodes(values: Scene3DStableRuntimeBlockerCode[]): Scene3DStableRuntimeBlockerCode[] {
+  return unique(values) as Scene3DStableRuntimeBlockerCode[];
 }
 
 function stripNestedIds<T>(value: T): T {

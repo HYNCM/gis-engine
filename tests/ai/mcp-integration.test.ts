@@ -412,6 +412,22 @@ describe("MCP Server Integration", () => {
     expect(snapshot.diagnostics).toContainEqual(expect.objectContaining({ code: "GEO.INVALID_COORDINATES", path: "/view/center" }));
   });
 
+  it("rejects scene3d snapshot requests through the MCP schema", async () => {
+    const result = await callGisEngineTool({
+      params: {
+        name: "snapshot_spec",
+        arguments: {
+          spec: before,
+          renderer: "scene3d"
+        }
+      }
+    });
+
+    const diagnostics = JSON.parse(result.content[0]!.text) as Array<{ code: string; path?: string }>;
+    expect(result.isError).toBe(true);
+    expect(diagnostics).toContainEqual(expect.objectContaining({ code: "SPEC.INVALID_TYPE", path: "/renderer" }));
+  });
+
   it("explains a spec with context summary and full validation diagnostics", async () => {
     const result = await callGisEngineTool({
       params: {
@@ -479,6 +495,21 @@ describe("MCP Server Integration", () => {
               caseCount: 2,
               blockedOperations: []
             },
+            sceneBrowsing: {
+              requested: false,
+              status: "not-requested",
+              extensionPresent: false,
+              stableViewMode: false,
+              runtimeSupported: false,
+              sourceCount: 0,
+              layerCount: 0,
+              sourceIds: [],
+              layerIds: [],
+              pickableLayerCount: 0,
+              mockSnapshotPassed: false,
+              mockQueryPickCount: 0,
+              stableRuntimeBlockerCodes: []
+            },
             snapshot: {
               requested: true,
               renderer: "mock",
@@ -502,6 +533,10 @@ describe("MCP Server Integration", () => {
       generationEvidence?: {
         status: string;
         spatialQuery: { caseCount: number };
+        sceneBrowsing: {
+          requested: boolean;
+          stableRuntimeBlockerCodes: string[];
+        };
         snapshot: { renderer: string; passed: boolean };
       };
     };
@@ -514,7 +549,106 @@ describe("MCP Server Integration", () => {
     expect(manifest.generationEvidence).toMatchObject({
       status: "ready",
       spatialQuery: { caseCount: 2 },
+      sceneBrowsing: {
+        requested: false,
+        stableRuntimeBlockerCodes: []
+      },
       snapshot: { renderer: "mock", passed: true }
+    });
+  });
+
+  it("round-trips scene browsing blocker evidence through export_example_app", async () => {
+    const result = await callGisEngineTool({
+      params: {
+        name: "export_example_app",
+        arguments: {
+          exampleId: "ai-map-edit",
+          generationEvidence: {
+            promptHash: "sha256:scene-manifest-summary",
+            status: "ready",
+            targetDomains: ["scene-browsing"],
+            toolSequence: ["get_context_summary", "validate_spec", "apply_commands", "snapshot_spec", "export_spec", "export_example_app"],
+            diagnosticCounts: { error: 0, warning: 0, info: 0 },
+            command: {
+              usedApplyCommands: true,
+              commandCount: 3,
+              committed: true,
+              rolledBack: false
+            },
+            planner: {
+              provided: true,
+              confidenceLevel: "medium",
+              unsupportedIntentCount: 0
+            },
+            spatialQuery: {
+              requested: false,
+              ready: false,
+              status: "not-requested",
+              caseCount: 0,
+              blockedOperations: []
+            },
+            sceneBrowsing: {
+              requested: true,
+              status: "experimental",
+              extensionPresent: true,
+              stableViewMode: false,
+              runtimeSupported: false,
+              sourceCount: 1,
+              layerCount: 1,
+              sourceIds: ["city"],
+              layerIds: ["city"],
+              pickableLayerCount: 1,
+              mockSnapshotPassed: true,
+              mockQueryPickCount: 1,
+              stableRuntimeBlockerCodes: [
+                "SCENE3D.STABLE_RUNTIME_DIMENSIONS_BLOCKED",
+                "SCENE3D.STABLE_RUNTIME_RENDERER_BLOCKED",
+                "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED"
+              ]
+            },
+            snapshot: {
+              requested: true,
+              renderer: "mock",
+              passed: true
+            },
+            export: {
+              ready: true,
+              sourceCount: 0,
+              layerCount: 0
+            }
+          }
+        }
+      }
+    });
+
+    const manifest = JSON.parse(result.content[0]!.text) as {
+      writesFiles: boolean;
+      generationEvidence?: {
+        sceneBrowsing: {
+          requested: boolean;
+          extensionPresent: boolean;
+          stableViewMode: boolean;
+          runtimeSupported: boolean;
+          sourceIds: string[];
+          layerIds: string[];
+          stableRuntimeBlockerCodes: string[];
+        };
+      };
+    };
+    expect(result.isError).toBeUndefined();
+    expect(manifest.writesFiles).toBe(false);
+    expect(manifest.generationEvidence?.sceneBrowsing).toMatchObject({
+      requested: true,
+      extensionPresent: true,
+      stableViewMode: false,
+      runtimeSupported: false,
+      sourceIds: ["city"],
+      layerIds: ["city"],
+      stableRuntimeBlockerCodes: [
+        "SCENE3D.STABLE_RUNTIME_DIMENSIONS_BLOCKED",
+        "SCENE3D.STABLE_RUNTIME_RENDERER_BLOCKED",
+        "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED"
+      ]
     });
   });
 });

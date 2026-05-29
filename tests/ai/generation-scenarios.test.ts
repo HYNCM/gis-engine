@@ -365,6 +365,25 @@ describe("minimum natural-language generation scenarios", () => {
     const sceneDomain = evidence.result.summary.capabilitySummary.domains.find((domain) => domain.id === "scene-browsing");
     expect(sceneDomain).toMatchObject({ status: "experimental" });
     expect(sceneDomain?.blocked.join(" ")).toContain('stable view.mode: "scene3d" runtime rendering is blocked');
+    expect(evidence.result.exampleEvidence.generationEvidence?.sceneBrowsing).toMatchObject({
+      requested: true,
+      status: "experimental",
+      extensionPresent: true,
+      stableViewMode: false,
+      runtimeSupported: false,
+      sourceCount: 1,
+      layerCount: 1,
+      sourceIds: ["city"],
+      layerIds: ["city"],
+      pickableLayerCount: 1,
+      mockSnapshotPassed: true,
+      mockQueryPickCount: 1,
+      stableRuntimeBlockerCodes: [
+        "SCENE3D.STABLE_RUNTIME_DIMENSIONS_BLOCKED",
+        "SCENE3D.STABLE_RUNTIME_RENDERER_BLOCKED",
+        "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED"
+      ]
+    });
   });
 
   it("blocks stable scene3d generation requests in the evidence bundle", async () => {
@@ -408,6 +427,25 @@ describe("minimum natural-language generation scenarios", () => {
         })
       ])
     );
+    expect(evidence.result.exampleEvidence.generationEvidence?.sceneBrowsing).toMatchObject({
+      requested: true,
+      status: "blocked",
+      extensionPresent: false,
+      stableViewMode: false,
+      runtimeSupported: false,
+      sourceCount: 0,
+      layerCount: 0,
+      sourceIds: [],
+      layerIds: [],
+      pickableLayerCount: 0,
+      mockSnapshotPassed: false,
+      mockQueryPickCount: 0,
+      stableRuntimeBlockerCodes: [
+        "SCENE3D.STABLE_RUNTIME_DIMENSIONS_BLOCKED",
+        "SCENE3D.STABLE_RUNTIME_RENDERER_BLOCKED",
+        "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED"
+      ]
+    });
   });
 });
 

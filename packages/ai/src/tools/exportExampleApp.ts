@@ -1,10 +1,12 @@
 import { Ajv } from "ajv/dist/ajv.js";
-import type { Diagnostic } from "@gis-engine/engine";
+import { Scene3DStableRuntimeBlockerCodes, type Diagnostic } from "@gis-engine/engine";
 import { toolInputErrorsToDiagnostics } from "./schemaDiagnostics.js";
 
 const exampleIds = ["basic-geojson", "ai-map-edit", "raster-basemap", "pmtiles-local", "vector-tile-url", "fill-extrusion-lite"] as const;
 
 export type ExampleId = (typeof exampleIds)[number];
+type Scene3DStableRuntimeBlockerCode =
+  (typeof Scene3DStableRuntimeBlockerCodes)[keyof typeof Scene3DStableRuntimeBlockerCodes];
 
 const DiagnosticCountsSchema = {
   type: "object",
@@ -15,6 +17,11 @@ const DiagnosticCountsSchema = {
   },
   required: ["error", "warning", "info"],
   additionalProperties: false
+} as const;
+
+const Scene3DStableRuntimeBlockerCodeSchema = {
+  type: "string",
+  enum: Object.values(Scene3DStableRuntimeBlockerCodes)
 } as const;
 
 export const ExampleAppGenerationEvidenceSummarySchema = {
@@ -67,6 +74,43 @@ export const ExampleAppGenerationEvidenceSummarySchema = {
       required: ["requested", "ready", "status", "caseCount", "blockedOperations"],
       additionalProperties: false
     },
+    sceneBrowsing: {
+      type: "object",
+      properties: {
+        requested: { type: "boolean" },
+        status: { type: "string", enum: ["experimental", "blocked", "not-requested"] },
+        extensionPresent: { type: "boolean" },
+        stableViewMode: { type: "boolean", const: false },
+        runtimeSupported: { type: "boolean", const: false },
+        sourceCount: { type: "number" },
+        layerCount: { type: "number" },
+        sourceIds: { type: "array", items: { type: "string" } },
+        layerIds: { type: "array", items: { type: "string" } },
+        pickableLayerCount: { type: "number" },
+        mockSnapshotPassed: { type: "boolean" },
+        mockQueryPickCount: { type: "number" },
+        stableRuntimeBlockerCodes: {
+          type: "array",
+          items: Scene3DStableRuntimeBlockerCodeSchema
+        }
+      },
+      required: [
+        "requested",
+        "status",
+        "extensionPresent",
+        "stableViewMode",
+        "runtimeSupported",
+        "sourceCount",
+        "layerCount",
+        "sourceIds",
+        "layerIds",
+        "pickableLayerCount",
+        "mockSnapshotPassed",
+        "mockQueryPickCount",
+        "stableRuntimeBlockerCodes"
+      ],
+      additionalProperties: false
+    },
     snapshot: {
       type: "object",
       properties: {
@@ -96,6 +140,7 @@ export const ExampleAppGenerationEvidenceSummarySchema = {
     "command",
     "planner",
     "spatialQuery",
+    "sceneBrowsing",
     "snapshot",
     "export"
   ],
@@ -140,6 +185,21 @@ export interface ExampleAppGenerationEvidenceSummary {
     status: "ready" | "blocked" | "not-requested";
     caseCount: number;
     blockedOperations: string[];
+  };
+  sceneBrowsing: {
+    requested: boolean;
+    status: "experimental" | "blocked" | "not-requested";
+    extensionPresent: boolean;
+    stableViewMode: false;
+    runtimeSupported: false;
+    sourceCount: number;
+    layerCount: number;
+    sourceIds: string[];
+    layerIds: string[];
+    pickableLayerCount: number;
+    mockSnapshotPassed: boolean;
+    mockQueryPickCount: number;
+    stableRuntimeBlockerCodes: Scene3DStableRuntimeBlockerCode[];
   };
   snapshot: {
     requested: boolean;

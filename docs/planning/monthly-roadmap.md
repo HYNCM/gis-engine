@@ -17,6 +17,7 @@ inputs:
   - docs/reviews/nlq-003-spatial-query-evidence-2026-05-29.md
   - docs/reviews/nlq-004-export-manifest-evidence-2026-05-29.md
   - docs/planning/feature-specs/cloud-native-source-readiness.md
+  - docs/reviews/nlq-006-scene-browsing-blocker-visibility-2026-05-29.md
   - docs/research/competitor-updates-2026-W20.md
   - docs/reviews/daily-audit-2026-05-17.md
   - docs/reviews/quality-gate-2026-05-17.md
@@ -97,6 +98,12 @@ GeoTIFF、GeoZarr 的 supported / readiness-only / blocked 状态、resource
 policy 路径、query readiness 和后续契约要求。下一步转入 SceneView3D blocker
 visibility。
 
+2026-05-29 NLQ-006 执行结果：`export_example_app` 的 compact
+`generationEvidence` manifest summary 已新增 `sceneBrowsing`，显式保留
+extension-only 状态、`stableViewMode: false`、`runtimeSupported: false`、source
+/ layer counts 和 `SCENE3D.STABLE_RUNTIME_*` blocker codes；仍不支持
+`snapshot.renderer: "scene3d"`。下一步转入 serialized planning closure。
+
 ## 2026-W22 Iteration Path
 
 | Priority | Track | Plan | Exit Condition |
@@ -145,8 +152,8 @@ visibility。
 
 | 排名 | 事项 | 得分 | 证据 | 行动 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | Scene browsing blocker visibility | 6.80 | NLQ-001 through NLQ-005 now expose planner, spatial, export, and source-readiness evidence; generated app handoff must still preserve SceneView3D blocker codes | execute NLQ-006; keep extension-only scene browsing visible without enabling stable runtime | high |
-| 2 | Serialized generation-hardening closure | 6.30 | NLQ-001 through NLQ-005 are complete and planning state should remain single-writer and evidence-backed | execute NLQ-007 after NLQ-006 owner evidence exists | medium |
+| 1 | Serialized generation-hardening closure | 6.30 | NLQ-001 through NLQ-006 are complete and planning state should remain single-writer and evidence-backed | execute NLQ-007 after NLQ-006 owner evidence exists | medium |
+| 2 | Future scene browsing product design | 6.05 | generated app manifests now preserve extension-only status and stable-runtime blocker codes without enabling stable 3D runtime | decide whether the next loop needs richer scene browsing UX copy, not renderer promotion | medium |
 | 3 | Future cloud-native source implementation contract | 5.90 | readiness matrix now documents supported/readiness-only/blocked formats before implementation claims | use the matrix as the prerequisite for any future GeoParquet/FlatGeobuf/GeoTIFF/GeoZarr schema task | high |
 | 4 | SceneView3D promotion readiness | parked / no-go | W22 evidence and beta gate are complete; W23 promotion-readiness package and gate are complete, and SRC-006 records No-go | future promotion requires a new stable-runtime task and Go decision | high |
 

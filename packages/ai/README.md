@@ -46,8 +46,9 @@ readiness, example manifest evidence, and structured diagnostics.
 accepted and unsupported intent fields, source prompt hashes, and diagnostic
 counts. `exampleEvidence.generationEvidence` is the compact export manifest
 handoff summary; it includes status, target domains, diagnostic counts, command
-summary, planner summary, spatial query summary, snapshot status, and export
-counts without exposing feature payloads or snapshot data URLs. A generated app
+summary, planner summary, spatial query summary, scene browsing blocker
+summary, snapshot status, and export counts without exposing feature payloads
+or snapshot data URLs. A generated app
 should be treated as ready only when the bundle returns `status: "ready"` and
 the relevant planner/spatial-query/snapshot/export evidence passes.
 

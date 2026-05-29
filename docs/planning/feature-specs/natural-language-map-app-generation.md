@@ -143,6 +143,10 @@ Every generated app handoff should name:
   `export_example_app` to return a compact `generationEvidence` summary for
   status, diagnostics, command replay, planner, spatial query, snapshot, and
   export counts while still writing no files and exposing no file content.
+- `TASK-2026W23-NLQ-006` extends that compact manifest summary with
+  `sceneBrowsing` metadata: extension-only source/layer ids, pickable counts,
+  mock snapshot/query counts, `stableViewMode: false`,
+  `runtimeSupported: false`, and stable-runtime blocker codes.
 - Spatial-analysis requests remain readiness-only, and stable
   `view.mode: "scene3d"` generation remains blocked with structured blocker
   diagnostics.

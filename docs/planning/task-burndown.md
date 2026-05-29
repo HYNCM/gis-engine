@@ -37,6 +37,7 @@ inputs:
   - docs/reviews/nlq-003-spatial-query-evidence-2026-05-29.md
   - docs/reviews/nlq-004-export-manifest-evidence-2026-05-29.md
   - docs/planning/feature-specs/cloud-native-source-readiness.md
+  - docs/reviews/nlq-006-scene-browsing-blocker-visibility-2026-05-29.md
 owner: "@coordinator"
 decision_level: advisory
 ---
@@ -197,7 +198,7 @@ new MCP tool alias or mutate runtime state outside `MapCommand` /
 | TASK-2026W23-NLQ-003 | Design spatial query evidence bundle | P0 | `@engine-agent`, `@ai-agent` | done | `docs/reviews/nlq-003-spatial-query-evidence-2026-05-29.md`; skeleton `analysisEvidence`; AI `spatialQueryEvidence` query cases | point/bbox query readiness is explicit and deterministic; buffer, overlay, routing, aggregation, and intersection remain blocked | `pnpm --filter @gis-engine/engine build`; `pnpm --filter @gis-engine/ai build`; `pnpm test:commands`; `pnpm test:ai`; `pnpm build:schema` |
 | TASK-2026W23-NLQ-004 | Harden generated-app export manifest | P1 | `@ai-agent`, `@docs-agent`, `@qa-agent` | done | `docs/reviews/nlq-004-export-manifest-evidence-2026-05-29.md`; compact `generationEvidence` manifest summary | `export_example_app` surfaces generation evidence, diagnostics, spatial query, snapshot/export status, and resource notes without side-effect file writes | `pnpm --filter @gis-engine/ai build`; `pnpm test:ai`; `pnpm test:schema-sync`; `pnpm check` |
 | TASK-2026W23-NLQ-005 | Create cloud-native source readiness matrix | P1 | `@engine-agent`, `@docs-agent` | done | `docs/planning/feature-specs/cloud-native-source-readiness.md`; source readiness matrix | support states and blocked diagnostics are documented before implementation claims | resource-policy doc audit; `pnpm check`; `git diff --check` |
-| TASK-2026W23-NLQ-006 | Keep scene browsing blockers visible in generated apps | P1 | `@adapter-agent`, `@qa-agent` | todo | adapter/QA blocker report | generated evidence preserves `extensions.scene3d` context and stable-runtime blocker codes; no `snapshot.renderer: "scene3d"` support | `pnpm test:ai`; `pnpm test:adapter`; `pnpm test:release:scene3d`; `pnpm check` |
+| TASK-2026W23-NLQ-006 | Keep scene browsing blockers visible in generated apps | P1 | `@adapter-agent`, `@qa-agent` | done | `docs/reviews/nlq-006-scene-browsing-blocker-visibility-2026-05-29.md`; generated-app `sceneBrowsing` manifest summary | generated evidence preserves `extensions.scene3d` context and stable-runtime blocker codes; no `snapshot.renderer: "scene3d"` support | `pnpm --filter @gis-engine/ai build`; `pnpm test:ai`; `pnpm test:adapter`; `pnpm test:release:scene3d`; `pnpm check`; `git diff --check` |
 | TASK-2026W23-NLQ-007 | Serialize quality-hardening planning status | P1 | `@task-distributor` | todo | accepted owner evidence and planning diff | burndown and dependency graph update only after owner evidence or gate reports exist | planning diff review; `pnpm check`; `git diff --check` |
 
 ## W23 promotion readiness 计划快照
