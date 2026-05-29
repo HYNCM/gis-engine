@@ -120,7 +120,18 @@ describe("minimum natural-language generation scenarios", () => {
           type: "geojson",
           data: {
             type: "FeatureCollection",
-            features: []
+            features: [
+              {
+                type: "Feature",
+                properties: { id: "incident-1" },
+                geometry: { type: "Point", coordinates: [120.15, 30.28] }
+              },
+              {
+                type: "Feature",
+                properties: { id: "incident-2" },
+                geometry: { type: "Point", coordinates: [120.18, 30.3] }
+              }
+            ]
           }
         }
       },
@@ -158,15 +169,71 @@ describe("minimum natural-language generation scenarios", () => {
         options: {
           targetLayers: ["incident-points"]
         }
+      },
+      spatialQueries: {
+        renderer: "mock",
+        cases: [
+          {
+            id: "incident-point-hit",
+            operation: "point-query",
+            point: [120.15, 30.28],
+            layers: ["incident-points"]
+          },
+          {
+            id: "incident-bbox-hit",
+            operation: "bbox-query",
+            bbox: [120.14, 30.27, 120.19, 30.31],
+            layers: ["incident-points"]
+          }
+        ]
       }
     });
 
     expect(skeleton.status).toBe("ready");
+    expect(skeleton.analysisEvidence).toMatchObject({
+      requested: true,
+      status: "ready",
+      acceptedQueryOperations: ["point-query", "bbox-query"]
+    });
     expect(skeleton.diagnostics).toEqual([]);
     expect(evidence.ok).toBe(true);
     if (!evidence.ok) throw new Error("Expected spatial-analysis generation evidence.");
     expect(evidence.result.status).toBe("ready");
     expect(evidence.result.diagnostics).toEqual([]);
+    expect(evidence.result.spatialQueryEvidence).toMatchObject({
+      requested: true,
+      ready: true,
+      renderer: "mock",
+      status: "ready",
+      requestedOperations: ["point-query", "bbox-query"],
+      acceptedQueryOperations: ["point-query", "bbox-query"],
+      blockedOperations: [],
+      unsupportedOperations: ["aggregation", "buffer", "intersection", "overlay", "routing"],
+      capabilityQueries: ["bbox", "point"],
+      queryableSourceIds: ["incidents"],
+      queryableLayerIds: ["incident-points"],
+      diagnosticCounts: { error: 0, warning: 0, info: 0 }
+    });
+    expect(evidence.result.spatialQueryEvidence.cases).toEqual([
+      expect.objectContaining({
+        id: "incident-point-hit",
+        operation: "point-query",
+        layerIds: ["incident-points"],
+        sourceIds: ["incidents"],
+        featureCount: 1,
+        passed: true,
+        diagnosticCounts: { error: 0, warning: 0, info: 0 }
+      }),
+      expect.objectContaining({
+        id: "incident-bbox-hit",
+        operation: "bbox-query",
+        layerIds: ["incident-points"],
+        sourceIds: ["incidents"],
+        featureCount: 2,
+        passed: true,
+        diagnosticCounts: { error: 0, warning: 0, info: 0 }
+      })
+    ]);
     const spatialDomain = evidence.result.summary.capabilitySummary.domains.find((domain) => domain.id === "spatial-analysis");
     expect(spatialDomain?.status).toBe("experimental");
     expect(spatialDomain?.supported.join(" ")).toContain("declared query capabilities: bbox, point");
@@ -221,6 +288,17 @@ describe("minimum natural-language generation scenarios", () => {
     expect(evidence.ok).toBe(true);
     if (!evidence.ok) throw new Error("Expected blocked analysis evidence bundle.");
     expect(evidence.result.status).toBe("blocked");
+    expect(evidence.result.spatialQueryEvidence).toMatchObject({
+      requested: true,
+      ready: false,
+      status: "blocked",
+      requestedOperations: ["buffer", "overlay", "aggregation"],
+      acceptedQueryOperations: [],
+      blockedOperations: ["buffer", "overlay", "aggregation"],
+      unsupportedOperations: ["aggregation", "buffer", "intersection", "overlay", "routing"],
+      cases: [],
+      diagnosticCounts: { error: 3, warning: 0, info: 0 }
+    });
     expect(evidence.result.snapshotEvidence.requested).toBe(false);
     expect(evidence.result.exportEvidence.ready).toBe(false);
     expect(evidence.result.diagnostics).toEqual(

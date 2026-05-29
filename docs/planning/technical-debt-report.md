@@ -14,6 +14,7 @@ inputs:
   - docs/planning/sprint-2026-W23-generation-quality-hardening.md
   - docs/reviews/nlq-001-prompt-planner-boundary-2026-05-29.md
   - docs/reviews/nlq-002-planner-provenance-evidence-2026-05-29.md
+  - docs/reviews/nlq-003-spatial-query-evidence-2026-05-29.md
 decision_level: advisory
 ---
 
@@ -41,17 +42,22 @@ cloud-native source readiness。
 `GenerationEvidenceBundleSchema`；剩余最高优先级债务转为 spatial query
 evidence。
 
+2026-05-29 NLQ-003 update: spatial query evidence 已接入
+`MapGenerationCommandSkeletonSchema` 和 `GenerationEvidenceBundleSchema`；
+剩余最高优先级债务转为 generated-app export manifest 与 cloud-native source
+readiness matrix。
+
 ## 债务优先级
 
 | 排名 | 债务 | 得分 | 证据 | 建议修复 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | Spatial query evidence missing | 0.66 | planner evidence is now present, but point/bbox query readiness still lacks its own evidence bundle shape | execute `TASK-2026W23-NLQ-003` before claiming spatial query evidence | high |
+| 1 | Generated-app export manifest evidence missing | 0.64 | generation evidence now includes planner and spatial query evidence, but `export_example_app` does not yet summarize those readiness fields | execute `TASK-2026W23-NLQ-004` before claiming generated app handoff completeness | high |
 | 2 | Cloud-native source readiness matrix missing | 0.61 | PMTiles/GeoParquet/FlatGeobuf/OpenLayers signals are now planning inputs, but support states and diagnostics are not yet consolidated | execute `TASK-2026W23-NLQ-005` before adding implementation claims | high |
 | 3 | SceneView3D stable runtime promotion parked after SRC-006 No-go | 0.42 | W23 gate and SRC-006 decision keep stable runtime blocked while browser matrix / adapter summary / docs alignment are in place | keep the blocker codes and require a new explicit stable-runtime approval task before reopening | medium |
 
 ## 修复顺序
 
-1. 先执行 `TASK-2026W23-NLQ-003`：spatial query evidence 必须有稳定诊断和测试。
+1. 先执行 `TASK-2026W23-NLQ-004`：generated-app export manifest 必须能承接 planner、spatial query、snapshot/export/example evidence。
 2. Cloud-native source readiness 要先落支持状态和 blocked diagnostics，再讨论 PMTiles/GeoParquet/FlatGeobuf/GeoZarr 实现。
 3. 下一步若要推进 stable runtime promotion，必须先形成明确的 promotion rubric、browser matrix evidence 和 guardrail diagnostics，不得直接把 `view.mode: "scene3d"` 视为稳定。
 4. 后续真实 renderer loader 接入时，必须先调用 `validateSceneResourceLoadPlan`，不得绕过 byte、texture、worker、timeout diagnostics。
@@ -59,4 +65,4 @@ evidence。
 
 ## 结论
 
-如果只做一件事，下一步优先把 spatial query evidence 设计成稳定的 point/bbox readiness 证据，让自然语言生成地图应用从“可解释 planner”继续走向“可解释分析准备”。SceneView3D stable runtime 仍保持 blocker state，直到新的 explicit approval arrives；下一步不能绕过 blocker code 直接打开 stable `view.mode: "scene3d"`。
+如果只做一件事，下一步优先让 generated-app export manifest 承接 planner 和 spatial query evidence，让自然语言生成地图应用从“可解释分析准备”继续走向“可交付应用包 handoff”。SceneView3D stable runtime 仍保持 blocker state，直到新的 explicit approval arrives；下一步不能绕过 blocker code 直接打开 stable `view.mode: "scene3d"`。

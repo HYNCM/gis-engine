@@ -5,14 +5,25 @@ import { validateSpec } from "../spec/validate.js";
 import {
   MapGenerationRequestSchema,
   type MapGenerationAnalysisOperation,
+  type MapGenerationQueryReadinessOperation,
   type MapGenerationRequestFromSchema,
   type MapGenerationTargetDomain
 } from "../spec/schemas/index.js";
 import type { Diagnostic, MapCommand, MapSpec, SceneView3DExtension } from "../types.js";
 
+export interface MapGenerationAnalysisEvidence {
+  requested: boolean;
+  status: "ready" | "blocked" | "not-requested";
+  requestedOperations: MapGenerationAnalysisOperation[];
+  acceptedQueryOperations: MapGenerationQueryReadinessOperation[];
+  blockedOperations: MapGenerationAnalysisOperation[];
+  diagnostics: Diagnostic[];
+}
+
 export interface MapGenerationCommandSkeleton {
   status: "ready" | "blocked";
   targetDomains: MapGenerationTargetDomain[];
+  analysisEvidence: MapGenerationAnalysisEvidence;
   baseSpec: MapSpec;
   spec: MapSpec;
   commands: MapCommand[];
@@ -31,6 +42,7 @@ export function createMapGenerationCommandSkeleton(input: unknown): MapGeneratio
     return blockedSkeleton({
       baseSpec: fallbackBaseSpec,
       diagnostics: toolInputErrorsToDiagnostics(validateGenerationRequest.errors ?? [], "Invalid map generation request."),
+      analysisEvidence: notRequestedAnalysisEvidence(),
       targetDomains: ["feature-display"],
       traceId
     });
@@ -42,20 +54,24 @@ export function createMapGenerationCommandSkeleton(input: unknown): MapGeneratio
   const baseValidation = validateSpec(baseSpec);
 
   if (!baseValidation.valid) {
+    const boundary = generationBoundaryEvidence(request, targetDomains);
     return blockedSkeleton({
       baseSpec,
       diagnostics: baseValidation.diagnostics,
+      analysisEvidence: boundary.analysisEvidence,
       targetDomains,
       traceId
     });
   }
 
-  const boundaryDiagnostics = generationBoundaryDiagnostics(request, targetDomains);
+  const boundary = generationBoundaryEvidence(request, targetDomains);
+  const boundaryDiagnostics = boundary.diagnostics;
   const blockingBoundaryDiagnostics = boundaryDiagnostics.filter((diagnostic) => diagnostic.severity === "error");
   if (blockingBoundaryDiagnostics.length > 0) {
     return blockedSkeleton({
       baseSpec,
       diagnostics: boundaryDiagnostics,
+      analysisEvidence: boundary.analysisEvidence,
       targetDomains,
       traceId
     });
@@ -66,6 +82,7 @@ export function createMapGenerationCommandSkeleton(input: unknown): MapGeneratio
     return {
       status: "ready",
       targetDomains,
+      analysisEvidence: boundary.analysisEvidence,
       baseSpec,
       spec: structuredClone(baseSpec),
       commands,
@@ -82,6 +99,7 @@ export function createMapGenerationCommandSkeleton(input: unknown): MapGeneratio
   return {
     status,
     targetDomains,
+    analysisEvidence: boundary.analysisEvidence,
     baseSpec,
     spec: applied.spec,
     commands,
@@ -207,25 +225,15 @@ function buildGenerationCommands(request: MapGenerationRequestFromSchema): MapCo
   return commands;
 }
 
-function generationBoundaryDiagnostics(request: MapGenerationRequestFromSchema, targetDomains: MapGenerationTargetDomain[]): Diagnostic[] {
+function generationBoundaryEvidence(
+  request: MapGenerationRequestFromSchema,
+  targetDomains: MapGenerationTargetDomain[]
+): { diagnostics: Diagnostic[]; analysisEvidence: MapGenerationAnalysisEvidence } {
   const diagnostics: Diagnostic[] = [];
+  const analysisEvidence = buildAnalysisEvidence(request, targetDomains);
 
   diagnostics.push(...styleEditDiagnostics(request));
-  diagnostics.push(...analysisDiagnostics(request, targetDomains));
-
-  if (targetDomains.includes("spatial-analysis") && !request.analysis?.operations) {
-    diagnostics.push({
-      severity: "warning",
-      code: DiagnosticCodes.CapabilityUnsupported,
-      message: "Spatial-analysis generation is readiness-only; buffer, overlay, routing, and aggregation commands are not public yet.",
-      path: "/targetDomains",
-      fix: {
-        kind: "manual",
-        confidence: "medium",
-        message: "Use get_context_summary and adapter query capabilities for read-only analysis planning until geoprocessing commands are added."
-      }
-    });
-  }
+  diagnostics.push(...analysisEvidence.diagnostics);
 
   if (targetDomains.includes("scene-browsing") && !request.scene3d) {
     diagnostics.push({
@@ -254,7 +262,7 @@ function generationBoundaryDiagnostics(request: MapGenerationRequestFromSchema, 
   }
 
   diagnostics.push(...unsupportedScene3DCommandDiagnostics(request.scene3d));
-  return diagnostics;
+  return { diagnostics, analysisEvidence };
 }
 
 function styleEditDiagnostics(request: MapGenerationRequestFromSchema): Diagnostic[] {
@@ -278,29 +286,77 @@ function styleEditDiagnostics(request: MapGenerationRequestFromSchema): Diagnost
   );
 }
 
-function analysisDiagnostics(request: MapGenerationRequestFromSchema, targetDomains: MapGenerationTargetDomain[]): Diagnostic[] {
-  if (!targetDomains.includes("spatial-analysis")) return [];
-  return (request.analysis?.operations ?? []).flatMap((operation, index): Diagnostic[] =>
-    isQueryReadinessOperation(operation)
-      ? []
-      : [
-          {
-            severity: "error",
-            code: DiagnosticCodes.CapabilityUnsupported,
-            message: `Spatial-analysis operation "${operation}" is not exposed as a public generation or MCP command yet.`,
-            path: `/analysis/operations/${index}`,
-            fix: {
-              kind: "manual",
-              confidence: "high",
-              message: "Use point-query or bbox-query readiness, or wait for a future geoprocessing command contract."
+function buildAnalysisEvidence(
+  request: MapGenerationRequestFromSchema,
+  targetDomains: MapGenerationTargetDomain[]
+): MapGenerationAnalysisEvidence {
+  if (!targetDomains.includes("spatial-analysis")) return notRequestedAnalysisEvidence();
+
+  const requestedOperations = [...(request.analysis?.operations ?? [])];
+  const acceptedQueryOperations = requestedOperations.filter(isQueryReadinessOperation);
+  const blockedOperations = requestedOperations.filter((operation) => !isQueryReadinessOperation(operation));
+  const diagnostics = [
+    ...missingAnalysisOperationDiagnostics(request),
+    ...requestedOperations.flatMap((operation, index): Diagnostic[] =>
+      isQueryReadinessOperation(operation)
+        ? []
+        : [
+            {
+              severity: "error",
+              code: DiagnosticCodes.CapabilityUnsupported,
+              message: `Spatial-analysis operation "${operation}" is not exposed as a public generation or MCP command yet.`,
+              path: `/analysis/operations/${index}`,
+              fix: {
+                kind: "manual",
+                confidence: "high",
+                message: "Use point-query or bbox-query readiness, or wait for a future geoprocessing command contract."
+              }
             }
-          }
-        ]
-  );
+          ]
+    )
+  ];
+
+  return {
+    requested: true,
+    status: blockedOperations.length > 0 || acceptedQueryOperations.length === 0 ? "blocked" : "ready",
+    requestedOperations,
+    acceptedQueryOperations,
+    blockedOperations,
+    diagnostics
+  };
 }
 
-function isQueryReadinessOperation(operation: MapGenerationAnalysisOperation): boolean {
+function missingAnalysisOperationDiagnostics(request: MapGenerationRequestFromSchema): Diagnostic[] {
+  return request.analysis?.operations
+    ? []
+    : [
+        {
+          severity: "warning",
+          code: DiagnosticCodes.CapabilityUnsupported,
+          message: "Spatial-analysis generation is readiness-only; buffer, overlay, routing, and aggregation commands are not public yet.",
+          path: "/targetDomains",
+          fix: {
+            kind: "manual",
+            confidence: "medium",
+            message: "Use get_context_summary and adapter query capabilities for read-only analysis planning until geoprocessing commands are added."
+          }
+        }
+      ];
+}
+
+function isQueryReadinessOperation(operation: MapGenerationAnalysisOperation): operation is MapGenerationQueryReadinessOperation {
   return operation === "point-query" || operation === "bbox-query";
+}
+
+function notRequestedAnalysisEvidence(): MapGenerationAnalysisEvidence {
+  return {
+    requested: false,
+    status: "not-requested",
+    requestedOperations: [],
+    acceptedQueryOperations: [],
+    blockedOperations: [],
+    diagnostics: []
+  };
 }
 
 function unsupportedScene3DCommandDiagnostics(scene3d: SceneView3DExtension | undefined): Diagnostic[] {
@@ -345,12 +401,14 @@ function stableScene3DBlockedDiagnostic(path: string, blockerCode: Scene3DStable
 function blockedSkeleton(input: {
   baseSpec: MapSpec;
   diagnostics: Diagnostic[];
+  analysisEvidence: MapGenerationAnalysisEvidence;
   targetDomains: MapGenerationTargetDomain[];
   traceId: string;
 }): MapGenerationCommandSkeleton {
   return {
     status: "blocked",
     targetDomains: input.targetDomains,
+    analysisEvidence: input.analysisEvidence,
     baseSpec: input.baseSpec,
     spec: structuredClone(input.baseSpec),
     commands: [],

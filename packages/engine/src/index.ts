@@ -1,7 +1,11 @@
 export { DiagnosticCodes, Scene3DStableRuntimeBlockerCodes } from "./diagnostics/codes.js";
 export { applyCommands, type ApplyCommandsResult } from "./commands/applyCommands.js";
 export { buildPatch, type BuildPatchResult } from "./commands/buildPatch.js";
-export { createMapGenerationCommandSkeleton, type MapGenerationCommandSkeleton } from "./generation/commandSkeleton.js";
+export {
+  createMapGenerationCommandSkeleton,
+  type MapGenerationAnalysisEvidence,
+  type MapGenerationCommandSkeleton
+} from "./generation/commandSkeleton.js";
 export { planMapGenerationRequest, type MapGenerationPromptPlan } from "./generation/promptPlanner.js";
 export { validateSpec } from "./spec/validate.js";
 export { defaultResourcePolicy, validateResourcePolicy, validateResourceUrl, type ResourcePolicy, type ResourceUrlScheme } from "./spec/resource-policy.js";

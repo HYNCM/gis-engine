@@ -32,6 +32,8 @@ export const MapGenerationAnalysisOperationSchema = Type.Union([
   Type.Literal("aggregation")
 ]);
 
+export const MapGenerationQueryReadinessOperationSchema = Type.Union([Type.Literal("point-query"), Type.Literal("bbox-query")]);
+
 const PaintLayoutSchema = Type.Record(Type.String(), Type.Unknown());
 
 const MapGenerationStyleEditSchema = Type.Object(
@@ -46,6 +48,18 @@ const MapGenerationStyleEditSchema = Type.Object(
 const MapGenerationAnalysisRequestSchema = Type.Object(
   {
     operations: Type.Array(MapGenerationAnalysisOperationSchema, { minItems: 1 })
+  },
+  { additionalProperties: false }
+);
+
+export const MapGenerationAnalysisEvidenceSchema = Type.Object(
+  {
+    requested: Type.Boolean(),
+    status: Type.Union([Type.Literal("ready"), Type.Literal("blocked"), Type.Literal("not-requested")]),
+    requestedOperations: Type.Array(MapGenerationAnalysisOperationSchema),
+    acceptedQueryOperations: Type.Array(MapGenerationQueryReadinessOperationSchema),
+    blockedOperations: Type.Array(MapGenerationAnalysisOperationSchema),
+    diagnostics: Type.Array(NestedDiagnosticSchema)
   },
   { additionalProperties: false }
 );
@@ -135,6 +149,7 @@ export const MapGenerationCommandSkeletonSchema = Type.Object(
   {
     status: Type.Union([Type.Literal("ready"), Type.Literal("blocked")]),
     targetDomains: Type.Array(MapGenerationTargetDomainSchema),
+    analysisEvidence: MapGenerationAnalysisEvidenceSchema,
     baseSpec: NestedMapSpecSchema,
     spec: NestedMapSpecSchema,
     commands: Type.Array(NestedMapCommandSchema),
@@ -149,6 +164,8 @@ export const MapGenerationCommandSkeletonSchema = Type.Object(
 
 export type MapGenerationTargetDomain = Static<typeof MapGenerationTargetDomainSchema>;
 export type MapGenerationAnalysisOperation = Static<typeof MapGenerationAnalysisOperationSchema>;
+export type MapGenerationQueryReadinessOperation = Static<typeof MapGenerationQueryReadinessOperationSchema>;
+export type MapGenerationAnalysisEvidenceFromSchema = Static<typeof MapGenerationAnalysisEvidenceSchema>;
 export type MapGenerationPromptPlannerInputFromSchema = Static<typeof MapGenerationPromptPlannerInputSchema>;
 export type MapGenerationPromptPlanFromSchema = Static<typeof MapGenerationPromptPlanSchema>;
 export type MapGenerationRequestFromSchema = Static<typeof MapGenerationRequestSchema>;

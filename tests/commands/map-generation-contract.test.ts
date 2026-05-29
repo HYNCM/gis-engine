@@ -72,6 +72,13 @@ describe("map generation command skeleton contract", () => {
     expect(skeleton.spec.layers.map((layer) => layer.id)).toEqual(["service-points"]);
     expect(skeleton.spec.interactions).toMatchObject({ click: true, popup: true });
     expect(validateSpec(skeleton.spec).valid).toBe(true);
+    expect(skeleton.analysisEvidence).toMatchObject({
+      requested: true,
+      status: "blocked",
+      requestedOperations: [],
+      acceptedQueryOperations: [],
+      blockedOperations: []
+    });
     expect(skeleton.diagnostics).toEqual([
       expect.objectContaining({
         severity: "warning",
@@ -173,6 +180,27 @@ describe("map generation command skeleton contract", () => {
 
     expect(skeleton.status).toBe("blocked");
     expect(skeleton.commands).toEqual([]);
+    expect(skeleton.analysisEvidence).toMatchObject({
+      requested: true,
+      status: "blocked",
+      requestedOperations: ["point-query", "buffer", "routing"],
+      acceptedQueryOperations: ["point-query"],
+      blockedOperations: ["buffer", "routing"]
+    });
+    expect(skeleton.analysisEvidence.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          severity: "error",
+          code: "CAPABILITY.UNSUPPORTED",
+          path: "/analysis/operations/1"
+        }),
+        expect.objectContaining({
+          severity: "error",
+          code: "CAPABILITY.UNSUPPORTED",
+          path: "/analysis/operations/2"
+        })
+      ])
+    );
     expect(skeleton.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -295,6 +323,13 @@ describe("map generation command skeleton contract", () => {
     const skeleton = createMapGenerationCommandSkeleton(plan.request);
 
     expect(skeleton.status).toBe("ready");
+    expect(skeleton.analysisEvidence).toMatchObject({
+      requested: true,
+      status: "ready",
+      requestedOperations: ["point-query"],
+      acceptedQueryOperations: ["point-query"],
+      blockedOperations: []
+    });
     expect(skeleton.commands.map((command) => command.sourcePromptHash)).toEqual([
       "sha256:planner-city-services",
       "sha256:planner-city-services",

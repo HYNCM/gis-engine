@@ -22,8 +22,10 @@ the gates required before adding richer analysis operations.
 
 ## Current Boundary
 
-- Evidence: `capabilitySummary` already reports `spatial-analysis` as
-  experimental through capability metadata and point/bbox query readiness.
+- Evidence: `capabilitySummary` reports `spatial-analysis` as experimental,
+  `analysisEvidence` records accepted point/bbox operations on the command
+  skeleton, and `spatialQueryEvidence` records deterministic query case counts
+  and diagnostics in the generation evidence bundle.
 - Impact: AI prompts such as "find features near this area" can be routed to
   existing query readiness or rejected with stable diagnostics.
 - Action: define a read-only analysis contract before adding any public MCP
@@ -34,8 +36,8 @@ the gates required before adding richer analysis operations.
 
 | Capability | Claim | Evidence Required |
 | --- | --- | --- |
-| Point query readiness | AI can plan against deterministic point query behavior where adapters expose it. | query result shape, stable layer/source ids, diagnostics for hidden or missing layers |
-| Bbox query readiness | AI can plan against bounded extent queries where fixtures and adapters support them. | deterministic result ordering or documented sort, extent validation, diagnostics |
+| Point query readiness | AI can plan against deterministic point query behavior where adapters expose it. | `analysisEvidence.acceptedQueryOperations`, `spatialQueryEvidence.cases`, stable layer/source ids, diagnostic counts |
+| Bbox query readiness | AI can plan against bounded extent queries where fixtures and adapters support them. | `analysisEvidence.acceptedQueryOperations`, deterministic case feature counts, extent validation diagnostics |
 | Capability explanation | AI can explain which analysis requests are supported, experimental, or blocked. | `capabilitySummary`, `explain_spec`, and output schema coverage |
 
 ## Explicitly Blocked Until Designed

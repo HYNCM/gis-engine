@@ -14,6 +14,7 @@ inputs:
   - docs/planning/sprint-2026-W23-generation-quality-hardening.md
   - docs/reviews/nlq-001-prompt-planner-boundary-2026-05-29.md
   - docs/reviews/nlq-002-planner-provenance-evidence-2026-05-29.md
+  - docs/reviews/nlq-003-spatial-query-evidence-2026-05-29.md
   - docs/research/competitor-updates-2026-W20.md
   - docs/reviews/daily-audit-2026-05-17.md
   - docs/reviews/quality-gate-2026-05-17.md
@@ -74,6 +75,13 @@ retention。下一步转入 planner quality/provenance evidence。
 `plannerEvidence`，覆盖 planner confidence、prompt/trace provenance、
 accepted/unsupported intent fields、source prompt hashes 和 planner
 diagnostics。下一步转入 spatial query evidence。
+
+2026-05-29 NLQ-003 执行结果：`MapGenerationCommandSkeletonSchema` 已新增
+`analysisEvidence`，`GenerationEvidenceBundleSchema` 已新增
+`spatialQueryEvidence`。点 / bbox readiness 现在由 deterministic query cases
+提供 feature count、layer/source ids 和 diagnostic counts；buffer、overlay、
+routing、aggregation、intersection 继续保持 blocked。下一步转入 generated-app
+export manifest hardening。
 
 ## 2026-W22 Iteration Path
 

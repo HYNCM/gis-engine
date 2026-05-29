@@ -3,15 +3,26 @@ import {
   CapabilityReportSchema,
   DiagnosticCodes,
   DiagnosticSchema,
+  MapGenerationAnalysisOperationSchema,
   MapGenerationCommandSkeletonSchema,
   MapGenerationPromptPlanSchema,
+  MapGenerationQueryReadinessOperationSchema,
   MapGenerationTargetDomainSchema,
+  MapLibreAdapter,
+  MapRuntime,
+  MockAdapter,
   validateSpec,
   type CapabilityReport,
   type Diagnostic,
+  type FeatureQueryResult,
   type MapGenerationCommandSkeleton,
+  type MapGenerationAnalysisOperation,
   type MapGenerationPromptPlanFromSchema,
+  type MapGenerationQueryReadinessOperation,
   type MapGenerationTargetDomain,
+  type MapSpec,
+  type QueryFeaturesOptions,
+  type RendererAdapter,
   type ValidationReport
 } from "@gis-engine/engine";
 import { applyCommandsTool } from "./applyCommands.js";
@@ -57,6 +68,49 @@ const PlannerConfidenceSchema = {
   additionalProperties: false
 } as const;
 
+const PointSpatialQueryCaseSchema = {
+  type: "object",
+  properties: {
+    id: { type: "string", minLength: 1 },
+    operation: { type: "string", const: "point-query" },
+    point: { type: "array", items: { type: "number" }, minItems: 2, maxItems: 2 },
+    layers: { type: "array", items: { type: "string" } }
+  },
+  required: ["id", "operation", "point"],
+  additionalProperties: false
+} as const;
+
+const BboxSpatialQueryCaseSchema = {
+  type: "object",
+  properties: {
+    id: { type: "string", minLength: 1 },
+    operation: { type: "string", const: "bbox-query" },
+    bbox: { type: "array", items: { type: "number" }, minItems: 4, maxItems: 4 },
+    layers: { type: "array", items: { type: "string" } }
+  },
+  required: ["id", "operation", "bbox"],
+  additionalProperties: false
+} as const;
+
+const SpatialQueryCaseSchema = {
+  anyOf: [PointSpatialQueryCaseSchema, BboxSpatialQueryCaseSchema]
+} as const;
+
+const SpatialQueryCaseEvidenceSchema = {
+  type: "object",
+  properties: {
+    id: { type: "string" },
+    operation: stripNestedIds(MapGenerationQueryReadinessOperationSchema),
+    layerIds: { type: "array", items: { type: "string" } },
+    sourceIds: { type: "array", items: { type: "string" } },
+    featureCount: { type: "number" },
+    passed: { type: "boolean" },
+    diagnosticCounts: DiagnosticCountsSchema
+  },
+  required: ["id", "operation", "layerIds", "sourceIds", "featureCount", "passed", "diagnosticCounts"],
+  additionalProperties: false
+} as const;
+
 export const GenerationEvidenceBundleInputSchema = {
   type: "object",
   properties: {
@@ -78,6 +132,15 @@ export const GenerationEvidenceBundleInputSchema = {
         renderer: SnapshotSpecToolInputSchema.properties.renderer,
         options: SnapshotSpecToolInputSchema.properties.snapshot
       },
+      additionalProperties: false
+    },
+    spatialQueries: {
+      type: "object",
+      properties: {
+        renderer: SnapshotSpecToolInputSchema.properties.renderer,
+        cases: { type: "array", items: SpatialQueryCaseSchema }
+      },
+      required: ["cases"],
       additionalProperties: false
     },
     exampleId: ExportExampleAppToolInputSchema.properties.exampleId
@@ -146,6 +209,46 @@ export const GenerationEvidenceBundleSchema = {
       ],
       additionalProperties: false
     },
+    spatialQueryEvidence: {
+      type: "object",
+      properties: {
+        requested: { type: "boolean" },
+        ready: { type: "boolean" },
+        renderer: { type: "string", enum: ["maplibre", "mock"] },
+        status: { type: "string", enum: ["ready", "blocked", "not-requested"] },
+        requestedOperations: { type: "array", items: stripNestedIds(MapGenerationAnalysisOperationSchema) },
+        acceptedQueryOperations: { type: "array", items: stripNestedIds(MapGenerationQueryReadinessOperationSchema) },
+        blockedOperations: { type: "array", items: stripNestedIds(MapGenerationAnalysisOperationSchema) },
+        unsupportedOperations: { type: "array", items: stripNestedIds(MapGenerationAnalysisOperationSchema) },
+        capabilityQueries: { type: "array", items: { type: "string" } },
+        queryableSourceIds: { type: "array", items: { type: "string" } },
+        queryableLayerIds: { type: "array", items: { type: "string" } },
+        hiddenLayerIds: { type: "array", items: { type: "string" } },
+        unsupportedSourceIds: { type: "array", items: { type: "string" } },
+        missingSourceIds: { type: "array", items: { type: "string" } },
+        cases: { type: "array", items: SpatialQueryCaseEvidenceSchema },
+        diagnosticCounts: DiagnosticCountsSchema
+      },
+      required: [
+        "requested",
+        "ready",
+        "renderer",
+        "status",
+        "requestedOperations",
+        "acceptedQueryOperations",
+        "blockedOperations",
+        "unsupportedOperations",
+        "capabilityQueries",
+        "queryableSourceIds",
+        "queryableLayerIds",
+        "hiddenLayerIds",
+        "unsupportedSourceIds",
+        "missingSourceIds",
+        "cases",
+        "diagnosticCounts"
+      ],
+      additionalProperties: false
+    },
     snapshotEvidence: {
       type: "object",
       properties: {
@@ -196,6 +299,7 @@ export const GenerationEvidenceBundleSchema = {
     "validation",
     "commandEvidence",
     "plannerEvidence",
+    "spatialQueryEvidence",
     "snapshotEvidence",
     "exportEvidence",
     "exampleEvidence",
@@ -221,6 +325,10 @@ export interface GenerationEvidenceBundleInput {
       format?: "png" | "jpeg" | "data-url";
       targetLayers?: string[];
     };
+  };
+  spatialQueries?: {
+    renderer?: "maplibre" | "mock";
+    cases: SpatialQueryCaseInput[];
   };
   exampleId?: ExampleId;
 }
@@ -253,6 +361,49 @@ export interface GenerationPlannerEvidence {
   acceptedIntentFields: string[];
   unsupportedIntentFields: string[];
   sourcePromptHashes: string[];
+  diagnosticCounts: Record<Diagnostic["severity"], number>;
+}
+
+export type SpatialQueryCaseInput =
+  | {
+      id: string;
+      operation: "point-query";
+      point: [number, number];
+      layers?: string[];
+    }
+  | {
+      id: string;
+      operation: "bbox-query";
+      bbox: [number, number, number, number];
+      layers?: string[];
+    };
+
+export interface GenerationSpatialQueryCaseEvidence {
+  id: string;
+  operation: MapGenerationQueryReadinessOperation;
+  layerIds: string[];
+  sourceIds: string[];
+  featureCount: number;
+  passed: boolean;
+  diagnosticCounts: Record<Diagnostic["severity"], number>;
+}
+
+export interface GenerationSpatialQueryEvidence {
+  requested: boolean;
+  ready: boolean;
+  renderer: "maplibre" | "mock";
+  status: "ready" | "blocked" | "not-requested";
+  requestedOperations: MapGenerationAnalysisOperation[];
+  acceptedQueryOperations: MapGenerationQueryReadinessOperation[];
+  blockedOperations: MapGenerationAnalysisOperation[];
+  unsupportedOperations: MapGenerationAnalysisOperation[];
+  capabilityQueries: string[];
+  queryableSourceIds: string[];
+  queryableLayerIds: string[];
+  hiddenLayerIds: string[];
+  unsupportedSourceIds: string[];
+  missingSourceIds: string[];
+  cases: GenerationSpatialQueryCaseEvidence[];
   diagnosticCounts: Record<Diagnostic["severity"], number>;
 }
 
@@ -289,6 +440,7 @@ export interface GenerationEvidenceBundle {
   validation: ValidationReport;
   commandEvidence: GenerationCommandEvidence;
   plannerEvidence: GenerationPlannerEvidence;
+  spatialQueryEvidence: GenerationSpatialQueryEvidence;
   snapshotEvidence: GenerationSnapshotEvidence;
   exportEvidence: GenerationExportEvidence;
   exampleEvidence: GenerationExampleEvidence;
@@ -318,6 +470,7 @@ export async function createGenerationEvidenceBundle(input: unknown): Promise<Ge
   });
   const commandEvidence = buildCommandEvidence(typedInput.skeleton);
   const plannerEvidence = buildPlannerEvidence(typedInput, commandEvidence);
+  const spatialQueryEvidence = await buildSpatialQueryEvidence(typedInput);
   const snapshotEvidence = await buildSnapshotEvidence(typedInput);
   const exportEvidence = buildExportEvidence(typedInput.skeleton, validation);
   const exampleEvidence = buildExampleEvidence(typedInput.exampleId ?? "ai-map-edit");
@@ -326,6 +479,7 @@ export async function createGenerationEvidenceBundle(input: unknown): Promise<Ge
     ...typedInput.skeleton.diagnostics,
     ...validation.diagnostics,
     ...commandEvidenceDiagnostics(typedInput.skeleton, commandEvidence),
+    ...spatialQueryEvidence.diagnostics,
     ...snapshotEvidenceDiagnostics(snapshotEvidence),
     ...exampleEvidence.diagnostics
   ];
@@ -335,6 +489,7 @@ export async function createGenerationEvidenceBundle(input: unknown): Promise<Ge
     !validation.valid ||
     plannerEvidence.diagnosticCounts.error > 0 ||
     commandEvidence.diagnosticCounts.error > 0 ||
+    spatialQueryEvidence.diagnosticCounts.error > 0 ||
     snapshotEvidence.diagnosticCounts.error > 0
       ? "blocked"
       : "ready";
@@ -350,6 +505,7 @@ export async function createGenerationEvidenceBundle(input: unknown): Promise<Ge
       validation,
       commandEvidence,
       plannerEvidence: stripPlannerDiagnostics(plannerEvidence),
+      spatialQueryEvidence: stripSpatialQueryDiagnostics(spatialQueryEvidence),
       snapshotEvidence: stripInternalDiagnostics(snapshotEvidence),
       exportEvidence,
       exampleEvidence: stripExampleDiagnostics(exampleEvidence),
@@ -543,6 +699,353 @@ function plannerConfidenceFromDiagnostics(diagnostics: Diagnostic[]): PlannerCon
   };
 }
 
+const unsupportedSpatialOperations: MapGenerationAnalysisOperation[] = ["aggregation", "buffer", "intersection", "overlay", "routing"];
+
+interface SpatialSpecReadiness {
+  queryableSourceIds: string[];
+  queryableLayerIds: string[];
+  hiddenLayerIds: string[];
+  unsupportedSourceIds: string[];
+  missingSourceIds: string[];
+}
+
+async function buildSpatialQueryEvidence(
+  input: GenerationEvidenceBundleInput
+): Promise<GenerationSpatialQueryEvidence & { diagnostics: Diagnostic[] }> {
+  const analysisEvidence = input.skeleton.analysisEvidence;
+  const renderer = input.spatialQueries?.renderer ?? "mock";
+  const capabilityQueries = unique(input.capabilities?.queries ?? []);
+  const readiness = summarizeSpatialSpecReadiness(input.skeleton.spec);
+
+  if (!analysisEvidence.requested) {
+    return {
+      requested: false,
+      ready: false,
+      renderer,
+      status: "not-requested",
+      requestedOperations: [],
+      acceptedQueryOperations: [],
+      blockedOperations: [],
+      unsupportedOperations: unsupportedSpatialOperations,
+      capabilityQueries,
+      ...readiness,
+      cases: [],
+      diagnosticCounts: zeroDiagnosticCounts(),
+      diagnostics: []
+    };
+  }
+
+  const setupDiagnostics = spatialQuerySetupDiagnostics(input, readiness, capabilityQueries);
+  const cases =
+    input.skeleton.status === "ready" && setupDiagnostics.every((diagnostic) => diagnostic.severity !== "error")
+      ? await runSpatialQueryCases(input, readiness, renderer)
+      : { evidence: [], diagnostics: [] };
+  const diagnostics = [...setupDiagnostics, ...cases.diagnostics];
+  const diagnosticCounts = countDiagnostics([...analysisEvidence.diagnostics, ...diagnostics]);
+  const caseEvidence = cases.evidence;
+  const ready =
+    analysisEvidence.status === "ready" &&
+    diagnosticCounts.error === 0 &&
+    analysisEvidence.acceptedQueryOperations.length > 0 &&
+    caseEvidence.length > 0 &&
+    caseEvidence.every((entry) => entry.passed);
+
+  return {
+    requested: true,
+    ready,
+    renderer,
+    status: ready ? "ready" : "blocked",
+    requestedOperations: analysisEvidence.requestedOperations,
+    acceptedQueryOperations: analysisEvidence.acceptedQueryOperations,
+    blockedOperations: analysisEvidence.blockedOperations,
+    unsupportedOperations: unsupportedSpatialOperations,
+    capabilityQueries,
+    ...readiness,
+    cases: caseEvidence,
+    diagnosticCounts,
+    diagnostics
+  };
+}
+
+function spatialQuerySetupDiagnostics(
+  input: GenerationEvidenceBundleInput,
+  readiness: SpatialSpecReadiness,
+  capabilityQueries: string[]
+): Diagnostic[] {
+  const analysisEvidence = input.skeleton.analysisEvidence;
+  if (!analysisEvidence.requested || analysisEvidence.acceptedQueryOperations.length === 0) return [];
+
+  const diagnostics: Diagnostic[] = [];
+  const requestedQueryTypes = unique(analysisEvidence.acceptedQueryOperations.map(queryTypeForAnalysisOperation));
+  const cases = input.spatialQueries?.cases ?? [];
+
+  if (input.capabilities && capabilityQueries.length > 0) {
+    const missingCapabilities = requestedQueryTypes.filter((query) => !capabilityQueries.includes(query));
+    if (missingCapabilities.length > 0) {
+      diagnostics.push({
+        severity: "error",
+        code: DiagnosticCodes.CapabilityUnsupported,
+        message: `Spatial query evidence requires declared capability queries: ${missingCapabilities.join(", ")}.`,
+        path: "/capabilities/queries",
+        relatedResources: [{ kind: "adapter", id: input.capabilities.renderer }],
+        fix: {
+          kind: "manual",
+          confidence: "high",
+          message: "Declare point and bbox query capabilities only when the selected adapter can provide deterministic query evidence."
+        }
+      });
+    }
+  }
+
+  if (readiness.queryableLayerIds.length === 0) {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.CapabilityUnsupported,
+      message: "Spatial query evidence requires at least one visible layer backed by inline GeoJSON data.",
+      path: "/skeleton/spec/layers",
+      fix: {
+        kind: "manual",
+        confidence: "high",
+        message: "Add a visible layer with an inline GeoJSON source before claiming point or bbox query readiness."
+      }
+    });
+  }
+
+  if (cases.length === 0) {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.CapabilityUnsupported,
+      message: "Spatial query evidence requires at least one point-query or bbox-query case.",
+      path: "/spatialQueries/cases",
+      fix: {
+        kind: "manual",
+        confidence: "high",
+        message: "Add deterministic point-query or bbox-query cases to the generation evidence bundle."
+      }
+    });
+  }
+
+  return diagnostics;
+}
+
+async function runSpatialQueryCases(
+  input: GenerationEvidenceBundleInput,
+  readiness: SpatialSpecReadiness,
+  renderer: "maplibre" | "mock"
+): Promise<{ evidence: GenerationSpatialQueryCaseEvidence[]; diagnostics: Diagnostic[] }> {
+  const cases = input.spatialQueries?.cases ?? [];
+  if (cases.length === 0) return { evidence: [], diagnostics: [] };
+
+  const adapter = createHeadlessAdapter(renderer);
+  let runtime: MapRuntime | undefined;
+
+  try {
+    runtime = await MapRuntime.create(input.skeleton.spec, {
+      adapter,
+      container: createHeadlessContainer()
+    });
+    const evidence: GenerationSpatialQueryCaseEvidence[] = [];
+    const diagnostics: Diagnostic[] = [];
+
+    for (const [index, queryCase] of cases.entries()) {
+      const operationDiagnostics = spatialQueryCaseOperationDiagnostics(input, queryCase, index);
+      if (operationDiagnostics.length > 0) {
+        diagnostics.push(...operationDiagnostics);
+        evidence.push(emptySpatialQueryCaseEvidence(input.skeleton.spec, readiness, queryCase, operationDiagnostics));
+        continue;
+      }
+
+      const result = await runtime.queryFeatures(queryOptionsForSpatialQueryCase(readiness, queryCase));
+      const caseDiagnostics = result.diagnostics.map((diagnostic) => prefixSpatialQueryCaseDiagnostic(diagnostic, index));
+      diagnostics.push(...caseDiagnostics);
+      evidence.push(spatialQueryCaseEvidence(input.skeleton.spec, readiness, queryCase, result, caseDiagnostics));
+    }
+
+    return { evidence, diagnostics };
+  } catch (error) {
+    return {
+      evidence: [],
+      diagnostics: [spatialQueryRuntimeDiagnostic(error)]
+    };
+  } finally {
+    if (runtime) {
+      await runtime.destroy();
+    } else {
+      await adapter.destroy();
+    }
+  }
+}
+
+function spatialQueryCaseOperationDiagnostics(
+  input: GenerationEvidenceBundleInput,
+  queryCase: SpatialQueryCaseInput,
+  index: number
+): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+  if (!input.skeleton.analysisEvidence.acceptedQueryOperations.includes(queryCase.operation)) {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.CapabilityUnsupported,
+      message: `Spatial query case "${queryCase.id}" uses operation "${queryCase.operation}" that was not accepted by the planner request.`,
+      path: `/spatialQueries/cases/${index}/operation`,
+      fix: {
+        kind: "manual",
+        confidence: "high",
+        message: "Keep spatial query cases aligned with accepted point-query and bbox-query planner operations."
+      }
+    });
+  }
+
+  for (const layerId of queryCase.layers ?? []) {
+    const layer = input.skeleton.spec.layers.find((entry) => entry.id === layerId);
+    if (layer?.layout?.visibility === "none") {
+      diagnostics.push({
+        severity: "error",
+        code: DiagnosticCodes.CapabilityUnsupported,
+        message: `Spatial query case "${queryCase.id}" targets hidden layer "${layerId}".`,
+        path: `/spatialQueries/cases/${index}/layers`,
+        relatedResources: [{ kind: "layer", id: layerId }],
+        fix: {
+          kind: "manual",
+          confidence: "high",
+          message: "Query a visible layer, or make the layer visible before claiming query readiness evidence."
+        }
+      });
+    }
+  }
+
+  return diagnostics;
+}
+
+function emptySpatialQueryCaseEvidence(
+  spec: MapSpec,
+  readiness: SpatialSpecReadiness,
+  queryCase: SpatialQueryCaseInput,
+  diagnostics: Diagnostic[]
+): GenerationSpatialQueryCaseEvidence {
+  return {
+    id: queryCase.id,
+    operation: queryCase.operation,
+    layerIds: selectedLayerIdsForCase(spec, readiness, queryCase),
+    sourceIds: selectedSourceIdsForCase(spec, readiness, queryCase),
+    featureCount: 0,
+    passed: false,
+    diagnosticCounts: countDiagnostics(diagnostics)
+  };
+}
+
+function spatialQueryCaseEvidence(
+  spec: MapSpec,
+  readiness: SpatialSpecReadiness,
+  queryCase: SpatialQueryCaseInput,
+  result: FeatureQueryResult,
+  diagnostics: Diagnostic[]
+): GenerationSpatialQueryCaseEvidence {
+  const counts = countDiagnostics(diagnostics);
+  return {
+    id: queryCase.id,
+    operation: queryCase.operation,
+    layerIds: selectedLayerIdsForCase(spec, readiness, queryCase),
+    sourceIds: selectedSourceIdsForCase(spec, readiness, queryCase),
+    featureCount: result.features.length,
+    passed: counts.error === 0,
+    diagnosticCounts: counts
+  };
+}
+
+function queryOptionsForSpatialQueryCase(readiness: SpatialSpecReadiness, queryCase: SpatialQueryCaseInput): QueryFeaturesOptions {
+  const layers = queryCase.layers ?? readiness.queryableLayerIds;
+  return queryCase.operation === "point-query"
+    ? {
+        point: queryCase.point,
+        ...(layers.length > 0 ? { layers } : {})
+      }
+    : {
+        bbox: queryCase.bbox,
+        ...(layers.length > 0 ? { layers } : {})
+      };
+}
+
+function summarizeSpatialSpecReadiness(spec: MapSpec): SpatialSpecReadiness {
+  const queryableSourceIds = new Set<string>();
+  const queryableLayerIds: string[] = [];
+  const hiddenLayerIds: string[] = [];
+  const unsupportedSourceIds = new Set<string>();
+  const missingSourceIds = new Set<string>();
+
+  for (const layer of spec.layers) {
+    if (!layer.source) continue;
+    if (layer.layout?.visibility === "none") {
+      hiddenLayerIds.push(layer.id);
+      continue;
+    }
+
+    const source = spec.sources[layer.source];
+    if (!source) {
+      missingSourceIds.add(layer.source);
+      continue;
+    }
+
+    if (source.type === "geojson" && typeof source.data !== "string") {
+      queryableSourceIds.add(layer.source);
+      queryableLayerIds.push(layer.id);
+      continue;
+    }
+
+    unsupportedSourceIds.add(layer.source);
+  }
+
+  return {
+    queryableSourceIds: unique([...queryableSourceIds]),
+    queryableLayerIds: unique(queryableLayerIds),
+    hiddenLayerIds: unique(hiddenLayerIds),
+    unsupportedSourceIds: unique([...unsupportedSourceIds]),
+    missingSourceIds: unique([...missingSourceIds])
+  };
+}
+
+function selectedLayerIdsForCase(spec: MapSpec, readiness: SpatialSpecReadiness, queryCase: SpatialQueryCaseInput): string[] {
+  return unique(queryCase.layers ?? readiness.queryableLayerIds.filter((layerId) => spec.layers.some((layer) => layer.id === layerId)));
+}
+
+function selectedSourceIdsForCase(spec: MapSpec, readiness: SpatialSpecReadiness, queryCase: SpatialQueryCaseInput): string[] {
+  if (!queryCase.layers) return readiness.queryableSourceIds;
+  return unique(
+    queryCase.layers
+      .map((layerId) => spec.layers.find((layer) => layer.id === layerId)?.source)
+      .filter((sourceId): sourceId is string => typeof sourceId === "string" && sourceId.length > 0)
+  );
+}
+
+function queryTypeForAnalysisOperation(operation: MapGenerationQueryReadinessOperation): "point" | "bbox" {
+  return operation === "point-query" ? "point" : "bbox";
+}
+
+function prefixSpatialQueryCaseDiagnostic(diagnostic: Diagnostic, index: number): Diagnostic {
+  const suffix = diagnostic.path && diagnostic.path !== "/" ? diagnostic.path : "";
+  return {
+    ...diagnostic,
+    path: `/spatialQueries/cases/${index}${suffix}`
+  };
+}
+
+function spatialQueryRuntimeDiagnostic(error: unknown): Diagnostic {
+  return {
+    severity: "error",
+    code: DiagnosticCodes.RenderAdapterError,
+    message: error instanceof Error ? error.message : "Renderer adapter failed while creating spatial query evidence.",
+    path: "/spatialQueries"
+  };
+}
+
+function createHeadlessAdapter(renderer: "maplibre" | "mock"): RendererAdapter {
+  return renderer === "mock" ? new MockAdapter() : new MapLibreAdapter();
+}
+
+function createHeadlessContainer(): HTMLElement {
+  return {} as HTMLElement;
+}
+
 async function buildSnapshotEvidence(input: GenerationEvidenceBundleInput): Promise<GenerationSnapshotEvidence & { diagnostics: Diagnostic[] }> {
   const renderer = input.snapshot?.renderer ?? "maplibre";
   if (input.skeleton.status === "blocked") {
@@ -661,6 +1164,13 @@ function stripInternalDiagnostics(snapshotEvidence: GenerationSnapshotEvidence &
 
 function stripPlannerDiagnostics(plannerEvidence: GenerationPlannerEvidence & { diagnostics?: Diagnostic[] }): GenerationPlannerEvidence {
   const { diagnostics: _diagnostics, ...publicEvidence } = plannerEvidence;
+  return publicEvidence;
+}
+
+function stripSpatialQueryDiagnostics(
+  spatialQueryEvidence: GenerationSpatialQueryEvidence & { diagnostics?: Diagnostic[] }
+): GenerationSpatialQueryEvidence {
+  const { diagnostics: _diagnostics, ...publicEvidence } = spatialQueryEvidence;
   return publicEvidence;
 }
 

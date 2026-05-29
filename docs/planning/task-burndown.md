@@ -34,6 +34,7 @@ inputs:
   - docs/reviews/nla-008-serialized-planning-handoff-2026-05-29.md
   - docs/reviews/nlq-001-prompt-planner-boundary-2026-05-29.md
   - docs/reviews/nlq-002-planner-provenance-evidence-2026-05-29.md
+  - docs/reviews/nlq-003-spatial-query-evidence-2026-05-29.md
 owner: "@coordinator"
 decision_level: advisory
 ---
@@ -191,7 +192,7 @@ new MCP tool alias or mutate runtime state outside `MapCommand` /
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | TASK-2026W23-NLQ-001 | Define typed prompt planner boundary | P0 | `@product-strategist`, `@ai-agent`, `@engine-agent` | done | `docs/reviews/nlq-001-prompt-planner-boundary-2026-05-29.md`; planner schemas and command tests | planner output is `MapGenerationRequest`-compatible and carries diagnostics, prompt hash, and trace metadata without raw prompt retention by default | `pnpm build:schema`; `pnpm test:commands`; `pnpm test:schema-sync`; `pnpm --filter @gis-engine/engine build` |
 | TASK-2026W23-NLQ-002 | Add planner quality and provenance evidence | P0 | `@ai-agent`, `@qa-agent` | done | `docs/reviews/nlq-002-planner-provenance-evidence-2026-05-29.md`; AI evidence report and prompt QA scenarios | generation evidence exposes planner confidence, unsupported-intent diagnostics, and command trace provenance | `pnpm --filter @gis-engine/engine build`; `pnpm --filter @gis-engine/ai build`; `pnpm test:commands`; `pnpm test:ai`; final `pnpm check` |
-| TASK-2026W23-NLQ-003 | Design spatial query evidence bundle | P0 | `@engine-agent`, `@ai-agent` | todo | query evidence contract and blocked-operation diagnostics | point/bbox query readiness is explicit; buffer, overlay, routing, and aggregation remain blocked | `pnpm test:commands`; `pnpm test:ai`; `pnpm build:schema` if schemas change; `pnpm check` |
+| TASK-2026W23-NLQ-003 | Design spatial query evidence bundle | P0 | `@engine-agent`, `@ai-agent` | done | `docs/reviews/nlq-003-spatial-query-evidence-2026-05-29.md`; skeleton `analysisEvidence`; AI `spatialQueryEvidence` query cases | point/bbox query readiness is explicit and deterministic; buffer, overlay, routing, aggregation, and intersection remain blocked | `pnpm --filter @gis-engine/engine build`; `pnpm --filter @gis-engine/ai build`; `pnpm test:commands`; `pnpm test:ai`; `pnpm build:schema` |
 | TASK-2026W23-NLQ-004 | Harden generated-app export manifest | P1 | `@ai-agent`, `@docs-agent`, `@qa-agent` | todo | export/example manifest evidence | `export_example_app` can surface generation evidence, diagnostics, snapshot/export status, and resource notes without side-effect file writes | `pnpm test:ai`; `pnpm test:examples`; `pnpm check` |
 | TASK-2026W23-NLQ-005 | Create cloud-native source readiness matrix | P1 | `@engine-agent`, `@docs-agent` | todo | PMTiles/GeoParquet/FlatGeobuf/GeoTIFF/GeoZarr readiness matrix | support states and blocked diagnostics are documented before implementation claims | resource-policy doc audit; schema tests if fixtures change; `pnpm check` |
 | TASK-2026W23-NLQ-006 | Keep scene browsing blockers visible in generated apps | P1 | `@adapter-agent`, `@qa-agent` | todo | adapter/QA blocker report | generated evidence preserves `extensions.scene3d` context and stable-runtime blocker codes; no `snapshot.renderer: "scene3d"` support | `pnpm test:ai`; `pnpm test:adapter`; `pnpm test:release:scene3d`; `pnpm check` |

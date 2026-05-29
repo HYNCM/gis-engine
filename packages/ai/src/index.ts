@@ -17,6 +17,8 @@ export {
   type GenerationEvidenceBundle,
   type GenerationEvidenceBundleInput,
   type GenerationPlannerEvidence,
+  type GenerationSpatialQueryCaseEvidence,
+  type GenerationSpatialQueryEvidence,
   type PlannerConfidence
 } from "./tools/generationEvidence.js";
 export { snapshotSpecTool, SnapshotSpecToolInputSchema, type SnapshotSpecToolInput, type SnapshotSpecToolResult } from "./tools/snapshotSpec.js";

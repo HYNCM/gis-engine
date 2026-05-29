@@ -128,7 +128,18 @@ describe("prompt-level generation evidence scenarios", () => {
             type: "geojson",
             data: {
               type: "FeatureCollection",
-              features: []
+              features: [
+                {
+                  type: "Feature",
+                  properties: { id: "incident-1" },
+                  geometry: { type: "Point", coordinates: [120.15, 30.28] }
+                },
+                {
+                  type: "Feature",
+                  properties: { id: "incident-2" },
+                  geometry: { type: "Point", coordinates: [120.18, 30.3] }
+                }
+              ]
             }
           }
         },
@@ -163,10 +174,32 @@ describe("prompt-level generation evidence scenarios", () => {
           options: {
             targetLayers: ["incident-points"]
           }
+        },
+        spatialQueries: {
+          renderer: "mock",
+          cases: [
+            {
+              id: "prompt-incident-point",
+              operation: "point-query",
+              point: [120.15, 30.28],
+              layers: ["incident-points"]
+            },
+            {
+              id: "prompt-incident-bbox",
+              operation: "bbox-query",
+              bbox: [120.14, 30.27, 120.19, 30.31],
+              layers: ["incident-points"]
+            }
+          ]
         }
       },
       assertEvidence: (skeleton, evidence) => {
         expect(skeleton.status).toBe("ready");
+        expect(skeleton.analysisEvidence).toMatchObject({
+          requested: true,
+          status: "ready",
+          acceptedQueryOperations: ["point-query", "bbox-query"]
+        });
         expect(evidence.status).toBe("ready");
         expect(evidence.commandEvidence).toMatchObject({
           usedApplyCommands: true,
@@ -180,6 +213,21 @@ describe("prompt-level generation evidence scenarios", () => {
           renderer: "mock",
           passed: true
         });
+        expect(evidence.spatialQueryEvidence).toMatchObject({
+          requested: true,
+          ready: true,
+          renderer: "mock",
+          status: "ready",
+          acceptedQueryOperations: ["point-query", "bbox-query"],
+          blockedOperations: [],
+          queryableSourceIds: ["incidents"],
+          queryableLayerIds: ["incident-points"],
+          diagnosticCounts: { error: 0, warning: 0, info: 0 }
+        });
+        expect(evidence.spatialQueryEvidence.cases.map((entry) => [entry.id, entry.operation, entry.featureCount, entry.passed])).toEqual([
+          ["prompt-incident-point", "point-query", 1, true],
+          ["prompt-incident-bbox", "bbox-query", 2, true]
+        ]);
         expect(evidence.exportEvidence).toMatchObject({
           ready: true,
           sourceCount: 1,

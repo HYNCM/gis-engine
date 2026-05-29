@@ -258,8 +258,10 @@ runtime mutation path.
   hashes plus structured intent and sets `retainedRawPrompt: false`; raw prompt
   text is not retained by default.
 - `createMapGenerationCommandSkeleton()` converts request data into
-  `MapCommand[]`, `baseSpec`, replayed `spec`, target domains, and structured
-  diagnostics.
+  `MapCommand[]`, `baseSpec`, replayed `spec`, target domains,
+  `analysisEvidence`, and structured diagnostics. `analysisEvidence` records
+  requested operations, accepted point/bbox query readiness operations, blocked
+  operations, and diagnostic paths.
 - All accepted mutations must replay through `apply_commands` /
   `applyCommands`; generated code must not edit `MapSpec` directly.
 - `createGenerationEvidenceBundle()` composes the existing public tool
@@ -269,10 +271,15 @@ runtime mutation path.
 - `plannerEvidence` records planner id, prompt hash, trace id, command trace
   id, raw prompt retention state, confidence, accepted/unsupported intent
   fields, command source prompt hashes, and diagnostic counts.
+- `spatialQueryEvidence` records whether spatial analysis was requested,
+  accepted point/bbox readiness operations, blocked geoprocessing operations,
+  adapter query capability metadata, visible inline-GeoJSON queryable
+  layer/source ids, and deterministic query case counts. It must not expose full
+  feature payloads.
 - The bundle may return `status: "blocked"` even when the underlying `MapSpec`
   is schema-valid. Generation boundary diagnostics, capability blockers, failed
-  planner evidence, failed command replay, or failed snapshot evidence decide
-  readiness.
+  planner evidence, failed command replay, failed spatial query evidence, or
+  failed snapshot evidence decide readiness.
 - No `generate_map_app`, renderer-specific shortcut, camelCase alias, or
   private adapter evidence is part of the public MCP contract.
 - Scene browsing generation may use `extensions.scene3d` camera/source/layer

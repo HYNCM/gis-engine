@@ -24,15 +24,19 @@ export { DiagnosticSchema } from "./diagnostics.schema.js";
 export { ApplyCommandsToolInputSchema } from "./tool.schema.js";
 export {
   MapGenerationCommandSkeletonSchema,
+  MapGenerationAnalysisEvidenceSchema,
   MapGenerationAnalysisOperationSchema,
   MapGenerationPromptPlanSchema,
   MapGenerationPromptPlannerInputSchema,
+  MapGenerationQueryReadinessOperationSchema,
   MapGenerationRequestSchema,
   MapGenerationTargetDomainSchema,
+  type MapGenerationAnalysisEvidenceFromSchema,
   type MapGenerationAnalysisOperation,
   type MapGenerationCommandSkeletonFromSchema,
   type MapGenerationPromptPlanFromSchema,
   type MapGenerationPromptPlannerInputFromSchema,
+  type MapGenerationQueryReadinessOperation,
   type MapGenerationRequestFromSchema,
   type MapGenerationTargetDomain
 } from "./generation.schema.js";

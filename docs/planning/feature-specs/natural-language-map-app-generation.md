@@ -134,6 +134,11 @@ Every generated app handoff should name:
   `GenerationEvidenceBundleSchema` so handoff output includes planner
   confidence, prompt/trace provenance, accepted/unsupported intent fields,
   source prompt hashes, and planner diagnostics.
+- `TASK-2026W23-NLQ-003` adds `analysisEvidence` to generation command
+  skeletons and `spatialQueryEvidence` to generation evidence bundles. The
+  evidence runs bounded point/bbox query cases and reports counts, layer ids,
+  source ids, capability metadata, and diagnostics without exporting feature
+  payloads or adding a public spatial-query MCP tool.
 - Spatial-analysis requests remain readiness-only, and stable
   `view.mode: "scene3d"` generation remains blocked with structured blocker
   diagnostics.
