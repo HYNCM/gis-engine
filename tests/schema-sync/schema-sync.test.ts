@@ -7,6 +7,8 @@ import {
   DiagnosticSchema,
   MapCommandSchema,
   MapGenerationCommandSkeletonSchema,
+  MapGenerationPromptPlannerInputSchema,
+  MapGenerationPromptPlanSchema,
   MapGenerationRequestSchema,
   MapSpecSchema,
   Scene3DStableRuntimeBlockerCodes,
@@ -42,6 +44,8 @@ describe("schema sync gate", () => {
       SceneView3DExtensionSchema,
       DiagnosticSchema,
       MapGenerationRequestSchema,
+      MapGenerationPromptPlannerInputSchema,
+      MapGenerationPromptPlanSchema,
       MapGenerationCommandSkeletonSchema,
       ApplyCommandsToolInputSchema,
       ApplyCommandsToolResultSchema,
@@ -250,6 +254,8 @@ describe("schema sync gate", () => {
     expect(SceneView3DExtensionSchema.$id).toBe("https://gis-engine.dev/schemas/sceneview3d.v1.schema.json");
     expect(DiagnosticSchema.$id).toBe("https://gis-engine.dev/schemas/diagnostics.v0.1.schema.json");
     expect(MapGenerationRequestSchema.$id).toBe("https://gis-engine.dev/schemas/map-generation-request.v0.1.schema.json");
+    expect(MapGenerationPromptPlannerInputSchema.$id).toBe("https://gis-engine.dev/schemas/map-generation-prompt-planner-input.v0.1.schema.json");
+    expect(MapGenerationPromptPlanSchema.$id).toBe("https://gis-engine.dev/schemas/map-generation-prompt-plan.v0.1.schema.json");
     expect(MapGenerationCommandSkeletonSchema.$id).toBe("https://gis-engine.dev/schemas/map-generation-command-skeleton.v0.1.schema.json");
     expect(ApplyCommandsToolInputSchema.$id).toBe("https://gis-engine.dev/schemas/ai-tools.v0.1.schema.json");
   });

@@ -1,8 +1,8 @@
 ---
 agent: coordinator
 period: 2026-W23
-generated_at: 2026-05-29T07:51:47Z
-repo_revision: "704104dfc92719ca73481b8f79d85d527c9a73da"
+generated_at: 2026-05-29T08:05:11Z
+repo_revision: "08d20633f25a633f15366d110a3e51f52438c0ab"
 inputs:
   - docs/archive/2026-05-18/planning/sprint-2026-W21.md
   - docs/planning/sprint-2026-W25-sceneview3d-v1.md
@@ -26,6 +26,7 @@ inputs:
   - docs/reviews/nla-007-docs-release-wording-2026-05-29.md
   - docs/reviews/nla-008-serialized-planning-handoff-2026-05-29.md
   - docs/planning/sprint-2026-W23-generation-quality-hardening.md
+  - docs/reviews/nlq-001-prompt-planner-boundary-2026-05-29.md
 owner: "@coordinator"
 decision_level: advisory
 ---
@@ -110,7 +111,8 @@ W21 sprint 计划已归档，当前活跃关键路径从 W23 promotion readiness
 | NLA-006 prompt evidence scenarios | done | `docs/reviews/nla-006-prompt-evidence-scenarios-2026-05-29.md`; QA matrix covers prompt-to-command/snapshot/export evidence for feature display, spatial-analysis readiness, scene browsing extension-only, and stable scene3d blocked prompts |
 | NLA-007 docs and release wording | done | `docs/reviews/nla-007-docs-release-wording-2026-05-29.md`; README, AI package docs, contracts, feature matrix, changelog, and ai-map-edit example docs describe evidence-first generation without stable 3D overclaim |
 | NLA-008 serialized planning handoff | done | `docs/reviews/nla-008-serialized-planning-handoff-2026-05-29.md`; sprint, burndown, and dependency graph now agree that the W23 NLA slice is complete and ready for the next planning cycle |
-| Generation quality hardening | planned | `docs/planning/sprint-2026-W23-generation-quality-hardening.md`; next W23 batch starts from typed planner boundary, planner provenance, spatial query evidence, export manifest, cloud-native source readiness, and SceneView3D blocker visibility |
+| Generation quality hardening | active | `docs/planning/sprint-2026-W23-generation-quality-hardening.md`; next W23 batch starts from typed planner boundary, planner provenance, spatial query evidence, export manifest, cloud-native source readiness, and SceneView3D blocker visibility |
+| NLQ-001 typed prompt planner boundary | done | `docs/reviews/nlq-001-prompt-planner-boundary-2026-05-29.md`; `planMapGenerationRequest()` accepts prompt hash plus structured intent, emits `MapGenerationRequest`-compatible handoff data, and rejects raw prompt retention by default |
 
 ## 关键路径
 

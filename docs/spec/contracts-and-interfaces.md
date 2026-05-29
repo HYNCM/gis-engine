@@ -252,6 +252,11 @@ Natural-language app generation is an orchestration contract rather than a new
 runtime mutation path.
 
 - Public generation requests are described by `MapGenerationRequestSchema`.
+- Prompt planner inputs/results are described by
+  `MapGenerationPromptPlannerInputSchema` and
+  `MapGenerationPromptPlanSchema`. `planMapGenerationRequest()` accepts prompt
+  hashes plus structured intent and sets `retainedRawPrompt: false`; raw prompt
+  text is not retained by default.
 - `createMapGenerationCommandSkeleton()` converts request data into
   `MapCommand[]`, `baseSpec`, replayed `spec`, target domains, and structured
   diagnostics.

@@ -7,6 +7,8 @@ import {
   DiagnosticSchema,
   MapCommandSchema,
   MapGenerationCommandSkeletonSchema,
+  MapGenerationPromptPlannerInputSchema,
+  MapGenerationPromptPlanSchema,
   MapGenerationRequestSchema,
   MapSpecSchema,
   SceneView3DExtensionSchema
@@ -20,6 +22,8 @@ const schemas = [
   ["sceneview3d.v1.schema.json", SceneView3DExtensionSchema],
   ["diagnostics.v0.1.schema.json", DiagnosticSchema],
   ["map-generation-request.v0.1.schema.json", MapGenerationRequestSchema],
+  ["map-generation-prompt-planner-input.v0.1.schema.json", MapGenerationPromptPlannerInputSchema],
+  ["map-generation-prompt-plan.v0.1.schema.json", MapGenerationPromptPlanSchema],
   ["map-generation-command-skeleton.v0.1.schema.json", MapGenerationCommandSkeletonSchema],
   ["ai-tools.v0.1.schema.json", ApplyCommandsToolInputSchema]
 ] as const;

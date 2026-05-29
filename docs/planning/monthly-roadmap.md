@@ -1,8 +1,8 @@
 ---
 agent: product-strategist
 period: 2026-05
-generated_at: 2026-05-29T07:51:47Z
-repo_revision: "704104dfc92719ca73481b8f79d85d527c9a73da"
+generated_at: 2026-05-29T08:05:11Z
+repo_revision: "08d20633f25a633f15366d110a3e51f52438c0ab"
 inputs:
   - README.md
   - AGENTS.md
@@ -12,6 +12,7 @@ inputs:
   - docs/planning/feature-specs/spatial-analysis-readiness.md
   - docs/planning/sprint-2026-W23-ai-map-app-generation.md
   - docs/planning/sprint-2026-W23-generation-quality-hardening.md
+  - docs/reviews/nlq-001-prompt-planner-boundary-2026-05-29.md
   - docs/research/competitor-updates-2026-W20.md
   - docs/reviews/daily-audit-2026-05-17.md
   - docs/reviews/quality-gate-2026-05-17.md
@@ -62,6 +63,12 @@ AI components、MapLibre/Mapbox style specs、PMTiles v3、GeoParquet 1.1、
 FlatGeobuf range semantics、OpenLayers GeoZarr/GeoTIFF、MCP schema contracts
 以及 structured outputs / computer-use 工具安全要求。
 
+2026-05-29 NLQ-001 执行结果：typed prompt planner boundary 已落地为
+`MapGenerationPromptPlannerInputSchema`、`MapGenerationPromptPlanSchema` 和
+`planMapGenerationRequest()`。它只接受 prompt hash 加 structured intent，
+输出 `MapGenerationRequest`-compatible handoff，并默认拒绝 raw prompt
+retention。下一步转入 planner quality/provenance evidence。
+
 ## 2026-W22 Iteration Path
 
 | Priority | Track | Plan | Exit Condition |
@@ -90,7 +97,7 @@ FlatGeobuf range semantics、OpenLayers GeoZarr/GeoTIFF、MCP schema contracts
 
 | Priority | Track | Plan | Exit Condition |
 | --- | --- | --- | --- |
-| P0 | Prompt planner contract | Define typed prompt planner/parser boundaries without retaining raw prompt text by default | planner output is `MapGenerationRequest`-compatible and schema-tested; no MCP alias |
+| P0 | Prompt planner contract | Define typed prompt planner/parser boundaries without retaining raw prompt text by default | done; planner output is `MapGenerationRequest`-compatible and schema-tested; no MCP alias |
 | P0 | Planner evidence | Add quality, provenance, unsupported-intent diagnostics, and trace evidence to the generation bundle | prompt evidence exposes confidence/trace without bypassing command-only mutation |
 | P0 | Spatial query evidence | Turn point/bbox readiness into explicit evidence while keeping geoprocessing blocked | stable diagnostics for blocked buffer/overlay/routing/aggregation; query evidence tests pass |
 | P1 | Export package DX | Harden generated-app export manifest and example evidence | export/example output carries diagnostics, snapshot/export status, and resource notes without side-effect writes |
@@ -110,7 +117,7 @@ FlatGeobuf range semantics、OpenLayers GeoZarr/GeoTIFF、MCP schema contracts
 
 | 排名 | 事项 | 得分 | 证据 | 行动 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | Typed prompt planner contract | 8.15 | ArcGIS AI components validate natural-language map interaction; local NLA evidence skeleton is complete but not a free-form parser | execute W23 generation-quality sprint around planner schema, diagnostics, provenance, and trace evidence | high |
+| 1 | Planner quality/provenance evidence | 8.05 | Typed prompt planner boundary is now schema-tested; the next gap is quality/confidence/provenance surfacing in the generation evidence bundle | execute NLQ-002 without adding MCP aliases or retaining raw prompt text by default | high |
 | 2 | Spatial query evidence | 7.65 | GeoParquet `covering.bbox`, OpenLayers source signals, and local spatial-analysis readiness point to query-first evidence | keep point/bbox query evidence first and block geoprocessing until command contracts exist | high |
 | 3 | Generated-app export polish | 7.10 | local `GenerationEvidenceBundle` includes export/example summaries but user-facing package manifest needs stronger evidence surfacing | harden `export_example_app` manifest and docs without side-effect file writes | medium |
 | 4 | Cloud-native source readiness matrix | 6.95 | PMTiles v3, GeoParquet 1.1, FlatGeobuf range access, and OpenLayers data-source signals widen portable source expectations | document support states and diagnostics before implementation claims | high |

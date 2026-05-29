@@ -73,6 +73,64 @@ export const MapGenerationRequestSchema = Type.Object(
   }
 );
 
+const NestedMapGenerationRequestSchema = stripNestedIds(MapGenerationRequestSchema);
+
+const MapGenerationPlannerIntentSchema = Type.Object(
+  {
+    mapId: Type.Optional(Type.String({ minLength: 1 })),
+    targetDomains: Type.Optional(Type.Array(MapGenerationTargetDomainSchema, { minItems: 1 })),
+    baseSpec: Type.Optional(NestedMapSpecSchema),
+    capabilities: Type.Optional(CapabilityRequestSchema),
+    view: Type.Optional(ViewSpecSchema),
+    sources: Type.Optional(Type.Record(Type.String(), SourceSpecSchema)),
+    layers: Type.Optional(Type.Array(LayerSpecSchema)),
+    styleEdits: Type.Optional(Type.Array(MapGenerationStyleEditSchema)),
+    interactions: Type.Optional(InteractionSpecSchema),
+    analysis: Type.Optional(MapGenerationAnalysisRequestSchema),
+    scene3d: Type.Optional(NestedSceneView3DExtensionSchema)
+  },
+  { additionalProperties: false }
+);
+
+const MapGenerationPlannerProvenanceSchema = Type.Object(
+  {
+    plannerId: Type.String({ minLength: 1 }),
+    promptHash: Type.String({ minLength: 1 }),
+    retainedRawPrompt: Type.Literal(false),
+    acceptedIntentFields: Type.Array(Type.String()),
+    unsupportedIntentFields: Type.Array(Type.String())
+  },
+  { additionalProperties: false }
+);
+
+export const MapGenerationPromptPlannerInputSchema = Type.Object(
+  {
+    promptHash: Type.String({ minLength: 1 }),
+    traceId: Type.Optional(Type.String({ minLength: 1 })),
+    createdAt: Type.Optional(Type.String({ minLength: 1 })),
+    plannerId: Type.Optional(Type.String({ minLength: 1 })),
+    intent: Type.Optional(MapGenerationPlannerIntentSchema)
+  },
+  {
+    $id: "https://gis-engine.dev/schemas/map-generation-prompt-planner-input.v0.1.schema.json",
+    additionalProperties: false
+  }
+);
+
+export const MapGenerationPromptPlanSchema = Type.Object(
+  {
+    status: Type.Union([Type.Literal("ready"), Type.Literal("blocked")]),
+    traceId: Type.String({ minLength: 1 }),
+    request: NestedMapGenerationRequestSchema,
+    diagnostics: Type.Array(NestedDiagnosticSchema),
+    provenance: MapGenerationPlannerProvenanceSchema
+  },
+  {
+    $id: "https://gis-engine.dev/schemas/map-generation-prompt-plan.v0.1.schema.json",
+    additionalProperties: false
+  }
+);
+
 export const MapGenerationCommandSkeletonSchema = Type.Object(
   {
     status: Type.Union([Type.Literal("ready"), Type.Literal("blocked")]),
@@ -91,6 +149,8 @@ export const MapGenerationCommandSkeletonSchema = Type.Object(
 
 export type MapGenerationTargetDomain = Static<typeof MapGenerationTargetDomainSchema>;
 export type MapGenerationAnalysisOperation = Static<typeof MapGenerationAnalysisOperationSchema>;
+export type MapGenerationPromptPlannerInputFromSchema = Static<typeof MapGenerationPromptPlannerInputSchema>;
+export type MapGenerationPromptPlanFromSchema = Static<typeof MapGenerationPromptPlanSchema>;
 export type MapGenerationRequestFromSchema = Static<typeof MapGenerationRequestSchema>;
 export type MapGenerationCommandSkeletonFromSchema = Static<typeof MapGenerationCommandSkeletonSchema>;
 

@@ -16,6 +16,7 @@
 - Added `createScene3DThreeAdapterPromotionEvidenceSummary` so the Three adapter spike can summarize load-plan, resource, runtime, snapshot, query, and renderer visual evidence for promotion-readiness review while keeping stable promotion disabled.
 - Added the W23 SceneView3D promotion-readiness package, browser matrix evidence, stable-runtime blocker codes, and no-go gate report while keeping stable `view.mode: "scene3d"` blocked.
 - Added the natural-language map app generation evidence loop: `MapGenerationRequestSchema`, `createMapGenerationCommandSkeleton()`, `createGenerationEvidenceBundle()`, prompt evidence scenarios, and docs that keep generation command-only, MCP-tool-compatible, and stable SceneView3D blocked.
+- Added the typed natural-language planner boundary: `MapGenerationPromptPlannerInputSchema`, `MapGenerationPromptPlanSchema`, and `planMapGenerationRequest()` accept prompt hashes plus structured intent, reject raw prompt retention by default, and feed the existing command skeleton without adding an MCP tool alias.
 - Archived the superseded W21 sprint plan and refreshed active documentation to point at completed SceneView3D alpha-gate, adapter-feasibility, release-gate, and Three adapter spike evidence; the remaining follow-up is real renderer visual evidence inside the adapter package.
 
 ## 0.2.0-checkpoint - 2026-05-17

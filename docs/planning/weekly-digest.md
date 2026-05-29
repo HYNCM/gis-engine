@@ -1,8 +1,8 @@
 ---
 agent: coordinator
 period: 2026-W22
-generated_at: 2026-05-29T07:51:47Z
-repo_revision: "704104dfc92719ca73481b8f79d85d527c9a73da"
+generated_at: 2026-05-29T08:05:11Z
+repo_revision: "08d20633f25a633f15366d110a3e51f52438c0ab"
 inputs:
   - AGENTS.md
   - docs/research/competitor-updates-2026-W22.md
@@ -13,6 +13,7 @@ inputs:
   - docs/planning/sprint-2026-W23-ai-map-app-generation.md
   - docs/planning/sprint-2026-W23-generation-quality-hardening.md
   - docs/reviews/nla-008-serialized-planning-handoff-2026-05-29.md
+  - docs/reviews/nlq-001-prompt-planner-boundary-2026-05-29.md
   - docs/planning/sprint-2026-W22-competitive-signal-response.md
   - docs/planning/feature-specs/sceneview3d-stable-renderer-contract.md
   - docs/engineering/maplibre-version-drift-audit.md
@@ -61,6 +62,11 @@ quality hardening: typed prompt planner boundary, planner provenance evidence,
 spatial query evidence, generated-app export manifest, cloud-native source
 readiness, and SceneView3D blocker transparency.
 
+The first generation-quality slice is complete: `planMapGenerationRequest()`
+adds a typed prompt planner boundary that accepts prompt hash plus structured
+intent, rejects raw prompt retention by default, and feeds the existing command
+skeleton without adding an MCP alias.
+
 ## Current Signals
 
 | Source | Signal | Impact | Confidence |
@@ -103,7 +109,8 @@ readiness, and SceneView3D blocker transparency.
 | TASK-2026W22-CSI-005 | done | `docs/engineering/maplibre-version-drift-audit.md` |
 | TASK-2026W22-CSI-006 | done | `docs/reviews/sceneview3d-src-evidence-decision-2026-05-25.md`, `docs/reviews/sceneview3d-src-006-stable-runtime-gate-2026-05-29.md`, `docs/planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md` |
 | TASK-2026W23-NLA-001 through NLA-008 | done | `docs/planning/sprint-2026-W23-ai-map-app-generation.md`, `docs/reviews/nla-008-serialized-planning-handoff-2026-05-29.md` |
-| TASK-2026W23-NLQ-001 through NLQ-007 | planned | `docs/planning/sprint-2026-W23-generation-quality-hardening.md` |
+| TASK-2026W23-NLQ-001 | done | `docs/reviews/nlq-001-prompt-planner-boundary-2026-05-29.md` |
+| TASK-2026W23-NLQ-002 through NLQ-007 | planned | `docs/planning/sprint-2026-W23-generation-quality-hardening.md` |
 
 ## Next Handoff
 
@@ -120,7 +127,6 @@ readiness, and SceneView3D blocker transparency.
   only after schema, command, diagnostics, and MCP output contracts are clear.
 - `@qa-agent` / `@docs-agent`: plan prompt evidence scenarios and public docs
   around validation, trace, snapshot, and export artifacts.
-- `@product-strategist`, `@engine-agent`, and `@ai-agent`: start the W23
-  generation-quality sprint with `TASK-2026W23-NLQ-001`; keep planner output
-  schema-compatible with `MapGenerationRequest` and do not add a new MCP tool
-  alias.
+- `@ai-agent` / `@qa-agent`: continue with `TASK-2026W23-NLQ-002`, adding
+  planner quality/provenance evidence to the generation bundle without adding a
+  new MCP tool alias or retaining raw prompt text by default.

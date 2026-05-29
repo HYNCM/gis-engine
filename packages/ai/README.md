@@ -27,6 +27,10 @@ command provenance, changed paths, and conflict diagnostics in the result.
 
 ## Generation Evidence Bundle
 
+`planMapGenerationRequest()` in `@gis-engine/engine` is the typed planner
+boundary for prompt hashes plus structured intent. It rejects raw prompt text by
+default and produces `MapGenerationRequest`-compatible handoff data.
+
 `createGenerationEvidenceBundle()` is the current prompt-level handoff helper.
 It does not register a new MCP tool. Instead, it composes the existing public
 contracts into one auditable result:

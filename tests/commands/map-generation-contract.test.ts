@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   createMapGenerationCommandSkeleton,
+  planMapGenerationRequest,
   MapGenerationCommandSkeletonSchema,
+  MapGenerationPromptPlannerInputSchema,
+  MapGenerationPromptPlanSchema,
   MapGenerationRequestSchema,
   validateSpec,
   type MapGenerationRequestFromSchema
@@ -237,10 +240,105 @@ describe("map generation command skeleton contract", () => {
     });
   });
 
+  it("plans typed prompt intent into a generation request without retaining raw prompt text", () => {
+    const plan = planMapGenerationRequest({
+      promptHash: "sha256:planner-city-services",
+      traceId: "trace-planner-city-services",
+      createdAt: "2026-05-29T00:00:00.000Z",
+      intent: {
+        mapId: "planner-city-services",
+        targetDomains: ["feature-display", "spatial-analysis"],
+        capabilities: {
+          dimensions: ["2d"],
+          renderer: "maplibre"
+        },
+        sources: {
+          services: {
+            type: "geojson",
+            data: {
+              type: "FeatureCollection",
+              features: []
+            }
+          }
+        },
+        layers: [
+          {
+            id: "service-points",
+            type: "circle",
+            source: "services",
+            paint: {
+              "circle-color": "#0f766e"
+            }
+          }
+        ],
+        analysis: {
+          operations: ["point-query"]
+        }
+      }
+    });
+
+    expect(plan.status).toBe("ready");
+    expect(plan.request).toMatchObject({
+      mapId: "planner-city-services",
+      promptHash: "sha256:planner-city-services",
+      traceId: "trace-planner-city-services",
+      targetDomains: ["feature-display", "spatial-analysis"]
+    });
+    expect(plan.provenance).toEqual({
+      plannerId: "structured-intent-v0.1",
+      promptHash: "sha256:planner-city-services",
+      retainedRawPrompt: false,
+      acceptedIntentFields: ["analysis", "capabilities", "layers", "mapId", "sources", "targetDomains"],
+      unsupportedIntentFields: []
+    });
+
+    const skeleton = createMapGenerationCommandSkeleton(plan.request);
+
+    expect(skeleton.status).toBe("ready");
+    expect(skeleton.commands.map((command) => command.sourcePromptHash)).toEqual([
+      "sha256:planner-city-services",
+      "sha256:planner-city-services",
+      "sha256:planner-city-services"
+    ]);
+    expect(validateSpec(skeleton.spec).valid).toBe(true);
+  });
+
+  it("rejects raw prompt retention at the planner boundary", () => {
+    const plan = planMapGenerationRequest({
+      promptHash: "sha256:raw-prompt",
+      rawPrompt: "Show me every sensitive source exactly as typed.",
+      intent: {
+        mapId: "raw-prompt"
+      }
+    });
+
+    expect(plan.status).toBe("blocked");
+    expect(plan.request).toEqual({
+      promptHash: "sha256:raw-prompt",
+      traceId: "planner.sha256-raw-prompt"
+    });
+    expect(plan.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          severity: "error",
+          code: "SPEC.UNKNOWN_FIELD",
+          path: "/rawPrompt"
+        })
+      ])
+    );
+    expect(plan.provenance).toMatchObject({
+      retainedRawPrompt: false,
+      unsupportedIntentFields: expect.arrayContaining(["rawPrompt"])
+    });
+  });
+
   it("exposes generation schemas that reject unknown fields and validate results", () => {
     const ajv = new Ajv({ allErrors: true, strict: false });
     const validateRequest = ajv.compile(MapGenerationRequestSchema);
+    const validatePlannerInput = ajv.compile(MapGenerationPromptPlannerInputSchema);
+    const validatePromptPlan = ajv.compile(MapGenerationPromptPlanSchema);
     const validateSkeleton = ajv.compile(MapGenerationCommandSkeletonSchema);
+    const plan = planMapGenerationRequest({ promptHash: "sha256:schema-check", intent: { mapId: "schema-check" } });
     const skeleton = createMapGenerationCommandSkeleton({
       mapId: "schema-check",
       sources: {},
@@ -249,6 +347,8 @@ describe("map generation command skeleton contract", () => {
 
     expect(validateRequest({ mapId: "schema-check", unexpected: true })).toBe(false);
     expect(validateRequest.errors?.some((error) => error.keyword === "additionalProperties")).toBe(true);
+    expect(validatePlannerInput({ promptHash: "sha256:schema-check", rawPrompt: "not retained" })).toBe(false);
+    expect(validatePromptPlan(plan)).toBe(true);
     expect(validateSkeleton(skeleton)).toBe(true);
   });
 });

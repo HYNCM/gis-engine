@@ -48,12 +48,14 @@ language runtime, does not add MCP tool aliases, and does not enable stable
    `capabilitySummary`.
 3. AI classifies the request into `feature-display`, `spatial-analysis`, and
    `scene-browsing` domains.
-4. AI creates a `MapGenerationCommandSkeleton` from schema-valid request data.
-5. AI calls `validate_spec` before mutation is accepted.
-6. AI calls `apply_commands` for command-only edits, with trace metadata.
-7. AI calls `snapshot_spec`, `export_spec`, and `export_example_app` for
+4. AI calls `planMapGenerationRequest()` with prompt hash plus structured
+   intent; raw prompt text is not retained by default.
+5. AI creates a `MapGenerationCommandSkeleton` from schema-valid request data.
+6. AI calls `validate_spec` before mutation is accepted.
+7. AI calls `apply_commands` for command-only edits, with trace metadata.
+8. AI calls `snapshot_spec`, `export_spec`, and `export_example_app` for
    evidence and delivery.
-8. User reviews diagnostics, command trace, snapshot status, and export
+9. User reviews diagnostics, command trace, snapshot status, and export
    manifest before treating the app as generated.
 
 ## Capability Boundaries
@@ -69,7 +71,7 @@ language runtime, does not add MCP tool aliases, and does not enable stable
 
 Every generated app handoff should name:
 
-- input prompt or prompt hash;
+- prompt hash and planner provenance; raw prompt text is not retained by default;
 - capability domain classification;
 - `MapSpec` validation result and diagnostic counts;
 - command list, dry-run/replay/rollback status when commands are used;
@@ -82,6 +84,7 @@ Every generated app handoff should name:
 | Item | Competitor Threat | AI Operability Gain | User Value | Debt Reduction | Delivery Risk | Score | Recommendation |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
 | Natural-language generation product spec | 8 | 9 | 9 | 5 | 4 | 7.95 | P0 |
+| Typed prompt planner boundary | 8 | 9 | 9 | 6 | 4 | 8.15 | P0 |
 | Generation evidence bundle | 7 | 9 | 8 | 7 | 5 | 7.55 | P0 |
 | Spatial-analysis readiness contract | 7 | 8 | 8 | 6 | 6 | 7.10 | P0 |
 | Example app generation DX | 5 | 7 | 8 | 5 | 4 | 6.25 | P1 |
@@ -92,6 +95,8 @@ Every generated app handoff should name:
 - `get_context_summary` and `explain_spec` remain the discovery path for
   supported, experimental, and blocked domains.
 - Public inputs remain TypeBox-described and Ajv-validated.
+- Prompt planner inputs/results remain schema-described, preserve prompt hashes
+  and trace metadata, and reject raw prompt retention by default.
 - Runtime mutations go only through `MapCommand` and `applyCommands`.
 - Public MCP tool descriptors continue to expose `inputSchema` and
   `outputSchema`.
@@ -119,6 +124,11 @@ Every generated app handoff should name:
   command replay, snapshot, export, and example evidence for feature display,
   spatial-analysis readiness, scene browsing extension-only, and stable 3D
   blocked prompts.
+- `TASK-2026W23-NLQ-001` adds the typed planner boundary:
+  `MapGenerationPromptPlannerInputSchema`, `MapGenerationPromptPlanSchema`, and
+  `planMapGenerationRequest()` convert prompt hashes plus structured intent
+  into `MapGenerationRequest`-compatible handoff data without retaining raw
+  prompt text by default.
 - Spatial-analysis requests remain readiness-only, and stable
   `view.mode: "scene3d"` generation remains blocked with structured blocker
   diagnostics.

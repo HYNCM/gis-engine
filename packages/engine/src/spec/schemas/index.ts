@@ -25,10 +25,14 @@ export { ApplyCommandsToolInputSchema } from "./tool.schema.js";
 export {
   MapGenerationCommandSkeletonSchema,
   MapGenerationAnalysisOperationSchema,
+  MapGenerationPromptPlanSchema,
+  MapGenerationPromptPlannerInputSchema,
   MapGenerationRequestSchema,
   MapGenerationTargetDomainSchema,
   type MapGenerationAnalysisOperation,
   type MapGenerationCommandSkeletonFromSchema,
+  type MapGenerationPromptPlanFromSchema,
+  type MapGenerationPromptPlannerInputFromSchema,
   type MapGenerationRequestFromSchema,
   type MapGenerationTargetDomain
 } from "./generation.schema.js";
