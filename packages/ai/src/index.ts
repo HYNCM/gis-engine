@@ -10,6 +10,13 @@ export {
 } from "./tools/contextSummary.js";
 export { explainSpecTool, ExplainSpecToolInputSchema, type ExplainSpecToolInput, type ExplainSpecToolResult } from "./tools/explainSpec.js";
 export { exportExampleAppTool, ExportExampleAppToolInputSchema, type ExampleAppManifest, type ExportExampleAppToolInput } from "./tools/exportExampleApp.js";
+export {
+  GenerationEvidenceBundleInputSchema,
+  GenerationEvidenceBundleSchema,
+  createGenerationEvidenceBundle,
+  type GenerationEvidenceBundle,
+  type GenerationEvidenceBundleInput
+} from "./tools/generationEvidence.js";
 export { snapshotSpecTool, SnapshotSpecToolInputSchema, type SnapshotSpecToolInput, type SnapshotSpecToolResult } from "./tools/snapshotSpec.js";
 export {
   ApplyCommandsToolResultSchema,

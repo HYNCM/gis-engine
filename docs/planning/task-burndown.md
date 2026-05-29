@@ -1,8 +1,8 @@
 ---
 agent: coordinator
 period: 2026-W22
-generated_at: 2026-05-29T06:35:38Z
-repo_revision: "4b1f3b1152937fa9e54f84b24acfd53b37c39f4d"
+generated_at: 2026-05-29T06:47:19Z
+repo_revision: "36099f4966f7028b092f3d2f3a1327825b32686f"
 inputs:
   - docs/planning/sprint-2026-W22-competitive-signal-response.md
   - docs/research/competitor-updates-2026-W22.md
@@ -25,6 +25,7 @@ inputs:
   - docs/planning/sprint-2026-W22-automation-hardening.md
   - docs/planning/feature-specs/sceneview3d-stable-renderer-contract.md
   - docs/reviews/nla-002-generation-command-contract-2026-05-29.md
+  - docs/reviews/nla-003-mcp-orchestration-evidence-2026-05-29.md
 owner: "@coordinator"
 decision_level: advisory
 ---
@@ -160,7 +161,7 @@ browsing may appear only as `extensions.scene3d` planning/evidence.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | TASK-2026W23-NLA-001 | Freeze natural-language map app product boundary | P0 | `@coordinator`, `@product-strategist` | done | feature spec and competitor refresh | product flow and capability boundaries are documented without stable 3D overclaim | scorecard and planning docs updated |
 | TASK-2026W23-NLA-002 | Define generation `MapSpec` and command skeleton contract | P0 | `@engine-agent` | done | `docs/reviews/nla-002-generation-command-contract-2026-05-29.md` | generation request/result schemas and command skeleton keep TypeBox/Ajv, `MapCommand`, and `applyCommands` on the path; stable 3D requests return blocker diagnostics | `pnpm build:schema`; `pnpm test:commands`; `pnpm test:schema-sync`; `pnpm check` |
-| TASK-2026W23-NLA-003 | Design MCP orchestration without new tool aliases | P0 | `@ai-agent` | todo | MCP contract report | use only documented snake_case tools and keep `inputSchema` / `outputSchema` complete | AI/MCP tests; schema build when schemas change |
+| TASK-2026W23-NLA-003 | Design MCP orchestration without new tool aliases | P0 | `@ai-agent` | done | `docs/reviews/nla-003-mcp-orchestration-evidence-2026-05-29.md` | generation evidence bundle uses only documented snake_case tools and keeps input/output schemas Ajv-compiled without adding an MCP alias | `pnpm test:ai`; `pnpm test:schema-sync`; `pnpm build:schema`; `pnpm check` |
 | TASK-2026W23-NLA-004 | Define feature-display and spatial-analysis minimum generated scenarios | P1 | `@engine-agent`, `@ai-agent` | todo | scenario report and tests | source/layer/style edits, query readiness, dry-run/replay/rollback, and blocked analysis diagnostics are covered | command replay tests; AI integration tests |
 | TASK-2026W23-NLA-005 | Keep scene browsing extension-only in generation flow | P1 | `@adapter-agent` | todo | adapter boundary report | `extensions.scene3d` evidence stays adapter-local; stable runtime remains blocked | adapter tests/build when touched; release scene3d for evidence claims |
 | TASK-2026W23-NLA-006 | Add end-to-end prompt evidence scenarios | P1 | `@qa-agent` | todo | QA evidence report | prompt-to-MapSpec/commands/snapshot/export covers display, analysis readiness, and scene browsing boundary | snapshot gates as affected; `pnpm check` |

@@ -1,8 +1,8 @@
 ---
 agent: product-strategist
 period: 2026-W23
-generated_at: 2026-05-29T06:35:38Z
-repo_revision: "4b1f3b1152937fa9e54f84b24acfd53b37c39f4d"
+generated_at: 2026-05-29T06:47:19Z
+repo_revision: "36099f4966f7028b092f3d2f3a1327825b32686f"
 inputs:
   - AGENTS.md
   - docs/research/competitor-updates-2026-W22.md
@@ -10,6 +10,7 @@ inputs:
   - docs/reviews/ai-orchestration-capability-summary-2026-05-27.md
   - docs/planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md
   - docs/reviews/nla-002-generation-command-contract-2026-05-29.md
+  - docs/reviews/nla-003-mcp-orchestration-evidence-2026-05-29.md
 owner: "@product-strategist"
 decision_level: advisory
 ---
@@ -102,6 +103,9 @@ Every generated app handoff should name:
 - Generated capability, view, source, layer, interaction, and extension-only
   SceneView3D edits are represented as `MapCommand[]` and replayed through
   `applyCommands`.
+- `TASK-2026W23-NLA-003` adds `GenerationEvidenceBundleSchema` and
+  `createGenerationEvidenceBundle()` so existing MCP tool results can be
+  handed off as one structured evidence package without adding new tool names.
 - Spatial-analysis requests remain readiness-only, and stable
   `view.mode: "scene3d"` generation remains blocked with structured blocker
   diagnostics.

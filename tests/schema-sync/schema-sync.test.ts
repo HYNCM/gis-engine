@@ -22,6 +22,8 @@ import {
   ExportExampleAppToolResultSchema,
   ExportSpecToolInputSchema,
   ExportSpecToolResultSchema,
+  GenerationEvidenceBundleInputSchema,
+  GenerationEvidenceBundleSchema,
   SnapshotSpecToolResultSchema,
   ValidateSpecToolInputSchema,
   ValidateSpecToolResultSchema,
@@ -54,7 +56,9 @@ describe("schema sync gate", () => {
       ExplainSpecToolInputSchema,
       ExplainSpecToolResultSchema,
       ExportExampleAppToolInputSchema,
-      ExportExampleAppToolResultSchema
+      ExportExampleAppToolResultSchema,
+      GenerationEvidenceBundleInputSchema,
+      GenerationEvidenceBundleSchema
     ]) {
       expect(() => new Ajv({ strict: false }).compile(schema)).not.toThrow();
     }
@@ -156,6 +160,7 @@ describe("schema sync gate", () => {
     expect(toolNames).not.toContain("snapshotSpec");
     expect(toolNames).not.toContain("explainSpec");
     expect(toolNames).not.toContain("exportExampleApp");
+    expect(toolNames).not.toContain("generate_map_app");
   });
 
   it("keeps newly added AI tool input schemas in the MCP tool bundle", () => {

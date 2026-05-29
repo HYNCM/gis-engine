@@ -5,6 +5,8 @@ import { Ajv } from "ajv/dist/ajv.js";
 import {
   ExplainSpecToolInputSchema,
   ExportExampleAppToolInputSchema,
+  GenerationEvidenceBundleInputSchema,
+  GenerationEvidenceBundleSchema,
   SnapshotSpecToolInputSchema,
   gisEngineTools
 } from "../dist/index.js";
@@ -13,6 +15,7 @@ const scriptDir = dirname(fileURLToPath(import.meta.url));
 const outDir = resolve(scriptDir, "../dist/schema");
 const inputOutFile = resolve(outDir, "ai-tools.v0.1.schema.json");
 const contractOutFile = resolve(outDir, "ai-tool-contracts.v0.2.schema.json");
+const generationEvidenceOutFile = resolve(outDir, "generation-evidence-bundle.v0.1.schema.json");
 
 const toolInputSchemas = Object.fromEntries(gisEngineTools.map((tool) => [tool.name, stripNestedIds(tool.inputSchema)]));
 const toolOutputSchemas = Object.fromEntries(gisEngineTools.map((tool) => [tool.name, stripNestedIds(tool.outputSchema)]));
@@ -50,6 +53,8 @@ for (const toolSchema of [
   SnapshotSpecToolInputSchema,
   ExplainSpecToolInputSchema,
   ExportExampleAppToolInputSchema,
+  GenerationEvidenceBundleInputSchema,
+  GenerationEvidenceBundleSchema,
   ...Object.values(toolInputSchemas),
   ...Object.values(toolOutputSchemas)
 ]) {
@@ -59,6 +64,7 @@ for (const toolSchema of [
 await mkdir(outDir, { recursive: true });
 await writeFile(inputOutFile, `${JSON.stringify(inputSchema, null, 2)}\n`);
 await writeFile(contractOutFile, `${JSON.stringify(contractSchema, null, 2)}\n`);
+await writeFile(generationEvidenceOutFile, `${JSON.stringify(GenerationEvidenceBundleSchema, null, 2)}\n`);
 
 function stripNestedIds(value) {
   if (Array.isArray(value)) return value.map(stripNestedIds);
