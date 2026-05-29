@@ -1,8 +1,8 @@
 ---
 agent: coordinator
 period: 2026-W23
-generated_at: 2026-05-29T07:32:17Z
-repo_revision: "7c8aabd471a20a4ec737fa82becb043a97cb27da"
+generated_at: 2026-05-29T07:35:10Z
+repo_revision: "c6db18146382d5bda729c8e6891f2d87016db50e"
 inputs:
   - docs/archive/2026-05-18/planning/sprint-2026-W21.md
   - docs/planning/sprint-2026-W25-sceneview3d-v1.md
@@ -24,6 +24,7 @@ inputs:
   - docs/reviews/nla-005-scene-browsing-extension-boundary-2026-05-29.md
   - docs/reviews/nla-006-prompt-evidence-scenarios-2026-05-29.md
   - docs/reviews/nla-007-docs-release-wording-2026-05-29.md
+  - docs/reviews/nla-008-serialized-planning-handoff-2026-05-29.md
 owner: "@coordinator"
 decision_level: advisory
 ---
@@ -100,17 +101,18 @@ W21 sprint 计划已归档，当前活跃关键路径从 W23 promotion readiness
 | automation hardening | done | 2026-05-24 quality gate required report `decision_level` alignment, serialized scheduled commits, local/CI daily cadence alignment, and emergency interpolation fix before scheduled agent evidence is trusted |
 | AI natural-language orchestration summary | done | `capabilitySummary` in `get_context_summary` / `explain_spec` names feature-display, spatial-analysis, and scene-browsing tool/evidence boundaries without adding tool aliases |
 | SceneView3D stable renderer contract | done / stable no-go | `SRC-001` through `SRC-005` have accepted prerequisite evidence; `SRC-006` has a quality-guardian/coordinator No-go decision, so stable `view.mode: "scene3d"` remains blocked |
-| AI natural-language map app generation planning | active | W23 product spec, spatial-analysis readiness spec, and sprint DAG define prompt -> capabilitySummary -> MapSpec -> commands -> diagnostics -> snapshot/export evidence |
+| AI natural-language map app generation planning | done / handoff-ready | W23 product spec, spatial-analysis readiness spec, and sprint DAG define prompt -> capabilitySummary -> MapGenerationCommandSkeleton -> commands -> diagnostics -> snapshot/export evidence |
 | NLA-002 generation command contract | done | `docs/reviews/nla-002-generation-command-contract-2026-05-29.md`; `MapGenerationRequestSchema`, `MapGenerationCommandSkeletonSchema`, `setCapabilities`, `setInteractions`, and command skeleton tests keep generation schema-first and command-only |
 | NLA-003 MCP orchestration evidence | done | `docs/reviews/nla-003-mcp-orchestration-evidence-2026-05-29.md`; `GenerationEvidenceBundleSchema` composes the existing seven MCP tool contracts without adding `generate_map_app` or other aliases |
 | NLA-004 generation scenarios | done | `docs/reviews/nla-004-generation-scenarios-2026-05-29.md`; feature-display and spatial-analysis scenarios cover style edits, query readiness, dry-run/replay/rollback, and blocked analysis diagnostics |
 | NLA-005 scene browsing boundary | done | `docs/reviews/nla-005-scene-browsing-extension-boundary-2026-05-29.md`; generation evidence keeps scene browsing under `extensions.scene3d`, stable 3D runtime blocked, and renderer dependencies adapter-local |
 | NLA-006 prompt evidence scenarios | done | `docs/reviews/nla-006-prompt-evidence-scenarios-2026-05-29.md`; QA matrix covers prompt-to-command/snapshot/export evidence for feature display, spatial-analysis readiness, scene browsing extension-only, and stable scene3d blocked prompts |
 | NLA-007 docs and release wording | done | `docs/reviews/nla-007-docs-release-wording-2026-05-29.md`; README, AI package docs, contracts, feature matrix, changelog, and ai-map-edit example docs describe evidence-first generation without stable 3D overclaim |
+| NLA-008 serialized planning handoff | done | `docs/reviews/nla-008-serialized-planning-handoff-2026-05-29.md`; sprint, burndown, and dependency graph now agree that the W23 NLA slice is complete and ready for the next planning cycle |
 
 ## 关键路径
 
-1. Natural-language app generation -> AI capability summary -> schema-valid MapSpec -> command-only edits -> snapshot/export evidence. This is the W23 product spine for feature display, spatial analysis readiness, and scene browsing boundaries.
+1. Natural-language app generation -> AI capability summary -> `MapGenerationCommandSkeleton` -> command-only edits -> snapshot/export evidence. This is the completed W23 product spine for feature display, spatial analysis readiness, and scene browsing boundaries.
 2. v1 SceneView3D RFC -> W25/W28 sprint DAG -> TypeBox schema -> fixtures + URL resource policy + loader resource gate + package boundary + scene commands -> mock snapshot/query contracts -> MCP context -> release visual gate -> alpha audit + adapter feasibility -> Three.js adapter spike -> renderer evidence handoff -> adapter runtime shim -> browser visual runner -> beta readiness gate -> promotion readiness -> stable renderer contract handoff -> stable runtime decision; W23 promotion-readiness package is Go, SRC-001 through SRC-005 prerequisite evidence is done, and SRC-006 records a No-go decision that keeps stable runtime blocked.
 3. 2026-05-24 automation hardening blocks scheduled agent evidence from being used as advisory/blocking input: generated report semantics -> serialized scheduled commits -> local/CI daily cadence + emergency interpolation -> automation hardening gate -> scheduled evidence may feed future coordinator/quality-guardian decisions.
 

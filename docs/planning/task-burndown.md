@@ -1,8 +1,8 @@
 ---
 agent: coordinator
 period: 2026-W22
-generated_at: 2026-05-29T07:32:17Z
-repo_revision: "7c8aabd471a20a4ec737fa82becb043a97cb27da"
+generated_at: 2026-05-29T07:35:10Z
+repo_revision: "c6db18146382d5bda729c8e6891f2d87016db50e"
 inputs:
   - docs/planning/sprint-2026-W22-competitive-signal-response.md
   - docs/research/competitor-updates-2026-W22.md
@@ -30,6 +30,7 @@ inputs:
   - docs/reviews/nla-005-scene-browsing-extension-boundary-2026-05-29.md
   - docs/reviews/nla-006-prompt-evidence-scenarios-2026-05-29.md
   - docs/reviews/nla-007-docs-release-wording-2026-05-29.md
+  - docs/reviews/nla-008-serialized-planning-handoff-2026-05-29.md
 owner: "@coordinator"
 decision_level: advisory
 ---
@@ -149,7 +150,7 @@ W23 moves from SceneView3D evidence closure into the product spine for
 natural-language app generation. The approved boundary is:
 
 ```txt
-prompt -> capabilitySummary -> MapSpec -> apply_commands -> diagnostics -> snapshot/export evidence
+prompt -> capabilitySummary -> MapGenerationCommandSkeleton -> apply_commands -> diagnostics -> snapshot/export evidence
 ```
 
 Sprint handoff:
@@ -170,7 +171,7 @@ browsing may appear only as `extensions.scene3d` planning/evidence.
 | TASK-2026W23-NLA-005 | Keep scene browsing extension-only in generation flow | P1 | `@adapter-agent` | done | `docs/reviews/nla-005-scene-browsing-extension-boundary-2026-05-29.md` | `extensions.scene3d` evidence stays adapter-local; stable runtime remains blocked; renderer dependencies stay out of core/AI | `pnpm test:ai`; `pnpm --filter @gis-engine/scene3d-three-adapter build`; `pnpm test:adapter`; `pnpm test:release:scene3d`; `pnpm check` |
 | TASK-2026W23-NLA-006 | Add end-to-end prompt evidence scenarios | P1 | `@qa-agent` | done | `docs/reviews/nla-006-prompt-evidence-scenarios-2026-05-29.md` | prompt-to-MapSpec/commands/snapshot/export covers display, analysis readiness, and scene browsing boundary | `pnpm test:ai`; `pnpm check` |
 | TASK-2026W23-NLA-007 | Align docs, examples, and release wording | P2 | `@docs-agent` | done | `docs/reviews/nla-007-docs-release-wording-2026-05-29.md` | docs explain flow, boundaries, diagnostics, and export evidence without stable 3D promotion | docs audit; `pnpm test:examples`; `pnpm check` |
-| TASK-2026W23-NLA-008 | Serialize planning status and next handoff | P1 | `@task-distributor` | todo | accepted owner reports and gate evidence | burndown and dependency graph update only after evidence exists | planning diff review; `pnpm check` |
+| TASK-2026W23-NLA-008 | Serialize planning status and next handoff | P1 | `@task-distributor` | done | `docs/reviews/nla-008-serialized-planning-handoff-2026-05-29.md` | burndown and dependency graph update only after evidence exists | planning diff review; `pnpm check`; `git diff --check` |
 
 ## W23 promotion readiness 计划快照
 
