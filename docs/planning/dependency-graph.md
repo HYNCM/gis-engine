@@ -1,8 +1,8 @@
 ---
 agent: coordinator
 period: 2026-W23
-generated_at: 2026-05-29T06:07:24Z
-repo_revision: "60d5d52301016a446f49fe12bd42256e3f87ca4d"
+generated_at: 2026-05-29T06:35:38Z
+repo_revision: "4b1f3b1152937fa9e54f84b24acfd53b37c39f4d"
 inputs:
   - docs/archive/2026-05-18/planning/sprint-2026-W21.md
   - docs/planning/sprint-2026-W25-sceneview3d-v1.md
@@ -18,6 +18,7 @@ inputs:
   - docs/planning/feature-specs/natural-language-map-app-generation.md
   - docs/planning/feature-specs/spatial-analysis-readiness.md
   - docs/planning/sprint-2026-W23-ai-map-app-generation.md
+  - docs/reviews/nla-002-generation-command-contract-2026-05-29.md
 owner: "@coordinator"
 decision_level: advisory
 ---
@@ -95,6 +96,7 @@ W21 sprint 计划已归档，当前活跃关键路径从 W23 promotion readiness
 | AI natural-language orchestration summary | done | `capabilitySummary` in `get_context_summary` / `explain_spec` names feature-display, spatial-analysis, and scene-browsing tool/evidence boundaries without adding tool aliases |
 | SceneView3D stable renderer contract | done / stable no-go | `SRC-001` through `SRC-005` have accepted prerequisite evidence; `SRC-006` has a quality-guardian/coordinator No-go decision, so stable `view.mode: "scene3d"` remains blocked |
 | AI natural-language map app generation planning | active | W23 product spec, spatial-analysis readiness spec, and sprint DAG define prompt -> capabilitySummary -> MapSpec -> commands -> diagnostics -> snapshot/export evidence |
+| NLA-002 generation command contract | done | `docs/reviews/nla-002-generation-command-contract-2026-05-29.md`; `MapGenerationRequestSchema`, `MapGenerationCommandSkeletonSchema`, `setCapabilities`, `setInteractions`, and command skeleton tests keep generation schema-first and command-only |
 
 ## 关键路径
 

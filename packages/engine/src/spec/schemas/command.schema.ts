@@ -1,5 +1,5 @@
 import { Type, type Static } from "@sinclair/typebox";
-import { LayerSpecSchema, SourceSpecSchema } from "./map-spec.schema.js";
+import { CapabilityRequestSchema, InteractionSpecSchema, LayerSpecSchema, SourceSpecSchema } from "./map-spec.schema.js";
 import { SceneCameraSchema, SceneLayerSchema, SceneSourceSchema } from "./sceneview3d.schema.js";
 
 const CommandBaseSchema = Type.Object(
@@ -72,6 +72,12 @@ export const MapCommandSchema = Type.Union([
       )
     })
   ], { additionalProperties: false }),
+  Type.Composite([CommandBaseSchema, Type.Object({ type: Type.Literal("setCapabilities"), capabilities: CapabilityRequestSchema })], {
+    additionalProperties: false
+  }),
+  Type.Composite([CommandBaseSchema, Type.Object({ type: Type.Literal("setInteractions"), interactions: InteractionSpecSchema })], {
+    additionalProperties: false
+  }),
   Type.Composite([
     CommandBaseSchema,
     Type.Object({

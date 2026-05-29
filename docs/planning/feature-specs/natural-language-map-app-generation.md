@@ -1,14 +1,15 @@
 ---
 agent: product-strategist
 period: 2026-W23
-generated_at: 2026-05-29T06:07:24Z
-repo_revision: "60d5d52301016a446f49fe12bd42256e3f87ca4d"
+generated_at: 2026-05-29T06:35:38Z
+repo_revision: "4b1f3b1152937fa9e54f84b24acfd53b37c39f4d"
 inputs:
   - AGENTS.md
   - docs/research/competitor-updates-2026-W22.md
   - docs/research/capability-scorecard.md
   - docs/reviews/ai-orchestration-capability-summary-2026-05-27.md
   - docs/planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md
+  - docs/reviews/nla-002-generation-command-contract-2026-05-29.md
 owner: "@product-strategist"
 decision_level: advisory
 ---
@@ -92,3 +93,15 @@ Every generated app handoff should name:
   `outputSchema`.
 - Stable `view.mode: "scene3d"` remains blocked unless a future
   `quality-guardian` gate and `coordinator` decision record a Go.
+
+## Implementation Evidence
+
+- `TASK-2026W23-NLA-002` adds the engine-side generation command skeleton:
+  `MapGenerationRequestSchema`, `MapGenerationCommandSkeletonSchema`, and
+  `createMapGenerationCommandSkeleton()`.
+- Generated capability, view, source, layer, interaction, and extension-only
+  SceneView3D edits are represented as `MapCommand[]` and replayed through
+  `applyCommands`.
+- Spatial-analysis requests remain readiness-only, and stable
+  `view.mode: "scene3d"` generation remains blocked with structured blocker
+  diagnostics.

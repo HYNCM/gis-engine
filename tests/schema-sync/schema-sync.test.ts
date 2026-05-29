@@ -6,6 +6,8 @@ import {
   DiagnosticCodes,
   DiagnosticSchema,
   MapCommandSchema,
+  MapGenerationCommandSkeletonSchema,
+  MapGenerationRequestSchema,
   MapSpecSchema,
   Scene3DStableRuntimeBlockerCodes,
   SceneView3DExtensionSchema
@@ -37,6 +39,8 @@ describe("schema sync gate", () => {
       CapabilityReportSchema,
       SceneView3DExtensionSchema,
       DiagnosticSchema,
+      MapGenerationRequestSchema,
+      MapGenerationCommandSkeletonSchema,
       ApplyCommandsToolInputSchema,
       ApplyCommandsToolResultSchema,
       ValidateSpecToolInputSchema,
@@ -70,6 +74,22 @@ describe("schema sync gate", () => {
     const validateCommand = ajv.compile(MapCommandSchema);
 
     expect(validateCommand({ id: "cmd-view", version: "0.1", type: "setView", view: { zoom: 8 } })).toBe(true);
+    expect(
+      validateCommand({
+        id: "cmd-capabilities",
+        version: "0.1",
+        type: "setCapabilities",
+        capabilities: { dimensions: ["2d"], renderer: "maplibre" }
+      })
+    ).toBe(true);
+    expect(
+      validateCommand({
+        id: "cmd-interactions",
+        version: "0.1",
+        type: "setInteractions",
+        interactions: { hover: true, click: true }
+      })
+    ).toBe(true);
     expect(validateCommand({ id: "cmd-view", version: "0.1", type: "setView", view: { zoom: 8 }, unexpected: true })).toBe(false);
     expect(validateCommand.errors?.some((error) => error.keyword === "additionalProperties")).toBe(true);
   });
@@ -224,6 +244,8 @@ describe("schema sync gate", () => {
     expect(MapCommandSchema.$id).toBe("https://gis-engine.dev/schemas/commands.v0.1.schema.json");
     expect(SceneView3DExtensionSchema.$id).toBe("https://gis-engine.dev/schemas/sceneview3d.v1.schema.json");
     expect(DiagnosticSchema.$id).toBe("https://gis-engine.dev/schemas/diagnostics.v0.1.schema.json");
+    expect(MapGenerationRequestSchema.$id).toBe("https://gis-engine.dev/schemas/map-generation-request.v0.1.schema.json");
+    expect(MapGenerationCommandSkeletonSchema.$id).toBe("https://gis-engine.dev/schemas/map-generation-command-skeleton.v0.1.schema.json");
     expect(ApplyCommandsToolInputSchema.$id).toBe("https://gis-engine.dev/schemas/ai-tools.v0.1.schema.json");
   });
 

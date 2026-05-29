@@ -6,6 +6,8 @@ import {
   CapabilityReportSchema,
   DiagnosticSchema,
   MapCommandSchema,
+  MapGenerationCommandSkeletonSchema,
+  MapGenerationRequestSchema,
   MapSpecSchema,
   SceneView3DExtensionSchema
 } from "../src/spec/schemas/index.js";
@@ -17,6 +19,8 @@ const schemas = [
   ["capabilities.v0.1.schema.json", CapabilityReportSchema],
   ["sceneview3d.v1.schema.json", SceneView3DExtensionSchema],
   ["diagnostics.v0.1.schema.json", DiagnosticSchema],
+  ["map-generation-request.v0.1.schema.json", MapGenerationRequestSchema],
+  ["map-generation-command-skeleton.v0.1.schema.json", MapGenerationCommandSkeletonSchema],
   ["ai-tools.v0.1.schema.json", ApplyCommandsToolInputSchema]
 ] as const;
 

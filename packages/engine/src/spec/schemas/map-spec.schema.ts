@@ -38,7 +38,7 @@ export const CapabilityReportSchema = Type.Object(
   }
 );
 
-const ViewSpecSchema = Type.Object(
+export const ViewSpecSchema = Type.Object(
   {
     mode: Type.Optional(Type.Union([Type.Literal("map2d"), Type.Literal("map2_5d"), Type.Literal("scene3d")])),
     center: Type.Optional(Type.Tuple([Type.Number(), Type.Number()])),
@@ -125,7 +125,7 @@ export const LayerSpecSchema = Type.Object(
   { additionalProperties: false }
 );
 
-const InteractionSpecSchema = Type.Object(
+export const InteractionSpecSchema = Type.Object(
   {
     pan: Type.Optional(Type.Boolean()),
     zoom: Type.Optional(Type.Boolean()),

@@ -160,6 +160,52 @@ const cases: CommandMatrixCase[] = [
     }
   },
   {
+    name: "setCapabilities",
+    spec: baseSpec(),
+    command: {
+      id: "cmd-set-capabilities",
+      version: "0.1",
+      type: "setCapabilities",
+      baseRevision: "1",
+      capabilities: {
+        dimensions: ["2d"],
+        renderer: "maplibre",
+        experimental: []
+      }
+    },
+    assertSpec: (spec) => {
+      expect(spec.capabilities).toEqual({
+        dimensions: ["2d"],
+        renderer: "maplibre",
+        experimental: []
+      });
+    }
+  },
+  {
+    name: "setInteractions",
+    spec: baseSpec(),
+    command: {
+      id: "cmd-set-interactions",
+      version: "0.1",
+      type: "setInteractions",
+      baseRevision: "1",
+      interactions: {
+        pan: true,
+        zoom: true,
+        click: true,
+        popup: true
+      }
+    },
+    assertSpec: (spec) => {
+      expect(spec.interactions).toEqual({
+        pan: true,
+        zoom: true,
+        click: true,
+        popup: true
+      });
+    }
+  },
+  {
     name: "fitBounds",
     spec: baseSpec({ view: { mode: "map2d", center: [0, 0], zoom: 2, bearing: 10, pitch: 20 } }),
     command: {

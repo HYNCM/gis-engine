@@ -1,4 +1,12 @@
-export { CapabilityReportSchema, CapabilityRequestSchema, MapSpecSchema, SourceSpecSchema, LayerSpecSchema } from "./map-spec.schema.js";
+export {
+  CapabilityReportSchema,
+  CapabilityRequestSchema,
+  InteractionSpecSchema,
+  LayerSpecSchema,
+  MapSpecSchema,
+  SourceSpecSchema,
+  ViewSpecSchema
+} from "./map-spec.schema.js";
 export {
   SceneCameraSchema,
   SceneDepthOptionsSchema,
@@ -14,3 +22,11 @@ export {
 export { MapCommandSchema } from "./command.schema.js";
 export { DiagnosticSchema } from "./diagnostics.schema.js";
 export { ApplyCommandsToolInputSchema } from "./tool.schema.js";
+export {
+  MapGenerationCommandSkeletonSchema,
+  MapGenerationRequestSchema,
+  MapGenerationTargetDomainSchema,
+  type MapGenerationCommandSkeletonFromSchema,
+  type MapGenerationRequestFromSchema,
+  type MapGenerationTargetDomain
+} from "./generation.schema.js";

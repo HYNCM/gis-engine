@@ -69,6 +69,18 @@ export function buildPatch(command: MapCommand, spec: MapSpec): BuildPatchResult
     case "setView":
       return { patch: [{ op: "replace", path: "/view", value: { ...spec.view, ...command.view } }], diagnostics: [] };
 
+    case "setCapabilities":
+      return {
+        patch: [{ op: spec.capabilities ? "replace" : "add", path: "/capabilities", value: command.capabilities }],
+        diagnostics: []
+      };
+
+    case "setInteractions":
+      return {
+        patch: [{ op: spec.interactions ? "replace" : "add", path: "/interactions", value: command.interactions }],
+        diagnostics: []
+      };
+
     case "fitBounds":
       return {
         patch: [

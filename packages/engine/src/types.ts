@@ -298,6 +298,16 @@ export interface SetViewCommand extends MapCommandBase {
   view: Partial<ViewSpec>;
 }
 
+export interface SetCapabilitiesCommand extends MapCommandBase {
+  type: "setCapabilities";
+  capabilities: CapabilityRequest;
+}
+
+export interface SetInteractionsCommand extends MapCommandBase {
+  type: "setInteractions";
+  interactions: InteractionSpec;
+}
+
 export interface FitBoundsCommand extends MapCommandBase {
   type: "fitBounds";
   bounds: [number, number, number, number];
@@ -345,6 +355,8 @@ export type MapCommand =
   | SetLayoutCommand
   | ReorderLayerCommand
   | SetViewCommand
+  | SetCapabilitiesCommand
+  | SetInteractionsCommand
   | FitBoundsCommand
   | SetSceneCameraCommand
   | AddSceneSourceCommand
