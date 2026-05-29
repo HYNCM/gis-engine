@@ -1,8 +1,8 @@
 ---
 agent: task-distributor
 period: 2026-W23
-generated_at: 2026-05-29T07:25:51Z
-repo_revision: "06ae9e20dda0159954abd40b8870145104537555"
+generated_at: 2026-05-29T07:32:17Z
+repo_revision: "7c8aabd471a20a4ec737fa82becb043a97cb27da"
 inputs:
   - docs/research/competitor-updates-2026-W22.md
   - docs/research/capability-scorecard.md
@@ -14,6 +14,7 @@ inputs:
   - docs/reviews/nla-004-generation-scenarios-2026-05-29.md
   - docs/reviews/nla-005-scene-browsing-extension-boundary-2026-05-29.md
   - docs/reviews/nla-006-prompt-evidence-scenarios-2026-05-29.md
+  - docs/reviews/nla-007-docs-release-wording-2026-05-29.md
 owner: "@task-distributor"
 decision_level: advisory
 ---
@@ -54,7 +55,7 @@ continues to use `extensions.scene3d` and adapter-local evidence only.
 | TASK-2026W23-NLA-004 | Define feature-display and spatial-analysis minimum generated scenarios | P1 | M | `@engine-agent`, `@ai-agent` | done | NLA-002, NLA-003 | `docs/reviews/nla-004-generation-scenarios-2026-05-29.md`; covers source/layer/style edits, query readiness, dry-run/replay/rollback, and blocked analysis diagnostics | `pnpm test:commands`; `pnpm test:ai`; `pnpm build:schema`; `pnpm test:schema-sync`; `pnpm check` |
 | TASK-2026W23-NLA-005 | Keep scene browsing extension-only in generation flow | P1 | S | `@adapter-agent` | done | NLA-001 | `docs/reviews/nla-005-scene-browsing-extension-boundary-2026-05-29.md`; scene browsing uses `extensions.scene3d`, stable `view.mode: "scene3d"` remains blocked, and renderer deps stay adapter-local | `pnpm test:ai`; `pnpm --filter @gis-engine/scene3d-three-adapter build`; `pnpm test:adapter`; `pnpm test:release:scene3d`; `pnpm check` |
 | TASK-2026W23-NLA-006 | Add end-to-end prompt evidence scenarios | P1 | L | `@qa-agent` | done | NLA-003, NLA-004, NLA-005 | `docs/reviews/nla-006-prompt-evidence-scenarios-2026-05-29.md`; prompt-to-MapSpec/commands/snapshot/export evidence covers feature display, spatial analysis readiness, and scene browsing blocked/extension-only behavior | `pnpm test:ai`; `pnpm check` |
-| TASK-2026W23-NLA-007 | Align docs, examples, and release wording | P2 | M | `@docs-agent` | todo | NLA-004, NLA-005, NLA-006 | docs explain generation flow, supported boundaries, diagnostics, and export evidence without stable 3D overclaim | docs audit; link check when available |
+| TASK-2026W23-NLA-007 | Align docs, examples, and release wording | P2 | M | `@docs-agent` | done | NLA-004, NLA-005, NLA-006 | `docs/reviews/nla-007-docs-release-wording-2026-05-29.md`; docs explain generation flow, supported boundaries, diagnostics, and export evidence without stable 3D overclaim | docs audit; `pnpm test:examples`; `pnpm check` |
 | TASK-2026W23-NLA-008 | Serialize planning status and next handoff | P1 | S | `@task-distributor` | todo | NLA-006, NLA-007 | burndown and dependency graph update only after owner reports or gate evidence exist | planning diff review; `pnpm check` for final handoff |
 
 ```mermaid

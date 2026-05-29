@@ -246,6 +246,31 @@ tool names and evidence fields; it must not introduce alias tool names or claim
 that a natural-language model can execute unsupported geoprocessing or stable
 SceneView3D runtime browsing.
 
+## Natural-Language Generation Evidence Contract
+
+Natural-language app generation is an orchestration contract rather than a new
+runtime mutation path.
+
+- Public generation requests are described by `MapGenerationRequestSchema`.
+- `createMapGenerationCommandSkeleton()` converts request data into
+  `MapCommand[]`, `baseSpec`, replayed `spec`, target domains, and structured
+  diagnostics.
+- All accepted mutations must replay through `apply_commands` /
+  `applyCommands`; generated code must not edit `MapSpec` directly.
+- `createGenerationEvidenceBundle()` composes the existing public tool
+  contracts for handoff evidence: `get_context_summary`, `validate_spec`,
+  `apply_commands`, `snapshot_spec`, `export_spec`, and
+  `export_example_app`.
+- The bundle may return `status: "blocked"` even when the underlying `MapSpec`
+  is schema-valid. Generation boundary diagnostics, capability blockers, failed
+  command replay, or failed snapshot evidence decide readiness.
+- No `generate_map_app`, renderer-specific shortcut, camelCase alias, or
+  private adapter evidence is part of the public MCP contract.
+- Scene browsing generation may use `extensions.scene3d` camera/source/layer
+  evidence. Stable `view.mode: "scene3d"`, `capabilities.renderer:
+  "scene3d"`, and `capabilities.dimensions: ["3d"]` generation remain blocked
+  until a future quality gate and coordinator decision record a Go.
+
 ### 事务语义
 
 ```ts

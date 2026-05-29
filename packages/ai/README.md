@@ -25,6 +25,26 @@ Each public tool descriptor exposes both `inputSchema` and `outputSchema`.
 `apply_commands` accepts `collectTrace: true` for review flows that need
 command provenance, changed paths, and conflict diagnostics in the result.
 
+## Generation Evidence Bundle
+
+`createGenerationEvidenceBundle()` is the current prompt-level handoff helper.
+It does not register a new MCP tool. Instead, it composes the existing public
+contracts into one auditable result:
+
+```txt
+get_context_summary -> validate_spec -> apply_commands -> snapshot_spec -> export_spec -> export_example_app
+```
+
+The bundle records the prompt hash, target domains, command replay evidence,
+snapshot evidence, export readiness, example manifest evidence, and structured
+diagnostics. A generated app should be treated as ready only when the bundle
+returns `status: "ready"` and the relevant snapshot/export evidence passes.
+
+Scene browsing remains extension-only in this flow. `extensions.scene3d` can be
+summarized through mock snapshot/query evidence, but
+`view.mode: "scene3d"` and renderer-specific SceneView3D evidence remain
+blocked until a future stable-runtime gate is accepted.
+
 ## AI Orchestration Guidance
 
 `get_context_summary` and `explain_spec` return a `capabilitySummary` block

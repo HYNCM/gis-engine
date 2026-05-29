@@ -8,10 +8,10 @@ promotion-readiness plus automation-hardening follow-up on top of the v0.1
 runtime base. The W23 SceneView3D promotion-readiness package is Go, but stable
 `view.mode: "scene3d"` remains blocked until the stable renderer contract gate
 accepts real renderer evidence.
-The current implementation proves this loop:
+The current implementation proves this evidence-first generation loop:
 
 ```txt
-Natural-language planner -> MCP capability summary -> MapSpec -> validate -> command modify -> snapshot -> export
+prompt -> capabilitySummary -> MapGenerationCommandSkeleton -> apply_commands -> diagnostics -> snapshot/export/example evidence
 ```
 
 ## Why This Exists
@@ -36,7 +36,7 @@ Traditional map SDKs are powerful, but AI agents need a stricter contract:
 | Diagnostics | Functional | Diagnostic registry covers schema, source/layer references, expressions, resource URL policy, command failures, unsupported capabilities, and snapshot errors. |
 | Renderer adapter | Functional MVP | `MockAdapter` and `MapLibreAdapter` implement the renderer contract; MapLibre transformation covers GeoJSON, raster, PMTiles, and generic vector sources. |
 | Snapshot harness | Functional | Node smoke snapshots are deterministic; Playwright visual snapshots cover a GeoJSON scene and a generated local MVT vector tile scene. |
-| AI tools | Functional | MCP exposes `validate_spec`, `apply_commands`, `export_spec`, `get_context_summary`, `snapshot_spec`, `explain_spec`, and `export_example_app` with input and output schemas. `get_context_summary` and `explain_spec` include `capabilitySummary` for feature display, spatial analysis, and scene browsing, plus gated extension-only SceneView3D context when `extensions.scene3d` exists. CamelCase aliases are intentionally not supported. |
+| AI tools | Functional | MCP exposes `validate_spec`, `apply_commands`, `export_spec`, `get_context_summary`, `snapshot_spec`, `explain_spec`, and `export_example_app` with input and output schemas. `get_context_summary` and `explain_spec` include `capabilitySummary` for feature display, spatial analysis, and scene browsing, plus gated extension-only SceneView3D context when `extensions.scene3d` exists. `createGenerationEvidenceBundle()` composes those existing tools for prompt-level handoff evidence without adding a `generate_map_app` alias. |
 | Examples/fixtures | Functional | Basic GeoJSON, AI map edit, raster-basemap, pmtiles-local, vector-tile-url, fill-extrusion-lite, and scene3d-extension examples plus schema/command/snapshot fixtures exist. |
 | CI/test gates | Functional | `pnpm build:schema` and `pnpm check` are required finish gates; strict visual snapshots require a browser/WebGL-capable runner. |
 | SceneView3D promotion | Handoff-ready | W23 promotion-readiness evidence is accepted; the next active work is SRC-001 through SRC-006 for stable renderer contract, lifecycle, snapshot/query, resource-policy, release-gate, and final promotion-decision evidence. |
@@ -86,6 +86,9 @@ const exported = map.exportSpec();
 - [SceneView3D renderer evidence sprint](./docs/planning/sprint-2026-W22-scene3d-renderer-evidence.md)
 - [SceneView3D promotion gate](./docs/reviews/sceneview3d-promotion-gate-2026-05-24.md)
 - [SceneView3D stable renderer contract plan](./docs/planning/feature-specs/sceneview3d-stable-renderer-contract.md)
+- [Natural-language map app generation spec](./docs/planning/feature-specs/natural-language-map-app-generation.md)
+- [AI map app generation sprint](./docs/planning/sprint-2026-W23-ai-map-app-generation.md)
+- [Prompt evidence scenario report](./docs/reviews/nla-006-prompt-evidence-scenarios-2026-05-29.md)
 - [Task burndown](./docs/planning/task-burndown.md)
 - [Dependency graph](./docs/planning/dependency-graph.md)
 - [Automation hardening gate](./docs/reviews/automation-hardening-gate-2026-05-24.md)
@@ -97,6 +100,11 @@ const exported = map.exportSpec();
 ## Known Limitations
 
 GIS Engine does not provide automatic retry for command application or export flows. Callers that receive revision conflicts or transient adapter failures must decide whether and how to retry.
+
+Natural-language generation is currently an orchestration and evidence contract,
+not an embedded free-form prompt parser. Callers should classify prompts into
+capability domains, build a generation command skeleton, and accept generated
+apps only after command replay, diagnostics, snapshot, and export evidence pass.
 
 GIS Engine also does not implement three-way merge. For cross-runtime, multi-tab, or multi-process concurrency, callers must refresh the latest spec, rebase their intended commands, and retry explicitly.
 

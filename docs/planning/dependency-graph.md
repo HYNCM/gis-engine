@@ -1,8 +1,8 @@
 ---
 agent: coordinator
 period: 2026-W23
-generated_at: 2026-05-29T07:25:51Z
-repo_revision: "06ae9e20dda0159954abd40b8870145104537555"
+generated_at: 2026-05-29T07:32:17Z
+repo_revision: "7c8aabd471a20a4ec737fa82becb043a97cb27da"
 inputs:
   - docs/archive/2026-05-18/planning/sprint-2026-W21.md
   - docs/planning/sprint-2026-W25-sceneview3d-v1.md
@@ -23,6 +23,7 @@ inputs:
   - docs/reviews/nla-004-generation-scenarios-2026-05-29.md
   - docs/reviews/nla-005-scene-browsing-extension-boundary-2026-05-29.md
   - docs/reviews/nla-006-prompt-evidence-scenarios-2026-05-29.md
+  - docs/reviews/nla-007-docs-release-wording-2026-05-29.md
 owner: "@coordinator"
 decision_level: advisory
 ---
@@ -105,6 +106,7 @@ W21 sprint 计划已归档，当前活跃关键路径从 W23 promotion readiness
 | NLA-004 generation scenarios | done | `docs/reviews/nla-004-generation-scenarios-2026-05-29.md`; feature-display and spatial-analysis scenarios cover style edits, query readiness, dry-run/replay/rollback, and blocked analysis diagnostics |
 | NLA-005 scene browsing boundary | done | `docs/reviews/nla-005-scene-browsing-extension-boundary-2026-05-29.md`; generation evidence keeps scene browsing under `extensions.scene3d`, stable 3D runtime blocked, and renderer dependencies adapter-local |
 | NLA-006 prompt evidence scenarios | done | `docs/reviews/nla-006-prompt-evidence-scenarios-2026-05-29.md`; QA matrix covers prompt-to-command/snapshot/export evidence for feature display, spatial-analysis readiness, scene browsing extension-only, and stable scene3d blocked prompts |
+| NLA-007 docs and release wording | done | `docs/reviews/nla-007-docs-release-wording-2026-05-29.md`; README, AI package docs, contracts, feature matrix, changelog, and ai-map-edit example docs describe evidence-first generation without stable 3D overclaim |
 
 ## 关键路径
 

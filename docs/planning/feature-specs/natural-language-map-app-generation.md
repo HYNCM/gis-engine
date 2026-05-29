@@ -1,8 +1,8 @@
 ---
 agent: product-strategist
 period: 2026-W23
-generated_at: 2026-05-29T07:05:30Z
-repo_revision: "957094d07fa61a77c8630f9f58b0db57cd1a3d49"
+generated_at: 2026-05-29T07:32:17Z
+repo_revision: "7c8aabd471a20a4ec737fa82becb043a97cb27da"
 inputs:
   - AGENTS.md
   - docs/research/competitor-updates-2026-W22.md
@@ -12,6 +12,8 @@ inputs:
   - docs/reviews/nla-002-generation-command-contract-2026-05-29.md
   - docs/reviews/nla-003-mcp-orchestration-evidence-2026-05-29.md
   - docs/reviews/nla-004-generation-scenarios-2026-05-29.md
+  - docs/reviews/nla-005-scene-browsing-extension-boundary-2026-05-29.md
+  - docs/reviews/nla-006-prompt-evidence-scenarios-2026-05-29.md
 owner: "@product-strategist"
 decision_level: advisory
 ---
@@ -46,7 +48,7 @@ language runtime, does not add MCP tool aliases, and does not enable stable
    `capabilitySummary`.
 3. AI classifies the request into `feature-display`, `spatial-analysis`, and
    `scene-browsing` domains.
-4. AI drafts or patches a `MapSpec`.
+4. AI creates a `MapGenerationCommandSkeleton` from schema-valid request data.
 5. AI calls `validate_spec` before mutation is accepted.
 6. AI calls `apply_commands` for command-only edits, with trace metadata.
 7. AI calls `snapshot_spec`, `export_spec`, and `export_example_app` for
@@ -110,6 +112,13 @@ Every generated app handoff should name:
 - `TASK-2026W23-NLA-004` adds minimum generated scenarios for feature display
   and spatial-analysis readiness, including generated style edits, dry-run,
   replay, rollback, query readiness, and blocked analysis diagnostics.
+- `TASK-2026W23-NLA-005` keeps scene browsing under `extensions.scene3d`,
+  rejects stable `view.mode: "scene3d"` generation, and verifies that renderer
+  dependencies stay outside engine and AI packages.
+- `TASK-2026W23-NLA-006` adds prompt-level evidence scenarios that compose
+  command replay, snapshot, export, and example evidence for feature display,
+  spatial-analysis readiness, scene browsing extension-only, and stable 3D
+  blocked prompts.
 - Spatial-analysis requests remain readiness-only, and stable
   `view.mode: "scene3d"` generation remains blocked with structured blocker
   diagnostics.
