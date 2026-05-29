@@ -10,6 +10,8 @@ inputs:
   - docs/planning/feature-specs/sceneview3d-stable-renderer-contract.md
   - docs/reviews/sceneview3d-src-002-dependency-boundary-2026-05-29.md
   - docs/reviews/sceneview3d-src-005-resource-release-gate-2026-05-29.md
+  - docs/reviews/sceneview3d-src-006-stable-runtime-gate-2026-05-29.md
+  - docs/planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md
 owner: "@task-distributor"
 decision_level: advisory
 ---
@@ -34,6 +36,9 @@ prerequisite evidence. This closes the current stable-renderer contract handoff
 prerequisites, but stable `view.mode: "scene3d"` remains blocked until the
 separate `SRC-006` quality-guardian/coordinator promotion decision passes.
 
+2026-05-29 SRC-006 update: the promotion decision is No-go. The stable renderer
+contract handoff is closed as a decision package, not as runtime enablement.
+
 ## Owner Assignments
 
 | Owner | Assignment | Write Scope | Handoff Artifact |
@@ -55,19 +60,19 @@ separate `SRC-006` quality-guardian/coordinator promotion decision passes.
 | TASK-2026W23-SRC-003 | Specify lifecycle and failure-state semantics | P1 | M | `@adapter-agent`, `@qa-agent` | done | SRC-001 | `getScene3DThreeAdapterLifecycleSemantics()`; lifecycle matrix report covering load, reload, resize, cancel, failure, recovery, destroy, and repeated destroy | State transitions are deterministic, idempotent where expected, and return structured diagnostics with stable codes and paths for resource, renderer, dimension, and lifecycle failures. | Adapter lifecycle contract tests; `pnpm check` when runtime behavior or diagnostics change |
 | TASK-2026W23-SRC-004 | Specify stable snapshot and query semantics | P1 | M | `@qa-agent`, `@adapter-agent` | done | SRC-001, SRC-003 | `docs/reviews/sceneview3d-src-004-qa-evidence-2026-05-27.md`; snapshot/query evidence report with browser metrics, fixture names, pick cases, and diagnostic outcomes | Snapshot/query evidence defines nonblank metrics, stable camera and dimensions, resource readiness, pick identity, no-hit behavior, and hidden/missing layer diagnostics. | `pnpm test:release:scene3d`; `pnpm test:snapshot:visual`; strict visual snapshot before any beta/stable renderer claim |
 | TASK-2026W23-SRC-005 | Align SceneView3D resource policy and release gates | P1 | M | `@engine-agent`, `@quality-guardian`, `@docs-agent` | done | SRC-002, SRC-004 | `docs/reviews/sceneview3d-src-005-resource-release-gate-2026-05-29.md`; resource-policy test output, release-gate matrix, and docs alignment note | Resource-policy implementation/tests/docs name 3D Tiles JSON, model, texture, worker, timeout, external URL, and example asset expectations; release gates state exact PR, beta, and stable triggers. | `pnpm test:resources`; `pnpm test:schema -- tests/schema/resource-policy.test.ts` when schema policy changes; `pnpm test:release:scene3d`; visual snapshot gate or coordinator waiver only for non-rendering changes |
-| TASK-2026W23-SRC-006 | Issue stable runtime promotion readiness decision | P0 | S | `@quality-guardian`, `@coordinator` | blocked | SRC-001, SRC-002, SRC-003, SRC-004, SRC-005 | Quality-guardian gate report and coordinator decision note listing accepted evidence or blockers | A future gate either accepts the real renderer contract package or keeps stable `view.mode: "scene3d"` blocked with explicit blocker codes and follow-up owners. | `pnpm build:schema` if public schema/tool contracts changed; `pnpm check`; `pnpm test:release:scene3d`; strict visual snapshot evidence or release waiver; coordinator records Go/No-go decision |
+| TASK-2026W23-SRC-006 | Issue stable runtime promotion readiness decision | P0 | S | `@quality-guardian`, `@coordinator` | done / no-go | SRC-001, SRC-002, SRC-003, SRC-004, SRC-005 | `docs/reviews/sceneview3d-src-006-stable-runtime-gate-2026-05-29.md`; `docs/planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md` | Stable `view.mode: "scene3d"` remains blocked with explicit blocker codes and future Go prerequisites. | `pnpm build:schema`; `pnpm check`; `pnpm test:release:scene3d`; visual snapshot evidence; strict visual snapshot before future beta/stable claims |
 
 ## Execution Order
 
 1. `SRC-001` through `SRC-005` are accepted as prerequisite evidence for the
    stable-renderer contract handoff.
-2. `@quality-guardian` and `@coordinator` keep `SRC-006` blocked until a future
-   stable runtime promotion gate has real renderer evidence, strict visual
-   evidence or release waiver, and an explicit Go/No-go decision.
+2. `SRC-006` is closed as No-go. Future stable runtime work must start from a
+   new task with real renderer evidence, strict visual evidence or release
+   waiver, and an explicit Go decision.
 
 ## Acceptance Criteria
 
-- Stable `view.mode: "scene3d"` remains blocked until SRC-006 passes.
+- Stable `view.mode: "scene3d"` remains blocked after the SRC-006 No-go.
 - Every SRC task has an owner, evidence target, acceptance condition, and finish
   gate before execution starts.
 - Renderer dependencies remain adapter-local and do not enter
@@ -103,9 +108,9 @@ separate `SRC-006` quality-guardian/coordinator promotion decision passes.
   implementing their scoped evidence.
 - Owner reports may propose status changes, blockers, or dependency updates;
   accepted changes are applied in one serialized planning update.
-- SRC-001 through SRC-005 are done as prerequisite evidence. SRC-006 stays
-  `blocked` until quality-guardian and coordinator accept stable runtime
-  promotion.
+- SRC-001 through SRC-005 are done as prerequisite evidence. SRC-006 is done as
+  a No-go decision; future stable runtime promotion must use a new accepted
+  task.
 - If GitHub Issues, Linear, Jira, or another tracker becomes canonical, this
   markdown file becomes a snapshot that references tracker ids rather than a
   hand-maintained task database.
@@ -119,7 +124,7 @@ separate `SRC-006` quality-guardian/coordinator promotion decision passes.
 - Impact: AI safety and adapter-boundary integrity stay protected while the
   real renderer contract is still unaccepted.
 - Action: `@coordinator` keeps stable `view.mode: "scene3d"` out of release
-  scope until SRC-006 passes.
+  scope after SRC-006 No-go and opens any future promotion as a new task.
 - Confidence: high.
 
 ### Start With Adapter Contract Evidence

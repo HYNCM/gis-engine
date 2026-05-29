@@ -14,6 +14,8 @@ inputs:
   - docs/reviews/sceneview3d-stable-renderer-gate-2026-05-25.md
   - docs/reviews/sceneview3d-lifecycle-diagnostics-2026-05-25.md
   - docs/reviews/sceneview3d-src-evidence-decision-2026-05-25.md
+  - docs/reviews/sceneview3d-src-006-stable-runtime-gate-2026-05-29.md
+  - docs/planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md
   - packages/scene3d-three-adapter/src/index.ts
   - tests/adapter/scene3d-three-adapter.test.ts
   - tests/snapshot/smoke/scene3d-stable-renderer-contract.test.ts
@@ -38,8 +40,9 @@ Engine direction:
 
 The execution loop is complete for W22: SceneView3D Three adapter lifecycle
 diagnostics now expose stable pre-load and post-destroy paths, MapLibre version
-drift has a pre-upgrade audit checklist, and the SRC evidence decision accepts
-prerequisite evidence while keeping stable runtime promotion blocked.
+drift has a pre-upgrade audit checklist, and the SRC-006 decision closes the
+stable renderer contract sequence as No-go while keeping stable runtime
+promotion blocked.
 
 ## Current Signals
 
@@ -53,15 +56,17 @@ prerequisite evidence while keeping stable runtime promotion blocked.
 
 ## Decisions
 
-1. Preserve stable `view.mode: "scene3d"` as blocked until SRC-006 passes.
+1. Preserve stable `view.mode: "scene3d"` as blocked after SRC-006 No-go.
 2. Treat MapLibre upgrade pressure as an audit/checklist task before dependency
    movement.
 3. Keep PMTiles/vector source examples tied to schema, resource-policy,
    smoke-snapshot, and visual-snapshot evidence.
 4. Count the lifecycle diagnostics patch as the first W22 execution slice under
    `TASK-2026W22-CSI-003`.
-5. Accept existing SRC evidence only as prerequisite contract evidence; stable
-   runtime promotion remains No-go.
+5. Accept SRC-001 through SRC-005 as prerequisite contract evidence and close
+   SRC-006 as No-go; stable runtime promotion remains blocked.
+6. Move the next planning loop back to natural-language map app generation:
+   competitor analysis, product design, and task-distributor DAG.
 
 ## Execution Status
 
@@ -78,7 +83,10 @@ prerequisite evidence while keeping stable runtime promotion blocked.
 
 - `@engine-agent` / `@docs-agent`: use the MapLibre version-drift checklist
   before any `maplibre-gl` package movement.
-- `@quality-guardian` / `@coordinator`: keep SRC-006 no-go until a future full
-  gate provides real renderer visual evidence or an approved release waiver.
+- `@quality-guardian` / `@coordinator`: keep stable runtime blocked after
+  SRC-006 No-go until a future full gate provides real renderer visual evidence
+  or an approved release waiver.
 - `@adapter-agent` / `@qa-agent`: keep lifecycle, snapshot, query, and visual
   evidence disjoint and adapter-local.
+- `@competitive-intel`, `@product-strategist`, and `@task-distributor`: start
+  the next short loop for AI-native natural-language map application generation.

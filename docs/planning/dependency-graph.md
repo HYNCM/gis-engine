@@ -13,6 +13,8 @@ inputs:
   - docs/planning/feature-specs/sceneview3d-stable-renderer-contract.md
   - docs/reviews/sceneview3d-src-002-dependency-boundary-2026-05-29.md
   - docs/reviews/sceneview3d-src-005-resource-release-gate-2026-05-29.md
+  - docs/reviews/sceneview3d-src-006-stable-runtime-gate-2026-05-29.md
+  - docs/planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md
 owner: "@coordinator"
 decision_level: advisory
 ---
@@ -88,12 +90,12 @@ W21 sprint 计划已归档，当前活跃关键路径从 W23 promotion readiness
 | SceneView3D promotion readiness | done | W23 rubric, browser matrix evidence, adapter promotion report, guardrail diagnostics, MCP decision, docs alignment, and go/no-go review completed; package accepted, stable runtime still blocked |
 | automation hardening | done | 2026-05-24 quality gate required report `decision_level` alignment, serialized scheduled commits, local/CI daily cadence alignment, and emergency interpolation fix before scheduled agent evidence is trusted |
 | AI natural-language orchestration summary | done | `capabilitySummary` in `get_context_summary` / `explain_spec` names feature-display, spatial-analysis, and scene-browsing tool/evidence boundaries without adding tool aliases |
-| SceneView3D stable renderer contract | prerequisite evidence done / stable blocked | `SRC-001` through `SRC-005` have accepted prerequisite evidence for contract, dependency boundary, lifecycle, snapshot/query, resource policy, and release gates; `SRC-006` remains blocked until quality-guardian/coordinator accept a future stable runtime decision |
+| SceneView3D stable renderer contract | done / stable no-go | `SRC-001` through `SRC-005` have accepted prerequisite evidence; `SRC-006` has a quality-guardian/coordinator No-go decision, so stable `view.mode: "scene3d"` remains blocked |
 
 ## 关键路径
 
 1. Natural-language app generation -> AI capability summary -> schema-valid MapSpec -> command-only edits -> snapshot/export evidence. This is the product spine for feature display, spatial analysis readiness, and scene browsing boundaries.
-2. v1 SceneView3D RFC -> W25/W28 sprint DAG -> TypeBox schema -> fixtures + URL resource policy + loader resource gate + package boundary + scene commands -> mock snapshot/query contracts -> MCP context -> release visual gate -> alpha audit + adapter feasibility -> Three.js adapter spike -> renderer evidence handoff -> adapter runtime shim -> browser visual runner -> beta readiness gate -> promotion readiness -> stable renderer contract handoff -> stable runtime decision; W23 promotion-readiness package is Go and SRC-001 through SRC-005 prerequisite evidence is done, but stable runtime promotion remains No-go/blocked until SRC-006 is accepted.
+2. v1 SceneView3D RFC -> W25/W28 sprint DAG -> TypeBox schema -> fixtures + URL resource policy + loader resource gate + package boundary + scene commands -> mock snapshot/query contracts -> MCP context -> release visual gate -> alpha audit + adapter feasibility -> Three.js adapter spike -> renderer evidence handoff -> adapter runtime shim -> browser visual runner -> beta readiness gate -> promotion readiness -> stable renderer contract handoff -> stable runtime decision; W23 promotion-readiness package is Go, SRC-001 through SRC-005 prerequisite evidence is done, and SRC-006 records a No-go decision that keeps stable runtime blocked.
 3. 2026-05-24 automation hardening blocks scheduled agent evidence from being used as advisory/blocking input: generated report semantics -> serialized scheduled commits -> local/CI daily cadence + emergency interpolation -> automation hardening gate -> scheduled evidence may feed future coordinator/quality-guardian decisions.
 
 ```mermaid
@@ -151,7 +153,7 @@ flowchart LR
   E --> F
   F --> F1["build:schema/check triggers documented"]
   F --> G["TASK-2026W23-SRC-006 future stable runtime decision"]
-  G -. "No-go / blocked until accepted" .-> H["stable view.mode: scene3d"]
+  G -. "No-go / parked for future revisit" .-> H["stable view.mode: scene3d"]
 ```
 
 ## SceneView3D SRC Gate Matrix
@@ -163,7 +165,7 @@ flowchart LR
 | TASK-2026W23-SRC-003 | SRC-001 | lifecycle matrix with structured diagnostics | adapter lifecycle contract tests; `pnpm check` when runtime behavior or diagnostics change | done as lifecycle/failure semantics evidence |
 | TASK-2026W23-SRC-004 | SRC-001, SRC-003 | snapshot/query evidence report with browser metrics and pick cases | `pnpm test:release:scene3d`; `pnpm test:snapshot:visual`; strict visual snapshot before beta/stable renderer claim | done as deterministic snapshot/query semantics; visual evidence acceptance still requires release-capable browser rerun |
 | TASK-2026W23-SRC-005 | SRC-002, SRC-004 | resource-policy test output, release-gate matrix, docs alignment note | `pnpm test:resources`; resource-policy schema tests when policy schemas change; `pnpm test:release:scene3d`; visual snapshot or coordinator waiver for non-rendering changes | done as resource-policy/release-gate prerequisite evidence |
-| TASK-2026W23-SRC-006 | SRC-001 through SRC-005 | quality-guardian gate report and coordinator decision note | `pnpm build:schema` if public schema/tool contracts changed; `pnpm check`; `pnpm test:release:scene3d`; strict visual snapshot evidence or release waiver | remains blocked until quality-guardian and coordinator accept stable runtime promotion |
+| TASK-2026W23-SRC-006 | SRC-001 through SRC-005 | quality-guardian gate report and coordinator decision note | `pnpm build:schema`; `pnpm check`; `pnpm test:release:scene3d`; visual snapshot evidence; strict visual snapshot before future beta/stable claims | done as No-go stable runtime decision |
 
 ## 阻断规则
 
@@ -172,7 +174,7 @@ flowchart LR
 - resource/perf 文档中声明的 PR 阻断项已有 deterministic Node-level evidence；nightly/release 大场景不得默认为 PR blocker。
 - `fill-extrusion-lite` 只作为 experimental beta 暴露；即使已有 release visual evidence，也不得绕过 explicit capability gate 升格为稳定图层。
 - scheduled agent evidence 在 `TASK-2026W22-AH-005` 通过前不得作为 advisory/blocking 决策输入；只能作为 machine-generated `info` evidence/template。
-- stable `view.mode: "scene3d"` 在 `TASK-2026W23-SRC-006` 通过前仍保持 blocked；promotion-readiness package Go 不等于 stable runtime Go。
+- stable `view.mode: "scene3d"` 在 `TASK-2026W23-SRC-006` No-go 后仍保持 blocked；promotion-readiness package Go 不等于 stable runtime Go。
 - SRC execution owners must not write shared planning markdown directly. They
   hand off code, tests, reports, or review findings; `@coordinator` serializes
   accepted status updates into this graph and the burndown.

@@ -38,16 +38,17 @@ extension-only 规划证据；stable `view.mode: "scene3d"` 继续 blocked。
 2026-05-29 计划收口：SceneView3D stable renderer contract 的 `SRC-001`
 through `SRC-005` 已有 prerequisite evidence，覆盖 adapter contract、
 dependency boundary、lifecycle、snapshot/query、resource policy 和 release
-gate alignment。下一步只剩 `SRC-006`：由 `quality-guardian` 和 `coordinator`
-基于真实 renderer、strict visual evidence 或明确 release waiver 作出 stable
-runtime Go/No-go 决策。
+gate alignment；`SRC-006` 已由 `quality-guardian` 和 `coordinator` 记录为
+No-go。stable runtime 继续 blocked，下一轮优先级切回自然语言生成地图应用的
+竞品分析、产品设计和任务规划。
 
 ## 2026-W22 Iteration Path
 
 | Priority | Track | Plan | Exit Condition |
 | --- | --- | --- | --- |
-| P0 | SceneView3D governance | Keep stable `view.mode: "scene3d"` blocked until SRC-006 | quality-guardian and coordinator record explicit Go/No-go after SRC-001 through SRC-005 evidence is accepted |
+| P0 | SceneView3D governance | Keep stable `view.mode: "scene3d"` blocked after SRC-006 No-go | future stable runtime work starts only from a new accepted promotion task |
 | P0 | AI natural-language app generation | Make feature display, spatial analysis, and scene browsing capability boundaries machine-readable | `get_context_summary` and `explain_spec` expose `capabilitySummary` with schema-tested MCP output |
+| P0 | Next planning loop | Refresh competitor evidence, product design, and task DAG for natural-language map app generation | competitive-intel, product-strategist, coordinator, and task-distributor produce the next iteration plan |
 | P0 | Multi-agent execution efficiency | Route agent work by model tier and reasoning effort while preserving evidence-first gates | `AGENTS.md` and `scripts/agent-runner.mjs` expose `model_policy` guidance for scheduled and human/Codex orchestration |
 | P1 | SceneView3D lifecycle evidence | Close path-stable lifecycle diagnostics and keep adapter-local runtime semantics deterministic | adapter tests and smoke lifecycle contract pass |
 | P1 | MapLibre/vector compatibility | Add a version-drift audit checklist before changing `maplibre-gl` | checklist names transformer, resource-policy, smoke/visual snapshot, and release-runner implications |
@@ -100,7 +101,7 @@ runtime Go/No-go 决策。
 | SceneView3D Three.js adapter spike | `@gis-engine/scene3d-three-adapter` package, deterministic load plan, resource policy integration, dependency isolation tests |
 | SceneView3D renderer evidence handoff | `createScene3DThreeAdapterRendererEvidence` turns future browser/WebGL capture metrics into release-gate compatible renderer evidence while keeping missing, blank, or resource-policy-failing evidence blocked |
 | AI orchestration capability summary | `get_context_summary` / `explain_spec` expose `feature-display`, `spatial-analysis`, and `scene-browsing` domains with tool names, evidence, and blocked boundaries |
-| SceneView3D stable renderer prerequisite evidence | `SRC-001` through `SRC-005` accepted as prerequisite evidence; stable `view.mode: "scene3d"` remains blocked until SRC-006 |
+| SceneView3D stable renderer decision | `SRC-001` through `SRC-005` accepted as prerequisite evidence; `SRC-006` closed as No-go and stable `view.mode: "scene3d"` remains blocked |
 | Agent model routing policy | `AGENTS.md` and `scripts/agent-runner.mjs` record model tier and reasoning effort guidance without treating routing metadata as evidence |
 
 ## 本月行动
@@ -109,9 +110,10 @@ runtime Go/No-go 决策。
 2. SceneView3D v1 RFC 已拆成 [sprint-2026-W25-sceneview3d-v1.md](./sprint-2026-W25-sceneview3d-v1.md)，且 `TASK-2026W25-001/002/003/004/005/006`、`TASK-2026W27-001/002/003/004/005` 与 `TASK-2026W28-001` 已完成；后续 3D 工作必须按该 DAG 继续执行，不得直接进入 core renderer。
 3. SceneView3D renderer evidence 已拆成 [sprint-2026-W22-scene3d-renderer-evidence.md](./sprint-2026-W22-scene3d-renderer-evidence.md)；`TASK-2026W22-001/002/003/004/005` 已完成，beta readiness gate 也已跑通。
 4. W23 已创建 [sprint-2026-W23-scene3d-promotion-readiness.md](./sprint-2026-W23-scene3d-promotion-readiness.md)，其 promotion readiness package 和 final gate 已完成，但 stable runtime 仍保持 blocked。
-5. W23 stable renderer contract 的 SRC-001 through SRC-005 前置证据已收口；
-   后续不得把该状态表述为 stable runtime Go，直到 SRC-006 由
-   quality-guardian/coordinator 单独决策。
+5. W23 stable renderer contract 的 SRC-001 through SRC-006 已完成为 No-go
+   决策包；后续不得把该状态表述为 stable runtime Go，除非未来新任务提供真实
+   renderer、strict visual evidence 或 release waiver 以及 coordinator Go。
+6. 下一轮进入面向自然语言生成地图应用的竞品分析、产品设计和 sprint DAG。
 
 ## Feature Spec 建议
 

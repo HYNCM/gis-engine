@@ -11,6 +11,8 @@ inputs:
   - docs/planning/feature-specs/sceneview3d-v1-rfc.md
   - docs/reviews/sceneview3d-src-002-dependency-boundary-2026-05-29.md
   - docs/reviews/sceneview3d-src-005-resource-release-gate-2026-05-29.md
+  - docs/reviews/sceneview3d-src-006-stable-runtime-gate-2026-05-29.md
+  - docs/planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md
   - AGENTS.md
 owner: "@coordinator"
 decision_level: advisory
@@ -29,8 +31,9 @@ Current decision state:
 
 - W23 promotion-readiness package: Go.
 - Stable `view.mode: "scene3d"` runtime promotion: No-go / blocked.
-- SRC-001 through SRC-005 are now accepted as prerequisite evidence only.
-  Stable runtime promotion still requires SRC-006.
+- SRC-001 through SRC-005 are accepted as prerequisite evidence only.
+- SRC-006 is closed as No-go; stable runtime promotion remains blocked and must
+  be reopened as a future task if real renderer evidence changes.
 
 Coordinator single-writer note: execution owners must return evidence artifacts
 or findings for their assigned slices. They must not directly update shared
@@ -44,6 +47,10 @@ resource-policy/release-gate evidence are accepted in
 `docs/reviews/sceneview3d-src-005-resource-release-gate-2026-05-29.md`.
 This closes SRC-001 through SRC-005 as prerequisite evidence, while stable
 `view.mode: "scene3d"` remains blocked under SRC-006.
+
+2026-05-29 SRC-006 note: quality-guardian and coordinator issued No-go for
+stable runtime promotion. This closes the current contract sequence as a
+decision package, not as runtime enablement.
 
 ## Contract Scope
 
@@ -66,7 +73,7 @@ This closes SRC-001 through SRC-005 as prerequisite evidence, while stable
 | TASK-2026W23-SRC-003 | Specify lifecycle and failure-state semantics | P1 | M | `@adapter-agent`, `@qa-agent` | done | SRC-001 | `getScene3DThreeAdapterLifecycleSemantics()`; lifecycle matrix report covering load, reload, resize, cancel, failure, recovery, destroy, and repeated destroy | State transitions are deterministic, idempotent where expected, and return structured diagnostics with stable codes and paths for resource, renderer, dimension, and lifecycle failures. | Lifecycle contract tests pass through adapter suite; `pnpm check` when runtime behavior or diagnostics change |
 | TASK-2026W23-SRC-004 | Specify stable snapshot and query semantics | P1 | M | `@qa-agent`, `@adapter-agent` | done | SRC-001, SRC-003 | `docs/reviews/sceneview3d-src-004-qa-evidence-2026-05-27.md`; snapshot/query evidence report with browser metrics, fixture names, pick cases, and diagnostic outcomes | Snapshot/query evidence defines nonblank metrics, stable camera and dimensions, resource readiness, pick identity, no-hit behavior, and hidden/missing layer diagnostics. | `pnpm test:release:scene3d`; `pnpm test:snapshot:visual`; strict visual snapshot before any beta/stable renderer claim |
 | TASK-2026W23-SRC-005 | Align SceneView3D resource policy and release gates | P1 | M | `@engine-agent`, `@quality-guardian`, `@docs-agent` | done | SRC-002, SRC-004 | `docs/reviews/sceneview3d-src-005-resource-release-gate-2026-05-29.md`; resource-policy test output, release-gate matrix, and docs alignment note | Resource-policy implementation/tests/docs name 3D Tiles JSON, model, texture, worker, timeout, external URL, and example asset expectations; release gates state exact PR, beta, and stable triggers. | `pnpm test:resources`; `pnpm test:schema -- tests/schema/resource-policy.test.ts` when schema policy changes; `pnpm test:release:scene3d`; visual snapshot gate or explicit coordinator waiver only for non-rendering changes |
-| TASK-2026W23-SRC-006 | Issue stable runtime promotion readiness decision | P0 | S | `@quality-guardian`, `@coordinator` | blocked | SRC-001, SRC-002, SRC-003, SRC-004, SRC-005 | Quality-guardian gate report and coordinator decision note listing accepted evidence or blockers | A future gate either accepts the real renderer contract package or keeps stable `view.mode: "scene3d"` blocked with explicit blocker codes and follow-up owners. | `pnpm build:schema` if public schema/tool contracts changed; `pnpm check`; `pnpm test:release:scene3d`; strict visual snapshot evidence or release waiver; coordinator records Go/No-go decision |
+| TASK-2026W23-SRC-006 | Issue stable runtime promotion readiness decision | P0 | S | `@quality-guardian`, `@coordinator` | done / no-go | SRC-001, SRC-002, SRC-003, SRC-004, SRC-005 | `docs/reviews/sceneview3d-src-006-stable-runtime-gate-2026-05-29.md`; `docs/planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md` | Stable `view.mode: "scene3d"` remains blocked with explicit blocker codes and future Go prerequisites. | `pnpm build:schema`; `pnpm check`; `pnpm test:release:scene3d`; visual snapshot evidence; strict visual snapshot before future beta/stable claims |
 
 ## Release Gate Requirements
 
@@ -94,7 +101,7 @@ The next quality gate is conditional on the touched surface:
   package changes and dependency-boundary evidence.
 
 Current gate state remains: W23 promotion-readiness package = Go; stable
-runtime promotion = No-go / blocked.
+runtime promotion = No-go / blocked after SRC-006 decision.
 
 ## Recommendations
 
@@ -105,7 +112,7 @@ runtime promotion = No-go / blocked.
 - Impact: AI safety and architecture remain protected while the real renderer
   contract is still being specified.
 - Action: `@coordinator` keeps stable `view.mode: "scene3d"` out of release
-  scope until `TASK-2026W23-SRC-006` passes.
+  scope after `TASK-2026W23-SRC-006` No-go.
 - Confidence: high.
 
 ### Define Contract Before Implementation Expansion

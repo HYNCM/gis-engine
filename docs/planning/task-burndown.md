@@ -12,6 +12,8 @@ inputs:
   - docs/reviews/sceneview3d-src-evidence-decision-2026-05-25.md
   - docs/reviews/sceneview3d-src-002-dependency-boundary-2026-05-29.md
   - docs/reviews/sceneview3d-src-005-resource-release-gate-2026-05-29.md
+  - docs/reviews/sceneview3d-src-006-stable-runtime-gate-2026-05-29.md
+  - docs/planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md
   - docs/archive/2026-05-18/planning/sprint-2026-W21.md
   - docs/planning/sprint-2026-W25-sceneview3d-v1.md
   - docs/reviews/quality-gate-2026-05-24.md
@@ -75,9 +77,9 @@ lifecycle、snapshot/query 语义、resource policy 和 release gate。规划规
 2026-05-25 handoff 见
 [sprint-2026-W23-scene3d-stable-renderer-contract.md](./sprint-2026-W23-scene3d-stable-renderer-contract.md)。
 
-共享规划状态由 `@coordinator` 单写。下面的状态表示当前已接受的前置证据；
-`TASK-2026W23-SRC-006` 仍保持 blocked，除非 future quality-guardian gate 和
-coordinator decision 明确批准 stable runtime。
+共享规划状态由 `@coordinator` 单写。下面的状态表示当前已接受的前置证据和
+SRC-006 No-go 决策；stable runtime 仍保持 blocked，除非 future
+quality-guardian gate 和 coordinator decision 明确批准新的 promotion task。
 
 2026-05-27 serialized evidence update: `@adapter-agent`, `@qa-agent`, and
 `@ai-agent` landed bounded evidence slices. `SRC-001`, `SRC-003`, and
@@ -93,6 +95,12 @@ alignment. This closes `SRC-001` through `SRC-005` as prerequisite evidence
 only. Stable `view.mode: "scene3d"` remains blocked until `SRC-006` receives a
 separate quality-guardian and coordinator Go decision.
 
+2026-05-29 SRC-006 decision update: `@quality-guardian` and `@coordinator`
+closed `SRC-006` as a No-go decision. The stable renderer contract sequence now
+has accepted prerequisite evidence plus an explicit promotion decision; stable
+`view.mode: "scene3d"` remains blocked, and the next iteration moves to
+competitor analysis, product design, and task planning.
+
 | id | title | priority | owner | status | evidence target | acceptance | finish gates |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | TASK-2026W23-SRC-001 | Define stable renderer adapter contract | P0 | `@adapter-agent` | done | `docs/reviews/sceneview3d-adapter-lifecycle-semantics-2026-05-26.md`; focused adapter contract tests | load/render/resize/camera/snapshot/query/destroy/diagnostics obligations are specified without changing stable `view.mode` | `pnpm test:adapter -- tests/adapter/scene3d-three-adapter.test.ts`; `pnpm --filter @gis-engine/scene3d-three-adapter build`; adapter boundary evidence |
@@ -100,7 +108,7 @@ separate quality-guardian and coordinator Go decision.
 | TASK-2026W23-SRC-003 | Specify lifecycle and failure-state semantics | P1 | `@adapter-agent`, `@qa-agent` | done | `getScene3DThreeAdapterLifecycleSemantics()`; `docs/reviews/sceneview3d-adapter-lifecycle-semantics-2026-05-26.md` | load/reload/resize/cancel/destroy/failure transitions are deterministic and structured | adapter lifecycle contract tests; `pnpm check` when runtime behavior or diagnostics change |
 | TASK-2026W23-SRC-004 | Specify stable snapshot and query semantics | P1 | `@qa-agent`, `@adapter-agent` | done | `docs/reviews/sceneview3d-src-004-qa-evidence-2026-05-27.md`; browser runner `promotionMatrix.snapshotQueryEvidence` | snapshot/query semantics, fixture identity, pick identity, hidden/missing-layer behavior, and diagnostic counts are defined; strict visual evidence is still required before beta/stable renderer claims | deterministic smoke/release tests; release-capable `pnpm test:release:scene3d` and `pnpm test:snapshot:visual` still required for visual evidence acceptance |
 | TASK-2026W23-SRC-005 | Align SceneView3D resource policy and release gates | P1 | `@engine-agent`, `@quality-guardian`, `@docs-agent` | done | `docs/reviews/sceneview3d-src-005-resource-release-gate-2026-05-29.md`; resource-policy tests; `docs/engineering/ci-test-strategy.md` | resource-policy tests/docs and release gates name exact PR, beta, and stable renderer checks | `pnpm test:resources`; `pnpm test:schema -- tests/schema/resource-policy.test.ts` when schema policy changes; `pnpm test:release:scene3d`; visual snapshot gate or coordinator waiver for non-rendering changes |
-| TASK-2026W23-SRC-006 | Issue stable runtime promotion readiness decision | P0 | `@quality-guardian`, `@coordinator` | blocked | quality-guardian gate report and coordinator decision note | future gate accepts the real renderer contract package or keeps stable `view.mode: "scene3d"` blocked with explicit blocker codes | `pnpm build:schema` if public schema/tool contracts changed; `pnpm check`; `pnpm test:release:scene3d`; strict visual snapshot evidence or release waiver; coordinator records Go/No-go decision |
+| TASK-2026W23-SRC-006 | Issue stable runtime promotion readiness decision | P0 | `@quality-guardian`, `@coordinator` | done / no-go | `docs/reviews/sceneview3d-src-006-stable-runtime-gate-2026-05-29.md`; `docs/planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md` | stable `view.mode: "scene3d"` remains blocked with explicit blocker codes and future Go prerequisites | `pnpm build:schema`; `pnpm check`; `pnpm test:release:scene3d`; `pnpm test:snapshot:visual`; coordinator records No-go decision |
 
 Next quality-gate triggers:
 
