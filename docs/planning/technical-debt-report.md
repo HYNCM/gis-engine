@@ -18,6 +18,7 @@ inputs:
   - docs/reviews/nlq-004-export-manifest-evidence-2026-05-29.md
   - docs/planning/feature-specs/cloud-native-source-readiness.md
   - docs/reviews/nlq-006-scene-browsing-blocker-visibility-2026-05-29.md
+  - docs/reviews/nlq-007-serialized-quality-hardening-planning-2026-05-29.md
 decision_level: advisory
 ---
 
@@ -62,22 +63,25 @@ support states、resource-policy paths、query readiness 和 blocked diagnostics
 `sceneBrowsing` summary，保留 extension-only context、mock evidence counts 和
 stable-runtime blocker codes；剩余最高优先级债务转为 serialized planning closure。
 
+2026-05-29 NLQ-007 update: generation quality hardening 已完成序列化封账；
+剩余债务转为下一轮规划输入，而不是继续在 NLQ batch 内追加实现。
+
 ## 债务优先级
 
 | 排名 | 债务 | 得分 | 证据 | 建议修复 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | Serialized planning closure for generation hardening | 0.30 | NLQ-001 through NLQ-006 are done, but final status serialization still needs coordinator/task-distributor closure | execute `TASK-2026W23-NLQ-007` after NLQ-006 evidence is accepted | medium |
+| 1 | Next planning loop input freshness | 0.36 | NLQ batch is closed, so new implementation should be driven by refreshed competitor/product/task-distributor evidence | start the next planning loop before opening another implementation batch | medium |
 | 2 | SceneView3D stable runtime promotion parked after SRC-006 No-go | 0.42 | W23 gate and SRC-006 decision keep stable runtime blocked while browser matrix / adapter summary / docs alignment are in place | keep the blocker codes and require a new explicit stable-runtime approval task before reopening | medium |
 | 3 | Future scene browsing UX evidence | 0.24 | generated-app manifests now preserve compact scene browsing context but do not include full camera/resource payloads by design | decide in the next product loop whether user-facing scene browsing copy needs richer non-runtime evidence | low |
 
 ## 修复顺序
 
-1. 先执行 `TASK-2026W23-NLQ-007`：序列化 planning closure，确保 burndown / dependency graph 只引用已完成 owner evidence。
-2. 再进入下一轮 competitive-intel / product-strategist / task-distributor 循环，决定是否需要新增真实实现任务。
+1. 先进入下一轮 competitive-intel / product-strategist / task-distributor 循环，决定是否需要新增真实实现任务。
+2. 若要开启新实现批次，先生成新的 feature spec / sprint DAG / owner split，不继续复用已关闭的 NLQ batch。
 3. 下一步若要推进 stable runtime promotion，必须先形成明确的 promotion rubric、browser matrix evidence 和 guardrail diagnostics，不得直接把 `view.mode: "scene3d"` 视为稳定。
 4. 后续真实 renderer loader 接入时，必须先调用 `validateSceneResourceLoadPlan`，不得绕过 byte、texture、worker、timeout diagnostics。
 5. W23 promotion readiness sprint 已完成并记录 no-go verdict；stable runtime promotion 仍然 blocked until a future approval.
 
 ## 结论
 
-如果只做一件事，下一步优先把 NLQ-001 through NLQ-006 的完成状态串行封账，避免 planning ledger 领先于 owner evidence。SceneView3D stable runtime 仍保持 blocker state，直到新的 explicit approval arrives；下一步不能绕过 blocker code 直接打开 stable `view.mode: "scene3d"`。
+如果只做一件事，下一步优先刷新下一轮规划输入，避免在已关闭的 NLQ batch 上继续追加实现。SceneView3D stable runtime 仍保持 blocker state，直到新的 explicit approval arrives；下一步不能绕过 blocker code 直接打开 stable `view.mode: "scene3d"`。

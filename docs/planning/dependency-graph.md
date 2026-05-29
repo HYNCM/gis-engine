@@ -32,6 +32,7 @@ inputs:
   - docs/reviews/nlq-004-export-manifest-evidence-2026-05-29.md
   - docs/planning/feature-specs/cloud-native-source-readiness.md
   - docs/reviews/nlq-006-scene-browsing-blocker-visibility-2026-05-29.md
+  - docs/reviews/nlq-007-serialized-quality-hardening-planning-2026-05-29.md
 owner: "@coordinator"
 decision_level: advisory
 ---
@@ -116,18 +117,19 @@ W21 sprint 计划已归档，当前活跃关键路径从 W23 promotion readiness
 | NLA-006 prompt evidence scenarios | done | `docs/reviews/nla-006-prompt-evidence-scenarios-2026-05-29.md`; QA matrix covers prompt-to-command/snapshot/export evidence for feature display, spatial-analysis readiness, scene browsing extension-only, and stable scene3d blocked prompts |
 | NLA-007 docs and release wording | done | `docs/reviews/nla-007-docs-release-wording-2026-05-29.md`; README, AI package docs, contracts, feature matrix, changelog, and ai-map-edit example docs describe evidence-first generation without stable 3D overclaim |
 | NLA-008 serialized planning handoff | done | `docs/reviews/nla-008-serialized-planning-handoff-2026-05-29.md`; sprint, burndown, and dependency graph now agree that the W23 NLA slice is complete and ready for the next planning cycle |
-| Generation quality hardening | active | `docs/planning/sprint-2026-W23-generation-quality-hardening.md`; next W23 batch starts from typed planner boundary, planner provenance, spatial query evidence, export manifest, cloud-native source readiness, and SceneView3D blocker visibility |
+| Generation quality hardening | done | `docs/reviews/nlq-007-serialized-quality-hardening-planning-2026-05-29.md`; NLQ-001 through NLQ-007 are serialized as a closed W23 batch |
 | NLQ-001 typed prompt planner boundary | done | `docs/reviews/nlq-001-prompt-planner-boundary-2026-05-29.md`; `planMapGenerationRequest()` accepts prompt hash plus structured intent, emits `MapGenerationRequest`-compatible handoff data, and rejects raw prompt retention by default |
 | NLQ-002 planner provenance evidence | done | `docs/reviews/nlq-002-planner-provenance-evidence-2026-05-29.md`; `GenerationEvidenceBundleSchema` now exposes planner confidence, trace provenance, source prompt hashes, unsupported intent fields, and planner diagnostics |
 | NLQ-003 spatial query evidence | done | `docs/reviews/nlq-003-spatial-query-evidence-2026-05-29.md`; `analysisEvidence` and `spatialQueryEvidence` expose deterministic point/bbox query readiness while keeping geoprocessing operations blocked |
 | NLQ-004 export manifest evidence | done | `docs/reviews/nlq-004-export-manifest-evidence-2026-05-29.md`; `export_example_app` can carry compact generation evidence summaries without side-effect file writes |
 | NLQ-005 cloud-native source readiness | done | `docs/planning/feature-specs/cloud-native-source-readiness.md`; support states and blocked diagnostics are documented before PMTiles, GeoParquet, FlatGeobuf, GeoTIFF, or GeoZarr implementation claims |
 | NLQ-006 scene browsing blocker visibility | done | `docs/reviews/nlq-006-scene-browsing-blocker-visibility-2026-05-29.md`; generated-app manifests expose extension-only scene browsing metadata and stable-runtime blocker codes without enabling `snapshot.renderer: "scene3d"` |
+| NLQ-007 serialized quality-hardening planning | done | `docs/reviews/nlq-007-serialized-quality-hardening-planning-2026-05-29.md`; sprint, burndown, dependency graph, roadmap, digest, and debt ledger now agree that the W23 generation quality hardening batch is closed |
 
 ## 关键路径
 
 1. Natural-language app generation -> AI capability summary -> `MapGenerationCommandSkeleton` -> command-only edits -> snapshot/export evidence. This is the completed W23 product spine for feature display, spatial analysis readiness, and scene browsing boundaries.
-2. Generation quality hardening -> typed prompt planner boundary -> planner provenance evidence -> spatial query evidence -> export manifest -> cloud-native readiness -> SceneView3D blocker transparency. NLQ-001 through NLQ-006 are done; the remaining W23 closure task must not add MCP aliases or stable 3D runtime support.
+2. Generation quality hardening -> typed prompt planner boundary -> planner provenance evidence -> spatial query evidence -> export manifest -> cloud-native readiness -> SceneView3D blocker transparency -> serialized closure. NLQ-001 through NLQ-007 are done; future work should start from a new planning loop rather than mutating this closed batch.
 3. v1 SceneView3D RFC -> W25/W28 sprint DAG -> TypeBox schema -> fixtures + URL resource policy + loader resource gate + package boundary + scene commands -> mock snapshot/query contracts -> MCP context -> release visual gate -> alpha audit + adapter feasibility -> Three.js adapter spike -> renderer evidence handoff -> adapter runtime shim -> browser visual runner -> beta readiness gate -> promotion readiness -> stable renderer contract handoff -> stable runtime decision; W23 promotion-readiness package is Go, SRC-001 through SRC-005 prerequisite evidence is done, and SRC-006 records a No-go decision that keeps stable runtime blocked.
 4. 2026-05-24 automation hardening blocks scheduled agent evidence from being used as advisory/blocking input: generated report semantics -> serialized scheduled commits -> local/CI daily cadence + emergency interpolation -> automation hardening gate -> scheduled evidence may feed future coordinator/quality-guardian decisions.
 

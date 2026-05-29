@@ -38,6 +38,7 @@ inputs:
   - docs/reviews/nlq-004-export-manifest-evidence-2026-05-29.md
   - docs/planning/feature-specs/cloud-native-source-readiness.md
   - docs/reviews/nlq-006-scene-browsing-blocker-visibility-2026-05-29.md
+  - docs/reviews/nlq-007-serialized-quality-hardening-planning-2026-05-29.md
 owner: "@coordinator"
 decision_level: advisory
 ---
@@ -182,10 +183,12 @@ browsing may appear only as `extensions.scene3d` planning/evidence.
 
 ## 2026-W23 generation quality hardening
 
-The NLA generation skeleton is complete. The next task batch starts from
+The NLA generation skeleton is complete. The generation quality hardening batch
+is closed through
 [sprint-2026-W23-generation-quality-hardening.md](./sprint-2026-W23-generation-quality-hardening.md)
-and focuses on planner quality, provenance, query evidence, export packaging,
-cloud-native source readiness, and SceneView3D blocker transparency.
+and covers planner quality, provenance, query evidence, export packaging,
+cloud-native source readiness, SceneView3D blocker transparency, and serialized
+planning closure.
 
 Stable `view.mode: "scene3d"` remains blocked. No task in this batch may add a
 new MCP tool alias or mutate runtime state outside `MapCommand` /
@@ -199,7 +202,7 @@ new MCP tool alias or mutate runtime state outside `MapCommand` /
 | TASK-2026W23-NLQ-004 | Harden generated-app export manifest | P1 | `@ai-agent`, `@docs-agent`, `@qa-agent` | done | `docs/reviews/nlq-004-export-manifest-evidence-2026-05-29.md`; compact `generationEvidence` manifest summary | `export_example_app` surfaces generation evidence, diagnostics, spatial query, snapshot/export status, and resource notes without side-effect file writes | `pnpm --filter @gis-engine/ai build`; `pnpm test:ai`; `pnpm test:schema-sync`; `pnpm check` |
 | TASK-2026W23-NLQ-005 | Create cloud-native source readiness matrix | P1 | `@engine-agent`, `@docs-agent` | done | `docs/planning/feature-specs/cloud-native-source-readiness.md`; source readiness matrix | support states and blocked diagnostics are documented before implementation claims | resource-policy doc audit; `pnpm check`; `git diff --check` |
 | TASK-2026W23-NLQ-006 | Keep scene browsing blockers visible in generated apps | P1 | `@adapter-agent`, `@qa-agent` | done | `docs/reviews/nlq-006-scene-browsing-blocker-visibility-2026-05-29.md`; generated-app `sceneBrowsing` manifest summary | generated evidence preserves `extensions.scene3d` context and stable-runtime blocker codes; no `snapshot.renderer: "scene3d"` support | `pnpm --filter @gis-engine/ai build`; `pnpm test:ai`; `pnpm test:adapter`; `pnpm test:release:scene3d`; `pnpm check`; `git diff --check` |
-| TASK-2026W23-NLQ-007 | Serialize quality-hardening planning status | P1 | `@task-distributor` | todo | accepted owner evidence and planning diff | burndown and dependency graph update only after owner evidence or gate reports exist | planning diff review; `pnpm check`; `git diff --check` |
+| TASK-2026W23-NLQ-007 | Serialize quality-hardening planning status | P1 | `@task-distributor` | done | `docs/reviews/nlq-007-serialized-quality-hardening-planning-2026-05-29.md`; accepted owner evidence and planning diff | burndown and dependency graph update only after owner evidence or gate reports exist | planning diff review; `pnpm check`; `git diff --check` |
 
 ## W23 promotion readiness 计划快照
 

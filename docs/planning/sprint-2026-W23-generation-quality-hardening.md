@@ -17,6 +17,7 @@ inputs:
   - docs/reviews/nlq-004-export-manifest-evidence-2026-05-29.md
   - docs/planning/feature-specs/cloud-native-source-readiness.md
   - docs/reviews/nlq-006-scene-browsing-blocker-visibility-2026-05-29.md
+  - docs/reviews/nlq-007-serialized-quality-hardening-planning-2026-05-29.md
 owner: "@task-distributor"
 decision_level: advisory
 ---
@@ -34,6 +35,9 @@ prompt -> capabilitySummary -> MapGenerationCommandSkeleton -> apply_commands ->
 This follow-up sprint turns that skeleton into a tighter product contract. It
 does not reopen NLA-001 through NLA-008, does not introduce a new MCP tool name,
 and does not promote stable `view.mode: "scene3d"`.
+
+Current status: NLQ-001 through NLQ-007 are closed as a serialized W23 planning
+snapshot. New implementation work should start from a fresh planning loop.
 
 ## Owner Split
 
@@ -57,7 +61,7 @@ and does not promote stable `view.mode: "scene3d"`.
 | TASK-2026W23-NLQ-004 | Harden generated-app export manifest | P1 | M | `@ai-agent`, `@docs-agent`, `@qa-agent` | done | NLQ-002 | `docs/reviews/nlq-004-export-manifest-evidence-2026-05-29.md`; `export_example_app` output carries compact generation evidence summary, diagnostic counts, spatial query, snapshot, and export status without side-effect file writes | `pnpm --filter @gis-engine/ai build`; `pnpm test:ai`; `pnpm test:schema-sync`; `pnpm check` |
 | TASK-2026W23-NLQ-005 | Create cloud-native source readiness matrix | P1 | S | `@engine-agent`, `@docs-agent` | done | NLQ-001 | `docs/planning/feature-specs/cloud-native-source-readiness.md`; PMTiles, GeoParquet, FlatGeobuf, GeoTIFF/GeoZarr support states and blocked diagnostics are documented before implementation claims | resource-policy doc audit; `pnpm check`; `git diff --check` |
 | TASK-2026W23-NLQ-006 | Keep scene browsing blockers visible in generated apps | P1 | S | `@adapter-agent`, `@qa-agent` | done | NLA-005, NLA-006 | `docs/reviews/nlq-006-scene-browsing-blocker-visibility-2026-05-29.md`; generated-app evidence preserves `extensions.scene3d` context and stable-runtime blocker codes; no `snapshot.renderer: "scene3d"` support is introduced | `pnpm --filter @gis-engine/ai build`; `pnpm test:ai`; `pnpm test:adapter`; `pnpm test:release:scene3d`; `pnpm check`; `git diff --check` |
-| TASK-2026W23-NLQ-007 | Serialize quality-hardening planning status | P1 | S | `@task-distributor` | todo | NLQ-002, NLQ-003, NLQ-004, NLQ-005, NLQ-006 | burndown and dependency graph update only after owner evidence or gate reports exist | planning diff review; `pnpm check`; `git diff --check` |
+| TASK-2026W23-NLQ-007 | Serialize quality-hardening planning status | P1 | S | `@task-distributor` | done | NLQ-002, NLQ-003, NLQ-004, NLQ-005, NLQ-006 | `docs/reviews/nlq-007-serialized-quality-hardening-planning-2026-05-29.md`; burndown and dependency graph update only after owner evidence or gate reports exist | planning diff review; `pnpm check`; `git diff --check` |
 
 ```mermaid
 flowchart LR
