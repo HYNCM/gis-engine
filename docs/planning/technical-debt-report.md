@@ -1,8 +1,8 @@
 ---
 agent: product-strategist
 period: 2026-05
-generated_at: 2026-05-29T08:20:23Z
-repo_revision: "b0ccfd9342d8d737fdde676399dc5059f8c13293"
+generated_at: 2026-05-29T10:20:00Z
+repo_revision: "d628fd1454a44859e57d8996343413684a541c30"
 inputs:
   - README.md
   - AGENTS.md
@@ -19,6 +19,8 @@ inputs:
   - docs/planning/feature-specs/cloud-native-source-readiness.md
   - docs/reviews/nlq-006-scene-browsing-blocker-visibility-2026-05-29.md
   - docs/reviews/nlq-007-serialized-quality-hardening-planning-2026-05-29.md
+  - docs/planning/feature-specs/generated-app-delivery-ux.md
+  - docs/planning/sprint-2026-W22-ai-native-next-loop.md
 decision_level: advisory
 ---
 
@@ -66,22 +68,26 @@ stable-runtime blocker codes；剩余最高优先级债务转为 serialized plan
 2026-05-29 NLQ-007 update: generation quality hardening 已完成序列化封账；
 剩余债务转为下一轮规划输入，而不是继续在 NLQ batch 内追加实现。
 
+2026-05-29 next-loop update: generated-app delivery UX 与 AI-native next loop
+已立项；最高优先级债务转为用户可检查的交付/确认状态，而不是继续补 evidence
+spine。
+
 ## 债务优先级
 
 | 排名 | 债务 | 得分 | 证据 | 建议修复 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | Next planning loop input freshness | 0.36 | NLQ batch is closed, so new implementation should be driven by refreshed competitor/product/task-distributor evidence | start the next planning loop before opening another implementation batch | medium |
+| 1 | Generated-app delivery acceptance states missing | 0.44 | evidence spine is closed, but users still need readiness / blocked / needs-confirmation states that a UI can render | execute `TASK-2026W22-AIN-001` and `TASK-2026W22-AIN-002` | medium |
 | 2 | SceneView3D stable runtime promotion parked after SRC-006 No-go | 0.42 | W23 gate and SRC-006 decision keep stable runtime blocked while browser matrix / adapter summary / docs alignment are in place | keep the blocker codes and require a new explicit stable-runtime approval task before reopening | medium |
-| 3 | Future scene browsing UX evidence | 0.24 | generated-app manifests now preserve compact scene browsing context but do not include full camera/resource payloads by design | decide in the next product loop whether user-facing scene browsing copy needs richer non-runtime evidence | low |
+| 3 | Future source promotion criteria missing | 0.34 | cloud-native readiness matrix exists, but implementation candidates need separate schema/resource-policy/query/export promotion gates | execute `TASK-2026W22-AIN-003` before source implementation | high |
 
 ## 修复顺序
 
-1. 先进入下一轮 competitive-intel / product-strategist / task-distributor 循环，决定是否需要新增真实实现任务。
-2. 若要开启新实现批次，先生成新的 feature spec / sprint DAG / owner split，不继续复用已关闭的 NLQ batch。
+1. 先执行 `TASK-2026W22-AIN-001` / `AIN-002`：把 generated-app evidence 转成用户可检查的 delivery / acceptance contract。
+2. 再执行 `TASK-2026W22-AIN-003` / `AIN-004`：把 source 与 spatial-analysis promotion criteria 拆成未来实现门禁。
 3. 下一步若要推进 stable runtime promotion，必须先形成明确的 promotion rubric、browser matrix evidence 和 guardrail diagnostics，不得直接把 `view.mode: "scene3d"` 视为稳定。
 4. 后续真实 renderer loader 接入时，必须先调用 `validateSceneResourceLoadPlan`，不得绕过 byte、texture、worker、timeout diagnostics。
 5. W23 promotion readiness sprint 已完成并记录 no-go verdict；stable runtime promotion 仍然 blocked until a future approval.
 
 ## 结论
 
-如果只做一件事，下一步优先刷新下一轮规划输入，避免在已关闭的 NLQ batch 上继续追加实现。SceneView3D stable runtime 仍保持 blocker state，直到新的 explicit approval arrives；下一步不能绕过 blocker code 直接打开 stable `view.mode: "scene3d"`。
+如果只做一件事，下一步优先把 generated-app evidence 变成用户可检查、可确认、可继续迭代的交付体验。SceneView3D stable runtime 仍保持 blocker state，直到新的 explicit approval arrives；下一步不能绕过 blocker code 直接打开 stable `view.mode: "scene3d"`。

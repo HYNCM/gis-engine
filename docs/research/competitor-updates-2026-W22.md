@@ -1,8 +1,8 @@
 ---
 agent: competitive-intel
 period: 2026-W22
-generated_at: 2026-05-29T07:51:47Z
-repo_revision: "704104dfc92719ca73481b8f79d85d527c9a73da"
+generated_at: 2026-05-29T10:20:00Z
+repo_revision: "d628fd1454a44859e57d8996343413684a541c30"
 inputs:
   - https://github.com/maplibre/maplibre-gl-js/releases
   - https://maplibre.org/maplibre-style-spec/
@@ -39,6 +39,7 @@ inputs:
   - command: npm view @arcgis/ai-components version time.modified --json
   - command: npm view pmtiles version time.modified --json
   - command: npm view flatgeobuf version time.modified --json
+  - command: npm view @modelcontextprotocol/sdk version time.modified --json
 owner: "@competitive-intel"
 decision_level: advisory
 ---
@@ -47,8 +48,9 @@ decision_level: advisory
 
 Checked on 2026-05-29. This refresh uses official project, package, or
 specification sources only. It updates the earlier W22 report after the W23
-natural-language generation backlog closed, so the recommendations focus on
-the next AI-native product loop rather than reopening completed NLA tasks.
+natural-language generation and generation-quality hardening backlogs closed,
+so the recommendations focus on the next AI-native product loop rather than
+reopening completed NLA/NLQ tasks.
 
 ## Executive Summary
 
@@ -94,11 +96,12 @@ External pressure is strongest in four places:
 | FlatGeobuf | Official repo/spec describes magic bytes, version signaling, optional Hilbert R-tree index, streaming/random access, and HTTP range behavior; GitHub releases have no current release artifact. | Treat FlatGeobuf as a fixture-pinned static vector-source candidate with medium confidence until release cadence is clearer. | medium |
 | MCP / structured outputs / computer-use tooling | MCP latest spec page now points beyond the 2025-06-18 tool schema page; OpenAI structured outputs and computer-use docs reinforce JSON Schema contracts, tool safety, screenshots, allowlists, and high-risk confirmation. | Keep GIS Engine MCP descriptors with input and output schemas, structured diagnostics, command-only mutation, browser evidence, and explicit human/safety boundaries. | high |
 
-Observed package versions from `npm view` on 2026-05-29: `maplibre-gl`
-5.24.0, `mapbox-gl` 3.24.0, `cesium` 1.141.0, `three` 0.184.0,
+Observed package versions from `npm view` on 2026-05-29 after NLQ closure:
+`maplibre-gl` 5.24.0, `mapbox-gl` 3.24.0, `cesium` 1.141.0, `three` 0.184.0,
 `3d-tiles-renderer` 0.4.27, `deck.gl` 9.3.2, `@deck.gl/core` 9.3.2,
 `ol` 10.9.0, `echarts` 6.1.0, `@arcgis/core` 5.0.19,
-`@arcgis/ai-components` 5.0.19, `pmtiles` 4.4.1, and `flatgeobuf` 4.4.0.
+`@arcgis/ai-components` 5.0.19, `pmtiles` 4.4.1, `flatgeobuf` 4.4.0, and
+`@modelcontextprotocol/sdk` 1.29.0.
 
 ## Threats To GIS Engine Assumptions
 
@@ -146,53 +149,57 @@ Observed package versions from `npm view` on 2026-05-29: `maplibre-gl`
 
 ## Recommended Follow-Up Tasks
 
-### [P0] Add A Typed Prompt Planner Contract
+### [P0] Design The Generated-App Delivery UX Contract
 
-- Evidence: ArcGIS AI components validate natural-language map application
-  generation as a competitive surface; local NLA work already has a structured
-  evidence skeleton.
-- Impact: product, AI safety, developer experience.
-- Action: `@ai-agent` and `@engine-agent` should define a prompt planner input
-  and output contract that emits `MapGenerationRequest`, diagnostics, and trace
-  metadata, then prove it with command and AI tests.
+- Evidence: ArcGIS AI components validate agentic/natural-language map apps as
+  a product surface, and NLQ-001 through NLQ-007 now provide a structured
+  evidence spine.
+- Impact: product and developer experience; the next gap is how a user receives,
+  inspects, accepts, and iterates on a generated map application.
+- Action: `@product-strategist`, `@ai-agent`, and `@docs-agent` should define a
+  generated-app delivery contract for manifest sections, readiness badges,
+  blocked capability explanations, and confirmation boundaries.
 - Confidence: high.
 
-### [P0] Design Spatial Query Evidence Before Geoprocessing
+### [P0] Plan Source-Readiness Promotion Tasks Before Implementation
 
-- Evidence: GeoParquet `covering.bbox`, OpenLayers data-source signals, and
-  existing local spatial-analysis readiness all point to query-readiness first.
-- Impact: spatial analysis, AI safety, future data support.
-- Action: `@engine-agent` and `@ai-agent` should keep point/bbox query evidence
-  first and preserve blocked diagnostics for buffer, overlay, routing, and
-  aggregation until public commands exist.
+- Evidence: PMTiles, GeoParquet, FlatGeobuf, and OpenLayers GeoZarr/GeoTIFF
+  signals show broad cloud-native source pressure, while NLQ-005 keeps
+  unsupported formats blocked.
+- Impact: data interoperability, resource policy, spatial-analysis readiness.
+- Action: `@engine-agent` and `@docs-agent` should split future source work into
+  schema/resource-policy diagnostics, fixture gates, and export handoff tasks
+  before any GeoParquet, FlatGeobuf, GeoTIFF, or GeoZarr implementation claim.
 - Confidence: high.
 
-### [P1] Harden Generated-App Export Evidence
+### [P1] Define Post-NLQ Spatial Analysis Promotion Criteria
 
-- Evidence: current generation evidence includes export/example summaries, but
-  packageable app delivery is the next user-visible step.
-- Impact: developer experience and release clarity.
-- Action: `@ai-agent`, `@docs-agent`, and `@qa-agent` should make
-  `export_example_app` surface generation evidence, diagnostics, and asset
-  resource status without writing files as a side effect.
+- Evidence: GeoParquet `covering.bbox` and existing point/bbox query evidence
+  support read-only query readiness, but geoprocessing remains blocked.
+- Impact: AI safety and user trust; generated apps must explain why buffer,
+  overlay, routing, aggregation, and intersection are not executable yet.
+- Action: `@engine-agent`, `@ai-agent`, and `@qa-agent` should draft promotion
+  criteria for each future operation: schema, command semantics, diagnostics,
+  deterministic fixtures, and MCP exposure assessment.
+- Confidence: high.
+
+### [P1] Keep Scene Browsing As Product Copy, Not Runtime Promotion
+
+- Evidence: CesiumJS, Three.js, deck.gl, and 3DTilesRendererJS keep external 3D
+  pressure high, but SRC-006 and NLQ-006 preserve the stable-runtime blocker.
+- Impact: release honesty and generated-app UX; users can see scene-browsing
+  intent without receiving a false stable 3D renderer claim.
+- Action: `@adapter-agent`, `@qa-agent`, and `@docs-agent` should plan
+  user-facing scene-browsing copy and evidence summaries separately from any
+  future stable-runtime Go package.
+- Confidence: high.
+
+### [P2] Refresh MapLibre And Mapbox Drift Before Dependency Movement
+
+- Evidence: MapLibre and Mapbox package lines continue moving, and generated
+  styles now depend on schema/style compatibility.
+- Impact: 2D reliability and generated-map rendering quality.
+- Action: `@engine-agent` should use the MapLibre version-drift checklist
+  before package upgrades, including transformer, style-spec, resource-policy,
+  smoke snapshot, and visual snapshot evidence.
 - Confidence: medium.
-
-### [P1] Create A Cloud-Native Source Readiness Matrix
-
-- Evidence: PMTiles, GeoParquet, FlatGeobuf, and OpenLayers source signals show
-  that generated maps will need portable source diagnostics beyond URL syntax.
-- Impact: resource policy, data interoperability, spatial-analysis readiness.
-- Action: `@engine-agent` and `@docs-agent` should draft support states,
-  blocked diagnostics, and test-fixture expectations before adding new source
-  implementations.
-- Confidence: high.
-
-### [P1] Keep Scene Browsing Blockers Visible In Generation Evidence
-
-- Evidence: SRC-006 is No-go and NLA-005/NLA-006 already prove stable scene3d
-  blocked prompts.
-- Impact: release safety and AI explainability.
-- Action: `@adapter-agent` and `@qa-agent` should preserve
-  `SCENE3D.STABLE_RUNTIME_*` blockers in generated-app evidence and keep
-  renderer evidence out of the public NLA bundle until a future Go decision.
-- Confidence: high.

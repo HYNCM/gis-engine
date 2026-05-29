@@ -1,8 +1,8 @@
 ---
 agent: coordinator
 period: 2026-W22
-generated_at: 2026-05-29T08:20:23Z
-repo_revision: "b0ccfd9342d8d737fdde676399dc5059f8c13293"
+generated_at: 2026-05-29T10:20:00Z
+repo_revision: "d628fd1454a44859e57d8996343413684a541c30"
 inputs:
   - docs/planning/sprint-2026-W22-competitive-signal-response.md
   - docs/research/competitor-updates-2026-W22.md
@@ -39,6 +39,8 @@ inputs:
   - docs/planning/feature-specs/cloud-native-source-readiness.md
   - docs/reviews/nlq-006-scene-browsing-blocker-visibility-2026-05-29.md
   - docs/reviews/nlq-007-serialized-quality-hardening-planning-2026-05-29.md
+  - docs/planning/feature-specs/generated-app-delivery-ux.md
+  - docs/planning/sprint-2026-W22-ai-native-next-loop.md
 owner: "@coordinator"
 decision_level: advisory
 ---
@@ -203,6 +205,21 @@ new MCP tool alias or mutate runtime state outside `MapCommand` /
 | TASK-2026W23-NLQ-005 | Create cloud-native source readiness matrix | P1 | `@engine-agent`, `@docs-agent` | done | `docs/planning/feature-specs/cloud-native-source-readiness.md`; source readiness matrix | support states and blocked diagnostics are documented before implementation claims | resource-policy doc audit; `pnpm check`; `git diff --check` |
 | TASK-2026W23-NLQ-006 | Keep scene browsing blockers visible in generated apps | P1 | `@adapter-agent`, `@qa-agent` | done | `docs/reviews/nlq-006-scene-browsing-blocker-visibility-2026-05-29.md`; generated-app `sceneBrowsing` manifest summary | generated evidence preserves `extensions.scene3d` context and stable-runtime blocker codes; no `snapshot.renderer: "scene3d"` support | `pnpm --filter @gis-engine/ai build`; `pnpm test:ai`; `pnpm test:adapter`; `pnpm test:release:scene3d`; `pnpm check`; `git diff --check` |
 | TASK-2026W23-NLQ-007 | Serialize quality-hardening planning status | P1 | `@task-distributor` | done | `docs/reviews/nlq-007-serialized-quality-hardening-planning-2026-05-29.md`; accepted owner evidence and planning diff | burndown and dependency graph update only after owner evidence or gate reports exist | planning diff review; `pnpm check`; `git diff --check` |
+
+## 2026-W22 AI-native next loop
+
+The next active planning batch starts from
+[sprint-2026-W22-ai-native-next-loop.md](./sprint-2026-W22-ai-native-next-loop.md).
+It does not reopen the closed NLA/NLQ work; it plans product delivery and
+promotion criteria for future implementation batches.
+
+| id | title | priority | owner | status | evidence target | acceptance | finish gates |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| TASK-2026W22-AIN-001 | Design generated-app delivery UX contract | P0 | `@product-strategist`, `@ai-agent`, `@docs-agent` | todo | `docs/planning/feature-specs/generated-app-delivery-ux.md` | manifest sections map to evidence fields and blocker diagnostics | docs review; `pnpm test:ai` if schemas change; `pnpm check` |
+| TASK-2026W22-AIN-002 | Define generated-app acceptance and confirmation states | P0 | `@ai-agent`, `@qa-agent` | todo | acceptance/confirmation contract | readiness, blocked, needs-confirmation, and follow-up states are schema-testable without MCP aliases | AI contract tests; schema-sync when public schema changes; `pnpm check` |
+| TASK-2026W22-AIN-003 | Split cloud-native source promotion candidates | P1 | `@engine-agent`, `@docs-agent` | todo | source promotion task split | schema/resource-policy/query/export gates are separated before implementation | resource-policy doc audit; schema tests only if fixtures change |
+| TASK-2026W22-AIN-004 | Draft spatial-analysis promotion criteria | P1 | `@engine-agent`, `@ai-agent`, `@qa-agent` | todo | operation promotion criteria | each future operation names schema, command semantics, diagnostics, fixtures, and MCP exposure assessment | planning diff review; command/AI tests when implemented |
+| TASK-2026W22-AIN-005 | Keep scene browsing copy extension-only | P1 | `@adapter-agent`, `@qa-agent`, `@docs-agent` | todo | scene browsing copy/evidence plan | user-facing copy preserves extension-only context and blocker codes without stable renderer claims | `pnpm test:ai`; `pnpm test:release:scene3d`; docs review |
 
 ## W23 promotion readiness 计划快照
 
