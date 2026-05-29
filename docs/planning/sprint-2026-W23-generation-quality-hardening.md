@@ -15,6 +15,7 @@ inputs:
   - docs/reviews/nlq-002-planner-provenance-evidence-2026-05-29.md
   - docs/reviews/nlq-003-spatial-query-evidence-2026-05-29.md
   - docs/reviews/nlq-004-export-manifest-evidence-2026-05-29.md
+  - docs/planning/feature-specs/cloud-native-source-readiness.md
 owner: "@task-distributor"
 decision_level: advisory
 ---
@@ -53,7 +54,7 @@ and does not promote stable `view.mode: "scene3d"`.
 | TASK-2026W23-NLQ-002 | Add planner quality and provenance evidence | P0 | M | `@ai-agent`, `@qa-agent` | done | NLQ-001 | `docs/reviews/nlq-002-planner-provenance-evidence-2026-05-29.md`; generation evidence exposes planner confidence, source prompt hash, unsupported-intent diagnostics, and command trace provenance without storing raw prompt text by default | `pnpm --filter @gis-engine/engine build`; `pnpm --filter @gis-engine/ai build`; `pnpm test:commands`; `pnpm test:ai`; final `pnpm check` |
 | TASK-2026W23-NLQ-003 | Design spatial query evidence bundle | P0 | M | `@engine-agent`, `@ai-agent` | done | NLA-004, NLQ-001 | `docs/reviews/nlq-003-spatial-query-evidence-2026-05-29.md`; `analysisEvidence` preserves point/bbox intent on the skeleton and `spatialQueryEvidence` runs deterministic query cases without exposing feature data; buffer, overlay, routing, aggregation, and intersection remain blocked | `pnpm --filter @gis-engine/engine build`; `pnpm --filter @gis-engine/ai build`; `pnpm test:commands`; `pnpm test:ai`; `pnpm build:schema` |
 | TASK-2026W23-NLQ-004 | Harden generated-app export manifest | P1 | M | `@ai-agent`, `@docs-agent`, `@qa-agent` | done | NLQ-002 | `docs/reviews/nlq-004-export-manifest-evidence-2026-05-29.md`; `export_example_app` output carries compact generation evidence summary, diagnostic counts, spatial query, snapshot, and export status without side-effect file writes | `pnpm --filter @gis-engine/ai build`; `pnpm test:ai`; `pnpm test:schema-sync`; `pnpm check` |
-| TASK-2026W23-NLQ-005 | Create cloud-native source readiness matrix | P1 | S | `@engine-agent`, `@docs-agent` | todo | NLQ-001 | PMTiles, GeoParquet, FlatGeobuf, GeoTIFF/GeoZarr support states and blocked diagnostics are documented before implementation claims | resource-policy doc audit; schema tests if fixtures change; `pnpm check` |
+| TASK-2026W23-NLQ-005 | Create cloud-native source readiness matrix | P1 | S | `@engine-agent`, `@docs-agent` | done | NLQ-001 | `docs/planning/feature-specs/cloud-native-source-readiness.md`; PMTiles, GeoParquet, FlatGeobuf, GeoTIFF/GeoZarr support states and blocked diagnostics are documented before implementation claims | resource-policy doc audit; `pnpm check`; `git diff --check` |
 | TASK-2026W23-NLQ-006 | Keep scene browsing blockers visible in generated apps | P1 | S | `@adapter-agent`, `@qa-agent` | todo | NLA-005, NLA-006 | generated-app evidence preserves `extensions.scene3d` context and stable-runtime blocker codes; no `snapshot.renderer: "scene3d"` support is introduced | `pnpm test:ai`; `pnpm test:adapter`; `pnpm test:release:scene3d`; `pnpm check` |
 | TASK-2026W23-NLQ-007 | Serialize quality-hardening planning status | P1 | S | `@task-distributor` | todo | NLQ-002, NLQ-003, NLQ-004, NLQ-005, NLQ-006 | burndown and dependency graph update only after owner evidence or gate reports exist | planning diff review; `pnpm check`; `git diff --check` |
 

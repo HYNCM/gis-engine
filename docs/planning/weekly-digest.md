@@ -17,6 +17,7 @@ inputs:
   - docs/reviews/nlq-002-planner-provenance-evidence-2026-05-29.md
   - docs/reviews/nlq-003-spatial-query-evidence-2026-05-29.md
   - docs/reviews/nlq-004-export-manifest-evidence-2026-05-29.md
+  - docs/planning/feature-specs/cloud-native-source-readiness.md
   - docs/planning/sprint-2026-W22-competitive-signal-response.md
   - docs/planning/feature-specs/sceneview3d-stable-renderer-contract.md
   - docs/engineering/maplibre-version-drift-audit.md
@@ -121,7 +122,8 @@ diagnostics.
 | TASK-2026W23-NLQ-002 | done | `docs/reviews/nlq-002-planner-provenance-evidence-2026-05-29.md` |
 | TASK-2026W23-NLQ-003 | done | `docs/reviews/nlq-003-spatial-query-evidence-2026-05-29.md` |
 | TASK-2026W23-NLQ-004 | done | `docs/reviews/nlq-004-export-manifest-evidence-2026-05-29.md` |
-| TASK-2026W23-NLQ-005 through NLQ-007 | planned | `docs/planning/sprint-2026-W23-generation-quality-hardening.md` |
+| TASK-2026W23-NLQ-005 | done | `docs/planning/feature-specs/cloud-native-source-readiness.md` |
+| TASK-2026W23-NLQ-006 through NLQ-007 | planned | `docs/planning/sprint-2026-W23-generation-quality-hardening.md` |
 
 ## Next Handoff
 
@@ -138,6 +140,6 @@ diagnostics.
   only after schema, command, diagnostics, and MCP output contracts are clear.
 - `@qa-agent` / `@docs-agent`: plan prompt evidence scenarios and public docs
   around validation, trace, snapshot, and export artifacts.
-- `@engine-agent` / `@docs-agent`: continue with `TASK-2026W23-NLQ-005`,
-  creating the cloud-native source readiness matrix before adding PMTiles,
-  GeoParquet, FlatGeobuf, GeoTIFF, or GeoZarr implementation claims.
+- `@adapter-agent` / `@qa-agent`: continue with `TASK-2026W23-NLQ-006`, keeping
+  SceneView3D blocker codes visible in generated-app evidence without enabling
+  stable `view.mode: "scene3d"`.

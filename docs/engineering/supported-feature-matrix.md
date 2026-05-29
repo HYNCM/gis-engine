@@ -7,7 +7,7 @@ accepted.
 
 | Area | Supported surface | Notes |
 | --- | --- | --- |
-| Sources | `geojson`, `raster`, `pmtiles`, `vector` | PMTiles is transformed to a MapLibre vector source URL; generic vector tile URL templates support `tiles[]` and `url`. |
+| Sources | `geojson`, `raster`, `pmtiles`, `vector` | PMTiles is transformed to a MapLibre vector source URL; generic vector tile URL templates support `tiles[]` and `url`. The cloud-native readiness matrix documents GeoParquet, FlatGeobuf, GeoTIFF, and GeoZarr as blocked until schemas, resource policy, diagnostics, and tests exist. |
 | Layers | `background`, `raster`, `fill`, `line`, `circle`, `symbol-lite`, `fill-extrusion-lite` | `symbol-lite` maps to MapLibre `symbol`; `fill-extrusion-lite` maps to MapLibre `fill-extrusion` only when explicitly gated as experimental 2.5D. |
 | Expressions | `get`, `step`, `interpolate`, `literal`, `case`, `match`, `zoom`, `to-number`, `to-string` | `interpolate` supports linear interpolation only. |
 | View | `center`, `zoom`, `bearing`, `pitch` | Bounds fitting remains command-level state in v0.1. |

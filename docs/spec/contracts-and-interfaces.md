@@ -281,6 +281,11 @@ runtime mutation path.
   counts, command/planner/spatial-query/snapshot/export status, and file-count
   metadata, but it must not write files, include raw prompts, include feature
   payloads, or include snapshot data URLs.
+- Cloud-native data source readiness is documented before implementation:
+  `geojson`, `raster`, `pmtiles`, and `vector` are the only public `SourceSpec`
+  types. GeoParquet, FlatGeobuf, GeoTIFF, and GeoZarr remain blocked planning
+  items until TypeBox schemas, resource-policy paths, structured diagnostics,
+  adapter boundaries, and tests are added.
 - The bundle may return `status: "blocked"` even when the underlying `MapSpec`
   is schema-valid. Generation boundary diagnostics, capability blockers, failed
   planner evidence, failed command replay, failed spatial query evidence, or

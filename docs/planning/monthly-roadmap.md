@@ -16,6 +16,7 @@ inputs:
   - docs/reviews/nlq-002-planner-provenance-evidence-2026-05-29.md
   - docs/reviews/nlq-003-spatial-query-evidence-2026-05-29.md
   - docs/reviews/nlq-004-export-manifest-evidence-2026-05-29.md
+  - docs/planning/feature-specs/cloud-native-source-readiness.md
   - docs/research/competitor-updates-2026-W20.md
   - docs/reviews/daily-audit-2026-05-17.md
   - docs/reviews/quality-gate-2026-05-17.md
@@ -90,6 +91,12 @@ planner、spatial query、snapshot、export 和 diagnostic summary 自动带入
 example manifest；仍不写文件、不返回文件内容、不新增 MCP 工具名。下一步转入
 cloud-native source readiness matrix。
 
+2026-05-29 NLQ-005 执行结果：`docs/planning/feature-specs/cloud-native-source-readiness.md`
+已记录 GeoJSON、raster、vector tile、PMTiles、GeoParquet、FlatGeobuf、
+GeoTIFF、GeoZarr 的 supported / readiness-only / blocked 状态、resource
+policy 路径、query readiness 和后续契约要求。下一步转入 SceneView3D blocker
+visibility。
+
 ## 2026-W22 Iteration Path
 
 | Priority | Track | Plan | Exit Condition |
@@ -138,9 +145,9 @@ cloud-native source readiness matrix。
 
 | 排名 | 事项 | 得分 | 证据 | 行动 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | Spatial query evidence | 7.65 | GeoParquet `covering.bbox`, OpenLayers source signals, and local spatial-analysis readiness point to query-first evidence | execute NLQ-003; keep point/bbox query evidence first and block geoprocessing until command contracts exist | high |
-| 2 | Generated-app export polish | 7.10 | local `GenerationEvidenceBundle` includes export/example summaries but user-facing package manifest needs stronger evidence surfacing | harden `export_example_app` manifest and docs without side-effect file writes | medium |
-| 3 | Cloud-native source readiness matrix | 6.95 | PMTiles v3, GeoParquet 1.1, FlatGeobuf range access, and OpenLayers data-source signals widen portable source expectations | document support states and diagnostics before implementation claims | high |
+| 1 | Scene browsing blocker visibility | 6.80 | NLQ-001 through NLQ-005 now expose planner, spatial, export, and source-readiness evidence; generated app handoff must still preserve SceneView3D blocker codes | execute NLQ-006; keep extension-only scene browsing visible without enabling stable runtime | high |
+| 2 | Serialized generation-hardening closure | 6.30 | NLQ-001 through NLQ-005 are complete and planning state should remain single-writer and evidence-backed | execute NLQ-007 after NLQ-006 owner evidence exists | medium |
+| 3 | Future cloud-native source implementation contract | 5.90 | readiness matrix now documents supported/readiness-only/blocked formats before implementation claims | use the matrix as the prerequisite for any future GeoParquet/FlatGeobuf/GeoTIFF/GeoZarr schema task | high |
 | 4 | SceneView3D promotion readiness | parked / no-go | W22 evidence and beta gate are complete; W23 promotion-readiness package and gate are complete, and SRC-006 records No-go | future promotion requires a new stable-runtime task and Go decision | high |
 
 已完成并保留回归证据：
