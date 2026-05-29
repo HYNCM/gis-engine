@@ -147,6 +147,14 @@ describe("generation evidence bundle", () => {
 
     expect(validateInput({ promptHash: "sha256:schema-evidence", skeleton, unexpected: true })).toBe(false);
     expect(validateInput.errors?.some((error) => error.keyword === "additionalProperties")).toBe(true);
+    expect(
+      validateInput({
+        promptHash: "sha256:schema-evidence",
+        skeleton,
+        snapshot: { renderer: "scene3d" }
+      })
+    ).toBe(false);
+    expect(validateInput.errors?.some((error) => error.instancePath === "/snapshot/renderer")).toBe(true);
     expect(response.ok).toBe(true);
     if (!response.ok) throw new Error("Expected generation evidence bundle to succeed.");
     expect(validateBundle(response.result)).toBe(true);

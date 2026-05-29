@@ -229,6 +229,108 @@ describe("minimum natural-language generation scenarios", () => {
       ])
     );
   });
+
+  it("keeps scene browsing generation extension-only in the evidence bundle", async () => {
+    const skeleton = createMapGenerationCommandSkeleton({
+      mapId: "nla-scene-extension-only",
+      promptHash: "sha256:nla-scene-extension-only",
+      traceId: "trace-nla-scene-extension-only",
+      targetDomains: ["scene-browsing"],
+      scene3d: {
+        camera: {
+          position: [120.15, 30.28, 1200],
+          target: [120.15, 30.28, 0]
+        },
+        sources: {
+          city: {
+            type: "3d-tiles",
+            url: "./data/city/tileset.json"
+          }
+        },
+        layers: [
+          {
+            id: "city",
+            type: "tileset3d",
+            source: "city",
+            pickable: true
+          }
+        ]
+      }
+    });
+
+    const evidence = await createGenerationEvidenceBundle({
+      promptHash: "sha256:nla-scene-extension-only",
+      skeleton,
+      snapshot: {
+        renderer: "mock"
+      }
+    });
+
+    expect(skeleton.status).toBe("ready");
+    expect(skeleton.commands.map((command) => command.type)).toEqual(["setSceneCamera", "addSceneSource", "addSceneLayer"]);
+    expect(skeleton.spec.view.mode).toBe("map2d");
+    expect(skeleton.spec.capabilities?.renderer).toBeUndefined();
+    expect(skeleton.spec.extensions?.scene3d).toBeDefined();
+    expect(evidence.ok).toBe(true);
+    if (!evidence.ok) throw new Error("Expected extension-only scene browsing evidence.");
+    expect(evidence.result.status).toBe("ready");
+    expect(evidence.result.summary.scene3d).toMatchObject({
+      status: "extension-only",
+      stableViewMode: false,
+      runtimeSupported: false,
+      sourceCount: 1,
+      layerCount: 1,
+      pickableLayerCount: 1
+    });
+    expect(evidence.result.summary.scene3d).not.toHaveProperty("rendererEvidence");
+    expect(evidence.result.summary.scene3d).not.toHaveProperty("promotionEvidence");
+    const sceneDomain = evidence.result.summary.capabilitySummary.domains.find((domain) => domain.id === "scene-browsing");
+    expect(sceneDomain).toMatchObject({ status: "experimental" });
+    expect(sceneDomain?.blocked.join(" ")).toContain('stable view.mode: "scene3d" runtime rendering is blocked');
+  });
+
+  it("blocks stable scene3d generation requests in the evidence bundle", async () => {
+    const skeleton = createMapGenerationCommandSkeleton({
+      mapId: "nla-stable-scene-blocked",
+      promptHash: "sha256:nla-stable-scene-blocked",
+      traceId: "trace-nla-stable-scene-blocked",
+      targetDomains: ["scene-browsing"],
+      view: { mode: "scene3d" },
+      capabilities: {
+        dimensions: ["3d"],
+        renderer: "scene3d"
+      }
+    });
+
+    const evidence = await createGenerationEvidenceBundle({
+      promptHash: "sha256:nla-stable-scene-blocked",
+      skeleton
+    });
+
+    expect(skeleton.status).toBe("blocked");
+    expect(skeleton.commands).toEqual([]);
+    expect(evidence.ok).toBe(true);
+    if (!evidence.ok) throw new Error("Expected blocked stable scene evidence.");
+    expect(evidence.result.status).toBe("blocked");
+    expect(evidence.result.snapshotEvidence.requested).toBe(false);
+    expect(evidence.result.exportEvidence.ready).toBe(false);
+    expect(evidence.result.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          blockerCode: "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED",
+          path: "/view/mode"
+        }),
+        expect.objectContaining({
+          blockerCode: "SCENE3D.STABLE_RUNTIME_RENDERER_BLOCKED",
+          path: "/capabilities/renderer"
+        }),
+        expect.objectContaining({
+          blockerCode: "SCENE3D.STABLE_RUNTIME_DIMENSIONS_BLOCKED",
+          path: "/capabilities/dimensions"
+        })
+      ])
+    );
+  });
 });
 
 function rollbackAppliedCommands(result: ApplyCommandsResult): MapSpec {

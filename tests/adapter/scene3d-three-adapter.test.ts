@@ -654,13 +654,14 @@ describe("SceneView3D Three.js adapter spike", () => {
     const scene3dPackage = readPackageJson("packages/scene3d/package.json");
     const aiPackage = readPackageJson("packages/ai/package.json");
     const threeAdapterPackage = readPackageJson("packages/scene3d-three-adapter/package.json");
+    const sourceImportRoots = [
+      packageSourceImports("@gis-engine/engine", "packages/engine/src"),
+      packageSourceImports("@gis-engine/scene3d", "packages/scene3d/src"),
+      packageSourceImports("@gis-engine/ai", "packages/ai/src")
+    ];
     const audit = auditScene3DThreeAdapterDependencyBoundary({
       manifests: [enginePackage, scene3dPackage, aiPackage, threeAdapterPackage],
-      sourceImports: [
-        packageSourceImports("@gis-engine/engine", "packages/engine/src"),
-        packageSourceImports("@gis-engine/scene3d", "packages/scene3d/src"),
-        packageSourceImports("@gis-engine/ai", "packages/ai/src")
-      ]
+      sourceImports: sourceImportRoots
     });
 
     expect(contract.dependencyBoundary).toEqual(
@@ -706,6 +707,11 @@ describe("SceneView3D Three.js adapter spike", () => {
       expect(threeAdapterPackage.dependencies ?? {}).not.toHaveProperty(dependency);
       expect(threeAdapterPackage.devDependencies ?? {}).not.toHaveProperty(dependency);
       expect(threeAdapterPackage.peerDependencies ?? {}).not.toHaveProperty(dependency);
+    }
+
+    for (const sourceImportRoot of sourceImportRoots) {
+      expect(sourceImportRoot.imports).not.toContain("@gis-engine/scene3d-three-adapter");
+      expect(sourceImportRoot.imports.some((specifier) => specifier.startsWith("@gis-engine/scene3d-three-adapter/"))).toBe(false);
     }
   });
 

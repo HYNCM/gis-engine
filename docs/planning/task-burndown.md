@@ -1,8 +1,8 @@
 ---
 agent: coordinator
 period: 2026-W22
-generated_at: 2026-05-29T07:05:30Z
-repo_revision: "957094d07fa61a77c8630f9f58b0db57cd1a3d49"
+generated_at: 2026-05-29T07:19:29Z
+repo_revision: "e2215b877343aa708af0f0d098316d6d3c0208e8"
 inputs:
   - docs/planning/sprint-2026-W22-competitive-signal-response.md
   - docs/research/competitor-updates-2026-W22.md
@@ -27,6 +27,7 @@ inputs:
   - docs/reviews/nla-002-generation-command-contract-2026-05-29.md
   - docs/reviews/nla-003-mcp-orchestration-evidence-2026-05-29.md
   - docs/reviews/nla-004-generation-scenarios-2026-05-29.md
+  - docs/reviews/nla-005-scene-browsing-extension-boundary-2026-05-29.md
 owner: "@coordinator"
 decision_level: advisory
 ---
@@ -164,7 +165,7 @@ browsing may appear only as `extensions.scene3d` planning/evidence.
 | TASK-2026W23-NLA-002 | Define generation `MapSpec` and command skeleton contract | P0 | `@engine-agent` | done | `docs/reviews/nla-002-generation-command-contract-2026-05-29.md` | generation request/result schemas and command skeleton keep TypeBox/Ajv, `MapCommand`, and `applyCommands` on the path; stable 3D requests return blocker diagnostics | `pnpm build:schema`; `pnpm test:commands`; `pnpm test:schema-sync`; `pnpm check` |
 | TASK-2026W23-NLA-003 | Design MCP orchestration without new tool aliases | P0 | `@ai-agent` | done | `docs/reviews/nla-003-mcp-orchestration-evidence-2026-05-29.md` | generation evidence bundle uses only documented snake_case tools and keeps input/output schemas Ajv-compiled without adding an MCP alias | `pnpm test:ai`; `pnpm test:schema-sync`; `pnpm build:schema`; `pnpm check` |
 | TASK-2026W23-NLA-004 | Define feature-display and spatial-analysis minimum generated scenarios | P1 | `@engine-agent`, `@ai-agent` | done | `docs/reviews/nla-004-generation-scenarios-2026-05-29.md` | source/layer/style edits, query readiness, dry-run/replay/rollback, and blocked analysis diagnostics are covered | `pnpm test:commands`; `pnpm test:ai`; `pnpm build:schema`; `pnpm test:schema-sync`; `pnpm check` |
-| TASK-2026W23-NLA-005 | Keep scene browsing extension-only in generation flow | P1 | `@adapter-agent` | todo | adapter boundary report | `extensions.scene3d` evidence stays adapter-local; stable runtime remains blocked | adapter tests/build when touched; release scene3d for evidence claims |
+| TASK-2026W23-NLA-005 | Keep scene browsing extension-only in generation flow | P1 | `@adapter-agent` | done | `docs/reviews/nla-005-scene-browsing-extension-boundary-2026-05-29.md` | `extensions.scene3d` evidence stays adapter-local; stable runtime remains blocked; renderer dependencies stay out of core/AI | `pnpm test:ai`; `pnpm --filter @gis-engine/scene3d-three-adapter build`; `pnpm test:adapter`; `pnpm test:release:scene3d`; `pnpm check` |
 | TASK-2026W23-NLA-006 | Add end-to-end prompt evidence scenarios | P1 | `@qa-agent` | todo | QA evidence report | prompt-to-MapSpec/commands/snapshot/export covers display, analysis readiness, and scene browsing boundary | snapshot gates as affected; `pnpm check` |
 | TASK-2026W23-NLA-007 | Align docs, examples, and release wording | P2 | `@docs-agent` | todo | docs audit report | docs explain flow, boundaries, diagnostics, and export evidence without stable 3D promotion | docs audit; link check when available |
 | TASK-2026W23-NLA-008 | Serialize planning status and next handoff | P1 | `@task-distributor` | todo | accepted owner reports and gate evidence | burndown and dependency graph update only after evidence exists | planning diff review; `pnpm check` |
