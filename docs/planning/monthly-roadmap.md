@@ -1,8 +1,8 @@
 ---
 agent: product-strategist
 period: 2026-05
-generated_at: 2026-05-29T06:07:24Z
-repo_revision: "60d5d52301016a446f49fe12bd42256e3f87ca4d"
+generated_at: 2026-05-29T07:51:47Z
+repo_revision: "704104dfc92719ca73481b8f79d85d527c9a73da"
 inputs:
   - README.md
   - AGENTS.md
@@ -11,6 +11,7 @@ inputs:
   - docs/planning/feature-specs/natural-language-map-app-generation.md
   - docs/planning/feature-specs/spatial-analysis-readiness.md
   - docs/planning/sprint-2026-W23-ai-map-app-generation.md
+  - docs/planning/sprint-2026-W23-generation-quality-hardening.md
   - docs/research/competitor-updates-2026-W20.md
   - docs/reviews/daily-audit-2026-05-17.md
   - docs/reviews/quality-gate-2026-05-17.md
@@ -52,6 +53,15 @@ agentic mapping applications 定义为以自然语言为主要 UI 的 web map �
 直接复制聊天 UI，而是把每次生成落到 `MapSpec`、commands、diagnostics、
 snapshot 和 export evidence 上。
 
+2026-05-29 第二轮竞品核验和 NLA 收口后，W23 的下一阶段不再重开
+NLA-001 through NLA-008，而是进入 generation quality hardening：补 typed
+prompt planner/parser contract、planner quality/provenance evidence、spatial
+query evidence、generated-app export manifest、cloud-native source readiness
+matrix，并继续保持 SceneView3D blocker transparency。外部证据来自 ArcGIS
+AI components、MapLibre/Mapbox style specs、PMTiles v3、GeoParquet 1.1、
+FlatGeobuf range semantics、OpenLayers GeoZarr/GeoTIFF、MCP schema contracts
+以及 structured outputs / computer-use 工具安全要求。
+
 ## 2026-W22 Iteration Path
 
 | Priority | Track | Plan | Exit Condition |
@@ -69,12 +79,23 @@ snapshot 和 export evidence 上。
 
 | Priority | Track | Plan | Exit Condition |
 | --- | --- | --- | --- |
-| P0 | Product boundary | Freeze prompt -> capabilitySummary -> MapSpec -> commands -> diagnostics -> snapshot/export evidence as the generation spine | feature spec and sprint DAG accepted; no stable SceneView3D overclaim |
-| P0 | Engine contract | Define the generation `MapSpec` / command skeleton and diagnostics | schema/command contract tests and `pnpm build:schema` pass when implemented |
-| P0 | AI orchestration | Use existing MCP tool names to plan, validate, mutate, snapshot, and export | MCP `inputSchema` / `outputSchema` coverage stays complete |
-| P1 | Spatial analysis readiness | Keep analysis as point/bbox query readiness and blocked-operation diagnostics first | unsupported buffer/intersection/overlay/routing/aggregation are machine-readable |
-| P1 | QA evidence | Add end-to-end prompt evidence scenarios | generated app evidence bundle includes validation, trace, snapshot, and export manifest |
-| P2 | Docs and examples | Explain the flow and limits without presenting natural language as source of truth | public docs and examples match gate state |
+| P0 | Product boundary | Freeze prompt -> capabilitySummary -> MapSpec -> commands -> diagnostics -> snapshot/export evidence as the generation spine | done; feature spec and sprint DAG accepted; no stable SceneView3D overclaim |
+| P0 | Engine contract | Define the generation `MapSpec` / command skeleton and diagnostics | done; schema/command contract tests and `pnpm build:schema` passed |
+| P0 | AI orchestration | Use existing MCP tool names to plan, validate, mutate, snapshot, and export | done; MCP `inputSchema` / `outputSchema` coverage stays complete |
+| P1 | Spatial analysis readiness | Keep analysis as point/bbox query readiness and blocked-operation diagnostics first | done as readiness; unsupported buffer/intersection/overlay/routing/aggregation are machine-readable |
+| P1 | QA evidence | Add end-to-end prompt evidence scenarios | done; generated app evidence bundle includes validation, trace, snapshot, export, and example evidence |
+| P2 | Docs and examples | Explain the flow and limits without presenting natural language as source of truth | done; public docs and examples match gate state |
+
+## 2026-W23 Generation Quality Hardening Path
+
+| Priority | Track | Plan | Exit Condition |
+| --- | --- | --- | --- |
+| P0 | Prompt planner contract | Define typed prompt planner/parser boundaries without retaining raw prompt text by default | planner output is `MapGenerationRequest`-compatible and schema-tested; no MCP alias |
+| P0 | Planner evidence | Add quality, provenance, unsupported-intent diagnostics, and trace evidence to the generation bundle | prompt evidence exposes confidence/trace without bypassing command-only mutation |
+| P0 | Spatial query evidence | Turn point/bbox readiness into explicit evidence while keeping geoprocessing blocked | stable diagnostics for blocked buffer/overlay/routing/aggregation; query evidence tests pass |
+| P1 | Export package DX | Harden generated-app export manifest and example evidence | export/example output carries diagnostics, snapshot/export status, and resource notes without side-effect writes |
+| P1 | Cloud-native source readiness | Document PMTiles, GeoParquet, FlatGeobuf, GeoTIFF/GeoZarr support states before implementation | source readiness matrix names validation, resource policy, CRS/bbox, and blocked diagnostics |
+| P1 | Scene browsing transparency | Keep extension-only SceneView3D context and stable-runtime blocker codes visible | generated-app evidence cannot request `snapshot.renderer: "scene3d"` or stable runtime |
 
 ## 路线总览
 
@@ -89,8 +110,11 @@ snapshot 和 export evidence 上。
 
 | 排名 | 事项 | 得分 | 证据 | 行动 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | Natural-language map app generation | 7.95 | ArcGIS agentic mapping docs validate natural-language map interaction; local `capabilitySummary` already exposes display/analysis/scene boundaries | execute W23 NLA sprint around evidence-first generation | high |
-| 2 | SceneView3D promotion readiness | parked / no-go | W22 evidence and beta gate are complete; W23 promotion-readiness package and gate are complete, and SRC-006 records No-go | future promotion requires a new stable-runtime task and Go decision | high |
+| 1 | Typed prompt planner contract | 8.15 | ArcGIS AI components validate natural-language map interaction; local NLA evidence skeleton is complete but not a free-form parser | execute W23 generation-quality sprint around planner schema, diagnostics, provenance, and trace evidence | high |
+| 2 | Spatial query evidence | 7.65 | GeoParquet `covering.bbox`, OpenLayers source signals, and local spatial-analysis readiness point to query-first evidence | keep point/bbox query evidence first and block geoprocessing until command contracts exist | high |
+| 3 | Generated-app export polish | 7.10 | local `GenerationEvidenceBundle` includes export/example summaries but user-facing package manifest needs stronger evidence surfacing | harden `export_example_app` manifest and docs without side-effect file writes | medium |
+| 4 | Cloud-native source readiness matrix | 6.95 | PMTiles v3, GeoParquet 1.1, FlatGeobuf range access, and OpenLayers data-source signals widen portable source expectations | document support states and diagnostics before implementation claims | high |
+| 5 | SceneView3D promotion readiness | parked / no-go | W22 evidence and beta gate are complete; W23 promotion-readiness package and gate are complete, and SRC-006 records No-go | future promotion requires a new stable-runtime task and Go decision | high |
 
 已完成并保留回归证据：
 
@@ -139,6 +163,9 @@ snapshot 和 export evidence 上。
    [natural-language-map-app-generation.md](./feature-specs/natural-language-map-app-generation.md)、
    [spatial-analysis-readiness.md](./feature-specs/spatial-analysis-readiness.md)
    和 [sprint-2026-W23-ai-map-app-generation.md](./sprint-2026-W23-ai-map-app-generation.md)。
+7. W23 NLA-001 through NLA-008 已完成；下一批任务改由
+   [sprint-2026-W23-generation-quality-hardening.md](./sprint-2026-W23-generation-quality-hardening.md)
+   承接，不重开已完成的生成骨架任务。
 
 ## Feature Spec 建议
 

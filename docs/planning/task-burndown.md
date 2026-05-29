@@ -1,8 +1,8 @@
 ---
 agent: coordinator
 period: 2026-W22
-generated_at: 2026-05-29T07:35:10Z
-repo_revision: "c6db18146382d5bda729c8e6891f2d87016db50e"
+generated_at: 2026-05-29T07:51:47Z
+repo_revision: "704104dfc92719ca73481b8f79d85d527c9a73da"
 inputs:
   - docs/planning/sprint-2026-W22-competitive-signal-response.md
   - docs/research/competitor-updates-2026-W22.md
@@ -10,6 +10,7 @@ inputs:
   - docs/planning/feature-specs/natural-language-map-app-generation.md
   - docs/planning/feature-specs/spatial-analysis-readiness.md
   - docs/planning/sprint-2026-W23-ai-map-app-generation.md
+  - docs/planning/sprint-2026-W23-generation-quality-hardening.md
   - docs/engineering/maplibre-version-drift-audit.md
   - docs/reviews/sceneview3d-lifecycle-diagnostics-2026-05-25.md
   - docs/reviews/sceneview3d-src-evidence-decision-2026-05-25.md
@@ -172,6 +173,27 @@ browsing may appear only as `extensions.scene3d` planning/evidence.
 | TASK-2026W23-NLA-006 | Add end-to-end prompt evidence scenarios | P1 | `@qa-agent` | done | `docs/reviews/nla-006-prompt-evidence-scenarios-2026-05-29.md` | prompt-to-MapSpec/commands/snapshot/export covers display, analysis readiness, and scene browsing boundary | `pnpm test:ai`; `pnpm check` |
 | TASK-2026W23-NLA-007 | Align docs, examples, and release wording | P2 | `@docs-agent` | done | `docs/reviews/nla-007-docs-release-wording-2026-05-29.md` | docs explain flow, boundaries, diagnostics, and export evidence without stable 3D promotion | docs audit; `pnpm test:examples`; `pnpm check` |
 | TASK-2026W23-NLA-008 | Serialize planning status and next handoff | P1 | `@task-distributor` | done | `docs/reviews/nla-008-serialized-planning-handoff-2026-05-29.md` | burndown and dependency graph update only after evidence exists | planning diff review; `pnpm check`; `git diff --check` |
+
+## 2026-W23 generation quality hardening
+
+The NLA generation skeleton is complete. The next task batch starts from
+[sprint-2026-W23-generation-quality-hardening.md](./sprint-2026-W23-generation-quality-hardening.md)
+and focuses on planner quality, provenance, query evidence, export packaging,
+cloud-native source readiness, and SceneView3D blocker transparency.
+
+Stable `view.mode: "scene3d"` remains blocked. No task in this batch may add a
+new MCP tool alias or mutate runtime state outside `MapCommand` /
+`applyCommands`.
+
+| id | title | priority | owner | status | evidence target | acceptance | finish gates |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| TASK-2026W23-NLQ-001 | Define typed prompt planner boundary | P0 | `@product-strategist`, `@ai-agent`, `@engine-agent` | todo | planner contract report and schema/tests if public | planner output is `MapGenerationRequest`-compatible and carries diagnostics, prompt hash, and trace metadata without raw prompt retention by default | feature spec update; `pnpm build:schema` when schema changes; `pnpm test:ai`; `pnpm test:commands`; `pnpm check` |
+| TASK-2026W23-NLQ-002 | Add planner quality and provenance evidence | P0 | `@ai-agent`, `@qa-agent` | todo | AI evidence report and prompt QA scenarios | generation evidence exposes planner confidence, unsupported-intent diagnostics, and command trace provenance | `pnpm test:ai`; `pnpm test:schema-sync`; `pnpm check` |
+| TASK-2026W23-NLQ-003 | Design spatial query evidence bundle | P0 | `@engine-agent`, `@ai-agent` | todo | query evidence contract and blocked-operation diagnostics | point/bbox query readiness is explicit; buffer, overlay, routing, and aggregation remain blocked | `pnpm test:commands`; `pnpm test:ai`; `pnpm build:schema` if schemas change; `pnpm check` |
+| TASK-2026W23-NLQ-004 | Harden generated-app export manifest | P1 | `@ai-agent`, `@docs-agent`, `@qa-agent` | todo | export/example manifest evidence | `export_example_app` can surface generation evidence, diagnostics, snapshot/export status, and resource notes without side-effect file writes | `pnpm test:ai`; `pnpm test:examples`; `pnpm check` |
+| TASK-2026W23-NLQ-005 | Create cloud-native source readiness matrix | P1 | `@engine-agent`, `@docs-agent` | todo | PMTiles/GeoParquet/FlatGeobuf/GeoTIFF/GeoZarr readiness matrix | support states and blocked diagnostics are documented before implementation claims | resource-policy doc audit; schema tests if fixtures change; `pnpm check` |
+| TASK-2026W23-NLQ-006 | Keep scene browsing blockers visible in generated apps | P1 | `@adapter-agent`, `@qa-agent` | todo | adapter/QA blocker report | generated evidence preserves `extensions.scene3d` context and stable-runtime blocker codes; no `snapshot.renderer: "scene3d"` support | `pnpm test:ai`; `pnpm test:adapter`; `pnpm test:release:scene3d`; `pnpm check` |
+| TASK-2026W23-NLQ-007 | Serialize quality-hardening planning status | P1 | `@task-distributor` | todo | accepted owner evidence and planning diff | burndown and dependency graph update only after owner evidence or gate reports exist | planning diff review; `pnpm check`; `git diff --check` |
 
 ## W23 promotion readiness 计划快照
 

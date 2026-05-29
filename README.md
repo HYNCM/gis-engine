@@ -88,6 +88,7 @@ const exported = map.exportSpec();
 - [SceneView3D stable renderer contract plan](./docs/planning/feature-specs/sceneview3d-stable-renderer-contract.md)
 - [Natural-language map app generation spec](./docs/planning/feature-specs/natural-language-map-app-generation.md)
 - [AI map app generation sprint](./docs/planning/sprint-2026-W23-ai-map-app-generation.md)
+- [Generation quality hardening sprint](./docs/planning/sprint-2026-W23-generation-quality-hardening.md)
 - [Prompt evidence scenario report](./docs/reviews/nla-006-prompt-evidence-scenarios-2026-05-29.md)
 - [Task burndown](./docs/planning/task-burndown.md)
 - [Dependency graph](./docs/planning/dependency-graph.md)

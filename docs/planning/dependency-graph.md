@@ -1,8 +1,8 @@
 ---
 agent: coordinator
 period: 2026-W23
-generated_at: 2026-05-29T07:35:10Z
-repo_revision: "c6db18146382d5bda729c8e6891f2d87016db50e"
+generated_at: 2026-05-29T07:51:47Z
+repo_revision: "704104dfc92719ca73481b8f79d85d527c9a73da"
 inputs:
   - docs/archive/2026-05-18/planning/sprint-2026-W21.md
   - docs/planning/sprint-2026-W25-sceneview3d-v1.md
@@ -25,6 +25,7 @@ inputs:
   - docs/reviews/nla-006-prompt-evidence-scenarios-2026-05-29.md
   - docs/reviews/nla-007-docs-release-wording-2026-05-29.md
   - docs/reviews/nla-008-serialized-planning-handoff-2026-05-29.md
+  - docs/planning/sprint-2026-W23-generation-quality-hardening.md
 owner: "@coordinator"
 decision_level: advisory
 ---
@@ -109,12 +110,14 @@ W21 sprint 计划已归档，当前活跃关键路径从 W23 promotion readiness
 | NLA-006 prompt evidence scenarios | done | `docs/reviews/nla-006-prompt-evidence-scenarios-2026-05-29.md`; QA matrix covers prompt-to-command/snapshot/export evidence for feature display, spatial-analysis readiness, scene browsing extension-only, and stable scene3d blocked prompts |
 | NLA-007 docs and release wording | done | `docs/reviews/nla-007-docs-release-wording-2026-05-29.md`; README, AI package docs, contracts, feature matrix, changelog, and ai-map-edit example docs describe evidence-first generation without stable 3D overclaim |
 | NLA-008 serialized planning handoff | done | `docs/reviews/nla-008-serialized-planning-handoff-2026-05-29.md`; sprint, burndown, and dependency graph now agree that the W23 NLA slice is complete and ready for the next planning cycle |
+| Generation quality hardening | planned | `docs/planning/sprint-2026-W23-generation-quality-hardening.md`; next W23 batch starts from typed planner boundary, planner provenance, spatial query evidence, export manifest, cloud-native source readiness, and SceneView3D blocker visibility |
 
 ## 关键路径
 
 1. Natural-language app generation -> AI capability summary -> `MapGenerationCommandSkeleton` -> command-only edits -> snapshot/export evidence. This is the completed W23 product spine for feature display, spatial analysis readiness, and scene browsing boundaries.
-2. v1 SceneView3D RFC -> W25/W28 sprint DAG -> TypeBox schema -> fixtures + URL resource policy + loader resource gate + package boundary + scene commands -> mock snapshot/query contracts -> MCP context -> release visual gate -> alpha audit + adapter feasibility -> Three.js adapter spike -> renderer evidence handoff -> adapter runtime shim -> browser visual runner -> beta readiness gate -> promotion readiness -> stable renderer contract handoff -> stable runtime decision; W23 promotion-readiness package is Go, SRC-001 through SRC-005 prerequisite evidence is done, and SRC-006 records a No-go decision that keeps stable runtime blocked.
-3. 2026-05-24 automation hardening blocks scheduled agent evidence from being used as advisory/blocking input: generated report semantics -> serialized scheduled commits -> local/CI daily cadence + emergency interpolation -> automation hardening gate -> scheduled evidence may feed future coordinator/quality-guardian decisions.
+2. Generation quality hardening -> typed prompt planner boundary -> planner provenance evidence -> spatial query evidence -> export manifest / cloud-native readiness / SceneView3D blocker transparency. This is the next W23 batch and must not add MCP aliases or stable 3D runtime support.
+3. v1 SceneView3D RFC -> W25/W28 sprint DAG -> TypeBox schema -> fixtures + URL resource policy + loader resource gate + package boundary + scene commands -> mock snapshot/query contracts -> MCP context -> release visual gate -> alpha audit + adapter feasibility -> Three.js adapter spike -> renderer evidence handoff -> adapter runtime shim -> browser visual runner -> beta readiness gate -> promotion readiness -> stable renderer contract handoff -> stable runtime decision; W23 promotion-readiness package is Go, SRC-001 through SRC-005 prerequisite evidence is done, and SRC-006 records a No-go decision that keeps stable runtime blocked.
+4. 2026-05-24 automation hardening blocks scheduled agent evidence from being used as advisory/blocking input: generated report semantics -> serialized scheduled commits -> local/CI daily cadence + emergency interpolation -> automation hardening gate -> scheduled evidence may feed future coordinator/quality-guardian decisions.
 
 ```mermaid
 flowchart LR
@@ -128,6 +131,20 @@ flowchart LR
   E --> F
   F --> G["TASK-2026W23-NLA-007 docs and examples"]
   G --> H["TASK-2026W23-NLA-008 serialized planning handoff"]
+  H --> I["TASK-2026W23-NLQ-001 typed prompt planner"]
+```
+
+```mermaid
+flowchart LR
+  A["TASK-2026W23-NLQ-001 typed prompt planner boundary"] --> B["TASK-2026W23-NLQ-002 planner quality evidence"]
+  A --> C["TASK-2026W23-NLQ-003 spatial query evidence"]
+  B --> D["TASK-2026W23-NLQ-004 export manifest hardening"]
+  A --> E["TASK-2026W23-NLQ-005 cloud-native source readiness"]
+  B --> F["TASK-2026W23-NLQ-006 scene browsing blocker visibility"]
+  C --> G["TASK-2026W23-NLQ-007 serialized status"]
+  D --> G
+  E --> G
+  F --> G
 ```
 
 ```mermaid

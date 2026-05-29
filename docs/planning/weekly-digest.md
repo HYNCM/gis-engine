@@ -1,8 +1,8 @@
 ---
 agent: coordinator
 period: 2026-W22
-generated_at: 2026-05-29T06:07:24Z
-repo_revision: "60d5d52301016a446f49fe12bd42256e3f87ca4d"
+generated_at: 2026-05-29T07:51:47Z
+repo_revision: "704104dfc92719ca73481b8f79d85d527c9a73da"
 inputs:
   - AGENTS.md
   - docs/research/competitor-updates-2026-W22.md
@@ -11,6 +11,8 @@ inputs:
   - docs/planning/feature-specs/natural-language-map-app-generation.md
   - docs/planning/feature-specs/spatial-analysis-readiness.md
   - docs/planning/sprint-2026-W23-ai-map-app-generation.md
+  - docs/planning/sprint-2026-W23-generation-quality-hardening.md
+  - docs/reviews/nla-008-serialized-planning-handoff-2026-05-29.md
   - docs/planning/sprint-2026-W22-competitive-signal-response.md
   - docs/planning/feature-specs/sceneview3d-stable-renderer-contract.md
   - docs/engineering/maplibre-version-drift-audit.md
@@ -53,6 +55,12 @@ agent orchestration a current product signal. GIS Engine's response is a
 verifiable pipeline, not an opaque chat surface: prompt -> `capabilitySummary`
 -> `MapSpec` -> commands -> diagnostics -> snapshot/export evidence.
 
+The post-NLA W22 refresh confirms that NLA-001 through NLA-008 are complete and
+should not be reopened as active backlog. The next W23 handoff is generation
+quality hardening: typed prompt planner boundary, planner provenance evidence,
+spatial query evidence, generated-app export manifest, cloud-native source
+readiness, and SceneView3D blocker transparency.
+
 ## Current Signals
 
 | Source | Signal | Impact | Confidence |
@@ -61,6 +69,8 @@ verifiable pipeline, not an opaque chat surface: prompt -> `capabilitySummary`
 | competitive-intel | Mapbox documents PMTiles vector source use; MapLibre release drift can affect module/WebGL baselines | Keep vector source evidence release-gated and add a MapLibre version-drift audit before upgrades | high |
 | competitive-intel | CesiumJS, Three.js, and 3DTilesRendererJS remain active 3D reference points | Continue adapter-local SceneView3D renderer contract work; stable runtime stays blocked | high |
 | competitive-intel | MCP tools spec includes output schemas | Keep public MCP `inputSchema` and `outputSchema` as blocking contract checks | high |
+| competitive-intel | PMTiles v3, GeoParquet 1.1, FlatGeobuf range semantics, and OpenLayers GeoZarr/GeoTIFF widen cloud-native data expectations | Plan source readiness and resource-policy diagnostics before adding new source support | high |
+| competitive-intel | Structured outputs and computer-use tooling reinforce JSON Schema, screenshots, allowlists, and confirmation boundaries | Keep generated-app and visual evidence auditable and side-effect-aware | high |
 | product-strategist | W22 scorecard raises AI operability, 2D cloud-native, and 3D readiness scores, but not stable 3D runtime | Next iteration is evidence hardening, not broad scope expansion | high |
 | adapter-agent | Lifecycle diagnostics now include `/runtime/not-loaded/{operation}` and `/runtime/destroyed/{operation}` | AI/debug tooling can identify failure state without parsing diagnostic messages | high |
 
@@ -79,6 +89,8 @@ verifiable pipeline, not an opaque chat surface: prompt -> `capabilitySummary`
    competitor analysis, product design, and task-distributor DAG.
 7. Treat W23 natural-language generation as an evidence bundle problem before
    adding tool aliases or broad spatial-analysis operations.
+8. After NLA-008, open a new W23 generation-quality sprint instead of editing
+   the completed NLA task batch.
 
 ## Execution Status
 
@@ -90,7 +102,8 @@ verifiable pipeline, not an opaque chat surface: prompt -> `capabilitySummary`
 | TASK-2026W22-CSI-004 | done | this digest and `docs/planning/monthly-roadmap.md` |
 | TASK-2026W22-CSI-005 | done | `docs/engineering/maplibre-version-drift-audit.md` |
 | TASK-2026W22-CSI-006 | done | `docs/reviews/sceneview3d-src-evidence-decision-2026-05-25.md`, `docs/reviews/sceneview3d-src-006-stable-runtime-gate-2026-05-29.md`, `docs/planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md` |
-| TASK-2026W23-NLA-001 | done | `docs/planning/feature-specs/natural-language-map-app-generation.md`, `docs/planning/feature-specs/spatial-analysis-readiness.md`, `docs/planning/sprint-2026-W23-ai-map-app-generation.md` |
+| TASK-2026W23-NLA-001 through NLA-008 | done | `docs/planning/sprint-2026-W23-ai-map-app-generation.md`, `docs/reviews/nla-008-serialized-planning-handoff-2026-05-29.md` |
+| TASK-2026W23-NLQ-001 through NLQ-007 | planned | `docs/planning/sprint-2026-W23-generation-quality-hardening.md` |
 
 ## Next Handoff
 
@@ -107,3 +120,7 @@ verifiable pipeline, not an opaque chat surface: prompt -> `capabilitySummary`
   only after schema, command, diagnostics, and MCP output contracts are clear.
 - `@qa-agent` / `@docs-agent`: plan prompt evidence scenarios and public docs
   around validation, trace, snapshot, and export artifacts.
+- `@product-strategist`, `@engine-agent`, and `@ai-agent`: start the W23
+  generation-quality sprint with `TASK-2026W23-NLQ-001`; keep planner output
+  schema-compatible with `MapGenerationRequest` and do not add a new MCP tool
+  alias.
