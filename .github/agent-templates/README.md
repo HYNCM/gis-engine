@@ -15,6 +15,9 @@
 | {{GENERATED_AT}} | 生成时间 ISO 8601 | 2026-05-24T08:00:00Z |
 | {{REPO_REVISION}} | 仓库版本 | cef340d |
 | {{DECISION_LEVEL}} | 决策级别；agent-runner 自动生成的模板默认为 info，只有记录了失败的 blocking 机器门禁时才可标为 blocking | info, blocking |
+| {{MODEL_POLICY_TIER}} | 推荐模型层级；用于调度，不作为证据 | frontier-quality |
+| {{REASONING_EFFORT}} | 推荐推理强度；用于调度，不作为证据 | high |
+| {{MODEL_POLICY_NOTE}} | 模型路由说明；解释为什么该任务需要对应强度 | Use for blocking merge/release gate decisions |
 | {{GATE_RESULTS}} | 门禁运行结果 | 见下方格式 |
 | {{TIMESTAMP}} | Unix 时间戳 | 1716537600 |
 
@@ -29,7 +32,7 @@
 
 ## 报告类型
 
-agent-runner 生成的文件是 automation-generated evidence/template，不等同于已完成的 specialist review。报告必须由对应智能体或人工补充实质分析、影响、行动项和置信度后，才能作为 advisory、blocking、merge 或 release 决策依据。
+agent-runner 生成的文件是 automation-generated evidence/template，不等同于已完成的 specialist review。报告必须由对应智能体或人工补充实质分析、影响、行动项和置信度后，才能作为 advisory、blocking、merge 或 release 决策依据。`model_policy` 只说明调度时推荐的模型层级和推理强度；它不能替代 dated evidence、测试输出、来源链接或质量门禁。
 
 ### 1. 每日审计报告 (code-reviewer)
 

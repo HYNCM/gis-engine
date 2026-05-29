@@ -602,6 +602,42 @@ executable pipeline.
 5. **Single writer per artifact**: Only one agent or pipeline job writes to a
    given planning artifact per cycle. Conflicts are resolved by `coordinator`.
 
+### Model and Reasoning Routing
+
+Model routing is an efficiency control, not evidence. Use the smallest capable
+model for bounded checks, and reserve stronger reasoning for decisions that can
+change public contracts, merge gates, release status, security posture, or
+roadmap priority. When the orchestration layer supports explicit model
+selection, record the selected model tier and reasoning effort in the report
+front matter. When it does not, use these rows as human/Codex routing guidance.
+
+| Agent or task class | Recommended model tier | Reasoning effort | Use when |
+| --- | --- | --- | --- |
+| `coordinator` | frontier-planning | high | resolving competing evidence, writing final roadmap state, or deciding whether planned work is complete |
+| `competitive-intel` | frontier-research | high | checking current releases, standards, or dependency behavior that can alter priority |
+| `quality-guardian` | frontier-quality | high | issuing blocking pass/fail/waiver decisions for merge, release, or stable-runtime promotion |
+| `code-reviewer` | coding-review | high | auditing public schemas, commands, diagnostics, resource policy, adapters, MCP tools, and regressions |
+| `engine-agent`, `ai-agent`, `adapter-agent` | coding-implementation | medium to high | implementing bounded code slices with schema, MCP, adapter, or diagnostic implications |
+| `qa-agent` | coding-browser-qa | medium | producing deterministic smoke, browser visual, fixture, and release-runner evidence |
+| `product-strategist`, `task-distributor` | planning-coding | medium | translating approved evidence into roadmap scores, task DAGs, owner splits, and dependencies |
+| `docs-agent` | efficient-docs | low to medium | aligning documentation, links, release notes, and planning ledgers after evidence exists |
+
+Escalate to a stronger tier when a lower-tier run finds a P0/P1 risk, when
+external evidence conflicts, when the task touches security/resource policy, or
+when the output will be used as blocking merge or release input. Downshift for
+template generation, link scans, grep-based consistency checks, and other
+bounded tasks whose evidence can be verified by deterministic commands.
+
+### Skills and MCP Policy
+
+Prefer the repository's scripts, tests, and local helper APIs first. Install or
+enable additional skills/MCP servers only when a task needs a capability that is
+missing from the current environment, such as authenticated GitHub review
+automation, browser visual investigation, document/spreadsheet generation, or a
+specialized external data source. Any new skill/MCP dependency must be recorded
+with its source, version or commit when available, why it was needed, and which
+agent owns its follow-up maintenance.
+
 ### Automation Artifacts
 
 | Artifact | Location | Purpose |

@@ -30,6 +30,11 @@ const AGENT_REGISTRY = {
   coordinator: {
     role: "chief planning and orchestration agent",
     period: "weekly",
+    modelPolicy: {
+      tier: "frontier-planning",
+      reasoningEffort: "high",
+      routingNote: "Use for cross-agent conflict resolution, roadmap tradeoffs, and Go/No-go planning state."
+    },
     outputDir: "docs/planning",
     outputFile: "weekly-digest.md",
     gates: [], // coordinator 不直接跑测试，而是汇总
@@ -38,6 +43,11 @@ const AGENT_REGISTRY = {
   "competitive-intel": {
     role: "evidence-first competitor and standards analyst",
     period: "weekly",
+    modelPolicy: {
+      tier: "frontier-research",
+      reasoningEffort: "high",
+      routingNote: "Use when dated external releases, standards, or dependency changes can alter roadmap priority."
+    },
     outputDir: "docs/research",
     outputFile: (period) => `competitor-updates-${period}.md`,
     gates: [],
@@ -46,6 +56,11 @@ const AGENT_REGISTRY = {
   "code-reviewer": {
     role: "daily diff and PR auditor",
     period: "daily",
+    modelPolicy: {
+      tier: "coding-review",
+      reasoningEffort: "high",
+      routingNote: "Use for architecture, schema, diagnostics, resource-policy, and regression risk review."
+    },
     outputDir: "docs/reviews",
     outputFile: (period) => `daily-audit-${period}.md`,
     gates: ["pnpm build:schema", "pnpm check"],
@@ -54,6 +69,11 @@ const AGENT_REGISTRY = {
   "product-strategist": {
     role: "roadmap and feature-priority owner",
     period: "monthly",
+    modelPolicy: {
+      tier: "frontier-product",
+      reasoningEffort: "medium",
+      routingNote: "Use for product scoring, user-value tradeoffs, and next-sprint roadmap synthesis."
+    },
     outputDir: "docs/planning",
     outputFile: "monthly-roadmap.md",
     gates: [],
@@ -62,6 +82,11 @@ const AGENT_REGISTRY = {
   "task-distributor": {
     role: "planning-to-execution decomposition agent",
     period: "weekly",
+    modelPolicy: {
+      tier: "planning-coding",
+      reasoningEffort: "medium",
+      routingNote: "Use for owner split, DAG updates, task sequencing, and serialized planning state."
+    },
     outputDir: "docs/planning",
     outputFile: "task-burndown.md",
     gates: [],
@@ -70,6 +95,11 @@ const AGENT_REGISTRY = {
   "quality-guardian": {
     role: "final merge and release gate",
     period: "daily",
+    modelPolicy: {
+      tier: "frontier-quality",
+      reasoningEffort: "high",
+      routingNote: "Use for blocking merge/release gate decisions and waiver review."
+    },
     outputDir: "docs/reviews",
     outputFile: (period) => `quality-gate-${period}.md`,
     gates: [
@@ -84,6 +114,11 @@ const AGENT_REGISTRY = {
     role: "documentation ledger and release notes",
     period: "weekly",
     cadences: ["daily", "weekly"],
+    modelPolicy: {
+      tier: "efficient-docs",
+      reasoningEffort: "low",
+      routingNote: "Use for documentation consistency, link audits, and release-note alignment after evidence exists."
+    },
     outputDir: "docs/reviews",
     outputFile: (period) => `documentation-audit-${period}.md`,
     gates: [],
@@ -92,6 +127,11 @@ const AGENT_REGISTRY = {
   "adapter-agent": {
     role: "renderer adapter implementation",
     period: "ad-hoc",
+    modelPolicy: {
+      tier: "coding-implementation",
+      reasoningEffort: "high",
+      routingNote: "Use for adapter-local implementation, renderer evidence APIs, and dependency-boundary work."
+    },
     outputDir: "docs/reviews",
     outputFile: (period) => `adapter-report-${period}.md`,
     gates: [
@@ -103,6 +143,11 @@ const AGENT_REGISTRY = {
   "qa-agent": {
     role: "visual evidence and release runner",
     period: "ad-hoc",
+    modelPolicy: {
+      tier: "coding-browser-qa",
+      reasoningEffort: "medium",
+      routingNote: "Use for deterministic smoke, browser visual evidence, fixtures, and release-runner reports."
+    },
     outputDir: "docs/reviews",
     outputFile: (period) => `qa-evidence-${period}.md`,
     gates: [
@@ -115,6 +160,11 @@ const AGENT_REGISTRY = {
   "ai-agent": {
     role: "MCP tools and AI contracts",
     period: "ad-hoc",
+    modelPolicy: {
+      tier: "coding-ai-contract",
+      reasoningEffort: "high",
+      routingNote: "Use for MCP schemas, context summaries, output schemas, and AI-facing diagnostics."
+    },
     outputDir: "docs/reviews",
     outputFile: (period) => `ai-contract-audit-${period}.md`,
     gates: ["pnpm test:ai"],
@@ -123,6 +173,11 @@ const AGENT_REGISTRY = {
   "engine-agent": {
     role: "public schemas, commands, diagnostics",
     period: "ad-hoc",
+    modelPolicy: {
+      tier: "coding-contract",
+      reasoningEffort: "high",
+      routingNote: "Use for TypeBox schemas, commands, diagnostics, resource policy, and runtime contracts."
+    },
     outputDir: "docs/reviews",
     outputFile: (period) => `engine-contract-delta-${period}.md`,
     gates: [
@@ -201,6 +256,10 @@ function generateFrontMatter(agentName, agentDef, period, gateResults) {
     `inputs:`,
     `  - AGENTS.md`,
     `  - README.md`,
+    `model_policy:`,
+    `  tier: ${agentDef.modelPolicy?.tier ?? "default"}`,
+    `  reasoning_effort: ${agentDef.modelPolicy?.reasoningEffort ?? "medium"}`,
+    `  note: "${agentDef.modelPolicy?.routingNote ?? "Use the inherited automation model unless a task-specific override is approved."}"`,
     `owner: "@${agentName}"`,
     `decision_level: ${decisionLevel}`,
     "---",
@@ -244,6 +303,9 @@ function generateReport(agentName, agentDef, period, gateResults) {
   );
   lines.push(
     "Treat the front matter `decision_level` as `info`. CI exit codes and job status may indicate failed machine gates, but an agent or human must add substantive analysis before this report can support advisory, release, or merge decisions."
+  );
+  lines.push(
+    "The `model_policy` front matter is routing guidance for human/Codex orchestration; it does not make a report current, sourced, or merge-ready by itself."
   );
   lines.push("");
 
@@ -383,6 +445,9 @@ Agent Runner — GIS Engine 多智能体调用脚本
     console.log(`📋 运行智能体: ${name}`);
     console.log(`   角色: ${def.role}`);
     console.log(`   周期: ${period}`);
+    console.log(
+      `   模型路由: ${def.modelPolicy?.tier ?? "default"} / ${def.modelPolicy?.reasoningEffort ?? "medium"}`
+    );
 
     // 运行门禁
     let gateResults = null;
