@@ -4,11 +4,13 @@ import {
   DiagnosticCodes,
   DiagnosticSchema,
   MapGenerationCommandSkeletonSchema,
+  MapGenerationPromptPlanSchema,
   MapGenerationTargetDomainSchema,
   validateSpec,
   type CapabilityReport,
   type Diagnostic,
   type MapGenerationCommandSkeleton,
+  type MapGenerationPromptPlanFromSchema,
   type MapGenerationTargetDomain,
   type ValidationReport
 } from "@gis-engine/engine";
@@ -44,11 +46,31 @@ const DiagnosticCountsSchema = {
   additionalProperties: false
 } as const;
 
+const PlannerConfidenceSchema = {
+  type: "object",
+  properties: {
+    level: { type: "string", enum: ["high", "medium", "low", "unknown"] },
+    score: { type: "number", minimum: 0, maximum: 1 },
+    reasons: { type: "array", items: { type: "string" } }
+  },
+  required: ["level", "score", "reasons"],
+  additionalProperties: false
+} as const;
+
 export const GenerationEvidenceBundleInputSchema = {
   type: "object",
   properties: {
     promptHash: { type: "string", minLength: 1 },
     skeleton: stripNestedIds(MapGenerationCommandSkeletonSchema),
+    planner: {
+      type: "object",
+      properties: {
+        plan: stripNestedIds(MapGenerationPromptPlanSchema),
+        confidence: PlannerConfidenceSchema
+      },
+      required: ["plan"],
+      additionalProperties: false
+    },
     capabilities: stripNestedIds(CapabilityReportSchema),
     snapshot: {
       type: "object",
@@ -92,6 +114,36 @@ export const GenerationEvidenceBundleSchema = {
         changedPaths: { type: "array", items: { type: "string" } }
       },
       required: ["usedApplyCommands", "traceId", "commandCount", "resultStatuses", "committed", "rolledBack", "diagnosticCounts", "changedPaths"],
+      additionalProperties: false
+    },
+    plannerEvidence: {
+      type: "object",
+      properties: {
+        provided: { type: "boolean" },
+        plannerId: { type: "string" },
+        promptHash: { type: "string" },
+        traceId: { type: "string" },
+        commandTraceId: { type: "string" },
+        retainedRawPrompt: { type: "boolean", const: false },
+        confidence: PlannerConfidenceSchema,
+        acceptedIntentFields: { type: "array", items: { type: "string" } },
+        unsupportedIntentFields: { type: "array", items: { type: "string" } },
+        sourcePromptHashes: { type: "array", items: { type: "string" } },
+        diagnosticCounts: DiagnosticCountsSchema
+      },
+      required: [
+        "provided",
+        "plannerId",
+        "promptHash",
+        "traceId",
+        "commandTraceId",
+        "retainedRawPrompt",
+        "confidence",
+        "acceptedIntentFields",
+        "unsupportedIntentFields",
+        "sourcePromptHashes",
+        "diagnosticCounts"
+      ],
       additionalProperties: false
     },
     snapshotEvidence: {
@@ -143,6 +195,7 @@ export const GenerationEvidenceBundleSchema = {
     "summary",
     "validation",
     "commandEvidence",
+    "plannerEvidence",
     "snapshotEvidence",
     "exportEvidence",
     "exampleEvidence",
@@ -154,6 +207,10 @@ export const GenerationEvidenceBundleSchema = {
 export interface GenerationEvidenceBundleInput {
   promptHash: string;
   skeleton: MapGenerationCommandSkeleton;
+  planner?: {
+    plan: MapGenerationPromptPlanFromSchema;
+    confidence?: PlannerConfidence;
+  };
   capabilities?: CapabilityReport;
   snapshot?: {
     renderer?: "maplibre" | "mock";
@@ -177,6 +234,26 @@ export interface GenerationCommandEvidence {
   rolledBack: boolean;
   diagnosticCounts: Record<Diagnostic["severity"], number>;
   changedPaths: string[];
+}
+
+export interface PlannerConfidence {
+  level: "high" | "medium" | "low" | "unknown";
+  score: number;
+  reasons: string[];
+}
+
+export interface GenerationPlannerEvidence {
+  provided: boolean;
+  plannerId: string;
+  promptHash: string;
+  traceId: string;
+  commandTraceId: string;
+  retainedRawPrompt: false;
+  confidence: PlannerConfidence;
+  acceptedIntentFields: string[];
+  unsupportedIntentFields: string[];
+  sourcePromptHashes: string[];
+  diagnosticCounts: Record<Diagnostic["severity"], number>;
 }
 
 export interface GenerationSnapshotEvidence {
@@ -211,6 +288,7 @@ export interface GenerationEvidenceBundle {
   summary: ContextSummary;
   validation: ValidationReport;
   commandEvidence: GenerationCommandEvidence;
+  plannerEvidence: GenerationPlannerEvidence;
   snapshotEvidence: GenerationSnapshotEvidence;
   exportEvidence: GenerationExportEvidence;
   exampleEvidence: GenerationExampleEvidence;
@@ -239,10 +317,12 @@ export async function createGenerationEvidenceBundle(input: unknown): Promise<Ge
     ...(typedInput.capabilities ? { capabilities: typedInput.capabilities } : {})
   });
   const commandEvidence = buildCommandEvidence(typedInput.skeleton);
+  const plannerEvidence = buildPlannerEvidence(typedInput, commandEvidence);
   const snapshotEvidence = await buildSnapshotEvidence(typedInput);
   const exportEvidence = buildExportEvidence(typedInput.skeleton, validation);
   const exampleEvidence = buildExampleEvidence(typedInput.exampleId ?? "ai-map-edit");
   const diagnostics = [
+    ...plannerEvidence.diagnostics,
     ...typedInput.skeleton.diagnostics,
     ...validation.diagnostics,
     ...commandEvidenceDiagnostics(typedInput.skeleton, commandEvidence),
@@ -253,6 +333,7 @@ export async function createGenerationEvidenceBundle(input: unknown): Promise<Ge
   const status =
     typedInput.skeleton.status === "blocked" ||
     !validation.valid ||
+    plannerEvidence.diagnosticCounts.error > 0 ||
     commandEvidence.diagnosticCounts.error > 0 ||
     snapshotEvidence.diagnosticCounts.error > 0
       ? "blocked"
@@ -268,12 +349,67 @@ export async function createGenerationEvidenceBundle(input: unknown): Promise<Ge
       summary,
       validation,
       commandEvidence,
+      plannerEvidence: stripPlannerDiagnostics(plannerEvidence),
       snapshotEvidence: stripInternalDiagnostics(snapshotEvidence),
       exportEvidence,
       exampleEvidence: stripExampleDiagnostics(exampleEvidence),
       diagnostics: visibleDiagnostics
     },
     diagnostics: []
+  };
+}
+
+function buildPlannerEvidence(
+  input: GenerationEvidenceBundleInput,
+  commandEvidence: GenerationCommandEvidence
+): GenerationPlannerEvidence & { diagnostics: Diagnostic[] } {
+  const sourcePromptHashes = unique(
+    input.skeleton.commands
+      .map((command) => command.sourcePromptHash)
+      .filter((hash): hash is string => typeof hash === "string" && hash.length > 0)
+  );
+
+  if (!input.planner) {
+    return {
+      provided: false,
+      plannerId: "unreported",
+      promptHash: input.promptHash,
+      traceId: input.skeleton.traceId,
+      commandTraceId: commandEvidence.traceId,
+      retainedRawPrompt: false,
+      confidence: {
+        level: "unknown",
+        score: 0,
+        reasons: ["Planner plan was not provided with this generation evidence bundle."]
+      },
+      acceptedIntentFields: [],
+      unsupportedIntentFields: [],
+      sourcePromptHashes,
+      diagnosticCounts: zeroDiagnosticCounts(),
+      diagnostics: []
+    };
+  }
+
+  const diagnostics = [
+    ...(input.planner.plan.diagnostics as Diagnostic[]),
+    ...plannerHashDiagnostics(input.promptHash, input.planner.plan.provenance.promptHash),
+    ...plannerTraceDiagnostics(input.skeleton.traceId, input.planner.plan.traceId),
+    ...sourcePromptHashDiagnostics(input.promptHash, sourcePromptHashes)
+  ];
+
+  return {
+    provided: true,
+    plannerId: input.planner.plan.provenance.plannerId,
+    promptHash: input.planner.plan.provenance.promptHash,
+    traceId: input.planner.plan.traceId,
+    commandTraceId: commandEvidence.traceId,
+    retainedRawPrompt: input.planner.plan.provenance.retainedRawPrompt,
+    confidence: input.planner.confidence ?? plannerConfidenceFromDiagnostics(diagnostics),
+    acceptedIntentFields: input.planner.plan.provenance.acceptedIntentFields,
+    unsupportedIntentFields: input.planner.plan.provenance.unsupportedIntentFields,
+    sourcePromptHashes,
+    diagnosticCounts: countDiagnostics(diagnostics),
+    diagnostics
   };
 }
 
@@ -325,6 +461,85 @@ function buildCommandEvidence(skeleton: MapGenerationCommandSkeleton): Generatio
     rolledBack: result.result.rolledBack,
     diagnosticCounts: countDiagnostics(diagnostics),
     changedPaths: unique(result.result.results.flatMap((commandResult) => commandResult.changedPaths))
+  };
+}
+
+function plannerHashDiagnostics(inputPromptHash: string, plannerPromptHash: string): Diagnostic[] {
+  return inputPromptHash === plannerPromptHash
+    ? []
+    : [
+        {
+          severity: "error",
+          code: DiagnosticCodes.SpecInvalidType,
+          message: "Generation evidence promptHash must match the planner promptHash.",
+          path: "/planner/plan/promptHash",
+          fix: {
+            kind: "manual",
+            confidence: "high",
+            message: "Regenerate the evidence bundle with the same promptHash used by the planner."
+          }
+        }
+      ];
+}
+
+function plannerTraceDiagnostics(skeletonTraceId: string, plannerTraceId: string): Diagnostic[] {
+  return skeletonTraceId === plannerTraceId
+    ? []
+    : [
+        {
+          severity: "error",
+          code: DiagnosticCodes.CommandInvalidPatch,
+          message: "Generation evidence skeleton traceId must match the planner traceId.",
+          path: "/planner/plan/traceId",
+          fix: {
+            kind: "manual",
+            confidence: "high",
+            message: "Create the command skeleton from the planner request instead of mixing traces."
+          }
+        }
+      ];
+}
+
+function sourcePromptHashDiagnostics(promptHash: string, sourcePromptHashes: string[]): Diagnostic[] {
+  const mismatched = sourcePromptHashes.filter((hash) => hash !== promptHash);
+  return mismatched.length === 0
+    ? []
+    : [
+        {
+          severity: "error",
+          code: DiagnosticCodes.CommandInvalidPatch,
+          message: "Generation command sourcePromptHash values must match the evidence promptHash.",
+          path: "/skeleton/commands",
+          relatedResources: mismatched.map((hash) => ({ kind: "command" as const, id: hash })),
+          fix: {
+            kind: "manual",
+            confidence: "high",
+            message: "Regenerate command skeleton commands from the same planner request and prompt hash."
+          }
+        }
+      ];
+}
+
+function plannerConfidenceFromDiagnostics(diagnostics: Diagnostic[]): PlannerConfidence {
+  const counts = countDiagnostics(diagnostics);
+  if (counts.error > 0) {
+    return {
+      level: "low",
+      score: 0,
+      reasons: ["Planner evidence has blocking diagnostics."]
+    };
+  }
+  if (counts.warning > 0) {
+    return {
+      level: "medium",
+      score: 0.7,
+      reasons: ["Planner evidence has warnings but no blocking diagnostics."]
+    };
+  }
+  return {
+    level: "high",
+    score: 1,
+    reasons: ["Planner evidence has no diagnostics."]
   };
 }
 
@@ -441,6 +656,11 @@ function snapshotEvidenceDiagnostics(snapshotEvidence: GenerationSnapshotEvidenc
 
 function stripInternalDiagnostics(snapshotEvidence: GenerationSnapshotEvidence & { diagnostics?: Diagnostic[] }): GenerationSnapshotEvidence {
   const { diagnostics: _diagnostics, ...publicEvidence } = snapshotEvidence;
+  return publicEvidence;
+}
+
+function stripPlannerDiagnostics(plannerEvidence: GenerationPlannerEvidence & { diagnostics?: Diagnostic[] }): GenerationPlannerEvidence {
+  const { diagnostics: _diagnostics, ...publicEvidence } = plannerEvidence;
   return publicEvidence;
 }
 

@@ -40,9 +40,12 @@ get_context_summary -> validate_spec -> apply_commands -> snapshot_spec -> expor
 ```
 
 The bundle records the prompt hash, target domains, command replay evidence,
-snapshot evidence, export readiness, example manifest evidence, and structured
-diagnostics. A generated app should be treated as ready only when the bundle
-returns `status: "ready"` and the relevant snapshot/export evidence passes.
+planner evidence, snapshot evidence, export readiness, example manifest
+evidence, and structured diagnostics. `plannerEvidence` carries planner id,
+confidence, prompt/trace provenance, accepted and unsupported intent fields,
+source prompt hashes, and diagnostic counts. A generated app should be treated
+as ready only when the bundle returns `status: "ready"` and the relevant
+planner/snapshot/export evidence passes.
 
 Scene browsing remains extension-only in this flow. `extensions.scene3d` can be
 summarized through mock snapshot/query evidence, but

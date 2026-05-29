@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createMapGenerationCommandSkeleton,
+  planMapGenerationRequest,
   type MapGenerationCommandSkeleton,
   type MapGenerationRequestFromSchema
 } from "@gis-engine/engine";
@@ -315,10 +316,18 @@ describe("prompt-level generation evidence scenarios", () => {
 
   it.each(scenarios)("$id composes prompt-to-evidence output", async (scenario) => {
     expect(scenario.prompt.length).toBeGreaterThan(0);
-    const skeleton = createMapGenerationCommandSkeleton(scenario.request);
+    const plan = planMapGenerationRequest({
+      promptHash: scenario.request.promptHash,
+      ...(scenario.request.traceId ? { traceId: scenario.request.traceId } : {}),
+      ...(scenario.request.createdAt ? { createdAt: scenario.request.createdAt } : {}),
+      intent: plannerIntentFromRequest(scenario.request)
+    });
+    expect(plan.status).toBe("ready");
+    const skeleton = createMapGenerationCommandSkeleton(plan.request);
     const response = await createGenerationEvidenceBundle({
       promptHash: scenario.request.promptHash,
       skeleton,
+      planner: { plan },
       ...(scenario.evidence ?? {})
     });
 
@@ -327,6 +336,13 @@ describe("prompt-level generation evidence scenarios", () => {
     expect(response.result.promptHash).toBe(scenario.request.promptHash);
     expect(response.result.targetDomains).toEqual(scenario.request.targetDomains);
     expect(response.result.validation.valid).toBe(true);
+    expect(response.result.plannerEvidence).toMatchObject({
+      provided: true,
+      promptHash: scenario.request.promptHash,
+      traceId: scenario.request.traceId,
+      retainedRawPrompt: false,
+      diagnosticCounts: { error: 0, warning: 0, info: 0 }
+    });
     expect(response.result.toolSequence).toEqual([
       "get_context_summary",
       "validate_spec",
@@ -340,6 +356,13 @@ describe("prompt-level generation evidence scenarios", () => {
     scenario.assertEvidence(skeleton, response.result);
   });
 });
+
+function plannerIntentFromRequest(
+  request: MapGenerationRequestFromSchema
+): Omit<MapGenerationRequestFromSchema, "promptHash" | "traceId" | "createdAt"> {
+  const { promptHash: _promptHash, traceId: _traceId, createdAt: _createdAt, ...intent } = request;
+  return intent;
+}
 
 function findDomain(evidence: GenerationEvidenceBundle, domainId: "feature-display" | "spatial-analysis" | "scene-browsing") {
   const domain = evidence.summary.capabilitySummary.domains.find((entry) => entry.id === domainId);

@@ -71,7 +71,8 @@ language runtime, does not add MCP tool aliases, and does not enable stable
 
 Every generated app handoff should name:
 
-- prompt hash and planner provenance; raw prompt text is not retained by default;
+- prompt hash, planner confidence/provenance, and unsupported intent fields;
+  raw prompt text is not retained by default;
 - capability domain classification;
 - `MapSpec` validation result and diagnostic counts;
 - command list, dry-run/replay/rollback status when commands are used;
@@ -129,6 +130,10 @@ Every generated app handoff should name:
   `planMapGenerationRequest()` convert prompt hashes plus structured intent
   into `MapGenerationRequest`-compatible handoff data without retaining raw
   prompt text by default.
+- `TASK-2026W23-NLQ-002` adds `plannerEvidence` to
+  `GenerationEvidenceBundleSchema` so handoff output includes planner
+  confidence, prompt/trace provenance, accepted/unsupported intent fields,
+  source prompt hashes, and planner diagnostics.
 - Spatial-analysis requests remain readiness-only, and stable
   `view.mode: "scene3d"` generation remains blocked with structured blocker
   diagnostics.

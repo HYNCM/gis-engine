@@ -1,8 +1,8 @@
 ---
 agent: product-strategist
 period: 2026-05
-generated_at: 2026-05-29T08:05:11Z
-repo_revision: "08d20633f25a633f15366d110a3e51f52438c0ab"
+generated_at: 2026-05-29T08:20:23Z
+repo_revision: "b0ccfd9342d8d737fdde676399dc5059f8c13293"
 inputs:
   - README.md
   - AGENTS.md
@@ -13,6 +13,7 @@ inputs:
   - docs/research/competitor-updates-2026-W22.md
   - docs/planning/sprint-2026-W23-generation-quality-hardening.md
   - docs/reviews/nlq-001-prompt-planner-boundary-2026-05-29.md
+  - docs/reviews/nlq-002-planner-provenance-evidence-2026-05-29.md
 decision_level: advisory
 ---
 
@@ -36,17 +37,21 @@ visual evidence”。
 schema-tested 边界；剩余债务转为 planner quality/provenance evidence 与
 cloud-native source readiness。
 
+2026-05-29 NLQ-002 update: planner quality/provenance evidence 已接入
+`GenerationEvidenceBundleSchema`；剩余最高优先级债务转为 spatial query
+evidence。
+
 ## 债务优先级
 
 | 排名 | 债务 | 得分 | 证据 | 建议修复 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | Planner quality/provenance evidence missing | 0.68 | `planMapGenerationRequest()` exists, but generation evidence does not yet expose planner confidence or unsupported-intent provenance | execute `TASK-2026W23-NLQ-002` before claiming planner quality evidence | high |
+| 1 | Spatial query evidence missing | 0.66 | planner evidence is now present, but point/bbox query readiness still lacks its own evidence bundle shape | execute `TASK-2026W23-NLQ-003` before claiming spatial query evidence | high |
 | 2 | Cloud-native source readiness matrix missing | 0.61 | PMTiles/GeoParquet/FlatGeobuf/OpenLayers signals are now planning inputs, but support states and diagnostics are not yet consolidated | execute `TASK-2026W23-NLQ-005` before adding implementation claims | high |
 | 3 | SceneView3D stable runtime promotion parked after SRC-006 No-go | 0.42 | W23 gate and SRC-006 decision keep stable runtime blocked while browser matrix / adapter summary / docs alignment are in place | keep the blocker codes and require a new explicit stable-runtime approval task before reopening | medium |
 
 ## 修复顺序
 
-1. 先执行 `TASK-2026W23-NLQ-002` 和 `TASK-2026W23-NLQ-003`：planner provenance 与 spatial query evidence 必须有稳定诊断和测试。
+1. 先执行 `TASK-2026W23-NLQ-003`：spatial query evidence 必须有稳定诊断和测试。
 2. Cloud-native source readiness 要先落支持状态和 blocked diagnostics，再讨论 PMTiles/GeoParquet/FlatGeobuf/GeoZarr 实现。
 3. 下一步若要推进 stable runtime promotion，必须先形成明确的 promotion rubric、browser matrix evidence 和 guardrail diagnostics，不得直接把 `view.mode: "scene3d"` 视为稳定。
 4. 后续真实 renderer loader 接入时，必须先调用 `validateSceneResourceLoadPlan`，不得绕过 byte、texture、worker、timeout diagnostics。
@@ -54,4 +59,4 @@ cloud-native source readiness。
 
 ## 结论
 
-如果只做一件事，下一步优先把 planner quality/provenance evidence 接进 generation evidence bundle，让自然语言生成地图应用从“可验证 planner”走向“可解释 planner”。SceneView3D stable runtime 仍保持 blocker state，直到新的 explicit approval arrives；下一步不能绕过 blocker code 直接打开 stable `view.mode: "scene3d"`。
+如果只做一件事，下一步优先把 spatial query evidence 设计成稳定的 point/bbox readiness 证据，让自然语言生成地图应用从“可解释 planner”继续走向“可解释分析准备”。SceneView3D stable runtime 仍保持 blocker state，直到新的 explicit approval arrives；下一步不能绕过 blocker code 直接打开 stable `view.mode: "scene3d"`。

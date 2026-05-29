@@ -185,7 +185,7 @@ function unique(values: string[]): string[] {
 function uniqueDiagnostics(diagnostics: Diagnostic[]): Diagnostic[] {
   const seen = new Set<string>();
   return diagnostics.filter((diagnostic) => {
-    const key = `${diagnostic.code}:${diagnostic.path ?? ""}:${diagnostic.message}`;
+    const key = `${diagnostic.code}:${diagnostic.path ?? ""}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;

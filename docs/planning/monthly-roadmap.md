@@ -1,8 +1,8 @@
 ---
 agent: product-strategist
 period: 2026-05
-generated_at: 2026-05-29T08:05:11Z
-repo_revision: "08d20633f25a633f15366d110a3e51f52438c0ab"
+generated_at: 2026-05-29T08:20:23Z
+repo_revision: "b0ccfd9342d8d737fdde676399dc5059f8c13293"
 inputs:
   - README.md
   - AGENTS.md
@@ -13,6 +13,7 @@ inputs:
   - docs/planning/sprint-2026-W23-ai-map-app-generation.md
   - docs/planning/sprint-2026-W23-generation-quality-hardening.md
   - docs/reviews/nlq-001-prompt-planner-boundary-2026-05-29.md
+  - docs/reviews/nlq-002-planner-provenance-evidence-2026-05-29.md
   - docs/research/competitor-updates-2026-W20.md
   - docs/reviews/daily-audit-2026-05-17.md
   - docs/reviews/quality-gate-2026-05-17.md
@@ -69,6 +70,11 @@ FlatGeobuf range semantics、OpenLayers GeoZarr/GeoTIFF、MCP schema contracts
 输出 `MapGenerationRequest`-compatible handoff，并默认拒绝 raw prompt
 retention。下一步转入 planner quality/provenance evidence。
 
+2026-05-29 NLQ-002 执行结果：`GenerationEvidenceBundleSchema` 已新增
+`plannerEvidence`，覆盖 planner confidence、prompt/trace provenance、
+accepted/unsupported intent fields、source prompt hashes 和 planner
+diagnostics。下一步转入 spatial query evidence。
+
 ## 2026-W22 Iteration Path
 
 | Priority | Track | Plan | Exit Condition |
@@ -98,7 +104,7 @@ retention。下一步转入 planner quality/provenance evidence。
 | Priority | Track | Plan | Exit Condition |
 | --- | --- | --- | --- |
 | P0 | Prompt planner contract | Define typed prompt planner/parser boundaries without retaining raw prompt text by default | done; planner output is `MapGenerationRequest`-compatible and schema-tested; no MCP alias |
-| P0 | Planner evidence | Add quality, provenance, unsupported-intent diagnostics, and trace evidence to the generation bundle | prompt evidence exposes confidence/trace without bypassing command-only mutation |
+| P0 | Planner evidence | Add quality, provenance, unsupported-intent diagnostics, and trace evidence to the generation bundle | done; prompt evidence exposes confidence/trace without bypassing command-only mutation |
 | P0 | Spatial query evidence | Turn point/bbox readiness into explicit evidence while keeping geoprocessing blocked | stable diagnostics for blocked buffer/overlay/routing/aggregation; query evidence tests pass |
 | P1 | Export package DX | Harden generated-app export manifest and example evidence | export/example output carries diagnostics, snapshot/export status, and resource notes without side-effect writes |
 | P1 | Cloud-native source readiness | Document PMTiles, GeoParquet, FlatGeobuf, GeoTIFF/GeoZarr support states before implementation | source readiness matrix names validation, resource policy, CRS/bbox, and blocked diagnostics |
@@ -117,11 +123,10 @@ retention。下一步转入 planner quality/provenance evidence。
 
 | 排名 | 事项 | 得分 | 证据 | 行动 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | Planner quality/provenance evidence | 8.05 | Typed prompt planner boundary is now schema-tested; the next gap is quality/confidence/provenance surfacing in the generation evidence bundle | execute NLQ-002 without adding MCP aliases or retaining raw prompt text by default | high |
-| 2 | Spatial query evidence | 7.65 | GeoParquet `covering.bbox`, OpenLayers source signals, and local spatial-analysis readiness point to query-first evidence | keep point/bbox query evidence first and block geoprocessing until command contracts exist | high |
-| 3 | Generated-app export polish | 7.10 | local `GenerationEvidenceBundle` includes export/example summaries but user-facing package manifest needs stronger evidence surfacing | harden `export_example_app` manifest and docs without side-effect file writes | medium |
-| 4 | Cloud-native source readiness matrix | 6.95 | PMTiles v3, GeoParquet 1.1, FlatGeobuf range access, and OpenLayers data-source signals widen portable source expectations | document support states and diagnostics before implementation claims | high |
-| 5 | SceneView3D promotion readiness | parked / no-go | W22 evidence and beta gate are complete; W23 promotion-readiness package and gate are complete, and SRC-006 records No-go | future promotion requires a new stable-runtime task and Go decision | high |
+| 1 | Spatial query evidence | 7.65 | GeoParquet `covering.bbox`, OpenLayers source signals, and local spatial-analysis readiness point to query-first evidence | execute NLQ-003; keep point/bbox query evidence first and block geoprocessing until command contracts exist | high |
+| 2 | Generated-app export polish | 7.10 | local `GenerationEvidenceBundle` includes export/example summaries but user-facing package manifest needs stronger evidence surfacing | harden `export_example_app` manifest and docs without side-effect file writes | medium |
+| 3 | Cloud-native source readiness matrix | 6.95 | PMTiles v3, GeoParquet 1.1, FlatGeobuf range access, and OpenLayers data-source signals widen portable source expectations | document support states and diagnostics before implementation claims | high |
+| 4 | SceneView3D promotion readiness | parked / no-go | W22 evidence and beta gate are complete; W23 promotion-readiness package and gate are complete, and SRC-006 records No-go | future promotion requires a new stable-runtime task and Go decision | high |
 
 已完成并保留回归证据：
 

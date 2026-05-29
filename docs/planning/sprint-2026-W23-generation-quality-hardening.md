@@ -1,8 +1,8 @@
 ---
 agent: task-distributor
 period: 2026-W23
-generated_at: 2026-05-29T08:05:11Z
-repo_revision: "08d20633f25a633f15366d110a3e51f52438c0ab"
+generated_at: 2026-05-29T08:20:23Z
+repo_revision: "b0ccfd9342d8d737fdde676399dc5059f8c13293"
 inputs:
   - docs/research/competitor-updates-2026-W22.md
   - docs/research/capability-scorecard.md
@@ -12,6 +12,7 @@ inputs:
   - docs/planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md
   - docs/reviews/nla-008-serialized-planning-handoff-2026-05-29.md
   - docs/reviews/nlq-001-prompt-planner-boundary-2026-05-29.md
+  - docs/reviews/nlq-002-planner-provenance-evidence-2026-05-29.md
 owner: "@task-distributor"
 decision_level: advisory
 ---
@@ -47,7 +48,7 @@ and does not promote stable `view.mode: "scene3d"`.
 | id | title | priority | complexity | owner | status | depends on | acceptance | finish gates |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | TASK-2026W23-NLQ-001 | Define typed prompt planner boundary | P0 | M | `@product-strategist`, `@ai-agent`, `@engine-agent` | done | NLA-008 | `docs/reviews/nlq-001-prompt-planner-boundary-2026-05-29.md`; planner input/output schema returns `MapGenerationRequest`-compatible intent, diagnostics, prompt hash, and trace metadata; no free-form mutation or new MCP tool name | `pnpm build:schema`; `pnpm test:commands`; `pnpm test:schema-sync`; `pnpm --filter @gis-engine/engine build` |
-| TASK-2026W23-NLQ-002 | Add planner quality and provenance evidence | P0 | M | `@ai-agent`, `@qa-agent` | todo | NLQ-001 | generation evidence exposes planner confidence, source prompt hash, unsupported-intent diagnostics, and command trace provenance without storing raw prompt text by default | `pnpm test:ai`; `pnpm test:schema-sync`; `pnpm check` |
+| TASK-2026W23-NLQ-002 | Add planner quality and provenance evidence | P0 | M | `@ai-agent`, `@qa-agent` | done | NLQ-001 | `docs/reviews/nlq-002-planner-provenance-evidence-2026-05-29.md`; generation evidence exposes planner confidence, source prompt hash, unsupported-intent diagnostics, and command trace provenance without storing raw prompt text by default | `pnpm --filter @gis-engine/engine build`; `pnpm --filter @gis-engine/ai build`; `pnpm test:commands`; `pnpm test:ai`; final `pnpm check` |
 | TASK-2026W23-NLQ-003 | Design spatial query evidence bundle | P0 | M | `@engine-agent`, `@ai-agent` | todo | NLA-004, NLQ-001 | point/bbox query readiness has structured evidence; buffer, overlay, routing, and aggregation remain blocked with stable diagnostic paths | `pnpm test:commands`; `pnpm test:ai`; `pnpm build:schema` if public schema changes; `pnpm check` |
 | TASK-2026W23-NLQ-004 | Harden generated-app export manifest | P1 | M | `@ai-agent`, `@docs-agent`, `@qa-agent` | todo | NLQ-002 | `export_example_app` output can carry generation evidence summary, diagnostic counts, snapshot/export status, and asset/resource policy notes without side-effect file writes | `pnpm test:ai`; `pnpm test:examples`; `pnpm check` |
 | TASK-2026W23-NLQ-005 | Create cloud-native source readiness matrix | P1 | S | `@engine-agent`, `@docs-agent` | todo | NLQ-001 | PMTiles, GeoParquet, FlatGeobuf, GeoTIFF/GeoZarr support states and blocked diagnostics are documented before implementation claims | resource-policy doc audit; schema tests if fixtures change; `pnpm check` |

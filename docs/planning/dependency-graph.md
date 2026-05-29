@@ -1,8 +1,8 @@
 ---
 agent: coordinator
 period: 2026-W23
-generated_at: 2026-05-29T08:05:11Z
-repo_revision: "08d20633f25a633f15366d110a3e51f52438c0ab"
+generated_at: 2026-05-29T08:20:23Z
+repo_revision: "b0ccfd9342d8d737fdde676399dc5059f8c13293"
 inputs:
   - docs/archive/2026-05-18/planning/sprint-2026-W21.md
   - docs/planning/sprint-2026-W25-sceneview3d-v1.md
@@ -27,6 +27,7 @@ inputs:
   - docs/reviews/nla-008-serialized-planning-handoff-2026-05-29.md
   - docs/planning/sprint-2026-W23-generation-quality-hardening.md
   - docs/reviews/nlq-001-prompt-planner-boundary-2026-05-29.md
+  - docs/reviews/nlq-002-planner-provenance-evidence-2026-05-29.md
 owner: "@coordinator"
 decision_level: advisory
 ---
@@ -113,6 +114,7 @@ W21 sprint 计划已归档，当前活跃关键路径从 W23 promotion readiness
 | NLA-008 serialized planning handoff | done | `docs/reviews/nla-008-serialized-planning-handoff-2026-05-29.md`; sprint, burndown, and dependency graph now agree that the W23 NLA slice is complete and ready for the next planning cycle |
 | Generation quality hardening | active | `docs/planning/sprint-2026-W23-generation-quality-hardening.md`; next W23 batch starts from typed planner boundary, planner provenance, spatial query evidence, export manifest, cloud-native source readiness, and SceneView3D blocker visibility |
 | NLQ-001 typed prompt planner boundary | done | `docs/reviews/nlq-001-prompt-planner-boundary-2026-05-29.md`; `planMapGenerationRequest()` accepts prompt hash plus structured intent, emits `MapGenerationRequest`-compatible handoff data, and rejects raw prompt retention by default |
+| NLQ-002 planner provenance evidence | done | `docs/reviews/nlq-002-planner-provenance-evidence-2026-05-29.md`; `GenerationEvidenceBundleSchema` now exposes planner confidence, trace provenance, source prompt hashes, unsupported intent fields, and planner diagnostics |
 
 ## 关键路径
 

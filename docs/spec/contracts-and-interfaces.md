@@ -266,9 +266,13 @@ runtime mutation path.
   contracts for handoff evidence: `get_context_summary`, `validate_spec`,
   `apply_commands`, `snapshot_spec`, `export_spec`, and
   `export_example_app`.
+- `plannerEvidence` records planner id, prompt hash, trace id, command trace
+  id, raw prompt retention state, confidence, accepted/unsupported intent
+  fields, command source prompt hashes, and diagnostic counts.
 - The bundle may return `status: "blocked"` even when the underlying `MapSpec`
   is schema-valid. Generation boundary diagnostics, capability blockers, failed
-  command replay, or failed snapshot evidence decide readiness.
+  planner evidence, failed command replay, or failed snapshot evidence decide
+  readiness.
 - No `generate_map_app`, renderer-specific shortcut, camelCase alias, or
   private adapter evidence is part of the public MCP contract.
 - Scene browsing generation may use `extensions.scene3d` camera/source/layer
