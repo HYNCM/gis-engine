@@ -1,13 +1,16 @@
 ---
 agent: coordinator
 period: 2026-W22
-generated_at: 2026-05-25T01:57:26Z
-repo_revision: "d3c0137"
+generated_at: 2026-05-29T06:07:24Z
+repo_revision: "60d5d52301016a446f49fe12bd42256e3f87ca4d"
 inputs:
   - AGENTS.md
   - docs/research/competitor-updates-2026-W22.md
   - docs/research/capability-scorecard.md
   - docs/planning/monthly-roadmap.md
+  - docs/planning/feature-specs/natural-language-map-app-generation.md
+  - docs/planning/feature-specs/spatial-analysis-readiness.md
+  - docs/planning/sprint-2026-W23-ai-map-app-generation.md
   - docs/planning/sprint-2026-W22-competitive-signal-response.md
   - docs/planning/feature-specs/sceneview3d-stable-renderer-contract.md
   - docs/engineering/maplibre-version-drift-audit.md
@@ -44,10 +47,17 @@ drift has a pre-upgrade audit checklist, and the SRC-006 decision closes the
 stable renderer contract sequence as No-go while keeping stable runtime
 promotion blocked.
 
+The final W22 planning update opens the W23 AI map app generation loop. Current
+ArcGIS AI component documentation makes natural-language map interaction and
+agent orchestration a current product signal. GIS Engine's response is a
+verifiable pipeline, not an opaque chat surface: prompt -> `capabilitySummary`
+-> `MapSpec` -> commands -> diagnostics -> snapshot/export evidence.
+
 ## Current Signals
 
 | Source | Signal | Impact | Confidence |
 | --- | --- | --- | --- |
+| competitive-intel | ArcGIS AI components document agentic mapping applications, natural-language UI, map-scoped context, tools, and orchestration | Make natural-language map app generation the W23 product spine while preserving evidence-first gates | high |
 | competitive-intel | Mapbox documents PMTiles vector source use; MapLibre release drift can affect module/WebGL baselines | Keep vector source evidence release-gated and add a MapLibre version-drift audit before upgrades | high |
 | competitive-intel | CesiumJS, Three.js, and 3DTilesRendererJS remain active 3D reference points | Continue adapter-local SceneView3D renderer contract work; stable runtime stays blocked | high |
 | competitive-intel | MCP tools spec includes output schemas | Keep public MCP `inputSchema` and `outputSchema` as blocking contract checks | high |
@@ -67,6 +77,8 @@ promotion blocked.
    SRC-006 as No-go; stable runtime promotion remains blocked.
 6. Move the next planning loop back to natural-language map app generation:
    competitor analysis, product design, and task-distributor DAG.
+7. Treat W23 natural-language generation as an evidence bundle problem before
+   adding tool aliases or broad spatial-analysis operations.
 
 ## Execution Status
 
@@ -77,7 +89,8 @@ promotion blocked.
 | TASK-2026W22-CSI-003 | done | `packages/scene3d-three-adapter/src/index.ts`, adapter tests, smoke lifecycle tests, `docs/reviews/sceneview3d-lifecycle-diagnostics-2026-05-25.md` |
 | TASK-2026W22-CSI-004 | done | this digest and `docs/planning/monthly-roadmap.md` |
 | TASK-2026W22-CSI-005 | done | `docs/engineering/maplibre-version-drift-audit.md` |
-| TASK-2026W22-CSI-006 | done | `docs/reviews/sceneview3d-src-evidence-decision-2026-05-25.md` |
+| TASK-2026W22-CSI-006 | done | `docs/reviews/sceneview3d-src-evidence-decision-2026-05-25.md`, `docs/reviews/sceneview3d-src-006-stable-runtime-gate-2026-05-29.md`, `docs/planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md` |
+| TASK-2026W23-NLA-001 | done | `docs/planning/feature-specs/natural-language-map-app-generation.md`, `docs/planning/feature-specs/spatial-analysis-readiness.md`, `docs/planning/sprint-2026-W23-ai-map-app-generation.md` |
 
 ## Next Handoff
 
@@ -90,3 +103,7 @@ promotion blocked.
   evidence disjoint and adapter-local.
 - `@competitive-intel`, `@product-strategist`, and `@task-distributor`: start
   the next short loop for AI-native natural-language map application generation.
+- `@engine-agent` / `@ai-agent`: implement the first W23 NLA contract slices
+  only after schema, command, diagnostics, and MCP output contracts are clear.
+- `@qa-agent` / `@docs-agent`: plan prompt evidence scenarios and public docs
+  around validation, trace, snapshot, and export artifacts.

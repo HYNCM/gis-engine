@@ -25,7 +25,7 @@ verifiable, and aligned with the repo's AI-native gate rules.
 
 The main product decision is unchanged: cloud-native 2D source support stays
 important, and SceneView3D work advances only through adapter-local evidence.
-Stable `view.mode: "scene3d"` remains blocked until SRC-006 is accepted.
+Stable `view.mode: "scene3d"` remains blocked after the SRC-006 No-go decision.
 
 ## Task Ledger
 

@@ -1,13 +1,16 @@
 ---
 agent: product-strategist
 period: 2026-05
-generated_at: 2026-05-25T01:57:26Z
-repo_revision: "d3c0137"
+generated_at: 2026-05-29T06:07:24Z
+repo_revision: "60d5d52301016a446f49fe12bd42256e3f87ca4d"
 inputs:
   - README.md
   - AGENTS.md
   - docs/research/competitor-updates-2026-W22.md
   - docs/research/capability-scorecard.md
+  - docs/planning/feature-specs/natural-language-map-app-generation.md
+  - docs/planning/feature-specs/spatial-analysis-readiness.md
+  - docs/planning/sprint-2026-W23-ai-map-app-generation.md
   - docs/research/competitor-updates-2026-W20.md
   - docs/reviews/daily-audit-2026-05-17.md
   - docs/reviews/quality-gate-2026-05-17.md
@@ -42,6 +45,13 @@ gate alignment；`SRC-006` 已由 `quality-guardian` 和 `coordinator` 记录为
 No-go。stable runtime 继续 blocked，下一轮优先级切回自然语言生成地图应用的
 竞品分析、产品设计和任务规划。
 
+2026-05-29 当前核验：ArcGIS Maps SDK JS 官方 AI components 文档已经把
+agentic mapping applications 定义为以自然语言为主要 UI 的 web map 交互，
+并提供导航、数据探索、统计/属性/空间查询和 agent orchestration。W23 因此
+正式进入 natural-language map app generation 规划：GIS Engine 的差异化不是
+直接复制聊天 UI，而是把每次生成落到 `MapSpec`、commands、diagnostics、
+snapshot 和 export evidence 上。
+
 ## 2026-W22 Iteration Path
 
 | Priority | Track | Plan | Exit Condition |
@@ -54,6 +64,17 @@ No-go。stable runtime 继续 blocked，下一轮优先级切回自然语言生�
 | P1 | MapLibre/vector compatibility | Add a version-drift audit checklist before changing `maplibre-gl` | checklist names transformer, resource-policy, smoke/visual snapshot, and release-runner implications |
 | P1 | Cloud-native examples | Keep PMTiles/vector source examples release-gated | schema fixtures, examples, resource policy, smoke snapshots, and visual snapshots remain aligned |
 | P2 | Public docs/DX | Convert gate state into concise user-facing upgrade and capability notes | docs reflect extension-only 3D status and 2D source support without overclaiming |
+
+## 2026-W23 Natural-Language App Generation Path
+
+| Priority | Track | Plan | Exit Condition |
+| --- | --- | --- | --- |
+| P0 | Product boundary | Freeze prompt -> capabilitySummary -> MapSpec -> commands -> diagnostics -> snapshot/export evidence as the generation spine | feature spec and sprint DAG accepted; no stable SceneView3D overclaim |
+| P0 | Engine contract | Define the generation `MapSpec` / command skeleton and diagnostics | schema/command contract tests and `pnpm build:schema` pass when implemented |
+| P0 | AI orchestration | Use existing MCP tool names to plan, validate, mutate, snapshot, and export | MCP `inputSchema` / `outputSchema` coverage stays complete |
+| P1 | Spatial analysis readiness | Keep analysis as point/bbox query readiness and blocked-operation diagnostics first | unsupported buffer/intersection/overlay/routing/aggregation are machine-readable |
+| P1 | QA evidence | Add end-to-end prompt evidence scenarios | generated app evidence bundle includes validation, trace, snapshot, and export manifest |
+| P2 | Docs and examples | Explain the flow and limits without presenting natural language as source of truth | public docs and examples match gate state |
 
 ## 路线总览
 
@@ -68,7 +89,8 @@ No-go。stable runtime 继续 blocked，下一轮优先级切回自然语言生�
 
 | 排名 | 事项 | 得分 | 证据 | 行动 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | SceneView3D promotion readiness | next | W22 evidence and beta gate are complete; W23 promotion-readiness package and gate are complete, but stable runtime remains blocked | execute the next explicit promotion step only after a future stable-runtime approval | medium |
+| 1 | Natural-language map app generation | 7.95 | ArcGIS agentic mapping docs validate natural-language map interaction; local `capabilitySummary` already exposes display/analysis/scene boundaries | execute W23 NLA sprint around evidence-first generation | high |
+| 2 | SceneView3D promotion readiness | parked / no-go | W22 evidence and beta gate are complete; W23 promotion-readiness package and gate are complete, and SRC-006 records No-go | future promotion requires a new stable-runtime task and Go decision | high |
 
 已完成并保留回归证据：
 
@@ -113,7 +135,10 @@ No-go。stable runtime 继续 blocked，下一轮优先级切回自然语言生�
 5. W23 stable renderer contract 的 SRC-001 through SRC-006 已完成为 No-go
    决策包；后续不得把该状态表述为 stable runtime Go，除非未来新任务提供真实
    renderer、strict visual evidence 或 release waiver 以及 coordinator Go。
-6. 下一轮进入面向自然语言生成地图应用的竞品分析、产品设计和 sprint DAG。
+6. 面向自然语言生成地图应用的竞品分析、产品设计和 sprint DAG 已开启：
+   [natural-language-map-app-generation.md](./feature-specs/natural-language-map-app-generation.md)、
+   [spatial-analysis-readiness.md](./feature-specs/spatial-analysis-readiness.md)
+   和 [sprint-2026-W23-ai-map-app-generation.md](./sprint-2026-W23-ai-map-app-generation.md)。
 
 ## Feature Spec 建议
 
@@ -127,3 +152,5 @@ No-go。stable runtime 继续 blocked，下一轮优先级切回自然语言生�
 | `docs/planning/feature-specs/sceneview3d-v1-rfc.md` | RFC drafted / sprint split done | camera、sources、layers、resource policy、snapshot、query、commands |
 | `docs/planning/feature-specs/sceneview3d-promotion-readiness.md` | active rubric | W23 promotion evidence matrix、owner split、blockers、readiness states |
 | `docs/planning/feature-specs/command-conflict-replay-audit.md` | done | `baseRevision`、`traceId`、`author`、`reason`、`sourcePromptHash`、`SuggestedFix` |
+| `docs/planning/feature-specs/natural-language-map-app-generation.md` | W23 active | prompt、capabilitySummary、MapSpec、commands、diagnostics、snapshot/export evidence |
+| `docs/planning/feature-specs/spatial-analysis-readiness.md` | W23 active | point/bbox query readiness、blocked analysis operations、future contract gates |

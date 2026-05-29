@@ -1,8 +1,8 @@
 ---
 agent: coordinator
 period: 2026-W23
-generated_at: 2026-05-24T15:35:46Z
-repo_revision: "1b607fd"
+generated_at: 2026-05-29T06:07:24Z
+repo_revision: "60d5d52301016a446f49fe12bd42256e3f87ca4d"
 inputs:
   - docs/archive/2026-05-18/planning/sprint-2026-W21.md
   - docs/planning/sprint-2026-W25-sceneview3d-v1.md
@@ -15,6 +15,9 @@ inputs:
   - docs/reviews/sceneview3d-src-005-resource-release-gate-2026-05-29.md
   - docs/reviews/sceneview3d-src-006-stable-runtime-gate-2026-05-29.md
   - docs/planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md
+  - docs/planning/feature-specs/natural-language-map-app-generation.md
+  - docs/planning/feature-specs/spatial-analysis-readiness.md
+  - docs/planning/sprint-2026-W23-ai-map-app-generation.md
 owner: "@coordinator"
 decision_level: advisory
 ---
@@ -57,7 +60,7 @@ flowchart LR
 
 ## 当前状态
 
-截至 `cef340d`，图中 W21/W23 的 v0.2 checkpoint 关键链路已完成；原
+截至 `60d5d52`，图中 W21/W23 的 v0.2 checkpoint 关键链路已完成；原
 W21 sprint 计划已归档，当前活跃关键路径从 W23 promotion readiness 与 W25 SceneView3D v1 DAG 继续：
 
 | Chain | Status | Evidence |
@@ -91,12 +94,27 @@ W21 sprint 计划已归档，当前活跃关键路径从 W23 promotion readiness
 | automation hardening | done | 2026-05-24 quality gate required report `decision_level` alignment, serialized scheduled commits, local/CI daily cadence alignment, and emergency interpolation fix before scheduled agent evidence is trusted |
 | AI natural-language orchestration summary | done | `capabilitySummary` in `get_context_summary` / `explain_spec` names feature-display, spatial-analysis, and scene-browsing tool/evidence boundaries without adding tool aliases |
 | SceneView3D stable renderer contract | done / stable no-go | `SRC-001` through `SRC-005` have accepted prerequisite evidence; `SRC-006` has a quality-guardian/coordinator No-go decision, so stable `view.mode: "scene3d"` remains blocked |
+| AI natural-language map app generation planning | active | W23 product spec, spatial-analysis readiness spec, and sprint DAG define prompt -> capabilitySummary -> MapSpec -> commands -> diagnostics -> snapshot/export evidence |
 
 ## 关键路径
 
-1. Natural-language app generation -> AI capability summary -> schema-valid MapSpec -> command-only edits -> snapshot/export evidence. This is the product spine for feature display, spatial analysis readiness, and scene browsing boundaries.
+1. Natural-language app generation -> AI capability summary -> schema-valid MapSpec -> command-only edits -> snapshot/export evidence. This is the W23 product spine for feature display, spatial analysis readiness, and scene browsing boundaries.
 2. v1 SceneView3D RFC -> W25/W28 sprint DAG -> TypeBox schema -> fixtures + URL resource policy + loader resource gate + package boundary + scene commands -> mock snapshot/query contracts -> MCP context -> release visual gate -> alpha audit + adapter feasibility -> Three.js adapter spike -> renderer evidence handoff -> adapter runtime shim -> browser visual runner -> beta readiness gate -> promotion readiness -> stable renderer contract handoff -> stable runtime decision; W23 promotion-readiness package is Go, SRC-001 through SRC-005 prerequisite evidence is done, and SRC-006 records a No-go decision that keeps stable runtime blocked.
 3. 2026-05-24 automation hardening blocks scheduled agent evidence from being used as advisory/blocking input: generated report semantics -> serialized scheduled commits -> local/CI daily cadence + emergency interpolation -> automation hardening gate -> scheduled evidence may feed future coordinator/quality-guardian decisions.
+
+```mermaid
+flowchart LR
+  A["TASK-2026W23-NLA-001 product boundary"] --> B["TASK-2026W23-NLA-002 MapSpec and command contract"]
+  A --> C["TASK-2026W23-NLA-003 MCP orchestration"]
+  B --> C
+  B --> D["TASK-2026W23-NLA-004 display and analysis scenarios"]
+  C --> D
+  A --> E["TASK-2026W23-NLA-005 scene browsing extension-only"]
+  D --> F["TASK-2026W23-NLA-006 prompt evidence scenarios"]
+  E --> F
+  F --> G["TASK-2026W23-NLA-007 docs and examples"]
+  G --> H["TASK-2026W23-NLA-008 serialized planning handoff"]
+```
 
 ```mermaid
 flowchart LR

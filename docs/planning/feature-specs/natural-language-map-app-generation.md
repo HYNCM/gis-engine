@@ -1,0 +1,94 @@
+---
+agent: product-strategist
+period: 2026-W23
+generated_at: 2026-05-29T06:07:24Z
+repo_revision: "60d5d52301016a446f49fe12bd42256e3f87ca4d"
+inputs:
+  - AGENTS.md
+  - docs/research/competitor-updates-2026-W22.md
+  - docs/research/capability-scorecard.md
+  - docs/reviews/ai-orchestration-capability-summary-2026-05-27.md
+  - docs/planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md
+owner: "@product-strategist"
+decision_level: advisory
+---
+
+# Natural-Language Map App Generation
+
+## Product Goal
+
+A user should be able to describe a map application in natural language and get
+a verifiable GIS Engine output: a schema-valid `MapSpec`, command-only edit
+trace, structured diagnostics, deterministic snapshot evidence, and an
+exportable example app manifest.
+
+This is a product orchestration plan. It does not add a free-form natural
+language runtime, does not add MCP tool aliases, and does not enable stable
+`view.mode: "scene3d"`.
+
+## Current Decision
+
+- Evidence: ArcGIS Maps SDK JS documents agentic mapping applications with a
+  natural-language primary UI, map-scoped context, tools, and agent
+  orchestration.
+- Impact: product; prompt-driven map creation is now a mainstream expectation.
+- Action: make GIS Engine's differentiator evidence-first generation: every
+  generated output must be inspectable, replayable, and exportable.
+- Confidence: high.
+
+## User Workflow
+
+1. User describes the desired map application.
+2. AI calls `get_context_summary` or `explain_spec` and reads
+   `capabilitySummary`.
+3. AI classifies the request into `feature-display`, `spatial-analysis`, and
+   `scene-browsing` domains.
+4. AI drafts or patches a `MapSpec`.
+5. AI calls `validate_spec` before mutation is accepted.
+6. AI calls `apply_commands` for command-only edits, with trace metadata.
+7. AI calls `snapshot_spec`, `export_spec`, and `export_example_app` for
+   evidence and delivery.
+8. User reviews diagnostics, command trace, snapshot status, and export
+   manifest before treating the app as generated.
+
+## Capability Boundaries
+
+| Domain | Status | Allowed Product Claim | Blocked Claim |
+| --- | --- | --- | --- |
+| `feature-display` | supported | 2D sources, layers, styles, PMTiles/vector evidence, snapshots, and example app export can be generated through schemas and commands. | AI may not bypass validation or mutate runtime state outside commands. |
+| `spatial-analysis` | experimental | Current planning may use point/bbox query readiness and capability metadata. | Do not claim buffer, intersection, overlay, routing, or aggregation as public MCP tools. |
+| `scene-browsing` | extension-only | `extensions.scene3d` can be planned, validated, and explained as evidence. | Stable `view.mode: "scene3d"` remains blocked after SRC-006 No-go. |
+| app export | supported as evidence | `export_example_app` is the delivery exit with manifest-backed assets. | Natural language text alone is never the source of truth. |
+
+## Generation Evidence Bundle
+
+Every generated app handoff should name:
+
+- input prompt or prompt hash;
+- capability domain classification;
+- `MapSpec` validation result and diagnostic counts;
+- command list, dry-run/replay/rollback status when commands are used;
+- snapshot summary and any visual evidence requirements;
+- export manifest and example app files;
+- blocked or experimental capability explanations.
+
+## Priority Scoring
+
+| Item | Competitor Threat | AI Operability Gain | User Value | Debt Reduction | Delivery Risk | Score | Recommendation |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| Natural-language generation product spec | 8 | 9 | 9 | 5 | 4 | 7.95 | P0 |
+| Generation evidence bundle | 7 | 9 | 8 | 7 | 5 | 7.55 | P0 |
+| Spatial-analysis readiness contract | 7 | 8 | 8 | 6 | 6 | 7.10 | P0 |
+| Example app generation DX | 5 | 7 | 8 | 5 | 4 | 6.25 | P1 |
+| Scene browsing boundary refresh | 5 | 7 | 6 | 5 | 5 | 5.95 | P1 |
+
+## Acceptance Criteria
+
+- `get_context_summary` and `explain_spec` remain the discovery path for
+  supported, experimental, and blocked domains.
+- Public inputs remain TypeBox-described and Ajv-validated.
+- Runtime mutations go only through `MapCommand` and `applyCommands`.
+- Public MCP tool descriptors continue to expose `inputSchema` and
+  `outputSchema`.
+- Stable `view.mode: "scene3d"` remains blocked unless a future
+  `quality-guardian` gate and `coordinator` decision record a Go.

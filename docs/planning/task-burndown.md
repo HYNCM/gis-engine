@@ -1,12 +1,15 @@
 ---
 agent: coordinator
 period: 2026-W22
-generated_at: 2026-05-25T01:57:26Z
-repo_revision: "d3c0137"
+generated_at: 2026-05-29T06:07:24Z
+repo_revision: "60d5d52301016a446f49fe12bd42256e3f87ca4d"
 inputs:
   - docs/planning/sprint-2026-W22-competitive-signal-response.md
   - docs/research/competitor-updates-2026-W22.md
   - docs/research/capability-scorecard.md
+  - docs/planning/feature-specs/natural-language-map-app-generation.md
+  - docs/planning/feature-specs/spatial-analysis-readiness.md
+  - docs/planning/sprint-2026-W23-ai-map-app-generation.md
   - docs/engineering/maplibre-version-drift-audit.md
   - docs/reviews/sceneview3d-lifecycle-diagnostics-2026-05-25.md
   - docs/reviews/sceneview3d-src-evidence-decision-2026-05-25.md
@@ -92,14 +95,19 @@ scene browsing. Stable `view.mode: "scene3d"` remains blocked under `SRC-006`.
 `@quality-guardian` evidence reports accept `SRC-002` and `SRC-005` as
 prerequisite evidence for dependency-boundary, resource-policy, and release-gate
 alignment. This closes `SRC-001` through `SRC-005` as prerequisite evidence
-only. Stable `view.mode: "scene3d"` remains blocked until `SRC-006` receives a
-separate quality-guardian and coordinator Go decision.
+only. At that point stable `view.mode: "scene3d"` remained blocked pending a
+separate quality-guardian and coordinator SRC-006 decision.
 
 2026-05-29 SRC-006 decision update: `@quality-guardian` and `@coordinator`
 closed `SRC-006` as a No-go decision. The stable renderer contract sequence now
 has accepted prerequisite evidence plus an explicit promotion decision; stable
 `view.mode: "scene3d"` remains blocked, and the next iteration moves to
 competitor analysis, product design, and task planning.
+
+2026-05-29 natural-language generation update: `@competitive-intel`,
+`@product-strategist`, and `@task-distributor` opened the next W23 loop around
+verifiable AI map app generation. The first task closes the product boundary;
+implementation tasks remain todo until owner reports and gate evidence exist.
 
 | id | title | priority | owner | status | evidence target | acceptance | finish gates |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -128,6 +136,35 @@ Next quality-gate triggers:
   policy contracts change.
 - `pnpm check` is required for final handoff, SRC-006, package metadata/import
   boundary changes, and quality-guardian acceptance.
+
+## 2026-W23 AI natural-language map app generation
+
+W23 moves from SceneView3D evidence closure into the product spine for
+natural-language app generation. The approved boundary is:
+
+```txt
+prompt -> capabilitySummary -> MapSpec -> apply_commands -> diagnostics -> snapshot/export evidence
+```
+
+Sprint handoff:
+[sprint-2026-W23-ai-map-app-generation.md](./sprint-2026-W23-ai-map-app-generation.md).
+Product specs:
+[natural-language-map-app-generation.md](./feature-specs/natural-language-map-app-generation.md)
+and [spatial-analysis-readiness.md](./feature-specs/spatial-analysis-readiness.md).
+
+Stable `view.mode: "scene3d"` remains blocked after the SRC-006 No-go. Scene
+browsing may appear only as `extensions.scene3d` planning/evidence.
+
+| id | title | priority | owner | status | evidence target | acceptance | finish gates |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| TASK-2026W23-NLA-001 | Freeze natural-language map app product boundary | P0 | `@coordinator`, `@product-strategist` | done | feature spec and competitor refresh | product flow and capability boundaries are documented without stable 3D overclaim | scorecard and planning docs updated |
+| TASK-2026W23-NLA-002 | Define generation `MapSpec` and command skeleton contract | P0 | `@engine-agent` | todo | contract delta report | generation cannot bypass TypeBox/Ajv or command-only mutation; failures have stable diagnostics | `pnpm build:schema`; command tests; `pnpm check` |
+| TASK-2026W23-NLA-003 | Design MCP orchestration without new tool aliases | P0 | `@ai-agent` | todo | MCP contract report | use only documented snake_case tools and keep `inputSchema` / `outputSchema` complete | AI/MCP tests; schema build when schemas change |
+| TASK-2026W23-NLA-004 | Define feature-display and spatial-analysis minimum generated scenarios | P1 | `@engine-agent`, `@ai-agent` | todo | scenario report and tests | source/layer/style edits, query readiness, dry-run/replay/rollback, and blocked analysis diagnostics are covered | command replay tests; AI integration tests |
+| TASK-2026W23-NLA-005 | Keep scene browsing extension-only in generation flow | P1 | `@adapter-agent` | todo | adapter boundary report | `extensions.scene3d` evidence stays adapter-local; stable runtime remains blocked | adapter tests/build when touched; release scene3d for evidence claims |
+| TASK-2026W23-NLA-006 | Add end-to-end prompt evidence scenarios | P1 | `@qa-agent` | todo | QA evidence report | prompt-to-MapSpec/commands/snapshot/export covers display, analysis readiness, and scene browsing boundary | snapshot gates as affected; `pnpm check` |
+| TASK-2026W23-NLA-007 | Align docs, examples, and release wording | P2 | `@docs-agent` | todo | docs audit report | docs explain flow, boundaries, diagnostics, and export evidence without stable 3D promotion | docs audit; link check when available |
+| TASK-2026W23-NLA-008 | Serialize planning status and next handoff | P1 | `@task-distributor` | todo | accepted owner reports and gate evidence | burndown and dependency graph update only after evidence exists | planning diff review; `pnpm check` |
 
 ## W23 promotion readiness 计划快照
 
