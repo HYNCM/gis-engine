@@ -124,6 +124,29 @@ new planning batch. Official and package-registry checks on 2026-05-30 showed:
 | CesiumJS / Three.js / 3DTilesRendererJS | `npm view` reported `cesium` 1.141.0, `three` 0.184.0, and `3d-tiles-renderer` 0.4.27 modified 2026-05-25. Official 3D ecosystem movement continues around metadata, load events, runtime evidence, and 3D Tiles. | Keep SceneView3D evidence adapter-local. Future metadata/query work needs schema and visual evidence; stable `view.mode: "scene3d"` remains blocked after SRC-006. | high |
 | PMTiles and cloud-native data | `npm view` reported `pmtiles` 4.4.1 and `flatgeobuf` 4.4.0; PMTiles appears in official Mapbox loading paths while GeoParquet, FlatGeobuf, GeoTIFF, and GeoZarr remain readiness candidates. | Prioritize PMTiles readiness wording and review-console source cards before runtime parser/worker work. GeoParquet/FlatGeobuf/GeoTIFF/GeoZarr stay blocked or readiness-only until promotion gates land. | medium-high |
 
+## 2026-05-30 Post-GIR Planning Refresh
+
+The Generated App Review Console batch is now closed through `GIR-006`, so the
+next product loop should harden the weakest accepted evidence boundary instead
+of opening another broad UX slice. Package-registry checks on 2026-05-30T07:12Z
+confirmed the same external pressure points:
+
+| Project | Command evidence | Source URL | Planning impact |
+| --- | --- | --- | --- |
+| ArcGIS AI components | `@arcgis/ai-components` 5.0.19, modified 2026-05-30T04:42:47Z | https://developers.arcgis.com/javascript/latest/agentic-apps/ai-introduction/ | Agentic map UX is current pressure; GIS Engine should keep generated-app acceptance evidence inspectable and machine-readable. |
+| MapLibre GL JS | `maplibre-gl` 5.24.0, modified 2026-05-21T20:36:20Z | https://github.com/maplibre/maplibre-gl-js/releases | Upgrade pressure stays behind the existing drift checklist; do not mix package movement into the next evidence-hardening sprint. |
+| Mapbox GL JS | `mapbox-gl` 3.24.0, modified 2026-05-18T12:26:18Z | https://docs.mapbox.com/mapbox-gl-js/example/pmtiles-vector-source/ | PMTiles/vector-source expectations remain high, but archive parsing and query support need explicit readiness states. |
+| CesiumJS / Three.js / 3DTilesRendererJS | `cesium` 1.141.0, `three` 0.184.0, `3d-tiles-renderer` 0.4.27 | https://github.com/CesiumGS/cesium/releases, https://github.com/mrdoob/three.js/releases, https://github.com/NASA-AMMOS/3DTilesRendererJS/releases | SceneView3D stays adapter-local; the next sprint should not reopen stable runtime promotion. |
+| OpenLayers / cloud-native data | `ol` 10.9.0, `pmtiles` 4.4.1, `flatgeobuf` 4.4.0, `geotiff` 3.0.5 | https://github.com/openlayers/openlayers/releases, https://docs.protomaps.com/pmtiles/, https://geoparquet.org/releases/v1.1.0/ | Query/readiness semantics are the pressure point: harden point/bbox evidence, result caps, unsupported-source diagnostics, and blocked-operation copy before new loaders. |
+| Structured outputs | OpenAI docs keep schema adherence and `strict: true` as the structured-output contract distinction | https://developers.openai.com/api/docs/guides/structured-outputs | GIS Engine should keep query evidence schema-first and avoid a new `spatial_query` MCP alias until payload contracts are explicit. |
+
+Recommended next loop: **Spatial Query Evidence Hardening**. The first task is
+to freeze the boundary around point/bbox evidence only, then enter execution on
+explicit adapter query capability gates, invalid input diagnostics, unsupported
+source diagnostics, result caps, and generated-app delivery mapping. Buffer,
+intersection, overlay, routing, aggregation, new cloud-native loaders, and
+stable SceneView3D runtime remain blocked.
+
 ## Threats To GIS Engine Assumptions
 
 ### Natural-Language Apps Need A Real Planner Boundary

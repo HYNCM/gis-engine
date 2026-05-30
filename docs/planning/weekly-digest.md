@@ -88,6 +88,11 @@ user or agent inspect and accept a generated map app without reading free-form
 prose." `GIR-001` through `GIR-006` are complete; the Generated App Review
 Console batch is closed and the next move is a fresh planning loop.
 
+2026-05-30 post-GIR planning update: the planning loop refreshed package and
+official-source evidence again and opened **Spatial Query Evidence Hardening**
+as the next sprint. `SQH-001` freezes the point/bbox-only boundary and is
+complete; execution should move to `TASK-2026W23-SQH-002`.
+
 ## Current Signals
 
 | Source | Signal | Impact | Confidence |
@@ -101,6 +106,8 @@ Console batch is closed and the next move is a fresh planning loop.
 | product-strategist | W22 scorecard raises AI operability, 2D cloud-native, and 3D readiness scores, but not stable 3D runtime | Next iteration is evidence hardening, not broad scope expansion | high |
 | product-strategist | AIN delivery states are schema-testable, but the user-facing review console is still missing | Open Generated App Review Console as the next productized delivery slice | high |
 | competitive-intel | 2026-05-30 npm checks show ArcGIS AI packages at 5.0.19, MapLibre at 5.24.0, Mapbox GL JS at 3.24.0, Cesium at 1.141.0, and 3DTilesRendererJS at 0.4.27 | Keep natural-language app generation, source readiness, and adapter-local SceneView3D evidence as the main pressure points | high |
+| competitive-intel | Post-GIR checks keep PMTiles, GeoParquet, FlatGeobuf, GeoTIFF, GeoZarr, MCP output schemas, and ArcGIS agentic app pressure visible | Harden point/bbox query evidence before adding new loaders, geoprocessing, or MCP aliases | high |
+| product-strategist | GIR is closed and the weakest accepted boundary is now spatial query evidence | Open Spatial Query Evidence Hardening and keep SQH-002 focused on explicit query capability gates | high |
 | adapter-agent | Lifecycle diagnostics now include `/runtime/not-loaded/{operation}` and `/runtime/destroyed/{operation}` | AI/debug tooling can identify failure state without parsing diagnostic messages | high |
 
 ## Decisions
@@ -123,6 +130,9 @@ Console batch is closed and the next move is a fresh planning loop.
 9. After AIN-005, open Generated App Review Console and treat review/acceptance
    fixtures as the next P0 task before broad source, spatial-analysis, or
    SceneView3D runtime expansion.
+10. After GIR-006, open Spatial Query Evidence Hardening; do not widen it into
+    PMTiles/vector parsing, new MCP tools, advanced geoprocessing, or stable
+    SceneView3D runtime.
 
 ## Execution Status
 
@@ -151,6 +161,8 @@ Console batch is closed and the next move is a fresh planning loop.
 | TASK-2026W22-GIR-004 | done | `docs/reviews/gir-004-spatial-analysis-review-section-mapping-2026-05-30.md`; spatial-analysis review cards mapped into delivery evidence |
 | TASK-2026W22-GIR-005 | done | `docs/reviews/gir-005-prompt-to-delivery-qa-scenarios-2026-05-30.md`; prompt-to-delivery QA scenarios |
 | TASK-2026W22-GIR-006 | done | `docs/reviews/gir-006-public-wording-release-guardrails-2026-05-30.md`; release wording guardrail docs and tests |
+| TASK-2026W23-SQH-001 | done | `docs/planning/feature-specs/spatial-query-evidence-hardening.md`; `docs/planning/sprint-2026-W23-spatial-query-hardening.md`; `docs/reviews/sqh-001-spatial-query-hardening-boundary-2026-05-30.md` |
+| TASK-2026W23-SQH-002 | todo | query capability gate; next queued execution task |
 
 ## Next Handoff
 
@@ -175,3 +187,6 @@ Console batch is closed and the next move is a fresh planning loop.
   `@task-distributor`: `TASK-2026W22-GIR-006` is done, so return to planning
   state and open the next evidence-backed task batch only after refreshed
   signals are recorded.
+- `@engine-agent` / `@ai-agent`: take `TASK-2026W23-SQH-002` next. Keep the
+  slice to explicit query capability gates and waivers; do not add a public
+  `spatial_query` tool or unsupported source parsing.

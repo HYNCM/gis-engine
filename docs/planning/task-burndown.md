@@ -278,6 +278,27 @@ covered by `docs/reviews/gir-006-public-wording-release-guardrails-2026-05-30.md
 `tests/docs/release-wording-guardrails.test.ts`. The Generated App Review
 Console batch is complete; the orchestrator returns to planning state.
 
+## 2026-05-30 Spatial Query Evidence Hardening
+
+Post-GIR planning refreshed competitor/package evidence and opened the
+[Spatial Query Evidence Hardening](./sprint-2026-W23-spatial-query-hardening.md)
+sprint. This batch hardens point/bbox evidence only; it does not add a public
+`spatial_query` MCP tool, geoprocessing execution, new source loaders, hidden
+IO, or stable SceneView3D runtime support.
+
+| id | title | priority | owner | status | evidence target | acceptance | finish gates |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| TASK-2026W23-SQH-001 | Freeze spatial query hardening boundary | P0 | `@product-strategist`, `@task-distributor` | done | `docs/planning/feature-specs/spatial-query-evidence-hardening.md`; `docs/planning/sprint-2026-W23-spatial-query-hardening.md`; `docs/reviews/sqh-001-spatial-query-hardening-boundary-2026-05-30.md` | point/bbox only; no MCP alias; no geoprocessing; no new source loader; no stable SceneView3D promotion | planning review; `pnpm test:docs`; `pnpm check`; `git diff --check` |
+| TASK-2026W23-SQH-002 | Add explicit query capability gate | P0 | `@engine-agent`, `@ai-agent` | todo | query capability gate in generation/query evidence | ready state requires adapter query capability or explicit waiver | `pnpm build:schema` if schemas change; `pnpm test:commands`; `pnpm test:ai`; `pnpm check` |
+| TASK-2026W23-SQH-003 | Harden invalid point/bbox/source diagnostics | P1 | `@engine-agent`, `@qa-agent` | todo | invalid query/source fixture matrix | non-finite point, reversed bbox, missing/hidden layer/source, URL GeoJSON, PMTiles/vector unsupported source, and empty result cases have stable codes and paths | `pnpm test:commands`; `pnpm test:ai`; `pnpm check` |
+| TASK-2026W23-SQH-004 | Add result caps and deterministic fixture evidence | P1 | `@qa-agent` | todo | capped query evidence fixtures | result cap, feature count, layer/source ids, and diagnostic counts are recorded without unbounded payloads | `pnpm test:ai`; `pnpm test:commands`; perf smoke only if result-size logic changes |
+| TASK-2026W23-SQH-005 | Map hardened query evidence into generated-app delivery | P1 | `@ai-agent`, `@docs-agent` | todo | delivery `data-and-analysis` mapping | query ready/follow-up/blocked states are visible without prose parsing or MCP aliases | `pnpm test:ai`; `pnpm test:docs`; `pnpm check` |
+| TASK-2026W23-SQH-006 | Run quality gate and serialized planning closure | P1 | `@quality-guardian`, `@coordinator` | todo | gate report and planning closure | schema-first, command-only mutation, structured diagnostics, adapter boundary, resource policy, and frozen MCP tool names remain intact | `pnpm build:schema`; `pnpm check`; visual gate waived only with non-rendering rationale |
+
+2026-05-30 SQH-001 execution update: the spatial query hardening boundary is
+frozen by `docs/reviews/sqh-001-spatial-query-hardening-boundary-2026-05-30.md`.
+The next queued task is `SQH-002`.
+
 ---
 
 ## Evolution Tracking

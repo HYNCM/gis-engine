@@ -17,8 +17,8 @@ evidence snapshots, and when old material should be archived.
 | Test and release gates | [engineering/ci-test-strategy.md](./engineering/ci-test-strategy.md), [engineering/release-wording-guardrails.md](./engineering/release-wording-guardrails.md), [engineering/maplibre-version-drift-audit.md](./engineering/maplibre-version-drift-audit.md), [planning/v0.2-release.md](./planning/v0.2-release.md) | CI strategy, release wording guardrails, dependency drift, release checklist & notes. |
 | SceneView3D stable runtime decision | [planning/feature-specs/sceneview3d-stable-renderer-contract.md](./planning/feature-specs/sceneview3d-stable-renderer-contract.md), [reviews/sceneview3d-src-evidence-decision-2026-05-25.md](./reviews/sceneview3d-src-evidence-decision-2026-05-25.md), [reviews/sceneview3d-src-006-stable-runtime-gate-2026-05-29.md](./reviews/sceneview3d-src-006-stable-runtime-gate-2026-05-29.md), [planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md](./planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md) | SRC-006 No-go is final; stable `view.mode: "scene3d"` remains blocked. Intermediate SRC evidence is archived. |
 | Active planning | [planning/monthly-roadmap.md](./planning/monthly-roadmap.md), [planning/weekly-digest.md](./planning/weekly-digest.md), [planning/technical-debt-report.md](./planning/technical-debt-report.md), [planning/resource-perf-gap-plan.md](./planning/resource-perf-gap-plan.md), [planning/task-burndown.md](./planning/task-burndown.md), [planning/dependency-graph.md](./planning/dependency-graph.md), [planning/evolution-framework.md](./planning/evolution-framework.md), [planning/evolution-ledger.md](./planning/evolution-ledger.md) | Living planning and tracking documents. |
-| Current sprints | [planning/sprint-2026-W23-ai-map-app-generation.md](./planning/sprint-2026-W23-ai-map-app-generation.md), [planning/sprint-2026-W23-generation-quality-hardening.md](./planning/sprint-2026-W23-generation-quality-hardening.md), [planning/sprint-2026-W25-sceneview3d-v1.md](./planning/sprint-2026-W25-sceneview3d-v1.md) | Active or upcoming sprint work. |
-| Feature specs | [planning/feature-specs/](./planning/feature-specs/) | 17 feature specifications for implemented or gated capabilities. |
+| Current sprints | [planning/sprint-2026-W23-spatial-query-hardening.md](./planning/sprint-2026-W23-spatial-query-hardening.md), [planning/sprint-2026-W23-ai-map-app-generation.md](./planning/sprint-2026-W23-ai-map-app-generation.md), [planning/sprint-2026-W23-generation-quality-hardening.md](./planning/sprint-2026-W23-generation-quality-hardening.md), [planning/sprint-2026-W25-sceneview3d-v1.md](./planning/sprint-2026-W25-sceneview3d-v1.md) | Active or upcoming sprint work. |
+| Feature specs | [planning/feature-specs/](./planning/feature-specs/) | 18 feature specifications for implemented or gated capabilities. |
 
 ## Dated Evidence Snapshots
 
@@ -56,6 +56,7 @@ evidence. Do not edit them to look timeless.
 
 **Other active reviews**:
 [ai-orchestration-capability-summary-2026-05-27.md](./reviews/ai-orchestration-capability-summary-2026-05-27.md),
+[sqh-001-spatial-query-hardening-boundary-2026-05-30.md](./reviews/sqh-001-spatial-query-hardening-boundary-2026-05-30.md),
 [sceneview3d-src-evidence-decision-2026-05-25.md](./reviews/sceneview3d-src-evidence-decision-2026-05-25.md),
 [sceneview3d-src-006-stable-runtime-gate-2026-05-29.md](./reviews/sceneview3d-src-006-stable-runtime-gate-2026-05-29.md)
 

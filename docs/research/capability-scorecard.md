@@ -24,10 +24,10 @@ benchmark below was refreshed on 2026-05-30 from official sources recorded in
 
 | Dimension | GIS Engine Score | Current External Benchmark | Evidence Note | Confidence |
 | --- | ---: | --- | --- | --- |
-| AI operability | 9.3/10 | ArcGIS AI components; MCP tools and structured-output schema contracts | GIS Engine now has prompt planning schemas, planner provenance, point/bbox query evidence, generated-app manifest evidence, delivery/acceptance states, scene-browsing blocker visibility, `capabilitySummary`, command-only generation, MCP output schemas, diagnostics, and prompt QA scenarios. The open gap is an inspectable review console UX, not the evidence spine. | high |
+| AI operability | 9.4/10 | ArcGIS AI components; MCP tools and structured-output schema contracts | GIS Engine now has prompt planning schemas, planner provenance, point/bbox query evidence, generated-app manifest evidence, delivery/acceptance states, scene-browsing blocker visibility, release wording guardrails, `capabilitySummary`, command-only generation, MCP output schemas, diagnostics, and prompt QA scenarios. The open gap is explicit query capability/result-bound evidence, not the evidence spine. | high |
 | 2D performance | 6.5/10 | MapLibre v5/v6 drift; Mapbox style spec and PMTiles examples | Generic vector sources, PMTiles-compatible URL policy, MapLibre transformation, and visual/smoke evidence exist. The next score bump requires a version-drift audit and generated-style compatibility checks before dependency movement. | high |
 | 3D readiness | 5.4/10 | CesiumJS, Three.js, 3DTilesRendererJS, deck.gl WebGPU/3D Tiles movement | SceneView3D has adapter contract, dependency boundary, lifecycle, snapshot/query, browser evidence, release-gate rules, and SRC-006 No-go. This remains evidence readiness, not stable runtime support. | high |
-| Developer experience | 7.6/10 | ArcGIS natural-language map UX; Mapbox/MapLibre examples; ECharts option-first visualization | Generated-app evidence now carries compact manifest summaries, delivery status, spatial-query readiness, source-readiness boundaries, confirmation boundaries, follow-up tasks, and scene-browsing blockers. The next gap is a user-facing review console that maps those fields into acceptance decisions. | medium |
+| Developer experience | 7.8/10 | ArcGIS natural-language map UX; Mapbox/MapLibre examples; ECharts option-first visualization | Generated-app evidence now carries compact manifest summaries, delivery status, spatial-query readiness, source-readiness boundaries, confirmation boundaries, follow-up tasks, scene-browsing blockers, and docs wording guardrails. The next gap is hardening point/bbox query evidence before richer review surfaces or geoprocessing claims. | medium |
 | Ecosystem and data readiness | 7.0/10 | PMTiles v3, GeoParquet 1.1, FlatGeobuf range access, OpenLayers GeoZarr/GeoTIFF | GIS Engine has resource policy, portable vector-source foundations, and a cloud-native readiness matrix. GeoParquet/FlatGeobuf/GeoZarr remain blocked until schema/resource-policy/runtime contracts exist. | high |
 
 ## W22 Delta
@@ -62,6 +62,18 @@ benchmark below was refreshed on 2026-05-30 from official sources recorded in
 - 2D performance, 3D readiness, and ecosystem/data readiness stay unchanged.
   The 2026-05-30 package checks reinforce existing MapLibre/Mapbox/PMTiles and
   SceneView3D pressure but do not add accepted runtime support.
+
+## 2026-05-30 Post-GIR Addendum
+
+- AI operability rises from 9.3 to 9.4 because `GIR-001` through `GIR-006`
+  closed the generated-app review-console batch with prompt-to-delivery QA and
+  testable release wording guardrails.
+- Developer experience rises from 7.6 to 7.8 because generated-app handoff
+  sections, source/spatial readiness, and public wording boundaries are now
+  serialized in planning and tests.
+- The next score bump is blocked on Spatial Query Evidence Hardening: adapter
+  query capability must become explicit, invalid point/bbox/source cases need
+  stable diagnostics, and result caps must prevent unbounded payload claims.
 
 ## Next Scorecard Update Requirements
 

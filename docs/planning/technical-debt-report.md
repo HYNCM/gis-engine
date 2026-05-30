@@ -89,13 +89,13 @@ cards。
 
 | 排名 | 债务 | 得分 | 证据 | 建议修复 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | Fresh planning loop pending | 0.24 | Generated App Review Console tasks `GIR-001` through `GIR-006` are complete; the next task batch needs refreshed competitive/product evidence before implementation | run coordinator planning with competitive-intel, product-strategist, and task-distributor | high |
+| 1 | Explicit query capability gate pending | 0.34 | post-GIR planning opened Spatial Query Evidence Hardening and closed `SQH-001`; ready point/bbox evidence still needs an explicit adapter query capability or waiver gate | execute `TASK-2026W23-SQH-002` | high |
 | 2 | MapLibre 6 drift audit pending | 0.24 | 2026-05-30 package checks confirm ongoing MapLibre/Mapbox drift pressure | run the existing MapLibre version-drift checklist before dependency movement | medium |
 
 ## 修复顺序
 
-1. 先回到 planning state：刷新竞品、产品设计和下一批任务 DAG。
-2. 后续再规划 point/bbox hardening fixtures 和 PMTiles archive metadata gate。
+1. 先执行 `TASK-2026W23-SQH-002`：为 point/bbox evidence 增加 explicit query capability gate。
+2. 后续再执行 invalid/source diagnostics、result caps 和 PMTiles archive metadata gate。
 3. 下一步若要推进 stable runtime promotion，必须先形成明确的 promotion
    rubric、browser matrix evidence 和 guardrail diagnostics，不得直接把
    `view.mode: "scene3d"` 视为稳定。
@@ -107,7 +107,8 @@ cards。
 
 ## 结论
 
-如果只做一件事，下一步优先启动 planning loop。Generated-app delivery review
-fixtures、source readiness review cards、spatial-analysis review cards、
-prompt-to-delivery QA scenarios 和 docs/release wording guardrails 已完成。
-SceneView3D stable runtime 仍保持 blocker state，直到新的 explicit approval arrives。
+如果只做一件事，下一步优先执行 `TASK-2026W23-SQH-002`。Generated-app delivery
+review fixtures、source readiness review cards、spatial-analysis review cards、
+prompt-to-delivery QA scenarios、docs/release wording guardrails 和 SQH boundary
+planning 已完成。SceneView3D stable runtime 仍保持 blocker state，直到新的
+explicit approval arrives。

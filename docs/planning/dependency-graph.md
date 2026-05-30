@@ -261,6 +261,32 @@ flowchart LR
 | TASK-2026W22-GIR-005 | GIR-002, GIR-003, GIR-004 | prompt-to-delivery QA matrix | `pnpm test:ai`; `pnpm test:examples`; `pnpm check`; visual gate only for rendering changes | done |
 | TASK-2026W22-GIR-006 | GIR-002, GIR-005 | docs and release wording audit | docs audit; `pnpm test:docs`; `pnpm check`; `pnpm test:release:scene3d` only if scene evidence changes | done |
 
+## Spatial Query Evidence Hardening DAG
+
+2026-05-30 planning update: after the Generated App Review Console batch
+closed, the orchestrator opened the Spatial Query Evidence Hardening sprint.
+`SQH-001` is complete as a boundary/spec task; `SQH-002` is the next queued
+execution task.
+
+```mermaid
+flowchart LR
+  A["TASK-2026W23-SQH-001 boundary spec"]
+  A --> B["TASK-2026W23-SQH-002 query capability gate"]
+  B --> C["TASK-2026W23-SQH-003 invalid/source diagnostics"]
+  C --> D["TASK-2026W23-SQH-004 result caps and fixtures"]
+  D --> E["TASK-2026W23-SQH-005 delivery mapping"]
+  E --> F["TASK-2026W23-SQH-006 quality gate and closure"]
+```
+
+| Task | Depends On | Evidence Target | Required Finish Gate | Status Rule |
+| --- | --- | --- | --- | --- |
+| TASK-2026W23-SQH-001 | GIR-006 | boundary spec and sprint DAG | planning review; `pnpm test:docs`; `pnpm check`; `git diff --check` | done |
+| TASK-2026W23-SQH-002 | SQH-001 | query capability gate | `pnpm build:schema` if schemas change; `pnpm test:commands`; `pnpm test:ai`; `pnpm check` | queued P0 |
+| TASK-2026W23-SQH-003 | SQH-002 | invalid/source diagnostics | `pnpm test:commands`; `pnpm test:ai`; `pnpm check` | todo |
+| TASK-2026W23-SQH-004 | SQH-003 | result caps and fixtures | `pnpm test:ai`; `pnpm test:commands`; perf smoke only if result-size logic changes | todo |
+| TASK-2026W23-SQH-005 | SQH-004 | generated-app delivery mapping | `pnpm test:ai`; `pnpm test:docs`; `pnpm check` | todo |
+| TASK-2026W23-SQH-006 | SQH-005 | quality gate and closure | `pnpm build:schema`; `pnpm check`; visual waiver rationale if non-rendering | todo |
+
 ## 阻断规则
 
 - public AI tool 或 public command surface 变更仍必须先通过 schema-sync、MCP contract tests 和 command replay tests。
