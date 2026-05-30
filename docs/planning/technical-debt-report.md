@@ -81,35 +81,33 @@ spatial-analysis promotion criteria。
 follow-through，以及 point/bbox hardening 的后续 fixture/capability gate。
 
 2026-05-30 AIN-005 and GIR planning update: SceneView3D delivery copy/evidence
-follow-through 已收口为 extension-only。`GIR-002` 已完成后，剩余最高优先级债务
-转为 Generated App Review Console 的 source readiness review cards 和
-spatial-analysis review cards。
+follow-through 已收口为 extension-only。`GIR-002` 与 `GIR-003` 已完成后，剩余
+最高优先级债务转为 Generated App Review Console 的 spatial-analysis review
+cards。
 
 ## 债务优先级
 
 | 排名 | 债务 | 得分 | 证据 | 建议修复 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | Source readiness review cards missing | 0.32 | source promotion criteria exist, but generated-app review does not yet map source states into user-facing acceptance cards | schedule `TASK-2026W22-GIR-003` before source runtime implementation | high |
-| 2 | Spatial-analysis review cards missing | 0.31 | point/bbox evidence and blocked operation criteria exist, but generated-app review does not yet expose them as acceptance cards | schedule `TASK-2026W22-GIR-004` and later point/bbox hardening fixtures | high |
-| 3 | MapLibre 6 drift audit pending | 0.24 | 2026-05-30 package checks confirm ongoing MapLibre/Mapbox drift pressure | run the existing MapLibre version-drift checklist before dependency movement | medium |
+| 1 | Spatial-analysis review cards missing | 0.31 | point/bbox evidence and blocked operation criteria exist, but generated-app review does not yet expose them as acceptance cards | schedule `TASK-2026W22-GIR-004` and later point/bbox hardening fixtures | high |
+| 2 | MapLibre 6 drift audit pending | 0.24 | 2026-05-30 package checks confirm ongoing MapLibre/Mapbox drift pressure | run the existing MapLibre version-drift checklist before dependency movement | medium |
 
 ## 修复顺序
 
-1. 先执行 `TASK-2026W22-GIR-003`：把 source readiness 转成 review cards。
-2. 再执行 `TASK-2026W22-GIR-004`：把 spatial-analysis readiness 转成 review cards。
-3. 后续再规划 point/bbox hardening fixtures 和 PMTiles archive metadata gate。
-4. 下一步若要推进 stable runtime promotion，必须先形成明确的 promotion
+1. 先执行 `TASK-2026W22-GIR-004`：把 spatial-analysis readiness 转成 review cards。
+2. 后续再规划 point/bbox hardening fixtures 和 PMTiles archive metadata gate。
+3. 下一步若要推进 stable runtime promotion，必须先形成明确的 promotion
    rubric、browser matrix evidence 和 guardrail diagnostics，不得直接把
    `view.mode: "scene3d"` 视为稳定。
-5. 后续真实 renderer loader 接入时，必须先调用
+4. 后续真实 renderer loader 接入时，必须先调用
    `validateSceneResourceLoadPlan`，不得绕过 byte、texture、worker、timeout
    diagnostics。
-6. W23 promotion readiness sprint 已完成并记录 no-go verdict；stable runtime
+5. W23 promotion readiness sprint 已完成并记录 no-go verdict；stable runtime
    promotion 仍然 blocked until a future approval.
 
 ## 结论
 
-如果只做一件事，下一步优先完成 `TASK-2026W22-GIR-003`。Generated-app delivery
-review fixtures 已完成；现在需要 source readiness review cards。Source 与
-spatial-analysis promotion gates 已拆分；SceneView3D stable runtime 仍保持
-blocker state，直到新的 explicit approval arrives。
+如果只做一件事，下一步优先完成 `TASK-2026W22-GIR-004`。Generated-app delivery
+review fixtures 和 source readiness review cards 已完成；现在需要
+spatial-analysis review cards。SceneView3D stable runtime 仍保持 blocker state，
+直到新的 explicit approval arrives。

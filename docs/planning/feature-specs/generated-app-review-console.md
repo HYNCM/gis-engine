@@ -69,6 +69,33 @@ loaders, add spatial geoprocessing operations, or promote stable
 The console should render these states from structured evidence only. It should
 not parse diagnostic messages or natural-language summaries to infer acceptance.
 
+## Source Readiness Cards
+
+The `Data and sources` review section should render one card per source intent
+or generated source. Each card must show the source id or planned format, the
+readiness state, the accepted `MapSpec` shape when one exists, the
+resource-policy result, query readiness, export/manifest behavior, and the next
+allowed action. The section-level state is the most restrictive card state:
+`blocked` wins over `needs-confirmation`, which wins over `follow-up-required`,
+which wins over `ready`.
+
+| Card state | Console presentation | Acceptance effect |
+| --- | --- | --- |
+| `supported` | Normal source card with schema/resource evidence, export notes, and any query limitation called out as structured evidence. | May contribute to `ready` when no card needs confirmation or follow-up. |
+| `readiness-only` | Warning card that can appear in planning, manifest notes, or source-readiness evidence, but must state that runtime parsing, archive access, or feature query behavior is not implemented. | Sets the source section to `follow-up-required` unless the unresolved behavior needs user approval, in which case it becomes `needs-confirmation`. |
+| `blocked` | Blocking card with the unsupported format or operation, diagnostic path/code, owner or follow-up contract, and no generated `MapSpec` source using that blocked type. | Sets `Data and sources` and the delivery summary to `blocked`. |
+
+Required source-format cards:
+
+| Format | Review-console card | Blocking or follow-up semantics |
+| --- | --- | --- |
+| PMTiles | Supported URL-compatible source card for existing `sources.*.type: "pmtiles"` display/export evidence, with a readiness-only substate for archive parsing, metadata extraction, range access, mutation/export handoff, and PMTiles feature query. | Existing URL-compatible display/export evidence may be reviewed, but archive parsing or query claims must produce `follow-up-required` or `needs-confirmation`; no runtime loader/parser is implied. |
+| URL GeoJSON | Supported display/export card for `sources.*.type: "geojson"` with string `data`; query row remains readiness-only for headless evidence. | Valid resource-policy URLs may appear in manifests without fetches; headless query must stay blocked with `CAPABILITY.UNSUPPORTED` until an inline-data or fetch/cache contract exists. |
+| GeoParquet | Blocked source-intent card only. | Do not generate a GeoParquet `SourceSpec`; card must point to future schema, CRS/encoding, range/worker policy, diagnostics, and read-only query gates. |
+| FlatGeobuf | Blocked source-intent card only. | Do not generate a FlatGeobuf `SourceSpec`; card must point to future schema, magic/version, index/range, streaming diagnostics, and fixture gates. |
+| GeoTIFF | Blocked source-intent card only. | Do not generate a GeoTIFF `SourceSpec`; card must point to future raster schema, byte/range policy, band/CRS/no-data diagnostics, sampling, and snapshot gates. |
+| GeoZarr | Blocked source-intent card only. | Do not generate a GeoZarr `SourceSpec`; card must point to future array-store schema, chunk/range policy, CRS/time/band diagnostics, worker budgets, and query/snapshot gates. |
+
 ## PRD Summary
 
 ### Problem

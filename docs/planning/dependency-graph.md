@@ -236,8 +236,8 @@ flowchart LR
 ## Generated App Review Console DAG
 
 2026-05-30 planning update: the AIN batch is closed and a new Generated App
-Review Console sprint is open. `GIR-001` is complete as a docs-only PRD/spec
-slice; `GIR-002` is the highest-priority queued implementation task.
+Review Console sprint is open. `GIR-001`, `GIR-002`, and `GIR-003` are done;
+`GIR-004` is the highest-priority queued implementation task.
 
 ```mermaid
 flowchart LR
@@ -255,7 +255,7 @@ flowchart LR
 | --- | --- | --- | --- | --- |
 | TASK-2026W22-GIR-001 | AIN-005 | product feature spec and sprint DAG | docs review; `pnpm check`; `git diff --check` | done as PRD/planning evidence |
 | TASK-2026W22-GIR-002 | GIR-001 | delivery review acceptance fixtures | `pnpm vitest run tests/ai/generation-evidence.test.ts`; `pnpm check`; `pnpm test:schema-sync` | done |
-| TASK-2026W22-GIR-003 | GIR-001 | source readiness review mapping | resource-policy doc audit; `pnpm test:resources` if policy changes; `pnpm check` | queued P1 implementation |
+| TASK-2026W22-GIR-003 | GIR-001 | source readiness review mapping | docs audit; `pnpm check`; `git diff --check` | done |
 | TASK-2026W22-GIR-004 | GIR-001 | spatial-analysis review mapping | `pnpm test:commands`; `pnpm test:ai`; `pnpm build:schema` when schemas change; `pnpm check` | queued P1 implementation |
 | TASK-2026W22-GIR-005 | GIR-002, GIR-003, GIR-004 | prompt-to-delivery QA matrix | `pnpm test:ai`; `pnpm test:examples`; `pnpm check`; visual gate only for rendering changes | queued P1 QA |
 | TASK-2026W22-GIR-006 | GIR-002, GIR-005 | docs and release wording audit | docs audit; `pnpm check`; `pnpm test:release:scene3d` only if scene evidence changes | queued P2 release guardrail |

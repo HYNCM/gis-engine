@@ -44,6 +44,22 @@ policy, and tests exist.
 | GeoTIFF | blocked | no public `SourceSpec` type | no URL path is accepted until schema exists | no raster query/sampling support | manifests must not claim GeoTIFF source support | add raster source schema, byte/range policy, band/CRS/no-data diagnostics, and snapshot tests |
 | GeoZarr | blocked | no public `SourceSpec` type | no URL path is accepted until schema exists | no array query/sampling support | manifests must not claim GeoZarr source support | add array-store schema, chunk/range policy, CRS/time/band diagnostics, worker budgets, and snapshot/query fixtures |
 
+## Review-Console Card Mapping
+
+`docs/planning/feature-specs/generated-app-review-console.md` should surface
+the matrix above as `Data and sources` cards. The cards are review evidence
+only: they do not add MCP tool names, promote stable SceneView3D behavior, or
+introduce runtime loaders, parsers, decoders, archive readers, or workers.
+
+| Format | Card state in Generated App Review Console | Card details | Delivery impact |
+| --- | --- | --- | --- |
+| PMTiles | `supported` for URL-compatible display/export evidence; `readiness-only` for archive parsing, archive metadata, range access, mutation/export handoff, and feature query. | Show `sources.*.type: "pmtiles"`, `/sources/{id}/url` resource-policy evidence, transformer warning, and explicit "no archive parser/query runtime" evidence. | May pass the source section for display/export; PMTiles archive or query requests become `follow-up-required` or `needs-confirmation` and must not be accepted as implemented behavior. |
+| URL GeoJSON | `supported` for display/export; `readiness-only` for headless feature query when `data` is a URL string. | Show `sources.*.type: "geojson"`, `/sources/{id}/data` policy result, manifest note that export does not fetch, and `CAPABILITY.UNSUPPORTED` query evidence for URL-backed headless cases. | Display/export evidence can be accepted; URL-backed query requests require inline data or a future fetch/cache contract before the app can be fully ready. |
+| GeoParquet | `blocked`. | Show blocked source intent only, no generated `SourceSpec`, and follow-up requirements for schema, CRS metadata, WKB/GeoArrow diagnostics, bbox metadata, range/worker policy, and query tests. | Blocks delivery if requested as an implemented source. |
+| FlatGeobuf | `blocked`. | Show blocked source intent only, no generated `SourceSpec`, and follow-up requirements for schema, magic/version checks, index/range semantics, streaming diagnostics, and deterministic fixtures. | Blocks delivery if requested as an implemented source. |
+| GeoTIFF | `blocked`. | Show blocked source intent only, no generated `SourceSpec`, and follow-up requirements for raster schema, byte/range policy, band/CRS/no-data diagnostics, sampling, and snapshot tests. | Blocks delivery if requested as an implemented source. |
+| GeoZarr | `blocked`. | Show blocked source intent only, no generated `SourceSpec`, and follow-up requirements for array-store schema, chunk/range policy, CRS/time/band diagnostics, worker budgets, and query/snapshot fixtures. | Blocks delivery if requested as an implemented source. |
+
 ## Generated-App Rules
 
 - AI generation may emit `geojson`, `raster`, `vector`, and `pmtiles` only
