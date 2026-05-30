@@ -59,6 +59,25 @@ describe("generation evidence bundle", () => {
     if (!response.ok) throw new Error("Expected generation evidence bundle to succeed.");
 
     expect(response.result.status).toBe("ready");
+    expect(response.result.delivery).toMatchObject({
+      status: "ready",
+      acceptance: {
+        state: "ready",
+        ready: true,
+        blocked: false,
+        needsConfirmation: false,
+        followUpRequired: false
+      },
+      confirmationRequired: false,
+      sourceReadiness: [
+        expect.objectContaining({
+          sourceId: "services",
+          type: "geojson",
+          state: "supported",
+          queryReady: true
+        })
+      ]
+    });
     expect(response.result.toolSequence).toEqual([
       "get_context_summary",
       "validate_spec",
@@ -106,6 +125,10 @@ describe("generation evidence bundle", () => {
       fileCount: 3,
       generationEvidence: {
         status: "ready",
+        delivery: {
+          status: "ready",
+          confirmationRequired: false
+        },
         targetDomains: ["feature-display"],
         diagnosticCounts: { error: 0, warning: 0, info: 0 },
         command: {
@@ -171,6 +194,13 @@ describe("generation evidence bundle", () => {
     expect(response.ok).toBe(true);
     if (!response.ok) throw new Error("Expected generation evidence bundle to return structured evidence.");
     expect(response.result.status).toBe("blocked");
+    expect(response.result.delivery).toMatchObject({
+      status: "blocked",
+      acceptance: {
+        state: "blocked",
+        blocked: true
+      }
+    });
     expect(response.result.commandEvidence.diagnosticCounts.error).toBe(1);
     expect(response.result.diagnostics).toContainEqual(
       expect.objectContaining({
@@ -504,6 +534,153 @@ describe("generation evidence bundle", () => {
         })
       ])
     );
+  });
+
+  it("marks URL and archive-backed sources as needs-confirmation without fetching resources", async () => {
+    const skeleton = createMapGenerationCommandSkeleton({
+      mapId: "pmtiles-delivery",
+      promptHash: "sha256:pmtiles-delivery",
+      traceId: "trace-pmtiles-delivery",
+      targetDomains: ["feature-display"],
+      sources: {
+        parcels: {
+          type: "pmtiles",
+          url: "pmtiles://local/parcels.pmtiles"
+        }
+      },
+      layers: [
+        {
+          id: "parcel-fills",
+          type: "fill",
+          source: "parcels"
+        }
+      ]
+    });
+
+    const response = await createGenerationEvidenceBundle({
+      promptHash: "sha256:pmtiles-delivery",
+      skeleton,
+      exampleId: "pmtiles-local"
+    });
+
+    expect(response.ok).toBe(true);
+    if (!response.ok) throw new Error("Expected PMTiles delivery evidence to succeed.");
+    expect(response.result.status).toBe("ready");
+    expect(response.result.delivery).toMatchObject({
+      status: "needs-confirmation",
+      acceptance: {
+        state: "needs-confirmation",
+        needsConfirmation: true,
+        ready: false,
+        blocked: false
+      },
+      confirmationRequired: true,
+      sourceReadiness: [
+        expect.objectContaining({
+          sourceId: "parcels",
+          type: "pmtiles",
+          state: "readiness-only",
+          queryReady: false,
+          confirmationReasons: ["external-resource", "archive-parsing"]
+        })
+      ]
+    });
+    expect(response.result.delivery.confirmations).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          reason: "external-resource",
+          required: true,
+          sourceIds: ["parcels"]
+        }),
+        expect.objectContaining({
+          reason: "archive-parsing",
+          required: true,
+          sourceIds: ["parcels"]
+        }),
+        expect.objectContaining({
+          reason: "file-write",
+          required: false,
+          target: "export_example_app manifest output"
+        })
+      ])
+    );
+    expect(response.result.exampleEvidence).toMatchObject({
+      exampleId: "pmtiles-local",
+      writesFiles: false,
+      generationEvidence: {
+        delivery: {
+          status: "needs-confirmation",
+          confirmationRequired: true
+        }
+      }
+    });
+  });
+
+  it("marks extension-only scene browsing as follow-up-required without stable runtime promotion", async () => {
+    const skeleton = createMapGenerationCommandSkeleton({
+      mapId: "scene-delivery",
+      promptHash: "sha256:scene-delivery",
+      traceId: "trace-scene-delivery",
+      targetDomains: ["scene-browsing"],
+      scene3d: {
+        camera: {
+          position: [120.15, 30.28, 1200],
+          target: [120.15, 30.28, 0]
+        },
+        sources: {
+          city: {
+            type: "3d-tiles",
+            url: "./data/city/tileset.json"
+          }
+        },
+        layers: [
+          {
+            id: "city",
+            type: "tileset3d",
+            source: "city",
+            pickable: true
+          }
+        ]
+      }
+    });
+
+    const response = await createGenerationEvidenceBundle({
+      promptHash: "sha256:scene-delivery",
+      skeleton
+    });
+
+    expect(response.ok).toBe(true);
+    if (!response.ok) throw new Error("Expected scene delivery evidence to succeed.");
+    expect(response.result.status).toBe("ready");
+    expect(response.result.delivery).toMatchObject({
+      status: "follow-up-required",
+      acceptance: {
+        state: "follow-up-required",
+        followUpRequired: true,
+        needsConfirmation: false,
+        blocked: false
+      }
+    });
+    expect(response.result.delivery.followUps).toContainEqual(
+      expect.objectContaining({
+        id: "scene-browsing.stable-runtime-gate",
+        owner: "@quality-guardian",
+        blockerCode: "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED"
+      })
+    );
+    expect(response.result.exampleEvidence.generationEvidence?.sceneBrowsing).toMatchObject({
+      requested: true,
+      status: "experimental",
+      state: "extension-only",
+      stableRuntimeBlocked: true,
+      stableViewMode: false,
+      runtimeSupported: false,
+      stableRuntimeBlockerCodes: [
+        "SCENE3D.STABLE_RUNTIME_DIMENSIONS_BLOCKED",
+        "SCENE3D.STABLE_RUNTIME_RENDERER_BLOCKED",
+        "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED"
+      ]
+    });
   });
 
   it("keeps generation evidence schemas strict and Ajv-compilable", async () => {

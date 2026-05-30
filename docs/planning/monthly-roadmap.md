@@ -117,6 +117,13 @@ generated-app delivery UX、acceptance/confirmation states、cloud-native source
 promotion candidates、spatial-analysis promotion criteria 和 extension-only
 scene browsing copy。
 
+2026-05-30 AIN-001/002 执行结果：generated-app delivery UX 和
+acceptance/confirmation states 已落为 `generationEvidence.delivery` 合同。
+compact manifest 与 full `GenerationEvidenceBundle` 现在公开
+`ready`、`blocked`、`needs-confirmation`、`follow-up-required` 状态、
+confirmation boundaries、source readiness 和 follow-up tasks；未新增 MCP tool
+name，`export_example_app` 仍不写文件。
+
 ## 2026-W22 Iteration Path
 
 | Priority | Track | Plan | Exit Condition |
@@ -165,9 +172,9 @@ scene browsing copy。
 
 | 排名 | 事项 | 得分 | 证据 | 行动 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | Generated-app delivery UX | 6.45 | NLQ evidence spine is closed, but users still need an inspectable handoff and confirmation states | execute AIN-001 and AIN-002 before adding new implementation surfaces | medium |
-| 2 | Future scene browsing product design | 6.05 | generated app manifests now preserve extension-only status and stable-runtime blocker codes without enabling stable 3D runtime | execute AIN-005 as copy/evidence work, not renderer promotion | medium |
-| 3 | Future cloud-native source implementation contract | 5.90 | readiness matrix now documents supported/readiness-only/blocked formats before implementation claims | execute AIN-003 before any GeoParquet/FlatGeobuf/GeoTIFF/GeoZarr schema task | high |
+| 1 | Future cloud-native source implementation contract | 5.90 | readiness matrix now feeds manifest `sourceReadiness`, but promotion candidates still need separate schema/resource-policy/query/export gates | execute AIN-003 before any GeoParquet/FlatGeobuf/GeoTIFF/GeoZarr schema task | high |
+| 2 | Spatial-analysis promotion criteria | 5.80 | generated-app delivery can expose blocked operations and follow-up tasks, but future operations still need promotion gates | execute AIN-004 before buffer/overlay/routing/aggregation implementation | medium |
+| 3 | Future scene browsing product design | 5.70 | generated app manifests now preserve extension-only state and stable-runtime blocker codes without enabling stable 3D runtime | execute AIN-005 as copy/evidence work, not renderer promotion | medium |
 | 4 | SceneView3D promotion readiness | parked / no-go | W22 evidence and beta gate are complete; W23 promotion-readiness package and gate are complete, and SRC-006 records No-go | future promotion requires a new stable-runtime task and Go decision | high |
 
 已完成并保留回归证据：

@@ -24,11 +24,117 @@ const Scene3DStableRuntimeBlockerCodeSchema = {
   enum: Object.values(Scene3DStableRuntimeBlockerCodes)
 } as const;
 
+const DeliveryStatusSchema = {
+  type: "string",
+  enum: ["ready", "blocked", "needs-confirmation", "follow-up-required"]
+} as const;
+
+const DeliverySectionIdSchema = {
+  type: "string",
+  enum: ["readiness", "files", "map-edits", "data-and-analysis", "scene-browsing"]
+} as const;
+
+const DeliveryConfirmationReasonSchema = {
+  type: "string",
+  enum: ["external-resource", "network-fetch", "archive-parsing", "worker-use", "file-write", "stable-scene3d-runtime"]
+} as const;
+
+const SourceReadinessStateSchema = {
+  type: "string",
+  enum: ["supported", "readiness-only", "blocked"]
+} as const;
+
+export const ExampleAppDeliverySummarySchema = {
+  type: "object",
+  properties: {
+    status: DeliveryStatusSchema,
+    acceptance: {
+      type: "object",
+      properties: {
+        state: DeliveryStatusSchema,
+        ready: { type: "boolean" },
+        blocked: { type: "boolean" },
+        needsConfirmation: { type: "boolean" },
+        followUpRequired: { type: "boolean" }
+      },
+      required: ["state", "ready", "blocked", "needsConfirmation", "followUpRequired"],
+      additionalProperties: false
+    },
+    sections: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          id: DeliverySectionIdSchema,
+          status: DeliveryStatusSchema,
+          blockerCount: { type: "number" },
+          confirmationRequired: { type: "boolean" },
+          followUpCount: { type: "number" }
+        },
+        required: ["id", "status", "blockerCount", "confirmationRequired", "followUpCount"],
+        additionalProperties: false
+      }
+    },
+    confirmations: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          reason: DeliveryConfirmationReasonSchema,
+          required: { type: "boolean" },
+          target: { type: "string" },
+          sourceIds: { type: "array", items: { type: "string" } }
+        },
+        required: ["reason", "required", "target"],
+        additionalProperties: false
+      }
+    },
+    confirmationRequired: { type: "boolean" },
+    followUps: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          owner: { type: "string" },
+          targetArtifact: { type: "string" },
+          reason: { type: "string" },
+          blockerCode: { type: "string" }
+        },
+        required: ["id", "owner", "targetArtifact", "reason"],
+        additionalProperties: false
+      }
+    },
+    sourceReadiness: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          sourceId: { type: "string" },
+          type: { type: "string" },
+          state: SourceReadinessStateSchema,
+          queryReady: { type: "boolean" },
+          confirmationReasons: {
+            type: "array",
+            items: DeliveryConfirmationReasonSchema
+          },
+          notes: { type: "array", items: { type: "string" } }
+        },
+        required: ["sourceId", "type", "state", "queryReady", "confirmationReasons", "notes"],
+        additionalProperties: false
+      }
+    }
+  },
+  required: ["status", "acceptance", "sections", "confirmations", "confirmationRequired", "followUps", "sourceReadiness"],
+  additionalProperties: false
+} as const;
+
 export const ExampleAppGenerationEvidenceSummarySchema = {
   type: "object",
   properties: {
     promptHash: { type: "string" },
     status: { type: "string", enum: ["ready", "blocked"] },
+    delivery: ExampleAppDeliverySummarySchema,
     targetDomains: {
       type: "array",
       items: { type: "string", enum: ["feature-display", "spatial-analysis", "scene-browsing"] }
@@ -82,6 +188,8 @@ export const ExampleAppGenerationEvidenceSummarySchema = {
         extensionPresent: { type: "boolean" },
         stableViewMode: { type: "boolean", const: false },
         runtimeSupported: { type: "boolean", const: false },
+        stableRuntimeBlocked: { type: "boolean", const: true },
+        state: { type: "string", enum: ["extension-only", "blocked", "not-requested"] },
         sourceCount: { type: "number" },
         layerCount: { type: "number" },
         sourceIds: { type: "array", items: { type: "string" } },
@@ -100,6 +208,8 @@ export const ExampleAppGenerationEvidenceSummarySchema = {
         "extensionPresent",
         "stableViewMode",
         "runtimeSupported",
+        "stableRuntimeBlocked",
+        "state",
         "sourceCount",
         "layerCount",
         "sourceIds",
@@ -134,6 +244,7 @@ export const ExampleAppGenerationEvidenceSummarySchema = {
   },
   required: [
     "status",
+    "delivery",
     "targetDomains",
     "toolSequence",
     "diagnosticCounts",
@@ -165,6 +276,7 @@ export interface ExportExampleAppToolInput {
 export interface ExampleAppGenerationEvidenceSummary {
   promptHash?: string;
   status: "ready" | "blocked";
+  delivery: ExampleAppDeliverySummary;
   targetDomains: Array<"feature-display" | "spatial-analysis" | "scene-browsing">;
   toolSequence: Array<"validate_spec" | "apply_commands" | "export_spec" | "get_context_summary" | "snapshot_spec" | "explain_spec" | "export_example_app">;
   diagnosticCounts: Record<Diagnostic["severity"], number>;
@@ -192,6 +304,8 @@ export interface ExampleAppGenerationEvidenceSummary {
     extensionPresent: boolean;
     stableViewMode: false;
     runtimeSupported: false;
+    stableRuntimeBlocked: true;
+    state: "extension-only" | "blocked" | "not-requested";
     sourceCount: number;
     layerCount: number;
     sourceIds: string[];
@@ -211,6 +325,46 @@ export interface ExampleAppGenerationEvidenceSummary {
     sourceCount: number;
     layerCount: number;
   };
+}
+
+export interface ExampleAppDeliverySummary {
+  status: "ready" | "blocked" | "needs-confirmation" | "follow-up-required";
+  acceptance: {
+    state: "ready" | "blocked" | "needs-confirmation" | "follow-up-required";
+    ready: boolean;
+    blocked: boolean;
+    needsConfirmation: boolean;
+    followUpRequired: boolean;
+  };
+  sections: Array<{
+    id: "readiness" | "files" | "map-edits" | "data-and-analysis" | "scene-browsing";
+    status: "ready" | "blocked" | "needs-confirmation" | "follow-up-required";
+    blockerCount: number;
+    confirmationRequired: boolean;
+    followUpCount: number;
+  }>;
+  confirmations: Array<{
+    reason: "external-resource" | "network-fetch" | "archive-parsing" | "worker-use" | "file-write" | "stable-scene3d-runtime";
+    required: boolean;
+    target: string;
+    sourceIds?: string[];
+  }>;
+  confirmationRequired: boolean;
+  followUps: Array<{
+    id: string;
+    owner: string;
+    targetArtifact: string;
+    reason: string;
+    blockerCode?: string;
+  }>;
+  sourceReadiness: Array<{
+    sourceId: string;
+    type: string;
+    state: "supported" | "readiness-only" | "blocked";
+    queryReady: boolean;
+    confirmationReasons: Array<"external-resource" | "network-fetch" | "archive-parsing" | "worker-use" | "file-write" | "stable-scene3d-runtime">;
+    notes: string[];
+  }>;
 }
 
 export interface ExampleAppFile {

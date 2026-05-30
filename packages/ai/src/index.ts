@@ -10,9 +10,11 @@ export {
 } from "./tools/contextSummary.js";
 export { explainSpecTool, ExplainSpecToolInputSchema, type ExplainSpecToolInput, type ExplainSpecToolResult } from "./tools/explainSpec.js";
 export {
+  ExampleAppDeliverySummarySchema,
   ExampleAppGenerationEvidenceSummarySchema,
   exportExampleAppTool,
   ExportExampleAppToolInputSchema,
+  type ExampleAppDeliverySummary,
   type ExampleAppGenerationEvidenceSummary,
   type ExampleAppManifest,
   type ExportExampleAppToolInput

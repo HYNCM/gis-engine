@@ -51,6 +51,29 @@ sections:
 - Scene browsing copy clearly says extension-only and shows stable-runtime
   blocker codes when relevant.
 
+## AIN-001 / AIN-002 Contract
+
+The current implementation exposes these delivery fields through
+`generationEvidence.delivery` in generated-app manifests and through the full
+`GenerationEvidenceBundle.delivery` handoff:
+
+| Field | Values | User-Facing Meaning |
+| --- | --- | --- |
+| `delivery.status` | `ready`, `blocked`, `needs-confirmation`, `follow-up-required` | Primary delivery state for the generated-app handoff. |
+| `delivery.acceptance.state` | same as `delivery.status` | Schema-testable acceptance state for UI and QA assertions. |
+| `delivery.sections[].id` | `readiness`, `files`, `map-edits`, `data-and-analysis`, `scene-browsing` | Direct mapping from product sections to evidence slices. |
+| `delivery.confirmations[].reason` | `external-resource`, `network-fetch`, `archive-parsing`, `worker-use`, `file-write`, `stable-scene3d-runtime` | Explicit confirmation boundaries before future high-risk IO or runtime promotion. |
+| `delivery.sourceReadiness[].state` | `supported`, `readiness-only`, `blocked` | Per-source status aligned to the cloud-native source readiness matrix. |
+| `sceneBrowsing.state` | `not-requested`, `extension-only`, `blocked` | Scene browsing copy can say extension-only without implying stable 3D runtime support. |
+| `sceneBrowsing.stableRuntimeBlocked` | `true` | Stable `view.mode: "scene3d"` is still blocked even when extension evidence exists. |
+
+`ready` means the inspectable handoff is ready, not that files were written or
+external resources were fetched. `needs-confirmation` is used when the spec
+references resource, network, archive, worker, or file-write actions that must
+remain behind an explicit future confirmation boundary. `follow-up-required`
+keeps extension-only scene browsing and readiness-only sources visible as next
+work instead of silently upgrading capability claims.
+
 ## Non-Goals
 
 - No free-form prompt parser expansion in this spec.

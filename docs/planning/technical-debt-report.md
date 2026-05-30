@@ -72,22 +72,30 @@ stable-runtime blocker codes；剩余最高优先级债务转为 serialized plan
 已立项；最高优先级债务转为用户可检查的交付/确认状态，而不是继续补 evidence
 spine。
 
+2026-05-30 AIN-001/002 update: generated-app delivery acceptance states 已接入
+`generationEvidence.delivery`；剩余最高优先级债务转为 source 与
+spatial-analysis promotion criteria。
+
 ## 债务优先级
 
 | 排名 | 债务 | 得分 | 证据 | 建议修复 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | Generated-app delivery acceptance states missing | 0.44 | evidence spine is closed, but users still need readiness / blocked / needs-confirmation states that a UI can render | execute `TASK-2026W22-AIN-001` and `TASK-2026W22-AIN-002` | medium |
-| 2 | SceneView3D stable runtime promotion parked after SRC-006 No-go | 0.42 | W23 gate and SRC-006 decision keep stable runtime blocked while browser matrix / adapter summary / docs alignment are in place | keep the blocker codes and require a new explicit stable-runtime approval task before reopening | medium |
-| 3 | Future source promotion criteria missing | 0.34 | cloud-native readiness matrix exists, but implementation candidates need separate schema/resource-policy/query/export promotion gates | execute `TASK-2026W22-AIN-003` before source implementation | high |
+| 1 | Future source promotion criteria missing | 0.39 | cloud-native readiness matrix now appears in generated-app delivery, but implementation candidates still need separate schema/resource-policy/query/export gates | execute `TASK-2026W22-AIN-003` before source implementation | high |
+| 2 | Spatial-analysis promotion criteria missing | 0.36 | delivery follow-ups can expose blocked operations, but buffer/overlay/routing/aggregation still lack promotion gates | execute `TASK-2026W22-AIN-004` before operation implementation | medium |
+| 3 | SceneView3D stable runtime promotion parked after SRC-006 No-go | 0.35 | W23 gate and SRC-006 decision keep stable runtime blocked while delivery now exposes extension-only state and blocker codes | keep the blocker codes and require a new explicit stable-runtime approval task before reopening | medium |
 
 ## 修复顺序
 
-1. 先执行 `TASK-2026W22-AIN-001` / `AIN-002`：把 generated-app evidence 转成用户可检查的 delivery / acceptance contract。
-2. 再执行 `TASK-2026W22-AIN-003` / `AIN-004`：把 source 与 spatial-analysis promotion criteria 拆成未来实现门禁。
+1. 先执行 `TASK-2026W22-AIN-003` / `AIN-004`：把 source 与 spatial-analysis promotion criteria 拆成未来实现门禁。
+2. 再执行 `TASK-2026W22-AIN-005`：把 scene browsing delivery copy/evidence follow-through 继续保持 extension-only。
 3. 下一步若要推进 stable runtime promotion，必须先形成明确的 promotion rubric、browser matrix evidence 和 guardrail diagnostics，不得直接把 `view.mode: "scene3d"` 视为稳定。
 4. 后续真实 renderer loader 接入时，必须先调用 `validateSceneResourceLoadPlan`，不得绕过 byte、texture、worker、timeout diagnostics。
 5. W23 promotion readiness sprint 已完成并记录 no-go verdict；stable runtime promotion 仍然 blocked until a future approval.
 
 ## 结论
 
-如果只做一件事，下一步优先把 generated-app evidence 变成用户可检查、可确认、可继续迭代的交付体验。SceneView3D stable runtime 仍保持 blocker state，直到新的 explicit approval arrives；下一步不能绕过 blocker code 直接打开 stable `view.mode: "scene3d"`。
+如果只做一件事，下一步优先把 source 与 spatial-analysis promotion
+criteria 拆成可执行门禁。Generated-app delivery contract 已能表达 ready /
+blocked / needs-confirmation / follow-up-required；SceneView3D stable runtime
+仍保持 blocker state，直到新的 explicit approval arrives；下一步不能绕过
+blocker code 直接打开 stable `view.mode: "scene3d"`。

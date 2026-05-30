@@ -129,7 +129,8 @@ diagnostics.
 | TASK-2026W23-NLQ-005 | done | `docs/planning/feature-specs/cloud-native-source-readiness.md` |
 | TASK-2026W23-NLQ-006 | done | `docs/reviews/nlq-006-scene-browsing-blocker-visibility-2026-05-29.md` |
 | TASK-2026W23-NLQ-007 | done | `docs/reviews/nlq-007-serialized-quality-hardening-planning-2026-05-29.md` |
-| TASK-2026W22-AIN-001 through AIN-005 | planned | `docs/planning/sprint-2026-W22-ai-native-next-loop.md` |
+| TASK-2026W22-AIN-001 through AIN-002 | done | `docs/reviews/ain-001-002-generated-app-delivery-acceptance-2026-05-30.md`; `generationEvidence.delivery` contract |
+| TASK-2026W22-AIN-003 through AIN-005 | planned | `docs/planning/sprint-2026-W22-ai-native-next-loop.md` |
 
 ## Next Handoff
 
@@ -146,6 +147,7 @@ diagnostics.
   only after schema, command, diagnostics, and MCP output contracts are clear.
 - `@qa-agent` / `@docs-agent`: plan prompt evidence scenarios and public docs
   around validation, trace, snapshot, and export artifacts.
-- `@competitive-intel`, `@product-strategist`, `@coordinator`, and
-  `@task-distributor`: execute `docs/planning/sprint-2026-W22-ai-native-next-loop.md`,
-  starting with generated-app delivery UX and confirmation states.
+- `@engine-agent`, `@ai-agent`, `@qa-agent`, and `@docs-agent`: continue
+  `docs/planning/sprint-2026-W22-ai-native-next-loop.md` from AIN-003 through
+  AIN-005 now that generated-app delivery UX and confirmation states are
+  schema-testable.

@@ -6,6 +6,60 @@ import vectorTileUrl from "../fixtures/specs/valid/vector-tile-url.map.json";
 import type { MapSpec } from "@gis-engine/engine";
 import { callGisEngineTool, createGisEngineMcpServer, listGisEngineTools } from "@gis-engine/ai";
 
+function manifestDeliverySummary(status: "ready" | "blocked" | "needs-confirmation" | "follow-up-required" = "ready") {
+  return {
+    status,
+    acceptance: {
+      state: status,
+      ready: status === "ready",
+      blocked: status === "blocked",
+      needsConfirmation: status === "needs-confirmation",
+      followUpRequired: status === "follow-up-required"
+    },
+    sections: [
+      {
+        id: "readiness",
+        status,
+        blockerCount: status === "blocked" ? 1 : 0,
+        confirmationRequired: status === "needs-confirmation",
+        followUpCount: status === "follow-up-required" ? 1 : 0
+      },
+      { id: "files", status: "ready", blockerCount: 0, confirmationRequired: false, followUpCount: 0 },
+      {
+        id: "map-edits",
+        status: status === "blocked" ? "blocked" : "ready",
+        blockerCount: status === "blocked" ? 1 : 0,
+        confirmationRequired: false,
+        followUpCount: 0
+      },
+      {
+        id: "data-and-analysis",
+        status: status === "needs-confirmation" ? "needs-confirmation" : "ready",
+        blockerCount: 0,
+        confirmationRequired: status === "needs-confirmation",
+        followUpCount: 0
+      },
+      {
+        id: "scene-browsing",
+        status: status === "follow-up-required" ? "follow-up-required" : "ready",
+        blockerCount: 0,
+        confirmationRequired: false,
+        followUpCount: status === "follow-up-required" ? 1 : 0
+      }
+    ],
+    confirmations: [
+      { reason: "external-resource", required: status === "needs-confirmation", target: "MapSpec.sources URL-bearing entries" },
+      { reason: "network-fetch", required: false, target: "future resource loader fetch" },
+      { reason: "archive-parsing", required: false, target: "future archive parser or range reader" },
+      { reason: "worker-use", required: false, target: "future worker-backed data decode" },
+      { reason: "file-write", required: false, target: "export_example_app manifest output" }
+    ],
+    confirmationRequired: status === "needs-confirmation",
+    followUps: [],
+    sourceReadiness: []
+  };
+}
+
 describe("MCP Server Integration", () => {
   it("defines the expected v0.1 tools without starting stdio", async () => {
     const server = createGisEngineMcpServer();
@@ -474,6 +528,7 @@ describe("MCP Server Integration", () => {
           generationEvidence: {
             promptHash: "sha256:manifest-summary",
             status: "ready",
+            delivery: manifestDeliverySummary(),
             targetDomains: ["feature-display", "spatial-analysis"],
             toolSequence: ["get_context_summary", "validate_spec", "apply_commands", "snapshot_spec", "export_spec", "export_example_app"],
             diagnosticCounts: { error: 0, warning: 0, info: 0 },
@@ -501,6 +556,8 @@ describe("MCP Server Integration", () => {
               extensionPresent: false,
               stableViewMode: false,
               runtimeSupported: false,
+              stableRuntimeBlocked: true,
+              state: "not-requested",
               sourceCount: 0,
               layerCount: 0,
               sourceIds: [],
@@ -566,6 +623,7 @@ describe("MCP Server Integration", () => {
           generationEvidence: {
             promptHash: "sha256:scene-manifest-summary",
             status: "ready",
+            delivery: manifestDeliverySummary("follow-up-required"),
             targetDomains: ["scene-browsing"],
             toolSequence: ["get_context_summary", "validate_spec", "apply_commands", "snapshot_spec", "export_spec", "export_example_app"],
             diagnosticCounts: { error: 0, warning: 0, info: 0 },
@@ -593,6 +651,8 @@ describe("MCP Server Integration", () => {
               extensionPresent: true,
               stableViewMode: false,
               runtimeSupported: false,
+              stableRuntimeBlocked: true,
+              state: "extension-only",
               sourceCount: 1,
               layerCount: 1,
               sourceIds: ["city"],

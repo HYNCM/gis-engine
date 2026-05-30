@@ -47,15 +47,22 @@ accepted and unsupported intent fields, source prompt hashes, and diagnostic
 counts. `exampleEvidence.generationEvidence` is the compact export manifest
 handoff summary; it includes status, target domains, diagnostic counts, command
 summary, planner summary, spatial query summary, scene browsing blocker
-summary, snapshot status, and export counts without exposing feature payloads
-or snapshot data URLs. A generated app
-should be treated as ready only when the bundle returns `status: "ready"` and
-the relevant planner/spatial-query/snapshot/export evidence passes.
+summary, snapshot status, export counts, and a delivery summary without
+exposing feature payloads or snapshot data URLs. The delivery summary exposes
+schema-testable `ready`, `blocked`, `needs-confirmation`, and
+`follow-up-required` states, plus per-section status, confirmation boundaries,
+follow-up tasks, and source readiness as `supported`, `readiness-only`, or
+`blocked`. A generated app should be treated as ready only when the bundle
+returns `status: "ready"`, `delivery.status: "ready"`, and the relevant
+planner/spatial-query/snapshot/export evidence passes.
 
 Scene browsing remains extension-only in this flow. `extensions.scene3d` can be
 summarized through mock snapshot/query evidence, but
 `view.mode: "scene3d"` and renderer-specific SceneView3D evidence remain
-blocked until a future stable-runtime gate is accepted.
+blocked until a future stable-runtime gate is accepted. The compact
+`sceneBrowsing` summary includes `state: "extension-only"` and
+`stableRuntimeBlocked: true` when scene browsing is present without stable
+runtime approval.
 
 ## AI Orchestration Guidance
 

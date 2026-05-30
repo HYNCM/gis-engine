@@ -29,9 +29,11 @@ import {
 import { applyCommandsTool } from "./applyCommands.js";
 import { getContextSummary, type ContextSummary, type GisEngineToolName } from "./contextSummary.js";
 import {
+  ExampleAppDeliverySummarySchema,
   ExampleAppGenerationEvidenceSummarySchema,
   exportExampleAppTool,
   ExportExampleAppToolInputSchema,
+  type ExampleAppDeliverySummary,
   type ExampleAppGenerationEvidenceSummary,
   type ExampleId
 } from "./exportExampleApp.js";
@@ -283,6 +285,7 @@ export const GenerationEvidenceBundleSchema = {
       required: ["ready", "sourceCount", "layerCount", "diagnosticCounts"],
       additionalProperties: false
     },
+    delivery: ExampleAppDeliverySummarySchema,
     exampleEvidence: {
       type: "object",
       properties: {
@@ -312,6 +315,7 @@ export const GenerationEvidenceBundleSchema = {
     "spatialQueryEvidence",
     "snapshotEvidence",
     "exportEvidence",
+    "delivery",
     "exampleEvidence",
     "diagnostics"
   ],
@@ -454,6 +458,7 @@ export interface GenerationEvidenceBundle {
   spatialQueryEvidence: GenerationSpatialQueryEvidence;
   snapshotEvidence: GenerationSnapshotEvidence;
   exportEvidence: GenerationExportEvidence;
+  delivery: ExampleAppDeliverySummary;
   exampleEvidence: GenerationExampleEvidence;
   diagnostics: Diagnostic[];
 }
@@ -504,19 +509,20 @@ export async function createGenerationEvidenceBundle(input: unknown): Promise<Ge
     snapshotEvidence.diagnosticCounts.error > 0
       ? "blocked"
       : "ready";
+  const manifestGenerationEvidence = buildExampleManifestGenerationEvidenceSummary({
+    input: typedInput,
+    summary,
+    commandEvidence,
+    plannerEvidence,
+    spatialQueryEvidence,
+    snapshotEvidence,
+    exportEvidence,
+    status: statusBeforeExample,
+    diagnostics: visibleDiagnosticsBeforeExample
+  });
   const exampleEvidence = buildExampleEvidence(
     typedInput.exampleId ?? "ai-map-edit",
-    buildExampleManifestGenerationEvidenceSummary({
-      input: typedInput,
-      summary,
-      commandEvidence,
-      plannerEvidence,
-      spatialQueryEvidence,
-      snapshotEvidence,
-      exportEvidence,
-      status: statusBeforeExample,
-      diagnostics: visibleDiagnosticsBeforeExample
-    })
+    manifestGenerationEvidence
   );
   const diagnostics = [
     ...diagnosticsBeforeExample,
@@ -542,6 +548,7 @@ export async function createGenerationEvidenceBundle(input: unknown): Promise<Ge
       spatialQueryEvidence: stripSpatialQueryDiagnostics(spatialQueryEvidence),
       snapshotEvidence: stripInternalDiagnostics(snapshotEvidence),
       exportEvidence,
+      delivery: manifestGenerationEvidence.delivery,
       exampleEvidence: stripExampleDiagnostics(exampleEvidence),
       diagnostics: visibleDiagnostics
     },
@@ -1142,9 +1149,23 @@ function buildExampleManifestGenerationEvidenceSummary(input: {
   status: "ready" | "blocked";
   diagnostics: Diagnostic[];
 }): ExampleAppGenerationEvidenceSummary {
+  const sceneBrowsing = buildSceneBrowsingManifestSummary(input.input, input.summary, input.status, input.diagnostics);
+  const delivery = buildDeliverySummary({
+    input: input.input,
+    status: input.status,
+    commandEvidence: input.commandEvidence,
+    plannerEvidence: input.plannerEvidence,
+    spatialQueryEvidence: input.spatialQueryEvidence,
+    snapshotEvidence: input.snapshotEvidence,
+    exportEvidence: input.exportEvidence,
+    sceneBrowsing,
+    diagnostics: input.diagnostics
+  });
+
   return {
     promptHash: input.input.promptHash,
     status: input.status,
+    delivery,
     targetDomains: input.input.skeleton.targetDomains,
     toolSequence: ["get_context_summary", "validate_spec", "apply_commands", "snapshot_spec", "export_spec", "export_example_app"],
     diagnosticCounts: countDiagnostics(input.diagnostics),
@@ -1166,7 +1187,7 @@ function buildExampleManifestGenerationEvidenceSummary(input: {
       caseCount: input.spatialQueryEvidence.cases.length,
       blockedOperations: input.spatialQueryEvidence.blockedOperations
     },
-    sceneBrowsing: buildSceneBrowsingManifestSummary(input.input, input.summary, input.status, input.diagnostics),
+    sceneBrowsing,
     snapshot: {
       requested: input.snapshotEvidence.requested,
       renderer: input.snapshotEvidence.renderer,
@@ -1200,6 +1221,8 @@ function buildSceneBrowsingManifestSummary(
     extensionPresent: summary.scene3d !== undefined,
     stableViewMode: false,
     runtimeSupported: false,
+    stableRuntimeBlocked: true,
+    state: !requested ? "not-requested" : status === "blocked" || diagnosticBlockerCodes.length > 0 ? "blocked" : "extension-only",
     sourceCount: summary.scene3d?.sourceCount ?? 0,
     layerCount: summary.scene3d?.layerCount ?? 0,
     sourceIds: summary.scene3d?.sources.map((source) => source.id) ?? [],
@@ -1209,6 +1232,293 @@ function buildSceneBrowsingManifestSummary(
     mockQueryPickCount: summary.scene3d?.query.pickCount ?? 0,
     stableRuntimeBlockerCodes
   };
+}
+
+function buildDeliverySummary(input: {
+  input: GenerationEvidenceBundleInput;
+  status: "ready" | "blocked";
+  commandEvidence: GenerationCommandEvidence;
+  plannerEvidence: GenerationPlannerEvidence;
+  spatialQueryEvidence: GenerationSpatialQueryEvidence;
+  snapshotEvidence: GenerationSnapshotEvidence;
+  exportEvidence: GenerationExportEvidence;
+  sceneBrowsing: ExampleAppGenerationEvidenceSummary["sceneBrowsing"];
+  diagnostics: Diagnostic[];
+}): ExampleAppDeliverySummary {
+  const sourceReadiness = buildSourceReadiness(input.input.skeleton.spec);
+  const confirmations = buildDeliveryConfirmations(sourceReadiness);
+  const confirmationRequired = confirmations.some((confirmation) => confirmation.required);
+  const followUps = buildDeliveryFollowUps(input, sourceReadiness);
+  const status = deliveryStatus(input.status, confirmationRequired, followUps.length);
+  const dataAndAnalysisBlockerCount =
+    input.spatialQueryEvidence.diagnosticCounts.error + sourceReadiness.filter((source) => source.state === "blocked").length;
+  const sceneBrowsingBlockerCount =
+    input.sceneBrowsing.status === "blocked"
+      ? Math.max(input.sceneBrowsing.stableRuntimeBlockerCodes.length, sceneBlockerDiagnosticCount(input.diagnostics))
+      : 0;
+  const dataConfirmationRequired = confirmations.some(
+    (confirmation) =>
+      confirmation.required &&
+      (confirmation.reason === "external-resource" ||
+        confirmation.reason === "network-fetch" ||
+        confirmation.reason === "archive-parsing" ||
+        confirmation.reason === "worker-use")
+  );
+
+  return {
+    status,
+    acceptance: {
+      state: status,
+      ready: status === "ready",
+      blocked: status === "blocked",
+      needsConfirmation: status === "needs-confirmation",
+      followUpRequired: status === "follow-up-required"
+    },
+    sections: [
+      {
+        id: "readiness",
+        status,
+        blockerCount: countDiagnostics(input.diagnostics).error,
+        confirmationRequired,
+        followUpCount: followUps.length
+      },
+      {
+        id: "files",
+        status: "ready",
+        blockerCount: 0,
+        confirmationRequired: false,
+        followUpCount: 0
+      },
+      {
+        id: "map-edits",
+        status: input.commandEvidence.diagnosticCounts.error > 0 ? "blocked" : "ready",
+        blockerCount: input.commandEvidence.diagnosticCounts.error,
+        confirmationRequired: false,
+        followUpCount: followUps.filter((followUp) => followUp.id.startsWith("planner.")).length
+      },
+      {
+        id: "data-and-analysis",
+        status: dataAndAnalysisBlockerCount > 0 ? "blocked" : dataConfirmationRequired ? "needs-confirmation" : dataSectionFollowUpCount(followUps) > 0 ? "follow-up-required" : "ready",
+        blockerCount: dataAndAnalysisBlockerCount,
+        confirmationRequired: dataConfirmationRequired,
+        followUpCount: dataSectionFollowUpCount(followUps)
+      },
+      {
+        id: "scene-browsing",
+        status: sceneBrowsingBlockerCount > 0 ? "blocked" : input.sceneBrowsing.requested ? "follow-up-required" : "ready",
+        blockerCount: sceneBrowsingBlockerCount,
+        confirmationRequired: false,
+        followUpCount: followUps.filter((followUp) => followUp.id.startsWith("scene-browsing.")).length
+      }
+    ],
+    confirmations,
+    confirmationRequired,
+    followUps,
+    sourceReadiness
+  };
+}
+
+function deliveryStatus(
+  status: "ready" | "blocked",
+  confirmationRequired: boolean,
+  followUpCount: number
+): ExampleAppDeliverySummary["status"] {
+  if (status === "blocked") return "blocked";
+  if (confirmationRequired) return "needs-confirmation";
+  if (followUpCount > 0) return "follow-up-required";
+  return "ready";
+}
+
+function buildSourceReadiness(spec: MapSpec): ExampleAppDeliverySummary["sourceReadiness"] {
+  return Object.entries(spec.sources).map(([sourceId, source]) => {
+    const confirmationReasons = sourceConfirmationReasons(source);
+    if (source.type === "geojson" && typeof source.data !== "string") {
+      return {
+        sourceId,
+        type: source.type,
+        state: "supported",
+        queryReady: true,
+        confirmationReasons,
+        notes: ["Inline GeoJSON is schema-valid, display-ready, and eligible for deterministic point/bbox query evidence."]
+      };
+    }
+
+    if (source.type === "geojson") {
+      return {
+        sourceId,
+        type: source.type,
+        state: "readiness-only",
+        queryReady: false,
+        confirmationReasons,
+        notes: ["URL GeoJSON is display/export ready, but headless query evidence must not fetch it without a future loader contract."]
+      };
+    }
+
+    if (source.type === "pmtiles") {
+      return {
+        sourceId,
+        type: source.type,
+        state: "readiness-only",
+        queryReady: false,
+        confirmationReasons,
+        notes: ["PMTiles is URL-compatible for display/export evidence, while archive parsing and feature query support remain future contracts."]
+      };
+    }
+
+    if (source.type === "raster") {
+      return {
+        sourceId,
+        type: source.type,
+        state: "supported",
+        queryReady: false,
+        confirmationReasons,
+        notes: ["Raster tiles are display/export ready; feature query and raster sampling remain blocked future work."]
+      };
+    }
+
+    if (source.type === "vector") {
+      return {
+        sourceId,
+        type: source.type,
+        state: "supported",
+        queryReady: false,
+        confirmationReasons,
+        notes: ["Vector tile URLs are display/export ready; headless feature query support requires a future tile decode contract."]
+      };
+    }
+
+    return {
+      sourceId,
+      type: (source as { type: string }).type,
+      state: "blocked",
+      queryReady: false,
+      confirmationReasons,
+      notes: ["This source type is outside the current public MapSpec source readiness matrix."]
+    };
+  });
+}
+
+function sourceConfirmationReasons(source: MapSpec["sources"][string]): ExampleAppDeliverySummary["sourceReadiness"][number]["confirmationReasons"] {
+  const urls = sourceUrls(source);
+  const reasons = new Set<ExampleAppDeliverySummary["sourceReadiness"][number]["confirmationReasons"][number]>();
+  if (urls.length > 0) reasons.add("external-resource");
+  if (urls.some(isRemoteUrl)) reasons.add("network-fetch");
+  if (source.type === "pmtiles") reasons.add("archive-parsing");
+  return [...reasons];
+}
+
+function sourceUrls(source: MapSpec["sources"][string]): string[] {
+  if (source.type === "geojson" && typeof source.data === "string") return [source.data];
+  if (source.type === "raster") return source.tiles;
+  if (source.type === "pmtiles") return [source.url];
+  if (source.type === "vector") return "url" in source ? [source.url] : source.tiles;
+  return [];
+}
+
+function isRemoteUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value);
+}
+
+function buildDeliveryConfirmations(
+  sourceReadiness: ExampleAppDeliverySummary["sourceReadiness"]
+): ExampleAppDeliverySummary["confirmations"] {
+  const sourcesByReason = (reason: ExampleAppDeliverySummary["confirmations"][number]["reason"]): string[] =>
+    sourceReadiness
+      .filter((source) => source.confirmationReasons.includes(reason))
+      .map((source) => source.sourceId);
+
+  const externalSourceIds = sourcesByReason("external-resource");
+  const networkSourceIds = sourcesByReason("network-fetch");
+  const archiveSourceIds = sourcesByReason("archive-parsing");
+
+  return [
+    {
+      reason: "external-resource",
+      required: externalSourceIds.length > 0,
+      target: "MapSpec.sources URL-bearing entries",
+      ...(externalSourceIds.length > 0 ? { sourceIds: externalSourceIds } : {})
+    },
+    {
+      reason: "network-fetch",
+      required: networkSourceIds.length > 0,
+      target: "future resource loader fetch",
+      ...(networkSourceIds.length > 0 ? { sourceIds: networkSourceIds } : {})
+    },
+    {
+      reason: "archive-parsing",
+      required: archiveSourceIds.length > 0,
+      target: "future archive parser or range reader",
+      ...(archiveSourceIds.length > 0 ? { sourceIds: archiveSourceIds } : {})
+    },
+    {
+      reason: "worker-use",
+      required: false,
+      target: "future worker-backed data decode"
+    },
+    {
+      reason: "file-write",
+      required: false,
+      target: "export_example_app manifest output"
+    }
+  ];
+}
+
+function buildDeliveryFollowUps(
+  input: {
+    plannerEvidence: GenerationPlannerEvidence;
+    spatialQueryEvidence: GenerationSpatialQueryEvidence;
+    sceneBrowsing: ExampleAppGenerationEvidenceSummary["sceneBrowsing"];
+  },
+  sourceReadiness: ExampleAppDeliverySummary["sourceReadiness"]
+): ExampleAppDeliverySummary["followUps"] {
+  const followUps: ExampleAppDeliverySummary["followUps"] = [];
+
+  for (const field of input.plannerEvidence.unsupportedIntentFields) {
+    followUps.push({
+      id: `planner.unsupported-intent.${field}`,
+      owner: "@ai-agent",
+      targetArtifact: "packages/ai/src/tools/generationEvidence.ts",
+      reason: `Planner intent field "${field}" is not accepted by the current generation contract.`
+    });
+  }
+
+  for (const operation of input.spatialQueryEvidence.blockedOperations) {
+    followUps.push({
+      id: `analysis.blocked-operation.${operation}`,
+      owner: "@engine-agent",
+      targetArtifact: "docs/planning/feature-specs/spatial-analysis-readiness.md",
+      reason: `Spatial analysis operation "${operation}" needs schema, command semantics, diagnostics, fixtures, and MCP exposure assessment before promotion.`
+    });
+  }
+
+  for (const source of sourceReadiness.filter((entry) => entry.state === "readiness-only")) {
+    followUps.push({
+      id: `source-readiness.${source.sourceId}`,
+      owner: "@engine-agent",
+      targetArtifact: "docs/planning/feature-specs/cloud-native-source-readiness.md",
+      reason: `Source "${source.sourceId}" is ${source.type} readiness-only; runtime fetch, archive parsing, or query semantics need a future contract before stronger claims.`
+    });
+  }
+
+  if (input.sceneBrowsing.requested && input.sceneBrowsing.status !== "blocked") {
+    followUps.push({
+      id: "scene-browsing.stable-runtime-gate",
+      owner: "@quality-guardian",
+      targetArtifact: "docs/planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md",
+      reason: "Scene browsing is extension-only; stable runtime promotion still needs a future quality-guardian and coordinator Go decision.",
+      blockerCode: Scene3DStableRuntimeBlockerCodes.ViewMode
+    });
+  }
+
+  return followUps;
+}
+
+function sceneBlockerDiagnosticCount(diagnostics: Diagnostic[]): number {
+  return diagnostics.filter((diagnostic) => isScene3DStableRuntimeBlockerCode(diagnostic.blockerCode)).length;
+}
+
+function dataSectionFollowUpCount(followUps: ExampleAppDeliverySummary["followUps"]): number {
+  return followUps.filter((followUp) => followUp.id.startsWith("analysis.") || followUp.id.startsWith("source-readiness.")).length;
 }
 
 function buildExampleEvidence(
