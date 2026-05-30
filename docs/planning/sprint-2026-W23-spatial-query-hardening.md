@@ -40,7 +40,7 @@ flowchart LR
 | TASK-2026W23-SQH-003 | Harden invalid point/bbox/source diagnostics | P1 | M | `@engine-agent`, `@qa-agent` | done | SQH-002 | Non-finite point, reversed bbox, missing layer/source, hidden layer, URL GeoJSON, PMTiles/vector unsupported source, and empty result cases have stable codes and paths. | `pnpm test:commands`; `pnpm test:ai`; `pnpm test:adapter`; `pnpm check`; `git diff --check` |
 | TASK-2026W23-SQH-004 | Add result caps and deterministic fixture evidence | P1 | M | `@qa-agent` | done | SQH-003 | Query evidence records result cap, feature count, layer/source ids, fixture hash, and diagnostic counts without unbounded payloads. | `pnpm build:schema`; `pnpm test:schema-sync`; `pnpm test:ai`; `pnpm test:commands`; `pnpm check`; `git diff --check` |
 | TASK-2026W23-SQH-005 | Map hardened query evidence into generated-app delivery | P1 | M | `@ai-agent`, `@docs-agent` | done | SQH-004 | `generationEvidence.delivery` shows query ready/follow-up/blocked states without parsing prose or adding MCP aliases. | `pnpm build:schema`; `pnpm test:schema-sync`; `pnpm test:ai`; `pnpm test:docs`; `pnpm check`; `git diff --check` |
-| TASK-2026W23-SQH-006 | Run quality gate and serialized planning closure | P1 | S | `@quality-guardian`, `@coordinator` | todo | SQH-005 | Gate report confirms schema-first, command-only mutation, structured diagnostics, adapter boundary, resource policy, and frozen MCP tool names remain intact. | `pnpm build:schema`; `pnpm check`; visual gate waived only with non-rendering rationale |
+| TASK-2026W23-SQH-006 | Run quality gate and serialized planning closure | P1 | S | `@quality-guardian`, `@coordinator` | done | SQH-005 | Gate report confirms schema-first, command-only mutation, structured diagnostics, adapter boundary, resource policy, and frozen MCP tool names remain intact. | `pnpm build:schema`; `pnpm test:schema-sync`; `pnpm test:ai`; `pnpm test:docs`; `pnpm check`; visual gate waived as non-rendering |
 
 ## Owner Boundaries
 
@@ -55,6 +55,7 @@ flowchart LR
 
 ## Next Execution Task
 
-`TASK-2026W23-SQH-006` should enter execution state next. It must run the
-quality gate and serialize closure without widening into PMTiles/vector parsing,
-new MCP tools, advanced geoprocessing, or stable SceneView3D promotion.
+The Spatial Query Evidence Hardening sprint is closed by
+`docs/reviews/sqh-006-quality-gate-closure-2026-05-31.md`. The orchestrator
+should return to planning state and refresh competitive, product, and task
+inputs before opening the next implementation slice.

@@ -167,7 +167,7 @@ move to `TASK-2026W23-SQH-003`.
 | TASK-2026W23-SQH-003 | done | `docs/reviews/sqh-003-invalid-source-diagnostics-2026-05-30.md`; invalid/source diagnostic matrix |
 | TASK-2026W23-SQH-004 | done | `docs/reviews/sqh-004-result-caps-fixtures-2026-05-30.md`; result caps and fixture hashes |
 | TASK-2026W23-SQH-005 | done | `docs/reviews/sqh-005-delivery-mapping-2026-05-31.md`; `delivery.spatialQueryReadiness` |
-| TASK-2026W23-SQH-006 | queued | quality gate and serialized planning closure; next execution task |
+| TASK-2026W23-SQH-006 | done | `docs/reviews/sqh-006-quality-gate-closure-2026-05-31.md`; quality gate pass and closure |
 
 ## Next Handoff
 
@@ -192,6 +192,7 @@ move to `TASK-2026W23-SQH-003`.
   `@task-distributor`: `TASK-2026W22-GIR-006` is done, so return to planning
   state and open the next evidence-backed task batch only after refreshed
   signals are recorded.
-- `@quality-guardian` / `@coordinator`: take `TASK-2026W23-SQH-006` next. Run
-  the final gate and closure without adding a public `spatial_query` tool,
-  unsupported source parsing, or stable SceneView3D promotion.
+- `@coordinator`, `@competitive-intel`, `@product-strategist`, and
+  `@task-distributor`: return to planning state. Refresh external evidence,
+  product priorities, and the next task DAG before opening another
+  implementation slice.

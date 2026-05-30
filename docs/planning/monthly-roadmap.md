@@ -160,13 +160,16 @@ hashes 已接入 spatial query case evidence，下一步最高优先级执行任
 2026-05-31 SQH-005 execution update: hardened query evidence 已映射进
 `generationEvidence.delivery.spatialQueryReadiness` 与 `data-and-analysis`
 section，下一步最高优先级执行任务是 `TASK-2026W23-SQH-006`。
+2026-05-31 SQH-006 execution update: quality gate 已通过并序列化 closure。
+Spatial Query Evidence Hardening sprint 已关闭，下一步回到 planning state 刷新
+竞品、产品设计和任务 DAG。
 
 ## 2026-W22 Iteration Path
 
 | Priority | Track | Plan | Exit Condition |
 | --- | --- | --- | --- |
 | P0 | Generated App Review Console | Turn generated-app delivery evidence into an inspectable acceptance handoff | `GIR-001` through `GIR-006` are done; next work starts from a fresh planning loop |
-| P0 | Spatial Query Evidence Hardening | Make point/bbox query evidence explicit, bounded, and delivery-mappable | `SQH-005` is done; `SQH-006` runs the final quality gate and closure |
+| P0 | Spatial Query Evidence Hardening | Make point/bbox query evidence explicit, bounded, and delivery-mappable | `SQH-001` through `SQH-006` are done; next work starts from a fresh planning loop |
 | P0 | SceneView3D governance | Keep stable `view.mode: "scene3d"` blocked after SRC-006 No-go | future stable runtime work starts only from a new accepted promotion task |
 | P0 | AI natural-language app generation | Make feature display, spatial analysis, and scene browsing capability boundaries machine-readable | `get_context_summary` and `explain_spec` expose `capabilitySummary` with schema-tested MCP output |
 | P0 | Next planning loop | Refresh competitor evidence, product design, and task DAG for natural-language map app generation | competitive-intel, product-strategist, coordinator, and task-distributor produce the next iteration plan |
@@ -212,7 +215,7 @@ section，下一步最高优先级执行任务是 `TASK-2026W23-SQH-006`。
 | 排名 | 事项 | 得分 | 证据 | 行动 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
 | 1 | Generated App Review Console | done | delivery sections, source readiness, spatial readiness, prompt-to-delivery QA, and release wording guardrails are complete through `GIR-006` | start the next planning loop before opening more implementation tasks | high |
-| 2 | Spatial Query Evidence Hardening | 8.35 | `SQH-005` maps ready/follow-up/blocked query states into `generationEvidence.delivery.spatialQueryReadiness` | execute `TASK-2026W23-SQH-006` next | high |
+| 2 | Spatial Query Evidence Hardening | done | `SQH-006` records a quality-gate pass and closure after `SQH-005` mapped query states into delivery | start the next planning loop before opening more implementation tasks | high |
 | 3 | MapLibre 6 drift audit | 5.80 | MapLibre v6 prerelease and Mapbox PMTiles/model/raster movement create dependency drift pressure | run the existing version-drift checklist before package movement | medium |
 | 4 | SceneView3D promotion readiness | parked / no-go | W22 evidence and beta gate are complete; W23 promotion-readiness package and gate are complete, and SRC-006 records No-go | future promotion requires a new stable-runtime task and Go decision | high |
 
@@ -274,8 +277,8 @@ section，下一步最高优先级执行任务是 `TASK-2026W23-SQH-006`。
    [sprint-2026-W23-spatial-query-hardening.md](./sprint-2026-W23-spatial-query-hardening.md)。
    `TASK-2026W23-SQH-001`、`TASK-2026W23-SQH-002` 与
    `TASK-2026W23-SQH-003`、`TASK-2026W23-SQH-004` 与
-   `TASK-2026W23-SQH-005` 已完成，当前最高优先级执行任务是
-   `TASK-2026W23-SQH-006`。
+   `TASK-2026W23-SQH-005` 与 `TASK-2026W23-SQH-006` 已完成。当前应回到
+   planning state 刷新竞品、产品设计和任务 DAG。
 
 ## Feature Spec 建议
 

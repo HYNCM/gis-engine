@@ -293,7 +293,7 @@ IO, or stable SceneView3D runtime support.
 | TASK-2026W23-SQH-003 | Harden invalid point/bbox/source diagnostics | P1 | `@engine-agent`, `@qa-agent` | done | `docs/reviews/sqh-003-invalid-source-diagnostics-2026-05-30.md`; AI and adapter query diagnostic matrix | non-finite point, reversed bbox, missing/hidden layer/source, URL GeoJSON, PMTiles/vector unsupported source, and empty result cases have stable codes and paths | `pnpm test:commands`; `pnpm test:ai`; `pnpm test:adapter`; `pnpm check`; `git diff --check` |
 | TASK-2026W23-SQH-004 | Add result caps and deterministic fixture evidence | P1 | `@qa-agent` | done | `docs/reviews/sqh-004-result-caps-fixtures-2026-05-30.md`; capped query fixture regression | result cap, feature count, layer/source ids, fixture hash, and diagnostic counts are recorded without unbounded payloads | `pnpm build:schema`; `pnpm test:schema-sync`; `pnpm test:ai`; `pnpm test:commands`; `pnpm check`; `git diff --check` |
 | TASK-2026W23-SQH-005 | Map hardened query evidence into generated-app delivery | P1 | `@ai-agent`, `@docs-agent` | done | `docs/reviews/sqh-005-delivery-mapping-2026-05-31.md`; `delivery.spatialQueryReadiness`; prompt-to-delivery regression | query ready/follow-up/blocked states are visible without prose parsing or MCP aliases | `pnpm build:schema`; `pnpm test:schema-sync`; `pnpm test:ai`; `pnpm test:docs`; `pnpm check`; `git diff --check` |
-| TASK-2026W23-SQH-006 | Run quality gate and serialized planning closure | P1 | `@quality-guardian`, `@coordinator` | todo | gate report and planning closure | schema-first, command-only mutation, structured diagnostics, adapter boundary, resource policy, and frozen MCP tool names remain intact | `pnpm build:schema`; `pnpm check`; visual gate waived only with non-rendering rationale |
+| TASK-2026W23-SQH-006 | Run quality gate and serialized planning closure | P1 | `@quality-guardian`, `@coordinator` | done | `docs/reviews/sqh-006-quality-gate-closure-2026-05-31.md`; planning closure | schema-first, command-only mutation, structured diagnostics, adapter boundary, resource policy, and frozen MCP tool names remain intact | `pnpm build:schema`; `pnpm test:schema-sync`; `pnpm test:ai`; `pnpm test:docs`; `pnpm check`; `git diff --check`; visual gate waived as non-rendering |
 
 2026-05-30 SQH-001 execution update: the spatial query hardening boundary is
 frozen by `docs/reviews/sqh-001-spatial-query-hardening-boundary-2026-05-30.md`.
@@ -316,6 +316,11 @@ is `SQH-005`.
 2026-05-31 SQH-005 execution update: hardened query evidence is mapped into
 `generationEvidence.delivery.spatialQueryReadiness` and the `data-and-analysis`
 section. The next queued task is `SQH-006`.
+
+2026-05-31 SQH-006 execution update: the quality gate passed and the
+Spatial Query Evidence Hardening sprint is serialized closed by
+`docs/reviews/sqh-006-quality-gate-closure-2026-05-31.md`. The workstream now
+returns to planning state for refreshed competitive/product/task inputs.
 
 ---
 
