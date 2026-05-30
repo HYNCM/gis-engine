@@ -85,8 +85,8 @@ therefore switched from execution state to planning state, refreshed official
 competitor/package signals, and opened the Generated App Review Console sprint.
 The product theme is no longer "can the evidence spine exist"; it is "can a
 user or agent inspect and accept a generated map app without reading free-form
-prose." `GIR-001`, `GIR-002`, and `GIR-003` are complete; `GIR-004` is the next
-queued review-console implementation task.
+prose." `GIR-001`, `GIR-002`, `GIR-003`, and `GIR-004` are complete; `GIR-005`
+is the next queued review-console implementation task.
 
 ## Current Signals
 
@@ -148,7 +148,8 @@ queued review-console implementation task.
 | TASK-2026W22-GIR-001 | done | `docs/planning/feature-specs/generated-app-review-console.md`; review-console PRD/spec |
 | TASK-2026W22-GIR-002 | done | `tests/ai/generation-evidence.test.ts`; delivery-review acceptance fixtures |
 | TASK-2026W22-GIR-003 | done | `docs/planning/feature-specs/generated-app-review-console.md`, `docs/planning/feature-specs/cloud-native-source-readiness.md`; source readiness review cards |
-| TASK-2026W22-GIR-004 through GIR-006 | todo | `docs/archive/2026-05-30/planning/sprint-2026-W22-generated-app-review-console.md`; queued implementation and QA tasks |
+| TASK-2026W22-GIR-004 | done | `docs/reviews/gir-004-spatial-analysis-review-section-mapping-2026-05-30.md`; spatial-analysis review cards mapped into delivery evidence |
+| TASK-2026W22-GIR-005 through GIR-006 | todo | `docs/archive/2026-05-30/planning/sprint-2026-W22-generated-app-review-console.md`; queued implementation and QA tasks |
 
 ## Next Handoff
 
@@ -169,9 +170,10 @@ queued review-console implementation task.
   `@task-distributor`: start the next planning loop because the current AIN
   batch is closed. Refresh market/product signals before opening new
   implementation tasks.
-- `@ai-agent` / `@qa-agent`: `TASK-2026W22-GIR-002` is done; the next
-  delivery-review work is `GIR-004` so spatial cards land in the review console
-  without adding MCP aliases.
-- `@engine-agent` / `@ai-agent` / `@qa-agent`: take `TASK-2026W22-GIR-004` next
-  so spatial-analysis readiness maps into the review console before any
-  geoprocessing runtime work.
+- `@ai-agent` / `@qa-agent`: `TASK-2026W22-GIR-004` is done; the next
+  delivery-review work is `GIR-005` so prompt-to-delivery QA scenarios land in
+  the review console without adding MCP aliases.
+- `@engine-agent` / `@ai-agent` / `@qa-agent`: take `TASK-2026W22-GIR-005` next
+  so prompt-to-delivery QA scenarios cover ready / blocked /
+  needs-confirmation / follow-up-required states before any broader
+  review-console polish.

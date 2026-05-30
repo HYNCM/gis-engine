@@ -140,6 +140,6 @@ manifest shape, not a rendered application UI.
 1. `GIR-001`: freeze this feature spec and add it to the planning queue.
 2. `GIR-002`: add delivery-review acceptance fixtures and tests.
 3. `GIR-003`: map source-readiness states into review sections.
-4. `GIR-004`: map spatial-analysis readiness into review sections.
+4. `GIR-004`: spatial-analysis readiness mapping is complete.
 5. `GIR-005`: add prompt-to-delivery QA scenarios.
 6. `GIR-006`: audit docs and release wording.
