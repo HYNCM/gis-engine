@@ -14,6 +14,10 @@ The current implementation proves this evidence-first generation loop:
 prompt hash + structured intent -> planMapGenerationRequest -> capabilitySummary -> MapGenerationCommandSkeleton -> apply_commands -> diagnostics -> snapshot/export/example evidence
 ```
 
+Generated-app scene browsing is an extension-only delivery signal. It consumes
+`extensions.scene3d`, `sceneBrowsing.state`, `stableRuntimeBlocked`, and stable
+runtime blocker codes; it must not be cited as stable renderer evidence.
+
 ## Why This Exists
 
 Traditional map SDKs are powerful, but AI agents need a stricter contract:
@@ -36,10 +40,10 @@ Traditional map SDKs are powerful, but AI agents need a stricter contract:
 | Diagnostics | Functional | Diagnostic registry covers schema, source/layer references, expressions, resource URL policy, command failures, unsupported capabilities, and snapshot errors. |
 | Renderer adapter | Functional MVP | `MockAdapter` and `MapLibreAdapter` implement the renderer contract; MapLibre transformation covers GeoJSON, raster, PMTiles, and generic vector sources. |
 | Snapshot harness | Functional | Node smoke snapshots are deterministic; Playwright visual snapshots cover a GeoJSON scene and a generated local MVT vector tile scene. |
-| AI tools | Functional | MCP exposes `validate_spec`, `apply_commands`, `export_spec`, `get_context_summary`, `snapshot_spec`, `explain_spec`, and `export_example_app` with input and output schemas. `get_context_summary` and `explain_spec` include `capabilitySummary` for feature display, spatial analysis, and scene browsing, plus gated extension-only SceneView3D context when `extensions.scene3d` exists. `planMapGenerationRequest()` accepts prompt hashes plus structured intent and rejects raw prompt retention by default; `createGenerationEvidenceBundle()` composes existing tools and now includes `plannerEvidence` for planner confidence/provenance without adding a `generate_map_app` alias. |
+| AI tools | Functional | MCP exposes `validate_spec`, `apply_commands`, `export_spec`, `get_context_summary`, `snapshot_spec`, `explain_spec`, and `export_example_app` with input and output schemas. `get_context_summary` and `explain_spec` include `capabilitySummary` for feature display, spatial analysis, and scene browsing, plus gated extension-only SceneView3D context when `extensions.scene3d` exists. `planMapGenerationRequest()` accepts prompt hashes plus structured intent and rejects raw prompt retention by default; `createGenerationEvidenceBundle()` composes existing tools and now includes planner, delivery, source-readiness, and extension-only scene browsing evidence without adding a `generate_map_app` alias. |
 | Examples/fixtures | Functional | Basic GeoJSON, AI map edit, raster-basemap, pmtiles-local, vector-tile-url, fill-extrusion-lite, and scene3d-extension examples plus schema/command/snapshot fixtures exist. |
 | CI/test gates | Functional | `pnpm build:schema` and `pnpm check` are required finish gates; strict visual snapshots require a browser/WebGL-capable runner. |
-| SceneView3D promotion | Handoff-ready | W23 promotion-readiness evidence is accepted; the next active work is SRC-001 through SRC-006 for stable renderer contract, lifecycle, snapshot/query, resource-policy, release-gate, and final promotion-decision evidence. |
+| SceneView3D promotion | Handoff-ready / stable no-go | W23 promotion-readiness evidence is accepted and SRC-006 records a stable-runtime No-go. Generated-app scene browsing delivery consumes `extensions.scene3d` and blocker summaries only; it is not stable renderer evidence. |
 
 ## Current Runtime Shape
 
@@ -87,6 +91,10 @@ const exported = map.exportSpec();
 - [SceneView3D promotion gate](./docs/reviews/sceneview3d-promotion-gate-2026-05-24.md)
 - [SceneView3D stable renderer contract plan](./docs/planning/feature-specs/sceneview3d-stable-renderer-contract.md)
 - [Natural-language map app generation spec](./docs/planning/feature-specs/natural-language-map-app-generation.md)
+- [Generated-app delivery UX](./docs/planning/feature-specs/generated-app-delivery-ux.md)
+- [Cloud-native source promotion candidates](./docs/planning/feature-specs/cloud-native-source-promotion-candidates.md)
+- [Spatial-analysis promotion criteria](./docs/planning/feature-specs/spatial-analysis-promotion-criteria.md)
+- [Scene browsing delivery copy evidence](./docs/reviews/ain-005-scene-browsing-delivery-copy-2026-05-30.md)
 - [AI map app generation sprint](./docs/planning/sprint-2026-W23-ai-map-app-generation.md)
 - [Generation quality hardening sprint](./docs/planning/sprint-2026-W23-generation-quality-hardening.md)
 - [Prompt evidence scenario report](./docs/reviews/nla-006-prompt-evidence-scenarios-2026-05-29.md)

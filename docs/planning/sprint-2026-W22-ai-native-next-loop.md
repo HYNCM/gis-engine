@@ -27,9 +27,9 @@ keeping unsupported data, geoprocessing, and stable 3D runtime claims blocked.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | TASK-2026W22-AIN-001 | Design generated-app delivery UX contract | P0 | M | `@product-strategist`, `@ai-agent`, `@docs-agent` | done | NLQ-007 | `generationEvidence.delivery.sections` maps readiness, files, map edits, data/analysis, and scene browsing to structured blocker/confirmation/follow-up fields | docs review; `pnpm test:ai`; `pnpm check` |
 | TASK-2026W22-AIN-002 | Define generated-app acceptance and confirmation states | P0 | M | `@ai-agent`, `@qa-agent` | done | AIN-001 | `delivery.status` and `delivery.acceptance.state` cover ready, blocked, needs-confirmation, and follow-up-required without MCP aliases | AI contract tests; schema-sync; `pnpm check` |
-| TASK-2026W22-AIN-003 | Split cloud-native source promotion candidates | P1 | M | `@engine-agent`, `@docs-agent` | todo | NLQ-005 | future PMTiles, GeoParquet, FlatGeobuf, GeoTIFF, and GeoZarr tasks are separated into schema/resource-policy/query/export gates before implementation | resource-policy doc audit; schema tests only if fixtures change |
-| TASK-2026W22-AIN-004 | Draft spatial-analysis promotion criteria | P1 | S | `@engine-agent`, `@ai-agent`, `@qa-agent` | todo | NLQ-003 | each future operation names schema, command semantics, diagnostics, deterministic fixtures, and MCP exposure assessment | planning diff review; command/AI tests when implemented |
-| TASK-2026W22-AIN-005 | Keep scene browsing copy extension-only | P1 | S | `@adapter-agent`, `@qa-agent`, `@docs-agent` | todo | NLQ-006 | user-facing delivery copy preserves `extensions.scene3d` context and stable-runtime blocker codes without stable renderer claims | `pnpm test:ai`; `pnpm test:release:scene3d`; docs review |
+| TASK-2026W22-AIN-003 | Split cloud-native source promotion candidates | P1 | M | `@engine-agent`, `@docs-agent` | done | NLQ-005 | PMTiles, GeoParquet, FlatGeobuf, GeoTIFF, and GeoZarr are split into schema/resource-policy/query/export promotion gates before implementation | resource-policy doc audit; `pnpm check` |
+| TASK-2026W22-AIN-004 | Draft spatial-analysis promotion criteria | P1 | S | `@engine-agent`, `@ai-agent`, `@qa-agent` | done | NLQ-003 | point/bbox hardening plus buffer, intersection, overlay, routing, and aggregation name schema, command/read-only semantics, diagnostics, fixtures, and MCP exposure assessment | planning diff review; `pnpm check` |
+| TASK-2026W22-AIN-005 | Keep scene browsing copy extension-only | P1 | S | `@adapter-agent`, `@qa-agent`, `@docs-agent` | done | NLQ-006 | user-facing delivery copy preserves `extensions.scene3d` context and stable-runtime blocker codes without stable renderer claims | `pnpm test:ai`; `pnpm test:release:scene3d`; docs review; `pnpm check` |
 
 ```mermaid
 flowchart LR
@@ -64,6 +64,11 @@ The implementation keeps the existing MCP tool surface and adds
 `generationEvidence.delivery` to compact manifests and
 `GenerationEvidenceBundle.delivery` to full evidence bundles.
 
-Remaining active tasks are `AIN-003` source promotion splits, `AIN-004`
-spatial-analysis promotion criteria, and `AIN-005` dedicated scene browsing
-copy/evidence follow-through. Stable `view.mode: "scene3d"` remains blocked.
+2026-05-30 follow-up update: `AIN-003` and `AIN-004` are now captured as
+promotion gate specs:
+`docs/planning/feature-specs/cloud-native-source-promotion-candidates.md` and
+`docs/planning/feature-specs/spatial-analysis-promotion-criteria.md`.
+`AIN-005` is closed by
+`docs/reviews/ain-005-scene-browsing-delivery-copy-2026-05-30.md`, which keeps
+scene browsing delivery copy extension-only. The AIN batch is now closed;
+stable `view.mode: "scene3d"` remains blocked.

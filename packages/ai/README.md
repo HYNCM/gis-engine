@@ -62,7 +62,8 @@ summarized through mock snapshot/query evidence, but
 blocked until a future stable-runtime gate is accepted. The compact
 `sceneBrowsing` summary includes `state: "extension-only"` and
 `stableRuntimeBlocked: true` when scene browsing is present without stable
-runtime approval.
+runtime approval. Mock snapshot/query summaries are readiness evidence only and
+must not be cited as stable renderer evidence.
 
 ## AI Orchestration Guidance
 

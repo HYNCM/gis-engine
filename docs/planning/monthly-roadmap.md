@@ -124,6 +124,17 @@ compact manifest 与 full `GenerationEvidenceBundle` 现在公开
 confirmation boundaries、source readiness 和 follow-up tasks；未新增 MCP tool
 name，`export_example_app` 仍不写文件。
 
+2026-05-30 AIN-003/004 执行结果：cloud-native source promotion candidates 和
+spatial-analysis promotion criteria 已拆成未来实现前置门禁；PMTiles、
+GeoParquet、FlatGeobuf、GeoTIFF、GeoZarr 以及 buffer、intersection、overlay、
+routing、aggregation 仍保持 blocked 或 readiness-only，直到 schema、
+resource-policy、diagnostic、fixture、query/export 和 MCP exposure gates 落地。
+
+2026-05-30 AIN-005 执行结果：scene browsing delivery copy/evidence 已收口为
+extension-only；`sceneBrowsing.state`、`stableRuntimeBlocked`、stable blocker
+codes 和 README/AI docs 均保持 stable `view.mode: "scene3d"` blocked。AIN batch
+已完成，下一轮应从竞品分析、产品设计和任务规划启动。
+
 ## 2026-W22 Iteration Path
 
 | Priority | Track | Plan | Exit Condition |
@@ -172,9 +183,9 @@ name，`export_example_app` 仍不写文件。
 
 | 排名 | 事项 | 得分 | 证据 | 行动 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | Future cloud-native source implementation contract | 5.90 | readiness matrix now feeds manifest `sourceReadiness`, but promotion candidates still need separate schema/resource-policy/query/export gates | execute AIN-003 before any GeoParquet/FlatGeobuf/GeoTIFF/GeoZarr schema task | high |
-| 2 | Spatial-analysis promotion criteria | 5.80 | generated-app delivery can expose blocked operations and follow-up tasks, but future operations still need promotion gates | execute AIN-004 before buffer/overlay/routing/aggregation implementation | medium |
-| 3 | Future scene browsing product design | 5.70 | generated app manifests now preserve extension-only state and stable-runtime blocker codes without enabling stable 3D runtime | execute AIN-005 as copy/evidence work, not renderer promotion | medium |
+| 1 | Next AI-native planning loop | 6.20 | AIN-001 through AIN-005 are closed; the next implementation batch needs refreshed market/product/task evidence | run competitive-intel, product-strategist, coordinator, and task-distributor before new code slices | medium |
+| 2 | Source promotion implementation gates | planned / split | source implementation candidates are now separated into schema/resource-policy/query/export promotion tasks | schedule AIN-003A through AIN-003F only after fixture and owner capacity are clear | high |
+| 3 | Spatial-analysis implementation gates | planned / split | operation candidates are now separated into point/bbox hardening and blocked geoprocessing promotion criteria | schedule AIN-004A through AIN-004E before implementation | medium |
 | 4 | SceneView3D promotion readiness | parked / no-go | W22 evidence and beta gate are complete; W23 promotion-readiness package and gate are complete, and SRC-006 records No-go | future promotion requires a new stable-runtime task and Go decision | high |
 
 已完成并保留回归证据：

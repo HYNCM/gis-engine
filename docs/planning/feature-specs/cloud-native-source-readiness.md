@@ -70,3 +70,12 @@ Before promoting any blocked format, the owning task must add:
 - Snapshot/query evidence when rendering or analysis behavior changes.
 - Documentation and example manifest updates that avoid implementation claims
   before the gates pass.
+
+## AIN-003 Promotion Split
+
+The follow-up split is now captured in
+`docs/planning/feature-specs/cloud-native-source-promotion-candidates.md`.
+That document keeps PMTiles archive metadata, PMTiles feature query,
+GeoParquet, FlatGeobuf, GeoTIFF, and GeoZarr as separate promotion gates. It is
+planning evidence only; it does not add schemas, parsers, workers, runtime
+loaders, or new MCP tool names.

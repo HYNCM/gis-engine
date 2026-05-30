@@ -76,26 +76,30 @@ spine。
 `generationEvidence.delivery`；剩余最高优先级债务转为 source 与
 spatial-analysis promotion criteria。
 
+2026-05-30 AIN-003/004 update: source 与 spatial-analysis promotion criteria
+已拆成未来实现门禁；剩余最高优先级债务转为 SceneView3D delivery copy/evidence
+follow-through，以及 point/bbox hardening 的后续 fixture/capability gate。
+
 ## 债务优先级
 
 | 排名 | 债务 | 得分 | 证据 | 建议修复 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | Future source promotion criteria missing | 0.39 | cloud-native readiness matrix now appears in generated-app delivery, but implementation candidates still need separate schema/resource-policy/query/export gates | execute `TASK-2026W22-AIN-003` before source implementation | high |
-| 2 | Spatial-analysis promotion criteria missing | 0.36 | delivery follow-ups can expose blocked operations, but buffer/overlay/routing/aggregation still lack promotion gates | execute `TASK-2026W22-AIN-004` before operation implementation | medium |
-| 3 | SceneView3D stable runtime promotion parked after SRC-006 No-go | 0.35 | W23 gate and SRC-006 decision keep stable runtime blocked while delivery now exposes extension-only state and blocker codes | keep the blocker codes and require a new explicit stable-runtime approval task before reopening | medium |
+| 1 | SceneView3D delivery copy follow-through | 0.35 | delivery now exposes extension-only state and blocker codes, but AIN-005 still needs dedicated copy/evidence closure | execute `TASK-2026W22-AIN-005` without renderer promotion | medium |
+| 2 | Point/bbox query hardening fixtures missing | 0.32 | promotion criteria require explicit adapter query capability, invalid coordinates/bbox, unsupported source, and result-cap fixtures | schedule `TASK-2026W22-AIN-004A` after AIN-005 or in the next execution batch | high |
+| 3 | Source promotion implementation gates pending | 0.30 | AIN-003 split exists, but PMTiles/GeoParquet/FlatGeobuf/GeoTIFF/GeoZarr gates are not implemented | schedule AIN-003A through AIN-003F only after fixture and owner capacity are clear | high |
 
 ## 修复顺序
 
-1. 先执行 `TASK-2026W22-AIN-003` / `AIN-004`：把 source 与 spatial-analysis promotion criteria 拆成未来实现门禁。
-2. 再执行 `TASK-2026W22-AIN-005`：把 scene browsing delivery copy/evidence follow-through 继续保持 extension-only。
+1. 先执行 `TASK-2026W22-AIN-005`：把 scene browsing delivery copy/evidence follow-through 继续保持 extension-only。
+2. 再规划 `AIN-004A` point/bbox hardening fixtures 和 `AIN-003A` PMTiles archive metadata gate。
 3. 下一步若要推进 stable runtime promotion，必须先形成明确的 promotion rubric、browser matrix evidence 和 guardrail diagnostics，不得直接把 `view.mode: "scene3d"` 视为稳定。
 4. 后续真实 renderer loader 接入时，必须先调用 `validateSceneResourceLoadPlan`，不得绕过 byte、texture、worker、timeout diagnostics。
 5. W23 promotion readiness sprint 已完成并记录 no-go verdict；stable runtime promotion 仍然 blocked until a future approval.
 
 ## 结论
 
-如果只做一件事，下一步优先把 source 与 spatial-analysis promotion
-criteria 拆成可执行门禁。Generated-app delivery contract 已能表达 ready /
-blocked / needs-confirmation / follow-up-required；SceneView3D stable runtime
-仍保持 blocker state，直到新的 explicit approval arrives；下一步不能绕过
-blocker code 直接打开 stable `view.mode: "scene3d"`。
+如果只做一件事，下一步优先完成 AIN-005，把 scene browsing delivery copy 和
+evidence follow-through 明确为 extension-only。Generated-app delivery contract
+已能表达 ready / blocked / needs-confirmation / follow-up-required；source 与
+spatial-analysis promotion gates 已拆分；SceneView3D stable runtime 仍保持
+blocker state，直到新的 explicit approval arrives。

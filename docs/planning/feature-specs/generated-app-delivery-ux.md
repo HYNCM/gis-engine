@@ -36,7 +36,7 @@ sections:
 | Files | Which files would I inspect or package? | `export_example_app.files`, file roles, media types, required flags | Return file contents or write files as a side effect |
 | Map edits | What changed and can it replay? | command count, trace id, committed/rolled-back flags, changed paths | Mutate runtime state outside `apply_commands` |
 | Data and analysis | What can be queried or must stay blocked? | spatial query cases, cloud-native source readiness, blocked operations | Claim buffer/overlay/routing/aggregation support without contracts |
-| Scene browsing | Is this 3D runtime support? | `sceneBrowsing`, `extensions.scene3d` ids, blocker codes | Promote stable `view.mode: "scene3d"` or renderer evidence |
+| Scene browsing | Is this 3D runtime support? | `sceneBrowsing`, `extensions.scene3d` ids, blocker codes | Promote mock or extension evidence into stable `view.mode: "scene3d"` or stable renderer evidence |
 
 ## Acceptance Criteria For The Next Implementation Batch
 

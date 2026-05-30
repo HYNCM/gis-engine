@@ -72,3 +72,12 @@ natural-language generation flow. Let AI classify analysis prompts, explain the
 current boundary, and generate only the supported query/readiness evidence. The
 first implementation task should design an analysis result evidence bundle
 before adding new operations.
+
+## AIN-004 Promotion Criteria
+
+The operation-by-operation promotion criteria are now captured in
+`docs/planning/feature-specs/spatial-analysis-promotion-criteria.md`. That
+document keeps point/bbox in the readiness-hardening lane and requires schema,
+semantics, diagnostics, deterministic fixtures, and MCP exposure assessment
+before buffer, intersection, overlay, routing, or aggregation can become public
+capabilities.
