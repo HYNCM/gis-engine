@@ -7,7 +7,7 @@
   "scripts": {
     "build": "pnpm -r build",
     "build:schema": "pnpm --filter @gis-engine/engine build:schema && pnpm --filter @gis-engine/scene3d build && pnpm --filter @gis-engine/ai build:schema",
-    "test": "pnpm test:schema && pnpm test:schema-sync && pnpm test:commands && pnpm test:patch && pnpm test:runtime && pnpm test:adapter && pnpm test:ai && pnpm test:examples && pnpm test:resources && pnpm test:perf:smoke && pnpm test:snapshot:smoke",
+    "test": "pnpm test:schema && pnpm test:schema-sync && pnpm test:commands && pnpm test:patch && pnpm test:runtime && pnpm test:adapter && pnpm test:ai && pnpm test:examples && pnpm test:docs && pnpm test:resources && pnpm test:perf:smoke && pnpm test:snapshot:smoke",
     "test:schema": "vitest run tests/schema/schema-fixtures.test.ts tests/schema/expression-validator.test.ts tests/schema/resource-policy.test.ts",
     "test:schema-sync": "vitest run tests/schema-sync",
     "test:commands": "vitest run tests/commands",
@@ -15,6 +15,7 @@
     "test:runtime": "vitest run tests/runtime",
     "test:adapter": "vitest run tests/adapter",
     "test:examples": "vitest run tests/examples",
+    "test:docs": "vitest run tests/docs",
     "test:snapshot": "pnpm test:snapshot:smoke && pnpm test:snapshot:visual",
     "test:snapshot:smoke": "vitest run tests/snapshot/smoke",
     "test:snapshot:visual": "playwright test tests/snapshot/visual",

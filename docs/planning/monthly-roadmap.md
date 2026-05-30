@@ -142,15 +142,15 @@ ArcGIS AI components、Mapbox/MapLibre source/runtime drift、Cesium/Three/
 runtime 能力，而是把已存在的 `generationEvidence.delivery`、diagnostics、
 command trace、snapshot/export evidence、source readiness、spatial readiness
 和 extension-only scene browsing 转成可审查、可验收的交付面。
-2026-05-30 execution update: `GIR-002`、`GIR-003`、`GIR-004` 与 `GIR-005`
-已完成，review console 的下一步执行重心转向 `GIR-006`，把 docs 和 release
-wording 审核补齐。
+2026-05-30 execution update: `GIR-002`、`GIR-003`、`GIR-004`、`GIR-005` 与
+`GIR-006` 已完成，Generated App Review Console batch 已关闭，下一步切回
+planning state，刷新竞品、产品设计和下一批任务 DAG。
 
 ## 2026-W22 Iteration Path
 
 | Priority | Track | Plan | Exit Condition |
 | --- | --- | --- | --- |
-| P0 | Generated App Review Console | Turn generated-app delivery evidence into an inspectable acceptance handoff | `GIR-001` through `GIR-005` are done; `GIR-006` now audits docs and release wording |
+| P0 | Generated App Review Console | Turn generated-app delivery evidence into an inspectable acceptance handoff | `GIR-001` through `GIR-006` are done; next work starts from a fresh planning loop |
 | P0 | SceneView3D governance | Keep stable `view.mode: "scene3d"` blocked after SRC-006 No-go | future stable runtime work starts only from a new accepted promotion task |
 | P0 | AI natural-language app generation | Make feature display, spatial analysis, and scene browsing capability boundaries machine-readable | `get_context_summary` and `explain_spec` expose `capabilitySummary` with schema-tested MCP output |
 | P0 | Next planning loop | Refresh competitor evidence, product design, and task DAG for natural-language map app generation | competitive-intel, product-strategist, coordinator, and task-distributor produce the next iteration plan |
@@ -195,7 +195,7 @@ wording 审核补齐。
 
 | 排名 | 事项 | 得分 | 证据 | 行动 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | Spatial-analysis review cards | done / mapped | operation candidates are separated into point/bbox hardening and blocked geoprocessing promotion criteria; `GIR-004` is complete | schedule `GIR-006` and later point/bbox hardening fixtures before implementation | medium |
+| 1 | Generated App Review Console | done | delivery sections, source readiness, spatial readiness, prompt-to-delivery QA, and release wording guardrails are complete through `GIR-006` | start the next planning loop before opening more implementation tasks | high |
 | 2 | MapLibre 6 drift audit | 5.80 | MapLibre v6 prerelease and Mapbox PMTiles/model/raster movement create dependency drift pressure | run the existing version-drift checklist before package movement | medium |
 | 3 | SceneView3D promotion readiness | parked / no-go | W22 evidence and beta gate are complete; W23 promotion-readiness package and gate are complete, and SRC-006 records No-go | future promotion requires a new stable-runtime task and Go decision | high |
 
@@ -249,9 +249,10 @@ wording 审核补齐。
 7. W23 NLA-001 through NLA-008 已完成；下一批任务改由
    [sprint-2026-W23-generation-quality-hardening.md](./sprint-2026-W23-generation-quality-hardening.md)
    承接，不重开已完成的生成骨架任务。
-8. AIN-001 through AIN-005 已完成；下一批任务改由
+8. AIN-001 through AIN-005 已完成；下一批任务已由
    [sprint-2026-W22-generated-app-review-console.md](../archive/2026-05-30/planning/sprint-2026-W22-generated-app-review-console.md)
-   承接。当前最高优先级执行任务是 `TASK-2026W22-GIR-006`。
+   承接，并且 `GIR-001` through `GIR-006` 已完成。当前不再追加实现任务，先回到
+   planning state 刷新竞品、产品设计和任务 DAG。
 
 ## Feature Spec 建议
 

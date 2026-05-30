@@ -1,6 +1,8 @@
 # GIS Engine
 
-AI-native, TypeScript-first map runtime for building, validating, replaying, snapshotting, and exporting 2D and 3D-ready web map applications.
+AI-native, TypeScript-first map runtime for building, validating, replaying,
+snapshotting, and exporting 2D web map applications, with evidence-gated 3D
+contract scaffolds.
 
 GIS Engine has completed the 2026-05-17 v0.2 checkpoint, the
 2026-05-18 SceneView3D v1 preparation pass, and the 2026-05-24 W23
@@ -80,6 +82,7 @@ const exported = map.exportSpec();
 - [v0.1 MVP acceptance criteria](./docs/archive/2026-05-30/engineering/v0.1-mvp-acceptance.md)
 - [v0.1 release checklist](./docs/archive/2026-05-30/engineering/v0.1-release-checklist.md)
 - [CI and test strategy](./docs/engineering/ci-test-strategy.md)
+- [Release wording guardrails](./docs/engineering/release-wording-guardrails.md)
 - [Contract freeze checklist](./docs/engineering/contract-freeze.md)
 - [v0.1 implementation playbook](./docs/archive/2026-05-30/engineering/implementation-playbook.md)
 - [Supported Feature Matrix](./docs/engineering/supported-feature-matrix.md)

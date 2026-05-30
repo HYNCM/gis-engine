@@ -14,7 +14,7 @@ evidence snapshots, and when old material should be archived.
 | Agent operations | [../AGENTS.md](../AGENTS.md) | Multi-agent workflow, repo gates, evolution ecosystem. |
 | Architecture | [architecture/core-framework.md](./architecture/core-framework.md), [architecture/core-capabilities.md](./architecture/core-capabilities.md) | Runtime boundaries, capability staging, package structure. |
 | Public contracts | [spec/contracts-and-interfaces.md](./spec/contracts-and-interfaces.md), [engineering/supported-feature-matrix.md](./engineering/supported-feature-matrix.md), [engineering/contract-freeze.md](./engineering/contract-freeze.md), [../packages/scene3d/README.md](../packages/scene3d/README.md), [../packages/scene3d-three-adapter/README.md](../packages/scene3d-three-adapter/README.md) | Schemas, commands, adapters, MCP tools. |
-| Test and release gates | [engineering/ci-test-strategy.md](./engineering/ci-test-strategy.md), [engineering/maplibre-version-drift-audit.md](./engineering/maplibre-version-drift-audit.md), [planning/v0.2-release.md](./planning/v0.2-release.md) | CI strategy, dependency drift, release checklist & notes. |
+| Test and release gates | [engineering/ci-test-strategy.md](./engineering/ci-test-strategy.md), [engineering/release-wording-guardrails.md](./engineering/release-wording-guardrails.md), [engineering/maplibre-version-drift-audit.md](./engineering/maplibre-version-drift-audit.md), [planning/v0.2-release.md](./planning/v0.2-release.md) | CI strategy, release wording guardrails, dependency drift, release checklist & notes. |
 | SceneView3D stable runtime decision | [planning/feature-specs/sceneview3d-stable-renderer-contract.md](./planning/feature-specs/sceneview3d-stable-renderer-contract.md), [reviews/sceneview3d-src-evidence-decision-2026-05-25.md](./reviews/sceneview3d-src-evidence-decision-2026-05-25.md), [reviews/sceneview3d-src-006-stable-runtime-gate-2026-05-29.md](./reviews/sceneview3d-src-006-stable-runtime-gate-2026-05-29.md), [planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md](./planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md) | SRC-006 No-go is final; stable `view.mode: "scene3d"` remains blocked. Intermediate SRC evidence is archived. |
 | Active planning | [planning/monthly-roadmap.md](./planning/monthly-roadmap.md), [planning/weekly-digest.md](./planning/weekly-digest.md), [planning/technical-debt-report.md](./planning/technical-debt-report.md), [planning/resource-perf-gap-plan.md](./planning/resource-perf-gap-plan.md), [planning/task-burndown.md](./planning/task-burndown.md), [planning/dependency-graph.md](./planning/dependency-graph.md), [planning/evolution-framework.md](./planning/evolution-framework.md), [planning/evolution-ledger.md](./planning/evolution-ledger.md) | Living planning and tracking documents. |
 | Current sprints | [planning/sprint-2026-W23-ai-map-app-generation.md](./planning/sprint-2026-W23-ai-map-app-generation.md), [planning/sprint-2026-W23-generation-quality-hardening.md](./planning/sprint-2026-W23-generation-quality-hardening.md), [planning/sprint-2026-W25-sceneview3d-v1.md](./planning/sprint-2026-W25-sceneview3d-v1.md) | Active or upcoming sprint work. |
@@ -48,6 +48,11 @@ evidence. Do not edit them to look timeless.
 [ain-001-002](./reviews/ain-001-002-generated-app-delivery-acceptance-2026-05-30.md),
 [ain-003-004](./reviews/ain-003-004-promotion-criteria-2026-05-30.md),
 [ain-005](./reviews/ain-005-scene-browsing-delivery-copy-2026-05-30.md)
+
+**Generated App Review Console (GIR stream, 2026-05-30)**:
+[gir-004](./reviews/gir-004-spatial-analysis-review-section-mapping-2026-05-30.md),
+[gir-005](./reviews/gir-005-prompt-to-delivery-qa-scenarios-2026-05-30.md),
+[gir-006](./reviews/gir-006-public-wording-release-guardrails-2026-05-30.md)
 
 **Other active reviews**:
 [ai-orchestration-capability-summary-2026-05-27.md](./reviews/ai-orchestration-capability-summary-2026-05-27.md),

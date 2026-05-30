@@ -142,4 +142,4 @@ manifest shape, not a rendered application UI.
 3. `GIR-003`: map source-readiness states into review sections.
 4. `GIR-004`: spatial-analysis readiness mapping is complete.
 5. `GIR-005`: prompt-to-delivery QA scenarios are complete.
-6. `GIR-006`: audit docs and release wording.
+6. `GIR-006`: docs and release wording guardrails are complete.
