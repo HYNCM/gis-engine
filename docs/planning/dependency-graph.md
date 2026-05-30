@@ -233,6 +233,33 @@ flowchart LR
 | TASK-2026W23-SRC-005 | SRC-002, SRC-004 | resource-policy test output, release-gate matrix, docs alignment note | `pnpm test:resources`; resource-policy schema tests when policy schemas change; `pnpm test:release:scene3d`; visual snapshot or coordinator waiver for non-rendering changes | done as resource-policy/release-gate prerequisite evidence |
 | TASK-2026W23-SRC-006 | SRC-001 through SRC-005 | quality-guardian gate report and coordinator decision note | `pnpm build:schema`; `pnpm check`; `pnpm test:release:scene3d`; visual snapshot evidence; strict visual snapshot before future beta/stable claims | done as No-go stable runtime decision |
 
+## Generated App Review Console DAG
+
+2026-05-30 planning update: the AIN batch is closed and a new Generated App
+Review Console sprint is open. `GIR-001` is complete as a docs-only PRD/spec
+slice; `GIR-002` is the highest-priority queued implementation task.
+
+```mermaid
+flowchart LR
+  A["AIN-001 through AIN-005 done"] --> B["TASK-2026W22-GIR-001 review console PRD"]
+  B --> C["TASK-2026W22-GIR-002 delivery acceptance fixtures"]
+  B --> D["TASK-2026W22-GIR-003 source readiness review sections"]
+  B --> E["TASK-2026W22-GIR-004 spatial-analysis review sections"]
+  C --> F["TASK-2026W22-GIR-005 prompt-to-delivery QA scenarios"]
+  D --> F
+  E --> F
+  F --> G["TASK-2026W22-GIR-006 wording and release guardrails"]
+```
+
+| Task | Depends On | Evidence Target | Required Finish Gate | Status Rule |
+| --- | --- | --- | --- | --- |
+| TASK-2026W22-GIR-001 | AIN-005 | product feature spec and sprint DAG | docs review; `pnpm check`; `git diff --check` | done as PRD/planning evidence |
+| TASK-2026W22-GIR-002 | GIR-001 | delivery review acceptance fixtures | `pnpm test:ai`; `pnpm test:schema-sync`; `pnpm check` | queued P0 implementation |
+| TASK-2026W22-GIR-003 | GIR-001 | source readiness review mapping | resource-policy doc audit; `pnpm test:resources` if policy changes; `pnpm check` | queued P1 implementation |
+| TASK-2026W22-GIR-004 | GIR-001 | spatial-analysis review mapping | `pnpm test:commands`; `pnpm test:ai`; `pnpm build:schema` when schemas change; `pnpm check` | queued P1 implementation |
+| TASK-2026W22-GIR-005 | GIR-002, GIR-003, GIR-004 | prompt-to-delivery QA matrix | `pnpm test:ai`; `pnpm test:examples`; `pnpm check`; visual gate only for rendering changes | queued P1 QA |
+| TASK-2026W22-GIR-006 | GIR-002, GIR-005 | docs and release wording audit | docs audit; `pnpm check`; `pnpm test:release:scene3d` only if scene evidence changes | queued P2 release guardrail |
+
 ## 阻断规则
 
 - public AI tool 或 public command surface 变更仍必须先通过 schema-sync、MCP contract tests 和 command replay tests。

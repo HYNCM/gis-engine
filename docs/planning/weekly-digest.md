@@ -80,6 +80,14 @@ now exposes `plannerEvidence` with confidence, prompt/trace provenance,
 accepted/unsupported intent fields, source prompt hashes, and planner
 diagnostics.
 
+2026-05-30 update: AIN-001 through AIN-005 are complete. The orchestrator
+therefore switched from execution state to planning state, refreshed official
+competitor/package signals, and opened the Generated App Review Console sprint.
+The product theme is no longer "can the evidence spine exist"; it is "can a
+user or agent inspect and accept a generated map app without reading free-form
+prose." The first task, `GIR-001`, is complete as a PRD/spec slice; `GIR-002`
+is the next queued P0 implementation task.
+
 ## Current Signals
 
 | Source | Signal | Impact | Confidence |
@@ -91,6 +99,8 @@ diagnostics.
 | competitive-intel | PMTiles v3, GeoParquet 1.1, FlatGeobuf range semantics, and OpenLayers GeoZarr/GeoTIFF widen cloud-native data expectations | Plan source readiness and resource-policy diagnostics before adding new source support | high |
 | competitive-intel | Structured outputs and computer-use tooling reinforce JSON Schema, screenshots, allowlists, and confirmation boundaries | Keep generated-app and visual evidence auditable and side-effect-aware | high |
 | product-strategist | W22 scorecard raises AI operability, 2D cloud-native, and 3D readiness scores, but not stable 3D runtime | Next iteration is evidence hardening, not broad scope expansion | high |
+| product-strategist | AIN delivery states are schema-testable, but the user-facing review console is still missing | Open Generated App Review Console as the next productized delivery slice | high |
+| competitive-intel | 2026-05-30 npm checks show ArcGIS AI packages at 5.0.19, MapLibre at 5.24.0, Mapbox GL JS at 3.24.0, Cesium at 1.141.0, and 3DTilesRendererJS at 0.4.27 | Keep natural-language app generation, source readiness, and adapter-local SceneView3D evidence as the main pressure points | high |
 | adapter-agent | Lifecycle diagnostics now include `/runtime/not-loaded/{operation}` and `/runtime/destroyed/{operation}` | AI/debug tooling can identify failure state without parsing diagnostic messages | high |
 
 ## Decisions
@@ -110,6 +120,9 @@ diagnostics.
    adding tool aliases or broad spatial-analysis operations.
 8. After NLA-008, open a new W23 generation-quality sprint instead of editing
    the completed NLA task batch.
+9. After AIN-005, open Generated App Review Console and treat review/acceptance
+   fixtures as the next P0 task before broad source, spatial-analysis, or
+   SceneView3D runtime expansion.
 
 ## Execution Status
 
@@ -132,6 +145,8 @@ diagnostics.
 | TASK-2026W22-AIN-001 through AIN-002 | done | `docs/reviews/ain-001-002-generated-app-delivery-acceptance-2026-05-30.md`; `generationEvidence.delivery` contract |
 | TASK-2026W22-AIN-003 through AIN-004 | done | `docs/reviews/ain-003-004-promotion-criteria-2026-05-30.md`; source and spatial-analysis promotion criteria |
 | TASK-2026W22-AIN-005 | done | `docs/reviews/ain-005-scene-browsing-delivery-copy-2026-05-30.md`; extension-only scene browsing delivery copy |
+| TASK-2026W22-GIR-001 | done | `docs/planning/feature-specs/generated-app-review-console.md`; review-console PRD/spec |
+| TASK-2026W22-GIR-002 through GIR-006 | todo | `docs/planning/sprint-2026-W22-generated-app-review-console.md`; queued implementation and QA tasks |
 
 ## Next Handoff
 
@@ -152,3 +167,6 @@ diagnostics.
   `@task-distributor`: start the next planning loop because the current AIN
   batch is closed. Refresh market/product signals before opening new
   implementation tasks.
+- `@ai-agent` / `@qa-agent`: take `TASK-2026W22-GIR-002` next and add
+  delivery-review acceptance fixtures for ready, blocked, needs-confirmation,
+  and follow-up-required states without adding MCP aliases.

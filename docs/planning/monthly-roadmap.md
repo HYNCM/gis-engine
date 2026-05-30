@@ -135,10 +135,19 @@ extension-only；`sceneBrowsing.state`、`stableRuntimeBlocked`、stable blocker
 codes 和 README/AI docs 均保持 stable `view.mode: "scene3d"` blocked。AIN batch
 已完成，下一轮应从竞品分析、产品设计和任务规划启动。
 
+2026-05-30 planning loop update: 当前队列已清空，系统切换到迭代规划态。基于
+ArcGIS AI components、Mapbox/MapLibre source/runtime drift、Cesium/Three/
+3DTilesRendererJS evidence pressure 以及 PMTiles/cloud-native data signals，
+下一轮产品主题定为 Generated App Review Console。目标不是扩展新的 MCP 工具或
+runtime 能力，而是把已存在的 `generationEvidence.delivery`、diagnostics、
+command trace、snapshot/export evidence、source readiness、spatial readiness
+和 extension-only scene browsing 转成可审查、可验收的交付面。
+
 ## 2026-W22 Iteration Path
 
 | Priority | Track | Plan | Exit Condition |
 | --- | --- | --- | --- |
+| P0 | Generated App Review Console | Turn generated-app delivery evidence into an inspectable acceptance handoff | `GIR-001` spec is done; `GIR-002` fixtures make ready/blocked/confirmation/follow-up states testable |
 | P0 | SceneView3D governance | Keep stable `view.mode: "scene3d"` blocked after SRC-006 No-go | future stable runtime work starts only from a new accepted promotion task |
 | P0 | AI natural-language app generation | Make feature display, spatial analysis, and scene browsing capability boundaries machine-readable | `get_context_summary` and `explain_spec` expose `capabilitySummary` with schema-tested MCP output |
 | P0 | Next planning loop | Refresh competitor evidence, product design, and task DAG for natural-language map app generation | competitive-intel, product-strategist, coordinator, and task-distributor produce the next iteration plan |
@@ -183,10 +192,11 @@ codes 和 README/AI docs 均保持 stable `view.mode: "scene3d"` blocked。AIN b
 
 | 排名 | 事项 | 得分 | 证据 | 行动 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | Next AI-native planning loop | 6.20 | AIN-001 through AIN-005 are closed; the next implementation batch needs refreshed market/product/task evidence | run competitive-intel, product-strategist, coordinator, and task-distributor before new code slices | medium |
-| 2 | Source promotion implementation gates | planned / split | source implementation candidates are now separated into schema/resource-policy/query/export promotion tasks | schedule AIN-003A through AIN-003F only after fixture and owner capacity are clear | high |
-| 3 | Spatial-analysis implementation gates | planned / split | operation candidates are now separated into point/bbox hardening and blocked geoprocessing promotion criteria | schedule AIN-004A through AIN-004E before implementation | medium |
-| 4 | SceneView3D promotion readiness | parked / no-go | W22 evidence and beta gate are complete; W23 promotion-readiness package and gate are complete, and SRC-006 records No-go | future promotion requires a new stable-runtime task and Go decision | high |
+| 1 | Generated App Review Console fixtures | 6.75 | AIN-001 through AIN-005 are closed; ArcGIS AI components increase pressure for inspectable agentic map handoff | execute `TASK-2026W22-GIR-002` before broad capability expansion | high |
+| 2 | Source readiness review cards | planned / split | source implementation candidates are already separated into schema/resource-policy/query/export promotion tasks | schedule `GIR-003` before any PMTiles/GeoParquet/FlatGeobuf/GeoTIFF/GeoZarr runtime work | high |
+| 3 | Spatial-analysis review cards | planned / split | operation candidates are separated into point/bbox hardening and blocked geoprocessing promotion criteria | schedule `GIR-004` and later point/bbox hardening fixtures before implementation | medium |
+| 4 | MapLibre 6 drift audit | 5.80 | MapLibre v6 prerelease and Mapbox PMTiles/model/raster movement create dependency drift pressure | run the existing version-drift checklist before package movement | medium |
+| 5 | SceneView3D promotion readiness | parked / no-go | W22 evidence and beta gate are complete; W23 promotion-readiness package and gate are complete, and SRC-006 records No-go | future promotion requires a new stable-runtime task and Go decision | high |
 
 已完成并保留回归证据：
 
@@ -238,6 +248,9 @@ codes 和 README/AI docs 均保持 stable `view.mode: "scene3d"` blocked。AIN b
 7. W23 NLA-001 through NLA-008 已完成；下一批任务改由
    [sprint-2026-W23-generation-quality-hardening.md](./sprint-2026-W23-generation-quality-hardening.md)
    承接，不重开已完成的生成骨架任务。
+8. AIN-001 through AIN-005 已完成；下一批任务改由
+   [sprint-2026-W22-generated-app-review-console.md](./sprint-2026-W22-generated-app-review-console.md)
+   承接。当前最高优先级执行任务是 `TASK-2026W22-GIR-002`。
 
 ## Feature Spec 建议
 
@@ -253,3 +266,4 @@ codes 和 README/AI docs 均保持 stable `view.mode: "scene3d"` blocked。AIN b
 | `docs/planning/feature-specs/command-conflict-replay-audit.md` | done | `baseRevision`、`traceId`、`author`、`reason`、`sourcePromptHash`、`SuggestedFix` |
 | `docs/planning/feature-specs/natural-language-map-app-generation.md` | W23 active | prompt、capabilitySummary、MapSpec、commands、diagnostics、snapshot/export evidence |
 | `docs/planning/feature-specs/spatial-analysis-readiness.md` | W23 active | point/bbox query readiness、blocked analysis operations、future contract gates |
+| `docs/planning/feature-specs/generated-app-review-console.md` | W22 active | delivery review sections、acceptance states、source/spatial readiness cards、scene browsing blockers |

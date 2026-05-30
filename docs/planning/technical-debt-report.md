@@ -80,26 +80,40 @@ spatial-analysis promotion criteria。
 已拆成未来实现门禁；剩余最高优先级债务转为 SceneView3D delivery copy/evidence
 follow-through，以及 point/bbox hardening 的后续 fixture/capability gate。
 
+2026-05-30 AIN-005 and GIR planning update: SceneView3D delivery copy/evidence
+follow-through 已收口为 extension-only。剩余最高优先级债务转为 Generated App
+Review Console 的验收 fixtures：ready、blocked、needs-confirmation 和
+follow-up-required 需要在 QA/AI 合同中作为可测试场景出现，而不是只停留在
+delivery schema。
+
 ## 债务优先级
 
 | 排名 | 债务 | 得分 | 证据 | 建议修复 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | SceneView3D delivery copy follow-through | 0.35 | delivery now exposes extension-only state and blocker codes, but AIN-005 still needs dedicated copy/evidence closure | execute `TASK-2026W22-AIN-005` without renderer promotion | medium |
-| 2 | Point/bbox query hardening fixtures missing | 0.32 | promotion criteria require explicit adapter query capability, invalid coordinates/bbox, unsupported source, and result-cap fixtures | schedule `TASK-2026W22-AIN-004A` after AIN-005 or in the next execution batch | high |
-| 3 | Source promotion implementation gates pending | 0.30 | AIN-003 split exists, but PMTiles/GeoParquet/FlatGeobuf/GeoTIFF/GeoZarr gates are not implemented | schedule AIN-003A through AIN-003F only after fixture and owner capacity are clear | high |
+| 1 | Generated-app review acceptance fixtures missing | 0.38 | delivery status exists in structured evidence, but there is no review-console fixture matrix for ready, blocked, confirmation, and follow-up outcomes | execute `TASK-2026W22-GIR-002` with AI/QA tests | high |
+| 2 | Source readiness review cards missing | 0.32 | source promotion criteria exist, but generated-app review does not yet map source states into user-facing acceptance cards | schedule `TASK-2026W22-GIR-003` before source runtime implementation | high |
+| 3 | Spatial-analysis review cards missing | 0.31 | point/bbox evidence and blocked operation criteria exist, but generated-app review does not yet expose them as acceptance cards | schedule `TASK-2026W22-GIR-004` and later point/bbox hardening fixtures | high |
+| 4 | MapLibre 6 drift audit pending | 0.24 | 2026-05-30 package checks confirm ongoing MapLibre/Mapbox drift pressure | run the existing MapLibre version-drift checklist before dependency movement | medium |
 
 ## 修复顺序
 
-1. 先执行 `TASK-2026W22-AIN-005`：把 scene browsing delivery copy/evidence follow-through 继续保持 extension-only。
-2. 再规划 `AIN-004A` point/bbox hardening fixtures 和 `AIN-003A` PMTiles archive metadata gate。
-3. 下一步若要推进 stable runtime promotion，必须先形成明确的 promotion rubric、browser matrix evidence 和 guardrail diagnostics，不得直接把 `view.mode: "scene3d"` 视为稳定。
-4. 后续真实 renderer loader 接入时，必须先调用 `validateSceneResourceLoadPlan`，不得绕过 byte、texture、worker、timeout diagnostics。
-5. W23 promotion readiness sprint 已完成并记录 no-go verdict；stable runtime promotion 仍然 blocked until a future approval.
+1. 先执行 `TASK-2026W22-GIR-002`：补 generated-app review acceptance fixtures。
+2. 再执行 `TASK-2026W22-GIR-003` 和 `TASK-2026W22-GIR-004`：把 source readiness
+   与 spatial-analysis readiness 转成 review sections。
+3. 后续再规划 point/bbox hardening fixtures 和 PMTiles archive metadata gate。
+4. 下一步若要推进 stable runtime promotion，必须先形成明确的 promotion
+   rubric、browser matrix evidence 和 guardrail diagnostics，不得直接把
+   `view.mode: "scene3d"` 视为稳定。
+5. 后续真实 renderer loader 接入时，必须先调用
+   `validateSceneResourceLoadPlan`，不得绕过 byte、texture、worker、timeout
+   diagnostics。
+6. W23 promotion readiness sprint 已完成并记录 no-go verdict；stable runtime
+   promotion 仍然 blocked until a future approval.
 
 ## 结论
 
-如果只做一件事，下一步优先完成 AIN-005，把 scene browsing delivery copy 和
-evidence follow-through 明确为 extension-only。Generated-app delivery contract
-已能表达 ready / blocked / needs-confirmation / follow-up-required；source 与
+如果只做一件事，下一步优先完成 `TASK-2026W22-GIR-002`。Generated-app delivery
+contract 已能表达 ready / blocked / needs-confirmation / follow-up-required；
+现在需要 fixtures 和 QA 证据证明 review console 能稳定消费这些状态。Source 与
 spatial-analysis promotion gates 已拆分；SceneView3D stable runtime 仍保持
 blocker state，直到新的 explicit approval arrives。

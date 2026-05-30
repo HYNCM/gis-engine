@@ -1,8 +1,8 @@
 ---
 agent: competitive-intel
 period: 2026-W22
-generated_at: 2026-05-29T10:20:00Z
-repo_revision: "d628fd1454a44859e57d8996343413684a541c30"
+generated_at: 2026-05-30T05:32:28Z
+repo_revision: "374248689630327c1df2360fbcea684eaadc2c31"
 inputs:
   - https://github.com/maplibre/maplibre-gl-js/releases
   - https://maplibre.org/maplibre-style-spec/
@@ -40,17 +40,25 @@ inputs:
   - command: npm view pmtiles version time.modified --json
   - command: npm view flatgeobuf version time.modified --json
   - command: npm view @modelcontextprotocol/sdk version time.modified --json
+  - command: npm view @arcgis/core version time.modified --json
+  - command: npm view @arcgis/ai-components version time.modified --json
+  - command: npm view maplibre-gl version time.modified --json
+  - command: npm view mapbox-gl version time.modified --json
+  - command: npm view cesium version time.modified --json
+  - command: npm view three version time.modified --json
+  - command: npm view 3d-tiles-renderer version time.modified --json
 owner: "@competitive-intel"
 decision_level: advisory
 ---
 
 # Competitor Updates: 2026-W22
 
-Checked on 2026-05-29. This refresh uses official project, package, or
-specification sources only. It updates the earlier W22 report after the W23
-natural-language generation and generation-quality hardening backlogs closed,
-so the recommendations focus on the next AI-native product loop rather than
-reopening completed NLA/NLQ tasks.
+Checked on 2026-05-29 and refreshed on 2026-05-30. This refresh uses official
+project, package, or specification sources only. It updates the earlier W22
+report after the W23 natural-language generation, generation-quality
+hardening, and AIN delivery/planning batches closed, so the recommendations
+focus on the next AI-native product loop rather than reopening completed
+NLA/NLQ/AIN tasks.
 
 ## Executive Summary
 
@@ -102,6 +110,19 @@ Observed package versions from `npm view` on 2026-05-29 after NLQ closure:
 `ol` 10.9.0, `echarts` 6.1.0, `@arcgis/core` 5.0.19,
 `@arcgis/ai-components` 5.0.19, `pmtiles` 4.4.1, `flatgeobuf` 4.4.0, and
 `@modelcontextprotocol/sdk` 1.29.0.
+
+## 2026-05-30 Next-Loop Refresh
+
+The AIN batch is now closed, so the refreshed competitive signal should feed a
+new planning batch. Official and package-registry checks on 2026-05-30 showed:
+
+| Project | 2026-05-30 checked signal | GIS Engine impact | Confidence |
+| --- | --- | --- | --- |
+| ArcGIS Maps SDK JS / AI components | Official 5.0 release notes document AI components beta for assistant, navigation, data exploration, help, and agentic map interaction. `npm view` reported `@arcgis/core` 5.0.19 modified 2026-05-30T04:05:41Z and `@arcgis/ai-components` 5.0.19 modified 2026-05-30T04:42:47Z. | The next product slice should make generated app review and acceptance inspectable. Do not add MCP aliases; compose the existing tools into a clearer evidence handoff. | high |
+| Mapbox GL JS | `npm view` reported `mapbox-gl` 3.24.0 modified 2026-05-18. Official changelog and PMTiles examples keep model, terrain, raster, and PMTiles loading pressure visible. | Keep PMTiles and raster parity behind schema, resource-policy, diagnostics, and snapshot gates. Generated apps should expose source readiness rather than imply archive mutation or new loaders. | high |
+| MapLibre GL JS | `npm view` reported `maplibre-gl` 5.24.0 modified 2026-05-21; upstream release stream continues v6 prerelease work with WebGL2/ESM drift implications. | Run the existing MapLibre version-drift checklist before dependency movement. The review console should explain renderer/source limits without depending on a package upgrade. | high |
+| CesiumJS / Three.js / 3DTilesRendererJS | `npm view` reported `cesium` 1.141.0, `three` 0.184.0, and `3d-tiles-renderer` 0.4.27 modified 2026-05-25. Official 3D ecosystem movement continues around metadata, load events, runtime evidence, and 3D Tiles. | Keep SceneView3D evidence adapter-local. Future metadata/query work needs schema and visual evidence; stable `view.mode: "scene3d"` remains blocked after SRC-006. | high |
+| PMTiles and cloud-native data | `npm view` reported `pmtiles` 4.4.1 and `flatgeobuf` 4.4.0; PMTiles appears in official Mapbox loading paths while GeoParquet, FlatGeobuf, GeoTIFF, and GeoZarr remain readiness candidates. | Prioritize PMTiles readiness wording and review-console source cards before runtime parser/worker work. GeoParquet/FlatGeobuf/GeoTIFF/GeoZarr stay blocked or readiness-only until promotion gates land. | medium-high |
 
 ## Threats To GIS Engine Assumptions
 
@@ -203,3 +224,18 @@ Observed package versions from `npm view` on 2026-05-29 after NLQ closure:
   before package upgrades, including transformer, style-spec, resource-policy,
   smoke snapshot, and visual snapshot evidence.
 - Confidence: medium.
+
+### [P0] Productize Generated-App Review And Acceptance
+
+- Evidence: ArcGIS AI components make agentic map applications a current
+  product signal, while AIN-001 through AIN-005 closed the structured delivery
+  contract and promotion criteria.
+- Impact: user value and AI safety; the next gap is an inspectable review
+  surface that maps generated-app status to diagnostics, command trace,
+  snapshot/export evidence, source readiness, spatial-analysis readiness, and
+  extension-only scene browsing.
+- Action: `@product-strategist`, `@docs-agent`, `@ai-agent`, and `@qa-agent`
+  should open the Generated App Review Console sprint. It must use the
+  existing MCP tools, preserve side-effect boundaries, and keep unsupported
+  source/spatial/scene capabilities blocked.
+- Confidence: high.

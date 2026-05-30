@@ -238,6 +238,24 @@ extension-only delivery copy/evidence alignment. `sceneBrowsing.state`,
 `stableRuntimeBlocked`, stable blocker codes, and public docs keep stable
 `view.mode: "scene3d"` blocked. The AIN batch is closed.
 
+## 2026-W22 Generated App Review Console
+
+The AIN batch is closed, so the orchestrator switched to a new planning loop on
+2026-05-30. The refreshed competitive/product evidence opens a new Generated
+App Review Console sprint:
+[sprint-2026-W22-generated-app-review-console.md](./sprint-2026-W22-generated-app-review-console.md).
+`GIR-001` is complete as a docs-only PRD/spec slice; implementation and QA
+tasks remain queued.
+
+| id | title | priority | owner | status | evidence target | acceptance | finish gates |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| TASK-2026W22-GIR-001 | Freeze generated-app review console PRD | P0 | `@product-strategist`, `@docs-agent` | done | `docs/planning/feature-specs/generated-app-review-console.md` | review sections map to delivery evidence, diagnostics, source readiness, spatial readiness, and scene browsing blockers | docs review; `pnpm check`; `git diff --check` |
+| TASK-2026W22-GIR-002 | Add delivery-review acceptance fixtures | P0 | `@ai-agent`, `@qa-agent` | todo | AI contract tests and delivery review scenarios | ready, blocked, needs-confirmation, and follow-up-required are schema-testable without MCP aliases | `pnpm test:ai`; `pnpm test:schema-sync`; `pnpm check` |
+| TASK-2026W22-GIR-003 | Map source readiness into review sections | P1 | `@engine-agent`, `@docs-agent` | todo | source readiness cards and diagnostics mapping | PMTiles and future source candidates keep readiness/promotion boundaries before runtime implementation | resource-policy doc audit; `pnpm test:resources` if policy changes; `pnpm check` |
+| TASK-2026W22-GIR-004 | Map spatial-analysis readiness into review sections | P1 | `@engine-agent`, `@ai-agent`, `@qa-agent` | todo | spatial-analysis review cards | point/bbox remain read-only; blocked operations keep stable diagnostic codes and paths | `pnpm test:commands`; `pnpm test:ai`; `pnpm build:schema` when schemas change; `pnpm check` |
+| TASK-2026W22-GIR-005 | Add prompt-to-delivery QA scenarios | P1 | `@qa-agent` | todo | prompt-to-delivery fixtures | successful 2D app, external resource confirmation, spatial blocked, and scene3d extension-only scenarios are covered | `pnpm test:ai`; `pnpm test:examples`; `pnpm check`; visual gate only for rendering changes |
+| TASK-2026W22-GIR-006 | Audit public wording and release guardrails | P2 | `@docs-agent`, `@quality-guardian` | todo | docs and release wording audit | public docs avoid stable scene3d, side-effect export, unsupported source, or advanced spatial-analysis claims | docs audit; `pnpm check`; scene3d release gate only if scene evidence changes |
+
 ## W23 promotion readiness 计划快照
 
 W23 将现有 SceneView3D 证据整理成 promotion-ready 决策包，不启用 stable
