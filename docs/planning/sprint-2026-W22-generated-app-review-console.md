@@ -32,7 +32,7 @@ capabilities.
 | id | title | priority | complexity | owner | status | depends on | acceptance | finish gates |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | TASK-2026W22-GIR-001 | Freeze generated-app review console PRD | P0 | S | `@product-strategist`, `@docs-agent` | done | AIN-005 | Feature spec maps review sections to `generationEvidence.delivery`, diagnostics, command trace, source readiness, spatial readiness, and scene browsing blockers | docs review; `pnpm check`; `git diff --check` |
-| TASK-2026W22-GIR-002 | Add delivery-review acceptance fixtures | P0 | M | `@ai-agent`, `@qa-agent` | todo | GIR-001 | Ready, blocked, needs-confirmation, and follow-up-required scenarios are schema-testable without new MCP tool names | `pnpm test:ai`; `pnpm test:schema-sync`; `pnpm check` |
+| TASK-2026W22-GIR-002 | Add delivery-review acceptance fixtures | P0 | M | `@ai-agent`, `@qa-agent` | done | GIR-001 | Ready, blocked, needs-confirmation, and follow-up-required scenarios are schema-testable without new MCP tool names | `pnpm vitest run tests/ai/generation-evidence.test.ts`; `pnpm check`; `pnpm test:schema-sync` |
 | TASK-2026W22-GIR-003 | Map source readiness into review sections | P1 | M | `@engine-agent`, `@docs-agent` | todo | GIR-001 | PMTiles, GeoParquet, FlatGeobuf, GeoTIFF, and GeoZarr review states use existing readiness/promotion gates and do not claim new runtime loaders | resource-policy doc audit; `pnpm test:resources` if policy changes; `pnpm check` |
 | TASK-2026W22-GIR-004 | Map spatial-analysis readiness into review sections | P1 | M | `@engine-agent`, `@ai-agent`, `@qa-agent` | todo | GIR-001 | Point/bbox remain read-only evidence; buffer, intersection, overlay, routing, and aggregation stay blocked with stable diagnostics | `pnpm test:commands`; `pnpm test:ai`; `pnpm build:schema` when schemas change; `pnpm check` |
 | TASK-2026W22-GIR-005 | Add prompt-to-delivery QA scenarios | P1 | M | `@qa-agent` | todo | GIR-002, GIR-003, GIR-004 | End-to-end fixtures cover successful 2D app, external resource confirmation, spatial blocked, and scene3d extension-only delivery | `pnpm test:ai`; `pnpm test:examples`; `pnpm check`; visual gate only for rendering changes |
@@ -67,3 +67,11 @@ flowchart LR
   for geoprocessing operations until future promotion tasks land.
 - Rendering, visual fixture, URL, tile, worker, or resource-policy changes
   trigger the appropriate snapshot/resource gates.
+
+## Execution Update
+
+`TASK-2026W22-GIR-002` landed with a new delivery-review acceptance fixture
+test in `tests/ai/generation-evidence.test.ts`. The test covers ready,
+blocked, needs-confirmation, and follow-up-required outcomes from structured
+evidence only. The next queued implementation tasks are `GIR-003` and
+`GIR-004`.

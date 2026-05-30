@@ -250,11 +250,53 @@ tasks remain queued.
 | id | title | priority | owner | status | evidence target | acceptance | finish gates |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | TASK-2026W22-GIR-001 | Freeze generated-app review console PRD | P0 | `@product-strategist`, `@docs-agent` | done | `docs/planning/feature-specs/generated-app-review-console.md` | review sections map to delivery evidence, diagnostics, source readiness, spatial readiness, and scene browsing blockers | docs review; `pnpm check`; `git diff --check` |
-| TASK-2026W22-GIR-002 | Add delivery-review acceptance fixtures | P0 | `@ai-agent`, `@qa-agent` | todo | AI contract tests and delivery review scenarios | ready, blocked, needs-confirmation, and follow-up-required are schema-testable without MCP aliases | `pnpm test:ai`; `pnpm test:schema-sync`; `pnpm check` |
+| TASK-2026W22-GIR-002 | Add delivery-review acceptance fixtures | P0 | `@ai-agent`, `@qa-agent` | done | AI contract tests and delivery review scenarios | ready, blocked, needs-confirmation, and follow-up-required are schema-testable without MCP aliases | `pnpm vitest run tests/ai/generation-evidence.test.ts`; `pnpm check`; `pnpm test:schema-sync` |
 | TASK-2026W22-GIR-003 | Map source readiness into review sections | P1 | `@engine-agent`, `@docs-agent` | todo | source readiness cards and diagnostics mapping | PMTiles and future source candidates keep readiness/promotion boundaries before runtime implementation | resource-policy doc audit; `pnpm test:resources` if policy changes; `pnpm check` |
 | TASK-2026W22-GIR-004 | Map spatial-analysis readiness into review sections | P1 | `@engine-agent`, `@ai-agent`, `@qa-agent` | todo | spatial-analysis review cards | point/bbox remain read-only; blocked operations keep stable diagnostic codes and paths | `pnpm test:commands`; `pnpm test:ai`; `pnpm build:schema` when schemas change; `pnpm check` |
 | TASK-2026W22-GIR-005 | Add prompt-to-delivery QA scenarios | P1 | `@qa-agent` | todo | prompt-to-delivery fixtures | successful 2D app, external resource confirmation, spatial blocked, and scene3d extension-only scenarios are covered | `pnpm test:ai`; `pnpm test:examples`; `pnpm check`; visual gate only for rendering changes |
 | TASK-2026W22-GIR-006 | Audit public wording and release guardrails | P2 | `@docs-agent`, `@quality-guardian` | todo | docs and release wording audit | public docs avoid stable scene3d, side-effect export, unsupported source, or advanced spatial-analysis claims | docs audit; `pnpm check`; scene3d release gate only if scene evidence changes |
+
+2026-05-30 GIR-002 execution update: the delivery-review acceptance fixtures
+landed in `tests/ai/generation-evidence.test.ts` and the P0 queue advances to
+`GIR-003` and `GIR-004`.
+
+---
+
+## Evolution Tracking
+
+> 本节由 `@coordinator`（evolution-guardian 职责）在每次进化审查时更新。
+> 周度量快照由 `scripts/evolution-collector.mjs` 自动生成。
+
+### 当前进化状态
+
+| 维度 | 指标 | 当前值 | 趋势 | 上次更新 |
+| --- | --- | --- | --- | --- |
+| D1 估算准确度 | 平均偏差率 | 待收集 | — | 2026-05-30 |
+| D2 瓶颈检测 | 关键路径占比 | 待收集 | — | 2026-05-30 |
+| D3 质量趋势 | 门禁首次通过率 | 待收集 | — | 2026-05-30 |
+| D4 知识积累 | 已验证模式数 | 0 | — | 2026-05-30 |
+| D5 职责分布 | 偏差（>20% 告警） | 待收集 | — | 2026-05-30 |
+| D6 决策权重 | 校准状态 | 基准（未校准） | — | 2026-05-30 |
+
+### 任务复盘模板
+
+每个 sprint 完成后，每个完成的 P0/P1 任务应追加以下字段：
+
+```yaml
+retrospective:
+  estimated_hours: 0
+  actual_hours: 0
+  deviation_ratio: 0.0
+  quality_surprises: "无 / 描述"
+  reusable_patterns:
+    - PAT-XXX: "模式描述"
+  pitfalls_encountered:
+    - PIT-XXX: "陷阱描述"
+  improvement_suggestions: "下轮建议"
+```
+
+详细进化记录见 [evolution-ledger.md](./evolution-ledger.md)，进化框架见
+[evolution-framework.md](./evolution-framework.md)。
 
 ## W23 promotion readiness 计划快照
 

@@ -146,7 +146,8 @@ is the next queued P0 implementation task.
 | TASK-2026W22-AIN-003 through AIN-004 | done | `docs/reviews/ain-003-004-promotion-criteria-2026-05-30.md`; source and spatial-analysis promotion criteria |
 | TASK-2026W22-AIN-005 | done | `docs/reviews/ain-005-scene-browsing-delivery-copy-2026-05-30.md`; extension-only scene browsing delivery copy |
 | TASK-2026W22-GIR-001 | done | `docs/planning/feature-specs/generated-app-review-console.md`; review-console PRD/spec |
-| TASK-2026W22-GIR-002 through GIR-006 | todo | `docs/planning/sprint-2026-W22-generated-app-review-console.md`; queued implementation and QA tasks |
+| TASK-2026W22-GIR-002 | done | `tests/ai/generation-evidence.test.ts`; delivery-review acceptance fixtures |
+| TASK-2026W22-GIR-003 through GIR-006 | todo | `docs/planning/sprint-2026-W22-generated-app-review-console.md`; queued implementation and QA tasks |
 
 ## Next Handoff
 
@@ -167,6 +168,8 @@ is the next queued P0 implementation task.
   `@task-distributor`: start the next planning loop because the current AIN
   batch is closed. Refresh market/product signals before opening new
   implementation tasks.
-- `@ai-agent` / `@qa-agent`: take `TASK-2026W22-GIR-002` next and add
-  delivery-review acceptance fixtures for ready, blocked, needs-confirmation,
-  and follow-up-required states without adding MCP aliases.
+- `@ai-agent` / `@qa-agent`: `TASK-2026W22-GIR-002` is done; the next
+  delivery-review work is `GIR-003` and `GIR-004` so source and spatial cards
+  land in the review console without adding MCP aliases.
+- `@engine-agent` / `@docs-agent`: take `TASK-2026W22-GIR-003` next so source
+  readiness cards map into the review console before any runtime source work.

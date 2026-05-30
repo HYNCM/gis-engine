@@ -254,7 +254,7 @@ flowchart LR
 | Task | Depends On | Evidence Target | Required Finish Gate | Status Rule |
 | --- | --- | --- | --- | --- |
 | TASK-2026W22-GIR-001 | AIN-005 | product feature spec and sprint DAG | docs review; `pnpm check`; `git diff --check` | done as PRD/planning evidence |
-| TASK-2026W22-GIR-002 | GIR-001 | delivery review acceptance fixtures | `pnpm test:ai`; `pnpm test:schema-sync`; `pnpm check` | queued P0 implementation |
+| TASK-2026W22-GIR-002 | GIR-001 | delivery review acceptance fixtures | `pnpm vitest run tests/ai/generation-evidence.test.ts`; `pnpm check`; `pnpm test:schema-sync` | done |
 | TASK-2026W22-GIR-003 | GIR-001 | source readiness review mapping | resource-policy doc audit; `pnpm test:resources` if policy changes; `pnpm check` | queued P1 implementation |
 | TASK-2026W22-GIR-004 | GIR-001 | spatial-analysis review mapping | `pnpm test:commands`; `pnpm test:ai`; `pnpm build:schema` when schemas change; `pnpm check` | queued P1 implementation |
 | TASK-2026W22-GIR-005 | GIR-002, GIR-003, GIR-004 | prompt-to-delivery QA matrix | `pnpm test:ai`; `pnpm test:examples`; `pnpm check`; visual gate only for rendering changes | queued P1 QA |

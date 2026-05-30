@@ -683,6 +683,267 @@ describe("generation evidence bundle", () => {
     });
   });
 
+  it("derives delivery-review acceptance states from structured evidence", async () => {
+    const readySkeleton = createMapGenerationCommandSkeleton({
+      mapId: "delivery-ready",
+      promptHash: "sha256:delivery-ready",
+      traceId: "trace-delivery-ready",
+      targetDomains: ["feature-display"],
+      sources: {
+        services: {
+          type: "geojson",
+          data: {
+            type: "FeatureCollection",
+            features: []
+          }
+        }
+      },
+      layers: [
+        {
+          id: "service-points",
+          type: "circle",
+          source: "services"
+        }
+      ]
+    });
+    const blockedBaseSkeleton = createMapGenerationCommandSkeleton({
+      mapId: "delivery-blocked",
+      promptHash: "sha256:delivery-blocked",
+      traceId: "trace-delivery-blocked",
+      view: { zoom: 8 }
+    });
+    const blockedSkeleton: MapGenerationCommandSkeleton = {
+      ...blockedBaseSkeleton,
+      spec: {
+        ...blockedBaseSkeleton.spec,
+        view: {
+          ...blockedBaseSkeleton.spec.view,
+          zoom: 99
+        }
+      }
+    };
+    const confirmationSkeleton = createMapGenerationCommandSkeleton({
+      mapId: "delivery-confirmation",
+      promptHash: "sha256:delivery-confirmation",
+      traceId: "trace-delivery-confirmation",
+      targetDomains: ["feature-display"],
+      sources: {
+        parcels: {
+          type: "pmtiles",
+          url: "pmtiles://local/parcels.pmtiles"
+        }
+      },
+      layers: [
+        {
+          id: "parcel-fills",
+          type: "fill",
+          source: "parcels"
+        }
+      ]
+    });
+    const followUpSkeleton = createMapGenerationCommandSkeleton({
+      mapId: "delivery-follow-up",
+      promptHash: "sha256:delivery-follow-up",
+      traceId: "trace-delivery-follow-up",
+      targetDomains: ["scene-browsing"],
+      scene3d: {
+        camera: {
+          position: [120.15, 30.28, 1200],
+          target: [120.15, 30.28, 0]
+        },
+        sources: {
+          city: {
+            type: "3d-tiles",
+            url: "./data/city/tileset.json"
+          }
+        },
+        layers: [
+          {
+            id: "city",
+            type: "tileset3d",
+            source: "city",
+            pickable: true
+          }
+        ]
+      }
+    });
+
+    const [ready, blocked, needsConfirmation, followUpRequired] = await Promise.all([
+      createGenerationEvidenceBundle({
+        promptHash: "sha256:delivery-ready",
+        skeleton: readySkeleton
+      }),
+      createGenerationEvidenceBundle({
+        promptHash: "sha256:delivery-blocked",
+        skeleton: blockedSkeleton
+      }),
+      createGenerationEvidenceBundle({
+        promptHash: "sha256:delivery-confirmation",
+        skeleton: confirmationSkeleton
+      }),
+      createGenerationEvidenceBundle({
+        promptHash: "sha256:delivery-follow-up",
+        skeleton: followUpSkeleton
+      })
+    ]);
+
+    expect(ready.ok).toBe(true);
+    expect(blocked.ok).toBe(true);
+    expect(needsConfirmation.ok).toBe(true);
+    expect(followUpRequired.ok).toBe(true);
+    if (!ready.ok || !blocked.ok || !needsConfirmation.ok || !followUpRequired.ok) {
+      throw new Error("Expected delivery-review acceptance fixtures to return structured evidence.");
+    }
+
+    const section = (bundle: typeof ready.result, id: string) => bundle.delivery.sections.find((entry) => entry.id === id);
+
+    expect(ready.result.delivery).toMatchObject({
+      status: "ready",
+      acceptance: {
+        state: "ready",
+        ready: true,
+        blocked: false,
+        needsConfirmation: false,
+        followUpRequired: false
+      },
+      confirmationRequired: false,
+      confirmations: expect.arrayContaining([
+        expect.objectContaining({ reason: "external-resource", required: false }),
+        expect.objectContaining({ reason: "file-write", required: false })
+      ]),
+      followUps: []
+    });
+    expect(section(ready.result, "readiness")).toMatchObject({
+      status: "ready",
+      blockerCount: 0,
+      confirmationRequired: false,
+      followUpCount: 0
+    });
+    expect(section(ready.result, "data-and-analysis")).toMatchObject({
+      status: "ready",
+      blockerCount: 0,
+      confirmationRequired: false,
+      followUpCount: 0
+    });
+    expect(ready.result.delivery.sourceReadiness).toContainEqual(
+      expect.objectContaining({
+        sourceId: "services",
+        state: "supported",
+        confirmationReasons: []
+      })
+    );
+
+    expect(blocked.result.delivery).toMatchObject({
+      status: "blocked",
+      acceptance: {
+        state: "blocked",
+        ready: false,
+        blocked: true,
+        needsConfirmation: false,
+        followUpRequired: false
+      },
+      confirmationRequired: false
+    });
+    expect(section(blocked.result, "readiness")).toMatchObject({
+      status: "blocked",
+      blockerCount: 1,
+      confirmationRequired: false
+    });
+    expect(section(blocked.result, "map-edits")).toMatchObject({
+      status: "blocked",
+      blockerCount: 1
+    });
+    expect(blocked.result.commandEvidence).toMatchObject({
+      usedApplyCommands: true,
+      diagnosticCounts: { error: 1, warning: 0, info: 0 }
+    });
+    expect(blocked.result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: "COMMAND.INVALID_PATCH",
+        path: "/skeleton/spec"
+      })
+    );
+
+    expect(needsConfirmation.result.delivery).toMatchObject({
+      status: "needs-confirmation",
+      acceptance: {
+        state: "needs-confirmation",
+        ready: false,
+        blocked: false,
+        needsConfirmation: true,
+        followUpRequired: false
+      },
+      confirmationRequired: true,
+      confirmations: expect.arrayContaining([
+        expect.objectContaining({
+          reason: "external-resource",
+          required: true,
+          sourceIds: ["parcels"]
+        }),
+        expect.objectContaining({
+          reason: "archive-parsing",
+          required: true,
+          sourceIds: ["parcels"]
+        })
+      ])
+    });
+    expect(section(needsConfirmation.result, "readiness")).toMatchObject({
+      status: "needs-confirmation",
+      confirmationRequired: true
+    });
+    expect(section(needsConfirmation.result, "data-and-analysis")).toMatchObject({
+      status: "needs-confirmation",
+      blockerCount: 0,
+      confirmationRequired: true,
+      followUpCount: 1
+    });
+    expect(needsConfirmation.result.delivery.sourceReadiness).toContainEqual(
+      expect.objectContaining({
+        sourceId: "parcels",
+        type: "pmtiles",
+        state: "readiness-only",
+        confirmationReasons: ["external-resource", "archive-parsing"]
+      })
+    );
+
+    expect(followUpRequired.result.delivery).toMatchObject({
+      status: "follow-up-required",
+      acceptance: {
+        state: "follow-up-required",
+        ready: false,
+        blocked: false,
+        needsConfirmation: false,
+        followUpRequired: true
+      },
+      confirmationRequired: false,
+      followUps: expect.arrayContaining([
+        expect.objectContaining({
+          id: "scene-browsing.stable-runtime-gate",
+          owner: "@quality-guardian",
+          blockerCode: "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED"
+        })
+      ])
+    });
+    expect(section(followUpRequired.result, "readiness")).toMatchObject({
+      status: "follow-up-required",
+      confirmationRequired: false,
+      followUpCount: 1
+    });
+    expect(section(followUpRequired.result, "scene-browsing")).toMatchObject({
+      status: "follow-up-required",
+      blockerCount: 0,
+      confirmationRequired: false,
+      followUpCount: 1
+    });
+    expect(followUpRequired.result.exampleEvidence.generationEvidence?.sceneBrowsing).toMatchObject({
+      requested: true,
+      status: "experimental",
+      state: "extension-only",
+      stableRuntimeBlocked: true,
+      stableViewMode: false
+    });
+  });
+
   it("keeps generation evidence schemas strict and Ajv-compilable", async () => {
     const ajv = new Ajv({ allErrors: true, strict: false });
     const validateInput = ajv.compile(GenerationEvidenceBundleInputSchema);

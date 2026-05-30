@@ -142,12 +142,15 @@ ArcGIS AI components、Mapbox/MapLibre source/runtime drift、Cesium/Three/
 runtime 能力，而是把已存在的 `generationEvidence.delivery`、diagnostics、
 command trace、snapshot/export evidence、source readiness、spatial readiness
 和 extension-only scene browsing 转成可审查、可验收的交付面。
+2026-05-30 execution update: `GIR-002` 已完成，review console 的下一步执行
+重心转向 `GIR-003` 和 `GIR-004`，先把 source readiness 与 spatial-analysis
+readiness 映射到 review sections。
 
 ## 2026-W22 Iteration Path
 
 | Priority | Track | Plan | Exit Condition |
 | --- | --- | --- | --- |
-| P0 | Generated App Review Console | Turn generated-app delivery evidence into an inspectable acceptance handoff | `GIR-001` spec is done; `GIR-002` fixtures make ready/blocked/confirmation/follow-up states testable |
+| P0 | Generated App Review Console | Turn generated-app delivery evidence into an inspectable acceptance handoff | `GIR-001` spec is done; `GIR-002` fixtures are done; `GIR-003` and `GIR-004` now map source and spatial readiness into review cards |
 | P0 | SceneView3D governance | Keep stable `view.mode: "scene3d"` blocked after SRC-006 No-go | future stable runtime work starts only from a new accepted promotion task |
 | P0 | AI natural-language app generation | Make feature display, spatial analysis, and scene browsing capability boundaries machine-readable | `get_context_summary` and `explain_spec` expose `capabilitySummary` with schema-tested MCP output |
 | P0 | Next planning loop | Refresh competitor evidence, product design, and task DAG for natural-language map app generation | competitive-intel, product-strategist, coordinator, and task-distributor produce the next iteration plan |
@@ -192,11 +195,10 @@ command trace、snapshot/export evidence、source readiness、spatial readiness
 
 | 排名 | 事项 | 得分 | 证据 | 行动 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | Generated App Review Console fixtures | 6.75 | AIN-001 through AIN-005 are closed; ArcGIS AI components increase pressure for inspectable agentic map handoff | execute `TASK-2026W22-GIR-002` before broad capability expansion | high |
-| 2 | Source readiness review cards | planned / split | source implementation candidates are already separated into schema/resource-policy/query/export promotion tasks | schedule `GIR-003` before any PMTiles/GeoParquet/FlatGeobuf/GeoTIFF/GeoZarr runtime work | high |
-| 3 | Spatial-analysis review cards | planned / split | operation candidates are separated into point/bbox hardening and blocked geoprocessing promotion criteria | schedule `GIR-004` and later point/bbox hardening fixtures before implementation | medium |
-| 4 | MapLibre 6 drift audit | 5.80 | MapLibre v6 prerelease and Mapbox PMTiles/model/raster movement create dependency drift pressure | run the existing version-drift checklist before package movement | medium |
-| 5 | SceneView3D promotion readiness | parked / no-go | W22 evidence and beta gate are complete; W23 promotion-readiness package and gate are complete, and SRC-006 records No-go | future promotion requires a new stable-runtime task and Go decision | high |
+| 1 | Source readiness review cards | planned / split | source implementation candidates are already separated into schema/resource-policy/query/export promotion tasks; `GIR-002` is done | schedule `GIR-003` before any PMTiles/GeoParquet/FlatGeobuf/GeoTIFF/GeoZarr runtime work | high |
+| 2 | Spatial-analysis review cards | planned / split | operation candidates are separated into point/bbox hardening and blocked geoprocessing promotion criteria | schedule `GIR-004` and later point/bbox hardening fixtures before implementation | medium |
+| 3 | MapLibre 6 drift audit | 5.80 | MapLibre v6 prerelease and Mapbox PMTiles/model/raster movement create dependency drift pressure | run the existing version-drift checklist before package movement | medium |
+| 4 | SceneView3D promotion readiness | parked / no-go | W22 evidence and beta gate are complete; W23 promotion-readiness package and gate are complete, and SRC-006 records No-go | future promotion requires a new stable-runtime task and Go decision | high |
 
 已完成并保留回归证据：
 
