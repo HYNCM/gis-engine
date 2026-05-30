@@ -76,6 +76,20 @@ export async function createWorkbenchServer(options = {}) {
         });
       }
 
+      if (request.method === "POST" && url.pathname === "/api/query") {
+        const body = await readJsonBody(request);
+        const query = await queryActiveFeatures(engine, activeSpec, {
+          point: body.point,
+          bbox: body.bbox,
+          layers: Array.isArray(body.layers) ? body.layers : ["poi-circles"]
+        });
+        return sendJson(response, {
+          status: query.diagnostics.some((diagnostic) => diagnostic.severity === "error") ? "blocked" : "queried",
+          query,
+          summary: statePayload(engine, "ready", activeSpec).summary
+        });
+      }
+
       if (request.method === "POST" && url.pathname === "/api/reset") {
         activeSpec = createInitialSpec();
         return sendJson(response, statePayload(engine, "reset", activeSpec));
@@ -161,6 +175,12 @@ function commandEvidence(results, committed, rolledBack) {
     failed: results.some((result) => result.status === "failed"),
     changedPathCount: results.reduce((count, result) => count + result.changedPaths.length, 0)
   };
+}
+
+async function queryActiveFeatures(engine, spec, options) {
+  const adapter = new engine.MapLibreAdapter();
+  await adapter.load(spec, { container: {} });
+  return adapter.queryFeatures(options);
 }
 
 async function readJsonBody(request) {

@@ -272,6 +272,31 @@ h3 {
   margin-top: 14px;
 }
 
+.feature-query {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.feature-card {
+  border: 1px solid rgba(15, 143, 113, 0.32);
+  border-radius: 8px;
+  background: #eaf7f3;
+  padding: 11px;
+}
+
+.feature-card strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.feature-card p {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .diagnostic {
   border: 1px solid var(--line);
   border-left: 4px solid var(--warning);

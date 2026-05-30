@@ -4,6 +4,7 @@ const chatInput = document.querySelector("#chat-input");
 const statusPill = document.querySelector("#status-pill");
 const summaryList = document.querySelector("#summary-list");
 const diagnosticsList = document.querySelector("#diagnostics-list");
+const featureQuery = document.querySelector("#feature-query");
 const commandJson = document.querySelector("#command-json");
 const revisionReadout = document.querySelector("#revision-readout");
 const cameraReadout = document.querySelector("#camera-readout");
@@ -26,6 +27,7 @@ init().catch((error) => {
 
 async function init() {
   appendMessage("assistant", "Ready. Try changing point color, point size, or the Hangzhou camera.");
+  renderFeatureQuery({ features: [], diagnostics: [] });
   document.querySelectorAll("[data-prompt]").forEach((button) => {
     button.addEventListener("click", () => {
       const prompt = button.getAttribute("data-prompt");
@@ -89,10 +91,21 @@ function renderMap(payload) {
       attributionControl: false
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    map.on("click", (event) => queryMapFeatures(event.lngLat));
   } else {
     map.setStyle(payload.style, { diff: false });
     map.jumpTo({ center, zoom });
   }
+}
+
+async function queryMapFeatures(lngLat) {
+  const zoom = map?.getZoom?.() ?? 11;
+  const tolerance = Math.max(0.004, 0.05 / Math.max(1, 2 ** (zoom - 10)));
+  const payload = await postJson("/api/query", {
+    bbox: [lngLat.lng - tolerance, lngLat.lat - tolerance, lngLat.lng + tolerance, lngLat.lat + tolerance],
+    layers: ["poi-circles"]
+  });
+  renderFeatureQuery(payload.query);
 }
 
 function renderSummary(payload) {
@@ -138,6 +151,37 @@ function renderDiagnostics(diagnostics) {
       message.textContent = diagnostic.message;
       item.append(code, message);
       return item;
+    })
+  );
+}
+
+function renderFeatureQuery(query) {
+  const features = query?.features ?? [];
+  const diagnostics = query?.diagnostics ?? [];
+
+  if (features.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "empty-state";
+    empty.textContent =
+      diagnostics.length > 0 ? `Query returned ${diagnostics.length} diagnostic(s).` : "Click a point to inspect feature data.";
+    featureQuery.replaceChildren(empty);
+    return;
+  }
+
+  featureQuery.replaceChildren(
+    ...features.slice(0, 3).map((feature) => {
+      const article = document.createElement("article");
+      article.className = "feature-card";
+      const name = document.createElement("strong");
+      name.textContent = feature.properties?.name ?? "Unnamed feature";
+      const meta = document.createElement("p");
+      meta.textContent = feature.properties
+        ? Object.entries(feature.properties)
+            .map(([key, value]) => `${key}: ${value}`)
+            .join(" / ")
+        : "No properties";
+      article.append(name, meta);
+      return article;
     })
   );
 }

@@ -92,4 +92,32 @@ describe("ai-map-workbench API", () => {
     });
     expect(result.diagnostics).toEqual([]);
   });
+
+  it("queries inline map features through the engine", async () => {
+    const server = await createWorkbenchServer({ port: 0 });
+    closeServer = server.close;
+
+    const response = await fetch(`${server.url}/api/query`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        bbox: [120.13, 30.23, 120.16, 30.26],
+        layers: ["poi-circles"]
+      })
+    });
+    const result = await response.json();
+
+    expect(response.ok).toBe(true);
+    expect(result.status).toBe("queried");
+    expect(result.query.features).toEqual([
+      expect.objectContaining({
+        properties: expect.objectContaining({
+          name: "West Lake"
+        })
+      })
+    ]);
+    expect(result.query.diagnostics).toEqual([]);
+  });
 });

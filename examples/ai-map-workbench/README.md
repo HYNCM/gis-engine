@@ -14,6 +14,9 @@ pnpm example:ai-map-workbench
 
 Open the printed localhost URL.
 
+Click a point on the map to run a real `queryFeatures` request against the
+current inline GeoJSON data. Query results appear in the Feature query panel.
+
 ## Supported Mock Prompts
 
 - `make points red`
