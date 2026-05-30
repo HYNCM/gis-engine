@@ -6,13 +6,13 @@ repo_revision: "d628fd1454a44859e57d8996343413684a541c30"
 inputs:
   - docs/archive/2026-05-18/planning/sprint-2026-W21.md
   - docs/planning/sprint-2026-W25-sceneview3d-v1.md
-  - docs/reviews/quality-gate-2026-05-24.md
-  - docs/reviews/automation-hardening-gate-2026-05-24.md
-  - docs/reviews/sceneview3d-promotion-gate-2026-05-24.md
-  - docs/planning/sprint-2026-W22-automation-hardening.md
+  - docs/archive/2026-05-30/reviews/quality-gate-2026-05-24.md
+  - docs/archive/2026-05-30/reviews/automation-hardening-gate-2026-05-24.md
+  - docs/archive/2026-05-30/reviews/sceneview3d-promotion-gate-2026-05-24.md
+  - docs/archive/2026-05-30/planning/sprint-2026-W22-automation-hardening.md
   - docs/planning/feature-specs/sceneview3d-stable-renderer-contract.md
-  - docs/reviews/sceneview3d-src-002-dependency-boundary-2026-05-29.md
-  - docs/reviews/sceneview3d-src-005-resource-release-gate-2026-05-29.md
+  - docs/archive/2026-05-30/reviews/sceneview3d-src-002-dependency-boundary-2026-05-29.md
+  - docs/archive/2026-05-30/reviews/sceneview3d-src-005-resource-release-gate-2026-05-29.md
   - docs/reviews/sceneview3d-src-006-stable-runtime-gate-2026-05-29.md
   - docs/planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md
   - docs/planning/feature-specs/natural-language-map-app-generation.md
@@ -34,7 +34,7 @@ inputs:
   - docs/reviews/nlq-006-scene-browsing-blocker-visibility-2026-05-29.md
   - docs/reviews/nlq-007-serialized-quality-hardening-planning-2026-05-29.md
   - docs/planning/feature-specs/generated-app-delivery-ux.md
-  - docs/planning/sprint-2026-W22-ai-native-next-loop.md
+  - docs/archive/2026-05-30/planning/sprint-2026-W22-ai-native-next-loop.md
 owner: "@coordinator"
 decision_level: advisory
 ---

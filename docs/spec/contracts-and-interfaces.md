@@ -4,8 +4,6 @@
 
 本文件把外部评审中指出的工程缺口转成可实现的接口契约。所有实现必须优先满足这些 contract，再扩展功能。
 
-脚本位置、测试 harness、参考伪代码和默认策略见 [../engineering/implementation-playbook.md](../engineering/implementation-playbook.md)。
-
 ## Schema 和类型同步
 
 ### 单一事实来源

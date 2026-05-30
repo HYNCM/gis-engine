@@ -4,13 +4,13 @@ period: 2026-W23
 generated_at: 2026-05-24T15:35:46Z
 repo_revision: "1b607fd"
 inputs:
-  - docs/reviews/sceneview3d-promotion-gate-2026-05-24.md
+  - docs/archive/2026-05-30/reviews/sceneview3d-promotion-gate-2026-05-24.md
   - docs/planning/feature-specs/sceneview3d-promotion-readiness.md
-  - docs/planning/sprint-2026-W23-scene3d-promotion-readiness.md
-  - docs/planning/sprint-2026-W22-scene3d-renderer-evidence.md
+  - docs/archive/2026-05-30/planning/sprint-2026-W23-scene3d-promotion-readiness.md
+  - docs/archive/2026-05-30/planning/sprint-2026-W22-scene3d-renderer-evidence.md
   - docs/planning/feature-specs/sceneview3d-v1-rfc.md
-  - docs/reviews/sceneview3d-src-002-dependency-boundary-2026-05-29.md
-  - docs/reviews/sceneview3d-src-005-resource-release-gate-2026-05-29.md
+  - docs/archive/2026-05-30/reviews/sceneview3d-src-002-dependency-boundary-2026-05-29.md
+  - docs/archive/2026-05-30/reviews/sceneview3d-src-005-resource-release-gate-2026-05-29.md
   - docs/reviews/sceneview3d-src-006-stable-runtime-gate-2026-05-29.md
   - docs/planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md
   - AGENTS.md
@@ -43,8 +43,8 @@ planning state; accepted status changes are serialized here, in
 
 2026-05-29 status note: SRC-002 dependency-boundary evidence and SRC-005
 resource-policy/release-gate evidence are accepted in
-`docs/reviews/sceneview3d-src-002-dependency-boundary-2026-05-29.md` and
-`docs/reviews/sceneview3d-src-005-resource-release-gate-2026-05-29.md`.
+`docs/archive/2026-05-30/reviews/sceneview3d-src-002-dependency-boundary-2026-05-29.md` and
+`docs/archive/2026-05-30/reviews/sceneview3d-src-005-resource-release-gate-2026-05-29.md`.
 This closes SRC-001 through SRC-005 as prerequisite evidence, while stable
 `view.mode: "scene3d"` remains blocked under SRC-006.
 
@@ -68,11 +68,11 @@ decision package, not as runtime enablement.
 
 | id | title | priority | complexity | owner | status | dependencies | evidence target | acceptance | finish gate |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| TASK-2026W23-SRC-001 | Define stable renderer adapter contract | P0 | M | `@adapter-agent` | done | W23 promotion gate | `docs/reviews/sceneview3d-adapter-lifecycle-semantics-2026-05-26.md`; focused adapter contract tests under `tests/adapter` | Contract names load, render, resize, camera sync, snapshot, query, destroy, diagnostics, resource readiness, and cleanup obligations without changing stable `view.mode`. | `pnpm test:adapter -- tests/adapter/scene3d-three-adapter.test.ts`; `pnpm --filter @gis-engine/scene3d-three-adapter build`; code-reviewer confirms no core renderer dependency leak |
-| TASK-2026W23-SRC-002 | Freeze Three.js and 3DTilesRendererJS dependency boundary | P0 | S | `@adapter-agent`, `@engine-agent` | done | SRC-001 | `docs/reviews/sceneview3d-src-002-dependency-boundary-2026-05-29.md`; dependency-boundary audit naming allowed package locations and any package.json/import checks | Three.js and 3DTilesRendererJS remain adapter-local; `@gis-engine/engine`, `@gis-engine/scene3d`, and `@gis-engine/ai` do not import renderer packages or workers. | `pnpm --filter @gis-engine/scene3d-three-adapter build`; dependency isolation check or audit evidence; `pnpm check` when package metadata or imports change |
+| TASK-2026W23-SRC-001 | Define stable renderer adapter contract | P0 | M | `@adapter-agent` | done | W23 promotion gate | `docs/archive/2026-05-30/reviews/sceneview3d-adapter-lifecycle-semantics-2026-05-26.md`; focused adapter contract tests under `tests/adapter` | Contract names load, render, resize, camera sync, snapshot, query, destroy, diagnostics, resource readiness, and cleanup obligations without changing stable `view.mode`. | `pnpm test:adapter -- tests/adapter/scene3d-three-adapter.test.ts`; `pnpm --filter @gis-engine/scene3d-three-adapter build`; code-reviewer confirms no core renderer dependency leak |
+| TASK-2026W23-SRC-002 | Freeze Three.js and 3DTilesRendererJS dependency boundary | P0 | S | `@adapter-agent`, `@engine-agent` | done | SRC-001 | `docs/archive/2026-05-30/reviews/sceneview3d-src-002-dependency-boundary-2026-05-29.md`; dependency-boundary audit naming allowed package locations and any package.json/import checks | Three.js and 3DTilesRendererJS remain adapter-local; `@gis-engine/engine`, `@gis-engine/scene3d`, and `@gis-engine/ai` do not import renderer packages or workers. | `pnpm --filter @gis-engine/scene3d-three-adapter build`; dependency isolation check or audit evidence; `pnpm check` when package metadata or imports change |
 | TASK-2026W23-SRC-003 | Specify lifecycle and failure-state semantics | P1 | M | `@adapter-agent`, `@qa-agent` | done | SRC-001 | `getScene3DThreeAdapterLifecycleSemantics()`; lifecycle matrix report covering load, reload, resize, cancel, failure, recovery, destroy, and repeated destroy | State transitions are deterministic, idempotent where expected, and return structured diagnostics with stable codes and paths for resource, renderer, dimension, and lifecycle failures. | Lifecycle contract tests pass through adapter suite; `pnpm check` when runtime behavior or diagnostics change |
-| TASK-2026W23-SRC-004 | Specify stable snapshot and query semantics | P1 | M | `@qa-agent`, `@adapter-agent` | done | SRC-001, SRC-003 | `docs/reviews/sceneview3d-src-004-qa-evidence-2026-05-27.md`; snapshot/query evidence report with browser metrics, fixture names, pick cases, and diagnostic outcomes | Snapshot/query evidence defines nonblank metrics, stable camera and dimensions, resource readiness, pick identity, no-hit behavior, and hidden/missing layer diagnostics. | `pnpm test:release:scene3d`; `pnpm test:snapshot:visual`; strict visual snapshot before any beta/stable renderer claim |
-| TASK-2026W23-SRC-005 | Align SceneView3D resource policy and release gates | P1 | M | `@engine-agent`, `@quality-guardian`, `@docs-agent` | done | SRC-002, SRC-004 | `docs/reviews/sceneview3d-src-005-resource-release-gate-2026-05-29.md`; resource-policy test output, release-gate matrix, and docs alignment note | Resource-policy implementation/tests/docs name 3D Tiles JSON, model, texture, worker, timeout, external URL, and example asset expectations; release gates state exact PR, beta, and stable triggers. | `pnpm test:resources`; `pnpm test:schema -- tests/schema/resource-policy.test.ts` when schema policy changes; `pnpm test:release:scene3d`; visual snapshot gate or explicit coordinator waiver only for non-rendering changes |
+| TASK-2026W23-SRC-004 | Specify stable snapshot and query semantics | P1 | M | `@qa-agent`, `@adapter-agent` | done | SRC-001, SRC-003 | `docs/archive/2026-05-30/reviews/sceneview3d-src-004-qa-evidence-2026-05-27.md`; snapshot/query evidence report with browser metrics, fixture names, pick cases, and diagnostic outcomes | Snapshot/query evidence defines nonblank metrics, stable camera and dimensions, resource readiness, pick identity, no-hit behavior, and hidden/missing layer diagnostics. | `pnpm test:release:scene3d`; `pnpm test:snapshot:visual`; strict visual snapshot before any beta/stable renderer claim |
+| TASK-2026W23-SRC-005 | Align SceneView3D resource policy and release gates | P1 | M | `@engine-agent`, `@quality-guardian`, `@docs-agent` | done | SRC-002, SRC-004 | `docs/archive/2026-05-30/reviews/sceneview3d-src-005-resource-release-gate-2026-05-29.md`; resource-policy test output, release-gate matrix, and docs alignment note | Resource-policy implementation/tests/docs name 3D Tiles JSON, model, texture, worker, timeout, external URL, and example asset expectations; release gates state exact PR, beta, and stable triggers. | `pnpm test:resources`; `pnpm test:schema -- tests/schema/resource-policy.test.ts` when schema policy changes; `pnpm test:release:scene3d`; visual snapshot gate or explicit coordinator waiver only for non-rendering changes |
 | TASK-2026W23-SRC-006 | Issue stable runtime promotion readiness decision | P0 | S | `@quality-guardian`, `@coordinator` | done / no-go | SRC-001, SRC-002, SRC-003, SRC-004, SRC-005 | `docs/reviews/sceneview3d-src-006-stable-runtime-gate-2026-05-29.md`; `docs/planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md` | Stable `view.mode: "scene3d"` remains blocked with explicit blocker codes and future Go prerequisites. | `pnpm build:schema`; `pnpm check`; `pnpm test:release:scene3d`; visual snapshot evidence; strict visual snapshot before future beta/stable claims |
 
 ## Release Gate Requirements
@@ -107,7 +107,7 @@ runtime promotion = No-go / blocked after SRC-006 decision.
 
 ### Keep Stable Runtime Blocked
 
-- Evidence: `docs/reviews/sceneview3d-promotion-gate-2026-05-24.md` accepts the
+- Evidence: `docs/archive/2026-05-30/reviews/sceneview3d-promotion-gate-2026-05-24.md` accepts the
   W23 promotion-readiness package but issues no-go for stable runtime.
 - Impact: AI safety and architecture remain protected while the real renderer
   contract is still being specified.

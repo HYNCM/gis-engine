@@ -21,12 +21,12 @@ inputs:
   - docs/reviews/nlq-006-scene-browsing-blocker-visibility-2026-05-29.md
   - docs/reviews/nlq-007-serialized-quality-hardening-planning-2026-05-29.md
   - docs/planning/feature-specs/generated-app-delivery-ux.md
-  - docs/planning/sprint-2026-W22-ai-native-next-loop.md
-  - docs/planning/sprint-2026-W22-competitive-signal-response.md
+  - docs/archive/2026-05-30/planning/sprint-2026-W22-ai-native-next-loop.md
+  - docs/archive/2026-05-30/planning/sprint-2026-W22-competitive-signal-response.md
   - docs/planning/feature-specs/sceneview3d-stable-renderer-contract.md
   - docs/engineering/maplibre-version-drift-audit.md
-  - docs/reviews/sceneview3d-stable-renderer-gate-2026-05-25.md
-  - docs/reviews/sceneview3d-lifecycle-diagnostics-2026-05-25.md
+  - docs/archive/2026-05-30/reviews/sceneview3d-stable-renderer-gate-2026-05-25.md
+  - docs/archive/2026-05-30/reviews/sceneview3d-lifecycle-diagnostics-2026-05-25.md
   - docs/reviews/sceneview3d-src-evidence-decision-2026-05-25.md
   - docs/reviews/sceneview3d-src-006-stable-runtime-gate-2026-05-29.md
   - docs/planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md
@@ -130,7 +130,7 @@ queued review-console implementation task.
 | --- | --- | --- |
 | TASK-2026W22-CSI-001 | done | `docs/research/competitor-updates-2026-W22.md` |
 | TASK-2026W22-CSI-002 | done | `docs/research/capability-scorecard.md` |
-| TASK-2026W22-CSI-003 | done | `packages/scene3d-three-adapter/src/index.ts`, adapter tests, smoke lifecycle tests, `docs/reviews/sceneview3d-lifecycle-diagnostics-2026-05-25.md` |
+| TASK-2026W22-CSI-003 | done | `packages/scene3d-three-adapter/src/index.ts`, adapter tests, smoke lifecycle tests, `docs/archive/2026-05-30/reviews/sceneview3d-lifecycle-diagnostics-2026-05-25.md` |
 | TASK-2026W22-CSI-004 | done | this digest and `docs/planning/monthly-roadmap.md` |
 | TASK-2026W22-CSI-005 | done | `docs/engineering/maplibre-version-drift-audit.md` |
 | TASK-2026W22-CSI-006 | done | `docs/reviews/sceneview3d-src-evidence-decision-2026-05-25.md`, `docs/reviews/sceneview3d-src-006-stable-runtime-gate-2026-05-29.md`, `docs/planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md` |
@@ -148,7 +148,7 @@ queued review-console implementation task.
 | TASK-2026W22-GIR-001 | done | `docs/planning/feature-specs/generated-app-review-console.md`; review-console PRD/spec |
 | TASK-2026W22-GIR-002 | done | `tests/ai/generation-evidence.test.ts`; delivery-review acceptance fixtures |
 | TASK-2026W22-GIR-003 | done | `docs/planning/feature-specs/generated-app-review-console.md`, `docs/planning/feature-specs/cloud-native-source-readiness.md`; source readiness review cards |
-| TASK-2026W22-GIR-004 through GIR-006 | todo | `docs/planning/sprint-2026-W22-generated-app-review-console.md`; queued implementation and QA tasks |
+| TASK-2026W22-GIR-004 through GIR-006 | todo | `docs/archive/2026-05-30/planning/sprint-2026-W22-generated-app-review-console.md`; queued implementation and QA tasks |
 
 ## Next Handoff
 

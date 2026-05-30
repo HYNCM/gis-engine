@@ -8,7 +8,7 @@ inputs:
   - docs/planning/feature-specs/spatial-analysis-readiness.md
   - docs/planning/feature-specs/cloud-native-source-promotion-candidates.md
   - docs/planning/feature-specs/spatial-analysis-promotion-criteria.md
-  - docs/planning/sprint-2026-W22-ai-native-next-loop.md
+  - docs/archive/2026-05-30/planning/sprint-2026-W22-ai-native-next-loop.md
 owner: "@task-distributor"
 decision_level: advisory
 ---

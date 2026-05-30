@@ -6,9 +6,9 @@ repo_revision: "d628fd1454a44859e57d8996343413684a541c30"
 inputs:
   - README.md
   - AGENTS.md
-  - docs/reviews/daily-audit-2026-05-17.md
-  - docs/reviews/quality-gate-2026-05-17.md
-  - docs/engineering/v0.1-release-checklist.md
+  - docs/archive/2026-05-30/reviews/daily-audit-2026-05-17.md
+  - docs/archive/2026-05-30/reviews/quality-gate-2026-05-17.md
+  - docs/archive/2026-05-30/engineering/v0.1-release-checklist.md
   - docs/engineering/ci-test-strategy.md
   - docs/research/competitor-updates-2026-W22.md
   - docs/planning/sprint-2026-W23-generation-quality-hardening.md
@@ -20,7 +20,7 @@ inputs:
   - docs/reviews/nlq-006-scene-browsing-blocker-visibility-2026-05-29.md
   - docs/reviews/nlq-007-serialized-quality-hardening-planning-2026-05-29.md
   - docs/planning/feature-specs/generated-app-delivery-ux.md
-  - docs/planning/sprint-2026-W22-ai-native-next-loop.md
+  - docs/archive/2026-05-30/planning/sprint-2026-W22-ai-native-next-loop.md
 decision_level: advisory
 ---
 

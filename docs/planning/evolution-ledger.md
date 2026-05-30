@@ -4,6 +4,7 @@ period: 2026-W22
 generated_at: 2026-05-30T00:00:00Z
 repo_revision: "unknown"
 inputs:
+  - AGENTS.md
   - docs/planning/evolution-framework.md
 owner: "@coordinator (evolution-guardian)"
 decision_level: advisory
@@ -276,8 +277,81 @@ fix: "更新 packages/engine/src/spec/resource-policy.ts 和对应测试"
 
 ---
 
+## 方法论参考：进化维度与自校准规则
+
+> 本节摘自 `evolution-framework.md`，用于让账本读者快速看到 D1-D6 的自校准规则。完整框架说明见 `AGENTS.md` Evolution Ecosystem 章节和 [evolution-framework.md](./evolution-framework.md)。
+
+### D1：估算准确度
+
+| 指标 | 计算方式 | 周期 |
+| --- | --- | --- |
+| 偏差率 | `abs(estimated_hours - actual_hours) / estimated_hours` | 每任务 |
+| 按复杂度分组的平均偏差 | `avg(deviation_ratio) GROUP BY complexity` | 每月 |
+| 趋势方向 | 最近 4 周偏差率移动平均斜率 | 每周 |
+
+**自校准**：若某 owner 的 S 任务连续 3 次偏差率 > 0.5，上调基准 1.5×；若连续 4 周下降，锁定为"已校准"。
+
+### D2：瓶颈检测
+
+| 指标 | 计算方式 | 周期 |
+| --- | --- | --- |
+| 依赖等待时间 | `downstream.start - upstream.end`（仅关键路径） | 每任务 |
+| 瓶颈复发率 | 同一依赖链路连续 2+ sprint 等待 > 24h | 每月 |
+
+**自校准**：若某依赖链路等待 > 48h 连续 2 sprint，建议 pre-freeze 上游；若某 agent 成为 3+ 任务的单一阻塞点，建议拆分职责。
+
+### D3：质量趋势
+
+| 指标 | 计算方式 | 周期 |
+| --- | --- | --- |
+| 门禁首次通过率 | `passes_on_first_run / total_gate_runs` | 每 sprint |
+| 返工率 | review → rework 循环次数 | 每任务 |
+| 诊断码覆盖率 | `diagnostic_code_count / error_path_count` | 每月 |
+
+**自校准**：某门禁失败率 > 30% 时建议添加 pre-commit hook；返工率连续上升 3 周触发 process review；覆盖率 < 80% 时阻止 release。
+
+### D4：知识积累
+
+**自校准**：复用 3+ 次的模式提升为 "verified pattern"；6 个月未复用的标记为 "deprecated"；每个 sprint 至少提取 1 个新模式或陷阱。
+
+### D5：动态职责分布
+
+产品阶段预期负载：
+
+| 阶段 | engine-agent | ai-agent | adapter-agent | qa-agent | docs-agent |
+| --- | --- | --- | --- | --- | --- |
+| v0.1 alpha | 35% | 25% | 15% | 10% | 15% |
+| v0.2 beta | 25% | 30% | 20% | 15% | 10% |
+| v0.3-v0.9 | 15% | 20% | 30% | 25% | 10% |
+| v1.0 | 10% | 15% | 20% | 35% | 20% |
+
+**自校准**：实际负载偏离预期 > 20% 时 coordinator 评估。
+
+### D6：决策权重自校准
+
+```txt
+priority = competitor_threat * w1 + ai_operability_gain * w2 + user_value * w3 + technical_debt_reduction * w4 - delivery_risk * w5
+```
+
+**自校准**：每月回顾预测准确率；某维度准确率 < 50% 时下调 0.05，> 80% 时上调 0.05；单次调整 ≤ 0.10；需 coordinator 审批。
+
+### 变更权限与安全边界
+
+| 变更类型 | 审批者 | 回滚 |
+| --- | --- | --- |
+| 估算基准微调 (< 2×) | 自动 | 4 周不改善自动回滚 |
+| 门禁阈值调整 | coordinator | 手动 |
+| 权重微调 (< 0.05) | coordinator | 手动 |
+| 职责重分配 | coordinator + product-strategist | 手动 |
+| Agent 创建/合并/删除 | coordinator + product-strategist | Git revert |
+
+**安全边界（不可自动修改）**：Repository Rules、门禁核心语义、MCP 工具名和契约、resource-policy 安全边界、产品阶段晋升决策。
+
+---
+
 ## 版本历史
 
 | 版本 | 日期 | 变更 |
 | --- | --- | --- |
 | v1.0 | 2026-05-30 | 初始账本：W22 基准、初始模式库（3 patterns）、初始陷阱库（3 pitfalls） |
+| v1.1 | 2026-05-30 | 追加方法论参考（D1-D6 自校准规则），合并自 evolution-framework.md |

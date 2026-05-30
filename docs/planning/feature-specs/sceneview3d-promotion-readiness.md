@@ -4,7 +4,7 @@ period: 2026-W23
 generated_at: 2026-05-23T13:05:10Z
 repo_revision: "cef340d"
 inputs:
-  - docs/planning/sprint-2026-W23-scene3d-promotion-readiness.md
+  - docs/archive/2026-05-30/planning/sprint-2026-W23-scene3d-promotion-readiness.md
   - docs/planning/monthly-roadmap.md
   - docs/planning/technical-debt-report.md
   - docs/planning/task-burndown.md
@@ -68,7 +68,7 @@ explicitly approved.
 
 ## Evidence Targets
 
-- `docs/planning/sprint-2026-W23-scene3d-promotion-readiness.md`
+- `docs/archive/2026-05-30/planning/sprint-2026-W23-scene3d-promotion-readiness.md`
 - `tests/snapshot/smoke/scene3d-release-visual-gate.test.ts`
 - `tests/snapshot/visual/scene3d-three-adapter.spec.ts`
 - `tests/adapter/scene3d-three-adapter.test.ts`

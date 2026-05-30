@@ -5,11 +5,11 @@ generated_at: 2026-05-25T04:51:50Z
 repo_revision: "c993ae1"
 inputs:
   - docs/planning/feature-specs/sceneview3d-stable-renderer-contract.md
-  - docs/reviews/sceneview3d-stable-renderer-adapter-contract-2026-05-25.md
-  - docs/reviews/sceneview3d-stable-renderer-contract-qa-2026-05-24.md
-  - docs/reviews/sceneview3d-stable-renderer-resource-policy-2026-05-24.md
-  - docs/reviews/sceneview3d-stable-renderer-gate-2026-05-25.md
-  - docs/reviews/sceneview3d-lifecycle-diagnostics-2026-05-25.md
+  - docs/archive/2026-05-30/reviews/sceneview3d-stable-renderer-adapter-contract-2026-05-25.md
+  - docs/archive/2026-05-30/reviews/sceneview3d-stable-renderer-contract-qa-2026-05-24.md
+  - docs/archive/2026-05-30/reviews/sceneview3d-stable-renderer-resource-policy-2026-05-24.md
+  - docs/archive/2026-05-30/reviews/sceneview3d-stable-renderer-gate-2026-05-25.md
+  - docs/archive/2026-05-30/reviews/sceneview3d-lifecycle-diagnostics-2026-05-25.md
   - command: pnpm --filter @gis-engine/scene3d-three-adapter build
   - command: pnpm test:adapter -- tests/adapter/scene3d-three-adapter.test.ts
   - command: pnpm test:snapshot:smoke -- tests/snapshot/smoke/scene3d-stable-renderer-contract.test.ts
@@ -34,9 +34,9 @@ runtime claim is approved by this decision.
 
 | SRC task | Evidence reviewed | Decision | Blocker before stable runtime |
 | --- | --- | --- | --- |
-| `TASK-2026W23-SRC-001` | `docs/reviews/sceneview3d-stable-renderer-adapter-contract-2026-05-25.md`; adapter build and adapter tests | Accepted as adapter contract evidence | A real stable renderer implementation still must satisfy the contract before promotion |
-| `TASK-2026W23-SRC-002` | adapter dependency audit plus `docs/reviews/sceneview3d-stable-renderer-resource-policy-2026-05-24.md` | Accepted as package-boundary evidence | Renderer dependencies must stay adapter-local in every future package diff |
-| `TASK-2026W23-SRC-003` | `docs/reviews/sceneview3d-stable-renderer-contract-qa-2026-05-24.md`; `docs/reviews/sceneview3d-lifecycle-diagnostics-2026-05-25.md` | Accepted as lifecycle semantics evidence | Future renderer lifecycle failures must keep stable diagnostic codes and paths |
+| `TASK-2026W23-SRC-001` | `docs/archive/2026-05-30/reviews/sceneview3d-stable-renderer-adapter-contract-2026-05-25.md`; adapter build and adapter tests | Accepted as adapter contract evidence | A real stable renderer implementation still must satisfy the contract before promotion |
+| `TASK-2026W23-SRC-002` | adapter dependency audit plus `docs/archive/2026-05-30/reviews/sceneview3d-stable-renderer-resource-policy-2026-05-24.md` | Accepted as package-boundary evidence | Renderer dependencies must stay adapter-local in every future package diff |
+| `TASK-2026W23-SRC-003` | `docs/archive/2026-05-30/reviews/sceneview3d-stable-renderer-contract-qa-2026-05-24.md`; `docs/archive/2026-05-30/reviews/sceneview3d-lifecycle-diagnostics-2026-05-25.md` | Accepted as lifecycle semantics evidence | Future renderer lifecycle failures must keep stable diagnostic codes and paths |
 | `TASK-2026W23-SRC-004` | QA snapshot/query report and smoke contract tests | Accepted as smoke-level snapshot/query semantics | Real renderer nonblank visual metrics and strict visual snapshot evidence are still required for beta/stable claims |
 | `TASK-2026W23-SRC-005` | resource-policy report and stable renderer gate report | Partially accepted | Release-gate docs and resource-policy evidence must be refreshed with any URL, tile, worker, model, texture, timeout, example, or renderer-output change |
 | `TASK-2026W23-SRC-006` | current gate report and this decision | No-go | Requires full final gate, strict visual evidence or approved waiver, and coordinator Go/No-go |
@@ -55,7 +55,7 @@ runtime claim is approved by this decision.
 
 ### Stable Runtime Remains Blocked
 
-- Evidence: `docs/reviews/sceneview3d-stable-renderer-gate-2026-05-25.md`
+- Evidence: `docs/archive/2026-05-30/reviews/sceneview3d-stable-renderer-gate-2026-05-25.md`
   keeps SRC-006 no-go, and the current evidence is contract/smoke evidence
   rather than strict real-renderer visual evidence.
 - Impact: public product and MCP behavior cannot overclaim stable SceneView3D

@@ -6,9 +6,9 @@ repo_revision: "6f76b57"
 inputs:
   - docs/planning/task-burndown.md
   - docs/planning/dependency-graph.md
-  - docs/reviews/sceneview3d-src-002-dependency-boundary-2026-05-29.md
-  - docs/reviews/sceneview3d-src-004-qa-evidence-2026-05-27.md
-  - docs/reviews/sceneview3d-src-005-resource-release-gate-2026-05-29.md
+  - docs/archive/2026-05-30/reviews/sceneview3d-src-002-dependency-boundary-2026-05-29.md
+  - docs/archive/2026-05-30/reviews/sceneview3d-src-004-qa-evidence-2026-05-27.md
+  - docs/archive/2026-05-30/reviews/sceneview3d-src-005-resource-release-gate-2026-05-29.md
   - tests/snapshot/smoke/scene3d-release-visual-gate.test.ts
   - tests/snapshot/smoke/scene3d-stable-renderer-contract.test.ts
   - docs/engineering/ci-test-strategy.md

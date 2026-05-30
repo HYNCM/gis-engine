@@ -42,7 +42,7 @@ review draft instead of overwriting `docs/planning/evolution-ledger.md`.
 | --- | --- | --- |
 | Runner syntax | pass | `node --check scripts/agent-runner.mjs` |
 | Evolution collector syntax | pass | `node --check scripts/evolution-collector.mjs` |
-| Evolution runner dry-run | pass | outputs `docs/planning/evolution-review-2026-W22.md`, not the ledger |
+| Evolution runner dry-run | pass | outputs the `docs/planning/evolution-review-{period}.md` path, not the ledger |
 | Collector dry-run | pass | W22 D1 actual hours are `0/27` known/unknown and average deviation is `N/A` |
 | Workflow YAML parse | pass | Ruby YAML parse passed for all `.github/workflows/*.yml` |
 | Deterministic check | pass | `pnpm check` passed in release-capable shell |

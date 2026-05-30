@@ -20,12 +20,12 @@ inputs:
   - docs/reviews/nlq-006-scene-browsing-blocker-visibility-2026-05-29.md
   - docs/reviews/nlq-007-serialized-quality-hardening-planning-2026-05-29.md
   - docs/planning/feature-specs/generated-app-delivery-ux.md
-  - docs/planning/sprint-2026-W22-ai-native-next-loop.md
-  - docs/research/competitor-updates-2026-W20.md
-  - docs/reviews/daily-audit-2026-05-17.md
-  - docs/reviews/quality-gate-2026-05-17.md
+  - docs/archive/2026-05-30/planning/sprint-2026-W22-ai-native-next-loop.md
+  - docs/archive/2026-05-30/research/competitor-updates-2026-W20.md
+  - docs/archive/2026-05-30/reviews/daily-audit-2026-05-17.md
+  - docs/archive/2026-05-30/reviews/quality-gate-2026-05-17.md
   - docs/spec/contracts-and-interfaces.md
-  - docs/engineering/v0.1-release-checklist.md
+  - docs/archive/2026-05-30/engineering/v0.1-release-checklist.md
   - docs/engineering/ci-test-strategy.md
 decision_level: advisory
 ---
@@ -112,7 +112,7 @@ NLQ-001 through NLQ-007 均有 owner evidence / contract artifact，下一步进
 competitive-intel、product-strategist、coordinator 和 task-distributor 规划循环。
 
 2026-05-29 下一轮规划：`docs/planning/feature-specs/generated-app-delivery-ux.md`
-和 `docs/planning/sprint-2026-W22-ai-native-next-loop.md` 已把新批次聚焦到
+和 `docs/archive/2026-05-30/planning/sprint-2026-W22-ai-native-next-loop.md` 已把新批次聚焦到
 generated-app delivery UX、acceptance/confirmation states、cloud-native source
 promotion candidates、spatial-analysis promotion criteria 和 extension-only
 scene browsing copy。
@@ -237,8 +237,8 @@ sections。
 
 1. W21/W23 当前规划项全部完成。
 2. SceneView3D v1 RFC 已拆成 [sprint-2026-W25-sceneview3d-v1.md](./sprint-2026-W25-sceneview3d-v1.md)，且 `TASK-2026W25-001/002/003/004/005/006`、`TASK-2026W27-001/002/003/004/005` 与 `TASK-2026W28-001` 已完成；后续 3D 工作必须按该 DAG 继续执行，不得直接进入 core renderer。
-3. SceneView3D renderer evidence 已拆成 [sprint-2026-W22-scene3d-renderer-evidence.md](./sprint-2026-W22-scene3d-renderer-evidence.md)；`TASK-2026W22-001/002/003/004/005` 已完成，beta readiness gate 也已跑通。
-4. W23 已创建 [sprint-2026-W23-scene3d-promotion-readiness.md](./sprint-2026-W23-scene3d-promotion-readiness.md)，其 promotion readiness package 和 final gate 已完成，但 stable runtime 仍保持 blocked。
+3. SceneView3D renderer evidence 已拆成 [sprint-2026-W22-scene3d-renderer-evidence.md](../archive/2026-05-30/planning/sprint-2026-W22-scene3d-renderer-evidence.md)；`TASK-2026W22-001/002/003/004/005` 已完成，beta readiness gate 也已跑通。
+4. W23 已创建 [sprint-2026-W23-scene3d-promotion-readiness.md](../archive/2026-05-30/planning/sprint-2026-W23-scene3d-promotion-readiness.md)，其 promotion readiness package 和 final gate 已完成，但 stable runtime 仍保持 blocked。
 5. W23 stable renderer contract 的 SRC-001 through SRC-006 已完成为 No-go
    决策包；后续不得把该状态表述为 stable runtime Go，除非未来新任务提供真实
    renderer、strict visual evidence 或 release waiver 以及 coordinator Go。
@@ -250,7 +250,7 @@ sections。
    [sprint-2026-W23-generation-quality-hardening.md](./sprint-2026-W23-generation-quality-hardening.md)
    承接，不重开已完成的生成骨架任务。
 8. AIN-001 through AIN-005 已完成；下一批任务改由
-   [sprint-2026-W22-generated-app-review-console.md](./sprint-2026-W22-generated-app-review-console.md)
+   [sprint-2026-W22-generated-app-review-console.md](../archive/2026-05-30/planning/sprint-2026-W22-generated-app-review-console.md)
    承接。当前最高优先级执行任务是 `TASK-2026W22-GIR-004`。
 
 ## Feature Spec 建议

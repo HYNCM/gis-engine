@@ -4,7 +4,7 @@ period: 2026-W22
 generated_at: 2026-05-29T10:20:00Z
 repo_revision: "d628fd1454a44859e57d8996343413684a541c30"
 inputs:
-  - docs/planning/sprint-2026-W22-competitive-signal-response.md
+  - docs/archive/2026-05-30/planning/sprint-2026-W22-competitive-signal-response.md
   - docs/research/competitor-updates-2026-W22.md
   - docs/research/capability-scorecard.md
   - docs/planning/feature-specs/natural-language-map-app-generation.md
@@ -12,18 +12,18 @@ inputs:
   - docs/planning/sprint-2026-W23-ai-map-app-generation.md
   - docs/planning/sprint-2026-W23-generation-quality-hardening.md
   - docs/engineering/maplibre-version-drift-audit.md
-  - docs/reviews/sceneview3d-lifecycle-diagnostics-2026-05-25.md
+  - docs/archive/2026-05-30/reviews/sceneview3d-lifecycle-diagnostics-2026-05-25.md
   - docs/reviews/sceneview3d-src-evidence-decision-2026-05-25.md
-  - docs/reviews/sceneview3d-src-002-dependency-boundary-2026-05-29.md
-  - docs/reviews/sceneview3d-src-005-resource-release-gate-2026-05-29.md
+  - docs/archive/2026-05-30/reviews/sceneview3d-src-002-dependency-boundary-2026-05-29.md
+  - docs/archive/2026-05-30/reviews/sceneview3d-src-005-resource-release-gate-2026-05-29.md
   - docs/reviews/sceneview3d-src-006-stable-runtime-gate-2026-05-29.md
   - docs/planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md
   - docs/archive/2026-05-18/planning/sprint-2026-W21.md
   - docs/planning/sprint-2026-W25-sceneview3d-v1.md
-  - docs/reviews/quality-gate-2026-05-24.md
-  - docs/reviews/automation-hardening-gate-2026-05-24.md
-  - docs/reviews/sceneview3d-promotion-gate-2026-05-24.md
-  - docs/planning/sprint-2026-W22-automation-hardening.md
+  - docs/archive/2026-05-30/reviews/quality-gate-2026-05-24.md
+  - docs/archive/2026-05-30/reviews/automation-hardening-gate-2026-05-24.md
+  - docs/archive/2026-05-30/reviews/sceneview3d-promotion-gate-2026-05-24.md
+  - docs/archive/2026-05-30/planning/sprint-2026-W22-automation-hardening.md
   - docs/planning/feature-specs/sceneview3d-stable-renderer-contract.md
   - docs/reviews/nla-002-generation-command-contract-2026-05-29.md
   - docs/reviews/nla-003-mcp-orchestration-evidence-2026-05-29.md
@@ -40,7 +40,7 @@ inputs:
   - docs/reviews/nlq-006-scene-browsing-blocker-visibility-2026-05-29.md
   - docs/reviews/nlq-007-serialized-quality-hardening-planning-2026-05-29.md
   - docs/planning/feature-specs/generated-app-delivery-ux.md
-  - docs/planning/sprint-2026-W22-ai-native-next-loop.md
+  - docs/archive/2026-05-30/planning/sprint-2026-W22-ai-native-next-loop.md
 owner: "@coordinator"
 decision_level: advisory
 ---
@@ -57,8 +57,7 @@ commands、resource load plan gate、package boundary、mock snapshot/query 和 
 
 ## 2026-05-25 W22 competitive signal response
 
-W22 竞品核验已转为执行 sprint：
-[sprint-2026-W22-competitive-signal-response.md](./sprint-2026-W22-competitive-signal-response.md)。
+W22 竞品核验已转为执行 sprint（已归档至 [archive/2026-05-30/planning/sprint-2026-W22-competitive-signal-response.md](../archive/2026-05-30/planning/sprint-2026-W22-competitive-signal-response.md)）。
 本轮已完成竞品报告、scorecard、路线图校准、adapter lifecycle diagnostics
 执行切片、MapLibre version-drift 升级前清单，以及 SRC 证据接受/No-go 决策。
 后续仍保持 stable `view.mode: "scene3d"` blocked。
@@ -76,7 +75,7 @@ W22 竞品核验已转为执行 sprint：
 
 2026-05-24 quality gate 对 current HEAD 条件通过，但 scheduled agent evidence
 在作为 advisory/blocking 输入前必须完成 automation-hardening。该 follow-up
-由 [sprint-2026-W22-automation-hardening.md](./sprint-2026-W22-automation-hardening.md)
+由 [sprint-2026-W22-automation-hardening.md](../archive/2026-05-30/planning/sprint-2026-W22-automation-hardening.md)
 承接，不修改 runtime/source/workflow 的当前文档账本状态。
 
 | id | title | priority | owner | status | acceptance | finish gates |
@@ -95,7 +94,7 @@ runtime，而是先冻结真实 renderer contract、Three.js/3DTilesRendererJS �
 lifecycle、snapshot/query 语义、resource policy 和 release gate。规划规格见
 [sceneview3d-stable-renderer-contract.md](./feature-specs/sceneview3d-stable-renderer-contract.md)，
 2026-05-25 handoff 见
-[sprint-2026-W23-scene3d-stable-renderer-contract.md](./sprint-2026-W23-scene3d-stable-renderer-contract.md)。
+[sprint-2026-W23-scene3d-stable-renderer-contract.md](../archive/2026-05-30/planning/sprint-2026-W23-scene3d-stable-renderer-contract.md)。
 
 共享规划状态由 `@coordinator` 单写。下面的状态表示当前已接受的前置证据和
 SRC-006 No-go 决策；stable runtime 仍保持 blocked，除非 future
@@ -128,11 +127,11 @@ implementation tasks remain todo until owner reports and gate evidence exist.
 
 | id | title | priority | owner | status | evidence target | acceptance | finish gates |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| TASK-2026W23-SRC-001 | Define stable renderer adapter contract | P0 | `@adapter-agent` | done | `docs/reviews/sceneview3d-adapter-lifecycle-semantics-2026-05-26.md`; focused adapter contract tests | load/render/resize/camera/snapshot/query/destroy/diagnostics obligations are specified without changing stable `view.mode` | `pnpm test:adapter -- tests/adapter/scene3d-three-adapter.test.ts`; `pnpm --filter @gis-engine/scene3d-three-adapter build`; adapter boundary evidence |
-| TASK-2026W23-SRC-002 | Freeze Three.js and 3DTilesRendererJS dependency boundary | P0 | `@adapter-agent`, `@engine-agent` | done | `docs/reviews/sceneview3d-src-002-dependency-boundary-2026-05-29.md`; `auditScene3DThreeAdapterDependencyBoundary()`; focused adapter tests | renderer dependencies remain adapter-local and core packages keep dependency-isolation checks | `pnpm --filter @gis-engine/scene3d-three-adapter build`; dependency isolation check or audit evidence; `pnpm check` when package metadata/imports change |
-| TASK-2026W23-SRC-003 | Specify lifecycle and failure-state semantics | P1 | `@adapter-agent`, `@qa-agent` | done | `getScene3DThreeAdapterLifecycleSemantics()`; `docs/reviews/sceneview3d-adapter-lifecycle-semantics-2026-05-26.md` | load/reload/resize/cancel/destroy/failure transitions are deterministic and structured | adapter lifecycle contract tests; `pnpm check` when runtime behavior or diagnostics change |
-| TASK-2026W23-SRC-004 | Specify stable snapshot and query semantics | P1 | `@qa-agent`, `@adapter-agent` | done | `docs/reviews/sceneview3d-src-004-qa-evidence-2026-05-27.md`; browser runner `promotionMatrix.snapshotQueryEvidence` | snapshot/query semantics, fixture identity, pick identity, hidden/missing-layer behavior, and diagnostic counts are defined; strict visual evidence is still required before beta/stable renderer claims | deterministic smoke/release tests; release-capable `pnpm test:release:scene3d` and `pnpm test:snapshot:visual` still required for visual evidence acceptance |
-| TASK-2026W23-SRC-005 | Align SceneView3D resource policy and release gates | P1 | `@engine-agent`, `@quality-guardian`, `@docs-agent` | done | `docs/reviews/sceneview3d-src-005-resource-release-gate-2026-05-29.md`; resource-policy tests; `docs/engineering/ci-test-strategy.md` | resource-policy tests/docs and release gates name exact PR, beta, and stable renderer checks | `pnpm test:resources`; `pnpm test:schema -- tests/schema/resource-policy.test.ts` when schema policy changes; `pnpm test:release:scene3d`; visual snapshot gate or coordinator waiver for non-rendering changes |
+| TASK-2026W23-SRC-001 | Define stable renderer adapter contract | P0 | `@adapter-agent` | done | `docs/archive/2026-05-30/reviews/sceneview3d-adapter-lifecycle-semantics-2026-05-26.md`; focused adapter contract tests | load/render/resize/camera/snapshot/query/destroy/diagnostics obligations are specified without changing stable `view.mode` | `pnpm test:adapter -- tests/adapter/scene3d-three-adapter.test.ts`; `pnpm --filter @gis-engine/scene3d-three-adapter build`; adapter boundary evidence |
+| TASK-2026W23-SRC-002 | Freeze Three.js and 3DTilesRendererJS dependency boundary | P0 | `@adapter-agent`, `@engine-agent` | done | `docs/archive/2026-05-30/reviews/sceneview3d-src-002-dependency-boundary-2026-05-29.md`; `auditScene3DThreeAdapterDependencyBoundary()`; focused adapter tests | renderer dependencies remain adapter-local and core packages keep dependency-isolation checks | `pnpm --filter @gis-engine/scene3d-three-adapter build`; dependency isolation check or audit evidence; `pnpm check` when package metadata/imports change |
+| TASK-2026W23-SRC-003 | Specify lifecycle and failure-state semantics | P1 | `@adapter-agent`, `@qa-agent` | done | `getScene3DThreeAdapterLifecycleSemantics()`; `docs/archive/2026-05-30/reviews/sceneview3d-adapter-lifecycle-semantics-2026-05-26.md` | load/reload/resize/cancel/destroy/failure transitions are deterministic and structured | adapter lifecycle contract tests; `pnpm check` when runtime behavior or diagnostics change |
+| TASK-2026W23-SRC-004 | Specify stable snapshot and query semantics | P1 | `@qa-agent`, `@adapter-agent` | done | `docs/archive/2026-05-30/reviews/sceneview3d-src-004-qa-evidence-2026-05-27.md`; browser runner `promotionMatrix.snapshotQueryEvidence` | snapshot/query semantics, fixture identity, pick identity, hidden/missing-layer behavior, and diagnostic counts are defined; strict visual evidence is still required before beta/stable renderer claims | deterministic smoke/release tests; release-capable `pnpm test:release:scene3d` and `pnpm test:snapshot:visual` still required for visual evidence acceptance |
+| TASK-2026W23-SRC-005 | Align SceneView3D resource policy and release gates | P1 | `@engine-agent`, `@quality-guardian`, `@docs-agent` | done | `docs/archive/2026-05-30/reviews/sceneview3d-src-005-resource-release-gate-2026-05-29.md`; resource-policy tests; `docs/engineering/ci-test-strategy.md` | resource-policy tests/docs and release gates name exact PR, beta, and stable renderer checks | `pnpm test:resources`; `pnpm test:schema -- tests/schema/resource-policy.test.ts` when schema policy changes; `pnpm test:release:scene3d`; visual snapshot gate or coordinator waiver for non-rendering changes |
 | TASK-2026W23-SRC-006 | Issue stable runtime promotion readiness decision | P0 | `@quality-guardian`, `@coordinator` | done / no-go | `docs/reviews/sceneview3d-src-006-stable-runtime-gate-2026-05-29.md`; `docs/planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md` | stable `view.mode: "scene3d"` remains blocked with explicit blocker codes and future Go prerequisites | `pnpm build:schema`; `pnpm check`; `pnpm test:release:scene3d`; `pnpm test:snapshot:visual`; coordinator records No-go decision |
 
 Next quality-gate triggers:
@@ -209,7 +208,7 @@ new MCP tool alias or mutate runtime state outside `MapCommand` /
 ## 2026-W22 AI-native next loop
 
 The next active planning batch starts from
-[sprint-2026-W22-ai-native-next-loop.md](./sprint-2026-W22-ai-native-next-loop.md).
+[sprint-2026-W22-ai-native-next-loop.md](../archive/2026-05-30/planning/sprint-2026-W22-ai-native-next-loop.md).
 It does not reopen the closed NLA/NLQ work; it plans product delivery and
 promotion criteria for future implementation batches.
 
@@ -243,7 +242,7 @@ extension-only delivery copy/evidence alignment. `sceneBrowsing.state`,
 The AIN batch is closed, so the orchestrator switched to a new planning loop on
 2026-05-30. The refreshed competitive/product evidence opens a new Generated
 App Review Console sprint:
-[sprint-2026-W22-generated-app-review-console.md](./sprint-2026-W22-generated-app-review-console.md).
+[sprint-2026-W22-generated-app-review-console.md](../archive/2026-05-30/planning/sprint-2026-W22-generated-app-review-console.md).
 `GIR-001` is complete as a docs-only PRD/spec slice; implementation and QA
 tasks remain queued.
 
@@ -319,9 +318,9 @@ task-distributor 按 owner registry 分配。
 | TASK-2026W23-002 | Expand browser runner with promotion matrix evidence | P1 | `@qa-agent` | done | runner records frame, console, renderer diagnostics, and promotion matrix readiness evidence |
 | TASK-2026W23-003 | Add adapter-side promotion evidence summary report | P1 | `@adapter-agent` | done | `createScene3DThreeAdapterPromotionEvidenceSummary` consolidates load-plan, resource-report, runtime, snapshot, query, and release evidence without enabling stable runtime |
 | TASK-2026W23-004 | Define stable-runtime guardrail diagnostics and blocker codes | P1 | `@engine-agent` | done | `CAPABILITY.UNSUPPORTED` diagnostics now carry SceneView3D stable-runtime blocker codes for view mode, renderer, and dimensions |
-| TASK-2026W23-005 | Decide whether promotion evidence summaries enter MCP context | P2 | `@ai-agent` | done | `docs/reviews/sceneview3d-mcp-promotion-evidence-decision-2026-05-23.md` keeps promotion summaries out of MCP context for W23 |
+| TASK-2026W23-005 | Decide whether promotion evidence summaries enter MCP context | P2 | `@ai-agent` | done | `docs/archive/2026-05-30/reviews/sceneview3d-mcp-promotion-evidence-decision-2026-05-23.md` keeps promotion summaries out of MCP context for W23 |
 | TASK-2026W23-006 | Update roadmap, debt report, and release checklist with the promotion decision | P2 | `@docs-agent` | done | public docs reflect the decision and residual risk; promotion evidence summaries stay out of public MCP context |
-| TASK-2026W23-007 | Run promotion gate review and issue go/no-go decision | P1 | `@quality-guardian` | done | gate report at `docs/reviews/sceneview3d-promotion-gate-2026-05-24.md` issues no-go for stable runtime while accepting the promotion-readiness package |
+| TASK-2026W23-007 | Run promotion gate review and issue go/no-go decision | P1 | `@quality-guardian` | done | gate report at `docs/archive/2026-05-30/reviews/sceneview3d-promotion-gate-2026-05-24.md` issues no-go for stable runtime while accepting the promotion-readiness package |
 
 ## 初始容量
 

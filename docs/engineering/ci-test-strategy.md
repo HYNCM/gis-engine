@@ -43,7 +43,7 @@ fixtures -> schema validation -> command replay -> renderer adapter -> snapshot 
 }
 ```
 
-脚本实现细节、目录约定和参考伪代码见 [implementation-playbook.md](./implementation-playbook.md)。
+目录约定、fixture 规则和 snapshot baseline 管理策略见下文各章节。
 
 ## Required Gates
 

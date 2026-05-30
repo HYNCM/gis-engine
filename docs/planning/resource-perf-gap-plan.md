@@ -4,7 +4,7 @@ period: 2026-W21
 generated_at: 2026-05-17T16:35:00Z
 repo_revision: "acdf28e"
 inputs:
-  - docs/reviews/daily-audit-2026-05-17.md
+  - docs/archive/2026-05-30/reviews/daily-audit-2026-05-17.md
   - docs/engineering/ci-test-strategy.md
   - tests/resources/resource-release.test.ts
   - tests/perf/perf-smoke.test.ts

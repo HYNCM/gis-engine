@@ -5,8 +5,8 @@ generated_at: 2026-05-29T05:47:40Z
 repo_revision: "6f76b57"
 inputs:
   - docs/reviews/sceneview3d-src-006-stable-runtime-gate-2026-05-29.md
-  - docs/reviews/sceneview3d-src-002-dependency-boundary-2026-05-29.md
-  - docs/reviews/sceneview3d-src-005-resource-release-gate-2026-05-29.md
+  - docs/archive/2026-05-30/reviews/sceneview3d-src-002-dependency-boundary-2026-05-29.md
+  - docs/archive/2026-05-30/reviews/sceneview3d-src-005-resource-release-gate-2026-05-29.md
   - docs/planning/task-burndown.md
   - docs/planning/dependency-graph.md
 owner: "@coordinator"

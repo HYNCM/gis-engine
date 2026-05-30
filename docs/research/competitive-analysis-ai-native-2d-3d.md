@@ -27,6 +27,24 @@
 | 云原生数据格式 | PMTiles、GeoParquet、FlatGeobuf、MVT | 单文件瓦片、列式分析、流式读、标准瓦片 | v0 先做 PMTiles，v2 引入 GeoParquet/DuckDB WASM |
 | AI 工具协议 | MCP、JSON Schema structured outputs | AI 工具调用、结构化输入输出、资源与工具边界 | `@gis-engine/ai` 提供 MCP tools，核心 runtime 不依赖 AI 层 |
 
+## 设计吸收矩阵
+
+下表列出各框架的核心模型、吸收点和 v0 阶段的明确避免事项：
+
+| 框架或生态 | 核心模型 | 本项目吸收点 | v0 避免点 |
+| --- | --- | --- | --- |
+| MapLibre GL JS / Mapbox GL JS | source / layer / style / expression / worker / tile / renderer | 采用 source/layer/style 的声明式思路，学习 worker/tile/render 分离，v0 使用 MapLibre adapter 降低交付风险 | 不在 v0 从零实现完整 symbol placement、collision、text shaping、完整 expression |
+| CesiumJS | Viewer / Scene / Globe / Primitive / Entity / 3D Tiles | 学习 Scene/Primitive/HLOD/SSE 思路，v1 后引入 SceneView 与 3D Tiles adapter | 不把 terrain、glTF、3D Tiles 放进 v0 核心 schema |
+| OpenLayers | Map / View / Layer / Source / Interaction / Control | 学习 Map/View 分离、Layer/Source 边界、Interaction/Control 可插拔设计 | 不在 v0 扩展到完整 OGC 协议和复杂投影矩阵 |
+| Leaflet | Map / Layer / Control / Plugin | 学习低门槛 API、插件优先、示例驱动和渐进增强 | 不采用 DOM/SVG 为主的渲染路线作为核心性能路径 |
+| deck.gl | Layer / CompositeLayer / View / AttributeManager | 学习 Layer 生命周期、CompositeLayer 思路、数据驱动可视分析扩展方式 | v0 不做复杂分析图层和大规模 GPU 聚合 |
+| ArcGIS Maps SDK for JavaScript | Map / MapView / SceneView / Layer / Renderer | 学习 Map 容器与 View 实例分离，以及后续 MapView/SceneView 演进方向 | v0 不做完整企业 GIS 平台能力 |
+| MapTalks | Map / Layer / GroupGLLayer / 3D extension | 学习 2D 地图与 3D 插件的松耦合方式 | v0 不把 3D 插件作为核心依赖 |
+| 3DTilesRendererJS | TilesRenderer / plugin / cache / traversal | v1 可作为 3D Tiles adapter 的候选实现或参考 | v0 不承诺 3D Tiles |
+| PMTiles | 单文件瓦片归档 / range request | v0 优先支持，体现低运维地图数据能力 | 不在 v0 同时铺开所有瓦片协议 |
+| GeoParquet / FlatGeobuf | 列式或流式地理数据格式 | v2 作为大规模分析与流式数据方向 | v0 不引入 DuckDB WASM 和复杂查询引擎 |
+| Model Context Protocol | tools / resources / prompts / schemas | 将 `validate_spec`、`apply_commands` 等 snake_case tools 暴露为 MCP tools，并提供 input/output schemas | MCP 不进入渲染核心生命周期 |
+
 ## 软件工程维度对比
 
 | 维度 | MapLibre / Mapbox | CesiumJS | OpenLayers | Leaflet | deck.gl | ArcGIS JS | GIS Engine 目标 |
@@ -185,6 +203,56 @@
 
 - v1 作为 `Tiles3DSource` adapter 候选。
 - 不在 v0 直接绑定 Three.js 作为全局 3D 架构。
+
+## 可吸收的核心设计理念
+
+### 1. Source/Layer/Style 是 AI 友好的地图表达方式
+
+MapLibre 和 Mapbox 的最大价值不是某一个渲染细节，而是把地图拆成稳定的 `sources`、`layers`、`paint/layout` 和 `expressions`。这类结构天然适合 AI 生成、审查、diff、回放和修复。
+
+本项目应吸收：
+
+- `sources` 定义数据输入和访问方式。
+- `layers` 定义可视化类型、图层顺序和样式。
+- `paint` 与 `layout` 分离，便于 AI 精准修改样式而不破坏结构。
+- expression 子集优先覆盖常见数据驱动样式。
+
+本项目不应在 v0 承担：
+
+- 完整 Mapbox expression 兼容。
+- 完整文字排版、碰撞检测、复杂 symbol placement。
+- 自研完整矢量瓦片渲染内核作为首个交付目标。
+
+### 2. Map/View 分离能避免 2D/3D 过早耦合
+
+OpenLayers 和 ArcGIS 都把地图内容容器与视图表达拆开。这个边界对本项目非常重要，因为 AI 需要操作的是稳定的地图意图，而不是某个渲染后端的临时状态。
+
+本项目采用：
+
+- `MapSpec` 表示地图内容、数据源、图层、交互和扩展能力。
+- `ViewState` 表示 center、zoom、bearing、pitch、bounds 等视图状态。
+- v0 只稳定 2D 和最小 2.5D。
+- v1 再引入 `SceneView`，不要让 3D 需求污染 v0 schema。
+
+### 3. Scene/Primitive/HLOD 适合放到 v1 的 3D 扩展层
+
+Cesium 的 Scene、Primitive、Globe、3D Tiles、screen space error 等能力非常适合大规模 3D 地理场景，但它们属于另一套复杂世界观。v0 若强行统一 2D 瓦片样式和 3D 场景图，会造成抽象过大、实现过薄。
+
+本项目采用：
+
+- v0 `extensions` 字段预留 terrain、scene、aiHints。
+- v1 `@gis-engine/scene3d` 作为 capability-gated experimental package。
+- 3D Tiles、glTF、terrain 都通过 adapter 接入，不进入 v0 核心。
+
+### 4. 声明式 Layer 生命周期比命令式绘制更适合 AI
+
+deck.gl 的 Layer 生命周期说明，复杂可视化不应散落在业务代码中，而应封装成稳定的声明式图层对象。AI 更容易添加、删除、替换一个图层，而不是改写一段临时绘制逻辑。
+
+本项目采用：
+
+- v0 图层类型有限，但每类图层都要有明确 schema、默认值、诊断规则和示例。
+- 复杂能力先通过 experimental layer 暴露，例如 `fill-extrusion-lite`。
+- 后续分析图层通过 plugin 或 extension 注册。
 
 ## AI 原生架构标准
 

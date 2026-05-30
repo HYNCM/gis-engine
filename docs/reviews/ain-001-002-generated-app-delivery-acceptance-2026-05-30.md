@@ -5,7 +5,7 @@ generated_at: 2026-05-30T04:47:43Z
 repo_revision: "ff070cb923314fb9df7105e09ce75c3db90309cd"
 inputs:
   - docs/planning/feature-specs/generated-app-delivery-ux.md
-  - docs/planning/sprint-2026-W22-ai-native-next-loop.md
+  - docs/archive/2026-05-30/planning/sprint-2026-W22-ai-native-next-loop.md
   - docs/planning/feature-specs/cloud-native-source-readiness.md
   - packages/ai/src/tools/exportExampleApp.ts
   - packages/ai/src/tools/generationEvidence.ts
