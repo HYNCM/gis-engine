@@ -292,7 +292,19 @@ describe("prompt-level generation evidence scenarios", () => {
             needsConfirmation: false,
             followUpRequired: false
           },
-          confirmationRequired: false
+          confirmationRequired: false,
+          spatialQueryReadiness: {
+            requested: true,
+            state: "ready",
+            status: "ready",
+            caseCount: 2,
+            passedCaseCount: 2,
+            failedCaseCount: 0,
+            blockerCount: 0,
+            followUpCount: 0,
+            queryableLayerIds: ["incident-points"],
+            queryableSourceIds: ["incidents"]
+          }
         });
         expect(evidence.delivery.sections).toEqual(
           expect.arrayContaining([

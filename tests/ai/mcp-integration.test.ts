@@ -56,7 +56,30 @@ function manifestDeliverySummary(status: "ready" | "blocked" | "needs-confirmati
     ],
     confirmationRequired: status === "needs-confirmation",
     followUps: [],
-    sourceReadiness: []
+    sourceReadiness: [],
+    spatialQueryReadiness: {
+      requested: false,
+      state: "not-requested",
+      status: "not-requested",
+      capabilityGateStatus: "passed",
+      requiredQueries: [],
+      providedQueries: [],
+      caseCount: 0,
+      passedCaseCount: 0,
+      failedCaseCount: 0,
+      resultLimit: 100,
+      resultTruncated: false,
+      blockerCount: 0,
+      followUpCount: 0,
+      followUpTaskIds: [],
+      queryableLayerIds: [],
+      queryableSourceIds: [],
+      unsupportedSourceIds: [],
+      missingSourceIds: [],
+      hiddenLayerIds: [],
+      blockedOperations: [],
+      cases: []
+    }
   };
 }
 

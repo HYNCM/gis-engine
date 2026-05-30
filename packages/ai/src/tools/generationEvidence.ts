@@ -1446,12 +1446,14 @@ function buildDeliverySummary(input: {
   diagnostics: Diagnostic[];
 }): ExampleAppDeliverySummary {
   const sourceReadiness = buildSourceReadiness(input.input.skeleton.spec);
+  const spatialQueryReadiness = buildSpatialQueryDeliveryReadiness(input.spatialQueryEvidence);
   const confirmations = buildDeliveryConfirmations(sourceReadiness);
   const confirmationRequired = confirmations.some((confirmation) => confirmation.required);
   const followUps = buildDeliveryFollowUps(input, sourceReadiness);
   const status = deliveryStatus(input.status, confirmationRequired, followUps.length);
   const dataAndAnalysisBlockerCount =
     input.spatialQueryEvidence.diagnosticCounts.error + sourceReadiness.filter((source) => source.state === "blocked").length;
+  const dataAndAnalysisFollowUpCount = dataSectionFollowUpCount(followUps);
   const sceneBrowsingBlockerCount =
     input.sceneBrowsing.status === "blocked"
       ? Math.max(input.sceneBrowsing.stableRuntimeBlockerCodes.length, sceneBlockerDiagnosticCount(input.diagnostics))
@@ -1498,10 +1500,10 @@ function buildDeliverySummary(input: {
       },
       {
         id: "data-and-analysis",
-        status: dataAndAnalysisBlockerCount > 0 ? "blocked" : dataConfirmationRequired ? "needs-confirmation" : dataSectionFollowUpCount(followUps) > 0 ? "follow-up-required" : "ready",
+        status: dataAndAnalysisBlockerCount > 0 ? "blocked" : dataConfirmationRequired ? "needs-confirmation" : dataAndAnalysisFollowUpCount > 0 ? "follow-up-required" : "ready",
         blockerCount: dataAndAnalysisBlockerCount,
         confirmationRequired: dataConfirmationRequired,
-        followUpCount: dataSectionFollowUpCount(followUps)
+        followUpCount: dataAndAnalysisFollowUpCount
       },
       {
         id: "scene-browsing",
@@ -1514,7 +1516,60 @@ function buildDeliverySummary(input: {
     confirmations,
     confirmationRequired,
     followUps,
-    sourceReadiness
+    sourceReadiness,
+    spatialQueryReadiness
+  };
+}
+
+function buildSpatialQueryDeliveryReadiness(
+  spatialQueryEvidence: GenerationSpatialQueryEvidence
+): ExampleAppDeliverySummary["spatialQueryReadiness"] {
+  const followUpTaskIds = spatialQueryEvidence.capabilityGate.waiver ? [spatialQueryEvidence.capabilityGate.waiver.followUpTaskId] : [];
+  const passedCaseCount = spatialQueryEvidence.cases.filter((entry) => entry.passed && entry.diagnosticCounts.error === 0).length;
+  const failedCaseCount = spatialQueryEvidence.cases.length - passedCaseCount;
+  const blockerCount = spatialQueryEvidence.diagnosticCounts.error;
+  const state =
+    !spatialQueryEvidence.requested
+      ? "not-requested"
+      : blockerCount > 0 || spatialQueryEvidence.status === "blocked"
+        ? "blocked"
+        : followUpTaskIds.length > 0
+          ? "follow-up-required"
+          : "ready";
+
+  return {
+    requested: spatialQueryEvidence.requested,
+    state,
+    status: spatialQueryEvidence.status,
+    capabilityGateStatus: spatialQueryEvidence.capabilityGate.status,
+    requiredQueries: spatialQueryEvidence.capabilityGate.requiredQueries,
+    providedQueries: spatialQueryEvidence.capabilityGate.providedQueries,
+    caseCount: spatialQueryEvidence.cases.length,
+    passedCaseCount,
+    failedCaseCount,
+    resultLimit: spatialQueryEvidence.cases[0]?.resultLimit ?? DEFAULT_SPATIAL_QUERY_RESULT_LIMIT,
+    resultTruncated: spatialQueryEvidence.cases.some((entry) => entry.resultTruncated),
+    blockerCount,
+    followUpCount: followUpTaskIds.length,
+    followUpTaskIds,
+    queryableLayerIds: spatialQueryEvidence.queryableLayerIds,
+    queryableSourceIds: spatialQueryEvidence.queryableSourceIds,
+    unsupportedSourceIds: spatialQueryEvidence.unsupportedSourceIds,
+    missingSourceIds: spatialQueryEvidence.missingSourceIds,
+    hiddenLayerIds: spatialQueryEvidence.hiddenLayerIds,
+    blockedOperations: spatialQueryEvidence.blockedOperations,
+    cases: spatialQueryEvidence.cases.map((entry) => ({
+      id: entry.id,
+      state: entry.passed && entry.diagnosticCounts.error === 0 ? "ready" : "blocked",
+      operation: entry.operation,
+      layerIds: entry.layerIds,
+      sourceIds: entry.sourceIds,
+      featureCount: entry.featureCount,
+      resultLimit: entry.resultLimit,
+      resultTruncated: entry.resultTruncated,
+      fixtureHash: entry.fixtureHash,
+      diagnosticCounts: entry.diagnosticCounts
+    }))
   };
 }
 
@@ -1691,6 +1746,15 @@ function buildDeliveryFollowUps(
     });
   }
 
+  if (input.spatialQueryEvidence.capabilityGate.status === "waived" && input.spatialQueryEvidence.capabilityGate.waiver) {
+    followUps.push({
+      id: `spatial-query.capability-waiver.${input.spatialQueryEvidence.capabilityGate.waiver.followUpTaskId}`,
+      owner: "@ai-agent",
+      targetArtifact: "packages/ai/src/tools/generationEvidence.ts",
+      reason: `Spatial query capability waiver must be closed by ${input.spatialQueryEvidence.capabilityGate.waiver.followUpTaskId} before treating adapter query support as complete.`
+    });
+  }
+
   for (const source of sourceReadiness.filter((entry) => entry.state === "readiness-only")) {
     followUps.push({
       id: `source-readiness.${source.sourceId}`,
@@ -1718,7 +1782,12 @@ function sceneBlockerDiagnosticCount(diagnostics: Diagnostic[]): number {
 }
 
 function dataSectionFollowUpCount(followUps: ExampleAppDeliverySummary["followUps"]): number {
-  return followUps.filter((followUp) => followUp.id.startsWith("analysis.") || followUp.id.startsWith("source-readiness.")).length;
+  return followUps.filter(
+    (followUp) =>
+      followUp.id.startsWith("analysis.") ||
+      followUp.id.startsWith("source-readiness.") ||
+      followUp.id.startsWith("spatial-query.")
+  ).length;
 }
 
 function buildExampleEvidence(

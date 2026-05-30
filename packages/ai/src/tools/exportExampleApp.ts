@@ -44,6 +44,31 @@ const SourceReadinessStateSchema = {
   enum: ["supported", "readiness-only", "blocked"]
 } as const;
 
+const SpatialQueryReadinessStateSchema = {
+  type: "string",
+  enum: ["not-requested", "ready", "blocked", "follow-up-required"]
+} as const;
+
+const SpatialQueryCaseReadinessStateSchema = {
+  type: "string",
+  enum: ["ready", "blocked"]
+} as const;
+
+const SpatialQueryCapabilityGateStatusSchema = {
+  type: "string",
+  enum: ["passed", "waived", "blocked"]
+} as const;
+
+const SpatialQueryEvidenceStatusSchema = {
+  type: "string",
+  enum: ["ready", "blocked", "not-requested"]
+} as const;
+
+const SpatialQueryOperationSchema = {
+  type: "string",
+  enum: ["point-query", "bbox-query"]
+} as const;
+
 export const ExampleAppDeliverySummarySchema = {
   type: "object",
   properties: {
@@ -123,9 +148,98 @@ export const ExampleAppDeliverySummarySchema = {
         required: ["sourceId", "type", "state", "queryReady", "confirmationReasons", "notes"],
         additionalProperties: false
       }
+    },
+    spatialQueryReadiness: {
+      type: "object",
+      properties: {
+        requested: { type: "boolean" },
+        state: SpatialQueryReadinessStateSchema,
+        status: SpatialQueryEvidenceStatusSchema,
+        capabilityGateStatus: SpatialQueryCapabilityGateStatusSchema,
+        requiredQueries: { type: "array", items: { type: "string", enum: ["point", "bbox"] } },
+        providedQueries: { type: "array", items: { type: "string" } },
+        caseCount: { type: "number" },
+        passedCaseCount: { type: "number" },
+        failedCaseCount: { type: "number" },
+        resultLimit: { type: "number" },
+        resultTruncated: { type: "boolean" },
+        blockerCount: { type: "number" },
+        followUpCount: { type: "number" },
+        followUpTaskIds: { type: "array", items: { type: "string" } },
+        queryableLayerIds: { type: "array", items: { type: "string" } },
+        queryableSourceIds: { type: "array", items: { type: "string" } },
+        unsupportedSourceIds: { type: "array", items: { type: "string" } },
+        missingSourceIds: { type: "array", items: { type: "string" } },
+        hiddenLayerIds: { type: "array", items: { type: "string" } },
+        blockedOperations: { type: "array", items: { type: "string" } },
+        cases: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              state: SpatialQueryCaseReadinessStateSchema,
+              operation: SpatialQueryOperationSchema,
+              layerIds: { type: "array", items: { type: "string" } },
+              sourceIds: { type: "array", items: { type: "string" } },
+              featureCount: { type: "number" },
+              resultLimit: { type: "number" },
+              resultTruncated: { type: "boolean" },
+              fixtureHash: { type: "string" },
+              diagnosticCounts: DiagnosticCountsSchema
+            },
+            required: [
+              "id",
+              "state",
+              "operation",
+              "layerIds",
+              "sourceIds",
+              "featureCount",
+              "resultLimit",
+              "resultTruncated",
+              "fixtureHash",
+              "diagnosticCounts"
+            ],
+            additionalProperties: false
+          }
+        }
+      },
+      required: [
+        "requested",
+        "state",
+        "status",
+        "capabilityGateStatus",
+        "requiredQueries",
+        "providedQueries",
+        "caseCount",
+        "passedCaseCount",
+        "failedCaseCount",
+        "resultLimit",
+        "resultTruncated",
+        "blockerCount",
+        "followUpCount",
+        "followUpTaskIds",
+        "queryableLayerIds",
+        "queryableSourceIds",
+        "unsupportedSourceIds",
+        "missingSourceIds",
+        "hiddenLayerIds",
+        "blockedOperations",
+        "cases"
+      ],
+      additionalProperties: false
     }
   },
-  required: ["status", "acceptance", "sections", "confirmations", "confirmationRequired", "followUps", "sourceReadiness"],
+  required: [
+    "status",
+    "acceptance",
+    "sections",
+    "confirmations",
+    "confirmationRequired",
+    "followUps",
+    "sourceReadiness",
+    "spatialQueryReadiness"
+  ],
   additionalProperties: false
 } as const;
 
@@ -365,6 +479,40 @@ export interface ExampleAppDeliverySummary {
     confirmationReasons: Array<"external-resource" | "network-fetch" | "archive-parsing" | "worker-use" | "file-write" | "stable-scene3d-runtime">;
     notes: string[];
   }>;
+  spatialQueryReadiness: {
+    requested: boolean;
+    state: "not-requested" | "ready" | "blocked" | "follow-up-required";
+    status: "ready" | "blocked" | "not-requested";
+    capabilityGateStatus: "passed" | "waived" | "blocked";
+    requiredQueries: Array<"point" | "bbox">;
+    providedQueries: string[];
+    caseCount: number;
+    passedCaseCount: number;
+    failedCaseCount: number;
+    resultLimit: number;
+    resultTruncated: boolean;
+    blockerCount: number;
+    followUpCount: number;
+    followUpTaskIds: string[];
+    queryableLayerIds: string[];
+    queryableSourceIds: string[];
+    unsupportedSourceIds: string[];
+    missingSourceIds: string[];
+    hiddenLayerIds: string[];
+    blockedOperations: string[];
+    cases: Array<{
+      id: string;
+      state: "ready" | "blocked";
+      operation: "point-query" | "bbox-query";
+      layerIds: string[];
+      sourceIds: string[];
+      featureCount: number;
+      resultLimit: number;
+      resultTruncated: boolean;
+      fixtureHash: string;
+      diagnosticCounts: Record<Diagnostic["severity"], number>;
+    }>;
+  };
 }
 
 export interface ExampleAppFile {

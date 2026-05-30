@@ -484,6 +484,144 @@ describe("generation evidence bundle", () => {
     expect(JSON.stringify(first.result.exampleEvidence.generationEvidence)).not.toContain("FeatureCollection");
   });
 
+  it("maps hardened spatial query states into generated-app delivery without prose parsing", async () => {
+    const readySkeleton = createSpatialQuerySkeleton("delivery-query-ready");
+    const waiverSkeleton = createSpatialQuerySkeleton("delivery-query-waiver");
+    const blockedSkeleton = createSpatialQuerySkeleton("delivery-query-blocked");
+    const queryCase = {
+      id: "incident-point",
+      operation: "point-query" as const,
+      point: [120.15, 30.28] as [number, number],
+      layers: ["incident-points"]
+    };
+
+    const [ready, followUpRequired, blocked] = await Promise.all([
+      createGenerationEvidenceBundle({
+        promptHash: "sha256:delivery-query-ready",
+        skeleton: readySkeleton,
+        capabilities: spatialQueryCapabilities,
+        spatialQueries: {
+          renderer: "mock",
+          cases: [queryCase]
+        }
+      }),
+      createGenerationEvidenceBundle({
+        promptHash: "sha256:delivery-query-waiver",
+        skeleton: waiverSkeleton,
+        spatialQueries: {
+          renderer: "mock",
+          capabilityWaiver: {
+            reason: "Adapter query capability report will be closed by the delivery mapping follow-up.",
+            approvedBy: "@quality-guardian",
+            followUpTaskId: "TASK-2026W23-SQH-006"
+          },
+          cases: [queryCase]
+        }
+      }),
+      createGenerationEvidenceBundle({
+        promptHash: "sha256:delivery-query-blocked",
+        skeleton: blockedSkeleton,
+        spatialQueries: {
+          renderer: "mock",
+          cases: [queryCase]
+        }
+      })
+    ]);
+
+    expect(ready.ok).toBe(true);
+    expect(followUpRequired.ok).toBe(true);
+    expect(blocked.ok).toBe(true);
+    if (!ready.ok || !followUpRequired.ok || !blocked.ok) {
+      throw new Error("Expected spatial query delivery fixtures to return structured evidence.");
+    }
+
+    const dataSection = (bundle: typeof ready.result) => bundle.delivery.sections.find((entry) => entry.id === "data-and-analysis");
+
+    expect(ready.result.delivery.spatialQueryReadiness).toMatchObject({
+      requested: true,
+      state: "ready",
+      status: "ready",
+      capabilityGateStatus: "passed",
+      requiredQueries: ["bbox", "point"],
+      providedQueries: ["bbox", "point"],
+      caseCount: 1,
+      passedCaseCount: 1,
+      failedCaseCount: 0,
+      resultLimit: 100,
+      resultTruncated: false,
+      blockerCount: 0,
+      followUpCount: 0,
+      followUpTaskIds: [],
+      queryableLayerIds: ["incident-points"],
+      queryableSourceIds: ["incidents"],
+      unsupportedSourceIds: [],
+      missingSourceIds: [],
+      hiddenLayerIds: [],
+      blockedOperations: [],
+      cases: [
+        expect.objectContaining({
+          id: "incident-point",
+          state: "ready",
+          operation: "point-query",
+          layerIds: ["incident-points"],
+          sourceIds: ["incidents"],
+          featureCount: 1,
+          resultLimit: 100,
+          resultTruncated: false,
+          diagnosticCounts: { error: 0, warning: 0, info: 0 }
+        })
+      ]
+    });
+    expect(dataSection(ready.result)).toMatchObject({
+      status: "ready",
+      blockerCount: 0,
+      followUpCount: 0
+    });
+    expect(ready.result.exampleEvidence.generationEvidence?.delivery.spatialQueryReadiness).toMatchObject({
+      state: "ready",
+      caseCount: 1,
+      passedCaseCount: 1
+    });
+    expect(JSON.stringify(ready.result.exampleEvidence.generationEvidence?.delivery.spatialQueryReadiness)).not.toContain("FeatureCollection");
+
+    expect(followUpRequired.result.delivery.spatialQueryReadiness).toMatchObject({
+      requested: true,
+      state: "follow-up-required",
+      status: "ready",
+      capabilityGateStatus: "waived",
+      caseCount: 1,
+      passedCaseCount: 1,
+      failedCaseCount: 0,
+      blockerCount: 0,
+      followUpCount: 1,
+      followUpTaskIds: ["TASK-2026W23-SQH-006"]
+    });
+    expect(dataSection(followUpRequired.result)).toMatchObject({
+      status: "follow-up-required",
+      blockerCount: 0,
+      followUpCount: 1
+    });
+
+    expect(blocked.result.delivery.spatialQueryReadiness).toMatchObject({
+      requested: true,
+      state: "blocked",
+      status: "blocked",
+      capabilityGateStatus: "blocked",
+      caseCount: 0,
+      passedCaseCount: 0,
+      failedCaseCount: 0,
+      blockerCount: 1,
+      followUpCount: 0,
+      followUpTaskIds: []
+    });
+    expect(dataSection(blocked.result)).toMatchObject({
+      status: "blocked",
+      blockerCount: 1,
+      followUpCount: 0
+    });
+    expect(blocked.result.toolSequence).not.toContain("spatial_query");
+  });
+
   it("blocks spatial query evidence when adapter query capabilities are not declared", async () => {
     const skeleton = createMapGenerationCommandSkeleton({
       mapId: "missing-query-capability",

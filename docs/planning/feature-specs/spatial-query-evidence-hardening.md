@@ -60,6 +60,7 @@ change stable SceneView3D runtime status.
 4. `SQH-004`: add result caps and deterministic fixture evidence. Completed by
    `docs/reviews/sqh-004-result-caps-fixtures-2026-05-30.md`.
 5. `SQH-005`: map hardened query evidence into generated-app delivery.
+   Completed by `docs/reviews/sqh-005-delivery-mapping-2026-05-31.md`.
 6. `SQH-006`: run the quality gate and serialize planning closure.
 
 ## Non-Goals
