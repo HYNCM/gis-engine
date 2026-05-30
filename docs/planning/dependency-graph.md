@@ -266,7 +266,8 @@ flowchart LR
 2026-05-30 planning update: after the Generated App Review Console batch
 closed, the orchestrator opened the Spatial Query Evidence Hardening sprint.
 `SQH-001` is complete as a boundary/spec task; `SQH-002` is complete as the
-explicit capability gate; `SQH-003` is the next queued execution task.
+explicit capability gate; `SQH-003` is complete as the invalid/source
+diagnostic matrix; `SQH-004` is the next queued execution task.
 
 ```mermaid
 flowchart LR
@@ -282,8 +283,8 @@ flowchart LR
 | --- | --- | --- | --- | --- |
 | TASK-2026W23-SQH-001 | GIR-006 | boundary spec and sprint DAG | planning review; `pnpm test:docs`; `pnpm check`; `git diff --check` | done |
 | TASK-2026W23-SQH-002 | SQH-001 | query capability gate | `pnpm build:schema`; `pnpm test:schema-sync`; `pnpm test:commands`; `pnpm test:ai`; `pnpm check`; `git diff --check` | done |
-| TASK-2026W23-SQH-003 | SQH-002 | invalid/source diagnostics | `pnpm test:commands`; `pnpm test:ai`; `pnpm check` | queued P1 |
-| TASK-2026W23-SQH-004 | SQH-003 | result caps and fixtures | `pnpm test:ai`; `pnpm test:commands`; perf smoke only if result-size logic changes | todo |
+| TASK-2026W23-SQH-003 | SQH-002 | invalid/source diagnostics | `pnpm test:commands`; `pnpm test:ai`; `pnpm test:adapter`; `pnpm check`; `git diff --check` | done |
+| TASK-2026W23-SQH-004 | SQH-003 | result caps and fixtures | `pnpm test:ai`; `pnpm test:commands`; perf smoke only if result-size logic changes | queued P1 |
 | TASK-2026W23-SQH-005 | SQH-004 | generated-app delivery mapping | `pnpm test:ai`; `pnpm test:docs`; `pnpm check` | todo |
 | TASK-2026W23-SQH-006 | SQH-005 | quality gate and closure | `pnpm build:schema`; `pnpm check`; visual waiver rationale if non-rendering | todo |
 

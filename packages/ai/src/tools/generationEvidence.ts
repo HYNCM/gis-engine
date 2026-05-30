@@ -958,6 +958,24 @@ async function runSpatialQueryCases(
   const cases = input.spatialQueries?.cases ?? [];
   if (cases.length === 0) return { evidence: [], diagnostics: [] };
 
+  const diagnostics: Diagnostic[] = [];
+  const evidenceByIndex = new Array<GenerationSpatialQueryCaseEvidence | undefined>(cases.length);
+  const pendingCases: Array<{ queryCase: SpatialQueryCaseInput; index: number }> = [];
+
+  for (const [index, queryCase] of cases.entries()) {
+    const operationDiagnostics = spatialQueryCaseOperationDiagnostics(input, queryCase, index);
+    if (operationDiagnostics.length > 0) {
+      diagnostics.push(...operationDiagnostics);
+      evidenceByIndex[index] = emptySpatialQueryCaseEvidence(input.skeleton.spec, readiness, queryCase, operationDiagnostics);
+    } else {
+      pendingCases.push({ queryCase, index });
+    }
+  }
+
+  if (pendingCases.length === 0) {
+    return { evidence: compactSpatialQueryCaseEvidence(evidenceByIndex), diagnostics };
+  }
+
   const adapter = createHeadlessAdapter(renderer);
   let runtime: MapRuntime | undefined;
 
@@ -966,28 +984,22 @@ async function runSpatialQueryCases(
       adapter,
       container: createHeadlessContainer()
     });
-    const evidence: GenerationSpatialQueryCaseEvidence[] = [];
-    const diagnostics: Diagnostic[] = [];
 
-    for (const [index, queryCase] of cases.entries()) {
-      const operationDiagnostics = spatialQueryCaseOperationDiagnostics(input, queryCase, index);
-      if (operationDiagnostics.length > 0) {
-        diagnostics.push(...operationDiagnostics);
-        evidence.push(emptySpatialQueryCaseEvidence(input.skeleton.spec, readiness, queryCase, operationDiagnostics));
-        continue;
-      }
-
+    for (const { queryCase, index } of pendingCases) {
       const result = await runtime.queryFeatures(queryOptionsForSpatialQueryCase(readiness, queryCase));
       const caseDiagnostics = result.diagnostics.map((diagnostic) => prefixSpatialQueryCaseDiagnostic(diagnostic, index));
+      if (result.features.length === 0 && caseDiagnostics.every((diagnostic) => diagnostic.severity !== "error")) {
+        caseDiagnostics.push(spatialQueryEmptyResultDiagnostic(input.skeleton.spec, readiness, queryCase, index));
+      }
       diagnostics.push(...caseDiagnostics);
-      evidence.push(spatialQueryCaseEvidence(input.skeleton.spec, readiness, queryCase, result, caseDiagnostics));
+      evidenceByIndex[index] = spatialQueryCaseEvidence(input.skeleton.spec, readiness, queryCase, result, caseDiagnostics);
     }
 
-    return { evidence, diagnostics };
+    return { evidence: compactSpatialQueryCaseEvidence(evidenceByIndex), diagnostics };
   } catch (error) {
     return {
-      evidence: [],
-      diagnostics: [spatialQueryRuntimeDiagnostic(error)]
+      evidence: compactSpatialQueryCaseEvidence(evidenceByIndex),
+      diagnostics: [...diagnostics, spatialQueryRuntimeDiagnostic(error)]
     };
   } finally {
     if (runtime) {
@@ -1018,14 +1030,49 @@ function spatialQueryCaseOperationDiagnostics(
     });
   }
 
-  for (const layerId of queryCase.layers ?? []) {
+  for (const [layerIndex, layerId] of (queryCase.layers ?? []).entries()) {
     const layer = input.skeleton.spec.layers.find((entry) => entry.id === layerId);
+    if (!layer) {
+      diagnostics.push({
+        severity: "error",
+        code: DiagnosticCodes.LayerNotFound,
+        message: `Spatial query case "${queryCase.id}" targets missing layer "${layerId}".`,
+        path: `/spatialQueries/cases/${index}/layers/${layerIndex}`,
+        relatedResources: [{ kind: "layer", id: layerId }],
+        fix: {
+          kind: "manual",
+          confidence: "high",
+          message: "Check the query layer id or omit layers to query all queryable layers."
+        }
+      });
+      continue;
+    }
+
+    if (layer.source && !input.skeleton.spec.sources[layer.source]) {
+      diagnostics.push({
+        severity: "error",
+        code: DiagnosticCodes.SourceNotFound,
+        message: `Spatial query case "${queryCase.id}" targets layer "${layerId}" with missing source "${layer.source}".`,
+        path: `/spatialQueries/cases/${index}/layers/${layerIndex}/source`,
+        relatedResources: [
+          { kind: "layer", id: layerId },
+          { kind: "source", id: layer.source }
+        ],
+        fix: {
+          kind: "manual",
+          confidence: "medium",
+          message: "Add the missing source or query a layer with an existing source."
+        }
+      });
+      continue;
+    }
+
     if (layer?.layout?.visibility === "none") {
       diagnostics.push({
         severity: "error",
         code: DiagnosticCodes.CapabilityUnsupported,
         message: `Spatial query case "${queryCase.id}" targets hidden layer "${layerId}".`,
-        path: `/spatialQueries/cases/${index}/layers`,
+        path: `/spatialQueries/cases/${index}/layers/${layerIndex}`,
         relatedResources: [{ kind: "layer", id: layerId }],
         fix: {
           kind: "manual",
@@ -1037,6 +1084,12 @@ function spatialQueryCaseOperationDiagnostics(
   }
 
   return diagnostics;
+}
+
+function compactSpatialQueryCaseEvidence(
+  evidenceByIndex: Array<GenerationSpatialQueryCaseEvidence | undefined>
+): GenerationSpatialQueryCaseEvidence[] {
+  return evidenceByIndex.filter((entry): entry is GenerationSpatialQueryCaseEvidence => entry !== undefined);
 }
 
 function emptySpatialQueryCaseEvidence(
@@ -1072,6 +1125,29 @@ function spatialQueryCaseEvidence(
     featureCount: result.features.length,
     passed: counts.error === 0,
     diagnosticCounts: counts
+  };
+}
+
+function spatialQueryEmptyResultDiagnostic(
+  spec: MapSpec,
+  readiness: SpatialSpecReadiness,
+  queryCase: SpatialQueryCaseInput,
+  index: number
+): Diagnostic {
+  return {
+    severity: "error",
+    code: DiagnosticCodes.CapabilityUnsupported,
+    message: `Spatial query case "${queryCase.id}" returned no features.`,
+    path: `/spatialQueries/cases/${index}/result`,
+    relatedResources: [
+      ...selectedLayerIdsForCase(spec, readiness, queryCase).map((layerId) => ({ kind: "layer" as const, id: layerId })),
+      ...selectedSourceIdsForCase(spec, readiness, queryCase).map((sourceId) => ({ kind: "source" as const, id: sourceId }))
+    ],
+    fix: {
+      kind: "manual",
+      confidence: "medium",
+      message: "Use a deterministic query case that returns at least one feature, or keep the case as blocked evidence."
+    }
   };
 }
 

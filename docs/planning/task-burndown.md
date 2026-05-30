@@ -290,7 +290,7 @@ IO, or stable SceneView3D runtime support.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | TASK-2026W23-SQH-001 | Freeze spatial query hardening boundary | P0 | `@product-strategist`, `@task-distributor` | done | `docs/planning/feature-specs/spatial-query-evidence-hardening.md`; `docs/planning/sprint-2026-W23-spatial-query-hardening.md`; `docs/reviews/sqh-001-spatial-query-hardening-boundary-2026-05-30.md` | point/bbox only; no MCP alias; no geoprocessing; no new source loader; no stable SceneView3D promotion | planning review; `pnpm test:docs`; `pnpm check`; `git diff --check` |
 | TASK-2026W23-SQH-002 | Add explicit query capability gate | P0 | `@engine-agent`, `@ai-agent` | done | `docs/reviews/sqh-002-query-capability-gate-2026-05-30.md`; `GenerationEvidenceBundleSchema.spatialQueryEvidence.capabilityGate`; AI regression tests | ready state requires adapter query capability or explicit waiver | `pnpm build:schema`; `pnpm test:schema-sync`; `pnpm test:commands`; `pnpm test:ai`; `pnpm check`; `git diff --check` |
-| TASK-2026W23-SQH-003 | Harden invalid point/bbox/source diagnostics | P1 | `@engine-agent`, `@qa-agent` | todo | invalid query/source fixture matrix | non-finite point, reversed bbox, missing/hidden layer/source, URL GeoJSON, PMTiles/vector unsupported source, and empty result cases have stable codes and paths | `pnpm test:commands`; `pnpm test:ai`; `pnpm check` |
+| TASK-2026W23-SQH-003 | Harden invalid point/bbox/source diagnostics | P1 | `@engine-agent`, `@qa-agent` | done | `docs/reviews/sqh-003-invalid-source-diagnostics-2026-05-30.md`; AI and adapter query diagnostic matrix | non-finite point, reversed bbox, missing/hidden layer/source, URL GeoJSON, PMTiles/vector unsupported source, and empty result cases have stable codes and paths | `pnpm test:commands`; `pnpm test:ai`; `pnpm test:adapter`; `pnpm check`; `git diff --check` |
 | TASK-2026W23-SQH-004 | Add result caps and deterministic fixture evidence | P1 | `@qa-agent` | todo | capped query evidence fixtures | result cap, feature count, layer/source ids, and diagnostic counts are recorded without unbounded payloads | `pnpm test:ai`; `pnpm test:commands`; perf smoke only if result-size logic changes |
 | TASK-2026W23-SQH-005 | Map hardened query evidence into generated-app delivery | P1 | `@ai-agent`, `@docs-agent` | todo | delivery `data-and-analysis` mapping | query ready/follow-up/blocked states are visible without prose parsing or MCP aliases | `pnpm test:ai`; `pnpm test:docs`; `pnpm check` |
 | TASK-2026W23-SQH-006 | Run quality gate and serialized planning closure | P1 | `@quality-guardian`, `@coordinator` | todo | gate report and planning closure | schema-first, command-only mutation, structured diagnostics, adapter boundary, resource policy, and frozen MCP tool names remain intact | `pnpm build:schema`; `pnpm check`; visual gate waived only with non-rendering rationale |
@@ -303,6 +303,10 @@ The next queued task is `SQH-002`.
 implemented in generation evidence and covered by
 `docs/reviews/sqh-002-query-capability-gate-2026-05-30.md`. The next queued
 task is `SQH-003`.
+
+2026-05-30 SQH-003 execution update: invalid point/bbox/source diagnostics are
+covered by `docs/reviews/sqh-003-invalid-source-diagnostics-2026-05-30.md`.
+The next queued task is `SQH-004`.
 
 ---
 

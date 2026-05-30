@@ -121,6 +121,31 @@ describe.each(adapters)("queryFeatures MVP in $name", ({ create }) => {
       })
     ]);
   });
+
+  it("reports one stable diagnostic for invalid query geometry", async () => {
+    const adapter = create();
+    await adapter.load(querySpec, { container: {} as HTMLElement });
+
+    const invalidPoint = await adapter.queryFeatures({ point: [Number.NaN, 10], layers: ["places-circle"] });
+    const reversedBbox = await adapter.queryFeatures({ bbox: [10, 10, 0, 0], layers: ["places-circle"] });
+
+    expect(invalidPoint.features).toEqual([]);
+    expect(invalidPoint.diagnostics).toEqual([
+      expect.objectContaining({
+        severity: "error",
+        code: "GEO.INVALID_COORDINATES",
+        path: "/point"
+      })
+    ]);
+    expect(reversedBbox.features).toEqual([]);
+    expect(reversedBbox.diagnostics).toEqual([
+      expect.objectContaining({
+        severity: "error",
+        code: "GEO.EMPTY_BBOX",
+        path: "/bbox"
+      })
+    ]);
+  });
 });
 
 function featureIds(result: FeatureQueryResult): string[] {

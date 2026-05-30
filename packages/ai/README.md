@@ -44,7 +44,9 @@ planner evidence, point/bbox spatial query evidence, snapshot evidence, export
 readiness, example manifest evidence, and structured diagnostics. Spatial query
 evidence includes a `capabilityGate` so point/bbox cases are ready only when the
 adapter declares matching query capability or an explicit waiver records the
-reason, approver, and follow-up task.
+reason, approver, and follow-up task. Invalid query geometry, missing/hidden
+layers, missing sources, unsupported URL/archive/vector sources, and empty
+results use stable case-local diagnostic paths under `/spatialQueries/cases`.
 `plannerEvidence` carries planner id, confidence, prompt/trace provenance,
 accepted and unsupported intent fields, source prompt hashes, and diagnostic
 counts. `exampleEvidence.generationEvidence` is the compact export manifest

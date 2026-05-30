@@ -116,8 +116,10 @@ function normalizeQuery(options: QueryFeaturesOptions): NormalizedQuery {
     diagnostics: [],
     valid: true
   };
+  const hasPoint = options.point !== undefined;
+  const hasBbox = options.bbox !== undefined;
 
-  if (options.point !== undefined) {
+  if (hasPoint) {
     if (isPoint(options.point)) {
       query.point = options.point;
     } else {
@@ -131,7 +133,7 @@ function normalizeQuery(options: QueryFeaturesOptions): NormalizedQuery {
     }
   }
 
-  if (options.bbox !== undefined) {
+  if (hasBbox) {
     if (isBbox(options.bbox)) {
       query.bbox = options.bbox;
     } else {
@@ -145,7 +147,7 @@ function normalizeQuery(options: QueryFeaturesOptions): NormalizedQuery {
     }
   }
 
-  if (!query.point && !query.bbox) {
+  if (!hasPoint && !hasBbox) {
     query.diagnostics.push({
       severity: "error",
       code: DiagnosticCodes.CapabilityUnsupported,

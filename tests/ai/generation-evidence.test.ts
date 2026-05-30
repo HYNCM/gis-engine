@@ -664,6 +664,271 @@ describe("generation evidence bundle", () => {
     );
   });
 
+  it("maps non-finite spatial query point input to stable geo diagnostics", async () => {
+    const skeleton = createSpatialQuerySkeleton("non-finite-query-point");
+
+    const response = await createGenerationEvidenceBundle({
+      promptHash: "sha256:non-finite-query-point",
+      skeleton,
+      capabilities: spatialQueryCapabilities,
+      spatialQueries: {
+        renderer: "mock",
+        cases: [
+          {
+            id: "bad-point",
+            operation: "point-query",
+            point: [Number.NaN, 30.28],
+            layers: ["incident-points"]
+          }
+        ]
+      }
+    });
+
+    expect(response.ok).toBe(true);
+    if (!response.ok) throw new Error("Expected non-finite point evidence to return structured diagnostics.");
+    expect(response.result.status).toBe("blocked");
+    expect(response.result.spatialQueryEvidence.cases).toEqual([
+      expect.objectContaining({
+        id: "bad-point",
+        passed: false,
+        featureCount: 0,
+        diagnosticCounts: { error: 1, warning: 0, info: 0 }
+      })
+    ]);
+    expect(response.result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: "GEO.INVALID_COORDINATES",
+        path: "/spatialQueries/cases/0/point"
+      })
+    );
+  });
+
+  it("blocks spatial query evidence for invalid bbox and empty-result cases", async () => {
+    const skeleton = createSpatialQuerySkeleton("invalid-query-geometry");
+
+    const response = await createGenerationEvidenceBundle({
+      promptHash: "sha256:invalid-query-geometry",
+      skeleton,
+      capabilities: spatialQueryCapabilities,
+      spatialQueries: {
+        renderer: "mock",
+        cases: [
+          {
+            id: "reversed-bbox",
+            operation: "bbox-query",
+            bbox: [120.2, 30.3, 120.1, 30.2],
+            layers: ["incident-points"]
+          },
+          {
+            id: "empty-point",
+            operation: "point-query",
+            point: [0, 0],
+            layers: ["incident-points"]
+          }
+        ]
+      }
+    });
+
+    expect(response.ok).toBe(true);
+    if (!response.ok) throw new Error("Expected invalid geometry evidence to return structured diagnostics.");
+    expect(response.result.status).toBe("blocked");
+    expect(response.result.spatialQueryEvidence).toMatchObject({
+      requested: true,
+      ready: false,
+      status: "blocked",
+      diagnosticCounts: { error: 2, warning: 0, info: 0 }
+    });
+    expect(response.result.spatialQueryEvidence.cases).toEqual([
+      expect.objectContaining({
+        id: "reversed-bbox",
+        passed: false,
+        featureCount: 0,
+        diagnosticCounts: { error: 1, warning: 0, info: 0 }
+      }),
+      expect.objectContaining({
+        id: "empty-point",
+        passed: false,
+        featureCount: 0,
+        diagnosticCounts: { error: 1, warning: 0, info: 0 }
+      })
+    ]);
+    expect(response.result.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          severity: "error",
+          code: "GEO.EMPTY_BBOX",
+          path: "/spatialQueries/cases/0/bbox"
+        }),
+        expect.objectContaining({
+          severity: "error",
+          code: "CAPABILITY.UNSUPPORTED",
+          path: "/spatialQueries/cases/1/result"
+        })
+      ])
+    );
+  });
+
+  it("blocks spatial query evidence with stable missing, hidden, and unsupported source paths", async () => {
+    const skeleton = createSpatialQuerySkeleton("invalid-query-sources", {
+      sources: {
+        incidents: inlineIncidentSource(),
+        remote: {
+          type: "geojson",
+          data: "./data/incidents.geojson"
+        },
+        archive: {
+          type: "pmtiles",
+          url: "pmtiles://local/incidents.pmtiles"
+        },
+        vector: {
+          type: "vector",
+          tiles: ["./tiles/{z}/{x}/{y}.pbf"]
+        }
+      },
+      layers: [
+        { id: "incident-points", type: "circle", source: "incidents" },
+        { id: "hidden-points", type: "circle", source: "incidents", layout: { visibility: "none" } },
+        { id: "remote-points", type: "circle", source: "remote" },
+        { id: "archive-points", type: "circle", source: "archive" },
+        { id: "vector-points", type: "circle", source: "vector" }
+      ]
+    });
+
+    const response = await createGenerationEvidenceBundle({
+      promptHash: "sha256:invalid-query-sources",
+      skeleton,
+      capabilities: spatialQueryCapabilities,
+      spatialQueries: {
+        renderer: "mock",
+        cases: [
+          {
+            id: "missing-layer",
+            operation: "point-query",
+            point: [120.15, 30.28],
+            layers: ["missing-layer"]
+          },
+          {
+            id: "hidden-layer",
+            operation: "point-query",
+            point: [120.15, 30.28],
+            layers: ["hidden-points"]
+          },
+          {
+            id: "url-geojson",
+            operation: "point-query",
+            point: [120.15, 30.28],
+            layers: ["remote-points"]
+          },
+          {
+            id: "pmtiles-source",
+            operation: "point-query",
+            point: [120.15, 30.28],
+            layers: ["archive-points"]
+          },
+          {
+            id: "vector-source",
+            operation: "point-query",
+            point: [120.15, 30.28],
+            layers: ["vector-points"]
+          }
+        ]
+      }
+    });
+
+    expect(response.ok).toBe(true);
+    if (!response.ok) throw new Error("Expected invalid source evidence to return structured diagnostics.");
+    expect(response.result.status).toBe("blocked");
+    expect(response.result.spatialQueryEvidence).toMatchObject({
+      requested: true,
+      ready: false,
+      status: "blocked",
+      queryableSourceIds: ["incidents"],
+      queryableLayerIds: ["incident-points"],
+      hiddenLayerIds: ["hidden-points"],
+      unsupportedSourceIds: ["archive", "remote", "vector"],
+      missingSourceIds: [],
+      diagnosticCounts: { error: 5, warning: 0, info: 0 }
+    });
+    expect(response.result.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          severity: "error",
+          code: "LAYER.NOT_FOUND",
+          path: "/spatialQueries/cases/0/layers/0"
+        }),
+        expect.objectContaining({
+          severity: "error",
+          code: "CAPABILITY.UNSUPPORTED",
+          path: "/spatialQueries/cases/1/layers/0"
+        }),
+        expect.objectContaining({
+          severity: "error",
+          code: "CAPABILITY.UNSUPPORTED",
+          path: "/spatialQueries/cases/2/sources/remote/data"
+        }),
+        expect.objectContaining({
+          severity: "error",
+          code: "CAPABILITY.UNSUPPORTED",
+          path: "/spatialQueries/cases/3/sources/archive/url"
+        }),
+        expect.objectContaining({
+          severity: "error",
+          code: "CAPABILITY.UNSUPPORTED",
+          path: "/spatialQueries/cases/4/sources/vector"
+        })
+      ])
+    );
+  });
+
+  it("reports stable spatial query case paths for layers with missing sources", async () => {
+    const skeleton = createSpatialQuerySkeleton("missing-query-source");
+    const tampered: MapGenerationCommandSkeleton = {
+      ...skeleton,
+      spec: {
+        ...skeleton.spec,
+        layers: [...skeleton.spec.layers, { id: "missing-source-layer", type: "circle", source: "missing-source" }]
+      }
+    };
+
+    const response = await createGenerationEvidenceBundle({
+      promptHash: "sha256:missing-query-source",
+      skeleton: tampered,
+      capabilities: spatialQueryCapabilities,
+      spatialQueries: {
+        renderer: "mock",
+        cases: [
+          {
+            id: "missing-source",
+            operation: "point-query",
+            point: [120.15, 30.28],
+            layers: ["missing-source-layer"]
+          }
+        ]
+      }
+    });
+
+    expect(response.ok).toBe(true);
+    if (!response.ok) throw new Error("Expected missing source evidence to return structured diagnostics.");
+    expect(response.result.status).toBe("blocked");
+    expect(response.result.spatialQueryEvidence).toMatchObject({
+      requested: true,
+      ready: false,
+      status: "blocked",
+      missingSourceIds: ["missing-source"],
+      diagnosticCounts: { error: 1, warning: 0, info: 0 }
+    });
+    expect(response.result.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          severity: "error",
+          code: "SRC.NOT_FOUND",
+          path: "/spatialQueries/cases/0/layers/0/source"
+        })
+      ])
+    );
+  });
+
   it("blocks generation evidence when planner diagnostics expose unsupported prompt intent", async () => {
     const plan = planMapGenerationRequest({
       promptHash: "sha256:raw-prompt",
@@ -1139,3 +1404,55 @@ describe("generation evidence bundle", () => {
     expect(validateBundle(response.result)).toBe(true);
   });
 });
+
+const spatialQueryCapabilities = {
+  renderer: "maplibre",
+  dimensions: ["2d"],
+  sources: ["geojson"],
+  layers: ["circle"],
+  expressions: [],
+  queries: ["point", "bbox"],
+  snapshot: {
+    supported: true,
+    formats: ["data-url"]
+  },
+  experimental: []
+} as const;
+
+function createSpatialQuerySkeleton(
+  id: string,
+  overrides: {
+    sources?: Record<string, unknown>;
+    layers?: Array<Record<string, unknown>>;
+  } = {}
+) {
+  return createMapGenerationCommandSkeleton({
+    mapId: id,
+    promptHash: `sha256:${id}`,
+    traceId: `trace-${id}`,
+    targetDomains: ["feature-display", "spatial-analysis"],
+    analysis: {
+      operations: ["point-query", "bbox-query"]
+    },
+    sources: overrides.sources ?? {
+      incidents: inlineIncidentSource()
+    },
+    layers: overrides.layers ?? [{ id: "incident-points", type: "circle", source: "incidents" }]
+  });
+}
+
+function inlineIncidentSource() {
+  return {
+    type: "geojson",
+    data: {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          properties: { id: "incident-1" },
+          geometry: { type: "Point", coordinates: [120.15, 30.28] }
+        }
+      ]
+    }
+  };
+}

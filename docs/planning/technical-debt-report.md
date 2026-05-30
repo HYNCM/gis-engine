@@ -90,17 +90,22 @@ cards。
 `passed`、`blocked`、`waived` 三态。剩余最高优先级债务转为 invalid
 point/bbox/source diagnostics。
 
+2026-05-30 SQH-003 update: invalid point/bbox/source diagnostics 已接入
+case-local evidence，覆盖 non-finite point、reversed bbox、missing/hidden
+layer/source、URL GeoJSON、PMTiles/vector unsupported source 和 empty result。
+剩余最高优先级债务转为 result caps and deterministic fixture evidence。
+
 ## 债务优先级
 
 | 排名 | 债务 | 得分 | 证据 | 建议修复 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | Invalid point/bbox/source diagnostics pending | 0.34 | `SQH-002` closed the explicit query capability gate; invalid points, reversed bboxes, missing or hidden layers/sources, unsupported source types, and empty results still need stable codes and paths | execute `TASK-2026W23-SQH-003` | high |
+| 1 | Result caps and deterministic fixtures pending | 0.34 | `SQH-003` closed invalid/source diagnostics; query evidence still needs explicit result caps and fixture guarantees before delivery mapping | execute `TASK-2026W23-SQH-004` | high |
 | 2 | MapLibre 6 drift audit pending | 0.24 | 2026-05-30 package checks confirm ongoing MapLibre/Mapbox drift pressure | run the existing MapLibre version-drift checklist before dependency movement | medium |
 
 ## 修复顺序
 
-1. 先执行 `TASK-2026W23-SQH-003`：为 invalid point/bbox/source cases 增加稳定 diagnostics。
-2. 后续再执行 result caps、delivery mapping 和 PMTiles archive metadata gate。
+1. 先执行 `TASK-2026W23-SQH-004`：为 query evidence 增加 result caps 和 deterministic fixture evidence。
+2. 后续再执行 delivery mapping 和 PMTiles archive metadata gate。
 3. 下一步若要推进 stable runtime promotion，必须先形成明确的 promotion
    rubric、browser matrix evidence 和 guardrail diagnostics，不得直接把
    `view.mode: "scene3d"` 视为稳定。
@@ -112,8 +117,9 @@ point/bbox/source diagnostics。
 
 ## 结论
 
-如果只做一件事，下一步优先执行 `TASK-2026W23-SQH-003`。Generated-app delivery
+如果只做一件事，下一步优先执行 `TASK-2026W23-SQH-004`。Generated-app delivery
 review fixtures、source readiness review cards、spatial-analysis review cards、
 prompt-to-delivery QA scenarios、docs/release wording guardrails、SQH boundary
-planning 和 explicit query capability gate 已完成。SceneView3D stable runtime
-仍保持 blocker state，直到新的 explicit approval arrives。
+planning、explicit query capability gate 和 invalid/source diagnostics 已完成。
+SceneView3D stable runtime 仍保持 blocker state，直到新的 explicit approval
+arrives。
