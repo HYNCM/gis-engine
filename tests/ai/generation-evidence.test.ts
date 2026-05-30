@@ -374,6 +374,11 @@ describe("generation evidence bundle", () => {
       blockedOperations: [],
       unsupportedOperations: ["aggregation", "buffer", "intersection", "overlay", "routing"],
       capabilityQueries: ["bbox", "point"],
+      capabilityGate: {
+        status: "passed",
+        requiredQueries: ["bbox", "point"],
+        providedQueries: ["bbox", "point"]
+      },
       queryableSourceIds: ["incidents"],
       queryableLayerIds: ["incident-points"],
       hiddenLayerIds: [],
@@ -429,6 +434,166 @@ describe("generation evidence bundle", () => {
     expect(response.result.toolSequence).not.toContain("spatial_query");
   });
 
+  it("blocks spatial query evidence when adapter query capabilities are not declared", async () => {
+    const skeleton = createMapGenerationCommandSkeleton({
+      mapId: "missing-query-capability",
+      promptHash: "sha256:missing-query-capability",
+      traceId: "trace-missing-query-capability",
+      targetDomains: ["feature-display", "spatial-analysis"],
+      analysis: {
+        operations: ["point-query"]
+      },
+      sources: {
+        incidents: {
+          type: "geojson",
+          data: {
+            type: "FeatureCollection",
+            features: [
+              {
+                type: "Feature",
+                properties: { id: "incident-1" },
+                geometry: { type: "Point", coordinates: [120.15, 30.28] }
+              }
+            ]
+          }
+        }
+      },
+      layers: [
+        {
+          id: "incident-points",
+          type: "circle",
+          source: "incidents"
+        }
+      ]
+    });
+
+    const response = await createGenerationEvidenceBundle({
+      promptHash: "sha256:missing-query-capability",
+      skeleton,
+      spatialQueries: {
+        renderer: "mock",
+        cases: [
+          {
+            id: "incident-point",
+            operation: "point-query",
+            point: [120.15, 30.28],
+            layers: ["incident-points"]
+          }
+        ]
+      }
+    });
+
+    expect(response.ok).toBe(true);
+    if (!response.ok) throw new Error("Expected missing capability evidence to return structured diagnostics.");
+    expect(response.result.status).toBe("blocked");
+    expect(response.result.spatialQueryEvidence).toMatchObject({
+      requested: true,
+      ready: false,
+      status: "blocked",
+      acceptedQueryOperations: ["point-query"],
+      capabilityQueries: [],
+      capabilityGate: {
+        status: "blocked",
+        requiredQueries: ["point"],
+        providedQueries: []
+      },
+      cases: [],
+      diagnosticCounts: { error: 1, warning: 0, info: 0 }
+    });
+    expect(response.result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: "CAPABILITY.UNSUPPORTED",
+        path: "/capabilities/queries"
+      })
+    );
+  });
+
+  it("allows spatial query evidence with an explicit capability waiver", async () => {
+    const skeleton = createMapGenerationCommandSkeleton({
+      mapId: "waived-query-capability",
+      promptHash: "sha256:waived-query-capability",
+      traceId: "trace-waived-query-capability",
+      targetDomains: ["feature-display", "spatial-analysis"],
+      analysis: {
+        operations: ["point-query"]
+      },
+      sources: {
+        incidents: {
+          type: "geojson",
+          data: {
+            type: "FeatureCollection",
+            features: [
+              {
+                type: "Feature",
+                properties: { id: "incident-1" },
+                geometry: { type: "Point", coordinates: [120.15, 30.28] }
+              }
+            ]
+          }
+        }
+      },
+      layers: [
+        {
+          id: "incident-points",
+          type: "circle",
+          source: "incidents"
+        }
+      ]
+    });
+
+    const response = await createGenerationEvidenceBundle({
+      promptHash: "sha256:waived-query-capability",
+      skeleton,
+      spatialQueries: {
+        renderer: "mock",
+        capabilityWaiver: {
+          reason: "Adapter query capability report is tracked by a follow-up hardening task.",
+          approvedBy: "@quality-guardian",
+          followUpTaskId: "TASK-2026W23-SQH-003"
+        },
+        cases: [
+          {
+            id: "incident-point",
+            operation: "point-query",
+            point: [120.15, 30.28],
+            layers: ["incident-points"]
+          }
+        ]
+      }
+    });
+
+    expect(response.ok).toBe(true);
+    if (!response.ok) throw new Error("Expected waived capability evidence bundle to succeed.");
+    expect(response.result.status).toBe("ready");
+    expect(response.result.spatialQueryEvidence).toMatchObject({
+      requested: true,
+      ready: true,
+      status: "ready",
+      acceptedQueryOperations: ["point-query"],
+      capabilityQueries: [],
+      capabilityGate: {
+        status: "waived",
+        requiredQueries: ["point"],
+        providedQueries: [],
+        waiver: {
+          reason: "Adapter query capability report is tracked by a follow-up hardening task.",
+          approvedBy: "@quality-guardian",
+          followUpTaskId: "TASK-2026W23-SQH-003"
+        }
+      },
+      diagnosticCounts: { error: 0, warning: 0, info: 0 }
+    });
+    expect(response.result.spatialQueryEvidence.cases).toEqual([
+      expect.objectContaining({
+        id: "incident-point",
+        operation: "point-query",
+        featureCount: 1,
+        passed: true
+      })
+    ]);
+  });
+
   it("blocks spatial query evidence when no deterministic query cases are provided", async () => {
     const skeleton = createMapGenerationCommandSkeleton({
       mapId: "missing-query-cases",
@@ -482,6 +647,11 @@ describe("generation evidence bundle", () => {
       ready: false,
       status: "blocked",
       acceptedQueryOperations: ["point-query"],
+      capabilityGate: {
+        status: "passed",
+        requiredQueries: ["point"],
+        providedQueries: ["point"]
+      },
       cases: [],
       diagnosticCounts: { error: 1, warning: 0, info: 0 }
     });

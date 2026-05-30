@@ -16,6 +16,7 @@ import {
   type CapabilityReport,
   type Diagnostic,
   type FeatureQueryResult,
+  type MapGenerationAnalysisEvidence,
   type MapGenerationCommandSkeleton,
   type MapGenerationAnalysisOperation,
   type MapGenerationPromptPlanFromSchema,
@@ -107,6 +108,29 @@ const SpatialQueryCaseSchema = {
   anyOf: [PointSpatialQueryCaseSchema, BboxSpatialQueryCaseSchema]
 } as const;
 
+const SpatialQueryCapabilityWaiverSchema = {
+  type: "object",
+  properties: {
+    reason: { type: "string", minLength: 1 },
+    approvedBy: { type: "string", minLength: 1 },
+    followUpTaskId: { type: "string", minLength: 1 }
+  },
+  required: ["reason", "approvedBy", "followUpTaskId"],
+  additionalProperties: false
+} as const;
+
+const SpatialQueryCapabilityGateSchema = {
+  type: "object",
+  properties: {
+    status: { type: "string", enum: ["passed", "waived", "blocked"] },
+    requiredQueries: { type: "array", items: { type: "string", enum: ["point", "bbox"] } },
+    providedQueries: { type: "array", items: { type: "string" } },
+    waiver: SpatialQueryCapabilityWaiverSchema
+  },
+  required: ["status", "requiredQueries", "providedQueries"],
+  additionalProperties: false
+} as const;
+
 const SpatialQueryCaseEvidenceSchema = {
   type: "object",
   properties: {
@@ -149,7 +173,8 @@ export const GenerationEvidenceBundleInputSchema = {
       type: "object",
       properties: {
         renderer: SnapshotSpecToolInputSchema.properties.renderer,
-        cases: { type: "array", items: SpatialQueryCaseSchema }
+        cases: { type: "array", items: SpatialQueryCaseSchema },
+        capabilityWaiver: SpatialQueryCapabilityWaiverSchema
       },
       required: ["cases"],
       additionalProperties: false
@@ -232,6 +257,7 @@ export const GenerationEvidenceBundleSchema = {
         blockedOperations: { type: "array", items: stripNestedIds(MapGenerationAnalysisOperationSchema) },
         unsupportedOperations: { type: "array", items: stripNestedIds(MapGenerationAnalysisOperationSchema) },
         capabilityQueries: { type: "array", items: { type: "string" } },
+        capabilityGate: SpatialQueryCapabilityGateSchema,
         queryableSourceIds: { type: "array", items: { type: "string" } },
         queryableLayerIds: { type: "array", items: { type: "string" } },
         hiddenLayerIds: { type: "array", items: { type: "string" } },
@@ -250,6 +276,7 @@ export const GenerationEvidenceBundleSchema = {
         "blockedOperations",
         "unsupportedOperations",
         "capabilityQueries",
+        "capabilityGate",
         "queryableSourceIds",
         "queryableLayerIds",
         "hiddenLayerIds",
@@ -343,6 +370,7 @@ export interface GenerationEvidenceBundleInput {
   spatialQueries?: {
     renderer?: "maplibre" | "mock";
     cases: SpatialQueryCaseInput[];
+    capabilityWaiver?: SpatialQueryCapabilityWaiver;
   };
   exampleId?: ExampleId;
 }
@@ -392,6 +420,19 @@ export type SpatialQueryCaseInput =
       layers?: string[];
     };
 
+export interface SpatialQueryCapabilityWaiver {
+  reason: string;
+  approvedBy: string;
+  followUpTaskId: string;
+}
+
+export interface SpatialQueryCapabilityGate {
+  status: "passed" | "waived" | "blocked";
+  requiredQueries: Array<"point" | "bbox">;
+  providedQueries: string[];
+  waiver?: SpatialQueryCapabilityWaiver;
+}
+
 export interface GenerationSpatialQueryCaseEvidence {
   id: string;
   operation: MapGenerationQueryReadinessOperation;
@@ -412,6 +453,7 @@ export interface GenerationSpatialQueryEvidence {
   blockedOperations: MapGenerationAnalysisOperation[];
   unsupportedOperations: MapGenerationAnalysisOperation[];
   capabilityQueries: string[];
+  capabilityGate: SpatialQueryCapabilityGate;
   queryableSourceIds: string[];
   queryableLayerIds: string[];
   hiddenLayerIds: string[];
@@ -757,6 +799,7 @@ async function buildSpatialQueryEvidence(
   const renderer = input.spatialQueries?.renderer ?? "mock";
   const capabilityQueries = unique(input.capabilities?.queries ?? []);
   const readiness = summarizeSpatialSpecReadiness(input.skeleton.spec);
+  const capabilityGate = buildSpatialQueryCapabilityGate(analysisEvidence, capabilityQueries, input.spatialQueries?.capabilityWaiver);
 
   if (!analysisEvidence.requested) {
     return {
@@ -769,6 +812,7 @@ async function buildSpatialQueryEvidence(
       blockedOperations: [],
       unsupportedOperations: unsupportedSpatialOperations,
       capabilityQueries,
+      capabilityGate,
       ...readiness,
       cases: [],
       diagnosticCounts: zeroDiagnosticCounts(),
@@ -776,7 +820,7 @@ async function buildSpatialQueryEvidence(
     };
   }
 
-  const setupDiagnostics = spatialQuerySetupDiagnostics(input, readiness, capabilityQueries);
+  const setupDiagnostics = spatialQuerySetupDiagnostics(input, readiness, capabilityGate);
   const cases =
     input.skeleton.status === "ready" && setupDiagnostics.every((diagnostic) => diagnostic.severity !== "error")
       ? await runSpatialQueryCases(input, readiness, renderer)
@@ -786,6 +830,7 @@ async function buildSpatialQueryEvidence(
   const caseEvidence = cases.evidence;
   const ready =
     analysisEvidence.status === "ready" &&
+    capabilityGate.status !== "blocked" &&
     diagnosticCounts.error === 0 &&
     analysisEvidence.acceptedQueryOperations.length > 0 &&
     caseEvidence.length > 0 &&
@@ -801,6 +846,7 @@ async function buildSpatialQueryEvidence(
     blockedOperations: analysisEvidence.blockedOperations,
     unsupportedOperations: unsupportedSpatialOperations,
     capabilityQueries,
+    capabilityGate,
     ...readiness,
     cases: caseEvidence,
     diagnosticCounts,
@@ -808,34 +854,69 @@ async function buildSpatialQueryEvidence(
   };
 }
 
+function buildSpatialQueryCapabilityGate(
+  analysisEvidence: MapGenerationAnalysisEvidence,
+  providedQueries: string[],
+  waiver: SpatialQueryCapabilityWaiver | undefined
+): SpatialQueryCapabilityGate {
+  if (!analysisEvidence.requested || analysisEvidence.acceptedQueryOperations.length === 0) {
+    return {
+      status: "passed",
+      requiredQueries: [],
+      providedQueries
+    };
+  }
+
+  const requiredQueries = uniqueSpatialQueryTypes(analysisEvidence.acceptedQueryOperations.map(queryTypeForAnalysisOperation));
+  const missingQueries = requiredQueries.filter((query) => !providedQueries.includes(query));
+  if (missingQueries.length === 0) {
+    return {
+      status: "passed",
+      requiredQueries,
+      providedQueries
+    };
+  }
+
+  if (waiver) {
+    return {
+      status: "waived",
+      requiredQueries,
+      providedQueries,
+      waiver
+    };
+  }
+
+  return {
+    status: "blocked",
+    requiredQueries,
+    providedQueries
+  };
+}
+
 function spatialQuerySetupDiagnostics(
   input: GenerationEvidenceBundleInput,
   readiness: SpatialSpecReadiness,
-  capabilityQueries: string[]
+  capabilityGate: SpatialQueryCapabilityGate
 ): Diagnostic[] {
   const analysisEvidence = input.skeleton.analysisEvidence;
   if (!analysisEvidence.requested || analysisEvidence.acceptedQueryOperations.length === 0) return [];
 
   const diagnostics: Diagnostic[] = [];
-  const requestedQueryTypes = unique(analysisEvidence.acceptedQueryOperations.map(queryTypeForAnalysisOperation));
   const cases = input.spatialQueries?.cases ?? [];
 
-  if (input.capabilities && capabilityQueries.length > 0) {
-    const missingCapabilities = requestedQueryTypes.filter((query) => !capabilityQueries.includes(query));
-    if (missingCapabilities.length > 0) {
-      diagnostics.push({
-        severity: "error",
-        code: DiagnosticCodes.CapabilityUnsupported,
-        message: `Spatial query evidence requires declared capability queries: ${missingCapabilities.join(", ")}.`,
-        path: "/capabilities/queries",
-        relatedResources: [{ kind: "adapter", id: input.capabilities.renderer }],
-        fix: {
-          kind: "manual",
-          confidence: "high",
-          message: "Declare point and bbox query capabilities only when the selected adapter can provide deterministic query evidence."
-        }
-      });
-    }
+  if (capabilityGate.status === "blocked") {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.CapabilityUnsupported,
+      message: `Spatial query evidence requires explicit adapter query capabilities or a waiver for: ${capabilityGate.requiredQueries.join(", ")}.`,
+      path: "/capabilities/queries",
+      relatedResources: input.capabilities ? [{ kind: "adapter", id: input.capabilities.renderer }] : [],
+      fix: {
+        kind: "manual",
+        confidence: "high",
+        message: "Declare point and bbox query capabilities for the adapter, or provide an explicit spatial query capability waiver with a follow-up task."
+      }
+    });
   }
 
   if (readiness.queryableLayerIds.length === 0) {
@@ -1623,6 +1704,10 @@ function zeroDiagnosticCounts(): Record<Diagnostic["severity"], number> {
 
 function unique(values: string[]): string[] {
   return Array.from(new Set(values)).sort();
+}
+
+function uniqueSpatialQueryTypes(values: Array<"point" | "bbox">): Array<"point" | "bbox"> {
+  return unique(values) as Array<"point" | "bbox">;
 }
 
 function isScene3DStableRuntimeBlockerCode(value: unknown): value is Scene3DStableRuntimeBlockerCode {

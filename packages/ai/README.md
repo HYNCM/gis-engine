@@ -41,7 +41,10 @@ get_context_summary -> validate_spec -> apply_commands -> snapshot_spec -> expor
 
 The bundle records the prompt hash, target domains, command replay evidence,
 planner evidence, point/bbox spatial query evidence, snapshot evidence, export
-readiness, example manifest evidence, and structured diagnostics.
+readiness, example manifest evidence, and structured diagnostics. Spatial query
+evidence includes a `capabilityGate` so point/bbox cases are ready only when the
+adapter declares matching query capability or an explicit waiver records the
+reason, approver, and follow-up task.
 `plannerEvidence` carries planner id, confidence, prompt/trace provenance,
 accepted and unsupported intent fields, source prompt hashes, and diagnostic
 counts. `exampleEvidence.generationEvidence` is the compact export manifest

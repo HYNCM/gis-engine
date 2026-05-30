@@ -44,7 +44,7 @@ change stable SceneView3D runtime status.
 
 | State | Query evidence | Delivery impact |
 | --- | --- | --- |
-| ready | Inline GeoJSON point/bbox evidence has explicit query capability, valid inputs, bounded result counts, and no blocking diagnostics. | `data-and-analysis` can be ready. |
+| ready | Inline GeoJSON point/bbox evidence has explicit query capability or an explicit waiver, valid inputs, bounded result counts, and no blocking diagnostics. | `data-and-analysis` can be ready. |
 | follow-up-required | The request is valid but source/query support needs a future adapter, parser, or fixture hardening task. | Delivery can be follow-up-required with concrete next task ids. |
 | needs-confirmation | Query evidence depends on future high-risk IO such as fetch, archive parse, worker use, or file writes. | Delivery must expose confirmation reasons before treating the app as ready. |
 | blocked | The prompt asks for unsupported geoprocessing or blocked source behavior. | Delivery must stay blocked with stable diagnostic paths and operation/source ids. |
@@ -53,7 +53,8 @@ change stable SceneView3D runtime status.
 
 1. `SQH-001`: freeze this boundary and open the sprint DAG.
 2. `SQH-002`: add an explicit query capability gate to generation/query
-   evidence.
+   evidence. Completed by
+   `docs/reviews/sqh-002-query-capability-gate-2026-05-30.md`.
 3. `SQH-003`: harden invalid point/bbox/source diagnostics.
 4. `SQH-004`: add result caps and deterministic fixture evidence.
 5. `SQH-005`: map hardened query evidence into generated-app delivery.

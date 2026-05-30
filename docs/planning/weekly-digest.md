@@ -91,7 +91,8 @@ Console batch is closed and the next move is a fresh planning loop.
 2026-05-30 post-GIR planning update: the planning loop refreshed package and
 official-source evidence again and opened **Spatial Query Evidence Hardening**
 as the next sprint. `SQH-001` freezes the point/bbox-only boundary and is
-complete; execution should move to `TASK-2026W23-SQH-002`.
+complete. `SQH-002` adds the explicit query capability gate; execution should
+move to `TASK-2026W23-SQH-003`.
 
 ## Current Signals
 
@@ -107,7 +108,7 @@ complete; execution should move to `TASK-2026W23-SQH-002`.
 | product-strategist | AIN delivery states are schema-testable, but the user-facing review console is still missing | Open Generated App Review Console as the next productized delivery slice | high |
 | competitive-intel | 2026-05-30 npm checks show ArcGIS AI packages at 5.0.19, MapLibre at 5.24.0, Mapbox GL JS at 3.24.0, Cesium at 1.141.0, and 3DTilesRendererJS at 0.4.27 | Keep natural-language app generation, source readiness, and adapter-local SceneView3D evidence as the main pressure points | high |
 | competitive-intel | Post-GIR checks keep PMTiles, GeoParquet, FlatGeobuf, GeoTIFF, GeoZarr, MCP output schemas, and ArcGIS agentic app pressure visible | Harden point/bbox query evidence before adding new loaders, geoprocessing, or MCP aliases | high |
-| product-strategist | GIR is closed and the weakest accepted boundary is now spatial query evidence | Open Spatial Query Evidence Hardening and keep SQH-002 focused on explicit query capability gates | high |
+| product-strategist | GIR is closed and the weakest accepted boundary is now spatial query evidence | Keep Spatial Query Evidence Hardening focused on SQH-003 invalid/source diagnostics after the explicit capability gate | high |
 | adapter-agent | Lifecycle diagnostics now include `/runtime/not-loaded/{operation}` and `/runtime/destroyed/{operation}` | AI/debug tooling can identify failure state without parsing diagnostic messages | high |
 
 ## Decisions
@@ -162,7 +163,8 @@ complete; execution should move to `TASK-2026W23-SQH-002`.
 | TASK-2026W22-GIR-005 | done | `docs/reviews/gir-005-prompt-to-delivery-qa-scenarios-2026-05-30.md`; prompt-to-delivery QA scenarios |
 | TASK-2026W22-GIR-006 | done | `docs/reviews/gir-006-public-wording-release-guardrails-2026-05-30.md`; release wording guardrail docs and tests |
 | TASK-2026W23-SQH-001 | done | `docs/planning/feature-specs/spatial-query-evidence-hardening.md`; `docs/planning/sprint-2026-W23-spatial-query-hardening.md`; `docs/reviews/sqh-001-spatial-query-hardening-boundary-2026-05-30.md` |
-| TASK-2026W23-SQH-002 | todo | query capability gate; next queued execution task |
+| TASK-2026W23-SQH-002 | done | `docs/reviews/sqh-002-query-capability-gate-2026-05-30.md`; `spatialQueryEvidence.capabilityGate` |
+| TASK-2026W23-SQH-003 | queued | invalid point/bbox/source diagnostics; next execution task |
 
 ## Next Handoff
 
@@ -187,6 +189,6 @@ complete; execution should move to `TASK-2026W23-SQH-002`.
   `@task-distributor`: `TASK-2026W22-GIR-006` is done, so return to planning
   state and open the next evidence-backed task batch only after refreshed
   signals are recorded.
-- `@engine-agent` / `@ai-agent`: take `TASK-2026W23-SQH-002` next. Keep the
-  slice to explicit query capability gates and waivers; do not add a public
+- `@engine-agent` / `@qa-agent`: take `TASK-2026W23-SQH-003` next. Keep the
+  slice to invalid point/bbox/source diagnostics; do not add a public
   `spatial_query` tool or unsupported source parsing.
