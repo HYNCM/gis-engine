@@ -108,17 +108,20 @@ serialized planning closure。
 `docs/reviews/sqh-006-quality-gate-closure-2026-05-31.md` 关闭。SQH 当前批次不再
 保留实现债务；下一步回到 planning state。
 
+2026-05-31 planning refresh: MapLibre Source Drift Audit 已打开，`MLD-001`
+完成边界和 sprint DAG。MapLibre/Mapbox drift 债务转入 `MLD-002` execution。
+
 ## 债务优先级
 
 | 排名 | 债务 | 得分 | 证据 | 建议修复 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | MapLibre 6 drift audit pending | 0.24 | 2026-05-30 package checks confirm ongoing MapLibre/Mapbox drift pressure | run the existing MapLibre version-drift checklist before dependency movement | medium |
+| 1 | MapLibre source drift audit pending | 0.24 | 2026-05-31 package checks confirm MapLibre 5.24.0 stable plus v6 prerelease line and Mapbox PMTiles source pressure | execute `TASK-2026W22-MLD-002` before dependency movement | high |
 | 2 | Next planning loop pending | 0.18 | Generated App Review Console and Spatial Query Evidence Hardening are both closed; new implementation work needs refreshed evidence first | run competitive-intel, product-strategist, coordinator, and task-distributor | high |
 
 ## 修复顺序
 
-1. 先回到 planning state：刷新竞品、产品设计和任务 DAG。
-2. 后续再按刷新后的计划决定是否执行 MapLibre drift audit 或 PMTiles archive metadata gate。
+1. 先执行 `TASK-2026W22-MLD-002`：审计 adapter/source compatibility against drift signals。
+2. 后续再按 MLD gate 结果决定是否执行 PMTiles archive metadata gate 或 package movement。
 3. 下一步若要推进 stable runtime promotion，必须先形成明确的 promotion
    rubric、browser matrix evidence 和 guardrail diagnostics，不得直接把
    `view.mode: "scene3d"` 视为稳定。
@@ -130,10 +133,11 @@ serialized planning closure。
 
 ## 结论
 
-如果只做一件事，下一步优先回到 planning state。Generated-app delivery
+如果只做一件事，下一步优先执行 `TASK-2026W22-MLD-002`。Generated-app delivery
 review fixtures、source readiness review cards、spatial-analysis review cards、
 prompt-to-delivery QA scenarios、docs/release wording guardrails、SQH boundary
 planning、explicit query capability gate 和 invalid/source diagnostics 已完成。
 Result caps and deterministic fixture hashes 以及 generated-app delivery query
-mapping、quality gate and closure 也已完成。SceneView3D stable
+mapping、quality gate and closure 也已完成。MapLibre Source Drift Audit 已进入
+执行队列。SceneView3D stable
 runtime 仍保持 blocker state，直到新的 explicit approval arrives。

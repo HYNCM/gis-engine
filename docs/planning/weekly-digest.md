@@ -168,6 +168,8 @@ move to `TASK-2026W23-SQH-003`.
 | TASK-2026W23-SQH-004 | done | `docs/reviews/sqh-004-result-caps-fixtures-2026-05-30.md`; result caps and fixture hashes |
 | TASK-2026W23-SQH-005 | done | `docs/reviews/sqh-005-delivery-mapping-2026-05-31.md`; `delivery.spatialQueryReadiness` |
 | TASK-2026W23-SQH-006 | done | `docs/reviews/sqh-006-quality-gate-closure-2026-05-31.md`; quality gate pass and closure |
+| TASK-2026W22-MLD-001 | done | `docs/planning/feature-specs/maplibre-source-drift-audit.md`; `docs/planning/sprint-2026-W22-maplibre-source-drift-audit.md` |
+| TASK-2026W22-MLD-002 | queued | adapter/source compatibility audit; next execution task |
 
 ## Next Handoff
 
@@ -193,6 +195,8 @@ move to `TASK-2026W23-SQH-003`.
   state and open the next evidence-backed task batch only after refreshed
   signals are recorded.
 - `@coordinator`, `@competitive-intel`, `@product-strategist`, and
-  `@task-distributor`: return to planning state. Refresh external evidence,
-  product priorities, and the next task DAG before opening another
-  implementation slice.
+  `@task-distributor`: planning refresh is recorded by `MLD-001`; use the MLD
+  DAG as the active next task batch.
+- `@engine-agent` / `@qa-agent`: take `TASK-2026W22-MLD-002` next. Audit
+  adapter/source compatibility against MapLibre drift signals without package
+  upgrades, hidden fetches, MCP aliases, or source parser promotion.

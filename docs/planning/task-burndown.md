@@ -322,6 +322,22 @@ Spatial Query Evidence Hardening sprint is serialized closed by
 `docs/reviews/sqh-006-quality-gate-closure-2026-05-31.md`. The workstream now
 returns to planning state for refreshed competitive/product/task inputs.
 
+## 2026-W22 MapLibre Source Drift Audit
+
+2026-05-31 planning update: refreshed package evidence keeps MapLibre/Mapbox
+source drift as the next bounded product slice. This sprint audits compatibility
+before any dependency movement and does not add MCP aliases, PMTiles archive
+parsing, vector decoding, hidden fetches, or stable SceneView3D runtime support.
+
+| id | title | priority | owner | status | evidence target | acceptance | finish gates |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| TASK-2026W22-MLD-001 | Freeze MapLibre source drift audit boundary | P0 | `@product-strategist`, `@task-distributor` | done | `docs/planning/feature-specs/maplibre-source-drift-audit.md`; `docs/planning/sprint-2026-W22-maplibre-source-drift-audit.md` | audit scope excludes package upgrades, MCP aliases, PMTiles archive parsing, vector decoding, and stable SceneView3D promotion | planning review; `pnpm test:docs`; `pnpm check`; `git diff --check` |
+| TASK-2026W22-MLD-002 | Audit adapter and source compatibility against drift signals | P0 | `@engine-agent`, `@qa-agent` | todo | adapter/source compatibility report | transformer, MapLibre adapter, query, vector, PMTiles, and fill-extrusion fixtures are compared against current package metadata and drift assumptions | `pnpm test:adapter`; `pnpm test:resources`; `pnpm test:snapshot:smoke`; `pnpm check` |
+| TASK-2026W22-MLD-003 | Map resource policy and delivery evidence for source drift | P1 | `@engine-agent`, `@ai-agent`, `@docs-agent` | todo | resource/delivery evidence report | generated-app delivery and resource-policy docs name exact PMTiles/vector boundaries without archive parsing or hidden fetches | `pnpm test:resources`; `pnpm test:ai`; `pnpm test:docs`; `pnpm check` |
+| TASK-2026W22-MLD-004 | Publish MapLibre drift Go-No-go gate | P1 | `@quality-guardian`, `@coordinator` | todo | quality gate report | no-go, conditional, or go-candidate decision names visual snapshot requirements before dependency movement | `pnpm build:schema`; `pnpm check`; visual gate or explicit non-rendering waiver |
+
+The next queued task is `MLD-002`.
+
 ---
 
 ## Evolution Tracking

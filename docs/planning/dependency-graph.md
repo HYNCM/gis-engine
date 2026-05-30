@@ -272,6 +272,10 @@ diagnostic matrix; `SQH-004` is complete as result-cap fixture evidence;
 as the quality gate and serialized closure. The next edge returns to planning
 state before any new implementation task is opened.
 
+2026-05-31 planning update: the next edge is MapLibre Source Drift Audit.
+`MLD-001` is complete as boundary/spec/DAG planning; `MLD-002` is the next
+queued execution task.
+
 ```mermaid
 flowchart LR
   A["TASK-2026W23-SQH-001 boundary spec"]
@@ -290,6 +294,21 @@ flowchart LR
 | TASK-2026W23-SQH-004 | SQH-003 | result caps and fixtures | `pnpm build:schema`; `pnpm test:schema-sync`; `pnpm test:ai`; `pnpm test:commands`; `pnpm check`; `git diff --check` | done |
 | TASK-2026W23-SQH-005 | SQH-004 | generated-app delivery mapping | `pnpm build:schema`; `pnpm test:schema-sync`; `pnpm test:ai`; `pnpm test:docs`; `pnpm check`; `git diff --check` | done |
 | TASK-2026W23-SQH-006 | SQH-005 | quality gate and closure | `pnpm build:schema`; `pnpm test:schema-sync`; `pnpm test:ai`; `pnpm test:docs`; `pnpm check`; visual waiver rationale if non-rendering | done |
+
+```mermaid
+flowchart LR
+  A["TASK-2026W22-MLD-001 boundary and DAG"]
+  A --> B["TASK-2026W22-MLD-002 adapter/source compatibility"]
+  B --> C["TASK-2026W22-MLD-003 resource and delivery evidence"]
+  C --> D["TASK-2026W22-MLD-004 smoke/visual Go-No-go"]
+```
+
+| Task | Depends On | Evidence Target | Required Finish Gate | Status Rule |
+| --- | --- | --- | --- | --- |
+| TASK-2026W22-MLD-001 | SQH-006 | boundary spec and sprint DAG | planning review; `pnpm test:docs`; `pnpm check`; `git diff --check` | done |
+| TASK-2026W22-MLD-002 | MLD-001 | adapter/source compatibility report | `pnpm test:adapter`; `pnpm test:resources`; `pnpm test:snapshot:smoke`; `pnpm check` | queued P0 |
+| TASK-2026W22-MLD-003 | MLD-002 | resource and delivery evidence | `pnpm test:resources`; `pnpm test:ai`; `pnpm test:docs`; `pnpm check` | todo |
+| TASK-2026W22-MLD-004 | MLD-003 | package movement Go-No-go | `pnpm build:schema`; `pnpm check`; visual gate or waiver rationale | todo |
 
 ## 阻断规则
 

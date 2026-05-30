@@ -1,8 +1,8 @@
 ---
 agent: competitive-intel
 period: 2026-W22
-generated_at: 2026-05-30T05:32:28Z
-repo_revision: "374248689630327c1df2360fbcea684eaadc2c31"
+generated_at: 2026-05-30T19:16:41Z
+repo_revision: "8609e5f"
 inputs:
   - https://github.com/maplibre/maplibre-gl-js/releases
   - https://maplibre.org/maplibre-style-spec/
@@ -47,6 +47,8 @@ inputs:
   - command: npm view cesium version time.modified --json
   - command: npm view three version time.modified --json
   - command: npm view 3d-tiles-renderer version time.modified --json
+  - command: npm view deck.gl version time.modified --json
+  - command: npm view maplibre-gl versions --json
 owner: "@competitive-intel"
 decision_level: advisory
 ---
@@ -261,4 +263,42 @@ stable SceneView3D runtime remain blocked.
   should open the Generated App Review Console sprint. It must use the
   existing MCP tools, preserve side-effect boundaries, and keep unsupported
   source/spatial/scene capabilities blocked.
+- Confidence: high.
+
+## 2026-05-31 Post-SQH Planning Refresh
+
+Checked on 2026-05-31 local time after `SQH-001` through `SQH-006` closed.
+No external signal justifies reopening spatial-query hardening or relaxing the
+current `spatial_query` MCP-tool freeze. The next product slice should instead
+audit renderer/source drift before any `maplibre-gl` package movement.
+
+| Source | Current Signal | Planning Impact | Confidence |
+| --- | --- | --- | --- |
+| MapLibre GL JS | `npm view` reports `maplibre-gl` 5.24.0 modified 2026-05-21, and the package version list includes `6.0.0-4` through `6.0.0-11` prereleases. | Open a MapLibre drift audit before dependency movement; check ESM/module, WebGL2, style transform, worker/resource, query, smoke, and visual gates. | high |
+| Mapbox GL JS | `npm view` reports `mapbox-gl` 3.24.0 modified 2026-05-18, and Mapbox keeps a PMTiles vector-source example in official docs. | Keep PMTiles/vector source compatibility evidence release-gated; do not infer archive parsing or feature-query support. | high |
+| ArcGIS Maps SDK / AI components | `@arcgis/core` and `@arcgis/ai-components` both report 5.0.19 on 2026-05-30. | Agentic map UX pressure remains current; GIS Engine should answer through evidence-first generated-app handoff rather than hidden runtime side effects. | high |
+| 3D ecosystem | `cesium` 1.141.0, `three` 0.184.0, `3d-tiles-renderer` 0.4.27, and deck.gl 9.3.2 remain active package lines. | Keep SceneView3D stable runtime blocked until a future gate accepts real renderer evidence. | high |
+| Cloud-native data | `pmtiles` 4.4.1, `flatgeobuf` 4.4.0, and GeoParquet 1.1 remain the current source-readiness pressure set. | Source promotion should start from schema/resource-policy/manifest gates, not direct parser implementation. | high |
+| MCP / structured tool contracts | `@modelcontextprotocol/sdk` reports 1.29.0; tool contracts continue to use structured schemas. | Keep the existing seven snake_case MCP tools and output schemas as the public contract. | high |
+
+### Recommended Follow-Up Task Batch
+
+### [P0] Open MapLibre Source Drift Audit
+
+- Evidence: MapLibre 5.24.0 is current stable while v6 prereleases are visible
+  in the package line; Mapbox PMTiles vector-source examples remain official.
+- Impact: 2D rendering reliability, generated-style compatibility, source
+  policy, and release evidence.
+- Action: `@product-strategist` and `@task-distributor` should open a bounded
+  MapLibre Source Drift Audit sprint before dependency movement.
+- Confidence: high.
+
+### [P1] Keep PMTiles Archive Metadata Behind A Promotion Gate
+
+- Evidence: PMTiles package/docs pressure remains current, but SQH and GIR
+  gates intentionally avoid archive parsing, worker startup, hidden fetches, or
+  query-runtime claims.
+- Impact: cloud-native data readiness and resource policy.
+- Action: keep PMTiles archive metadata as a separate promotion candidate after
+  the MapLibre drift audit names transformer/resource implications.
 - Confidence: high.
