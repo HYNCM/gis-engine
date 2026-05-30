@@ -9,6 +9,9 @@ const commandJson = document.querySelector("#command-json");
 const revisionReadout = document.querySelector("#revision-readout");
 const cameraReadout = document.querySelector("#camera-readout");
 const resetButton = document.querySelector("#reset-button");
+const shell = document.querySelector(".workbench-shell");
+const chatPanelToggle = document.querySelector("#toggle-chat-panel");
+const evidencePanelToggle = document.querySelector("#toggle-evidence-panel");
 
 let map;
 
@@ -26,6 +29,7 @@ init().catch((error) => {
 });
 
 async function init() {
+  initSidebarControls();
   appendMessage("assistant", "Ready. Try changing point color, point size, or the Hangzhou camera.");
   renderFeatureQuery({ features: [], diagnostics: [] });
   document.querySelectorAll("[data-prompt]").forEach((button) => {
@@ -51,6 +55,34 @@ async function init() {
 
   const state = await fetchJson("/api/state");
   applyPayload(state);
+}
+
+function initSidebarControls() {
+  restoreSidebarState("left", chatPanelToggle);
+  restoreSidebarState("right", evidencePanelToggle);
+
+  chatPanelToggle.addEventListener("click", () => toggleSidebar("left", chatPanelToggle));
+  evidencePanelToggle.addEventListener("click", () => toggleSidebar("right", evidencePanelToggle));
+}
+
+function restoreSidebarState(side, button) {
+  const collapsed = localStorage.getItem(`workbench-${side}-collapsed`) === "true";
+  setSidebarCollapsed(side, button, collapsed);
+}
+
+function toggleSidebar(side, button) {
+  const collapsed = !shell.classList.contains(`${side}-collapsed`);
+  setSidebarCollapsed(side, button, collapsed);
+  localStorage.setItem(`workbench-${side}-collapsed`, String(collapsed));
+}
+
+function setSidebarCollapsed(side, button, collapsed) {
+  shell.classList.toggle(`${side}-collapsed`, collapsed);
+  button.setAttribute("aria-expanded", String(!collapsed));
+  button.setAttribute("aria-label", collapsed ? `Expand ${side} sidebar` : `Collapse ${side} sidebar`);
+  requestAnimationFrame(() => {
+    map?.resize?.();
+  });
 }
 
 async function submitPrompt(message) {
@@ -100,7 +132,7 @@ function renderMap(payload) {
 
 async function queryMapFeatures(lngLat) {
   const zoom = map?.getZoom?.() ?? 11;
-  const tolerance = Math.max(0.004, 0.05 / Math.max(1, 2 ** (zoom - 10)));
+  const tolerance = Math.max(0.012, 0.08 / Math.max(1, 2 ** (zoom - 10)));
   const payload = await postJson("/api/query", {
     bbox: [lngLat.lng - tolerance, lngLat.lat - tolerance, lngLat.lng + tolerance, lngLat.lat + tolerance],
     layers: ["poi-circles"]
@@ -163,7 +195,7 @@ function renderFeatureQuery(query) {
     const empty = document.createElement("p");
     empty.className = "empty-state";
     empty.textContent =
-      diagnostics.length > 0 ? `Query returned ${diagnostics.length} diagnostic(s).` : "Click a point to inspect feature data.";
+      diagnostics.length > 0 ? `Query returned ${diagnostics.length} diagnostic(s).` : "No feature selected.";
     featureQuery.replaceChildren(empty);
     return;
   }
