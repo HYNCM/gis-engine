@@ -1,4 +1,5 @@
 import { Ajv } from "ajv/dist/ajv.js";
+import { createHash } from "node:crypto";
 import {
   CapabilityReportSchema,
   DiagnosticCodes,
@@ -68,6 +69,8 @@ const DiagnosticCountsSchema = {
   required: ["error", "warning", "info"],
   additionalProperties: false
 } as const;
+
+const DEFAULT_SPATIAL_QUERY_RESULT_LIMIT = 100;
 
 const PlannerConfidenceSchema = {
   type: "object",
@@ -139,10 +142,24 @@ const SpatialQueryCaseEvidenceSchema = {
     layerIds: { type: "array", items: { type: "string" } },
     sourceIds: { type: "array", items: { type: "string" } },
     featureCount: { type: "number" },
+    resultLimit: { type: "number" },
+    resultTruncated: { type: "boolean" },
+    fixtureHash: { type: "string", minLength: 1 },
     passed: { type: "boolean" },
     diagnosticCounts: DiagnosticCountsSchema
   },
-  required: ["id", "operation", "layerIds", "sourceIds", "featureCount", "passed", "diagnosticCounts"],
+  required: [
+    "id",
+    "operation",
+    "layerIds",
+    "sourceIds",
+    "featureCount",
+    "resultLimit",
+    "resultTruncated",
+    "fixtureHash",
+    "passed",
+    "diagnosticCounts"
+  ],
   additionalProperties: false
 } as const;
 
@@ -439,6 +456,9 @@ export interface GenerationSpatialQueryCaseEvidence {
   layerIds: string[];
   sourceIds: string[];
   featureCount: number;
+  resultLimit: number;
+  resultTruncated: boolean;
+  fixtureHash: string;
   passed: boolean;
   diagnosticCounts: Record<Diagnostic["severity"], number>;
 }
@@ -800,6 +820,7 @@ async function buildSpatialQueryEvidence(
   const capabilityQueries = unique(input.capabilities?.queries ?? []);
   const readiness = summarizeSpatialSpecReadiness(input.skeleton.spec);
   const capabilityGate = buildSpatialQueryCapabilityGate(analysisEvidence, capabilityQueries, input.spatialQueries?.capabilityWaiver);
+  const resultLimit = DEFAULT_SPATIAL_QUERY_RESULT_LIMIT;
 
   if (!analysisEvidence.requested) {
     return {
@@ -823,7 +844,7 @@ async function buildSpatialQueryEvidence(
   const setupDiagnostics = spatialQuerySetupDiagnostics(input, readiness, capabilityGate);
   const cases =
     input.skeleton.status === "ready" && setupDiagnostics.every((diagnostic) => diagnostic.severity !== "error")
-      ? await runSpatialQueryCases(input, readiness, renderer)
+      ? await runSpatialQueryCases(input, readiness, renderer, resultLimit)
       : { evidence: [], diagnostics: [] };
   const diagnostics = [...setupDiagnostics, ...cases.diagnostics];
   const diagnosticCounts = countDiagnostics([...analysisEvidence.diagnostics, ...diagnostics]);
@@ -953,7 +974,8 @@ function spatialQuerySetupDiagnostics(
 async function runSpatialQueryCases(
   input: GenerationEvidenceBundleInput,
   readiness: SpatialSpecReadiness,
-  renderer: "maplibre" | "mock"
+  renderer: "maplibre" | "mock",
+  resultLimit: number
 ): Promise<{ evidence: GenerationSpatialQueryCaseEvidence[]; diagnostics: Diagnostic[] }> {
   const cases = input.spatialQueries?.cases ?? [];
   if (cases.length === 0) return { evidence: [], diagnostics: [] };
@@ -966,7 +988,7 @@ async function runSpatialQueryCases(
     const operationDiagnostics = spatialQueryCaseOperationDiagnostics(input, queryCase, index);
     if (operationDiagnostics.length > 0) {
       diagnostics.push(...operationDiagnostics);
-      evidenceByIndex[index] = emptySpatialQueryCaseEvidence(input.skeleton.spec, readiness, queryCase, operationDiagnostics);
+      evidenceByIndex[index] = emptySpatialQueryCaseEvidence(input.skeleton.spec, readiness, queryCase, operationDiagnostics, resultLimit);
     } else {
       pendingCases.push({ queryCase, index });
     }
@@ -992,7 +1014,7 @@ async function runSpatialQueryCases(
         caseDiagnostics.push(spatialQueryEmptyResultDiagnostic(input.skeleton.spec, readiness, queryCase, index));
       }
       diagnostics.push(...caseDiagnostics);
-      evidenceByIndex[index] = spatialQueryCaseEvidence(input.skeleton.spec, readiness, queryCase, result, caseDiagnostics);
+      evidenceByIndex[index] = spatialQueryCaseEvidence(input.skeleton.spec, readiness, queryCase, result, caseDiagnostics, resultLimit);
     }
 
     return { evidence: compactSpatialQueryCaseEvidence(evidenceByIndex), diagnostics };
@@ -1096,7 +1118,8 @@ function emptySpatialQueryCaseEvidence(
   spec: MapSpec,
   readiness: SpatialSpecReadiness,
   queryCase: SpatialQueryCaseInput,
-  diagnostics: Diagnostic[]
+  diagnostics: Diagnostic[],
+  resultLimit: number
 ): GenerationSpatialQueryCaseEvidence {
   return {
     id: queryCase.id,
@@ -1104,6 +1127,9 @@ function emptySpatialQueryCaseEvidence(
     layerIds: selectedLayerIdsForCase(spec, readiness, queryCase),
     sourceIds: selectedSourceIdsForCase(spec, readiness, queryCase),
     featureCount: 0,
+    resultLimit,
+    resultTruncated: false,
+    fixtureHash: spatialQueryFixtureHash(spec, readiness, queryCase, resultLimit),
     passed: false,
     diagnosticCounts: countDiagnostics(diagnostics)
   };
@@ -1114,7 +1140,8 @@ function spatialQueryCaseEvidence(
   readiness: SpatialSpecReadiness,
   queryCase: SpatialQueryCaseInput,
   result: FeatureQueryResult,
-  diagnostics: Diagnostic[]
+  diagnostics: Diagnostic[],
+  resultLimit: number
 ): GenerationSpatialQueryCaseEvidence {
   const counts = countDiagnostics(diagnostics);
   return {
@@ -1123,9 +1150,25 @@ function spatialQueryCaseEvidence(
     layerIds: selectedLayerIdsForCase(spec, readiness, queryCase),
     sourceIds: selectedSourceIdsForCase(spec, readiness, queryCase),
     featureCount: result.features.length,
+    resultLimit,
+    resultTruncated: result.features.length > resultLimit,
+    fixtureHash: spatialQueryFixtureHash(spec, readiness, queryCase, resultLimit),
     passed: counts.error === 0,
     diagnosticCounts: counts
   };
+}
+
+function spatialQueryFixtureHash(spec: MapSpec, readiness: SpatialSpecReadiness, queryCase: SpatialQueryCaseInput, resultLimit: number): string {
+  const fixture = {
+    id: queryCase.id,
+    operation: queryCase.operation,
+    query: queryCase.operation === "point-query" ? { point: queryCase.point } : { bbox: queryCase.bbox },
+    requestedLayerIds: queryCase.layers ?? [],
+    layerIds: selectedLayerIdsForCase(spec, readiness, queryCase),
+    sourceIds: selectedSourceIdsForCase(spec, readiness, queryCase),
+    resultLimit
+  };
+  return `sha256:${createHash("sha256").update(JSON.stringify(fixture)).digest("hex")}`;
 }
 
 function spatialQueryEmptyResultDiagnostic(

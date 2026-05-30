@@ -57,7 +57,8 @@ change stable SceneView3D runtime status.
    `docs/reviews/sqh-002-query-capability-gate-2026-05-30.md`.
 3. `SQH-003`: harden invalid point/bbox/source diagnostics. Completed by
    `docs/reviews/sqh-003-invalid-source-diagnostics-2026-05-30.md`.
-4. `SQH-004`: add result caps and deterministic fixture evidence.
+4. `SQH-004`: add result caps and deterministic fixture evidence. Completed by
+   `docs/reviews/sqh-004-result-caps-fixtures-2026-05-30.md`.
 5. `SQH-005`: map hardened query evidence into generated-app delivery.
 6. `SQH-006`: run the quality gate and serialize planning closure.
 

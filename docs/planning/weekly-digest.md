@@ -165,7 +165,8 @@ move to `TASK-2026W23-SQH-003`.
 | TASK-2026W23-SQH-001 | done | `docs/planning/feature-specs/spatial-query-evidence-hardening.md`; `docs/planning/sprint-2026-W23-spatial-query-hardening.md`; `docs/reviews/sqh-001-spatial-query-hardening-boundary-2026-05-30.md` |
 | TASK-2026W23-SQH-002 | done | `docs/reviews/sqh-002-query-capability-gate-2026-05-30.md`; `spatialQueryEvidence.capabilityGate` |
 | TASK-2026W23-SQH-003 | done | `docs/reviews/sqh-003-invalid-source-diagnostics-2026-05-30.md`; invalid/source diagnostic matrix |
-| TASK-2026W23-SQH-004 | queued | result caps and deterministic fixtures; next execution task |
+| TASK-2026W23-SQH-004 | done | `docs/reviews/sqh-004-result-caps-fixtures-2026-05-30.md`; result caps and fixture hashes |
+| TASK-2026W23-SQH-005 | queued | generated-app delivery mapping; next execution task |
 
 ## Next Handoff
 
@@ -190,6 +191,6 @@ move to `TASK-2026W23-SQH-003`.
   `@task-distributor`: `TASK-2026W22-GIR-006` is done, so return to planning
   state and open the next evidence-backed task batch only after refreshed
   signals are recorded.
-- `@qa-agent`: take `TASK-2026W23-SQH-004` next. Keep the slice to result caps
-  and deterministic fixture evidence; do not add a public
-  `spatial_query` tool or unsupported source parsing.
+- `@ai-agent` / `@docs-agent`: take `TASK-2026W23-SQH-005` next. Keep the
+  slice to generated-app delivery mapping; do not add a public `spatial_query`
+  tool or unsupported source parsing.

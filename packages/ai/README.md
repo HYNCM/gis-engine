@@ -47,6 +47,9 @@ adapter declares matching query capability or an explicit waiver records the
 reason, approver, and follow-up task. Invalid query geometry, missing/hidden
 layers, missing sources, unsupported URL/archive/vector sources, and empty
 results use stable case-local diagnostic paths under `/spatialQueries/cases`.
+Each spatial query case also records bounded result metadata through
+`resultLimit`, `resultTruncated`, and a deterministic `fixtureHash`, while
+keeping raw feature payloads out of evidence and generated-app summaries.
 `plannerEvidence` carries planner id, confidence, prompt/trace provenance,
 accepted and unsupported intent fields, source prompt hashes, and diagnostic
 counts. `exampleEvidence.generationEvidence` is the compact export manifest

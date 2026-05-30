@@ -434,6 +434,56 @@ describe("generation evidence bundle", () => {
     expect(response.result.toolSequence).not.toContain("spatial_query");
   });
 
+  it("records capped deterministic spatial query fixture evidence without feature payloads", async () => {
+    const skeleton = createSpatialQuerySkeleton("capped-query-fixture", {
+      sources: {
+        incidents: inlineIncidentSource(105)
+      }
+    });
+    const input = {
+      promptHash: "sha256:capped-query-fixture",
+      skeleton,
+      capabilities: spatialQueryCapabilities,
+      spatialQueries: {
+        renderer: "mock" as const,
+        cases: [
+          {
+            id: "capped-point",
+            operation: "point-query" as const,
+            point: [120.15, 30.28] as [number, number],
+            layers: ["incident-points"]
+          }
+        ]
+      }
+    };
+
+    const first = await createGenerationEvidenceBundle(input);
+    const second = await createGenerationEvidenceBundle(input);
+
+    expect(first.ok).toBe(true);
+    expect(second.ok).toBe(true);
+    if (!first.ok || !second.ok) throw new Error("Expected capped fixture evidence bundles to succeed.");
+    expect(first.result.status).toBe("ready");
+    expect(first.result.spatialQueryEvidence.cases).toEqual([
+      expect.objectContaining({
+        id: "capped-point",
+        layerIds: ["incident-points"],
+        sourceIds: ["incidents"],
+        featureCount: 105,
+        resultLimit: 100,
+        resultTruncated: true,
+        passed: true,
+        diagnosticCounts: { error: 0, warning: 0, info: 0 }
+      })
+    ]);
+    const [firstCase] = first.result.spatialQueryEvidence.cases;
+    const [secondCase] = second.result.spatialQueryEvidence.cases;
+    expect(firstCase?.fixtureHash).toMatch(/^sha256:[a-f0-9]{64}$/);
+    expect(secondCase?.fixtureHash).toBe(firstCase?.fixtureHash);
+    expect(firstCase).not.toHaveProperty("features");
+    expect(JSON.stringify(first.result.exampleEvidence.generationEvidence)).not.toContain("FeatureCollection");
+  });
+
   it("blocks spatial query evidence when adapter query capabilities are not declared", async () => {
     const skeleton = createMapGenerationCommandSkeleton({
       mapId: "missing-query-capability",
@@ -1441,18 +1491,16 @@ function createSpatialQuerySkeleton(
   });
 }
 
-function inlineIncidentSource() {
+function inlineIncidentSource(featureCount = 1) {
   return {
     type: "geojson",
     data: {
       type: "FeatureCollection",
-      features: [
-        {
-          type: "Feature",
-          properties: { id: "incident-1" },
-          geometry: { type: "Point", coordinates: [120.15, 30.28] }
-        }
-      ]
+      features: Array.from({ length: featureCount }, (_, index) => ({
+        type: "Feature",
+        properties: { id: `incident-${index + 1}` },
+        geometry: { type: "Point", coordinates: [120.15, 30.28] }
+      }))
     }
   };
 }
