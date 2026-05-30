@@ -565,6 +565,94 @@ Adapter Evidence Cycle:
 7. `coordinator` updates planning state and decides whether the capability can
    move from scaffold to beta.
 
+## Evolution Ecosystem
+
+The multi-agent system itself is a product that continuously improves through
+metric-driven feedback loops, self-calibrating rules, and accumulated knowledge.
+This section defines how the agent ecosystem evolves over time.
+
+**Core document**: `docs/planning/evolution-framework.md` — full evolution
+dimensions, metrics, self-adjustment rules, and governance.
+
+**Tracking ledger**: `docs/planning/evolution-ledger.md` — weekly snapshots,
+monthly trends, pattern library, pitfall library, and rule change log.
+
+### Evolution Dimensions
+
+The system tracks six dimensions of its own performance and self-adjusts:
+
+| Dim | Name | Self-Adjusts |
+| --- | --- | --- |
+| D1 | Estimation accuracy | Complexity-hour baselines per agent |
+| D2 | Bottleneck detection | Dependency sequencing, pre-freeze suggestions |
+| D3 | Quality trend | Gate thresholds, pre-commit hooks |
+| D4 | Knowledge accumulation | Pattern library, pitfall library |
+| D5 | Dynamic responsibility | Agent load distribution by product stage |
+| D6 | Decision weight calibration | Priority formula coefficients |
+
+### Evolution Cadence
+
+The evolution cycle runs alongside the existing daily/weekly/monthly cadences:
+
+| Layer | Cadence | Trigger | Output |
+| --- | --- | --- | --- |
+| L1 Operational | Weekly | `agent-weekly.yml` evolution job | Metric snapshot appended to evolution ledger; anomaly alerts |
+| L2 Strategic | Monthly | Coordinator evolution review | Trend report; auto-suggested rule adjustments; coordinator approval |
+| L3 Structural | Per product stage | Stage promotion decision | Responsibility redistribution review; AGENTS.md update proposals |
+
+### Evolution Guardian
+
+`evolution-guardian` is not a separate agent — it is a **responsibility subset
+of `coordinator`**. Once per month, coordinator performs an evolution review:
+
+1. Collect D1–D6 metrics for the past 4 weeks.
+2. Generate trend report with auto-suggested adjustments.
+3. Compare key indicators against the previous month.
+4. Flag structural changes requiring human decision.
+5. Update the evolution ledger.
+
+### Self-Adjustment Authority
+
+| Change type | Auto/Manual | Approver | Rollback |
+| --- | --- | --- | --- |
+| Estimation baseline tweak (< 2×) | Auto | None needed | Auto-revert after 4 weeks no improvement |
+| Gate threshold adjustment | Auto-suggest | Coordinator | Manual revert |
+| Weight micro-adjustment (< 0.05) | Auto-suggest | Coordinator | Manual revert |
+| Responsibility redistribution | Auto-suggest | Coordinator + product-strategist | Manual revert |
+| Agent create/merge/delete | Manual proposal | Coordinator + product-strategist | Git revert |
+| AGENTS.md structural change | Manual proposal | Coordinator | Git revert |
+
+### Safety Boundaries
+
+The following are **never** auto-modified:
+
+- Repository Rules (schema-first, command-only mutation, etc.)
+- Gate core semantics (no downgrading snapshot gates to advisory)
+- MCP tool names and contracts
+- Resource-policy security boundaries
+- Product-stage promotion decisions (always human Go/No-go)
+
+### Knowledge Accumulation
+
+Completed tasks feed two growing libraries stored in the evolution ledger:
+
+- **Pattern Library**: Reusable design patterns extracted from tasks.
+  Patterns reused 3+ times are promoted to "verified" and pre-filled in
+  new task templates.
+- **Pitfall Library**: Common mistakes observed in rework and gate failures.
+  Code-reviewer checks new diffs against known pitfalls.
+
+At least one new pattern or pitfall should be extracted per sprint.
+
+### Invocation
+
+```txt
+@coordinator 生成本月进化趋势报告
+@coordinator 审查当前估算基准是否需要校准
+@coordinator 检查 W23-W26 瓶颈复发模式
+@task-distributor 为新任务推荐匹配的设计模式
+```
+
 ## Invocation Examples
 
 ```txt
@@ -621,6 +709,7 @@ front matter. When it does not, use these rows as human/Codex routing guidance.
 | `qa-agent` | coding-browser-qa | medium | producing deterministic smoke, browser visual, fixture, and release-runner evidence |
 | `product-strategist`, `task-distributor` | planning-coding | medium | translating approved evidence into roadmap scores, task DAGs, owner splits, and dependencies |
 | `docs-agent` | efficient-docs | low to medium | aligning documentation, links, release notes, and planning ledgers after evidence exists |
+| `evolution-guardian` (coordinator subset) | frontier-planning | medium to high | monthly evolution reviews: analyzing 4-week metric trends, auto-suggesting rule adjustments, calibrating estimation baselines and decision weights |
 
 Escalate to a stronger tier when a lower-tier run finds a P0/P1 risk, when
 external evidence conflicts, when the task touches security/resource policy, or
@@ -648,6 +737,7 @@ agent owns its follow-up maintenance.
 | Auto-fix pipeline | `.github/workflows/auto-fix.yml` | Diagnoses and auto-fixes schema sync, test, and doc link issues on PR |
 | Agent runner | `scripts/agent-runner.mjs` | CLI tool to invoke any agent locally or in CI |
 | Doc generator | `scripts/doc-generator.mjs` | Auto-generates changelog entries, feature matrix, API skeleton, and link audits |
+| Evolution collector | `scripts/evolution-collector.mjs` | Collects D1-D6 metrics from sprint artifacts, generates evolution ledger entries, and detects anomalies |
 | Report templates | `.github/agent-templates/README.md` | Standardized report structure for each agent type |
 
 ### GitHub Actions Workflow Summary
@@ -837,7 +927,10 @@ To activate the automation infrastructure for the first time:
 - [x] `.github/workflows/auto-fix.yml` — CI auto-fix pipeline
 - [x] `scripts/agent-runner.mjs` — Agent invocation CLI
 - [x] `scripts/doc-generator.mjs` — Documentation auto-generator
+- [x] `scripts/evolution-collector.mjs` — Evolution metrics collector (D1-D6 + anomaly detection)
 - [x] `.github/agent-templates/README.md` — Report templates
+- [x] `docs/planning/evolution-framework.md` — Self-evolving ecosystem framework
+- [x] `docs/planning/evolution-ledger.md` — Evolution tracking ledger
 - [ ] GitHub Actions enabled in repository settings
 - [ ] `secrets.GITHUB_TOKEN` has write permissions for auto-commit
 - [ ] Branch protection rules allow bot commits to `docs/reviews/` and `docs/planning/`

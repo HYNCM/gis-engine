@@ -67,6 +67,10 @@ jobs:
           echo "period: ${WEEK}" >> "${REPORT_PATH}"
           echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "${REPORT_PATH}"
           echo "repo_revision: \"${{ github.sha }}\"" >> "${REPORT_PATH}"
+          echo "inputs:" >> "${REPORT_PATH}"
+          echo "  - AGENTS.md" >> "${REPORT_PATH}"
+          echo "  - docs/research/capability-scorecard.md" >> "${REPORT_PATH}"
+          echo "owner: \"@competitive-intel\"" >> "${REPORT_PATH}"
           echo "decision_level: info" >> "${REPORT_PATH}"
           echo "---" >> "${REPORT_PATH}"
           echo "" >> "${REPORT_PATH}"
@@ -135,6 +139,10 @@ jobs:
           echo "period: ${DATE}" >> docs/planning/technical-debt-report.md
           echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> docs/planning/technical-debt-report.md
           echo "repo_revision: \"${{ github.sha }}\"" >> docs/planning/technical-debt-report.md
+          echo "inputs:" >> docs/planning/technical-debt-report.md
+          echo "  - AGENTS.md" >> docs/planning/technical-debt-report.md
+          echo "  - /tmp/debt-signals.txt" >> docs/planning/technical-debt-report.md
+          echo "owner: \"@product-strategist\"" >> docs/planning/technical-debt-report.md
           echo "decision_level: info" >> docs/planning/technical-debt-report.md
           echo "---" >> docs/planning/technical-debt-report.md
           echo "" >> docs/planning/technical-debt-report.md
@@ -174,6 +182,11 @@ jobs:
           echo "period: ${WEEK}" >> docs/planning/weekly-digest.md
           echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> docs/planning/weekly-digest.md
           echo "repo_revision: \"${{ github.sha }}\"" >> docs/planning/weekly-digest.md
+          echo "inputs:" >> docs/planning/weekly-digest.md
+          echo "  - AGENTS.md" >> docs/planning/weekly-digest.md
+          echo "  - docs/research/competitor-updates-${WEEK}.md" >> docs/planning/weekly-digest.md
+          echo "  - docs/planning/technical-debt-report.md" >> docs/planning/weekly-digest.md
+          echo "owner: \"@coordinator\"" >> docs/planning/weekly-digest.md
           echo "decision_level: info" >> docs/planning/weekly-digest.md
           echo "---" >> docs/planning/weekly-digest.md
           echo "" >> docs/planning/weekly-digest.md
@@ -216,6 +229,57 @@ jobs:
           path: weekly-artifacts/
           if-no-files-found: error
 
+  # ── Job 4.5: 进化度量收集 ──
+  evolution-collector:
+    name: "evolution-guardian: D1-D6 度量收集"
+    runs-on: ubuntu-latest
+    needs: [task-distributor]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: 运行进化度量收集并更新账本
+        env:
+          WEEK_OVERRIDE: ${{ github.event.inputs.week }}
+        run: |
+          WEEK=$(date -u +%G-W%V)
+          if [ -n "${WEEK_OVERRIDE}" ]; then
+            WEEK="${WEEK_OVERRIDE}"
+          fi
+          set +e
+          node scripts/evolution-collector.mjs --week "${WEEK}" 2>&1 | tee /tmp/evolution-output.txt
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          if [ "${STATUS}" -eq 1 ]; then
+            echo "::warning::evolution-collector detected metric anomalies; see weekly-evolution-collector artifact"
+          elif [ "${STATUS}" -ne 0 ]; then
+            exit "${STATUS}"
+          fi
+
+      - name: 收集进化账本 artifact
+        run: |
+          mkdir -p weekly-artifacts/docs/planning
+          mkdir -p weekly-artifacts/evidence
+          cp docs/planning/evolution-ledger.md weekly-artifacts/docs/planning/evolution-ledger.md
+          cp /tmp/evolution-output.txt weekly-artifacts/evidence/evolution-output.txt
+
+      - name: 上传进化度量 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-evolution-collector
+          path: weekly-artifacts/
+          if-no-files-found: error
+
   # ── Job 5: 单写入者序列化提交 ──
   coordinator-commit:
     name: "coordinator: 序列化提交 weekly artifacts"
@@ -225,6 +289,7 @@ jobs:
       - product-strategist
       - coordinator
       - task-distributor
+      - evolution-collector
     steps:
       - uses: actions/checkout@v4
 
@@ -238,6 +303,6 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "docs: weekly agent artifacts for ${{ github.event.inputs.week || 'current week' }}"
-          file_pattern: "docs/research/competitor-updates-*.md docs/planning/technical-debt-report.md docs/planning/weekly-digest.md docs/planning/task-burndown.md docs/planning/dependency-graph.md"
+          file_pattern: "docs/research/competitor-updates-*.md docs/planning/technical-debt-report.md docs/planning/weekly-digest.md docs/planning/task-burndown.md docs/planning/dependency-graph.md docs/planning/evolution-ledger.md"
           commit_user_name: "coordinator[bot]"
           commit_user_email: "coordinator[bot]@gis-engine.dev"

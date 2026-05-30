@@ -33,7 +33,8 @@ const AGENT_REGISTRY = {
     modelPolicy: {
       tier: "frontier-planning",
       reasoningEffort: "high",
-      routingNote: "Use for cross-agent conflict resolution, roadmap tradeoffs, and Go/No-go planning state."
+      routingNote:
+        "Use for cross-agent conflict resolution, roadmap tradeoffs, and Go/No-go planning state.",
     },
     outputDir: "docs/planning",
     outputFile: "weekly-digest.md",
@@ -46,7 +47,8 @@ const AGENT_REGISTRY = {
     modelPolicy: {
       tier: "frontier-research",
       reasoningEffort: "high",
-      routingNote: "Use when dated external releases, standards, or dependency changes can alter roadmap priority."
+      routingNote:
+        "Use when dated external releases, standards, or dependency changes can alter roadmap priority.",
     },
     outputDir: "docs/research",
     outputFile: (period) => `competitor-updates-${period}.md`,
@@ -59,7 +61,8 @@ const AGENT_REGISTRY = {
     modelPolicy: {
       tier: "coding-review",
       reasoningEffort: "high",
-      routingNote: "Use for architecture, schema, diagnostics, resource-policy, and regression risk review."
+      routingNote:
+        "Use for architecture, schema, diagnostics, resource-policy, and regression risk review.",
     },
     outputDir: "docs/reviews",
     outputFile: (period) => `daily-audit-${period}.md`,
@@ -72,7 +75,8 @@ const AGENT_REGISTRY = {
     modelPolicy: {
       tier: "frontier-product",
       reasoningEffort: "medium",
-      routingNote: "Use for product scoring, user-value tradeoffs, and next-sprint roadmap synthesis."
+      routingNote:
+        "Use for product scoring, user-value tradeoffs, and next-sprint roadmap synthesis.",
     },
     outputDir: "docs/planning",
     outputFile: "monthly-roadmap.md",
@@ -85,7 +89,8 @@ const AGENT_REGISTRY = {
     modelPolicy: {
       tier: "planning-coding",
       reasoningEffort: "medium",
-      routingNote: "Use for owner split, DAG updates, task sequencing, and serialized planning state."
+      routingNote:
+        "Use for owner split, DAG updates, task sequencing, and serialized planning state.",
     },
     outputDir: "docs/planning",
     outputFile: "task-burndown.md",
@@ -98,7 +103,8 @@ const AGENT_REGISTRY = {
     modelPolicy: {
       tier: "frontier-quality",
       reasoningEffort: "high",
-      routingNote: "Use for blocking merge/release gate decisions and waiver review."
+      routingNote:
+        "Use for blocking merge/release gate decisions and waiver review.",
     },
     outputDir: "docs/reviews",
     outputFile: (period) => `quality-gate-${period}.md`,
@@ -117,7 +123,8 @@ const AGENT_REGISTRY = {
     modelPolicy: {
       tier: "efficient-docs",
       reasoningEffort: "low",
-      routingNote: "Use for documentation consistency, link audits, and release-note alignment after evidence exists."
+      routingNote:
+        "Use for documentation consistency, link audits, and release-note alignment after evidence exists.",
     },
     outputDir: "docs/reviews",
     outputFile: (period) => `documentation-audit-${period}.md`,
@@ -130,7 +137,8 @@ const AGENT_REGISTRY = {
     modelPolicy: {
       tier: "coding-implementation",
       reasoningEffort: "high",
-      routingNote: "Use for adapter-local implementation, renderer evidence APIs, and dependency-boundary work."
+      routingNote:
+        "Use for adapter-local implementation, renderer evidence APIs, and dependency-boundary work.",
     },
     outputDir: "docs/reviews",
     outputFile: (period) => `adapter-report-${period}.md`,
@@ -146,7 +154,8 @@ const AGENT_REGISTRY = {
     modelPolicy: {
       tier: "coding-browser-qa",
       reasoningEffort: "medium",
-      routingNote: "Use for deterministic smoke, browser visual evidence, fixtures, and release-runner reports."
+      routingNote:
+        "Use for deterministic smoke, browser visual evidence, fixtures, and release-runner reports.",
     },
     outputDir: "docs/reviews",
     outputFile: (period) => `qa-evidence-${period}.md`,
@@ -163,7 +172,8 @@ const AGENT_REGISTRY = {
     modelPolicy: {
       tier: "coding-ai-contract",
       reasoningEffort: "high",
-      routingNote: "Use for MCP schemas, context summaries, output schemas, and AI-facing diagnostics."
+      routingNote:
+        "Use for MCP schemas, context summaries, output schemas, and AI-facing diagnostics.",
     },
     outputDir: "docs/reviews",
     outputFile: (period) => `ai-contract-audit-${period}.md`,
@@ -176,7 +186,8 @@ const AGENT_REGISTRY = {
     modelPolicy: {
       tier: "coding-contract",
       reasoningEffort: "high",
-      routingNote: "Use for TypeBox schemas, commands, diagnostics, resource policy, and runtime contracts."
+      routingNote:
+        "Use for TypeBox schemas, commands, diagnostics, resource policy, and runtime contracts.",
     },
     outputDir: "docs/reviews",
     outputFile: (period) => `engine-contract-delta-${period}.md`,
@@ -188,6 +199,22 @@ const AGENT_REGISTRY = {
       "pnpm test:patch",
       "pnpm test:runtime",
     ],
+    gateDecisionLevel: "advisory",
+  },
+  "evolution-guardian": {
+    role: "self-evolving ecosystem metrics collector (coordinator subset)",
+    period: "weekly",
+    reportAgent: "coordinator",
+    owner: "@coordinator (evolution-guardian)",
+    modelPolicy: {
+      tier: "frontier-planning",
+      reasoningEffort: "medium",
+      routingNote:
+        "Use for monthly evolution reviews: analyzing 4-week metric trends, auto-suggesting rule adjustments, calibrating estimation baselines and decision weights.",
+    },
+    outputDir: "docs/planning",
+    outputFile: (period) => `evolution-review-${period}.md`,
+    gates: [],
     gateDecisionLevel: "advisory",
   },
 };
@@ -203,7 +230,9 @@ function getDateStr() {
 /** 获取当前周字符串 */
 function getWeekStr() {
   const d = new Date();
-  const utcDate = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const utcDate = new Date(
+    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
+  );
   const day = utcDate.getUTCDay() || 7;
   utcDate.setUTCDate(utcDate.getUTCDate() + 4 - day);
   const isoYear = utcDate.getUTCFullYear();
@@ -247,9 +276,11 @@ function formatGateOutput(output) {
 function generateFrontMatter(agentName, agentDef, period, gateResults) {
   const now = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
   const decisionLevel = getReportDecisionLevel();
+  const reportAgent = agentDef.reportAgent ?? agentName;
+  const owner = agentDef.owner ?? `@${agentName}`;
   return [
     "---",
-    `agent: ${agentName}`,
+    `agent: ${reportAgent}`,
     `period: ${period}`,
     `generated_at: ${now}`,
     `repo_revision: "${getGitSha()}"`,
@@ -260,7 +291,7 @@ function generateFrontMatter(agentName, agentDef, period, gateResults) {
     `  tier: ${agentDef.modelPolicy?.tier ?? "default"}`,
     `  reasoning_effort: ${agentDef.modelPolicy?.reasoningEffort ?? "medium"}`,
     `  note: "${agentDef.modelPolicy?.routingNote ?? "Use the inherited automation model unless a task-specific override is approved."}"`,
-    `owner: "@${agentName}"`,
+    `owner: "${owner}"`,
     `decision_level: ${decisionLevel}`,
     "---",
     "",
@@ -299,13 +330,13 @@ function generateReport(agentName, agentDef, period, gateResults) {
   lines.push("## Automation Notice");
   lines.push("");
   lines.push(
-    `This file is automation-generated evidence/template output from \`scripts/agent-runner.mjs\`. It is not a completed ${agentName} specialist review.`
+    `This file is automation-generated evidence/template output from \`scripts/agent-runner.mjs\`. It is not a completed ${agentName} specialist review.`,
   );
   lines.push(
-    "Treat the front matter `decision_level` as `info`. CI exit codes and job status may indicate failed machine gates, but an agent or human must add substantive analysis before this report can support advisory, release, or merge decisions."
+    "Treat the front matter `decision_level` as `info`. CI exit codes and job status may indicate failed machine gates, but an agent or human must add substantive analysis before this report can support advisory, release, or merge decisions.",
   );
   lines.push(
-    "The `model_policy` front matter is routing guidance for human/Codex orchestration; it does not make a report current, sourced, or merge-ready by itself."
+    "The `model_policy` front matter is routing guidance for human/Codex orchestration; it does not make a report current, sourced, or merge-ready by itself.",
   );
   lines.push("");
 
@@ -336,21 +367,23 @@ function generateReport(agentName, agentDef, period, gateResults) {
   } else {
     lines.push("## Machine Gate Evidence");
     lines.push("");
-    lines.push("No gates were run by this invocation. This report is template-only evidence.");
+    lines.push(
+      "No gates were run by this invocation. This report is template-only evidence.",
+    );
     lines.push("");
   }
 
   lines.push("## Specialist Analysis Required");
   lines.push("");
   lines.push(
-    "<!-- Add evidence-backed findings, impact, required actions, owners, and confidence before using this as an advisory or blocking agent report. -->"
+    "<!-- Add evidence-backed findings, impact, required actions, owners, and confidence before using this as an advisory or blocking agent report. -->",
   );
   lines.push("");
 
   lines.push("## Handoff Required");
   lines.push("");
   lines.push(
-    "<!-- Add accepted follow-up tasks, downstream owners, and target artifacts after specialist review. -->"
+    "<!-- Add accepted follow-up tasks, downstream owners, and target artifacts after specialist review. -->",
   );
   lines.push("");
 
@@ -436,8 +469,10 @@ Agent Runner — GIS Engine 多智能体调用脚本
     // 确定周期
     let period = options.period;
     if (!period) {
-      if (periodType === "daily" || def.period === "daily") period = getDateStr();
-      else if (periodType === "weekly" || def.period === "weekly") period = getWeekStr();
+      if (periodType === "daily" || def.period === "daily")
+        period = getDateStr();
+      else if (periodType === "weekly" || def.period === "weekly")
+        period = getWeekStr();
       else if (def.period === "monthly") period = getMonthStr();
       else period = getDateStr();
     }
@@ -446,7 +481,7 @@ Agent Runner — GIS Engine 多智能体调用脚本
     console.log(`   角色: ${def.role}`);
     console.log(`   周期: ${period}`);
     console.log(
-      `   模型路由: ${def.modelPolicy?.tier ?? "default"} / ${def.modelPolicy?.reasoningEffort ?? "medium"}`
+      `   模型路由: ${def.modelPolicy?.tier ?? "default"} / ${def.modelPolicy?.reasoningEffort ?? "medium"}`,
     );
 
     // 运行门禁
@@ -465,7 +500,9 @@ Agent Runner — GIS Engine 多智能体调用脚本
 
     // 写入输出文件
     const outputFile =
-      typeof def.outputFile === "function" ? def.outputFile(period) : def.outputFile;
+      typeof def.outputFile === "function"
+        ? def.outputFile(period)
+        : def.outputFile;
     const outputPath = join(ROOT, def.outputDir, outputFile);
     if (options.dryRun) {
       console.log(`   📄 (dry-run) 将生成报告: ${outputPath}`);
