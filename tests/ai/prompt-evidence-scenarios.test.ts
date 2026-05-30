@@ -127,6 +127,26 @@ describe("prompt-level generation evidence scenarios", () => {
             }
           }
         });
+        expect(evidence.delivery).toMatchObject({
+          status: "ready",
+          acceptance: {
+            state: "ready",
+            ready: true,
+            blocked: false,
+            needsConfirmation: false,
+            followUpRequired: false
+          },
+          confirmationRequired: false
+        });
+        expect(evidence.delivery.sections).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ id: "readiness", status: "ready" }),
+            expect.objectContaining({ id: "files", status: "ready" }),
+            expect.objectContaining({ id: "map-edits", status: "ready" }),
+            expect.objectContaining({ id: "data-and-analysis", status: "ready" }),
+            expect.objectContaining({ id: "scene-browsing", status: "ready" })
+          ])
+        );
         expect(findDomain(evidence, "feature-display")).toMatchObject({
           status: "supported"
         });
@@ -263,6 +283,26 @@ describe("prompt-level generation evidence scenarios", () => {
             passed: true
           }
         });
+        expect(evidence.delivery).toMatchObject({
+          status: "ready",
+          acceptance: {
+            state: "ready",
+            ready: true,
+            blocked: false,
+            needsConfirmation: false,
+            followUpRequired: false
+          },
+          confirmationRequired: false
+        });
+        expect(evidence.delivery.sections).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ id: "readiness", status: "ready" }),
+            expect.objectContaining({ id: "files", status: "ready" }),
+            expect.objectContaining({ id: "map-edits", status: "ready" }),
+            expect.objectContaining({ id: "data-and-analysis", status: "ready" }),
+            expect.objectContaining({ id: "scene-browsing", status: "ready" })
+          ])
+        );
         expect(evidence.exportEvidence).toMatchObject({
           ready: true,
           sourceCount: 1,
@@ -273,6 +313,74 @@ describe("prompt-level generation evidence scenarios", () => {
         expect(spatial.supported.join(" ")).toContain("declared query capabilities: bbox, point");
         expect(spatial.blocked.join(" ")).toContain("buffer");
         expect(spatial.blocked.join(" ")).toContain("routing");
+      }
+    },
+    {
+      id: "delivery-needs-confirmation",
+      prompt: "Prepare a parcel archive handoff for review without fetching or parsing the archive yet.",
+      request: {
+        mapId: "prompt-delivery-needs-confirmation",
+        promptHash: "sha256:prompt-delivery-needs-confirmation",
+        traceId: "trace-prompt-delivery-needs-confirmation",
+        targetDomains: ["feature-display"],
+        sources: {
+          parcels: {
+            type: "pmtiles",
+            url: "pmtiles://local/parcels.pmtiles"
+          }
+        },
+        layers: [
+          {
+            id: "parcel-fills",
+            type: "fill",
+            source: "parcels"
+          }
+        ]
+      },
+      evidence: {
+        exampleId: "pmtiles-local"
+      },
+      assertEvidence: (skeleton, evidence) => {
+        expect(skeleton.status).toBe("ready");
+        expect(evidence.status).toBe("ready");
+        expect(evidence.delivery).toMatchObject({
+          status: "needs-confirmation",
+          acceptance: {
+            state: "needs-confirmation",
+            ready: false,
+            blocked: false,
+            needsConfirmation: true,
+            followUpRequired: false
+          },
+          confirmationRequired: true
+        });
+        expect(evidence.delivery.sections).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ id: "readiness", status: "needs-confirmation" }),
+            expect.objectContaining({ id: "files", status: "ready" }),
+            expect.objectContaining({ id: "map-edits", status: "ready" }),
+            expect.objectContaining({ id: "data-and-analysis", status: "needs-confirmation" }),
+            expect.objectContaining({ id: "scene-browsing", status: "ready" })
+          ])
+        );
+        expect(evidence.exampleEvidence.generationEvidence).toMatchObject({
+          status: "ready",
+          delivery: {
+            status: "needs-confirmation",
+            confirmationRequired: true
+          }
+        });
+        expect(evidence.exampleEvidence.generationEvidence?.delivery?.sourceReadiness).toContainEqual(
+          expect.objectContaining({
+            sourceId: "parcels",
+            type: "pmtiles",
+            state: "readiness-only",
+            confirmationReasons: ["external-resource", "archive-parsing"]
+          })
+        );
+        expect(findDomain(evidence, "feature-display")).toMatchObject({
+          status: "supported"
+        });
       }
     },
     {
@@ -320,6 +428,26 @@ describe("prompt-level generation evidence scenarios", () => {
           passed: true
         });
         expect(evidence.exportEvidence.ready).toBe(true);
+        expect(evidence.delivery).toMatchObject({
+          status: "follow-up-required",
+          acceptance: {
+            state: "follow-up-required",
+            ready: false,
+            blocked: false,
+            needsConfirmation: false,
+            followUpRequired: true
+          },
+          confirmationRequired: false
+        });
+        expect(evidence.delivery.sections).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ id: "readiness", status: "follow-up-required" }),
+            expect.objectContaining({ id: "files", status: "ready" }),
+            expect.objectContaining({ id: "map-edits", status: "ready" }),
+            expect.objectContaining({ id: "data-and-analysis", status: "ready" }),
+            expect.objectContaining({ id: "scene-browsing", status: "follow-up-required" })
+          ])
+        );
         expect(evidence.summary.scene3d).toMatchObject({
           status: "extension-only",
           stableViewMode: false,
@@ -393,6 +521,25 @@ describe("prompt-level generation evidence scenarios", () => {
           dataUrlPresent: false
         });
         expect(evidence.exportEvidence.ready).toBe(false);
+        expect(evidence.delivery).toMatchObject({
+          status: "blocked",
+          acceptance: {
+            state: "blocked",
+            ready: false,
+            blocked: true,
+            needsConfirmation: false,
+            followUpRequired: false
+          }
+        });
+        expect(evidence.delivery.sections).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ id: "readiness", status: "blocked" }),
+            expect.objectContaining({ id: "files", status: "ready" }),
+            expect.objectContaining({ id: "map-edits", status: "ready" }),
+            expect.objectContaining({ id: "data-and-analysis", status: "ready" }),
+            expect.objectContaining({ id: "scene-browsing", status: "blocked" })
+          ])
+        );
         const sceneDomain = findDomain(evidence, "scene-browsing");
         expect(sceneDomain.status).toBe("experimental");
         expect(sceneDomain.blocked.join(" ")).toContain('stable view.mode: "scene3d" runtime rendering is blocked');

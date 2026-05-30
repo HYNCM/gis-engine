@@ -141,5 +141,5 @@ manifest shape, not a rendered application UI.
 2. `GIR-002`: add delivery-review acceptance fixtures and tests.
 3. `GIR-003`: map source-readiness states into review sections.
 4. `GIR-004`: spatial-analysis readiness mapping is complete.
-5. `GIR-005`: add prompt-to-delivery QA scenarios.
+5. `GIR-005`: prompt-to-delivery QA scenarios are complete.
 6. `GIR-006`: audit docs and release wording.
