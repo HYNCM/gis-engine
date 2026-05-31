@@ -36,6 +36,7 @@ export async function callOpenAiCompatibleProvider(input) {
     const parsed = parseJsonObject(content);
     if (!parsed.ok) return providerError(profile, "/providerResponse", "Provider response content must be a JSON object.");
 
+    const confidence = sanitizeConfidence(parsed.value.confidence);
     return {
       ok: true,
       providerOutput: {
@@ -43,7 +44,7 @@ export async function callOpenAiCompatibleProvider(input) {
         promptHash: hashPrompt(message),
         traceId: `provider.${profile.id}.${randomUUID()}`,
         intent: parsed.value.intent,
-        ...(parsed.value.confidence ? { confidence: parsed.value.confidence } : {})
+        ...(confidence ? { confidence } : {})
       }
     };
   } catch (error) {
@@ -77,6 +78,17 @@ function stripJsonFence(content) {
 
 function hashPrompt(message) {
   return `sha256:${createHash("sha256").update(message).digest("hex")}`;
+}
+
+function sanitizeConfidence(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  if (!["low", "medium", "high"].includes(value.level)) return undefined;
+  if (!Array.isArray(value.reasons) || !value.reasons.every((reason) => typeof reason === "string")) return undefined;
+
+  return {
+    level: value.level,
+    reasons: value.reasons.slice(0, 3).map((reason) => reason.slice(0, 160))
+  };
 }
 
 function providerError(profile, path, message) {

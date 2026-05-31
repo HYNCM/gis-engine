@@ -338,28 +338,37 @@ describe("ai-map-workbench provider profiles", () => {
 });
 
 describe("ai-map-workbench OpenAI-compatible provider adapter", () => {
+  const profile = {
+    id: "deepseek",
+    label: "DeepSeek",
+    protocol: "openai-chat-completions",
+    baseUrl: "https://api.deepseek.example",
+    model: "deepseek-chat"
+  };
+  const summary = { mapId: "ai-map-workbench", revision: "1", sourceCount: 1, layerCount: 2 };
+  const rawMessage = "make points red";
+  const apiKey = "secret-key";
+  const rawProviderBody = "provider raw body with make points red and secret-key";
+
   it("turns a chat completion JSON response into structured provider output", async () => {
     const { callOpenAiCompatibleProvider } = await import(
       "../../examples/ai-map-workbench/openai-compatible-provider.mjs"
     );
     const response = await callOpenAiCompatibleProvider({
-      profile: {
-        id: "deepseek",
-        label: "DeepSeek",
-        protocol: "openai-chat-completions",
-        baseUrl: "https://api.deepseek.example",
-        model: "deepseek-chat"
-      },
-      apiKey: "secret-key",
-      message: "make points red",
-      summary: { mapId: "ai-map-workbench", revision: "1", sourceCount: 1, layerCount: 2 },
+      profile,
+      apiKey,
+      message: rawMessage,
+      summary,
       fetchImpl: async (url: string, init: RequestInit) => {
         expect(String(url)).toBe("https://api.deepseek.example/chat/completions");
         expect(init.headers).toMatchObject({
           authorization: "Bearer secret-key",
           "content-type": "application/json"
         });
-        expect(JSON.stringify(init.body)).toContain("deepseek-chat");
+        const requestBody = JSON.parse(String(init.body));
+        expect(requestBody.model).toBe("deepseek-chat");
+        expect(requestBody.response_format).toEqual({ type: "json_object" });
+        expect(requestBody.messages.map((message: { role: string }) => message.role)).toEqual(["system", "user"]);
         return new Response(
           JSON.stringify({
             choices: [
@@ -395,23 +404,100 @@ describe("ai-map-workbench OpenAI-compatible provider adapter", () => {
     expect(response.providerOutput.traceId).toMatch(/^provider.deepseek./);
   });
 
+  it("bounds provider confidence reasons before returning provider output", async () => {
+    const { callOpenAiCompatibleProvider } = await import(
+      "../../examples/ai-map-workbench/openai-compatible-provider.mjs"
+    );
+    const longReason = `${"x".repeat(180)} raw prompt: ${rawMessage}`;
+    const response = await callOpenAiCompatibleProvider({
+      profile,
+      apiKey,
+      message: rawMessage,
+      summary,
+      fetchImpl: async () =>
+        new Response(
+          JSON.stringify({
+            choices: [
+              {
+                message: {
+                  content: JSON.stringify({
+                    intent: {
+                      mapId: "ai-map-workbench",
+                      targetDomains: ["feature-display"],
+                      styleEdits: [{ layerId: "poi-circles", paint: { "circle-color": "#ef4444" } }]
+                    },
+                    confidence: {
+                      level: "high",
+                      reasons: [longReason, "second", "third", "fourth"],
+                      rawProviderText: rawProviderBody
+                    }
+                  })
+                }
+              }
+            ]
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+    });
+
+    expect(response.ok).toBe(true);
+    if (!response.ok) throw new Error("Expected provider call to succeed.");
+    expect(response.providerOutput.confidence).toEqual({
+      level: "high",
+      reasons: [`${"x".repeat(160)}`, "second", "third"]
+    });
+    expect(JSON.stringify(response.providerOutput)).not.toContain(rawProviderBody);
+    expect(JSON.stringify(response.providerOutput)).not.toContain(rawMessage);
+  });
+
+  it("omits invalid provider confidence instead of returning raw invalid content", async () => {
+    const { callOpenAiCompatibleProvider } = await import(
+      "../../examples/ai-map-workbench/openai-compatible-provider.mjs"
+    );
+    const response = await callOpenAiCompatibleProvider({
+      profile,
+      apiKey,
+      message: rawMessage,
+      summary,
+      fetchImpl: async () =>
+        new Response(
+          JSON.stringify({
+            choices: [
+              {
+                message: {
+                  content: JSON.stringify({
+                    intent: {
+                      mapId: "ai-map-workbench",
+                      targetDomains: ["feature-display"],
+                      styleEdits: [{ layerId: "poi-circles", paint: { "circle-color": "#ef4444" } }]
+                    },
+                    confidence: { level: "certain", reasons: [rawProviderBody] }
+                  })
+                }
+              }
+            ]
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+    });
+
+    expect(response.ok).toBe(true);
+    if (!response.ok) throw new Error("Expected provider call to succeed.");
+    expect(response.providerOutput.confidence).toBeUndefined();
+    expect(JSON.stringify(response.providerOutput)).not.toContain(rawProviderBody);
+  });
+
   it("returns structured diagnostics for non-JSON model content", async () => {
     const { callOpenAiCompatibleProvider } = await import(
       "../../examples/ai-map-workbench/openai-compatible-provider.mjs"
     );
     const response = await callOpenAiCompatibleProvider({
-      profile: {
-        id: "deepseek",
-        label: "DeepSeek",
-        protocol: "openai-chat-completions",
-        baseUrl: "https://api.deepseek.example",
-        model: "deepseek-chat"
-      },
-      apiKey: "secret-key",
-      message: "make points red",
-      summary: { mapId: "ai-map-workbench", revision: "1", sourceCount: 1, layerCount: 2 },
+      profile,
+      apiKey,
+      message: rawMessage,
+      summary,
       fetchImpl: async () =>
-        new Response(JSON.stringify({ choices: [{ message: { content: "I would make the points red." } }] }), {
+        new Response(JSON.stringify({ choices: [{ message: { content: rawProviderBody } }] }), {
           status: 200,
           headers: { "content-type": "application/json" }
         })
@@ -425,5 +511,130 @@ describe("ai-map-workbench OpenAI-compatible provider adapter", () => {
         path: "/providerResponse"
       })
     );
+    expectProviderFailureSafe(response);
+  });
+
+  it("returns structured diagnostics when the provider credential is missing", async () => {
+    const { callOpenAiCompatibleProvider } = await import(
+      "../../examples/ai-map-workbench/openai-compatible-provider.mjs"
+    );
+    const response = await callOpenAiCompatibleProvider({
+      profile,
+      apiKey: "",
+      message: rawMessage,
+      summary,
+      fetchImpl: async () => {
+        throw new Error("fetch should not be called");
+      }
+    });
+
+    expect(response.ok).toBe(false);
+    expect(response.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: "CAPABILITY.UNSUPPORTED",
+        path: "/providerProfile"
+      })
+    );
+    expectProviderFailureSafe(response);
+  });
+
+  it("returns structured diagnostics for non-OK provider responses without leaking response body", async () => {
+    const { callOpenAiCompatibleProvider } = await import(
+      "../../examples/ai-map-workbench/openai-compatible-provider.mjs"
+    );
+    const response = await callOpenAiCompatibleProvider({
+      profile,
+      apiKey,
+      message: rawMessage,
+      summary,
+      fetchImpl: async () =>
+        new Response(rawProviderBody, {
+          status: 429,
+          headers: { "content-type": "text/plain" }
+        })
+    });
+
+    expect(response.ok).toBe(false);
+    expect(response.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: "CAPABILITY.UNSUPPORTED",
+        path: "/providerRequest"
+      })
+    );
+    expectProviderFailureSafe(response);
+  });
+
+  it("returns structured diagnostics when fetch throws or response JSON is invalid", async () => {
+    const { callOpenAiCompatibleProvider } = await import(
+      "../../examples/ai-map-workbench/openai-compatible-provider.mjs"
+    );
+    const thrownResponse = await callOpenAiCompatibleProvider({
+      profile,
+      apiKey,
+      message: rawMessage,
+      summary,
+      fetchImpl: async () => {
+        throw new Error(rawProviderBody);
+      }
+    });
+    const invalidJsonResponse = await callOpenAiCompatibleProvider({
+      profile,
+      apiKey,
+      message: rawMessage,
+      summary,
+      fetchImpl: async () =>
+        new Response(rawProviderBody, {
+          status: 200,
+          headers: { "content-type": "application/json" }
+        })
+    });
+
+    for (const response of [thrownResponse, invalidJsonResponse]) {
+      expect(response.ok).toBe(false);
+      expect(response.diagnostics).toContainEqual(
+        expect.objectContaining({
+          severity: "error",
+          code: "CAPABILITY.UNSUPPORTED",
+          path: "/providerRequest"
+        })
+      );
+      expectProviderFailureSafe(response);
+    }
+  });
+
+  it("returns structured diagnostics when provider message content is missing", async () => {
+    const { callOpenAiCompatibleProvider } = await import(
+      "../../examples/ai-map-workbench/openai-compatible-provider.mjs"
+    );
+    const response = await callOpenAiCompatibleProvider({
+      profile,
+      apiKey,
+      message: rawMessage,
+      summary,
+      fetchImpl: async () =>
+        new Response(JSON.stringify({ choices: [{ message: { refusal: rawProviderBody } }] }), {
+          status: 200,
+          headers: { "content-type": "application/json" }
+        })
+    });
+
+    expect(response.ok).toBe(false);
+    expect(response.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: "CAPABILITY.UNSUPPORTED",
+        path: "/providerResponse"
+      })
+    );
+    expectProviderFailureSafe(response);
   });
 });
+
+function expectProviderFailureSafe(response: unknown) {
+  const serialized = JSON.stringify(response);
+  expect(serialized).not.toContain("make points red");
+  expect(serialized).not.toContain("secret-key");
+  expect(serialized).not.toContain("provider raw body");
+}
