@@ -30,6 +30,13 @@ export {
   type GenerationSpatialQueryEvidence,
   type PlannerConfidence
 } from "./tools/generationEvidence.js";
+export {
+  normalizeWorkbenchProviderPlan,
+  type WorkbenchProviderConfidence,
+  type WorkbenchProviderPlan,
+  type WorkbenchProviderPlanInput,
+  type WorkbenchProviderPlanResponse
+} from "./tools/workbenchProviderPlan.js";
 export { snapshotSpecTool, SnapshotSpecToolInputSchema, type SnapshotSpecToolInput, type SnapshotSpecToolResult } from "./tools/snapshotSpec.js";
 export {
   ApplyCommandsToolResultSchema,

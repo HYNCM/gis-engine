@@ -337,7 +337,7 @@ SceneView3D runtime claims.
 | id | title | priority | owner | status | evidence target | acceptance | finish gates |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | TASK-2026W22-AMW-001 | Accept runnable AI map workbench review surface | P0 | `@coordinator`, `@product-strategist`, `@qa-agent` | done | `docs/reviews/amw-001-product-evolution-2026-05-31.md`; `examples/ai-map-workbench`; commits `20743a8`, `8e8026e`, `99e7944` | local mock prompt, command evidence, MapLibre rendering, feature query, and collapsible review rails are visible without leaving `examples/` scope | `pnpm check`; browser smoke at `http://127.0.0.1:4321/`; `git diff --check` |
-| TASK-2026W22-AMW-002 | Freeze provider boundary for real-model integration | P0 | `@product-strategist`, `@ai-agent`, `@engine-agent` | todo | `docs/planning/feature-specs/ai-map-workbench-real-system-evolution.md`; `docs/superpowers/plans/2026-05-31-ai-map-workbench-real-system.md`; AI contract tests | real model output is converted to typed command skeletons or `MapCommand` values before mutation; mock planner remains deterministic fallback; unsupported output returns structured diagnostics | `pnpm build:schema`; `pnpm test:schema-sync`; `pnpm test:ai`; `pnpm test:examples`; `pnpm check` |
+| TASK-2026W22-AMW-002 | Freeze provider boundary for real-model integration | P0 | `@product-strategist`, `@ai-agent`, `@engine-agent` | done | `docs/planning/product-architecture/ai-map-workbench-product-architecture.md`; `docs/planning/feature-specs/ai-map-workbench-real-system-evolution.md`; `docs/reviews/amw-002-provider-boundary-2026-05-31.md`; `tests/ai/workbench-provider-plan.test.ts` | real model output is converted to typed planner intent before mutation; mock planner remains deterministic fallback; unsafe provider output returns structured diagnostics at `/providerOutput` | `pnpm vitest run tests/ai/workbench-provider-plan.test.ts`; `pnpm test:ai`; `pnpm test:docs`; `pnpm check`; `git diff --check` |
 | TASK-2026W22-AMW-003 | Add workbench review-console acceptance fixtures | P1 | `@qa-agent`, `@docs-agent` | todo | prompt-to-workbench review scenarios and docs alignment | ready, unsupported, command-applied, query-ready, and collapsed-evidence states are covered without depending on prose or screenshots alone | `pnpm test:examples`; `pnpm test:ai` when evidence schemas change; browser smoke; `pnpm check` |
 | TASK-2026W22-AMW-004 | Decide example-to-product promotion gate | P1 | `@quality-guardian`, `@coordinator` | todo | AMW promotion gate report | the workbench either remains an example, becomes a generated-app review-console slice, or is blocked with named schema, resource, provider, and visual evidence gaps | `pnpm check`; resource-policy review if any external provider/resource is introduced; visual gate or coordinator waiver |
 
@@ -351,6 +351,12 @@ product-evolution candidate by
 `docs/superpowers/plans/2026-05-31-ai-map-workbench-real-system.md`. `AMW-002`
 remains implementation-todo until provider-normalization tests and server
 provider-mode evidence land.
+
+2026-05-31 AMW-002 execution update: provider output normalization landed in
+`packages/ai/src/tools/workbenchProviderPlan.ts` and is covered by
+`tests/ai/workbench-provider-plan.test.ts`. Server provider mode, UI provider
+evidence, and session audit remain queued under `AMW-003` / `AMW-004`. The next
+queued task is `AMW-003`.
 
 ## 2026-W22 MapLibre Source Drift Audit
 

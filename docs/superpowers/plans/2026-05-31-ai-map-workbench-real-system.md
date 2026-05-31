@@ -60,7 +60,7 @@ describe("workbench provider plan normalization", () => {
 
     expect(response.ok).toBe(true);
     if (!response.ok) throw new Error("Expected provider plan to normalize.");
-    expect(response.result.plan.status).toBe("planned");
+    expect(response.result.plan.status).toBe("ready");
     expect(response.result.plan.request.promptHash).toBe("sha256:provider-feature-display");
     expect(response.result.provider.providerId).toBe("fixture-provider");
     expect(response.result.provider.retainedRawPrompt).toBe(false);
@@ -75,7 +75,7 @@ describe("workbench provider plan normalization", () => {
     });
 
     expect(response.ok).toBe(false);
-    expect(response.diagnostics.map((diagnostic) => diagnostic.code)).toContain("AI.PROVIDER_OUTPUT_UNSUPPORTED");
+    expect(response.diagnostics.map((diagnostic) => diagnostic.code)).toContain("CAPABILITY.UNSUPPORTED");
     expect(response.diagnostics.map((diagnostic) => diagnostic.path)).toContain("/providerOutput");
   });
 });
@@ -93,11 +93,14 @@ Expected: fail because `normalizeWorkbenchProviderPlan` is not exported.
 
 - [ ] **Step 3: Implement the normalizer**
 
-Create `packages/ai/src/tools/workbenchProviderPlan.ts` with:
+Create `packages/ai/src/tools/workbenchProviderPlan.ts` with a minimal
+implementation that imports `DiagnosticCodes`, `planMapGenerationRequest`, and
+engine types from `@gis-engine/engine`. Use the existing
+`CAPABILITY.UNSUPPORTED` diagnostic code for unsafe provider output and keep the
+diagnostic path stable at `/providerOutput`.
 
 ```ts
-import { planMapGenerationRequest, type MapGenerationPromptPlan } from "@gis-engine/engine";
-import type { Diagnostic } from "@gis-engine/engine";
+import { DiagnosticCodes, planMapGenerationRequest, type Diagnostic, type MapGenerationPromptPlan } from "@gis-engine/engine";
 
 export interface WorkbenchProviderPlanInput {
   providerId?: string;
@@ -131,14 +134,14 @@ export function normalizeWorkbenchProviderPlan(input: WorkbenchProviderPlanInput
       diagnostics: [
         {
           severity: "error",
-          code: "AI.PROVIDER_OUTPUT_UNSUPPORTED",
+          code: DiagnosticCodes.CapabilityUnsupported,
           message: "Provider output must use promptHash and structured intent, not raw prompts, JavaScript, or direct commands.",
           path: "/providerOutput",
-          suggestions: [
-            {
-              message: "Normalize model output into MapGenerationPromptPlannerInput before command creation."
-            }
-          ]
+          fix: {
+            kind: "manual",
+            confidence: "high",
+            message: "Normalize model output into structured intent before command creation."
+          }
         }
       ]
     };
@@ -262,7 +265,7 @@ it("blocks unsafe provider output without mutating the active spec", async () =>
 
     expect(payload.status).toBe("blocked");
     expect(payload.summary.revision).toBe("1");
-    expect(payload.diagnostics.map((diagnostic) => diagnostic.code)).toContain("AI.PROVIDER_OUTPUT_UNSUPPORTED");
+    expect(payload.diagnostics.map((diagnostic) => diagnostic.code)).toContain("CAPABILITY.UNSUPPORTED");
   } finally {
     await server.close();
   }
@@ -451,7 +454,7 @@ git commit -m "feat: add workbench session audit"
 **Files:**
 - Modify: `examples/ai-map-workbench/README.md`
 - Modify: `docs/planning/task-burndown.md`
-- Create: `docs/reviews/amw-002-provider-boundary-2026-06-01.md`
+- Create: `docs/reviews/amw-002-provider-boundary-2026-05-31.md`
 
 - [ ] **Step 1: Update README and review report**
 
@@ -461,9 +464,10 @@ impact, action, and confidence rows.
 
 - [ ] **Step 2: Update burndown**
 
-Mark `TASK-2026W22-AMW-002` done only after provider boundary tests, server
-provider tests, UI evidence, and docs pass. Leave `AMW-003` and `AMW-004`
-queued unless their evidence has landed.
+Mark `TASK-2026W22-AMW-002` done only after provider boundary tests, the product
+architecture document, and docs gates pass. Leave server provider mode, UI
+provider evidence, and audit work queued under `AMW-003` and `AMW-004` unless
+their evidence has landed.
 
 - [ ] **Step 3: Run focused gates**
 
@@ -492,7 +496,7 @@ Expected: full build and deterministic test suite pass.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add examples/ai-map-workbench/README.md docs/planning/task-burndown.md docs/reviews/amw-002-provider-boundary-2026-06-01.md
+git add examples/ai-map-workbench/README.md docs/planning/task-burndown.md docs/reviews/amw-002-provider-boundary-2026-05-31.md
 git commit -m "docs: close workbench provider boundary plan"
 ```
 
