@@ -251,6 +251,42 @@ describe("ai-map-workbench provider profiles", () => {
     expect(JSON.stringify(publicProviderProfiles(profiles))).not.toContain("secret-deepseek-key");
   });
 
+  it("marks DeepSeek disabled when its credential is whitespace only", async () => {
+    const { buildProviderProfiles, publicProviderProfiles, readProviderApiKey } = await import(
+      "../../examples/ai-map-workbench/provider-profiles.mjs"
+    );
+    const env = {
+      DEEPSEEK_API_KEY: "   "
+    };
+    const profiles = buildProviderProfiles(env);
+    const deepSeekProfile = profiles.find((profile) => profile.id === "deepseek");
+
+    expect(publicProviderProfiles(profiles)).toContainEqual(
+      expect.objectContaining({
+        id: "deepseek",
+        enabled: false,
+        missingCredential: true
+      })
+    );
+    expect(readProviderApiKey(deepSeekProfile, env)).toBeUndefined();
+  });
+
+  it("uses default DeepSeek base URL and model when overrides are blank", async () => {
+    const { buildProviderProfiles, DEFAULT_DEEPSEEK_BASE_URL, DEFAULT_DEEPSEEK_MODEL } = await import(
+      "../../examples/ai-map-workbench/provider-profiles.mjs"
+    );
+    const profiles = buildProviderProfiles({
+      DEEPSEEK_API_KEY: "secret-deepseek-key",
+      GIS_WORKBENCH_DEEPSEEK_BASE_URL: "   ",
+      GIS_WORKBENCH_DEEPSEEK_MODEL: ""
+    });
+
+    expect(profiles.find((profile) => profile.id === "deepseek")).toMatchObject({
+      baseUrl: DEFAULT_DEEPSEEK_BASE_URL,
+      model: DEFAULT_DEEPSEEK_MODEL
+    });
+  });
+
   it("marks OpenAI-compatible custom profiles disabled when their credential is missing", async () => {
     const { buildProviderProfiles, publicProviderProfiles } = await import(
       "../../examples/ai-map-workbench/provider-profiles.mjs"
@@ -273,5 +309,30 @@ describe("ai-map-workbench provider profiles", () => {
         missingCredential: true
       })
     );
+  });
+
+  it("marks OpenAI-compatible custom profiles disabled when their credential is whitespace only", async () => {
+    const { buildProviderProfiles, publicProviderProfiles, readProviderApiKey } = await import(
+      "../../examples/ai-map-workbench/provider-profiles.mjs"
+    );
+    const env = {
+      GIS_WORKBENCH_CUSTOM_PROVIDER_ID: "my-provider",
+      GIS_WORKBENCH_CUSTOM_PROVIDER_LABEL: "My Provider",
+      GIS_WORKBENCH_CUSTOM_PROVIDER_BASE_URL: "https://example.test/v1",
+      GIS_WORKBENCH_CUSTOM_PROVIDER_MODEL: "my-model",
+      GIS_WORKBENCH_CUSTOM_PROVIDER_API_KEY_ENV: "MY_PROVIDER_API_KEY",
+      MY_PROVIDER_API_KEY: "  "
+    };
+    const profiles = buildProviderProfiles(env);
+    const customProfile = profiles.find((profile) => profile.id === "my-provider");
+
+    expect(publicProviderProfiles(profiles)).toContainEqual(
+      expect.objectContaining({
+        id: "my-provider",
+        enabled: false,
+        missingCredential: true
+      })
+    );
+    expect(readProviderApiKey(customProfile, env)).toBeUndefined();
   });
 });

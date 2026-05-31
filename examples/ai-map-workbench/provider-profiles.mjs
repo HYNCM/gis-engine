@@ -13,32 +13,33 @@ export function buildProviderProfiles(env = process.env) {
     }
   ];
 
+  const deepSeekApiKey = readNonEmpty(env.DEEPSEEK_API_KEY);
   profiles.push({
     id: "deepseek",
     label: "DeepSeek",
     protocol: "openai-chat-completions",
-    baseUrl: env.GIS_WORKBENCH_DEEPSEEK_BASE_URL ?? DEFAULT_DEEPSEEK_BASE_URL,
-    model: env.GIS_WORKBENCH_DEEPSEEK_MODEL ?? DEFAULT_DEEPSEEK_MODEL,
+    baseUrl: readNonEmpty(env.GIS_WORKBENCH_DEEPSEEK_BASE_URL) ?? DEFAULT_DEEPSEEK_BASE_URL,
+    model: readNonEmpty(env.GIS_WORKBENCH_DEEPSEEK_MODEL) ?? DEFAULT_DEEPSEEK_MODEL,
     apiKeyEnv: "DEEPSEEK_API_KEY",
-    enabled: Boolean(env.DEEPSEEK_API_KEY),
-    missingCredential: !env.DEEPSEEK_API_KEY
+    enabled: Boolean(deepSeekApiKey),
+    missingCredential: !deepSeekApiKey
   });
 
   const customId = readNonEmpty(env.GIS_WORKBENCH_CUSTOM_PROVIDER_ID);
   if (customId) {
     const apiKeyEnv = readNonEmpty(env.GIS_WORKBENCH_CUSTOM_PROVIDER_API_KEY_ENV) ?? "GIS_WORKBENCH_CUSTOM_API_KEY";
+    const baseUrl = readNonEmpty(env.GIS_WORKBENCH_CUSTOM_PROVIDER_BASE_URL);
+    const model = readNonEmpty(env.GIS_WORKBENCH_CUSTOM_PROVIDER_MODEL);
+    const apiKey = readNonEmpty(env[apiKeyEnv]);
     profiles.push({
       id: customId,
       label: readNonEmpty(env.GIS_WORKBENCH_CUSTOM_PROVIDER_LABEL) ?? customId,
       protocol: "openai-chat-completions",
-      baseUrl: readNonEmpty(env.GIS_WORKBENCH_CUSTOM_PROVIDER_BASE_URL) ?? "",
-      model: readNonEmpty(env.GIS_WORKBENCH_CUSTOM_PROVIDER_MODEL) ?? "",
+      baseUrl: baseUrl ?? "",
+      model: model ?? "",
       apiKeyEnv,
-      enabled:
-        Boolean(readNonEmpty(env.GIS_WORKBENCH_CUSTOM_PROVIDER_BASE_URL)) &&
-        Boolean(readNonEmpty(env.GIS_WORKBENCH_CUSTOM_PROVIDER_MODEL)) &&
-        Boolean(env[apiKeyEnv]),
-      missingCredential: !env[apiKeyEnv]
+      enabled: Boolean(baseUrl) && Boolean(model) && Boolean(apiKey),
+      missingCredential: !apiKey
     });
   }
 
