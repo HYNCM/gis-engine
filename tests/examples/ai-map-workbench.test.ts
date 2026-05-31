@@ -336,3 +336,94 @@ describe("ai-map-workbench provider profiles", () => {
     expect(readProviderApiKey(customProfile, env)).toBeUndefined();
   });
 });
+
+describe("ai-map-workbench OpenAI-compatible provider adapter", () => {
+  it("turns a chat completion JSON response into structured provider output", async () => {
+    const { callOpenAiCompatibleProvider } = await import(
+      "../../examples/ai-map-workbench/openai-compatible-provider.mjs"
+    );
+    const response = await callOpenAiCompatibleProvider({
+      profile: {
+        id: "deepseek",
+        label: "DeepSeek",
+        protocol: "openai-chat-completions",
+        baseUrl: "https://api.deepseek.example",
+        model: "deepseek-chat"
+      },
+      apiKey: "secret-key",
+      message: "make points red",
+      summary: { mapId: "ai-map-workbench", revision: "1", sourceCount: 1, layerCount: 2 },
+      fetchImpl: async (url: string, init: RequestInit) => {
+        expect(String(url)).toBe("https://api.deepseek.example/chat/completions");
+        expect(init.headers).toMatchObject({
+          authorization: "Bearer secret-key",
+          "content-type": "application/json"
+        });
+        expect(JSON.stringify(init.body)).toContain("deepseek-chat");
+        return new Response(
+          JSON.stringify({
+            choices: [
+              {
+                message: {
+                  content: JSON.stringify({
+                    intent: {
+                      mapId: "ai-map-workbench",
+                      targetDomains: ["feature-display"],
+                      styleEdits: [{ layerId: "poi-circles", paint: { "circle-color": "#ef4444" } }]
+                    },
+                    confidence: { level: "medium", reasons: ["User asked for red points."] }
+                  })
+                }
+              }
+            ]
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        );
+      }
+    });
+
+    expect(response.ok).toBe(true);
+    if (!response.ok) throw new Error("Expected provider call to succeed.");
+    expect(response.providerOutput).toMatchObject({
+      providerId: "deepseek",
+      intent: {
+        styleEdits: [{ layerId: "poi-circles", paint: { "circle-color": "#ef4444" } }]
+      },
+      confidence: { level: "medium", reasons: ["User asked for red points."] }
+    });
+    expect(response.providerOutput.promptHash).toMatch(/^sha256:/);
+    expect(response.providerOutput.traceId).toMatch(/^provider.deepseek./);
+  });
+
+  it("returns structured diagnostics for non-JSON model content", async () => {
+    const { callOpenAiCompatibleProvider } = await import(
+      "../../examples/ai-map-workbench/openai-compatible-provider.mjs"
+    );
+    const response = await callOpenAiCompatibleProvider({
+      profile: {
+        id: "deepseek",
+        label: "DeepSeek",
+        protocol: "openai-chat-completions",
+        baseUrl: "https://api.deepseek.example",
+        model: "deepseek-chat"
+      },
+      apiKey: "secret-key",
+      message: "make points red",
+      summary: { mapId: "ai-map-workbench", revision: "1", sourceCount: 1, layerCount: 2 },
+      fetchImpl: async () =>
+        new Response(JSON.stringify({ choices: [{ message: { content: "I would make the points red." } }] }), {
+          status: 200,
+          headers: { "content-type": "application/json" }
+        })
+    });
+
+    expect(response.ok).toBe(false);
+    expect(response.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: "CAPABILITY.UNSUPPORTED",
+        path: "/providerResponse"
+      })
+    );
+  });
+});
