@@ -102,3 +102,12 @@ promotion.
 | Audit storage | Bounded in-memory records. | Add durable storage with retention, export, and privacy policy. |
 | Acceptance workflow | Evidence-only display. | Add explicit accept/block/follow-up actions after review-console promotion. |
 | Deployment | Local server. | Hosted service requires auth, rate limit, observability, and security review. |
+
+## AMW-004 Gate Decision
+
+The 2026-05-31 promotion gate accepts AI Map Workbench as a provider-gated local
+system and keeps it under `examples/ai-map-workbench`. It is not promoted to a
+product app, hosted service, or real-provider integration yet. Promotion requires
+a separate app boundary spec, credential/resource-policy review, durable audit
+design, repeatable visual evidence, and explicit accept/block/follow-up review
+actions.

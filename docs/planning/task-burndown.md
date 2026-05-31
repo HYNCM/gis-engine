@@ -339,7 +339,7 @@ SceneView3D runtime claims.
 | TASK-2026W22-AMW-001 | Accept runnable AI map workbench review surface | P0 | `@coordinator`, `@product-strategist`, `@qa-agent` | done | `docs/reviews/amw-001-product-evolution-2026-05-31.md`; `examples/ai-map-workbench`; commits `20743a8`, `8e8026e`, `99e7944` | local mock prompt, command evidence, MapLibre rendering, feature query, and collapsible review rails are visible without leaving `examples/` scope | `pnpm check`; browser smoke at `http://127.0.0.1:4321/`; `git diff --check` |
 | TASK-2026W22-AMW-002 | Freeze provider boundary for real-model integration | P0 | `@product-strategist`, `@ai-agent`, `@engine-agent` | done | `docs/planning/product-architecture/ai-map-workbench-product-architecture.md`; `docs/planning/feature-specs/ai-map-workbench-real-system-evolution.md`; `docs/reviews/amw-002-provider-boundary-2026-05-31.md`; `tests/ai/workbench-provider-plan.test.ts` | real model output is converted to typed planner intent before mutation; mock planner remains deterministic fallback; unsafe provider output returns structured diagnostics at `/providerOutput` | `pnpm vitest run tests/ai/workbench-provider-plan.test.ts`; `pnpm test:ai`; `pnpm test:docs`; `pnpm check`; `git diff --check` |
 | TASK-2026W22-AMW-003 | Add provider-gated workbench evidence | P1 | `@ai-agent`, `@qa-agent`, `@docs-agent` | done | `docs/reviews/amw-003-provider-workbench-evidence-2026-05-31.md`; `tests/examples/ai-map-workbench.test.ts`; `examples/ai-map-workbench` | injected provider output goes through provider normalization, command skeletons, `applyCommands`, compact generation evidence, visible provider/session evidence, and payload-free audit records | `pnpm vitest run tests/examples/ai-map-workbench.test.ts`; `pnpm test:examples`; browser smoke; `pnpm check`; `git diff --check` |
-| TASK-2026W22-AMW-004 | Decide example-to-product promotion gate | P1 | `@quality-guardian`, `@coordinator` | todo | AMW promotion gate report | the workbench either remains an example, becomes a generated-app review-console slice, or is blocked with named schema, resource, provider, and visual evidence gaps | `pnpm check`; resource-policy review if any external provider/resource is introduced; visual gate or coordinator waiver |
+| TASK-2026W22-AMW-004 | Decide example-to-product promotion gate | P1 | `@quality-guardian`, `@coordinator` | done | `docs/reviews/amw-004-promotion-gate-2026-05-31.md` | the workbench passes the provider-gated local-system gate and remains under `examples/ai-map-workbench`; product-app or hosted promotion is held pending app boundary, provider credential/resource review, durable audit, visual evidence, and review actions | `pnpm test:docs`; `pnpm check`; `git diff --check` |
 
 2026-05-31 AMW execution update: the runnable workbench is accepted as a
 product-evolution candidate by
@@ -358,6 +358,12 @@ product-evolution candidate by
 generation evidence, provider/session UI evidence, and bounded payload-free
 audit records landed under `examples/ai-map-workbench` and
 `tests/examples/ai-map-workbench.test.ts`. The next queued task is `AMW-004`.
+
+2026-05-31 AMW-004 gate update: the workbench passes the provider-gated local
+system stage but stays in `examples/ai-map-workbench`. Product-app promotion,
+hosted deployment, and real provider integration are held until app ownership,
+credential/resource policy, durable audit, visual evidence, and explicit review
+actions are designed.
 
 ## 2026-W22 MapLibre Source Drift Audit
 
