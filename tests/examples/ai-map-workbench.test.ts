@@ -495,6 +495,95 @@ describe("ai-map-workbench OpenAI-compatible provider adapter", () => {
     expect(serialized).not.toContain(providerMarker);
   });
 
+  it("omits shortened sensitive confidence substrings", async () => {
+    const { callOpenAiCompatibleProvider } = await import(
+      "../../examples/ai-map-workbench/openai-compatible-provider.mjs"
+    );
+    const response = await callOpenAiCompatibleProvider({
+      profile,
+      apiKey,
+      message: rawMessage,
+      summary,
+      fetchImpl: async () =>
+        new Response(
+          JSON.stringify({
+            choices: [
+              {
+                message: {
+                  content: JSON.stringify({
+                    intent: {
+                      mapId: "ai-map-workbench",
+                      targetDomains: ["feature-display"],
+                      styleEdits: [{ layerId: "poi-circles", paint: { "circle-color": "#ef4444" } }]
+                    },
+                    confidence: {
+                      level: "medium",
+                      reasons: ["secret", "safe confidence reason"]
+                    }
+                  })
+                }
+              }
+            ]
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+    });
+
+    expect(response.ok).toBe(true);
+    if (!response.ok) throw new Error("Expected provider call to succeed.");
+    expect(response.providerOutput.confidence).toEqual({
+      level: "medium",
+      reasons: ["safe confidence reason"]
+    });
+    expect(JSON.stringify(response.providerOutput)).not.toContain("secret");
+  });
+
+  it("returns diagnostics when provider intent contains raw or sensitive content", async () => {
+    const { callOpenAiCompatibleProvider } = await import(
+      "../../examples/ai-map-workbench/openai-compatible-provider.mjs"
+    );
+    const providerMarker = "provider-private-marker";
+    const response = await callOpenAiCompatibleProvider({
+      profile,
+      apiKey,
+      message: rawMessage,
+      summary,
+      fetchImpl: async () =>
+        new Response(
+          JSON.stringify({
+            choices: [
+              {
+                message: {
+                  content: JSON.stringify({
+                    intent: {
+                      mapId: "ai-map-workbench",
+                      targetDomains: ["feature-display"],
+                      styleEdits: [{ layerId: "poi-circles", paint: { "circle-color": "#ef4444" } }],
+                      rawProviderTrace: providerMarker
+                    }
+                  })
+                }
+              }
+            ]
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+    });
+
+    expect(response.ok).toBe(false);
+    expect(response.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: "CAPABILITY.UNSUPPORTED",
+        path: "/providerResponse"
+      })
+    );
+    const serialized = JSON.stringify(response);
+    expect(serialized).not.toContain(providerMarker);
+    expect(serialized).not.toContain(rawMessage);
+    expect(serialized).not.toContain(apiKey);
+  });
+
   it("omits invalid provider confidence instead of returning raw invalid content", async () => {
     const { callOpenAiCompatibleProvider } = await import(
       "../../examples/ai-map-workbench/openai-compatible-provider.mjs"

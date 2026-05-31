@@ -35,6 +35,9 @@ export async function callOpenAiCompatibleProvider(input) {
 
     const parsed = parseJsonObject(content);
     if (!parsed.ok) return providerError(profile, "/providerResponse", "Provider response content must be a JSON object.");
+    if (hasUnsafeIntent(parsed.value.intent, { apiKey, message })) {
+      return providerError(profile, "/providerResponse", "Provider response intent contains unsupported raw or sensitive content.");
+    }
 
     const confidence = sanitizeConfidence(parsed.value.confidence, {
       apiKey,
@@ -104,14 +107,20 @@ function sanitizeConfidence(value, leakContext) {
 }
 
 function collectForbiddenMarkers({ apiKey, message, providerContent, providerValue }, confidenceReasons) {
-  const markers = [apiKey, message, providerContent].filter((marker) => typeof marker === "string" && marker.length > 0);
+  const markers = [];
+  for (const marker of [apiKey, message]) {
+    if (typeof marker === "string" && marker.length > 0) markers.push({ value: marker, allowReverse: true });
+  }
+  if (typeof providerContent === "string" && providerContent.length > 0) {
+    markers.push({ value: providerContent, allowReverse: false });
+  }
   collectProviderStrings(providerValue, markers, confidenceReasons);
   return markers;
 }
 
 function collectProviderStrings(value, markers, confidenceReasons) {
   if (typeof value === "string") {
-    markers.push(value);
+    markers.push({ value, allowReverse: true });
     return;
   }
   if (!value || typeof value !== "object") return;
@@ -125,7 +134,38 @@ function collectProviderStrings(value, markers, confidenceReasons) {
 
 function isSafeReason(reason, forbiddenMarkers) {
   const normalizedReason = reason.toLowerCase();
-  return !forbiddenMarkers.some((marker) => normalizedReason.includes(marker.toLowerCase()));
+  return !forbiddenMarkers.some((marker) => {
+    const normalizedMarker = marker.value.toLowerCase();
+    return (
+      normalizedReason.includes(normalizedMarker) ||
+      (marker.allowReverse && normalizedReason.length >= 4 && normalizedMarker.includes(normalizedReason))
+    );
+  });
+}
+
+function hasUnsafeIntent(intent, leakContext) {
+  if (intent === undefined) return false;
+  const serializedIntent = JSON.stringify(intent);
+  if (containsMarker(serializedIntent, leakContext.message) || containsMarker(serializedIntent, leakContext.apiKey)) return true;
+  return hasUnsafeIntentKey(intent);
+}
+
+function hasUnsafeIntentKey(value) {
+  if (!value || typeof value !== "object") return false;
+  if (Array.isArray(value)) return value.some((item) => hasUnsafeIntentKey(item));
+
+  return Object.entries(value).some(([key, child]) => isUnsafeIntentKey(key) || hasUnsafeIntentKey(child));
+}
+
+function isUnsafeIntentKey(key) {
+  const normalizedKey = key.toLowerCase();
+  return ["raw", "prompt", "secret", "apikey", "providertrace", "providerresponse"].some((marker) =>
+    normalizedKey.includes(marker)
+  );
+}
+
+function containsMarker(value, marker) {
+  return typeof marker === "string" && marker.length > 0 && value.toLowerCase().includes(marker.toLowerCase());
 }
 
 function providerError(profile, path, message) {
