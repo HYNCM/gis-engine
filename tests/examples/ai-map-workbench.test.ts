@@ -219,3 +219,59 @@ describe("ai-map-workbench API", () => {
     expect(JSON.stringify(result.records[0])).not.toContain("make points red");
   });
 });
+
+describe("ai-map-workbench provider profiles", () => {
+  it("returns mock plus safe DeepSeek metadata without leaking credentials", async () => {
+    const { buildProviderProfiles, publicProviderProfiles } = await import(
+      "../../examples/ai-map-workbench/provider-profiles.mjs"
+    );
+    const profiles = buildProviderProfiles({
+      DEEPSEEK_API_KEY: "secret-deepseek-key"
+    });
+
+    expect(publicProviderProfiles(profiles)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "mock-ai",
+          label: "Mock AI",
+          protocol: "mock",
+          model: "deterministic-mock",
+          enabled: true,
+          missingCredential: false
+        }),
+        expect.objectContaining({
+          id: "deepseek",
+          label: "DeepSeek",
+          protocol: "openai-chat-completions",
+          enabled: true,
+          missingCredential: false
+        })
+      ])
+    );
+    expect(JSON.stringify(publicProviderProfiles(profiles))).not.toContain("secret-deepseek-key");
+  });
+
+  it("marks OpenAI-compatible custom profiles disabled when their credential is missing", async () => {
+    const { buildProviderProfiles, publicProviderProfiles } = await import(
+      "../../examples/ai-map-workbench/provider-profiles.mjs"
+    );
+    const profiles = buildProviderProfiles({
+      GIS_WORKBENCH_CUSTOM_PROVIDER_ID: "my-provider",
+      GIS_WORKBENCH_CUSTOM_PROVIDER_LABEL: "My Provider",
+      GIS_WORKBENCH_CUSTOM_PROVIDER_BASE_URL: "https://example.test/v1",
+      GIS_WORKBENCH_CUSTOM_PROVIDER_MODEL: "my-model",
+      GIS_WORKBENCH_CUSTOM_PROVIDER_API_KEY_ENV: "MY_PROVIDER_API_KEY"
+    });
+
+    expect(publicProviderProfiles(profiles)).toContainEqual(
+      expect.objectContaining({
+        id: "my-provider",
+        label: "My Provider",
+        protocol: "openai-chat-completions",
+        model: "my-model",
+        enabled: false,
+        missingCredential: true
+      })
+    );
+  });
+});
