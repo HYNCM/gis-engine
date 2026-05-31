@@ -22,6 +22,10 @@ export async function createWorkbenchServer(options = {}) {
   const host = options.host ?? "127.0.0.1";
   const port = options.port ?? 4321;
   const engine = await loadEngine();
+  const ai = await loadAi();
+  const plannerProvider = options.plannerProvider;
+  const sessionId = options.sessionId ?? createSessionId();
+  const auditRecords = [];
   let activeSpec = createInitialSpec();
 
   const server = createServer(async (request, response) => {
@@ -32,13 +36,159 @@ export async function createWorkbenchServer(options = {}) {
         return sendJson(response, statePayload(engine, "ready", activeSpec));
       }
 
+      if (request.method === "GET" && url.pathname === "/api/audit") {
+        return sendJson(response, {
+          sessionId,
+          records: auditRecords
+        });
+      }
+
       if (request.method === "POST" && url.pathname === "/api/chat") {
         const body = await readJsonBody(request);
         const message = typeof body.message === "string" ? body.message : "";
+        const fromRevision = activeSpec.revision ?? "0";
+
+        if (plannerProvider) {
+          const providerOutput = await plannerProvider({
+            message,
+            spec: structuredClone(activeSpec),
+            summary: summarizeSpec(activeSpec)
+          });
+          const providerPlan = ai.normalizeWorkbenchProviderPlan(providerOutput);
+
+          if (!providerPlan.ok) {
+            const provider = blockedProviderEvidence(providerOutput);
+            appendAuditRecord(auditRecords, {
+              sessionId,
+              providerId: provider.providerId,
+              promptHash: readString(providerOutput, "promptHash"),
+              traceId: readString(providerOutput, "traceId"),
+              status: "blocked",
+              commandCount: 0,
+              diagnostics: providerPlan.diagnostics,
+              fromRevision,
+              toRevision: activeSpec.revision ?? "0"
+            });
+            return sendJson(response, {
+              ...statePayload(engine, "blocked", activeSpec),
+              provider,
+              plan: null,
+              results: [],
+              traces: [],
+              diagnostics: providerPlan.diagnostics,
+              commandEvidence: commandEvidence([], false, false)
+            });
+          }
+
+          const plan = providerPlan.result.plan;
+          const skeleton = engine.createMapGenerationCommandSkeleton({
+            ...plan.request,
+            mapId: plan.request.mapId ?? activeSpec.id,
+            baseSpec: activeSpec
+          });
+
+          if (skeleton.status === "blocked") {
+            appendAuditRecord(auditRecords, {
+              sessionId,
+              providerId: providerPlan.result.provider.providerId,
+              promptHash: plan.provenance.promptHash,
+              traceId: skeleton.traceId,
+              status: "blocked",
+              commandCount: 0,
+              diagnostics: skeleton.diagnostics,
+              fromRevision,
+              toRevision: activeSpec.revision ?? "0"
+            });
+            return sendJson(response, {
+              ...statePayload(engine, "blocked", activeSpec),
+              provider: providerPlan.result.provider,
+              plan,
+              results: [],
+              traces: [],
+              diagnostics: skeleton.diagnostics,
+              commandEvidence: commandEvidence([], false, false)
+            });
+          }
+
+          const generationEvidence = await ai.createGenerationEvidenceBundle({
+            promptHash: plan.provenance.promptHash,
+            skeleton,
+            planner: {
+              plan,
+              ...(providerPlan.result.provider.confidence
+                ? { confidence: plannerConfidence(providerPlan.result.provider.confidence) }
+                : {})
+            }
+          });
+
+          if (!generationEvidence.ok) {
+            appendAuditRecord(auditRecords, {
+              sessionId,
+              providerId: providerPlan.result.provider.providerId,
+              promptHash: plan.provenance.promptHash,
+              traceId: skeleton.traceId,
+              status: "blocked",
+              commandCount: 0,
+              diagnostics: generationEvidence.diagnostics,
+              fromRevision,
+              toRevision: activeSpec.revision ?? "0"
+            });
+            return sendJson(response, {
+              ...statePayload(engine, "blocked", activeSpec),
+              provider: providerPlan.result.provider,
+              plan,
+              results: [],
+              traces: [],
+              diagnostics: generationEvidence.diagnostics,
+              commandEvidence: commandEvidence([], false, false)
+            });
+          }
+
+          const applied = engine.applyCommands(activeSpec, skeleton.commands, {
+            collectTrace: true,
+            traceId: skeleton.traceId
+          });
+          if (applied.committed && !applied.rolledBack) {
+            activeSpec = applied.spec;
+          }
+
+          const failed = applied.results.some((result) => result.status === "failed");
+          const status = failed ? "blocked" : "applied";
+          appendAuditRecord(auditRecords, {
+            sessionId,
+            providerId: providerPlan.result.provider.providerId,
+            promptHash: plan.provenance.promptHash,
+            traceId: applied.traceId,
+            status,
+            commandCount: applied.results.length,
+            diagnostics: applied.results.flatMap((result) => result.diagnostics),
+            fromRevision,
+            toRevision: activeSpec.revision ?? "0"
+          });
+          return sendJson(response, {
+            ...statePayload(engine, status, activeSpec),
+            provider: providerPlan.result.provider,
+            plan,
+            generationEvidence: compactGenerationEvidence(generationEvidence.result),
+            results: applied.results,
+            traces: applied.traces ?? [],
+            commandEvidence: commandEvidence(applied.results, applied.committed, applied.rolledBack)
+          });
+        }
+
         const plan = planMockAiEdit(message);
 
         if (plan.status === "reset") {
           activeSpec = createInitialSpec();
+          appendAuditRecord(auditRecords, {
+            sessionId,
+            providerId: "mock-ai",
+            status: "reset",
+            commandCount: 0,
+            diagnostics: [],
+            fromRevision,
+            toRevision: activeSpec.revision ?? "0"
+          });
           return sendJson(response, {
             ...statePayload(engine, "reset", activeSpec),
             plan,
@@ -49,6 +199,15 @@ export async function createWorkbenchServer(options = {}) {
         }
 
         if (plan.status === "unsupported") {
+          appendAuditRecord(auditRecords, {
+            sessionId,
+            providerId: "mock-ai",
+            status: "unsupported",
+            commandCount: 0,
+            diagnostics: [],
+            fromRevision,
+            toRevision: activeSpec.revision ?? "0"
+          });
           return sendJson(response, {
             ...statePayload(engine, "unsupported", activeSpec),
             plan,
@@ -67,8 +226,20 @@ export async function createWorkbenchServer(options = {}) {
         }
 
         const failed = applied.results.some((result) => result.status === "failed");
+        const status = failed ? "blocked" : "applied";
+        appendAuditRecord(auditRecords, {
+          sessionId,
+          providerId: "mock-ai",
+          promptHash: firstPromptHash(plan.commands),
+          traceId: applied.traceId,
+          status,
+          commandCount: applied.results.length,
+          diagnostics: applied.results.flatMap((result) => result.diagnostics),
+          fromRevision,
+          toRevision: activeSpec.revision ?? "0"
+        });
         return sendJson(response, {
-          ...statePayload(engine, failed ? "blocked" : "applied", activeSpec),
+          ...statePayload(engine, status, activeSpec),
           plan,
           results: applied.results,
           traces: applied.traces ?? [],
@@ -146,6 +317,15 @@ async function loadEngine() {
   }
 }
 
+async function loadAi() {
+  try {
+    return await import("@gis-engine/ai");
+  } catch (error) {
+    if (error?.code !== "ERR_MODULE_NOT_FOUND") throw error;
+    return import("../../packages/ai/dist/index.js");
+  }
+}
+
 function statePayload(engine, status, spec) {
   const validation = engine.validateSpec(spec);
   const transform = engine.transformMapSpecToMapLibreStyle(spec);
@@ -165,6 +345,108 @@ function statePayload(engine, status, spec) {
       zoom: spec.view.zoom ?? null
     }
   };
+}
+
+function summarizeSpec(spec) {
+  return {
+    mapId: spec.id ?? "unknown",
+    revision: spec.revision ?? "0",
+    sourceCount: Object.keys(spec.sources).length,
+    layerCount: spec.layers.length
+  };
+}
+
+function blockedProviderEvidence(providerOutput) {
+  const providerId =
+    providerOutput && typeof providerOutput === "object" && typeof providerOutput.providerId === "string"
+      ? providerOutput.providerId
+      : "unknown-provider";
+  return {
+    providerId,
+    retainedRawPrompt: false
+  };
+}
+
+function plannerConfidence(confidence) {
+  return {
+    level: confidence.level,
+    score: confidenceScore(confidence.level),
+    reasons: confidence.reasons
+  };
+}
+
+function confidenceScore(level) {
+  if (level === "high") return 0.9;
+  if (level === "medium") return 0.65;
+  return 0.35;
+}
+
+function compactGenerationEvidence(evidence) {
+  return {
+    promptHash: evidence.promptHash,
+    status: evidence.status,
+    planner: {
+      provided: evidence.plannerEvidence.provided,
+      plannerId: evidence.plannerEvidence.plannerId,
+      retainedRawPrompt: evidence.plannerEvidence.retainedRawPrompt,
+      confidence: evidence.plannerEvidence.confidence,
+      acceptedIntentFields: evidence.plannerEvidence.acceptedIntentFields,
+      unsupportedIntentFields: evidence.plannerEvidence.unsupportedIntentFields,
+      diagnosticCounts: evidence.plannerEvidence.diagnosticCounts
+    },
+    delivery: evidence.delivery,
+    command: {
+      usedApplyCommands: evidence.commandEvidence.usedApplyCommands,
+      commandCount: evidence.commandEvidence.commandCount,
+      committed: evidence.commandEvidence.committed,
+      rolledBack: evidence.commandEvidence.rolledBack,
+      diagnosticCounts: evidence.commandEvidence.diagnosticCounts
+    },
+    diagnostics: evidence.diagnostics
+  };
+}
+
+function appendAuditRecord(records, input) {
+  records.push({
+    id: `${input.sessionId}.${records.length + 1}`,
+    sessionId: input.sessionId,
+    timestamp: new Date().toISOString(),
+    status: input.status,
+    providerId: input.providerId,
+    ...(input.promptHash ? { promptHash: input.promptHash } : {}),
+    ...(input.traceId ? { traceId: input.traceId } : {}),
+    commandCount: input.commandCount,
+    diagnosticCounts: countDiagnostics(input.diagnostics ?? []),
+    fromRevision: input.fromRevision,
+    toRevision: input.toRevision
+  });
+  if (records.length > 50) records.splice(0, records.length - 50);
+}
+
+function countDiagnostics(diagnostics) {
+  return diagnostics.reduce(
+    (counts, diagnostic) => {
+      if (diagnostic.severity === "error" || diagnostic.severity === "warning" || diagnostic.severity === "info") {
+        counts[diagnostic.severity] += 1;
+      }
+      return counts;
+    },
+    { error: 0, warning: 0, info: 0 }
+  );
+}
+
+function firstPromptHash(commands) {
+  return commands.find((command) => typeof command.sourcePromptHash === "string")?.sourcePromptHash;
+}
+
+function readString(input, key) {
+  if (!input || typeof input !== "object") return undefined;
+  const value = input[key];
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+function createSessionId() {
+  return `workbench-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function commandEvidence(results, committed, rolledBack) {

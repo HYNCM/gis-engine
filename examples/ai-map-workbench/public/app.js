@@ -3,8 +3,10 @@ const chatForm = document.querySelector("#chat-form");
 const chatInput = document.querySelector("#chat-input");
 const statusPill = document.querySelector("#status-pill");
 const summaryList = document.querySelector("#summary-list");
+const providerList = document.querySelector("#provider-list");
 const diagnosticsList = document.querySelector("#diagnostics-list");
 const featureQuery = document.querySelector("#feature-query");
+const auditList = document.querySelector("#audit-list");
 const commandJson = document.querySelector("#command-json");
 const revisionReadout = document.querySelector("#revision-readout");
 const cameraReadout = document.querySelector("#camera-readout");
@@ -97,16 +99,29 @@ function applyPayload(payload) {
   setStatus(payload.status);
   renderMap(payload);
   renderSummary(payload);
+  renderProviderEvidence(payload);
   renderDiagnostics(payload.diagnostics ?? []);
+  refreshAudit();
   commandJson.textContent = JSON.stringify(
     {
       plan: payload.plan ?? null,
+      provider: payload.provider ?? null,
+      generationEvidence: payload.generationEvidence ?? null,
       commandEvidence: payload.commandEvidence ?? null,
       results: payload.results ?? []
     },
     null,
     2
   );
+}
+
+async function refreshAudit() {
+  try {
+    const audit = await fetchJson("/api/audit");
+    renderAudit(audit.records ?? []);
+  } catch (error) {
+    renderAudit([]);
+  }
 }
 
 function renderMap(payload) {
@@ -164,6 +179,23 @@ function renderSummary(payload) {
   );
 }
 
+function renderProviderEvidence(payload) {
+  const provider = payload.provider;
+  const evidence = payload.generationEvidence;
+  const planner = evidence?.planner;
+  const delivery = evidence?.delivery;
+  const rows = [
+    ["Provider", provider?.providerId ?? "mock"],
+    ["Raw prompt", provider?.retainedRawPrompt === false ? "not retained" : "not provided"],
+    ["Planner", planner?.provided ? planner.plannerId : "mock fallback"],
+    ["Confidence", provider?.confidence?.level ?? planner?.confidence?.level ?? "--"],
+    ["Delivery", delivery?.status ?? "not requested"],
+    ["Prompt hash", evidence?.promptHash ?? "--"]
+  ];
+
+  providerList.replaceChildren(...definitionRows(rows));
+}
+
 function renderDiagnostics(diagnostics) {
   if (diagnostics.length === 0) {
     const empty = document.createElement("p");
@@ -185,6 +217,16 @@ function renderDiagnostics(diagnostics) {
       return item;
     })
   );
+}
+
+function definitionRows(rows) {
+  return rows.flatMap(([label, value]) => {
+    const term = document.createElement("dt");
+    term.textContent = label;
+    const description = document.createElement("dd");
+    description.textContent = value;
+    return [term, description];
+  });
 }
 
 function renderFeatureQuery(query) {
@@ -215,6 +257,32 @@ function renderFeatureQuery(query) {
       article.append(name, meta);
       return article;
     })
+  );
+}
+
+function renderAudit(records) {
+  if (records.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "empty-state";
+    empty.textContent = "No session records.";
+    auditList.replaceChildren(empty);
+    return;
+  }
+
+  auditList.replaceChildren(
+    ...records
+      .slice(-3)
+      .reverse()
+      .map((record) => {
+        const article = document.createElement("article");
+        article.className = "audit-card";
+        const title = document.createElement("strong");
+        title.textContent = `${record.status} / ${record.commandCount} command(s)`;
+        const meta = document.createElement("p");
+        meta.textContent = `${record.fromRevision} -> ${record.toRevision} / ${record.providerId}`;
+        article.append(title, meta);
+        return article;
+      })
   );
 }
 

@@ -8,6 +8,13 @@
 
 **Tech Stack:** TypeScript AI/engine packages, TypeBox/Ajv schemas already exported by `@gis-engine/engine`, Node ESM workbench server, plain browser UI, Vitest, `MapCommand`, `applyCommands`, `createGenerationEvidenceBundle`.
 
+**2026-05-31 execution status:** Task 1 and AMW-002 are complete. Tasks 2-4
+landed as the AMW-003 provider-gated workbench slice: injected provider mode,
+compact generation evidence, visible provider/session evidence, and bounded
+payload-free audit records. Task 5 documentation has been updated; final gates
+passed with focused provider/workbench suites, browser smoke, `git diff
+--check`, and `pnpm check`.
+
 ---
 
 ## File Structure

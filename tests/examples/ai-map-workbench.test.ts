@@ -93,6 +93,76 @@ describe("ai-map-workbench API", () => {
     expect(result.diagnostics).toEqual([]);
   });
 
+  it("applies injected provider output through the command path", async () => {
+    const server = await createWorkbenchServer({
+      port: 0,
+      plannerProvider: async () => ({
+        providerId: "fixture-provider",
+        promptHash: "sha256:server-provider",
+        traceId: "trace-server-provider",
+        intent: {
+          mapId: "server-provider",
+          targetDomains: ["feature-display"],
+          styleEdits: [{ layerId: "poi-circles", paint: { "circle-color": "#ef4444" } }]
+        }
+      })
+    });
+    closeServer = server.close;
+
+    const response = await fetch(`${server.url}/api/chat`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        message: "make the point layer red with provider mode"
+      })
+    });
+    const result = await response.json();
+
+    expect(response.ok).toBe(true);
+    expect(result.status).toBe("applied");
+    expect(result.provider).toMatchObject({
+      providerId: "fixture-provider",
+      retainedRawPrompt: false
+    });
+    expect(result.generationEvidence.delivery.status).toBe("ready");
+    expect(result.generationEvidence.planner.provided).toBe(true);
+    expect(result.skeleton).toBeUndefined();
+    expect(JSON.stringify(result.generationEvidence)).not.toContain("West Lake");
+    expect(result.commandEvidence.committed).toBe(true);
+    expect(result.summary.revision).toBe("2");
+  });
+
+  it("blocks unsafe provider output without mutating the active spec", async () => {
+    const server = await createWorkbenchServer({
+      port: 0,
+      plannerProvider: async () => ({
+        providerId: "unsafe-provider",
+        promptHash: "sha256:unsafe-server-provider",
+        rawPrompt: "make points red",
+        javascript: "map.setPaintProperty('poi-circles', 'circle-color', 'red')"
+      })
+    });
+    closeServer = server.close;
+
+    const response = await fetch(`${server.url}/api/chat`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        message: "unsafe provider output"
+      })
+    });
+    const result = await response.json();
+
+    expect(response.ok).toBe(true);
+    expect(result.status).toBe("blocked");
+    expect(result.summary.revision).toBe("1");
+    expect(result.diagnostics.map((diagnostic: { code: string }) => diagnostic.code)).toContain("CAPABILITY.UNSUPPORTED");
+  });
+
   it("queries inline map features through the engine", async () => {
     const server = await createWorkbenchServer({ port: 0 });
     closeServer = server.close;
@@ -119,5 +189,33 @@ describe("ai-map-workbench API", () => {
       })
     ]);
     expect(result.query.diagnostics).toEqual([]);
+  });
+
+  it("keeps bounded payload-free audit records", async () => {
+    const server = await createWorkbenchServer({ port: 0 });
+    closeServer = server.close;
+
+    await fetch(`${server.url}/api/chat`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        message: "make points red"
+      })
+    });
+    const response = await fetch(`${server.url}/api/audit`);
+    const result = await response.json();
+
+    expect(response.ok).toBe(true);
+    expect(result.records).toHaveLength(1);
+    expect(result.records[0]).toMatchObject({
+      status: "applied",
+      commandCount: 1,
+      fromRevision: "1",
+      toRevision: "2"
+    });
+    expect(JSON.stringify(result.records[0])).not.toContain("West Lake");
+    expect(JSON.stringify(result.records[0])).not.toContain("make points red");
   });
 });

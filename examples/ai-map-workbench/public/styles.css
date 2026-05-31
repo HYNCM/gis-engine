@@ -471,14 +471,16 @@ h3 {
 }
 
 .diagnostics-list,
-.feature-query {
+.feature-query,
+.audit-list {
   display: grid;
   gap: 10px;
   margin-top: 14px;
 }
 
 .feature-card,
-.diagnostic {
+.diagnostic,
+.audit-card {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--paper);
@@ -500,6 +502,19 @@ h3 {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.45;
+}
+
+.audit-card strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.audit-card p {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .diagnostic {
