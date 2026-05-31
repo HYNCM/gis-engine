@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Map Workbench</title>
+    <link rel="stylesheet" href="/vendor/maplibre-gl.css" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="workbench-shell">
+      <aside class="chat-panel" aria-label="AI chat sidebar">
+        <button id="toggle-chat-panel" type="button" class="rail-toggle left" aria-expanded="true" aria-label="Collapse chat sidebar">
+          <span class="rail-expanded">&lt;&lt;</span>
+          <span class="rail-collapsed">Chat</span>
+        </button>
+        <div class="panel-content">
+          <header class="panel-header">
+            <div class="header-line">
+              <p class="eyebrow">Local mock AI</p>
+              <span class="tiny-badge">Command only</span>
+            </div>
+            <h1>AI Map Workbench</h1>
+            <p class="subtle">Structured chat edits for the current GIS Engine.</p>
+          </header>
+
+          <div id="messages" class="messages" aria-live="polite"></div>
+
+          <div class="prompt-bank" aria-label="Prompt shortcuts">
+            <button type="button" data-prompt="make points red">Red</button>
+            <button type="button" data-prompt="make points blue">Blue</button>
+            <button type="button" data-prompt="increase point size">Larger</button>
+            <button type="button" data-prompt="zoom to Hangzhou">Zoom</button>
+          </div>
+
+          <form id="chat-form" class="chat-form">
+            <label class="sr-only" for="chat-input">Map instruction</label>
+            <input id="chat-input" name="message" autocomplete="off" placeholder="Ask for a local map edit" />
+            <button type="submit" aria-label="Send instruction">Send</button>
+          </form>
+        </div>
+      </aside>
+
+      <main class="map-stage">
+        <header class="stage-bar">
+          <div>
+            <p class="eyebrow">Map display</p>
+            <h2 id="map-title">Starter POI scene</h2>
+          </div>
+          <div class="stage-meta" aria-label="Renderer context">
+            <span>MapLibre</span>
+            <span>MapSpec v0.1</span>
+          </div>
+          <div id="status-pill" class="status-pill">Loading</div>
+        </header>
+        <div id="map" class="map-canvas" aria-label="MapLibre map"></div>
+        <div class="map-readout" aria-label="Current map state">
+          <span id="revision-readout">revision --</span>
+          <span id="camera-readout">camera --</span>
+        </div>
+      </main>
+
+      <aside class="evidence-panel" aria-label="Engine evidence">
+        <button id="toggle-evidence-panel" type="button" class="rail-toggle right" aria-expanded="true" aria-label="Collapse evidence sidebar">
+          <span class="rail-expanded">&gt;&gt;</span>
+          <span class="rail-collapsed">Evidence</span>
+        </button>
+        <div class="panel-content">
+          <header class="panel-header compact">
+            <div class="header-line">
+              <p class="eyebrow">Engine evidence</p>
+              <span class="tiny-badge live">Live</span>
+            </div>
+            <h2>Command trail</h2>
+          </header>
+
+          <div class="evidence-scroll">
+            <section class="evidence-section">
+              <h3>Summary</h3>
+              <dl id="summary-list" class="summary-list"></dl>
+            </section>
+
+            <section class="evidence-section">
+              <h3>Diagnostics</h3>
+              <div id="diagnostics-list" class="diagnostics-list"></div>
+            </section>
+
+            <section class="evidence-section">
+              <h3>Feature query</h3>
+              <div id="feature-query" class="feature-query"></div>
+            </section>
+
+            <section class="evidence-section">
+              <h3>Last command</h3>
+              <pre id="command-json" class="code-panel">{}</pre>
+            </section>
+
+            <button id="reset-button" type="button" class="reset-button">Reset workbench</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <script src="/vendor/maplibre-gl.js"></script>
+    <script src="/app.js" defer></script>
+  </body>
+</html>

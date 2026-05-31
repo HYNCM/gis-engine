@@ -7,6 +7,7 @@ import pmtilesLocal from "../../examples/pmtiles-local/map.json";
 import rasterBasemap from "../../examples/raster-basemap/map.json";
 import vectorTileUrl from "../../examples/vector-tile-url/map.json";
 import fillExtrusionLite from "../../examples/fill-extrusion-lite/map.json";
+import { createInitialSpec as createAiMapWorkbenchSpec } from "../../examples/ai-map-workbench/initial-map.mjs";
 import { applyCommands, transformMapSpecToMapLibreStyle, validateSpec, type MapCommand, type MapSpec } from "@gis-engine/engine";
 
 describe("examples gate", () => {
@@ -27,6 +28,12 @@ describe("examples gate", () => {
       spec: () => applyCommands(aiBefore as MapSpec, aiCommands as MapCommand[]).spec,
       firstLayerId: "poi-circles",
       expectedRevision: "2"
+    },
+    {
+      id: "ai-map-workbench",
+      spec: () => createAiMapWorkbenchSpec() as MapSpec,
+      firstLayerId: "background",
+      expectedRevision: "1"
     },
     {
       id: "raster-basemap",
@@ -90,6 +97,7 @@ describe("examples gate", () => {
     expect(examples.map((example) => example.id)).toEqual([
       "basic-geojson",
       "ai-map-edit",
+      "ai-map-workbench",
       "raster-basemap",
       "pmtiles-local",
       "vector-tile-url",

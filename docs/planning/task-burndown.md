@@ -322,6 +322,30 @@ Spatial Query Evidence Hardening sprint is serialized closed by
 `docs/reviews/sqh-006-quality-gate-closure-2026-05-31.md`. The workstream now
 returns to planning state for refreshed competitive/product/task inputs.
 
+## 2026-05-31 AI Map Workbench Product Evolution
+
+The AI Map Workbench is now a runnable generated-app review candidate, not a
+production package and not a real model integration. It turns the closed NLA,
+NLQ, AIN, GIR, and SQH evidence spine into a browser surface where reviewers can
+inspect prompt intent, command-only mutation, MapLibre rendering, structured
+diagnostics, feature query, and immersive map review in one place.
+
+This batch does not add MCP aliases, browser-side spec mutation, external model
+calls, hidden file writes, external basemap/resource fetches, or stable
+SceneView3D runtime claims.
+
+| id | title | priority | owner | status | evidence target | acceptance | finish gates |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| TASK-2026W22-AMW-001 | Accept runnable AI map workbench review surface | P0 | `@coordinator`, `@product-strategist`, `@qa-agent` | done | `docs/reviews/amw-001-product-evolution-2026-05-31.md`; `examples/ai-map-workbench`; commits `20743a8`, `8e8026e`, `99e7944` | local mock prompt, command evidence, MapLibre rendering, feature query, and collapsible review rails are visible without leaving `examples/` scope | `pnpm check`; browser smoke at `http://127.0.0.1:4321/`; `git diff --check` |
+| TASK-2026W22-AMW-002 | Freeze provider boundary for real-model integration | P0 | `@product-strategist`, `@ai-agent`, `@engine-agent` | todo | provider-boundary feature spec and AI contract tests | real model output is converted to typed command skeletons or `MapCommand` values before mutation; mock planner remains deterministic fallback; unsupported output returns structured diagnostics | `pnpm build:schema`; `pnpm test:schema-sync`; `pnpm test:ai`; `pnpm test:examples`; `pnpm check` |
+| TASK-2026W22-AMW-003 | Add workbench review-console acceptance fixtures | P1 | `@qa-agent`, `@docs-agent` | todo | prompt-to-workbench review scenarios and docs alignment | ready, unsupported, command-applied, query-ready, and collapsed-evidence states are covered without depending on prose or screenshots alone | `pnpm test:examples`; `pnpm test:ai` when evidence schemas change; browser smoke; `pnpm check` |
+| TASK-2026W22-AMW-004 | Decide example-to-product promotion gate | P1 | `@quality-guardian`, `@coordinator` | todo | AMW promotion gate report | the workbench either remains an example, becomes a generated-app review-console slice, or is blocked with named schema, resource, provider, and visual evidence gaps | `pnpm check`; resource-policy review if any external provider/resource is introduced; visual gate or coordinator waiver |
+
+2026-05-31 AMW execution update: the runnable workbench is accepted as a
+product-evolution candidate by
+`docs/reviews/amw-001-product-evolution-2026-05-31.md`. The next queued task is
+`AMW-002`.
+
 ## 2026-W22 MapLibre Source Drift Audit
 
 2026-05-31 planning update: refreshed package evidence keeps MapLibre/Mapbox
