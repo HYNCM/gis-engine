@@ -408,7 +408,7 @@ describe("ai-map-workbench OpenAI-compatible provider adapter", () => {
     const { callOpenAiCompatibleProvider } = await import(
       "../../examples/ai-map-workbench/openai-compatible-provider.mjs"
     );
-    const longReason = `${"x".repeat(180)} raw prompt: ${rawMessage}`;
+    const longReason = "x".repeat(180);
     const response = await callOpenAiCompatibleProvider({
       profile,
       apiKey,
@@ -448,6 +448,51 @@ describe("ai-map-workbench OpenAI-compatible provider adapter", () => {
     });
     expect(JSON.stringify(response.providerOutput)).not.toContain(rawProviderBody);
     expect(JSON.stringify(response.providerOutput)).not.toContain(rawMessage);
+  });
+
+  it("omits confidence reasons that contain prompt, credential, or raw provider markers", async () => {
+    const { callOpenAiCompatibleProvider } = await import(
+      "../../examples/ai-map-workbench/openai-compatible-provider.mjs"
+    );
+    const providerMarker = "provider-private-marker";
+    const response = await callOpenAiCompatibleProvider({
+      profile,
+      apiKey,
+      message: rawMessage,
+      summary,
+      fetchImpl: async () =>
+        new Response(
+          JSON.stringify({
+            choices: [
+              {
+                message: {
+                  content: JSON.stringify({
+                    intent: {
+                      mapId: "ai-map-workbench",
+                      targetDomains: ["feature-display"],
+                      styleEdits: [{ layerId: "poi-circles", paint: { "circle-color": "#ef4444" } }]
+                    },
+                    rawProviderTrace: providerMarker,
+                    confidence: {
+                      level: "medium",
+                      reasons: [rawMessage, apiKey, providerMarker]
+                    }
+                  })
+                }
+              }
+            ]
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+    });
+
+    expect(response.ok).toBe(true);
+    if (!response.ok) throw new Error("Expected provider call to succeed.");
+    expect(response.providerOutput.confidence).toBeUndefined();
+    const serialized = JSON.stringify(response.providerOutput);
+    expect(serialized).not.toContain(rawMessage);
+    expect(serialized).not.toContain(apiKey);
+    expect(serialized).not.toContain(providerMarker);
   });
 
   it("omits invalid provider confidence instead of returning raw invalid content", async () => {

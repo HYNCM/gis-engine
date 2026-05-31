@@ -36,7 +36,12 @@ export async function callOpenAiCompatibleProvider(input) {
     const parsed = parseJsonObject(content);
     if (!parsed.ok) return providerError(profile, "/providerResponse", "Provider response content must be a JSON object.");
 
-    const confidence = sanitizeConfidence(parsed.value.confidence);
+    const confidence = sanitizeConfidence(parsed.value.confidence, {
+      apiKey,
+      message,
+      providerContent: content,
+      providerValue: parsed.value
+    });
     return {
       ok: true,
       providerOutput: {
@@ -80,15 +85,47 @@ function hashPrompt(message) {
   return `sha256:${createHash("sha256").update(message).digest("hex")}`;
 }
 
-function sanitizeConfidence(value) {
+function sanitizeConfidence(value, leakContext) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
   if (!["low", "medium", "high"].includes(value.level)) return undefined;
   if (!Array.isArray(value.reasons) || !value.reasons.every((reason) => typeof reason === "string")) return undefined;
 
+  const forbiddenMarkers = collectForbiddenMarkers(leakContext, value.reasons);
+  const reasons = value.reasons
+    .filter((reason) => isSafeReason(reason, forbiddenMarkers))
+    .slice(0, 3)
+    .map((reason) => reason.slice(0, 160));
+  if (reasons.length === 0) return undefined;
+
   return {
     level: value.level,
-    reasons: value.reasons.slice(0, 3).map((reason) => reason.slice(0, 160))
+    reasons
   };
+}
+
+function collectForbiddenMarkers({ apiKey, message, providerContent, providerValue }, confidenceReasons) {
+  const markers = [apiKey, message, providerContent].filter((marker) => typeof marker === "string" && marker.length > 0);
+  collectProviderStrings(providerValue, markers, confidenceReasons);
+  return markers;
+}
+
+function collectProviderStrings(value, markers, confidenceReasons) {
+  if (typeof value === "string") {
+    markers.push(value);
+    return;
+  }
+  if (!value || typeof value !== "object") return;
+  if (Array.isArray(value)) {
+    if (value === confidenceReasons) return;
+    for (const item of value) collectProviderStrings(item, markers, confidenceReasons);
+    return;
+  }
+  for (const item of Object.values(value)) collectProviderStrings(item, markers, confidenceReasons);
+}
+
+function isSafeReason(reason, forbiddenMarkers) {
+  const normalizedReason = reason.toLowerCase();
+  return !forbiddenMarkers.some((marker) => normalizedReason.includes(marker.toLowerCase()));
 }
 
 function providerError(profile, path, message) {
