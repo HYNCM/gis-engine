@@ -125,5 +125,10 @@ plan in `docs/planning/feature-specs/ai-map-workbench-product-boundary.md` and
 `docs/planning/sprint-2026-W23-ai-map-workbench-product-boundary.md`; `AMW-007`
 completed provider credential/resource administration as a planning handoff.
 Future code work must add base URL policy, timeout/abort, response size caps,
-and identity-field validation before hosted or product use. The next planning
-task is `AMW-008` durable audit retention/export design.
+and identity-field validation before hosted or product use.
+
+2026-06-01 AMW-008 update: durable audit retention/export design is complete as
+a planning handoff. Future product-mode storage must keep audit records compact,
+retention-bound, access-controlled, export-capped, and free of raw prompts,
+provider bodies, credentials, feature payloads, screenshots, and full map specs.
+The next planning task is `AMW-009` command-safe review action design.

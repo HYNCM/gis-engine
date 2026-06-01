@@ -105,5 +105,16 @@ external fetches, write generated app files, or expose raw provider payloads.
 `docs/reviews/amw-007-provider-resource-admin-2026-06-01.md`. The provider
 administration design keeps current server-only credentials and browser-safe
 metadata, records base URL, timeout, size, and diagnostic follow-ups, and keeps
-product promotion blocked. The next task is durable audit retention and export
-design under `AMW-008`.
+product promotion blocked. That handoff fed the durable audit retention/export
+design now closed under `AMW-008`.
+
+## 2026-06-01 AMW-008 Addendum
+
+`AMW-008` is captured in
+`docs/planning/feature-specs/ai-map-workbench-durable-audit.md` and
+`docs/reviews/amw-008-durable-audit-retention-export-2026-06-01.md`. The durable
+audit design preserves the current latest-50 in-memory audit behavior for the
+example and defines future product-mode retention, privacy, access control,
+export shape, payload caps, deletion behavior, and diagnostic paths before any
+persistent storage implementation. Product promotion remains blocked. The next
+task is command-safe review action design under `AMW-009`.

@@ -142,3 +142,14 @@ benchmark below was refreshed on 2026-05-31 from official sources recorded in
 - AI operability stays at 9.5 because no public AI schema or MCP contract
   changed. The next score movement requires accepted durable audit or review
   action evidence, not design text alone.
+
+## 2026-06-01 AMW-008 Addendum
+
+- Developer experience stays at 8.0. Durable audit retention/export is now a
+  design handoff, but the workbench still lacks command-safe review actions,
+  visual product evidence, and a quality-guardian/coordinator promotion
+  decision.
+- AI operability stays at 9.5 because AMW-008 adds no public AI schema, MCP
+  contract, durable storage runtime, or review-action runtime behavior. The
+  next score movement requires accepted AMW-009 review-action evidence or a
+  product-promotion gate.

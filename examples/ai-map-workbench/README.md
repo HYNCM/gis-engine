@@ -89,8 +89,19 @@ provider request bodies, and raw provider response bodies must stay server-only.
 
 Only mock mode and OpenAI-compatible chat completions are in scope for this
 example. Product or hosted use still needs the AMW provider-administration
-follow-up: base URL scheme/host policy, timeout/abort behavior, response size
-limits, durable audit rules, and product-owned credential/resource review.
+implementation follow-up: base URL scheme/host policy, timeout/abort behavior,
+response size limits, and product-owned credential/resource review.
+
+## Durable Audit Guardrails
+
+`/api/audit` remains a local, in-memory, latest-50 session evidence endpoint.
+AMW-008 defines future durable audit retention/export behavior, but this example
+does not implement a database, export endpoint, auth system, browser file write,
+or persistent review workflow.
+
+Future product-mode audit storage must keep records compact, retention-bound,
+access-controlled, export-capped, and free of raw prompts, provider raw bodies,
+credentials, feature payloads, screenshots, browser state, and full map specs.
 
 ## Evidence
 
@@ -103,7 +114,8 @@ The chat API returns compact review evidence:
   the server-side command transaction.
 - `/api/audit`: the latest 50 payload-free session records with provider id,
   prompt hash when available, trace id, status, command count, diagnostic
-  counts, and revision movement.
+  counts, and revision movement. Durable retention/export is design-only until
+  a later implementation adds schemas, authorization, caps, and tests.
 
 The audit endpoint intentionally does not store raw prompts, provider raw
 outputs, map specs, feature payloads, screenshots, credentials, or browser

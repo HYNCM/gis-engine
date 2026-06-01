@@ -119,12 +119,13 @@ preserving the local/example boundary: browser code sees safe provider metadata
 and sends only `providerId`; the server owns credential lookup, provider calls,
 normalization, command application, and payload-free audit evidence.
 
-AMW-006 opened the product-boundary planning batch, and AMW-007 completed
-provider credential/resource administration as a design handoff. The workbench
-remains under `examples/ai-map-workbench` until a future quality gate accepts
-the full product boundary. The next product architecture gap is AMW-008 durable
-audit retention/export design before any product app movement, hosted
-deployment, persistent audit storage, or review actions are implemented.
+AMW-006 opened the product-boundary planning batch, AMW-007 completed provider
+credential/resource administration as a design handoff, and AMW-008 completed
+durable audit retention/export as a design handoff. The workbench remains under
+`examples/ai-map-workbench` until a future quality gate accepts the full product
+boundary. The next product architecture gap is AMW-009 command-safe review
+action design before any product app movement, hosted deployment, persistent
+audit storage, or review actions are implemented.
 
 ## 2026-06-01 AMW-007 Addendum
 
@@ -133,4 +134,15 @@ AMW-007 defines provider credential/resource administration in
 design records current server-only profile behavior and reserves future gates
 for base URL policy, timeout/abort behavior, response size caps, and public
 metadata validation. Product promotion remains blocked; the next product
-architecture gap is durable audit retention and export behavior.
+architecture gap has advanced to command-safe review action design after
+AMW-008.
+
+## 2026-06-01 AMW-008 Addendum
+
+AMW-008 defines durable audit retention/export in
+`docs/planning/feature-specs/ai-map-workbench-durable-audit.md`. The design
+keeps the current local audit endpoint as latest-50 in-memory evidence and
+reserves future product-mode gates for retention windows, privacy rules,
+project-scoped access, JSON export shape, payload caps, hard deletion, and
+payload-free deletion receipts. Product promotion remains blocked; the next
+product architecture gap is command-safe accept/block/follow-up review actions.
