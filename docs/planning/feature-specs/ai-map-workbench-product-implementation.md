@@ -146,6 +146,26 @@ adding product storage:
 - `/api/audit` remains latest-50 in-memory local evidence; no database, export
   endpoint, auth UI, browser write, or hosted deployment is added.
 
+## AWP-005 Acceptance
+
+`AWP-005` must implement review decisions as command-safe evidence:
+
+- Accept, block, and follow-up-required decisions are append-only and in-memory
+  inside the example boundary.
+- Browser requests send only outcome, reason codes, and optional follow-up task
+  ids; the server derives ids, timestamps, session/project context, and compact
+  evidence references.
+- Review decision creation uses project-scoped reviewer/admin authorization and
+  does not inherit service-only audit append authority.
+- Decisions are linked to compact audit/provider/command/diagnostic summaries
+  and never store raw prompts, provider raw bodies, command bodies, patches,
+  screenshots, feature payloads, credentials, or full `MapSpec` payloads.
+- Review decision endpoints must not mutate `MapSpec`, return full map payloads,
+  write browser files, write planning state, or add MCP tool names.
+- Focused tests cover accepted, blocked, follow-up-required, stale/blocked
+  evidence rejection, payload leak rejection, command-safety rejection, and UI
+  request shape.
+
 ## 2026-06-02 AWP-002 Addendum
 
 `AWP-002` is captured in
@@ -173,3 +193,12 @@ durable audit boundary is now represented by pure contract helpers and focused
 tests for compact records, project-scoped authorization, export caps, deletion
 receipts, and raw-payload rejection. Durable storage and export endpoints remain
 blocked. The next task is `AWP-005` command-safe review decisions.
+
+## 2026-06-02 AWP-005 Addendum
+
+`AWP-005` is captured in
+`docs/reviews/awp-005-command-safe-review-decisions-2026-06-02.md`. The example
+now supports local in-memory review decisions through compact API/UI controls
+without direct `MapSpec` mutation, browser file writes, durable storage, hosted
+promotion, or new MCP tool names. The next task is `AWP-006` repeatable
+workbench UI evidence.

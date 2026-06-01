@@ -205,5 +205,17 @@ benchmark below was refreshed on 2026-05-31 from official sources recorded in
   endpoint, review-action runtime, or repeatable UI evidence.
 - AI operability stays at 9.5 because audit evidence remains compact and
   payload-free without adding public MCP tools or direct mutation paths.
-- The next score movement requires `AWP-005` command-safe review decisions plus
-  accepted repeatable UI evidence, not audit contract helpers alone.
+- The next score movement requires command-safe review decisions plus accepted
+  repeatable UI evidence, not audit contract helpers alone.
+
+## 2026-06-02 AWP-005 Addendum
+
+- Developer experience stays at 8.0. Local review decision controls now make
+  accept/block/follow-up outcomes usable inside the example, but product app
+  movement, durable review storage, hosted deployment, and repeatable UI
+  evidence remain open.
+- AI operability stays at 9.5 because decisions are append-only compact evidence
+  and do not create new mutation paths or MCP tool names.
+- The next score movement requires `AWP-006` repeatable UI evidence and the
+  later `AWP-007` product implementation gate, not review decision runtime
+  alone.

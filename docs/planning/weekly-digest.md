@@ -182,7 +182,8 @@ move to `TASK-2026W23-SQH-003`.
 | TASK-2026W23-AWP-002 | done | `docs/reviews/awp-002-provider-resource-enforcement-2026-06-02.md`; provider base URL policy, timeout/abort, response byte cap, and leak regressions |
 | TASK-2026W23-AWP-003 | done | `docs/reviews/awp-003-product-ownership-project-model-2026-06-02.md`; product ownership, route/module boundary, project identity model, and non-go language |
 | TASK-2026W23-AWP-004 | done | `docs/reviews/awp-004-authorized-durable-audit-contract-2026-06-02.md`; durable audit contract helpers for project-scoped access, export caps, deletion receipts, and raw-payload rejection |
-| TASK-2026W23-AWP-005 | queued | command-safe review decisions as append-only evidence, not direct `MapSpec` mutation |
+| TASK-2026W23-AWP-005 | done | `docs/reviews/awp-005-command-safe-review-decisions-2026-06-02.md`; command-safe review decisions as append-only evidence, not direct `MapSpec` mutation |
+| TASK-2026W23-AWP-006 | queued | repeatable workbench UI evidence for provider, evidence, diagnostics, audit, and review-decision states |
 
 ## Next Handoff
 
@@ -207,7 +208,7 @@ move to `TASK-2026W23-SQH-003`.
   now `TASK-2026W23-AWP-001` through `AWP-007`; use it before any product app
   movement, hosted deployment, durable audit runtime, or review-action
   implementation.
-- `@engine-agent`, `@ai-agent`, and `@qa-agent`: take
-  `TASK-2026W23-AWP-005` next. Implement command-safe accept/block/follow-up
-  decisions as append-only evidence linked to compact audit/provider/command
-  diagnostics, without direct `MapSpec` mutation or new MCP tool names.
+- `@qa-agent` and `@docs-agent`: take `TASK-2026W23-AWP-006` next. Capture
+  repeatable workbench UI evidence for provider selector, evidence rails,
+  diagnostics, audit, and review-decision states before the product
+  implementation gate.

@@ -509,6 +509,29 @@ h3 {
   margin-top: 14px;
 }
 
+.review-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.review-actions button {
+  min-height: 34px;
+  border: 1px solid rgba(40, 74, 82, 0.2);
+  border-radius: 6px;
+  background: #f7fbfa;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.review-actions button:hover {
+  border-color: rgba(11, 143, 111, 0.45);
+  background: #eef8f4;
+}
+
 .feature-card,
 .diagnostic,
 .audit-card {

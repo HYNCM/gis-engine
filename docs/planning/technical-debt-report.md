@@ -150,16 +150,22 @@ deletion、export caps 和 payload-free audit semantics。
 和 follow-up-required 决策做成 append-only evidence，而不是第二条 map mutation
 path。
 
+2026-06-02 AWP-005 update: command-safe review decisions 已由
+`docs/reviews/awp-005-command-safe-review-decisions-2026-06-02.md` 记录。当前最高
+优先级债务转为 `AWP-006` repeatable workbench UI evidence：需要把 provider
+selector、evidence rails、diagnostics、audit 和 review-decision states 形成可重复
+浏览器证据。
+
 ## 债务优先级
 
 | 排名 | 债务 | 得分 | 证据 | 建议修复 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | AWP command-safe review decisions | 0.15 | `AWP-004` closes authorized durable audit contract; `AWP-005` must implement accept, block, and follow-up-required decisions as append-only evidence linked to compact audit/provider/command diagnostics | execute `TASK-2026W23-AWP-005` before UI evidence or product gate work | high |
+| 1 | AWP repeatable UI evidence | 0.14 | `AWP-005` closes command-safe review decisions; `AWP-006` must capture repeatable provider/evidence/diagnostic/audit/review-decision UI evidence before product gate work | execute `TASK-2026W23-AWP-006` before the implementation Go/No-go gate | high |
 | 2 | Future MapLibre package movement gate | 0.12 | `MLD-004` blocks package movement in this batch; current code remains on the existing `maplibre-gl` range | create a new package-movement task only after official source refresh and strict visual evidence are available | high |
 
 ## 修复顺序
 
-1. 执行 `TASK-2026W23-AWP-005`：实现 command-safe review decisions，确保 accept/block/follow-up-required 只写 append-only decision evidence，不直接改 `MapSpec`、不写浏览器文件、不新增 MCP tool name。
+1. 执行 `TASK-2026W23-AWP-006`：生成 repeatable workbench UI evidence，覆盖 provider selector、evidence rails、diagnostics、audit 和 review-decision states。
 2. 后续若要移动 MapLibre package，先开新任务并刷新官方 package/changelog evidence、example loading compatibility 和 strict visual gates。
 3. 下一步若要推进 stable runtime promotion，必须先形成明确的 promotion
    rubric、browser matrix evidence 和 guardrail diagnostics，不得直接把
@@ -172,7 +178,7 @@ path。
 
 ## 结论
 
-如果只做一件事，下一步优先执行 `TASK-2026W23-AWP-005`。Generated-app delivery
+如果只做一件事，下一步优先执行 `TASK-2026W23-AWP-006`。Generated-app delivery
 review fixtures、source readiness review cards、spatial-analysis review cards、
 prompt-to-delivery QA scenarios、docs/release wording guardrails、SQH boundary
 planning、explicit query capability gate 和 invalid/source diagnostics 已完成。
@@ -183,4 +189,5 @@ MLD-004 收口为 package movement No-go。AI Map Workbench Product Boundary 已
 retention/export、review actions 和 AMW-010 No-go gate；AWP-001 已打开新的产品
 实现批次，AWP-002 provider resource enforcement 已落地，AWP-003 product
 ownership/project model 已记录，AWP-004 durable audit contract 已落地。SceneView3D
-stable runtime 仍保持 blocker state，直到新的 explicit approval arrives。
+stable runtime 仍保持 blocker state，直到新的 explicit approval arrives。AWP-005
+command-safe review decisions 已落地，下一步需要 UI evidence。

@@ -350,7 +350,8 @@ planning state, the next edge is AI Map Workbench Product Implementation.
 DAG. `AWP-002` is complete as provider resource enforcement inside the
 local/example boundary, `AWP-003` is complete as product ownership/project model
 decision evidence, `AWP-004` is complete as authorized durable audit contract
-evidence, and `AWP-005` is the next queued task.
+evidence, `AWP-005` is complete as command-safe review decision evidence, and
+`AWP-006` is the next queued task.
 
 ```mermaid
 flowchart LR
@@ -373,7 +374,7 @@ flowchart LR
 | TASK-2026W23-AWP-002 | AWP-001, AMW-007 | provider enforcement implementation report | provider/workbench tests; leak regression tests; `pnpm test:examples`; `pnpm check`; `git diff --check` | done |
 | TASK-2026W23-AWP-003 | AWP-001 | product ownership decision note | planning review; `pnpm test:docs`; `git diff --check` | done |
 | TASK-2026W23-AWP-004 | AWP-003, AMW-008 | durable audit contract delta report | schema/design review; focused audit tests; `pnpm check`; `git diff --check` | done |
-| TASK-2026W23-AWP-005 | AWP-002, AWP-003, AWP-004, AMW-009 | review decision implementation report | schema/contract tests; workbench UI tests; `pnpm check`; `git diff --check` | queued P1 |
+| TASK-2026W23-AWP-005 | AWP-002, AWP-003, AWP-004, AMW-009 | review decision implementation report | schema/contract tests; workbench UI tests; `pnpm check`; `git diff --check` | done |
 | TASK-2026W23-AWP-006 | AWP-002, AWP-005 | browser smoke or visual evidence report | browser smoke or visual evidence; `pnpm test:examples`; `pnpm check`; `git diff --check` | queued P1 |
 | TASK-2026W23-AWP-007 | AWP-002 through AWP-006 | product implementation gate report | `pnpm test:docs`; `pnpm check`; browser smoke or visual evidence; release visual waiver or evidence; `git diff --check` | queued P1 |
 

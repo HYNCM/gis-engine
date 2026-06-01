@@ -9,6 +9,7 @@ const providerList = document.querySelector("#provider-list");
 const diagnosticsList = document.querySelector("#diagnostics-list");
 const featureQuery = document.querySelector("#feature-query");
 const auditList = document.querySelector("#audit-list");
+const reviewList = document.querySelector("#review-list");
 const commandJson = document.querySelector("#command-json");
 const revisionReadout = document.querySelector("#revision-readout");
 const cameraReadout = document.querySelector("#camera-readout");
@@ -25,6 +26,7 @@ const statusLabels = {
   applied: "Applied",
   blocked: "Blocked",
   ready: "Ready",
+  reviewed: "Reviewed",
   reset: "Reset",
   unsupported: "Unsupported"
 };
@@ -55,6 +57,12 @@ async function init() {
       if (prompt) submitPrompt(prompt);
     });
   });
+  document.querySelectorAll("[data-review-outcome]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const outcome = button.getAttribute("data-review-outcome");
+      if (outcome) submitReviewDecision(outcome);
+    });
+  });
 
   chatForm.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -72,6 +80,7 @@ async function init() {
 
   const state = await fetchJson("/api/state");
   applyPayload(state);
+  await refreshReviewDecisions();
 }
 
 async function loadProviders() {
@@ -163,6 +172,28 @@ async function submitPrompt(message) {
   applyPayload(payload);
 }
 
+async function submitReviewDecision(outcome) {
+  const payload = await postJson("/api/review-decision", reviewDecisionRequest(outcome));
+  if (payload.decision) {
+    appendMessage("assistant", `Review decision recorded: ${payload.decision.outcome}.`);
+  } else {
+    appendMessage("assistant", "Review decision was blocked by structured diagnostics.");
+  }
+  setStatus(payload.status);
+  renderDiagnostics(payload.diagnostics ?? []);
+  renderReviewDecisions(payload.decisions ?? []);
+}
+
+function reviewDecisionRequest(outcome) {
+  if (outcome === "accepted") return { outcome, reasonCodes: ["review-accepted"] };
+  if (outcome === "blocked") return { outcome, reasonCodes: ["manual-review-blocked"] };
+  return {
+    outcome,
+    reasonCodes: ["visual-evidence-required"],
+    followUpTaskIds: ["TASK-2026W23-AWP-006"]
+  };
+}
+
 function applyPayload(payload) {
   setStatus(payload.status);
   renderMap(payload);
@@ -170,6 +201,7 @@ function applyPayload(payload) {
   renderProviderEvidence(payload);
   renderDiagnostics(payload.diagnostics ?? []);
   refreshAudit();
+  refreshReviewDecisions();
   commandJson.textContent = JSON.stringify(
     {
       plan: payload.plan ?? null,
@@ -189,6 +221,15 @@ async function refreshAudit() {
     renderAudit(audit.records ?? []);
   } catch (error) {
     renderAudit([]);
+  }
+}
+
+async function refreshReviewDecisions() {
+  try {
+    const payload = await fetchJson("/api/review-decisions");
+    renderReviewDecisions(payload.decisions ?? []);
+  } catch (error) {
+    renderReviewDecisions([]);
   }
 }
 
@@ -353,6 +394,32 @@ function renderAudit(records) {
         title.textContent = `${record.status} / ${record.commandCount} command(s)`;
         const meta = document.createElement("p");
         meta.textContent = `${record.fromRevision} -> ${record.toRevision} / ${record.providerId}`;
+        article.append(title, meta);
+        return article;
+      })
+  );
+}
+
+function renderReviewDecisions(decisions) {
+  if (decisions.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "empty-state";
+    empty.textContent = "No review decisions.";
+    reviewList.replaceChildren(empty);
+    return;
+  }
+
+  reviewList.replaceChildren(
+    ...decisions
+      .slice(-3)
+      .reverse()
+      .map((decision) => {
+        const article = document.createElement("article");
+        article.className = "audit-card";
+        const title = document.createElement("strong");
+        title.textContent = `${decision.outcome} / ${decision.reasonCodes?.join(", ") ?? "review"}`;
+        const meta = document.createElement("p");
+        meta.textContent = `${decision.auditRecordId ?? "no-audit"} / ${decision.providerId ?? "provider"}`;
         article.append(title, meta);
         return article;
       })

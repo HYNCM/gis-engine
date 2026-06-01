@@ -131,14 +131,20 @@ browser state, command bodies, patches, and full map specs.
 
 ## Review Action Guardrails
 
-AMW-009 defines future accept, block, and follow-up-required review actions as
-structured decisions about existing evidence. This example does not implement
-review action controls or a review-decision endpoint yet.
+The workbench exposes local accept, block, and follow-up-required review
+actions. They append in-memory review decision evidence through
+`/api/review-decision` and can be listed through `/api/review-decisions`.
+Browser clients send only an outcome, reason codes, and optional follow-up task
+ids; the server derives ids, timestamps, session/project context, and evidence
+references from compact audit records. Review decision creation is
+project-scoped to reviewer/admin principals; service-only audit append authority
+does not authorize reviewer outcomes.
 
 Future review decisions must reference compact audit, provider, delivery,
 command, and diagnostic evidence only. They must not directly mutate `MapSpec`,
 write browser files, retain raw provider payloads, store command bodies or
-patches, create hidden task state, or add new MCP tool names.
+patches, create hidden task state, or add new MCP tool names. This local review
+decision path is not durable storage and does not approve product or hosted use.
 
 ## Evidence
 
@@ -153,6 +159,8 @@ The chat API returns compact review evidence:
   prompt hash when available, trace id, status, command count, diagnostic
   counts, and revision movement. Durable storage/export endpoints are still
   absent; the durable audit contract is exercised by focused tests only.
+- `/api/review-decisions`: the latest in-memory review decisions with compact
+  outcome, reason, audit, provider, command, and diagnostic references.
 
 The audit endpoint intentionally does not store raw prompts, provider raw
 outputs, map specs, feature payloads, screenshots, credentials, or browser

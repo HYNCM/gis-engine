@@ -842,6 +842,176 @@ describe("ai-map-workbench selected provider API", () => {
   });
 });
 
+describe("ai-map-workbench review decision API", () => {
+  it("records accepted review decisions without mutating the active spec", async () => {
+    const server = await createWorkbenchServer({ port: 0 });
+    closeServer = server.close;
+
+    await fetch(`${server.url}/api/chat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message: "make points red" })
+    });
+    const beforeState = await (await fetch(`${server.url}/api/state`)).json();
+    const response = await fetch(`${server.url}/api/review-decision`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ outcome: "accepted", reasonCodes: ["review-accepted"] })
+    });
+    const result = await response.json();
+    const afterState = await (await fetch(`${server.url}/api/state`)).json();
+    const decisions = await (await fetch(`${server.url}/api/review-decisions`)).json();
+
+    expect(response.ok).toBe(true);
+    expect(result.status).toBe("reviewed");
+    expect(result.summary.revision).toBe("2");
+    expect(result.spec).toBeUndefined();
+    expect(result.style).toBeUndefined();
+    expect(result.validation).toBeUndefined();
+    expect(afterState.summary.revision).toBe(beforeState.summary.revision);
+    expect(result.commandEvidence).toMatchObject({ commandCount: 0, committed: false, failed: false });
+    expect(result.decision).toMatchObject({
+      recordVersion: "amw.review.v1",
+      outcome: "accepted",
+      providerId: "mock-ai",
+      auditRecordId: expect.stringMatching(/^workbench-/),
+      commandEvidence: expect.objectContaining({ commandCount: 1, committed: true })
+    });
+    expect(decisions.decisions).toHaveLength(1);
+    const serialized = `${JSON.stringify(result)}\n${JSON.stringify(decisions)}`;
+    expect(serialized).not.toMatch(/make points red|West Lake|MapSpec|commandBody|patch/i);
+  });
+
+  it("blocks review decisions that attempt direct map mutation or raw payload retention", async () => {
+    const server = await createWorkbenchServer({ port: 0 });
+    closeServer = server.close;
+
+    await fetch(`${server.url}/api/chat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message: "make points red" })
+    });
+    const response = await fetch(`${server.url}/api/review-decision`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        outcome: "blocked",
+        reasonCodes: ["manual-review-blocked"],
+        rawPrompt: "make points red",
+        commands: [{ type: "setPaint" }],
+        spec: { id: "ai-map-workbench" }
+      })
+    });
+    const result = await response.json();
+    const decisions = await (await fetch(`${server.url}/api/review-decisions`)).json();
+
+    expect(response.ok).toBe(true);
+    expect(result.status).toBe("blocked");
+    expect(result.decision).toBeNull();
+    expect(result.summary.revision).toBe("2");
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: "REVIEW.CONTRACT_VIOLATION",
+        path: "/reviewAction/commandSafety"
+      })
+    );
+    expect(decisions.decisions).toEqual([]);
+    expect(JSON.stringify(result)).not.toContain("make points red");
+    expect(result.spec).toBeUndefined();
+    expect(result.style).toBeUndefined();
+    expect(result.validation).toBeUndefined();
+  });
+
+  it("authorizes review decisions by project-scoped reviewer role", async () => {
+    const server = await createWorkbenchServer({
+      port: 0,
+      reviewPrincipal: { role: "service", projectIds: ["project_demo"] }
+    });
+    closeServer = server.close;
+
+    await fetch(`${server.url}/api/chat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message: "make points red" })
+    });
+    const response = await fetch(`${server.url}/api/review-decision`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ outcome: "accepted", reasonCodes: ["review-accepted"] })
+    });
+    const result = await response.json();
+
+    expect(response.ok).toBe(true);
+    expect(result.status).toBe("blocked");
+    expect(result.decision).toBeNull();
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: "REVIEW.CONTRACT_VIOLATION",
+        path: "/reviewDecision/authorization"
+      })
+    );
+    expect(result.spec).toBeUndefined();
+    expect(result.style).toBeUndefined();
+    expect(result.validation).toBeUndefined();
+  });
+
+  it("requires follow-up ids for follow-up review decisions", async () => {
+    const server = await createWorkbenchServer({ port: 0 });
+    closeServer = server.close;
+
+    await fetch(`${server.url}/api/chat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message: "make points red" })
+    });
+    const blockedResponse = await fetch(`${server.url}/api/review-decision`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ outcome: "follow-up-required", reasonCodes: ["visual-evidence-required"] })
+    });
+    const blocked = await blockedResponse.json();
+    expect(blocked.status).toBe("blocked");
+    expect(blocked.diagnostics).toContainEqual(expect.objectContaining({ path: "/reviewAction/followUp" }));
+
+    const acceptedResponse = await fetch(`${server.url}/api/review-decision`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        outcome: "follow-up-required",
+        reasonCodes: ["visual-evidence-required"],
+        followUpTaskIds: ["TASK-2026W23-AWP-006"]
+      })
+    });
+    const accepted = await acceptedResponse.json();
+    expect(accepted.status).toBe("reviewed");
+    expect(accepted.decision).toMatchObject({
+      outcome: "follow-up-required",
+      followUpTaskIds: ["TASK-2026W23-AWP-006"]
+    });
+  });
+
+  it("does not accept blocked evidence as an accepted review decision", async () => {
+    const server = await createWorkbenchServer({ port: 0 });
+    closeServer = server.close;
+
+    await fetch(`${server.url}/api/chat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message: "build a terrain city" })
+    });
+    const response = await fetch(`${server.url}/api/review-decision`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ outcome: "accepted", reasonCodes: ["review-accepted"] })
+    });
+    const result = await response.json();
+
+    expect(result.status).toBe("blocked");
+    expect(result.diagnostics).toContainEqual(expect.objectContaining({ path: "/reviewAction/evidence" }));
+    expect(result.summary.revision).toBe("1");
+  });
+});
+
 describe("ai-map-workbench provider selector UI contract", () => {
   it("serves provider selector markup and browser code that sends providerId", async () => {
     const server = await createWorkbenchServer({ port: 0 });
@@ -854,6 +1024,10 @@ describe("ai-map-workbench provider selector UI contract", () => {
 
     expect(html).toContain('id="provider-select"');
     expect(html).toContain('id="provider-status"');
+    expect(html).toContain('id="review-list"');
+    expect(html).toContain('data-review-outcome="accepted"');
+    expect(html).toContain('data-review-outcome="blocked"');
+    expect(html).toContain('data-review-outcome="follow-up-required"');
     expect(html).toContain('aria-describedby="provider-status"');
     expect(html).toContain('role="status"');
     expect(appJs).toContain('fetchJson("/api/providers")');
@@ -861,6 +1035,8 @@ describe("ai-map-workbench provider selector UI contract", () => {
     expect(appJs).toContain('provider.id === "mock-ai" && provider.enabled');
     expect(appJs).toContain("(missing credential)");
     expect(appJs).toContain("providerId: selectedProviderId");
+    expect(appJs).toContain('postJson("/api/review-decision"');
+    expect(appJs).toContain('fetchJson("/api/review-decisions")');
     const chatPostBody = /postJson\("\/api\/chat",\s*\{([^}]+)\}\)/.exec(appJs)?.[1] ?? "";
     expect(chatPostBody).toContain("message");
     expect(chatPostBody).toContain("providerId: selectedProviderId");
@@ -872,6 +1048,7 @@ describe("ai-map-workbench provider selector UI contract", () => {
 
   it("executes provider selection without leaking credentials or rewriting completed evidence", async () => {
     const chatRequests: unknown[] = [];
+    const reviewRequests: unknown[] = [];
     let providerFetchCount = 0;
     const server = await createWorkbenchServer({
       port: 0,
@@ -918,6 +1095,9 @@ describe("ai-map-workbench provider selector UI contract", () => {
       page.on("request", (request) => {
         if (request.url() === `${server.url}/api/chat`) {
           chatRequests.push(JSON.parse(request.postData() ?? "{}"));
+        }
+        if (request.url() === `${server.url}/api/review-decision`) {
+          reviewRequests.push(JSON.parse(request.postData() ?? "{}"));
         }
       });
       await page.route("**/vendor/maplibre-gl.js", async (route) => {
@@ -982,6 +1162,16 @@ describe("ai-map-workbench provider selector UI contract", () => {
       expect(await providerEvidenceRows(page)).toMatchObject({
         Provider: "deepseek"
       });
+
+      await Promise.all([
+        page.waitForResponse((response) => response.url() === `${server.url}/api/review-decision`),
+        page.click('[data-review-outcome="accepted"]')
+      ]);
+      expect(reviewRequests.at(-1)).toEqual({ outcome: "accepted", reasonCodes: ["review-accepted"] });
+      expect(JSON.stringify(reviewRequests.at(-1))).not.toMatch(/server-secret-key|apiKey|baseUrl|https:\/\/|raw|MapSpec/i);
+      const reviewText = await page.locator("#review-list").textContent();
+      expect(reviewText).toContain("accepted");
+      expect(reviewText).toContain("review-accepted");
 
       await selectedProvider.selectOption("mock-ai");
       expect(await selectedProvider.inputValue()).toBe("mock-ai");

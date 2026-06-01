@@ -160,6 +160,16 @@ project-scoped role authorization, export and deletion caps, and raw-payload
 rejection without changing `/api/audit` storage behavior. Durable database,
 export endpoint, auth UI, and hosted deployment remain No-go.
 
+## 2026-06-02 AWP-005 Addendum
+
+AWP-005 adds local command-safe review decisions through
+`examples/ai-map-workbench/review-decisions.mjs`, `POST /api/review-decision`,
+`GET /api/review-decisions`, and UI controls. Decisions are append-only
+in-memory evidence linked to compact audit records and do not return full
+`MapSpec` or feature payloads from the review endpoint. Product promotion,
+durable review storage, browser file writes, and hosted deployment remain
+No-go.
+
 ## 2026-06-01 AMW-007 Addendum
 
 AMW-007 defines provider credential/resource administration in
