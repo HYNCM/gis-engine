@@ -1,6 +1,6 @@
 import { chromium, expect, test, type Page, type TestInfo } from "@playwright/test";
 import { Buffer } from "node:buffer";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -11,7 +11,37 @@ const width = 320;
 const height = 200;
 const strictVisualSnapshot = process.env.GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT === "1";
 
-test("renders a real MapLibre visual snapshot when dependencies are available", async ({}, testInfo) => {
+interface MapLibreBundle {
+  /** File path to the bundle (UMD) or the ESM module (v6+). */
+  scriptPath?: string;
+  /** 'umd' for v5 `maplibre-gl.js`, 'esm' for v6+ `maplibre-gl.mjs`. */
+  scriptType?: "umd" | "esm";
+  reason: string;
+}
+
+/**
+ * Load the MapLibre GL bundle into a Playwright page.
+ *
+ * v5 (UMD): loads via `<script src="...">` and exposes `window.maplibregl`.
+ * v6 (ESM): loads via `<script type="module">` that imports the ESM bundle
+ *   and re-exposes the namespace as `window.maplibregl`.
+ */
+async function loadMapLibreBundle(page: Page, bundle: MapLibreBundle): Promise<void> {
+  if (!bundle.scriptPath) {
+    throw new Error("Cannot load MapLibre bundle: no script path");
+  }
+  if (bundle.scriptType === "esm") {
+    const fileUrl = pathToFileURL(bundle.scriptPath).href;
+    await page.addScriptTag({
+      type: "module",
+      content: `import * as maplibregl from ${JSON.stringify(fileUrl)}; window.maplibregl = maplibregl;`
+    });
+  } else {
+    await page.addScriptTag({ path: bundle.scriptPath });
+  }
+}
+
+test("renders a real MapLibre visual snapshot when dependencies are available", async ({ }, testInfo) => {
   const maplibre = resolveMapLibreBundle();
   if (!maplibre.scriptPath) {
     await completeUnavailable(testInfo, maplibre.reason);
@@ -76,7 +106,7 @@ test("renders a real MapLibre visual snapshot when dependencies are available", 
     }
 
     try {
-      await page.addScriptTag({ path: maplibre.scriptPath });
+      await loadMapLibreBundle(page, maplibre);
     } catch (error) {
       await completeUnavailable(testInfo, `maplibre-gl browser bundle could not be loaded: ${formatError(error)}`);
       return;
@@ -205,7 +235,7 @@ test("renders a real MapLibre visual snapshot when dependencies are available", 
   }
 });
 
-test("renders a vector tile release acceptance snapshot with generated local MVT", async ({}, testInfo) => {
+test("renders a vector tile release acceptance snapshot with generated local MVT", async ({ }, testInfo) => {
   const maplibre = resolveMapLibreBundle();
   if (!maplibre.scriptPath) {
     await completeUnavailable(testInfo, maplibre.reason);
@@ -283,7 +313,7 @@ test("renders a vector tile release acceptance snapshot with generated local MVT
     }
 
     try {
-      await page.addScriptTag({ path: maplibre.scriptPath });
+      await loadMapLibreBundle(page, maplibre);
     } catch (error) {
       await completeUnavailable(testInfo, `maplibre-gl browser bundle could not be loaded: ${formatError(error)}`);
       return;
@@ -314,7 +344,7 @@ test("renders a vector tile release acceptance snapshot with generated local MVT
   }
 });
 
-test("renders a fill-extrusion-lite beta visual snapshot", async ({}, testInfo) => {
+test("renders a fill-extrusion-lite beta visual snapshot", async ({ }, testInfo) => {
   const maplibre = resolveMapLibreBundle();
   if (!maplibre.scriptPath) {
     await completeUnavailable(testInfo, maplibre.reason);
@@ -379,7 +409,7 @@ test("renders a fill-extrusion-lite beta visual snapshot", async ({}, testInfo) 
     }
 
     try {
-      await page.addScriptTag({ path: maplibre.scriptPath });
+      await loadMapLibreBundle(page, maplibre);
     } catch (error) {
       await completeUnavailable(testInfo, `maplibre-gl browser bundle could not be loaded: ${formatError(error)}`);
       return;
@@ -412,17 +442,17 @@ test("renders a fill-extrusion-lite beta visual snapshot", async ({}, testInfo) 
 
 type BrowserRenderResult =
   | {
-      ok: true;
-      dataUrl: string;
-      canvasWidth: number;
-      canvasHeight: number;
-      nonTransparentSamples: number;
-      nonWhiteSamples: number;
-    }
+    ok: true;
+    dataUrl: string;
+    canvasWidth: number;
+    canvasHeight: number;
+    nonTransparentSamples: number;
+    nonWhiteSamples: number;
+  }
   | {
-      ok: false;
-      reason: string;
-    };
+    ok: false;
+    reason: string;
+  };
 
 interface VectorTileServer {
   tileForUrl(url: string): Uint8Array | null;
@@ -579,31 +609,42 @@ async function loadVectorTileModules(): Promise<{
   };
 }
 
-function resolveMapLibreBundle(): { scriptPath?: string; reason: string } {
+function resolveMapLibreBundle(): MapLibreBundle {
+  // v5: UMD bundle at dist/maplibre-gl.js (exposes window.maplibregl)
   try {
     const directPath = require.resolve("maplibre-gl/dist/maplibre-gl.js");
+    return { scriptPath: directPath, scriptType: "umd", reason: "" };
+  } catch {
+    // UMD not found — try v6 ESM
+  }
+
+  // v6+: ESM bundle at dist/maplibre-gl.mjs (named exports only)
+  try {
+    const esmPath = require.resolve("maplibre-gl/dist/maplibre-gl.mjs");
+    return { scriptPath: esmPath, scriptType: "esm", reason: "" };
+  } catch {
+    // ESM not found either — try fallback resolution
+  }
+
+  // Fallback: resolve package root and look for either bundle
+  try {
+    const packageJsonPath = require.resolve("maplibre-gl/package.json");
+    const root = dirname(packageJsonPath);
+    const umdPath = join(root, "dist", "maplibre-gl.js");
+    if (existsSync(umdPath)) {
+      return { scriptPath: umdPath, scriptType: "umd", reason: "" };
+    }
+    const esmPath = join(root, "dist", "maplibre-gl.mjs");
+    if (existsSync(esmPath)) {
+      return { scriptPath: esmPath, scriptType: "esm", reason: "" };
+    }
     return {
-      scriptPath: directPath,
-      reason: ""
+      reason: `maplibre-gl is installed at ${root}, but neither dist/maplibre-gl.js nor dist/maplibre-gl.mjs exists.`
     };
   } catch {
-    try {
-      const packageJsonPath = require.resolve("maplibre-gl/package.json");
-      const fallbackPath = join(dirname(packageJsonPath), "dist", "maplibre-gl.js");
-      if (existsSync(fallbackPath)) {
-        return {
-          scriptPath: fallbackPath,
-          reason: ""
-        };
-      }
-      return {
-        reason: `maplibre-gl is installed, but ${fallbackPath} does not exist.`
-      };
-    } catch {
-      return {
-        reason: "maplibre-gl is not installed. Install maplibre-gl to run real MapLibre visual snapshots."
-      };
-    }
+    return {
+      reason: "maplibre-gl is not installed. Install maplibre-gl to run real MapLibre visual snapshots."
+    };
   }
 }
 
