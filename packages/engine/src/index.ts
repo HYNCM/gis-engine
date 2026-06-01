@@ -13,6 +13,14 @@ export * from "./spec/patch/index.js";
 export * from "./spec/schemas/index.js";
 export { createMap, type CreateMapOptions } from "./runtime/createMap.js";
 export { MapRuntime, MapSpecValidationError, type MapRuntimeOptions } from "./runtime/MapRuntime.js";
+export {
+  SOURCE_CAPABILITY_PRESETS,
+  type SourceCapabilitySummary,
+  type SourceLoader,
+  type SourceLoaderFactory,
+  type SourceValidationResult,
+  type SourceValidationStatus
+} from "./sources/contract.js";
 export { createAdapter, listAdapters, registerAdapter, type RendererAdapterFactory } from "./renderer/registry.js";
 export { MockAdapter } from "./renderer/mock.js";
 export { MapLibreAdapter } from "./renderer/maplibre/adapter.js";
