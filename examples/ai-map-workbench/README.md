@@ -79,6 +79,19 @@ machine-readable tokens. Unsafe values are replaced or omitted before responses
 or audit records are written, and prompt hashes must use the `sha256:*` evidence
 shape.
 
+## Provider Administration Guardrails
+
+Provider profiles are local/server configuration, not browser configuration.
+The browser-visible profile list is limited to provider id, label, protocol,
+model, enabled state, and missing-credential state. API keys, credential
+environment variable names, base URLs, request headers, raw prompts, raw
+provider request bodies, and raw provider response bodies must stay server-only.
+
+Only mock mode and OpenAI-compatible chat completions are in scope for this
+example. Product or hosted use still needs the AMW provider-administration
+follow-up: base URL scheme/host policy, timeout/abort behavior, response size
+limits, durable audit rules, and product-owned credential/resource review.
+
 ## Evidence
 
 The chat API returns compact review evidence:

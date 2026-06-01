@@ -132,3 +132,13 @@ benchmark below was refreshed on 2026-05-31 from official sources recorded in
   after SRC-006.
 - Ecosystem/data readiness stays at 7.0 because cloud-native source signals
   remain promotion candidates, not parser/query implementations.
+
+## 2026-06-01 AMW-007 Addendum
+
+- Developer experience stays at 8.0. Provider credential/resource
+  administration is now a design handoff, but the workbench still lacks durable
+  audit retention/export, review actions, visual product evidence, and a
+  quality-guardian/coordinator promotion decision.
+- AI operability stays at 9.5 because no public AI schema or MCP contract
+  changed. The next score movement requires accepted durable audit or review
+  action evidence, not design text alone.

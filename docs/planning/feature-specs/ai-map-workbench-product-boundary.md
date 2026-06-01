@@ -97,3 +97,13 @@ external fetches, write generated app files, or expose raw provider payloads.
 3. `AMW-008`: design durable audit retention, privacy, and export behavior.
 4. `AMW-009`: implement or specify command-safe review actions.
 5. `AMW-010`: run the product-promotion Go/No-go gate with visual evidence.
+
+## 2026-06-01 AMW-007 Addendum
+
+`AMW-007` is captured in
+`docs/planning/feature-specs/ai-map-workbench-provider-administration.md` and
+`docs/reviews/amw-007-provider-resource-admin-2026-06-01.md`. The provider
+administration design keeps current server-only credentials and browser-safe
+metadata, records base URL, timeout, size, and diagnostic follow-ups, and keeps
+product promotion blocked. The next task is durable audit retention and export
+design under `AMW-008`.

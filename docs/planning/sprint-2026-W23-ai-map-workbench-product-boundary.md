@@ -40,7 +40,7 @@ must precede those decisions.
 | id | title | priority | complexity | owner | status | depends on | acceptance | finish gates |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | TASK-2026W23-AMW-006 | Freeze AI Map Workbench product boundary | P0 | S | `@coordinator`, `@product-strategist`, `@task-distributor` | done | AMW-005, MLD-004 | `docs/planning/feature-specs/ai-map-workbench-product-boundary.md` and this sprint DAG define app ownership, provider administration, durable audit, review actions, visual evidence, and promotion gates without implementation creep. | planning review; `pnpm test:docs`; `pnpm check`; `git diff --check` |
-| TASK-2026W23-AMW-007 | Design provider credential and resource administration | P0 | M | `@ai-agent`, `@engine-agent`, `@docs-agent` | todo | AMW-006 | Provider profile lifecycle, allowed protocols, missing credential states, timeout/error behavior, prompt/body leak-hardening, and browser-safe metadata are specified before hosted or product use. | provider/workbench tests or design review; `pnpm test:examples`; `pnpm test:docs`; `pnpm check` |
+| TASK-2026W23-AMW-007 | Design provider credential and resource administration | P0 | M | `@ai-agent`, `@engine-agent`, `@docs-agent` | done | AMW-006 | `docs/planning/feature-specs/ai-map-workbench-provider-administration.md` and `docs/reviews/amw-007-provider-resource-admin-2026-06-01.md` specify provider lifecycle, browser-safe metadata, resource policy, timeout/size follow-ups, leak-hardening, and diagnostic paths before hosted or product use. | provider/workbench tests or design review; `pnpm test:examples`; `pnpm test:docs`; `pnpm check` |
 | TASK-2026W23-AMW-008 | Design durable audit retention and export | P1 | M | `@engine-agent`, `@ai-agent`, `@docs-agent` | todo | AMW-006 | Audit retention, privacy, access control, export shape, payload caps, and deletion behavior are specified before persistent storage implementation. | schema/design review if public; `pnpm test:docs`; `pnpm check`; `git diff --check` |
 | TASK-2026W23-AMW-009 | Define command-safe review actions | P1 | M | `@engine-agent`, `@ai-agent`, `@qa-agent` | todo | AMW-006, AMW-008 | Accept, block, and follow-up-required actions produce structured review decisions without direct `MapSpec` mutation, browser file writes, or raw provider payload retention. | command/evidence tests when implemented; `pnpm test:ai`; `pnpm test:examples`; `pnpm check` |
 | TASK-2026W23-AMW-010 | Run product-promotion Go-No-go gate | P1 | S | `@quality-guardian`, `@coordinator`, `@qa-agent` | todo | AMW-007, AMW-008, AMW-009 | Gate decides whether AI Map Workbench stays in `examples/` or can move to a product app boundary, and records required visual/resource/audit evidence. | `pnpm test:docs`; `pnpm check`; browser smoke or visual evidence; `git diff --check` |
@@ -57,9 +57,10 @@ flowchart LR
 
 ## Current Handoff
 
-`TASK-2026W23-AMW-006` is complete as a planning-only boundary freeze. The next
-queued task is `TASK-2026W23-AMW-007`. It must stay in product/provider design
-scope unless a later owner report explicitly opens implementation files.
+`TASK-2026W23-AMW-007` is complete as a provider administration design handoff.
+The next queued task is `TASK-2026W23-AMW-008`. It must stay in durable audit
+retention/export design scope unless a later owner report explicitly opens
+implementation files.
 
 ## Finish Gate Rules
 

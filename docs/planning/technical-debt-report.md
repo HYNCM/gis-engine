@@ -118,20 +118,22 @@ serialized planning closure。
 和 strict visual gates”。
 
 2026-06-01 W23 planning refresh: W23 competitor/package evidence 已刷新，AI
-Map Workbench Product Boundary 已打开并完成 `AMW-006`。当前最高优先级债务从
-“刷新 planning loop”转为“执行 `AMW-007`，先设计 provider credential/resource
-administration，再谈 product app 或 hosted promotion”。
+Map Workbench Product Boundary 已打开并完成 `AMW-006`；`AMW-007` 已完成
+provider credential/resource administration 设计收口。当前最高优先级债务转为
+durable audit retention/export：在持久化、产品化或 hosted use 前，必须先定义
+retention、privacy、access control、export shape、payload caps 和 deletion
+behavior。
 
 ## 债务优先级
 
 | 排名 | 债务 | 得分 | 证据 | 建议修复 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | AMW provider credential/resource administration pending | 0.20 | `AMW-006` opens the product-boundary sprint after AMW-004/005 held promotion on provider safety, durable audit, review actions, and visual evidence | execute `TASK-2026W23-AMW-007` before product app or hosted promotion | high |
+| 1 | AMW durable audit retention/export pending | 0.20 | `AMW-007` accepts provider credential/resource administration design and keeps product promotion blocked until durable audit and review actions are designed | execute `TASK-2026W23-AMW-008` before persistent storage, product app, or hosted promotion | high |
 | 2 | Future MapLibre package movement gate | 0.12 | `MLD-004` blocks package movement in this batch; current code remains on the existing `maplibre-gl` range | create a new package-movement task only after official source refresh and strict visual evidence are available | high |
 
 ## 修复顺序
 
-1. 先执行 `TASK-2026W23-AMW-007`：设计 provider credential/resource administration，保持 credentials server-only、metadata browser-safe、audit payload-free。
+1. 先执行 `TASK-2026W23-AMW-008`：设计 durable audit retention/export，保持 raw prompts、raw provider bodies、credentials、feature payloads 和 screenshots 不进入持久化审计。
 2. 后续若要移动 MapLibre package，先开新任务并刷新官方 package/changelog evidence、example loading compatibility 和 strict visual gates。
 3. 下一步若要推进 stable runtime promotion，必须先形成明确的 promotion
    rubric、browser matrix evidence 和 guardrail diagnostics，不得直接把
@@ -144,12 +146,13 @@ administration，再谈 product app 或 hosted promotion”。
 
 ## 结论
 
-如果只做一件事，下一步优先执行 `TASK-2026W23-AMW-007`。Generated-app delivery
+如果只做一件事，下一步优先执行 `TASK-2026W23-AMW-008`。Generated-app delivery
 review fixtures、source readiness review cards、spatial-analysis review cards、
 prompt-to-delivery QA scenarios、docs/release wording guardrails、SQH boundary
 planning、explicit query capability gate 和 invalid/source diagnostics 已完成。
 Result caps and deterministic fixture hashes 以及 generated-app delivery query
 mapping、quality gate and closure 也已完成。MapLibre Source Drift Audit 已通过
 MLD-004 收口为 package movement No-go。AI Map Workbench Product Boundary 已
-打开，product promotion 仍保持 hold。SceneView3D stable runtime 仍保持 blocker
-state，直到新的 explicit approval arrives。
+打开并完成 provider credential/resource administration 设计，product promotion
+仍保持 hold。SceneView3D stable runtime 仍保持 blocker state，直到新的 explicit
+approval arrives。

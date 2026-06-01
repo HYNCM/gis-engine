@@ -120,8 +120,10 @@ AMW-002 through AMW-005 are complete. AMW-005 added server-side provider
 profiles while keeping credentials and provider calls on the server and keeping
 the workbench under `examples/ai-map-workbench`.
 
-The next slice is not direct promotion. `AMW-006` freezes the product-boundary
+The next slice is not direct promotion. `AMW-006` froze the product-boundary
 plan in `docs/planning/feature-specs/ai-map-workbench-product-boundary.md` and
-`docs/planning/sprint-2026-W23-ai-map-workbench-product-boundary.md`. `AMW-007`
-must design provider credential/resource administration before hosted use,
-durable audit, review actions, or product app movement.
+`docs/planning/sprint-2026-W23-ai-map-workbench-product-boundary.md`; `AMW-007`
+completed provider credential/resource administration as a planning handoff.
+Future code work must add base URL policy, timeout/abort, response size caps,
+and identity-field validation before hosted or product use. The next planning
+task is `AMW-008` durable audit retention/export design.

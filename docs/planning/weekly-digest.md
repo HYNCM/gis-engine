@@ -174,7 +174,8 @@ move to `TASK-2026W23-SQH-003`.
 | TASK-2026W22-MLD-004 | done / no-go | `docs/reviews/mld-004-go-no-go-2026-06-01.md`; package movement blocked pending refreshed official evidence and strict visual gates |
 | TASK-2026W22-AMW-001 through AMW-005 | done | `examples/ai-map-workbench`; provider-gated local review surface, provider profiles, and promotion hold evidence |
 | TASK-2026W23-AMW-006 | done | `docs/research/competitor-updates-2026-W23.md`; `docs/planning/feature-specs/ai-map-workbench-product-boundary.md`; `docs/planning/sprint-2026-W23-ai-map-workbench-product-boundary.md`; `docs/reviews/amw-006-product-boundary-planning-2026-06-01.md` |
-| TASK-2026W23-AMW-007 | queued | provider credential and resource administration design before hosted/product use |
+| TASK-2026W23-AMW-007 | done | `docs/planning/feature-specs/ai-map-workbench-provider-administration.md`; `docs/reviews/amw-007-provider-resource-admin-2026-06-01.md`; provider credential/resource administration design before hosted/product use |
+| TASK-2026W23-AMW-008 | queued | durable audit retention and export design before persistent storage or product promotion |
 
 ## Next Handoff
 
@@ -193,10 +194,8 @@ move to `TASK-2026W23-SQH-003`.
   until a future run refreshes official package evidence, scopes example
   loading compatibility, and accepts strict visual evidence or an explicit
   conditional waiver.
-- `@ai-agent`, `@engine-agent`, and `@docs-agent`: take
-  `TASK-2026W23-AMW-007` next. Design provider credential/resource
-  administration for AI Map Workbench without moving it out of `examples/`,
-  adding arbitrary provider templates, exposing browser secrets, or changing
-  MCP tool names.
+- `@engine-agent`, `@ai-agent`, and `@docs-agent`: take
+  `TASK-2026W23-AMW-008` next. Design durable audit retention/export behavior
+  before persistent storage, hosted deployment, or product promotion.
 - `@qa-agent` and `@quality-guardian`: prepare future AMW visual/product gate
-  evidence only after AMW-007 through AMW-009 have owner reports.
+  evidence only after AMW-008 and AMW-009 have owner reports.

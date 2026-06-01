@@ -119,8 +119,18 @@ preserving the local/example boundary: browser code sees safe provider metadata
 and sends only `providerId`; the server owns credential lookup, provider calls,
 normalization, command application, and payload-free audit evidence.
 
-AMW-006 opens the product-boundary planning batch. The next implementation task
-is AMW-007, which must design provider credential/resource administration
-before any product app movement, hosted deployment, durable audit, or review
-actions are implemented. The workbench remains under `examples/ai-map-workbench`
-until a future quality gate accepts the full product boundary.
+AMW-006 opened the product-boundary planning batch, and AMW-007 completed
+provider credential/resource administration as a design handoff. The workbench
+remains under `examples/ai-map-workbench` until a future quality gate accepts
+the full product boundary. The next product architecture gap is AMW-008 durable
+audit retention/export design before any product app movement, hosted
+deployment, persistent audit storage, or review actions are implemented.
+
+## 2026-06-01 AMW-007 Addendum
+
+AMW-007 defines provider credential/resource administration in
+`docs/planning/feature-specs/ai-map-workbench-provider-administration.md`. The
+design records current server-only profile behavior and reserves future gates
+for base URL policy, timeout/abort behavior, response size caps, and public
+metadata validation. Product promotion remains blocked; the next product
+architecture gap is durable audit retention and export behavior.
