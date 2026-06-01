@@ -330,9 +330,12 @@ NLQ, AIN, GIR, and SQH evidence spine into a browser surface where reviewers can
 inspect prompt intent, command-only mutation, MapLibre rendering, structured
 diagnostics, feature query, and immersive map review in one place.
 
-This batch does not add MCP aliases, browser-side spec mutation, external model
-calls, hidden file writes, external basemap/resource fetches, or stable
-SceneView3D runtime claims.
+The AMW-001 through AMW-004 batch did not add MCP aliases, browser-side spec
+mutation, external model calls, hidden file writes, external basemap/resource
+fetches, or stable SceneView3D runtime claims. AMW-005 adds optional
+server-side OpenAI-compatible provider calls while preserving the browser/key
+boundary, command-only mutation path, payload-free audit, and product-promotion
+hold.
 
 | id | title | priority | owner | status | evidence target | acceptance | finish gates |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -340,6 +343,7 @@ SceneView3D runtime claims.
 | TASK-2026W22-AMW-002 | Freeze provider boundary for real-model integration | P0 | `@product-strategist`, `@ai-agent`, `@engine-agent` | done | `docs/planning/product-architecture/ai-map-workbench-product-architecture.md`; `docs/planning/feature-specs/ai-map-workbench-real-system-evolution.md`; `docs/reviews/amw-002-provider-boundary-2026-05-31.md`; `tests/ai/workbench-provider-plan.test.ts` | real model output is converted to typed planner intent before mutation; mock planner remains deterministic fallback; unsafe provider output returns structured diagnostics at `/providerOutput` | `pnpm vitest run tests/ai/workbench-provider-plan.test.ts`; `pnpm test:ai`; `pnpm test:docs`; `pnpm check`; `git diff --check` |
 | TASK-2026W22-AMW-003 | Add provider-gated workbench evidence | P1 | `@ai-agent`, `@qa-agent`, `@docs-agent` | done | `docs/reviews/amw-003-provider-workbench-evidence-2026-05-31.md`; `tests/examples/ai-map-workbench.test.ts`; `examples/ai-map-workbench` | injected provider output goes through provider normalization, command skeletons, `applyCommands`, compact generation evidence, visible provider/session evidence, and payload-free audit records | `pnpm vitest run tests/examples/ai-map-workbench.test.ts`; `pnpm test:examples`; browser smoke; `pnpm check`; `git diff --check` |
 | TASK-2026W22-AMW-004 | Decide example-to-product promotion gate | P1 | `@quality-guardian`, `@coordinator` | done | `docs/reviews/amw-004-promotion-gate-2026-05-31.md` | the workbench passes the provider-gated local-system gate and remains under `examples/ai-map-workbench`; product-app or hosted promotion is held pending app boundary, provider credential/resource review, durable audit, visual evidence, and review actions | `pnpm test:docs`; `pnpm check`; `git diff --check` |
+| TASK-2026W22-AMW-005 | Add server-side provider profiles | P1 | `@ai-agent`, `@docs-agent` | review | `docs/reviews/amw-005-provider-profiles-2026-05-31.md`; `examples/ai-map-workbench`; `tests/examples/ai-map-workbench.test.ts` | server-side DeepSeek/OpenAI-compatible provider profiles are implemented under `examples/ai-map-workbench`; API keys remain server-only; provider output still normalizes through `normalizeWorkbenchProviderPlan` and `applyCommands`; selector evidence remains scoped to the last completed payload | provider/workbench tests; docs test; `pnpm check`; AMW-005 review |
 
 2026-05-31 AMW execution update: the runnable workbench is accepted as a
 product-evolution candidate by
@@ -364,6 +368,12 @@ system stage but stays in `examples/ai-map-workbench`. Product-app promotion,
 hosted deployment, and real provider integration are held until app ownership,
 credential/resource policy, durable audit, visual evidence, and explicit review
 actions are designed.
+
+2026-06-01 AMW-005 execution update: server-side provider profiles now expose
+safe public metadata, accept browser-selected `providerId` values, call
+OpenAI-compatible chat completions from the Node server only, preserve
+credential-free browser/audit evidence, and keep all resulting map changes on
+the existing provider-normalization plus command-application path.
 
 ## 2026-W22 MapLibre Source Drift Audit
 

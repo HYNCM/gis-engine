@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
+import { chromium, type Page } from "@playwright/test";
 import { planMockAiEdit } from "../../examples/ai-map-workbench/mock-ai.mjs";
 import { createWorkbenchServer } from "../../examples/ai-map-workbench/server.mjs";
 
@@ -590,7 +591,143 @@ describe("ai-map-workbench provider selector UI contract", () => {
     expect(appJs).not.toContain("baseUrl");
     expect(appJs).not.toContain("renderProviderEvidence({})");
   });
+
+  it("executes provider selection without leaking credentials or rewriting completed evidence", async () => {
+    const chatRequests: unknown[] = [];
+    let providerFetchCount = 0;
+    const server = await createWorkbenchServer({
+      port: 0,
+      env: {
+        DEEPSEEK_API_KEY: "server-secret-key",
+        GIS_WORKBENCH_CUSTOM_PROVIDER_ID: "disabled-provider",
+        GIS_WORKBENCH_CUSTOM_PROVIDER_LABEL: "Disabled Provider",
+        GIS_WORKBENCH_CUSTOM_PROVIDER_BASE_URL: "https://disabled-provider.example/v1",
+        GIS_WORKBENCH_CUSTOM_PROVIDER_MODEL: "disabled-model",
+        GIS_WORKBENCH_CUSTOM_PROVIDER_API_KEY_ENV: "DISABLED_PROVIDER_API_KEY"
+      },
+      fetchImpl: async (url: string, init: RequestInit) => {
+        providerFetchCount += 1;
+        expect(String(url)).toBe("https://api.deepseek.com/chat/completions");
+        expect(init.headers).toMatchObject({
+          authorization: "Bearer server-secret-key",
+          "content-type": "application/json"
+        });
+        return new Response(
+          JSON.stringify({
+            choices: [
+              {
+                message: {
+                  content: JSON.stringify({
+                    intent: {
+                      mapId: "ai-map-workbench",
+                      targetDomains: ["feature-display"],
+                      styleEdits: [{ layerId: "poi-circles", paint: { "circle-color": "#ef4444" } }]
+                    },
+                    confidence: { level: "medium", reasons: ["DeepSeek selected a structured point style edit."] }
+                  })
+                }
+              }
+            ]
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        );
+      }
+    });
+    closeServer = server.close;
+    const browser = await chromium.launch();
+    try {
+      const page = await browser.newPage();
+      page.on("request", (request) => {
+        if (request.url() === `${server.url}/api/chat`) {
+          chatRequests.push(JSON.parse(request.postData() ?? "{}"));
+        }
+      });
+      await page.route("**/vendor/maplibre-gl.js", async (route) => {
+        await route.fulfill({
+          contentType: "text/javascript",
+          body: `
+            window.maplibregl = {
+              Map: class {
+                addControl() {}
+                getZoom() { return 11; }
+                jumpTo() {}
+                on() {}
+                resize() {}
+                setStyle() {}
+              },
+              NavigationControl: class {}
+            };
+          `
+        });
+      });
+
+      await page.goto(server.url);
+      await page.waitForSelector("#provider-select option", { state: "attached" });
+
+      const selectedProvider = page.locator("#provider-select");
+      expect(await selectedProvider.inputValue()).toBe("mock-ai");
+      expect(await page.locator("#provider-status").textContent()).toBe("Next request: Mock AI");
+      expect(await page.locator('#provider-select option[value="disabled-provider"]').isDisabled()).toBe(true);
+
+      await selectedProvider.evaluate((select) => {
+        const element = select as HTMLSelectElement;
+        element.value = "disabled-provider";
+        element.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+      expect(await selectedProvider.inputValue()).toBe("mock-ai");
+      expect(await page.locator("#provider-status").textContent()).toBe("Next request: Mock AI");
+
+      await page.fill("#chat-input", "make points blue");
+      await Promise.all([
+        page.waitForResponse((response) => response.url() === `${server.url}/api/chat`),
+        page.click('#chat-form button[type="submit"]')
+      ]);
+      expect(await providerEvidenceRows(page)).toMatchObject({
+        Provider: "mock"
+      });
+
+      await selectedProvider.selectOption("deepseek");
+      expect(await selectedProvider.inputValue()).toBe("deepseek");
+      expect(await page.locator("#provider-status").textContent()).toBe("Next request: DeepSeek");
+      expect(await providerEvidenceRows(page)).toMatchObject({
+        Provider: "mock"
+      });
+
+      await page.fill("#chat-input", "make points red");
+      await Promise.all([
+        page.waitForResponse((response) => response.url() === `${server.url}/api/chat`),
+        page.click('#chat-form button[type="submit"]')
+      ]);
+      expect(providerFetchCount).toBe(1);
+      expect(chatRequests.at(-1)).toEqual({ message: "make points red", providerId: "deepseek" });
+      expect(JSON.stringify(chatRequests.at(-1))).not.toMatch(/server-secret-key|apiKey|baseUrl|https:\/\//i);
+      expect(await providerEvidenceRows(page)).toMatchObject({
+        Provider: "deepseek"
+      });
+
+      await selectedProvider.selectOption("mock-ai");
+      expect(await selectedProvider.inputValue()).toBe("mock-ai");
+      expect(await page.locator("#provider-status").textContent()).toBe("Next request: Mock AI");
+      expect(await providerEvidenceRows(page)).toMatchObject({
+        Provider: "deepseek"
+      });
+    } finally {
+      await browser.close();
+    }
+  }, 30_000);
 });
+
+async function providerEvidenceRows(page: Page) {
+  return page.locator("#provider-list").evaluate((list) => {
+    const rows: Record<string, string> = {};
+    for (const term of list.querySelectorAll("dt")) {
+      const label = term.textContent?.trim();
+      const value = term.nextElementSibling?.textContent?.trim();
+      if (label) rows[label] = value ?? "";
+    }
+    return rows;
+  });
+}
 
 describe("ai-map-workbench provider profiles", () => {
   it("returns mock plus safe DeepSeek metadata without leaking credentials", async () => {

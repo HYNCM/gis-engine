@@ -4,7 +4,9 @@
 mock AI chat sidebar with a real MapLibre map display and keeps all map
 mutation behind GIS Engine commands. Mock mode remains the default, but the
 server can also accept an injected provider fixture for provider-gated review
-tests.
+tests. When server environment variables are configured, the same boundary can
+call DeepSeek or another OpenAI-compatible chat completions endpoint from the
+Node server.
 
 ## Run
 
@@ -40,6 +42,39 @@ Unsafe provider output is blocked before mutation. Raw prompts, free-form
 JavaScript, direct commands, raw `MapSpec`, and patch payloads return
 `CAPABILITY.UNSUPPORTED` diagnostics at `/providerOutput`.
 
+## Server Provider Profiles
+
+The workbench exposes safe provider metadata at `/api/providers`. The browser
+selects a `providerId` only; credentials, base URLs, and provider request
+details stay on the server.
+
+DeepSeek profile:
+
+```bash
+DEEPSEEK_API_KEY=...
+# optional
+GIS_WORKBENCH_DEEPSEEK_BASE_URL=https://api.deepseek.com
+GIS_WORKBENCH_DEEPSEEK_MODEL=deepseek-chat
+```
+
+Custom OpenAI-compatible profile:
+
+```bash
+GIS_WORKBENCH_CUSTOM_PROVIDER_ID=my-provider
+GIS_WORKBENCH_CUSTOM_PROVIDER_LABEL="My Provider"
+GIS_WORKBENCH_CUSTOM_PROVIDER_BASE_URL=https://provider.example/v1
+GIS_WORKBENCH_CUSTOM_PROVIDER_MODEL=my-model
+GIS_WORKBENCH_CUSTOM_PROVIDER_API_KEY_ENV=MY_PROVIDER_API_KEY
+MY_PROVIDER_API_KEY=...
+```
+
+If `GIS_WORKBENCH_CUSTOM_PROVIDER_API_KEY_ENV` is omitted, the server reads
+`GIS_WORKBENCH_CUSTOM_API_KEY`. Providers are enabled only when required values
+and a non-empty API key are present. Provider output must be JSON with
+structured `intent` and optional bounded `confidence`; it is still normalized
+through `normalizeWorkbenchProviderPlan` and committed only through
+`applyCommands`.
+
 ## Evidence
 
 The chat API returns compact review evidence:
@@ -59,8 +94,11 @@ state.
 
 ## Boundaries
 
-- No real AI provider is called.
+- Mock mode makes no external AI call. Configured server provider profiles may
+  call DeepSeek or OpenAI-compatible chat completions from Node only.
 - No provider credentials are stored or sent to browser-visible state.
+- No provider response may directly return commands, JavaScript, raw `MapSpec`,
+  or patch payloads.
 - No browser-side `MapSpec` mutation is allowed.
 - No new MCP tool names are introduced.
 - No stable SceneView3D runtime or 3D renderer claim is made.

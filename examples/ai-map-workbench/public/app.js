@@ -124,7 +124,7 @@ function renderProviderStatus() {
     providerStatus.textContent = "Missing server credential.";
     return;
   }
-  providerStatus.textContent = `${profile.label ?? profile.id} ready.`;
+  providerStatus.textContent = `Next request: ${profile.label ?? profile.id}`;
 }
 
 function initSidebarControls() {
