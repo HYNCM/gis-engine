@@ -27,7 +27,10 @@ export async function callOpenAiCompatibleProvider(input) {
 
     const parsed = parseJsonObject(content);
     if (!parsed.ok) return providerError(profile, "Response must be a JSON object.");
-    if (!parsed.value.intent || typeof parsed.value.intent !== "string") return providerError(profile, "Response must include a string intent.");
+
+    // Support both old "intent" and new "action" format
+    const action = parsed.value.action || parsed.value.intent;
+    if (!action || typeof action !== "string") return providerError(profile, "Response must include an 'action' field.");
 
     return {
       ok: true,
@@ -35,7 +38,11 @@ export async function callOpenAiCompatibleProvider(input) {
         providerId: profile.id,
         promptHash: hashPrompt(message),
         traceId: `provider.${profile.id}.${randomUUID()}`,
-        intent: parsed.value.intent,
+        action: parsed.value.action || parsed.value.intent,
+        layerId: parsed.value.layerId || null,
+        paint: parsed.value.paint || null,
+        view: parsed.value.view || null,
+        layer: parsed.value.layer || null,
         confidence: sanitizeConfidence(parsed.value.confidence),
       },
     };
@@ -45,13 +52,42 @@ export async function callOpenAiCompatibleProvider(input) {
 }
 
 function systemPrompt(summary) {
+  const layerInfo = summary.layers > 0
+    ? `There ${summary.layers === 1 ? "is" : "are"} ${summary.layers} layer(s). Layer IDs: ${(summary.layerIds || []).join(", ") || "points-layer"}.`
+    : "No layers exist yet.";
   return [
-    "You are a map-editing assistant. Return ONLY valid JSON.",
-    "Your response must have an 'intent' field describing the map edit.",
-    "Valid intents: make points {color}, make points {larger|smaller}, zoom to {place}, reset.",
-    "Optionally include 'confidence': { score: 0.0-1.0, level: 'high'|'medium'|'low' }.",
-    `Current map: ${JSON.stringify(summary)}`,
-    "Example: {\"intent\":\"make points red\",\"confidence\":{\"score\":0.95,\"level\":\"high\"}}",
+    "You are a map-editing assistant for GIS Engine. You MUST return ONLY valid JSON.",
+    "",
+    "## Available Actions",
+    "- Change point/line/fill color: set 'circle-color', 'line-color', or 'fill-color'",
+    "- Change point size: set 'circle-radius' (range 3-30)",
+    "- Change line width: set 'line-width' (range 0.5-10)",
+    "- Change opacity: set 'circle-opacity', 'line-opacity', or 'fill-opacity'",
+    "- Move camera: set view center [lng, lat] and zoom level (0-22)",
+    "- Add a layer: provide layer type, source id, and paint properties",
+    "- Remove a layer: provide layer id",
+    "- Reset map: restore to default state",
+    "",
+    `## Current Map State\n${JSON.stringify(summary, null, 2)}`,
+    "",
+    layerInfo,
+    "",
+    "## Response Format (STRICT)",
+    "{",
+    '  "action": "setPaint" | "setLayout" | "setView" | "addLayer" | "removeLayer" | "reset",',
+    '  "layerId": "target-layer-id",          // for setPaint/setLayout/removeLayer',
+    '  "paint": { "circle-color": "#ef4444" }, // for setPaint',
+    '  "view": { "center": [120.15, 30.28], "zoom": 13 }, // for setView',
+    '  "layer": { "id": "new-layer", "type": "circle", "source": "points", "paint": { "circle-radius": 8 } }, // for addLayer',
+    '  "confidence": { "score": 0.95, "level": "high" }',
+    "}",
+    "",
+    "## Rules",
+    "- ALWAYS use exact layer IDs from the current map state",
+    "- For color changes, use hex colors like #ef4444, #3b82f6, #22c55e",
+    "- For setView, always include both center [lng, lat] and zoom",
+    "- Return ONLY the JSON object, no markdown, no explanation",
+    "- If unsure about any field, set confidence to 'low'",
   ].join("\n");
 }
 

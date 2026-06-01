@@ -125,33 +125,70 @@ function createInitialSpec() {
   };
 }
 
-// ── Intent parsing (for AI providers) ──
-function parseIntent(intent, spec) {
-  const msg = intent.toLowerCase();
-  // Color
-  if (msg.includes("red")) return { intent: "setPaint", layerId: "points-layer", paint: { "circle-color": "#ef4444" } };
-  if (msg.includes("blue")) return { intent: "setPaint", layerId: "points-layer", paint: { "circle-color": "#3b82f6" } };
-  if (msg.includes("green")) return { intent: "setPaint", layerId: "points-layer", paint: { "circle-color": "#22c55e" } };
-  // Size
-  if (msg.includes("larger") || msg.includes("bigger") || msg.includes("increase")) return { intent: "setPaint", layerId: "points-layer", paint: { "circle-radius": Math.min(30, (spec.layers[0]?.paint?.["circle-radius"] || 8) + 4) } };
-  if (msg.includes("smaller") || msg.includes("decrease")) return { intent: "setPaint", layerId: "points-layer", paint: { "circle-radius": Math.max(3, (spec.layers[0]?.paint?.["circle-radius"] || 8) - 4) } };
-  // Camera
-  if (msg.includes("hangzhou") || msg.includes("zoom")) return { intent: "setView", view: { center: [120.155, 30.274], zoom: 13 } };
-  if (msg.includes("reset")) return { intent: "reset" };
-  return null;
-}
+// ── AI command mapping ──
+function applyProviderCommands(engine, output, spec) {
+  const { action, layerId, paint, view, layer } = output;
+  let commands = [];
 
-function buildCommands(plan, spec) {
-  if (!plan) return [];
-  switch (plan.intent) {
-    case "setPaint": return [{ type: "setPaint", layerId: plan.layerId, paint: plan.paint }];
-    case "setView": return [{ type: "setView", view: plan.view }];
-    default: return [];
+  switch (action) {
+    case "setPaint":
+      if (layerId && paint) commands = [{ type: "setPaint", layerId, paint }];
+      break;
+    case "setLayout":
+      if (layerId && paint) commands = [{ type: "setLayout", layerId, layout: paint }];
+      break;
+    case "setView":
+      if (view?.center && view?.zoom != null) commands = [{ type: "setView", view }];
+      break;
+    case "addLayer":
+      if (layer?.id && layer?.type && layer?.source) commands = [{ type: "addLayer", layer }];
+      break;
+    case "removeLayer":
+      if (layerId) commands = [{ type: "removeLayer", layerId }];
+      break;
+    case "reset":
+      return { status: "applied", nextSpec: createInitialSpec(), evidence: { committed: true, rolledBack: false, changedPathCount: 1 } };
+    default:
+      // Fallback: try legacy intent parsing
+      return applyLegacyIntent(engine, action, spec);
   }
+
+  if (commands.length === 0) {
+    return { status: "ready", nextSpec: spec, evidence: { committed: false, rolledBack: false, changedPathCount: 0 } };
+  }
+
+  const result = engine.applyCommands(spec, commands, { collectTrace: true });
+  const nextSpec = result.committed && !result.rolledBack ? result.spec : spec;
+  const failed = (result.results || []).some((r) => r.status === "failed");
+  return {
+    status: failed ? "blocked" : "applied",
+    nextSpec,
+    evidence: { committed: result.committed || false, rolledBack: result.rolledBack || false, changedPathCount: result.results?.filter((r) => r.status === "applied").length || 0 },
+  };
 }
 
-function planMockEdit(message, spec) {
-  return parseIntent(message, spec);
+function applyLegacyIntent(engine, intent, spec) {
+  const msg = (intent || "").toLowerCase();
+  let plan = null;
+  if (msg.includes("red")) plan = { intent: "setPaint", layerId: "points-layer", paint: { "circle-color": "#ef4444" } };
+  else if (msg.includes("blue")) plan = { intent: "setPaint", layerId: "points-layer", paint: { "circle-color": "#3b82f6" } };
+  else if (msg.includes("green")) plan = { intent: "setPaint", layerId: "points-layer", paint: { "circle-color": "#22c55e" } };
+  else if (msg.includes("larger") || msg.includes("bigger")) plan = { intent: "setPaint", layerId: "points-layer", paint: { "circle-radius": Math.min(30, (spec.layers[0]?.paint?.["circle-radius"] || 8) + 4) } };
+  else if (msg.includes("smaller") || msg.includes("decrease")) plan = { intent: "setPaint", layerId: "points-layer", paint: { "circle-radius": Math.max(3, (spec.layers[0]?.paint?.["circle-radius"] || 8) - 4) } };
+  else if (msg.includes("hangzhou") || msg.includes("zoom")) plan = { intent: "setView", view: { center: [120.155, 30.274], zoom: 13 } };
+  else if (msg.includes("reset")) plan = { intent: "reset" };
+
+  if (!plan) return { status: "ready", nextSpec: spec, evidence: { committed: false, rolledBack: false, changedPathCount: 0 } };
+  if (plan.intent === "reset") return { status: "applied", nextSpec: createInitialSpec(), evidence: { committed: true, rolledBack: false, changedPathCount: 1 } };
+
+  const commands = plan.intent === "setPaint" ? [{ type: "setPaint", layerId: plan.layerId, paint: plan.paint }]
+    : plan.intent === "setView" ? [{ type: "setView", view: plan.view }] : [];
+  if (commands.length === 0) return { status: "ready", nextSpec: spec, evidence: { committed: false, rolledBack: false, changedPathCount: 0 } };
+
+  const result = engine.applyCommands(spec, commands, { collectTrace: true });
+  const nextSpec = result.committed && !result.rolledBack ? result.spec : spec;
+  const failed = (result.results || []).some((r) => r.status === "failed");
+  return { status: failed ? "blocked" : "applied", nextSpec, evidence: { committed: result.committed || false, rolledBack: result.rolledBack || false, changedPathCount: result.results?.filter((r) => r.status === "applied").length || 0 } };
 }
 
 // ── State ──
@@ -218,56 +255,38 @@ async function main() {
             return sendJson(res, { ...statePayload(engine, "ready", activeSpec), diagnostics: [{ code: "PROVIDER.UNAVAILABLE", severity: "error", message: "DeepSeek API key not configured. Set DEEPSEEK_API_KEY." }] });
           }
 
-          const summary = { sources: Object.keys(activeSpec.sources || {}), layers: (activeSpec.layers || []).length, view: activeSpec.view };
+          const summary = {
+            sources: Object.keys(activeSpec.sources || {}),
+            layers: (activeSpec.layers || []).length,
+            layerIds: (activeSpec.layers || []).map((l) => l.id),
+            view: activeSpec.view,
+          };
           const result = await provider.callOpenAiCompatibleProvider({ profile: ds, apiKey, message, summary });
 
           if (!result.ok) {
             return sendJson(res, { ...statePayload(engine, "ready", activeSpec), diagnostics: [{ code: "PROVIDER.ERROR", severity: "error", message: result.error || "Provider error" }], provider: { providerId: "deepseek" } });
           }
 
-          // Parse AI intent into commands
-          const intent = result.providerOutput.intent?.toLowerCase() || "";
-          const plan = parseIntent(intent, activeSpec);
-          const commands = buildCommands(plan, activeSpec);
-          if (commands.length === 0) {
-            return sendJson(res, { ...statePayload(engine, "ready", activeSpec), diagnostics: [{ code: "AI.NO_MATCH", severity: "warning", message: `AI intent "${intent}" could not be mapped to commands.` }], provider: { providerId: "deepseek", confidence: result.providerOutput.confidence } });
-          }
-
-          const cmdResult = engine.applyCommands(activeSpec, commands, { collectTrace: true });
-          const nextSpec = cmdResult.committed && !cmdResult.rolledBack ? cmdResult.spec : activeSpec;
-          const failed = (cmdResult.results || []).some((r) => r.status === "failed");
-          const status = failed ? "blocked" : "applied";
+          // Parse AI action into commands (new structured format)
+          const cmdResult = applyProviderCommands(engine, result.providerOutput, activeSpec);
+          const nextSpec = cmdResult.nextSpec;
+          const status = cmdResult.status;
           if (status === "applied") replaceActiveSpec(nextSpec);
 
           return sendJson(res, {
             ...statePayload(engine, status, status === "applied" ? nextSpec : activeSpec),
-            commandEvidence: { committed: cmdResult.committed || false, rolledBack: cmdResult.rolledBack || false, changedPathCount: cmdResult.results?.filter((r) => r.status === "applied").length || 0 },
+            commandEvidence: cmdResult.evidence,
             provider: { providerId: "deepseek", confidence: result.providerOutput.confidence },
           });
         }
 
         // Mock AI
-        const plan = planMockEdit(message, activeSpec);
-        if (plan?.intent === "reset") {
-          const fresh = createInitialSpec();
-          replaceActiveSpec(fresh);
-          return sendJson(res, { ...statePayload(engine, "applied", activeSpec), commandEvidence: { committed: true, rolledBack: false, changedPathCount: 3 }, provider: { providerId: "mock-ai" } });
-        }
-
-        const commands = buildCommands(plan, activeSpec);
-        if (commands.length === 0) {
-          return sendJson(res, { ...statePayload(engine, "ready", activeSpec), diagnostics: [{ code: "AI.NO_PLAN", severity: "warning", message: `Could not understand: "${message}". Try: make points red, zoom to Hangzhou, reset.` }], provider: { providerId: "mock-ai" } });
-        }
-
-        const result = engine.applyCommands(activeSpec, commands, { collectTrace: true });
-        const nextSpec = result.committed && !result.rolledBack ? result.spec : activeSpec;
-        const failed = (result.results || []).some((r) => r.status === "failed");
-        const status = failed ? "blocked" : "applied";
-        if (status === "applied") replaceActiveSpec(nextSpec);
+        const legacyResult = applyLegacyIntent(engine, message, activeSpec);
+        if (legacyResult.status === "applied") replaceActiveSpec(legacyResult.nextSpec);
 
         return sendJson(res, {
-          ...statePayload(engine, status, status === "applied" ? nextSpec : activeSpec),
-          commandEvidence: { committed: result.committed || false, rolledBack: result.rolledBack || false, changedPathCount: result.results?.filter((r) => r.status === "applied").length || 0 },
+          ...statePayload(engine, legacyResult.status, legacyResult.status === "applied" ? legacyResult.nextSpec : activeSpec),
+          commandEvidence: legacyResult.evidence,
           provider: { providerId: "mock-ai" },
         });
       }
