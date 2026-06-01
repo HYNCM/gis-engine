@@ -137,5 +137,12 @@ design.
 2026-06-02 AMW-009 update: command-safe review action design is complete as a
 planning handoff. Future review decisions must stay compact, evidence-linked,
 and free of direct `MapSpec` mutation, browser file writes, raw provider
-payloads, command bodies, patches, screenshots, and new MCP tool names. The next
-planning task is `AMW-010` product-promotion Go/No-go.
+payloads, command bodies, patches, screenshots, and new MCP tool names. That
+handoff fed `AMW-010` product-promotion Go/No-go.
+
+2026-06-02 AMW-010 update: product promotion is No-go. The local
+provider-gated example remains Go under `examples/ai-map-workbench`, but future
+real-system movement must start from a fresh planning loop and implement
+product ownership, provider resource enforcement, durable authorized audit,
+review-action runtime, and release-grade visual evidence before hosted or
+product claims.

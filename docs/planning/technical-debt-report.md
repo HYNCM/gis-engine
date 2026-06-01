@@ -121,20 +121,21 @@ serialized planning closure。
 Map Workbench Product Boundary 已打开并完成 `AMW-006`；`AMW-007` 已完成
 provider credential/resource administration 设计收口；`AMW-008` 已完成 durable
 audit retention/export 设计收口；`AMW-009` 已完成 command-safe review actions
-设计收口。当前最高优先级债务转为 product-promotion Go/No-go gate：在 product
-app 或 hosted use 前，必须先用 visual、provider、audit、review-action evidence
-做明确的 pass/hold/no-go 决策。
+设计收口；`AMW-010` 已完成 product-promotion No-go gate。当前债务转为
+promotion blocker implementation：在 product app 或 hosted use 前，必须先实现
+provider resource enforcement、durable authorized audit、review-action runtime
+和 release-grade visual evidence。
 
 ## 债务优先级
 
 | 排名 | 债务 | 得分 | 证据 | 建议修复 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | AMW product-promotion Go/No-go pending | 0.20 | `AMW-009` accepts command-safe review action design and keeps product promotion blocked until a quality-guardian/coordinator gate reviews visual, provider, audit, and review-action evidence | execute `TASK-2026W23-AMW-010` before product app or hosted promotion | high |
+| 1 | AMW product-promotion blockers | 0.18 | `AMW-010` keeps local example use Go but records product app and hosted promotion as No-go until provider resource enforcement, durable audit, review-action runtime, and release-grade visual evidence exist | open a fresh product implementation planning loop before product app or hosted promotion | high |
 | 2 | Future MapLibre package movement gate | 0.12 | `MLD-004` blocks package movement in this batch; current code remains on the existing `maplibre-gl` range | create a new package-movement task only after official source refresh and strict visual evidence are available | high |
 
 ## 修复顺序
 
-1. 先执行 `TASK-2026W23-AMW-010`：运行 product-promotion Go/No-go gate，确保 promotion 只在 visual、provider、audit、review-action evidence 被 quality-guardian/coordinator 接受后发生。
+1. 如需继续 AI Map Workbench 产品化，先开 fresh planning loop，把 provider resource enforcement、durable authorized audit、review-action runtime 和 release-grade visual evidence 拆成新的实现任务。
 2. 后续若要移动 MapLibre package，先开新任务并刷新官方 package/changelog evidence、example loading compatibility 和 strict visual gates。
 3. 下一步若要推进 stable runtime promotion，必须先形成明确的 promotion
    rubric、browser matrix evidence 和 guardrail diagnostics，不得直接把

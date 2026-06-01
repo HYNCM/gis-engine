@@ -316,14 +316,15 @@ flowchart LR
 | TASK-2026W22-MLD-003 | MLD-002 | resource and delivery evidence | `pnpm test:resources`; `pnpm test:ai`; `pnpm test:docs`; `pnpm check` | done |
 | TASK-2026W22-MLD-004 | MLD-003 | package movement Go-No-go | `pnpm build:schema`; `pnpm check`; visual gate or waiver rationale | done / no-go |
 
-2026-06-01 planning update: after MLD closure and AMW-005 provider-profile
+2026-06-02 planning update: after MLD closure and AMW-005 provider-profile
 evidence, the next edge is AI Map Workbench Product Boundary. `AMW-006` is
 complete as product boundary/spec/DAG planning, `AMW-007` is complete as
 provider credential/resource administration design, and `AMW-008` is complete
-as durable audit retention/export design. `AMW-009` is now complete as
-command-safe review action design, and `AMW-010` is the next queued execution
-task. This path does not move MapLibre packages or promote the workbench out of
-`examples/` without a product-promotion gate.
+as durable audit retention/export design. `AMW-009` is complete as
+command-safe review action design, and `AMW-010` is complete as a
+product-promotion No-go gate. This path does not move MapLibre packages or
+promote the workbench out of `examples/`; future product work must start from a
+fresh planning loop.
 
 ```mermaid
 flowchart LR
@@ -341,7 +342,7 @@ flowchart LR
 | TASK-2026W23-AMW-007 | AMW-006 | provider credential/resource administration design | provider/workbench tests or design review; `pnpm test:examples`; `pnpm test:docs`; `pnpm check` | done |
 | TASK-2026W23-AMW-008 | AMW-006 | durable audit retention/export design | schema/design review if public; `pnpm test:docs`; `pnpm check`; `git diff --check` | done |
 | TASK-2026W23-AMW-009 | AMW-006, AMW-008 | command-safe review action contract | design review; `pnpm test:docs`; `pnpm check`; `git diff --check` | done |
-| TASK-2026W23-AMW-010 | AMW-007, AMW-008, AMW-009 | product-promotion gate report | `pnpm test:docs`; `pnpm check`; browser smoke or visual evidence; `git diff --check` | queued P1 |
+| TASK-2026W23-AMW-010 | AMW-007, AMW-008, AMW-009 | product-promotion gate report | `pnpm test:docs`; `pnpm check`; browser smoke; `git diff --check` | done / no-go |
 
 ## 阻断规则
 

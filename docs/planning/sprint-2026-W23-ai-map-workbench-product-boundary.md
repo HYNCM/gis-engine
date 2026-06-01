@@ -43,7 +43,7 @@ must precede those decisions.
 | TASK-2026W23-AMW-007 | Design provider credential and resource administration | P0 | M | `@ai-agent`, `@engine-agent`, `@docs-agent` | done | AMW-006 | `docs/planning/feature-specs/ai-map-workbench-provider-administration.md` and `docs/reviews/amw-007-provider-resource-admin-2026-06-01.md` specify provider lifecycle, browser-safe metadata, resource policy, timeout/size follow-ups, leak-hardening, and diagnostic paths before hosted or product use. | provider/workbench tests or design review; `pnpm test:examples`; `pnpm test:docs`; `pnpm check` |
 | TASK-2026W23-AMW-008 | Design durable audit retention and export | P1 | M | `@engine-agent`, `@ai-agent`, `@docs-agent` | done | AMW-006 | `docs/planning/feature-specs/ai-map-workbench-durable-audit.md` and `docs/reviews/amw-008-durable-audit-retention-export-2026-06-01.md` specify retention, privacy, access control, export shape, payload caps, deletion behavior, and no-raw-payload persistence rules before storage implementation. | schema/design review if public; `pnpm test:docs`; `pnpm check`; `git diff --check` |
 | TASK-2026W23-AMW-009 | Define command-safe review actions | P1 | M | `@engine-agent`, `@ai-agent`, `@qa-agent` | done | AMW-006, AMW-008 | `docs/planning/feature-specs/ai-map-workbench-review-actions.md` and `docs/reviews/amw-009-command-safe-review-actions-2026-06-02.md` define accept, block, and follow-up-required review decisions without direct `MapSpec` mutation, browser file writes, or raw provider payload retention. | design review; `pnpm test:docs`; `pnpm check`; `git diff --check` |
-| TASK-2026W23-AMW-010 | Run product-promotion Go-No-go gate | P1 | S | `@quality-guardian`, `@coordinator`, `@qa-agent` | queued | AMW-007, AMW-008, AMW-009 | Gate decides whether AI Map Workbench stays in `examples/` or can move to a product app boundary, and records required visual/resource/audit/review-action evidence. | `pnpm test:docs`; `pnpm check`; browser smoke or visual evidence; `git diff --check` |
+| TASK-2026W23-AMW-010 | Run product-promotion Go-No-go gate | P1 | S | `@quality-guardian`, `@coordinator`, `@qa-agent` | done / no-go | AMW-007, AMW-008, AMW-009 | `docs/reviews/amw-010-product-promotion-go-no-go-2026-06-02.md` keeps the provider-gated local example Go under `examples/ai-map-workbench` and records product app movement plus hosted promotion as No-go. | `pnpm test:docs`; `pnpm check`; browser smoke; `git diff --check` |
 
 ```mermaid
 flowchart LR
@@ -57,10 +57,10 @@ flowchart LR
 
 ## Current Handoff
 
-`TASK-2026W23-AMW-009` is complete as a command-safe review action design
-handoff. The next queued task is `TASK-2026W23-AMW-010`. It must stay in
-product-promotion Go/No-go scope and record visual, provider, audit, and
-review-action evidence before any product app movement or hosted deployment.
+`TASK-2026W23-AMW-010` closes this sprint as a product-promotion No-go. The
+local provider-gated example remains useful under `examples/ai-map-workbench`,
+but product app movement, hosted deployment, durable audit runtime, and
+review-action implementation require a fresh planning loop with new task ids.
 
 ## Finish Gate Rules
 

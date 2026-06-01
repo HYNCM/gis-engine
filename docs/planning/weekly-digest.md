@@ -177,7 +177,7 @@ move to `TASK-2026W23-SQH-003`.
 | TASK-2026W23-AMW-007 | done | `docs/planning/feature-specs/ai-map-workbench-provider-administration.md`; `docs/reviews/amw-007-provider-resource-admin-2026-06-01.md`; provider credential/resource administration design before hosted/product use |
 | TASK-2026W23-AMW-008 | done | `docs/planning/feature-specs/ai-map-workbench-durable-audit.md`; `docs/reviews/amw-008-durable-audit-retention-export-2026-06-01.md`; durable audit retention/export design before persistent storage or product promotion |
 | TASK-2026W23-AMW-009 | done | `docs/planning/feature-specs/ai-map-workbench-review-actions.md`; command-safe accept/block/follow-up review action design |
-| TASK-2026W23-AMW-010 | queued | product-promotion Go/No-go gate |
+| TASK-2026W23-AMW-010 | done / no-go | `docs/reviews/amw-010-product-promotion-go-no-go-2026-06-02.md`; local example Go, product app and hosted promotion No-go |
 
 ## Next Handoff
 
@@ -196,7 +196,8 @@ move to `TASK-2026W23-SQH-003`.
   until a future run refreshes official package evidence, scopes example
   loading compatibility, and accepts strict visual evidence or an explicit
   conditional waiver.
-- `@quality-guardian`, `@coordinator`, and `@qa-agent`: take
-  `TASK-2026W23-AMW-010` next. Run the product-promotion Go/No-go gate with
-  visual, provider, audit, and review-action evidence before any product app
-  movement or hosted deployment.
+- `@coordinator`, `@competitive-intel`, `@product-strategist`, and
+  `@task-distributor`: the AI Map Workbench product-boundary batch is closed by
+  `TASK-2026W23-AMW-010` as product promotion No-go. Start a fresh planning loop
+  before any product app movement, hosted deployment, durable audit runtime, or
+  review-action implementation.

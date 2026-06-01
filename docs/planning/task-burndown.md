@@ -350,7 +350,7 @@ review actions, visual evidence, and promotion gates are accepted.
 | TASK-2026W23-AMW-007 | Design provider credential and resource administration | P0 | `@ai-agent`, `@engine-agent`, `@docs-agent` | done | `docs/planning/feature-specs/ai-map-workbench-provider-administration.md`; `docs/reviews/amw-007-provider-resource-admin-2026-06-01.md`; `examples/ai-map-workbench/README.md` | provider profile lifecycle, allowed protocols, missing credential states, timeout/error behavior, prompt/body leak-hardening, and browser-safe metadata are specified before hosted or product use | provider/workbench tests or design review; `pnpm test:examples`; `pnpm test:docs`; `pnpm check` |
 | TASK-2026W23-AMW-008 | Design durable audit retention and export | P1 | `@engine-agent`, `@ai-agent`, `@docs-agent` | done | `docs/planning/feature-specs/ai-map-workbench-durable-audit.md`; `docs/reviews/amw-008-durable-audit-retention-export-2026-06-01.md`; `examples/ai-map-workbench/README.md` | retention, privacy, access control, export shape, payload caps, and deletion behavior are specified before persistent storage implementation | schema/design review if public; `pnpm test:docs`; `pnpm check`; `git diff --check` |
 | TASK-2026W23-AMW-009 | Define command-safe review actions | P1 | `@engine-agent`, `@ai-agent`, `@qa-agent` | done | `docs/planning/feature-specs/ai-map-workbench-review-actions.md`; `docs/reviews/amw-009-command-safe-review-actions-2026-06-02.md`; `examples/ai-map-workbench/README.md` | accept, block, and follow-up-required actions are specified as structured review decisions without direct `MapSpec` mutation, browser file writes, raw provider payload retention, or new MCP tool names | design review; `pnpm test:docs`; `pnpm check`; `git diff --check` |
-| TASK-2026W23-AMW-010 | Run product-promotion Go-No-go gate | P1 | `@quality-guardian`, `@coordinator`, `@qa-agent` | queued | product-promotion gate report | gate decides whether AI Map Workbench stays in `examples/` or can move to a product app boundary, and records required visual/resource/audit/review-action evidence | `pnpm test:docs`; `pnpm check`; browser smoke or visual evidence; `git diff --check` |
+| TASK-2026W23-AMW-010 | Run product-promotion Go-No-go gate | P1 | `@quality-guardian`, `@coordinator`, `@qa-agent` | done / no-go | `docs/reviews/amw-010-product-promotion-go-no-go-2026-06-02.md` | local provider-gated example remains Go under `examples/ai-map-workbench`, while product app movement and hosted promotion remain No-go until product ownership, provider resource enforcement, durable audit, review-action runtime, and release-grade visual evidence exist | `pnpm test:docs`; `pnpm check`; browser smoke; `git diff --check` |
 
 2026-05-31 AMW execution update: the runnable workbench is accepted as a
 product-evolution candidate by
@@ -393,8 +393,15 @@ action design.
 2026-06-02 AMW-009 planning update: command-safe review actions are accepted as
 a design handoff in
 `docs/planning/feature-specs/ai-map-workbench-review-actions.md` and
-`docs/reviews/amw-009-command-safe-review-actions-2026-06-02.md`. The next
-queued task is `TASK-2026W23-AMW-010` for the product-promotion Go/No-go gate.
+`docs/reviews/amw-009-command-safe-review-actions-2026-06-02.md`. That handoff
+fed `TASK-2026W23-AMW-010` for the product-promotion Go/No-go gate.
+
+2026-06-02 AMW-010 gate update: product promotion is closed as No-go in
+`docs/reviews/amw-010-product-promotion-go-no-go-2026-06-02.md`. The local
+provider-gated example remains usable under `examples/ai-map-workbench`, but it
+must not move to a product app, hosted system, durable audit workflow, or
+review-action runtime without a new planning loop and fresh implementation
+tasks.
 
 ## 2026-W22 MapLibre Source Drift Audit
 

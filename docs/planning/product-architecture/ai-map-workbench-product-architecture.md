@@ -121,12 +121,12 @@ normalization, command application, and payload-free audit evidence.
 
 AMW-006 opened the product-boundary planning batch, AMW-007 completed provider
 credential/resource administration as a design handoff, AMW-008 completed
-durable audit retention/export as a design handoff, and AMW-009 completed
-command-safe review action design as a design handoff. The workbench remains
-under `examples/ai-map-workbench` until a future quality gate accepts the full
-product boundary. The next product architecture gap is AMW-010 product-promotion
-Go/No-go before any product app movement, hosted deployment, persistent audit
-storage, or review actions are implemented.
+durable audit retention/export as a design handoff, AMW-009 completed
+command-safe review action design as a design handoff, and AMW-010 closed the
+promotion gate as No-go. The workbench remains under
+`examples/ai-map-workbench`; future product movement requires a fresh planning
+loop before any product app boundary, hosted deployment, persistent audit
+storage, or review-action runtime is implemented.
 
 ## 2026-06-01 AMW-007 Addendum
 

@@ -127,5 +127,16 @@ task at that point was command-safe review action design under `AMW-009`.
 action design defines `accepted`, `blocked`, and `follow-up-required` as compact
 review decisions that reference existing audit, provider, delivery, command, and
 diagnostic evidence without direct `MapSpec` mutation, browser file writes, raw
-provider payload retention, or new MCP tool names. Product promotion remains
-blocked. The next task is the product-promotion Go/No-go gate under `AMW-010`.
+provider payload retention, or new MCP tool names. Product promotion remained
+blocked and this design fed the product-promotion Go/No-go gate under
+`AMW-010`.
+
+## 2026-06-02 AMW-010 Addendum
+
+`AMW-010` is captured in
+`docs/reviews/amw-010-product-promotion-go-no-go-2026-06-02.md`. The gate keeps
+the local provider-gated example Go under `examples/ai-map-workbench`, but
+records product app movement and hosted promotion as No-go. The batch is closed;
+future product work must start from a fresh planning loop covering product app
+ownership, provider resource enforcement, durable authorized audit,
+review-action runtime, and release-grade visual evidence.
