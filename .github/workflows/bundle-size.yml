@@ -1,0 +1,101 @@
+# Bundle Size Check — SDK 体积监控
+#
+# 每次 PR 和 push main 时检查各包体积
+# 体积增大超过 5% 时告警
+
+name: Bundle Size
+
+on:
+  pull_request:
+    paths:
+      - "packages/**/src/**"
+      - "packages/**/package.json"
+  push:
+    branches: [main]
+    paths:
+      - "packages/**/src/**"
+      - "packages/**/package.json"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  size-check:
+    name: "体积检查"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: 构建所有包
+        run: pnpm build
+
+      - name: 测量各包体积
+        run: |
+          echo "## 📦 SDK Bundle Sizes" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Package | Raw (KB) | Gzip (KB) |" >> $GITHUB_STEP_SUMMARY
+          echo "| --- | ---: | ---: |" >> $GITHUB_STEP_SUMMARY
+
+          for pkg in engine ai scene3d scene3d-three-adapter; do
+            DIST_DIR="packages/${pkg}/dist"
+            if [ -d "$DIST_DIR" ]; then
+              RAW=$(du -sk "$DIST_DIR" | cut -f1)
+              GZIP=$(tar -czf - -C "$DIST_DIR" . 2>/dev/null | wc -c | awk '{printf "%.1f", $1/1024}')
+              echo "| @gis-engine/${pkg} | ${RAW} | ${GZIP} |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📊 总体积 (engine + ai core): $(du -sk packages/engine/dist packages/ai/dist | awk '{s+=$1}END{print s}') KB raw" >> $GITHUB_STEP_SUMMARY
+
+      - name: 体积回归检查
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "🔍 对比 base 分支体积..."
+
+          # 保存当前体积
+          for pkg in engine ai; do
+            DIST_DIR="packages/${pkg}/dist"
+            if [ -d "$DIST_DIR" ]; then
+              du -sk "$DIST_DIR" | cut -f1 > "/tmp/${pkg}-size-pr.txt"
+            fi
+          done
+
+          # Checkout base 并测量
+          git fetch origin ${{ github.base_ref }}
+          git checkout origin/${{ github.base_ref }} -- packages/engine/dist packages/ai/dist 2>/dev/null || true
+
+          for pkg in engine ai; do
+            DIST_DIR="packages/${pkg}/dist"
+            if [ -d "$DIST_DIR" ]; then
+              du -sk "$DIST_DIR" | cut -f1 > "/tmp/${pkg}-size-base.txt"
+            fi
+          done
+
+          # 对比
+          for pkg in engine ai; do
+            PR_SIZE=$(cat "/tmp/${pkg}-size-pr.txt" 2>/dev/null || echo "0")
+            BASE_SIZE=$(cat "/tmp/${pkg}-size-base.txt" 2>/dev/null || echo "0")
+            if [ "$PR_SIZE" != "0" ] && [ "$BASE_SIZE" != "0" ]; then
+              CHANGE=$(( (PR_SIZE - BASE_SIZE) * 100 / BASE_SIZE ))
+              if [ $CHANGE -gt 5 ]; then
+                echo "::warning::@gis-engine/${pkg} 体积增大 ${CHANGE}% (${BASE_SIZE}KB → ${PR_SIZE}KB)"
+              elif [ $CHANGE -gt 0 ]; then
+                echo "📈 @gis-engine/${pkg}: +${CHANGE}% (${BASE_SIZE}KB → ${PR_SIZE}KB)"
+              else
+                echo "✅ @gis-engine/${pkg}: 体积未增大"
+              fi
+            fi
+          done

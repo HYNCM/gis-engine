@@ -1,0 +1,95 @@
+import { defineConfig } from "vitepress";
+
+export default defineConfig({
+  title: "GIS Engine",
+  description: "AI-native, schema-first map engine — deterministic, replayable, auditable.",
+  lang: "en-US",
+  base: "/gis-engine/",
+  lastUpdated: true,
+  cleanUrls: true,
+
+  head: [
+    ["link", { rel: "icon", type: "image/svg+xml", href: "/gis-engine/favicon.svg" }],
+  ],
+
+  themeConfig: {
+    logo: { light: "/gis-engine/logo-light.svg", dark: "/gis-engine/logo-dark.svg" },
+    nav: [
+      { text: "Guide", link: "/guide/what-is-gis-engine" },
+      { text: "API", link: "/api/engine" },
+      { text: "MCP", link: "/mcp/overview" },
+      { text: "Playground", link: "https://gis-engine.dev/playground" },
+    ],
+
+    sidebar: {
+      "/guide/": [
+        {
+          text: "Introduction",
+          items: [
+            { text: "What is GIS Engine?", link: "/guide/what-is-gis-engine" },
+            { text: "Quick Start", link: "/guide/quick-start" },
+            { text: "Core Concepts", link: "/guide/core-concepts" },
+            { text: "Schema-First Design", link: "/guide/schema-first" },
+            { text: "Command System", link: "/guide/commands" },
+            { text: "Diagnostics", link: "/guide/diagnostics" },
+          ],
+        },
+        {
+          text: "AI Integration",
+          items: [
+            { text: "MCP Server Setup", link: "/guide/mcp-server" },
+            { text: "Natural Language Editing", link: "/guide/nl-editing" },
+            { text: "Generation Evidence", link: "/guide/generation-evidence" },
+          ],
+        },
+        {
+          text: "Advanced",
+          items: [
+            { text: "Custom Adapters", link: "/guide/custom-adapters" },
+            { text: "Snapshot Testing", link: "/guide/snapshot-testing" },
+            { text: "Resource Policy", link: "/guide/resource-policy" },
+            { text: "Performance", link: "/guide/performance" },
+          ],
+        },
+      ],
+      "/api/": [
+        {
+          text: "Packages",
+          items: [
+            { text: "@gis-engine/engine", link: "/api/engine" },
+            { text: "@gis-engine/ai", link: "/api/ai" },
+            { text: "@gis-engine/scene3d", link: "/api/scene3d" },
+          ],
+        },
+      ],
+      "/mcp/": [
+        {
+          text: "MCP Tools",
+          items: [
+            { text: "Overview", link: "/mcp/overview" },
+            { text: "validate_spec", link: "/mcp/validate-spec" },
+            { text: "apply_commands", link: "/mcp/apply-commands" },
+            { text: "export_spec", link: "/mcp/export-spec" },
+            { text: "get_context_summary", link: "/mcp/get-context-summary" },
+            { text: "snapshot_spec", link: "/mcp/snapshot-spec" },
+            { text: "explain_spec", link: "/mcp/explain-spec" },
+            { text: "export_example_app", link: "/mcp/export-example-app" },
+          ],
+        },
+      ],
+    },
+
+    socialLinks: [
+      { icon: "github", link: "https://github.com/HYNCM/gis-engine" },
+    ],
+
+    search: {
+      provider: "local",
+    },
+
+    footer: {
+      message: "Released under the Apache-2.0 License.",
+      copyright: "Copyright © 2026 GIS Engine contributors",
+    },
+  },
+});

@@ -39,7 +39,11 @@
     "docs:generate": "node scripts/doc-generator.mjs",
     "docs:changelog": "node scripts/doc-generator.mjs changelog",
     "docs:features": "node scripts/doc-generator.mjs features",
-    "docs:links": "node scripts/doc-generator.mjs links"
+    "docs:links": "node scripts/doc-generator.mjs links",
+    "docs:dev": "cd docs/website && pnpm docs:dev",
+    "docs:build": "cd docs/website && pnpm docs:build",
+    "docs:preview": "cd docs/website && pnpm docs:preview",
+    "size:check": "du -sk packages/*/dist | sort -rn"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

@@ -6,14 +6,27 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "sideEffects": false,
   "repository": {
     "type": "git",
     "url": "git+https://github.com/HYNCM/gis-engine.git",
     "directory": "packages/ai"
   },
-  "files": [
-    "dist"
-  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./mcp": {
+      "types": "./dist/mcp/server.d.ts",
+      "import": "./dist/mcp/server.js"
+    },
+    "./tools/*": {
+      "types": "./dist/tools/*.d.ts",
+      "import": "./dist/tools/*.js"
+    }
+  },
+  "files": ["dist"],
   "publishConfig": {
     "access": "public"
   },
@@ -30,5 +43,15 @@
   },
   "devDependencies": {
     "typescript": "^5.7.0"
-  }
+  },
+  "keywords": [
+    "gis",
+    "maps",
+    "ai",
+    "mcp",
+    "model-context-protocol",
+    "map-spec",
+    "map-editing",
+    "structured-output"
+  ]
 }

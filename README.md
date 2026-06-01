@@ -1,5 +1,30 @@
 # GIS Engine
 
+> **AI-native, schema-first map engine.** Deterministic, replayable, auditable.
+> Built for AI agents and human developers who need a stricter contract than
+> traditional map SDKs can offer.
+
+[![CI](https://github.com/HYNCM/gis-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/HYNCM/gis-engine/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+
+```bash
+npm install @gis-engine/engine @gis-engine/ai
+```
+
+```html
+<!-- Or from CDN: -->
+<script type="module">
+import { createMap, applyCommands } from "https://unpkg.com/@gis-engine/engine";
+</script>
+```
+
+**[Quick Start](https://github.com/HYNCM/gis-engine#quick-start) ·
+[MCP Tools](https://github.com/HYNCM/gis-engine#mcp-tools-for-ai) ·
+[AI Map Workbench Demo](examples/ai-map-workbench) ·
+[Documentation](https://github.com/HYNCM/gis-engine/tree/main/docs)**
+
+---
+
 AI-native, TypeScript-first map runtime for building, validating, replaying,
 snapshotting, and exporting 2D web map applications, with evidence-gated 3D
 contract scaffolds.
