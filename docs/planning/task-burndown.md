@@ -382,14 +382,23 @@ source drift as the next bounded product slice. This sprint audits compatibility
 before any dependency movement and does not add MCP aliases, PMTiles archive
 parsing, vector decoding, hidden fetches, or stable SceneView3D runtime support.
 
+2026-06-01 closure update: `MLD-002` is accepted through
+`docs/reviews/mld-002-maplibre-drift-audit-2026-05-31.md`; `MLD-003` closes the
+resource/delivery evidence boundary; `MLD-004` records a no-go for MapLibre
+package movement in this batch. `SourceLoader` now exists as an exported
+contract-only surface, but runtime source loading remains adapter-owned until a
+separate implementation task is approved.
+
 | id | title | priority | owner | status | evidence target | acceptance | finish gates |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | TASK-2026W22-MLD-001 | Freeze MapLibre source drift audit boundary | P0 | `@product-strategist`, `@task-distributor` | done | `docs/planning/feature-specs/maplibre-source-drift-audit.md`; `docs/planning/sprint-2026-W22-maplibre-source-drift-audit.md` | audit scope excludes package upgrades, MCP aliases, PMTiles archive parsing, vector decoding, and stable SceneView3D promotion | planning review; `pnpm test:docs`; `pnpm check`; `git diff --check` |
-| TASK-2026W22-MLD-002 | Audit adapter and source compatibility against drift signals | P0 | `@engine-agent`, `@qa-agent` | todo | adapter/source compatibility report | transformer, MapLibre adapter, query, vector, PMTiles, and fill-extrusion fixtures are compared against current package metadata and drift assumptions | `pnpm test:adapter`; `pnpm test:resources`; `pnpm test:snapshot:smoke`; `pnpm check` |
-| TASK-2026W22-MLD-003 | Map resource policy and delivery evidence for source drift | P1 | `@engine-agent`, `@ai-agent`, `@docs-agent` | todo | resource/delivery evidence report | generated-app delivery and resource-policy docs name exact PMTiles/vector boundaries without archive parsing or hidden fetches | `pnpm test:resources`; `pnpm test:ai`; `pnpm test:docs`; `pnpm check` |
-| TASK-2026W22-MLD-004 | Publish MapLibre drift Go-No-go gate | P1 | `@quality-guardian`, `@coordinator` | todo | quality gate report | no-go, conditional, or go-candidate decision names visual snapshot requirements before dependency movement | `pnpm build:schema`; `pnpm check`; visual gate or explicit non-rendering waiver |
+| TASK-2026W22-MLD-002 | Audit adapter and source compatibility against drift signals | P0 | `@engine-agent`, `@qa-agent` | done | `docs/reviews/mld-002-maplibre-drift-audit-2026-05-31.md`; `packages/engine/src/sources/contract.ts`; visual harness ESM/UMD resolver | transformer, MapLibre adapter, query, vector, PMTiles, and fill-extrusion fixtures are compared against current package metadata and drift assumptions | `pnpm test:adapter`; `pnpm test:resources`; `pnpm test:snapshot:smoke`; `pnpm check` |
+| TASK-2026W22-MLD-003 | Map resource policy and delivery evidence for source drift | P1 | `@engine-agent`, `@ai-agent`, `@docs-agent` | done | `docs/reviews/mld-003-resource-delivery-evidence-2026-06-01.md` | generated-app delivery and resource-policy docs name exact PMTiles/vector boundaries without archive parsing or hidden fetches | `pnpm test:resources`; `pnpm test:ai`; `pnpm test:docs`; `pnpm check` |
+| TASK-2026W22-MLD-004 | Publish MapLibre drift Go-No-go gate | P1 | `@quality-guardian`, `@coordinator` | done / no-go | `docs/reviews/mld-004-go-no-go-2026-06-01.md` | package movement remains blocked until a future task refreshes official source evidence and accepts strict visual evidence | `pnpm build:schema`; `pnpm check`; visual gate or explicit non-rendering waiver |
 
-The next queued task is `MLD-002`.
+The MLD batch is closed. The next edge returns to planning state; any future
+MapLibre package movement must start as a separate task with refreshed official
+evidence and release-capable visual gates.
 
 ---
 

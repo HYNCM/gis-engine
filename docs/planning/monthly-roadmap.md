@@ -165,7 +165,12 @@ Spatial Query Evidence Hardening sprint 已关闭，下一步回到 planning sta
 竞品、产品设计和任务 DAG。
 2026-05-31 planning refresh: MapLibre/Mapbox package evidence 仍显示 source
 drift 压力。下一批任务打开为 MapLibre Source Drift Audit；`MLD-001` 已冻结
-边界和 sprint DAG，下一步执行 `TASK-2026W22-MLD-002`。
+边界和 sprint DAG。
+2026-06-01 MLD closure update: `MLD-002` 已由
+`docs/reviews/mld-002-maplibre-drift-audit-2026-05-31.md` 接受为
+adapter/source compatibility evidence；`MLD-003` 关闭 resource/delivery
+evidence；`MLD-004` 记录本批次 MapLibre package movement No-go。`SourceLoader`
+已作为 contract-only surface 存在，但 runtime source loading 仍不在本批次范围。
 
 ## 2026-W22 Iteration Path
 
@@ -173,7 +178,7 @@ drift 压力。下一批任务打开为 MapLibre Source Drift Audit；`MLD-001` 
 | --- | --- | --- | --- |
 | P0 | Generated App Review Console | Turn generated-app delivery evidence into an inspectable acceptance handoff | `GIR-001` through `GIR-006` are done; next work starts from a fresh planning loop |
 | P0 | Spatial Query Evidence Hardening | Make point/bbox query evidence explicit, bounded, and delivery-mappable | `SQH-001` through `SQH-006` are done; next work starts from a fresh planning loop |
-| P0 | MapLibre Source Drift Audit | Audit MapLibre/Mapbox source and renderer drift before package movement | `MLD-001` is done; `MLD-002` audits adapter/source compatibility |
+| P0 | MapLibre Source Drift Audit | Audit MapLibre/Mapbox source and renderer drift before package movement | `MLD-001` through `MLD-004` are done; package movement remains no-go until a future task refreshes official evidence and strict visual gates |
 | P0 | SceneView3D governance | Keep stable `view.mode: "scene3d"` blocked after SRC-006 No-go | future stable runtime work starts only from a new accepted promotion task |
 | P0 | AI natural-language app generation | Make feature display, spatial analysis, and scene browsing capability boundaries machine-readable | `get_context_summary` and `explain_spec` expose `capabilitySummary` with schema-tested MCP output |
 | P0 | Next planning loop | Refresh competitor evidence, product design, and task DAG for natural-language map app generation | competitive-intel, product-strategist, coordinator, and task-distributor produce the next iteration plan |
@@ -220,7 +225,7 @@ drift 压力。下一批任务打开为 MapLibre Source Drift Audit；`MLD-001` 
 | --- | ---: | ---: | --- | --- | --- |
 | 1 | Generated App Review Console | done | delivery sections, source readiness, spatial readiness, prompt-to-delivery QA, and release wording guardrails are complete through `GIR-006` | start the next planning loop before opening more implementation tasks | high |
 | 2 | Spatial Query Evidence Hardening | done | `SQH-006` records a quality-gate pass and closure after `SQH-005` mapped query states into delivery | start the next planning loop before opening more implementation tasks | high |
-| 3 | MapLibre Source Drift Audit | 5.90 | 2026-05-31 package evidence shows MapLibre 5.24.0 stable with v6 prerelease line and Mapbox PMTiles source pressure | execute `TASK-2026W22-MLD-002` next | high |
+| 3 | MapLibre Source Drift Audit | done / package movement no-go | `MLD-002` adapter/source audit, `MLD-003` resource/delivery evidence, and `MLD-004` Go-No-go gate are recorded | open a new package-movement task only after refreshed official evidence, example loading compatibility, and strict visual gates are available | high |
 | 4 | SceneView3D promotion readiness | parked / no-go | W22 evidence and beta gate are complete; W23 promotion-readiness package and gate are complete, and SRC-006 records No-go | future promotion requires a new stable-runtime task and Go decision | high |
 
 已完成并保留回归证据：
@@ -286,7 +291,8 @@ drift 压力。下一批任务打开为 MapLibre Source Drift Audit；`MLD-001` 
 10. MapLibre Source Drift Audit 已打开：
    [maplibre-source-drift-audit.md](./feature-specs/maplibre-source-drift-audit.md)
    与 [sprint-2026-W22-maplibre-source-drift-audit.md](./sprint-2026-W22-maplibre-source-drift-audit.md)。
-   当前最高优先级执行任务是 `TASK-2026W22-MLD-002`。
+   `TASK-2026W22-MLD-002` through `TASK-2026W22-MLD-004` 已关闭；package
+   movement 当前为 No-go，下一步应回到 planning state。
 
 ## Feature Spec 建议
 

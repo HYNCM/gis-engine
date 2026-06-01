@@ -275,8 +275,12 @@ as the quality gate and serialized closure. The next edge returns to planning
 state before any new implementation task is opened.
 
 2026-05-31 planning update: the next edge is MapLibre Source Drift Audit.
-`MLD-001` is complete as boundary/spec/DAG planning; `MLD-002` is the next
-queued execution task.
+`MLD-001` is complete as boundary/spec/DAG planning.
+
+2026-06-01 closure update: `MLD-002` is accepted as adapter/source drift
+evidence, `MLD-003` closes resource/delivery evidence, and `MLD-004` records a
+package-movement no-go. The next edge returns to planning state before any
+future dependency movement task is opened.
 
 ```mermaid
 flowchart LR
@@ -308,9 +312,9 @@ flowchart LR
 | Task | Depends On | Evidence Target | Required Finish Gate | Status Rule |
 | --- | --- | --- | --- | --- |
 | TASK-2026W22-MLD-001 | SQH-006 | boundary spec and sprint DAG | planning review; `pnpm test:docs`; `pnpm check`; `git diff --check` | done |
-| TASK-2026W22-MLD-002 | MLD-001 | adapter/source compatibility report | `pnpm test:adapter`; `pnpm test:resources`; `pnpm test:snapshot:smoke`; `pnpm check` | queued P0 |
-| TASK-2026W22-MLD-003 | MLD-002 | resource and delivery evidence | `pnpm test:resources`; `pnpm test:ai`; `pnpm test:docs`; `pnpm check` | todo |
-| TASK-2026W22-MLD-004 | MLD-003 | package movement Go-No-go | `pnpm build:schema`; `pnpm check`; visual gate or waiver rationale | todo |
+| TASK-2026W22-MLD-002 | MLD-001 | adapter/source compatibility report | `pnpm test:adapter`; `pnpm test:resources`; `pnpm test:snapshot:smoke`; `pnpm check` | done |
+| TASK-2026W22-MLD-003 | MLD-002 | resource and delivery evidence | `pnpm test:resources`; `pnpm test:ai`; `pnpm test:docs`; `pnpm check` | done |
+| TASK-2026W22-MLD-004 | MLD-003 | package movement Go-No-go | `pnpm build:schema`; `pnpm check`; visual gate or waiver rationale | done / no-go |
 
 ## 阻断规则
 

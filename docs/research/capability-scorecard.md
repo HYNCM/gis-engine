@@ -104,3 +104,15 @@ benchmark below was refreshed on 2026-05-31 from official sources recorded in
 - 3D readiness stays at 5.4 and ecosystem/data readiness stays at 7.0 because
   this refresh does not promote SceneView3D stable runtime, PMTiles archive
   parsing, vector tile decoding, or cloud-native feature queries.
+
+## 2026-06-01 Post-MLD Addendum
+
+- 2D performance stays at 6.5 because `MLD-002` through `MLD-004` closed the
+  MapLibre source drift audit as compatibility evidence and a package-movement
+  No-go, not as an upgrade.
+- The next 2D performance score bump requires a separate package-movement task
+  with refreshed official package/changelog evidence, example loading
+  compatibility, deterministic gates, and strict visual snapshot evidence.
+- AI operability, 3D readiness, developer experience, and ecosystem/data
+  readiness stay unchanged because this closure does not add source parsers,
+  hidden fetches, MCP aliases, or stable SceneView3D runtime.

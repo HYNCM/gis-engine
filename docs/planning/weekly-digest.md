@@ -169,7 +169,9 @@ move to `TASK-2026W23-SQH-003`.
 | TASK-2026W23-SQH-005 | done | `docs/reviews/sqh-005-delivery-mapping-2026-05-31.md`; `delivery.spatialQueryReadiness` |
 | TASK-2026W23-SQH-006 | done | `docs/reviews/sqh-006-quality-gate-closure-2026-05-31.md`; quality gate pass and closure |
 | TASK-2026W22-MLD-001 | done | `docs/planning/feature-specs/maplibre-source-drift-audit.md`; `docs/planning/sprint-2026-W22-maplibre-source-drift-audit.md` |
-| TASK-2026W22-MLD-002 | queued | adapter/source compatibility audit; next execution task |
+| TASK-2026W22-MLD-002 | done | `docs/reviews/mld-002-maplibre-drift-audit-2026-05-31.md`; `packages/engine/src/sources/contract.ts`; adapter/source compatibility evidence |
+| TASK-2026W22-MLD-003 | done | `docs/reviews/mld-003-resource-delivery-evidence-2026-06-01.md`; PMTiles/vector resource and delivery boundary evidence |
+| TASK-2026W22-MLD-004 | done / no-go | `docs/reviews/mld-004-go-no-go-2026-06-01.md`; package movement blocked pending refreshed official evidence and strict visual gates |
 
 ## Next Handoff
 
@@ -195,8 +197,9 @@ move to `TASK-2026W23-SQH-003`.
   state and open the next evidence-backed task batch only after refreshed
   signals are recorded.
 - `@coordinator`, `@competitive-intel`, `@product-strategist`, and
-  `@task-distributor`: planning refresh is recorded by `MLD-001`; use the MLD
-  DAG as the active next task batch.
-- `@engine-agent` / `@qa-agent`: take `TASK-2026W22-MLD-002` next. Audit
-  adapter/source compatibility against MapLibre drift signals without package
-  upgrades, hidden fetches, MCP aliases, or source parser promotion.
+  `@task-distributor`: MLD closure is recorded through `MLD-004`; return to
+  planning state before opening any future dependency movement task.
+- `@quality-guardian` / `@coordinator`: keep MapLibre package movement blocked
+  until a future run refreshes official package evidence, scopes example
+  loading compatibility, and accepts strict visual evidence or an explicit
+  conditional waiver.
