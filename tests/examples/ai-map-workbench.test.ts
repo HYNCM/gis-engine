@@ -790,6 +790,7 @@ describe("ai-map-workbench provider profiles", () => {
       GIS_WORKBENCH_DEEPSEEK_MODEL: ""
     });
 
+    expect(DEFAULT_DEEPSEEK_MODEL).toBe("deepseek-v4-flash");
     expect(profiles.find((profile) => profile.id === "deepseek")).toMatchObject({
       baseUrl: DEFAULT_DEEPSEEK_BASE_URL,
       model: DEFAULT_DEEPSEEK_MODEL
@@ -852,7 +853,7 @@ describe("ai-map-workbench OpenAI-compatible provider adapter", () => {
     label: "DeepSeek",
     protocol: "openai-chat-completions",
     baseUrl: "https://api.deepseek.example",
-    model: "deepseek-chat"
+    model: "deepseek-v4-flash"
   };
   const summary = { mapId: "ai-map-workbench", revision: "1", sourceCount: 1, layerCount: 2 };
   const rawMessage = "make points red";
@@ -875,7 +876,7 @@ describe("ai-map-workbench OpenAI-compatible provider adapter", () => {
           "content-type": "application/json"
         });
         const requestBody = JSON.parse(String(init.body));
-        expect(requestBody.model).toBe("deepseek-chat");
+        expect(requestBody.model).toBe("deepseek-v4-flash");
         expect(requestBody.response_format).toEqual({ type: "json_object" });
         expect(requestBody.messages.map((message: { role: string }) => message.role)).toEqual(["system", "user"]);
         return new Response(

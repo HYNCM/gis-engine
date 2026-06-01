@@ -54,7 +54,7 @@ DeepSeek profile:
 DEEPSEEK_API_KEY=...
 # optional
 GIS_WORKBENCH_DEEPSEEK_BASE_URL=https://api.deepseek.com
-GIS_WORKBENCH_DEEPSEEK_MODEL=deepseek-chat
+GIS_WORKBENCH_DEEPSEEK_MODEL=deepseek-v4-flash
 ```
 
 Custom OpenAI-compatible profile:

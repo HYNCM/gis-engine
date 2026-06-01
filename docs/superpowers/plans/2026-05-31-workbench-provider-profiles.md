@@ -107,7 +107,7 @@ Create `examples/ai-map-workbench/provider-profiles.mjs`:
 
 ```js
 export const DEFAULT_DEEPSEEK_BASE_URL = "https://api.deepseek.com";
-export const DEFAULT_DEEPSEEK_MODEL = "deepseek-chat";
+export const DEFAULT_DEEPSEEK_MODEL = "deepseek-v4-flash";
 
 export function buildProviderProfiles(env = process.env) {
   const profiles = [
@@ -217,7 +217,7 @@ describe("ai-map-workbench OpenAI-compatible provider adapter", () => {
         label: "DeepSeek",
         protocol: "openai-chat-completions",
         baseUrl: "https://api.deepseek.example",
-        model: "deepseek-chat"
+        model: "deepseek-v4-flash"
       },
       apiKey: "secret-key",
       message: "make points red",
@@ -228,7 +228,7 @@ describe("ai-map-workbench OpenAI-compatible provider adapter", () => {
           authorization: "Bearer secret-key",
           "content-type": "application/json"
         });
-        expect(JSON.stringify(init.body)).toContain("deepseek-chat");
+        expect(JSON.stringify(init.body)).toContain("deepseek-v4-flash");
         return new Response(
           JSON.stringify({
             choices: [
@@ -274,7 +274,7 @@ describe("ai-map-workbench OpenAI-compatible provider adapter", () => {
         label: "DeepSeek",
         protocol: "openai-chat-completions",
         baseUrl: "https://api.deepseek.example",
-        model: "deepseek-chat"
+        model: "deepseek-v4-flash"
       },
       apiKey: "secret-key",
       message: "make points red",
@@ -1021,7 +1021,7 @@ Optional DeepSeek overrides:
 
 ```bash
 GIS_WORKBENCH_DEEPSEEK_BASE_URL=https://api.deepseek.com
-GIS_WORKBENCH_DEEPSEEK_MODEL=deepseek-chat
+GIS_WORKBENCH_DEEPSEEK_MODEL=deepseek-v4-flash
 ```
 
 A custom OpenAI-compatible endpoint can be enabled with:
