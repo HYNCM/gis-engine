@@ -7,10 +7,15 @@ services:
       dockerfile: apps/studio/Dockerfile
     ports:
       - "4321:4321"
+    volumes:
+      - studio-data:/data
     environment:
       - NODE_ENV=production
       - HOST=0.0.0.0
       - PORT=4321
-      # Optional: enable DeepSeek provider
+      - STUDIO_DB_PATH=/data/maps.db
       # - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
     restart: unless-stopped
+
+volumes:
+  studio-data:

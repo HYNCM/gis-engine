@@ -33,6 +33,7 @@ export default function App() {
   const [status, setStatus] = useState("Connecting...");
   const [leftOpen, setLeftOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(true);
+  const [savedMsg, setSavedMsg] = useState("");
 
   const fetchState = useCallback(async () => {
     try {
@@ -66,13 +67,29 @@ export default function App() {
     }
   };
 
+  const saveMap = async () => {
+    try {
+      const name = `Map ${serverState?.summary.revision || "0"}`;
+      const res = await fetch("/api/maps/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: serverState?.summary.mapId, name }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setSavedMsg(`Saved: ${name}`);
+        setTimeout(() => setSavedMsg(""), 2000);
+      }
+    } catch { setSavedMsg("Save failed"); }
+  };
+
   return (
     <div className="flex h-screen overflow-hidden bg-gray-950">
       <div className={`panel bg-gray-900 border-r border-gray-800 flex flex-col transition-all ${leftOpen ? "w-96" : "w-0"}`}>
         {leftOpen && <ChatPanel messages={messages} status={status} onSend={sendMessage} onClose={() => setLeftOpen(false)} />}
       </div>
       {!leftOpen && <button onClick={() => setLeftOpen(true)} className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-gray-800/80 hover:bg-gray-700 text-gray-400 hover:text-white px-1.5 py-5 rounded-r" title="Chat">▸</button>}
-      <div className="flex-1 relative"><MapStage serverState={serverState} status={status} /></div>
+      <div className="flex-1 relative"><MapStage serverState={serverState} status={status} onSave={saveMap} savedMsg={savedMsg} /></div>
       {!rightOpen && <button onClick={() => setRightOpen(true)} className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-gray-800/80 hover:bg-gray-700 text-gray-400 hover:text-white px-1.5 py-5 rounded-l" title="Evidence">◂</button>}
       <div className={`panel bg-gray-900 border-l border-gray-800 flex flex-col transition-all ${rightOpen ? "w-80" : "w-0"}`}>
         {rightOpen && <EvidencePanel messages={messages} serverState={serverState} onClose={() => setRightOpen(false)} />}

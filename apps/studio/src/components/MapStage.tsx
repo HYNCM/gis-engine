@@ -3,9 +3,9 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { ServerState } from "../App";
 
-interface Props { serverState: ServerState | null; status: string; }
+interface Props { serverState: ServerState | null; status: string; onSave: () => void; savedMsg: string; }
 
-export default function MapStage({ serverState, status }: Props) {
+export default function MapStage({ serverState, status, onSave, savedMsg }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
 
@@ -64,8 +64,16 @@ export default function MapStage({ serverState, status }: Props) {
             {" · "}
             {serverState ? `${serverState.summary.layerCount} layers` : "--"}
           </p>
+          {savedMsg && <span className="text-xs text-green-400 animate-pulse">{savedMsg}</span>}
         </div>
-        <span className={`text-xs px-2 py-0.5 rounded-full ${badgeColor}`}>{status}</span>
+        <div className="flex items-center gap-2">
+          <button onClick={onSave} disabled={!serverState}
+            className="text-xs px-3 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 disabled:opacity-40 transition"
+            title="Save map to database">
+            💾 Save
+          </button>
+          <span className={`text-xs px-2 py-0.5 rounded-full ${badgeColor}`}>{status}</span>
+        </div>
       </div>
       <div className="absolute bottom-4 left-4 bg-gray-900/80 backdrop-blur rounded px-3 py-1.5 text-xs text-gray-400 font-mono">
         MapSpec v0.1 · MapLibre GL
