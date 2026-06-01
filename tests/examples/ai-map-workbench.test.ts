@@ -401,7 +401,49 @@ describe("ai-map-workbench OpenAI-compatible provider adapter", () => {
       confidence: { level: "medium", reasons: ["User asked for red points."] }
     });
     expect(response.providerOutput.promptHash).toMatch(/^sha256:/);
-    expect(response.providerOutput.traceId).toMatch(/^provider.deepseek./);
+    expect(response.providerOutput.traceId).toMatch(/^provider\.deepseek\./);
+  });
+
+  it("keeps safe confidence reasons that mention structured intent values", async () => {
+    const { callOpenAiCompatibleProvider } = await import(
+      "../../examples/ai-map-workbench/openai-compatible-provider.mjs"
+    );
+    const response = await callOpenAiCompatibleProvider({
+      profile,
+      apiKey,
+      message: rawMessage,
+      summary,
+      fetchImpl: async () =>
+        new Response(
+          JSON.stringify({
+            choices: [
+              {
+                message: {
+                  content: JSON.stringify({
+                    intent: {
+                      mapId: "ai-map-workbench",
+                      targetDomains: ["feature-display"],
+                      styleEdits: [{ layerId: "poi-circles", paint: { "circle-color": "#ef4444" } }]
+                    },
+                    confidence: {
+                      level: "high",
+                      reasons: ["High confidence because the poi-circles layer is targeted for feature-display."]
+                    }
+                  })
+                }
+              }
+            ]
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+    });
+
+    expect(response.ok).toBe(true);
+    if (!response.ok) throw new Error("Expected provider call to succeed.");
+    expect(response.providerOutput.confidence).toEqual({
+      level: "high",
+      reasons: ["High confidence because the poi-circles layer is targeted for feature-display."]
+    });
   });
 
   it("bounds provider confidence reasons before returning provider output", async () => {

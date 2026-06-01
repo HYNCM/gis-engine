@@ -106,30 +106,28 @@ function sanitizeConfidence(value, leakContext) {
   };
 }
 
-function collectForbiddenMarkers({ apiKey, message, providerContent, providerValue }, confidenceReasons) {
+function collectForbiddenMarkers({ apiKey, message, providerValue }) {
   const markers = [];
   for (const marker of [apiKey, message]) {
     if (typeof marker === "string" && marker.length > 0) markers.push({ value: marker, allowReverse: true });
   }
-  if (typeof providerContent === "string" && providerContent.length > 0) {
-    markers.push({ value: providerContent, allowReverse: false });
-  }
-  collectProviderStrings(providerValue, markers, confidenceReasons);
+  collectUnsafeProviderMarkers(providerValue, markers);
   return markers;
 }
 
-function collectProviderStrings(value, markers, confidenceReasons) {
+function collectUnsafeProviderMarkers(value, markers, insideUnsafeProviderKey = false) {
   if (typeof value === "string") {
-    markers.push({ value, allowReverse: true });
+    if (insideUnsafeProviderKey) markers.push({ value, allowReverse: true });
     return;
   }
   if (!value || typeof value !== "object") return;
   if (Array.isArray(value)) {
-    if (value === confidenceReasons) return;
-    for (const item of value) collectProviderStrings(item, markers, confidenceReasons);
+    for (const item of value) collectUnsafeProviderMarkers(item, markers, insideUnsafeProviderKey);
     return;
   }
-  for (const item of Object.values(value)) collectProviderStrings(item, markers, confidenceReasons);
+  for (const [key, item] of Object.entries(value)) {
+    collectUnsafeProviderMarkers(item, markers, insideUnsafeProviderKey || isUnsafeProviderKey(key));
+  }
 }
 
 function isSafeReason(reason, forbiddenMarkers) {
@@ -158,6 +156,10 @@ function hasUnsafeIntentKey(value) {
 }
 
 function isUnsafeIntentKey(key) {
+  return isUnsafeProviderKey(key);
+}
+
+function isUnsafeProviderKey(key) {
   const normalizedKey = key.toLowerCase();
   return ["raw", "prompt", "secret", "apikey", "providertrace", "providerresponse"].some((marker) =>
     normalizedKey.includes(marker)
