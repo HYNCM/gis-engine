@@ -41,6 +41,13 @@ User types "make points red"
 | **Map** (center) | MapLibre GL rendering driven by server MapSpec |
 | **Evidence** (right) | Command trail, diagnostics, AI provider info |
 
+## Performance
+
+The Studio shell loads chat, provider controls, and evidence panels first.
+MapLibre GL is imported on demand by the map stage, so the renderer package is
+kept out of the initial React entry path while the map canvas is still created
+automatically when the app opens.
+
 ## Docker
 
 ```bash

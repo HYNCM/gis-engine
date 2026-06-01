@@ -10,10 +10,16 @@ export default defineConfig({
     },
   },
   build: {
+    // Keep MapLibre out of HTML preloads so the shell can render before the renderer downloads.
+    modulePreload: {
+      resolveDependencies(_filename, deps, context) {
+        if (context.hostType !== "html") return deps;
+        return deps.filter((dep) => !dep.includes("maplibre"));
+      },
+    },
     rollupOptions: {
       output: {
         manualChunks: {
-          "maplibre": ["maplibre-gl"],
           "react-vendor": ["react", "react-dom"],
         },
       },
