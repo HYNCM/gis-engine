@@ -400,7 +400,9 @@ describe("ai-map-workbench OpenAI-compatible provider adapter", () => {
       },
       confidence: { level: "medium", reasons: ["User asked for red points."] }
     });
-    expect(response.providerOutput.promptHash).toMatch(/^sha256:/);
+    expect(response.providerOutput.promptHash).toBe(
+      "sha256:98336f8f0b11f1b76c3b04b00534e48f3983a5e0434d6225c26299d06722b1ac"
+    );
     expect(response.providerOutput.traceId).toMatch(/^provider\.deepseek\./);
   });
 
@@ -536,6 +538,103 @@ describe("ai-map-workbench OpenAI-compatible provider adapter", () => {
     expect(serialized).not.toContain(apiKey);
     expect(serialized).not.toContain(providerMarker);
   });
+
+  it.each(["api_key", "api-key", "provider_trace", "provider_response"])(
+    "returns diagnostics when provider intent contains unsafe separator key %s",
+    async (unsafeKey) => {
+      const { callOpenAiCompatibleProvider } = await import(
+        "../../examples/ai-map-workbench/openai-compatible-provider.mjs"
+      );
+      const providerMarker = `provider-private-marker-${unsafeKey}`;
+      const response = await callOpenAiCompatibleProvider({
+        profile,
+        apiKey,
+        message: rawMessage,
+        summary,
+        fetchImpl: async () =>
+          new Response(
+            JSON.stringify({
+              choices: [
+                {
+                  message: {
+                    content: JSON.stringify({
+                      intent: {
+                        mapId: "ai-map-workbench",
+                        targetDomains: ["feature-display"],
+                        styleEdits: [{ layerId: "poi-circles", paint: { "circle-color": "#ef4444" } }],
+                        [unsafeKey]: providerMarker
+                      }
+                    })
+                  }
+                }
+              ]
+            }),
+            { status: 200, headers: { "content-type": "application/json" } }
+          )
+      });
+
+      expect(response.ok).toBe(false);
+      expect(response.diagnostics).toContainEqual(
+        expect.objectContaining({
+          severity: "error",
+          code: "CAPABILITY.UNSUPPORTED",
+          path: "/providerResponse"
+        })
+      );
+      const serialized = JSON.stringify(response);
+      expect(serialized).not.toContain(providerMarker);
+      expect(serialized).not.toContain(rawMessage);
+      expect(serialized).not.toContain(apiKey);
+    }
+  );
+
+  it.each(["api_key", "provider_trace", "provider_response"])(
+    "omits confidence reasons that contain markers under unsafe separator key %s",
+    async (unsafeKey) => {
+      const { callOpenAiCompatibleProvider } = await import(
+        "../../examples/ai-map-workbench/openai-compatible-provider.mjs"
+      );
+      const providerMarker = `provider-private-marker-${unsafeKey}`;
+      const response = await callOpenAiCompatibleProvider({
+        profile,
+        apiKey,
+        message: rawMessage,
+        summary,
+        fetchImpl: async () =>
+          new Response(
+            JSON.stringify({
+              choices: [
+                {
+                  message: {
+                    content: JSON.stringify({
+                      intent: {
+                        mapId: "ai-map-workbench",
+                        targetDomains: ["feature-display"],
+                        styleEdits: [{ layerId: "poi-circles", paint: { "circle-color": "#ef4444" } }]
+                      },
+                      [unsafeKey]: providerMarker,
+                      confidence: {
+                        level: "medium",
+                        reasons: [providerMarker, "safe confidence reason"]
+                      }
+                    })
+                  }
+                }
+              ]
+            }),
+            { status: 200, headers: { "content-type": "application/json" } }
+          )
+      });
+
+      expect(response.ok).toBe(true);
+      if (!response.ok) throw new Error("Expected provider call to succeed.");
+      expect(response.providerOutput.confidence).toEqual({
+        level: "medium",
+        reasons: ["safe confidence reason"]
+      });
+      expect(JSON.stringify(response.providerOutput)).not.toContain(providerMarker);
+    }
+  );
 
   it("omits shortened sensitive confidence substrings", async () => {
     const { callOpenAiCompatibleProvider } = await import(

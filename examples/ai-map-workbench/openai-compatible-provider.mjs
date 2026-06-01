@@ -42,7 +42,6 @@ export async function callOpenAiCompatibleProvider(input) {
     const confidence = sanitizeConfidence(parsed.value.confidence, {
       apiKey,
       message,
-      providerContent: content,
       providerValue: parsed.value
     });
     return {
@@ -93,7 +92,7 @@ function sanitizeConfidence(value, leakContext) {
   if (!["low", "medium", "high"].includes(value.level)) return undefined;
   if (!Array.isArray(value.reasons) || !value.reasons.every((reason) => typeof reason === "string")) return undefined;
 
-  const forbiddenMarkers = collectForbiddenMarkers(leakContext, value.reasons);
+  const forbiddenMarkers = collectForbiddenMarkers(leakContext);
   const reasons = value.reasons
     .filter((reason) => isSafeReason(reason, forbiddenMarkers))
     .slice(0, 3)
@@ -160,10 +159,14 @@ function isUnsafeIntentKey(key) {
 }
 
 function isUnsafeProviderKey(key) {
-  const normalizedKey = key.toLowerCase();
+  const normalizedKey = normalizeProviderKey(key);
   return ["raw", "prompt", "secret", "apikey", "providertrace", "providerresponse"].some((marker) =>
     normalizedKey.includes(marker)
   );
+}
+
+function normalizeProviderKey(key) {
+  return key.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
 function containsMarker(value, marker) {
