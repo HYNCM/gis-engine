@@ -94,12 +94,49 @@ async function readJsonBody(req) {
   });
 }
 
-function createInitialSpec() {
+// ── Basemap presets ──
+const BASEMAPS = {
+  osm: {
+    id: "osm", label: "OpenStreetMap",
+    tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+    attribution: "© OpenStreetMap contributors",
+  },
+  "carto-light": {
+    id: "carto-light", label: "Carto Light",
+    tiles: ["https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"],
+    attribution: "© CARTO © OpenStreetMap",
+  },
+  "carto-dark": {
+    id: "carto-dark", label: "Carto Dark",
+    tiles: ["https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"],
+    attribution: "© CARTO © OpenStreetMap",
+  },
+  satellite: {
+    id: "satellite", label: "Satellite",
+    tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
+    attribution: "Esri, Maxar, Earthstar Geographics",
+  },
+};
+
+const DEFAULT_BASEMAP = "osm";
+const BASEMAP_SOURCE_ID = "basemap";
+const BASEMAP_LAYER_ID = "basemap-layer";
+
+function createInitialSpec(basemapId = DEFAULT_BASEMAP) {
+  const bm = BASEMAPS[basemapId] || BASEMAPS[DEFAULT_BASEMAP];
   return {
     version: "0.1",
     id: randomUUID(),
     revision: "0",
     sources: {
+      [BASEMAP_SOURCE_ID]: {
+        type: "raster",
+        tiles: bm.tiles,
+        tileSize: 256,
+        attribution: bm.attribution,
+        minzoom: 0,
+        maxzoom: 19,
+      },
       points: {
         type: "geojson",
         data: {
@@ -114,6 +151,13 @@ function createInitialSpec() {
       },
     },
     layers: [
+      {
+        id: BASEMAP_LAYER_ID,
+        type: "raster",
+        source: BASEMAP_SOURCE_ID,
+        minzoom: 0,
+        maxzoom: 19,
+      },
       {
         id: "points-layer",
         type: "circle",
@@ -146,7 +190,20 @@ function applyProviderCommands(engine, output, spec) {
     case "removeLayer":
       if (layerId) commands = [{ type: "removeLayer", layerId }];
       break;
+    case "setBasemap": {
+      const bmId = layerId && BASEMAPS[layerId] ? layerId : DEFAULT_BASEMAP;
+      activeBasemap = bmId;
+      const bm = BASEMAPS[bmId];
+      commands = [
+        { type: "removeLayer", layerId: BASEMAP_LAYER_ID },
+        { type: "removeSource", sourceId: BASEMAP_SOURCE_ID },
+        { type: "addSource", source: { id: BASEMAP_SOURCE_ID, type: "raster", tiles: bm.tiles, tileSize: 256, attribution: bm.attribution, minzoom: 0, maxzoom: 19 } },
+        { type: "addLayer", layer: { id: BASEMAP_LAYER_ID, type: "raster", source: BASEMAP_SOURCE_ID, minzoom: 0, maxzoom: 19 }, beforeId: spec.layers[0]?.id },
+      ];
+      break;
+    }
     case "reset":
+      activeBasemap = DEFAULT_BASEMAP;
       return { status: "applied", nextSpec: createInitialSpec(), evidence: { committed: true, rolledBack: false, changedPathCount: 1 } };
     default:
       // Fallback: try legacy intent parsing
@@ -182,12 +239,29 @@ function applyLegacyIntent(engine, intent, spec) {
   else if (msg.includes("smaller") || msg.includes("decrease")) plan = { intent: "setPaint", layerId: "points-layer", paint: { "circle-radius": Math.max(3, (spec.layers[0]?.paint?.["circle-radius"] || 8) - 4) } };
   else if (msg.includes("hangzhou") || msg.includes("zoom")) plan = { intent: "setView", view: { center: [120.155, 30.274], zoom: 13 } };
   else if (msg.includes("reset")) plan = { intent: "reset" };
+  // Basemap
+  else if (msg.includes("osm") || msg.includes("openstreetmap")) plan = { intent: "setBasemap", layerId: "osm" };
+  else if (msg.includes("dark") || msg.includes("carto dark")) plan = { intent: "setBasemap", layerId: "carto-dark" };
+  else if (msg.includes("light") || msg.includes("carto light")) plan = { intent: "setBasemap", layerId: "carto-light" };
+  else if (msg.includes("satellite") || msg.includes("imagery")) plan = { intent: "setBasemap", layerId: "satellite" };
 
   if (!plan) return { status: "ready", nextSpec: spec, evidence: { committed: false, rolledBack: false, changedPathCount: 0 } };
-  if (plan.intent === "reset") return { status: "applied", nextSpec: createInitialSpec(), evidence: { committed: true, rolledBack: false, changedPathCount: 1 } };
+  if (plan.intent === "reset") { activeBasemap = DEFAULT_BASEMAP; return { status: "applied", nextSpec: createInitialSpec(), evidence: { committed: true, rolledBack: false, changedPathCount: 1 } }; }
 
-  const commands = plan.intent === "setPaint" ? [{ type: "setPaint", layerId: plan.layerId, paint: plan.paint }]
-    : plan.intent === "setView" ? [{ type: "setView", view: plan.view }] : [];
+  let commands = [];
+  if (plan.intent === "setBasemap") {
+    const bmId = plan.layerId && BASEMAPS[plan.layerId] ? plan.layerId : DEFAULT_BASEMAP;
+    activeBasemap = bmId;
+    const bm = BASEMAPS[bmId];
+    commands = [
+      { type: "removeSource", sourceId: BASEMAP_SOURCE_ID },
+      { type: "addSource", source: { id: BASEMAP_SOURCE_ID, type: "raster", tiles: bm.tiles, tileSize: 256, attribution: bm.attribution, minzoom: 0, maxzoom: 19 } },
+    ];
+  } else if (plan.intent === "setPaint") {
+    commands = [{ type: "setPaint", layerId: plan.layerId, paint: plan.paint }];
+  } else if (plan.intent === "setView") {
+    commands = [{ type: "setView", view: plan.view }];
+  }
   if (commands.length === 0) return { status: "ready", nextSpec: spec, evidence: { committed: false, rolledBack: false, changedPathCount: 0 } };
 
   const result = engine.applyCommands(spec, commands, { traceId: `studio.legacy.${Date.now()}` });
@@ -198,6 +272,7 @@ function applyLegacyIntent(engine, intent, spec) {
 
 // ── State ──
 let activeSpec = createInitialSpec();
+let activeBasemap = DEFAULT_BASEMAP;
 let activeEpoch = 0;
 const auditRecords = [];
 
@@ -242,6 +317,14 @@ async function main() {
       if (req.method === "GET" && url.pathname === "/api/providers") {
         const profiles = buildProviders();
         return sendJson(res, { providers: profiles.map((p) => ({ id: p.id, label: p.label, protocol: p.protocol, enabled: p.enabled })) });
+      }
+
+      // GET /api/basemaps
+      if (req.method === "GET" && url.pathname === "/api/basemaps") {
+        return sendJson(res, {
+          current: activeBasemap,
+          options: Object.entries(BASEMAPS).map(([id, bm]) => ({ id, label: bm.label })),
+        });
       }
 
       // POST /api/chat
