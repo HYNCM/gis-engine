@@ -28,7 +28,9 @@ import {
   mkdirSync,
 } from "node:fs";
 import { join, dirname } from "node:path";
+import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import generateEvolutionSnapshot from "./evolution-snapshot-generator.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
@@ -583,6 +585,17 @@ function formatMetric(value) {
   return value === null || value === undefined ? "N/A" : value.toFixed(2);
 }
 
+function getRepoRevision() {
+  try {
+    return execSync("git rev-parse --short HEAD", {
+      cwd: ROOT,
+      encoding: "utf-8",
+    }).trim();
+  } catch (error) {
+    return "unknown";
+  }
+}
+
 // ── 主流程 ──
 function main() {
   console.log(`🔬 Evolution Collector — ${options.week}`);
@@ -762,6 +775,27 @@ function main() {
       console.log(`\n📝 已追加 ${options.week} 周条目到进化账本`);
     } else {
       console.log(`\n📝 ${options.week} 条目已存在于进化账本中`);
+    }
+
+    const generatedAt = new Date().toISOString();
+    const repoRevision = getRepoRevision();
+    const snapshotResult = generateEvolutionSnapshot(
+      options.week,
+      {
+        d1,
+        d2,
+        d3,
+        d4,
+        d5,
+        d6,
+        generatedAt,
+        repoRevision,
+      },
+      options.dryRun,
+    );
+
+    if (snapshotResult && snapshotResult.path) {
+      console.log(`✅ 已生成 Evolution Snapshot: ${snapshotResult.path}`);
     }
   }
 

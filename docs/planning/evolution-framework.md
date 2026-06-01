@@ -232,6 +232,29 @@ Coordinator 在周规划之外，每月执行一次进化审查。
 
 ---
 
+## SLA 与降级规则
+
+### SLA 定义
+
+- 周期性 agent 的自动化机生成报告应在触发后 4 小时内完成，并在 24 小时内可用于人工补全。
+- 关键 gate 或 coordinator 收敛工作失败时，应在 30 分钟内自动重试一次。
+- 任何 `quality-guardian` 或 `code-reviewer` 的 blocking gate 失败都必须被保留为阻断事件，不得自动降级。
+- `evolution-guardian` 和 `task-distributor` 的度量/规划 artifact 应在 weekly workflow 执行后发生一次单写入者提交。
+
+### 降级规则
+
+- `snapshot:visual` 可在 CI 环境中检测到浏览器、GPU 或 WebGL 不可用时降级为 skipped，并记录降级原因。
+- 文档审计、竞争情报、技术债务报告和依赖图等可生成 placeholder template 继续流水线，但必须显式标记为 automation-generated template。
+- 非阻断任务的失败应触发告警与 artifact 归档，而不是直接阻断整个 workflow。
+
+### 自动故障恢复
+
+- 工作流关键命令应支持有限重试，针对网络、依赖安装、浏览器下载等短暂失败自动回退一次。
+- 进化收集或一个 agent 步骤失败时，workflow 应保留可用 artifact 并通过 warning 注释告知后续人工复核。
+- `agent-runner` 全局运行锁出现 stale lock 时应自动清理，并将该故障视为可恢复的调度问题。
+
+---
+
 ## 知识积累系统
 
 ### 模式库

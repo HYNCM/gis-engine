@@ -252,14 +252,28 @@ jobs:
         env:
           WEEK_OVERRIDE: ${{ github.event.inputs.week }}
         run: |
+          retry() {
+            local attempts=0
+            local max=2
+            local delay=15
+            until "$@"; do
+              attempts=$((attempts + 1))
+              if [ "$attempts" -ge "$max" ]; then
+                return 1
+              fi
+              echo "⚠️ Command failed, retrying in ${delay}s... (attempt ${attempts}/${max})"
+              sleep "$delay"
+            done
+          }
+
           WEEK=$(date -u +%G-W%V)
           if [ -n "${WEEK_OVERRIDE}" ]; then
             WEEK="${WEEK_OVERRIDE}"
           fi
-          set +e
-          node scripts/evolution-collector.mjs --week "${WEEK}" 2>&1 | tee /tmp/evolution-output.txt
-          STATUS=${PIPESTATUS[0]}
-          set -e
+
+          set -o pipefail
+          retry bash -lc 'node scripts/evolution-collector.mjs --week "${WEEK}" 2>&1 | tee /tmp/evolution-output.txt'
+          STATUS=$?
           if [ "${STATUS}" -eq 1 ]; then
             echo "::warning::evolution-collector detected metric anomalies; see weekly-evolution-collector artifact"
           elif [ "${STATUS}" -ne 0 ]; then
@@ -272,6 +286,9 @@ jobs:
           mkdir -p weekly-artifacts/evidence
           cp docs/planning/evolution-ledger.md weekly-artifacts/docs/planning/evolution-ledger.md
           cp /tmp/evolution-output.txt weekly-artifacts/evidence/evolution-output.txt
+          if [ -f "docs/planning/evolution-snapshot-${WEEK}.md" ]; then
+            cp "docs/planning/evolution-snapshot-${WEEK}.md" weekly-artifacts/docs/planning/evolution-snapshot-${WEEK}.md
+          fi
 
       - name: 上传进化度量 artifact
         uses: actions/upload-artifact@v4
@@ -303,6 +320,6 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "docs: weekly agent artifacts for ${{ github.event.inputs.week || 'current week' }}"
-          file_pattern: "docs/research/competitor-updates-*.md docs/planning/technical-debt-report.md docs/planning/weekly-digest.md docs/planning/task-burndown.md docs/planning/dependency-graph.md docs/planning/evolution-ledger.md"
+          file_pattern: "docs/research/competitor-updates-*.md docs/planning/technical-debt-report.md docs/planning/weekly-digest.md docs/planning/task-burndown.md docs/planning/dependency-graph.md docs/planning/evolution-ledger.md docs/planning/evolution-snapshot-*.md"
           commit_user_name: "coordinator[bot]"
           commit_user_email: "coordinator[bot]@gis-engine.dev"

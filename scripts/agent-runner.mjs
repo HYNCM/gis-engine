@@ -18,7 +18,14 @@
  */
 
 import { execSync } from "node:child_process";
-import { mkdirSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  writeFileSync,
+  openSync,
+  closeSync,
+  unlinkSync,
+  statSync,
+} from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -258,6 +265,56 @@ function getGitSha() {
   }
 }
 
+function sleep(ms) {
+  if (typeof Atomics !== "undefined" && typeof SharedArrayBuffer !== "undefined") {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+    return;
+  }
+  const end = Date.now() + ms;
+  while (Date.now() < end) {}
+}
+
+function acquireRunLock(lockPath, { maxAttempts = 50, intervalMs = 100 } = {}) {
+  let attempt = 0;
+  while (true) {
+    attempt += 1;
+    try {
+      return openSync(lockPath, "wx", 0o600);
+    } catch (err) {
+      if (err.code !== "EEXIST") {
+        throw err;
+      }
+      try {
+        const stats = statSync(lockPath);
+        const ageMs = Date.now() - stats.mtimeMs;
+        if (ageMs > 5 * 60_000) {
+          unlinkSync(lockPath);
+          continue;
+        }
+      } catch {
+        // ignore stale metadata errors
+      }
+      if (attempt >= maxAttempts) {
+        throw new Error(`Could not acquire agent-runner lock at ${lockPath} after ${attempt} attempts`);
+      }
+      sleep(intervalMs);
+    }
+  }
+}
+
+function releaseRunLock(fd, lockPath) {
+  try {
+    closeSync(fd);
+  } catch {
+    // ignore close errors
+  }
+  try {
+    unlinkSync(lockPath);
+  } catch {
+    // ignore cleanup failures
+  }
+}
+
 /** 自动化生成的报告只是机器证据/模板，不能声明 advisory 或 blocking。 */
 function getReportDecisionLevel() {
   return "info";
@@ -464,55 +521,70 @@ Agent Runner — GIS Engine 多智能体调用脚本
   console.log("");
 
   let hasBlockingFailure = false;
+  let lockFd = null;
+  const lockPath = join(ROOT, ".agent-runner.lock");
 
-  for (const [name, def] of agentsToRun) {
-    // 确定周期
-    let period = options.period;
-    if (!period) {
-      if (periodType === "daily" || def.period === "daily")
-        period = getDateStr();
-      else if (periodType === "weekly" || def.period === "weekly")
-        period = getWeekStr();
-      else if (def.period === "monthly") period = getMonthStr();
-      else period = getDateStr();
-    }
+  if (!options.dryRun) {
+    console.log(`   🔒 正在获取全局运行锁: ${lockPath}`);
+    lockFd = acquireRunLock(lockPath);
+    console.log(`   🔒 全局运行锁已获取`);
+  }
 
-    console.log(`📋 运行智能体: ${name}`);
-    console.log(`   角色: ${def.role}`);
-    console.log(`   周期: ${period}`);
-    console.log(
-      `   模型路由: ${def.modelPolicy?.tier ?? "default"} / ${def.modelPolicy?.reasoningEffort ?? "medium"}`,
-    );
+  try {
+    for (const [name, def] of agentsToRun) {
+      // 确定周期
+      let period = options.period;
+      if (!period) {
+        if (periodType === "daily" || def.period === "daily")
+          period = getDateStr();
+        else if (periodType === "weekly" || def.period === "weekly")
+          period = getWeekStr();
+        else if (def.period === "monthly") period = getMonthStr();
+        else period = getDateStr();
+      }
 
-    // 运行门禁
-    let gateResults = null;
-    if (!options.dryRun && def.gates.length > 0) {
-      console.log(`   运行门禁 (${def.gates.length} 项)...`);
-      gateResults = runGates(def.gates);
-      for (const r of gateResults) {
-        const icon = r.status === "passed" ? "✅" : "❌";
-        console.log(`     ${icon} ${r.gate}`);
-        if (def.gateDecisionLevel === "blocking" && r.status === "failed") {
-          hasBlockingFailure = true;
+      console.log(`📋 运行智能体: ${name}`);
+      console.log(`   角色: ${def.role}`);
+      console.log(`   周期: ${period}`);
+      console.log(
+        `   模型路由: ${def.modelPolicy?.tier ?? "default"} / ${def.modelPolicy?.reasoningEffort ?? "medium"}`,
+      );
+
+      // 运行门禁
+      let gateResults = null;
+      if (!options.dryRun && def.gates.length > 0) {
+        console.log(`   运行门禁 (${def.gates.length} 项)...`);
+        gateResults = runGates(def.gates);
+        for (const r of gateResults) {
+          const icon = r.status === "passed" ? "✅" : "❌";
+          console.log(`     ${icon} ${r.gate}`);
+          if (def.gateDecisionLevel === "blocking" && r.status === "failed") {
+            hasBlockingFailure = true;
+          }
         }
       }
-    }
 
-    // 写入输出文件
-    const outputFile =
-      typeof def.outputFile === "function"
-        ? def.outputFile(period)
-        : def.outputFile;
-    const outputPath = join(ROOT, def.outputDir, outputFile);
-    if (options.dryRun) {
-      console.log(`   📄 (dry-run) 将生成报告: ${outputPath}`);
-    } else {
-      const report = generateReport(name, def, period, gateResults);
-      mkdirSync(dirname(outputPath), { recursive: true });
-      writeFileSync(outputPath, report, "utf-8");
-      console.log(`   📄 报告已生成: ${outputPath}`);
+      // 写入输出文件
+      const outputFile =
+        typeof def.outputFile === "function"
+          ? def.outputFile(period)
+          : def.outputFile;
+      const outputPath = join(ROOT, def.outputDir, outputFile);
+      if (options.dryRun) {
+        console.log(`   📄 (dry-run) 将生成报告: ${outputPath}`);
+      } else {
+        const report = generateReport(name, def, period, gateResults);
+        mkdirSync(dirname(outputPath), { recursive: true });
+        writeFileSync(outputPath, report, "utf-8");
+        console.log(`   📄 报告已生成: ${outputPath}`);
+      }
+      console.log("");
     }
-    console.log("");
+  } finally {
+    if (lockFd !== null) {
+      releaseRunLock(lockFd, lockPath);
+      console.log(`   🔓 全局运行锁已释放`);
+    }
   }
 
   if (hasBlockingFailure) {
