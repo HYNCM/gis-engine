@@ -24,8 +24,9 @@ audit records, and AMW-008 defines the future product-mode contract for record
 shape, retention, privacy, access control, export, payload caps, deletion, and
 diagnostic paths.
 
-This report satisfies `TASK-2026W23-AMW-008` as a design task and queues
-`TASK-2026W23-AMW-009` for command-safe review action design.
+This report satisfies `TASK-2026W23-AMW-008` as a design task. AMW-009
+subsequently closed command-safe review action design and queues
+`TASK-2026W23-AMW-010` for the product-promotion Go/No-go gate.
 
 ## Evidence
 
@@ -71,5 +72,5 @@ Required for this design handoff:
 - `pnpm check`
 - `git diff --check`
 
-The next queued task is `TASK-2026W23-AMW-009`.
-
+AMW-009 subsequently closed as command-safe review action design, so the next
+queued task is `TASK-2026W23-AMW-010`.

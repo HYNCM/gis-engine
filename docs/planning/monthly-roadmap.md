@@ -179,9 +179,12 @@ Workbench Product Boundary；`AMW-006` 已冻结产品边界和 sprint DAG，`AM
 credential/resource administration design，`AMW-008` 已由
 `docs/planning/feature-specs/ai-map-workbench-durable-audit.md` 与
 `docs/reviews/amw-008-durable-audit-retention-export-2026-06-01.md` 收口
-durable audit retention/export design。当前下一步执行 `TASK-2026W23-AMW-009`，
-设计 command-safe review actions；不得直接把 `examples/ai-map-workbench` 推成
-product app 或 hosted system。
+durable audit retention/export design，`AMW-009` 已由
+`docs/planning/feature-specs/ai-map-workbench-review-actions.md` 与
+`docs/reviews/amw-009-command-safe-review-actions-2026-06-02.md` 收口
+command-safe review action design。当前下一步执行 `TASK-2026W23-AMW-010`，
+运行 product-promotion Go/No-go gate；不得直接把
+`examples/ai-map-workbench` 推成 product app 或 hosted system。
 
 ## 2026-W22 Iteration Path
 
@@ -190,10 +193,10 @@ product app 或 hosted system。
 | P0 | Generated App Review Console | Turn generated-app delivery evidence into an inspectable acceptance handoff | `GIR-001` through `GIR-006` are done; next work starts from a fresh planning loop |
 | P0 | Spatial Query Evidence Hardening | Make point/bbox query evidence explicit, bounded, and delivery-mappable | `SQH-001` through `SQH-006` are done; next work starts from a fresh planning loop |
 | P0 | MapLibre Source Drift Audit | Audit MapLibre/Mapbox source and renderer drift before package movement | `MLD-001` through `MLD-004` are done; package movement remains no-go until a future task refreshes official evidence and strict visual gates |
-| P0 | AI Map Workbench product boundary | Define the gates before the provider-gated example can become a product review surface | `AMW-006` through `AMW-008` are done; `AMW-009` designs command-safe review actions next |
+| P0 | AI Map Workbench product boundary | Define the gates before the provider-gated example can become a product review surface | `AMW-006` through `AMW-009` are done; `AMW-010` runs the product-promotion Go/No-go gate next |
 | P0 | SceneView3D governance | Keep stable `view.mode: "scene3d"` blocked after SRC-006 No-go | future stable runtime work starts only from a new accepted promotion task |
 | P0 | AI natural-language app generation | Make feature display, spatial analysis, and scene browsing capability boundaries machine-readable | `get_context_summary` and `explain_spec` expose `capabilitySummary` with schema-tested MCP output |
-| P0 | W23 planning refresh | Refresh competitor evidence, product design, and task DAG for the next bounded workstream | done through `AMW-008`; active execution starts at `AMW-009` |
+| P0 | W23 planning refresh | Refresh competitor evidence, product design, and task DAG for the next bounded workstream | done through `AMW-009`; active execution starts at `AMW-010` |
 | P0 | Multi-agent execution efficiency | Route agent work by model tier and reasoning effort while preserving evidence-first gates | `AGENTS.md` and `scripts/agent-runner.mjs` expose `model_policy` guidance for scheduled and human/Codex orchestration |
 | P1 | SceneView3D lifecycle evidence | Close path-stable lifecycle diagnostics and keep adapter-local runtime semantics deterministic | adapter tests and smoke lifecycle contract pass |
 | P1 | MapLibre/vector compatibility | Add a version-drift audit checklist before changing `maplibre-gl` | checklist names transformer, resource-policy, smoke/visual snapshot, and release-runner implications |
@@ -238,7 +241,7 @@ product app 或 hosted system。
 | 1 | Generated App Review Console | done | delivery sections, source readiness, spatial readiness, prompt-to-delivery QA, and release wording guardrails are complete through `GIR-006` | consumed by later SQH, MLD, and AMW planning loops | high |
 | 2 | Spatial Query Evidence Hardening | done | `SQH-006` records a quality-gate pass and closure after `SQH-005` mapped query states into delivery | consumed by MLD closure and AMW-006 planning refresh | high |
 | 3 | MapLibre Source Drift Audit | done / package movement no-go | `MLD-002` adapter/source audit, `MLD-003` resource/delivery evidence, and `MLD-004` Go-No-go gate are recorded | open a new package-movement task only after refreshed official evidence, example loading compatibility, and strict visual gates are available | high |
-| 4 | AI Map Workbench product boundary | active | `AMW-006` freezes the product boundary, `AMW-007` records provider credential/resource administration design, and `AMW-008` records durable audit retention/export design | execute `TASK-2026W23-AMW-009` next | high |
+| 4 | AI Map Workbench product boundary | active | `AMW-006` freezes the product boundary, `AMW-007` records provider credential/resource administration design, `AMW-008` records durable audit retention/export design, and `AMW-009` records command-safe review action design | execute `TASK-2026W23-AMW-010` next | high |
 | 5 | SceneView3D promotion readiness | parked / no-go | W22 evidence and beta gate are complete; W23 promotion-readiness package and gate are complete, and SRC-006 records No-go | future promotion requires a new stable-runtime task and Go decision | high |
 
 已完成并保留回归证据：
@@ -309,8 +312,8 @@ product app 或 hosted system。
 11. W23 planning refresh 已打开 AI Map Workbench Product Boundary：
    [ai-map-workbench-product-boundary.md](./feature-specs/ai-map-workbench-product-boundary.md)
    与 [sprint-2026-W23-ai-map-workbench-product-boundary.md](./sprint-2026-W23-ai-map-workbench-product-boundary.md)。
-   `TASK-2026W23-AMW-006` through `TASK-2026W23-AMW-008` 已关闭，当前最高优先级执行任务是
-   `TASK-2026W23-AMW-009`。
+   `TASK-2026W23-AMW-006` through `TASK-2026W23-AMW-009` 已关闭，当前最高优先级执行任务是
+   `TASK-2026W23-AMW-010`。
 
 ## Feature Spec 建议
 
@@ -328,5 +331,6 @@ product app 或 hosted system。
 | `docs/planning/feature-specs/ai-map-workbench-product-boundary.md` | W23 active | provider administration、durable audit、review actions、visual evidence、product promotion gate |
 | `docs/planning/feature-specs/ai-map-workbench-provider-administration.md` | W23 active | provider lifecycle、browser-safe metadata、base URL policy、timeout/size diagnostics、leak hardening |
 | `docs/planning/feature-specs/ai-map-workbench-durable-audit.md` | W23 active | retention、privacy、access control、export shape、payload caps、deletion behavior |
+| `docs/planning/feature-specs/ai-map-workbench-review-actions.md` | W23 active | accept/block/follow-up decision model、command-safety、payload caps、diagnostic paths |
 | `docs/planning/feature-specs/spatial-analysis-readiness.md` | W23 active | point/bbox query readiness、blocked analysis operations、future contract gates |
 | `docs/planning/feature-specs/generated-app-review-console.md` | W22 active | delivery review sections、acceptance states、source/spatial readiness cards、scene browsing blockers |

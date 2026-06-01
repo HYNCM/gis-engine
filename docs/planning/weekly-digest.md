@@ -176,7 +176,8 @@ move to `TASK-2026W23-SQH-003`.
 | TASK-2026W23-AMW-006 | done | `docs/research/competitor-updates-2026-W23.md`; `docs/planning/feature-specs/ai-map-workbench-product-boundary.md`; `docs/planning/sprint-2026-W23-ai-map-workbench-product-boundary.md`; `docs/reviews/amw-006-product-boundary-planning-2026-06-01.md` |
 | TASK-2026W23-AMW-007 | done | `docs/planning/feature-specs/ai-map-workbench-provider-administration.md`; `docs/reviews/amw-007-provider-resource-admin-2026-06-01.md`; provider credential/resource administration design before hosted/product use |
 | TASK-2026W23-AMW-008 | done | `docs/planning/feature-specs/ai-map-workbench-durable-audit.md`; `docs/reviews/amw-008-durable-audit-retention-export-2026-06-01.md`; durable audit retention/export design before persistent storage or product promotion |
-| TASK-2026W23-AMW-009 | queued | command-safe accept/block/follow-up review action design |
+| TASK-2026W23-AMW-009 | done | `docs/planning/feature-specs/ai-map-workbench-review-actions.md`; command-safe accept/block/follow-up review action design |
+| TASK-2026W23-AMW-010 | queued | product-promotion Go/No-go gate |
 
 ## Next Handoff
 
@@ -195,8 +196,7 @@ move to `TASK-2026W23-SQH-003`.
   until a future run refreshes official package evidence, scopes example
   loading compatibility, and accepts strict visual evidence or an explicit
   conditional waiver.
-- `@engine-agent`, `@ai-agent`, and `@qa-agent`: take
-  `TASK-2026W23-AMW-009` next. Define command-safe review actions without direct
-  `MapSpec` mutation, browser file writes, or raw provider payload retention.
-- `@qa-agent` and `@quality-guardian`: prepare future AMW visual/product gate
-  evidence only after AMW-009 has an owner report.
+- `@quality-guardian`, `@coordinator`, and `@qa-agent`: take
+  `TASK-2026W23-AMW-010` next. Run the product-promotion Go/No-go gate with
+  visual, provider, audit, and review-action evidence before any product app
+  movement or hosted deployment.

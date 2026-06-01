@@ -320,9 +320,10 @@ flowchart LR
 evidence, the next edge is AI Map Workbench Product Boundary. `AMW-006` is
 complete as product boundary/spec/DAG planning, `AMW-007` is complete as
 provider credential/resource administration design, and `AMW-008` is complete
-as durable audit retention/export design. `AMW-009` is the next queued execution
+as durable audit retention/export design. `AMW-009` is now complete as
+command-safe review action design, and `AMW-010` is the next queued execution
 task. This path does not move MapLibre packages or promote the workbench out of
-`examples/`.
+`examples/` without a product-promotion gate.
 
 ```mermaid
 flowchart LR
@@ -339,8 +340,8 @@ flowchart LR
 | TASK-2026W23-AMW-006 | AMW-005, MLD-004 | product boundary spec and sprint DAG | planning review; `pnpm test:docs`; `pnpm check`; `git diff --check` | done |
 | TASK-2026W23-AMW-007 | AMW-006 | provider credential/resource administration design | provider/workbench tests or design review; `pnpm test:examples`; `pnpm test:docs`; `pnpm check` | done |
 | TASK-2026W23-AMW-008 | AMW-006 | durable audit retention/export design | schema/design review if public; `pnpm test:docs`; `pnpm check`; `git diff --check` | done |
-| TASK-2026W23-AMW-009 | AMW-006, AMW-008 | command-safe review action contract | command/evidence tests when implemented; `pnpm test:ai`; `pnpm test:examples`; `pnpm check` | queued P1 |
-| TASK-2026W23-AMW-010 | AMW-007, AMW-008, AMW-009 | product-promotion gate report | `pnpm test:docs`; `pnpm check`; browser smoke or visual evidence; `git diff --check` | todo |
+| TASK-2026W23-AMW-009 | AMW-006, AMW-008 | command-safe review action contract | design review; `pnpm test:docs`; `pnpm check`; `git diff --check` | done |
+| TASK-2026W23-AMW-010 | AMW-007, AMW-008, AMW-009 | product-promotion gate report | `pnpm test:docs`; `pnpm check`; browser smoke or visual evidence; `git diff --check` | queued P1 |
 
 ## 阻断规则
 

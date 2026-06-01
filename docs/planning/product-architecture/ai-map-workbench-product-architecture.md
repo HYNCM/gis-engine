@@ -120,12 +120,13 @@ and sends only `providerId`; the server owns credential lookup, provider calls,
 normalization, command application, and payload-free audit evidence.
 
 AMW-006 opened the product-boundary planning batch, AMW-007 completed provider
-credential/resource administration as a design handoff, and AMW-008 completed
-durable audit retention/export as a design handoff. The workbench remains under
-`examples/ai-map-workbench` until a future quality gate accepts the full product
-boundary. The next product architecture gap is AMW-009 command-safe review
-action design before any product app movement, hosted deployment, persistent
-audit storage, or review actions are implemented.
+credential/resource administration as a design handoff, AMW-008 completed
+durable audit retention/export as a design handoff, and AMW-009 completed
+command-safe review action design as a design handoff. The workbench remains
+under `examples/ai-map-workbench` until a future quality gate accepts the full
+product boundary. The next product architecture gap is AMW-010 product-promotion
+Go/No-go before any product app movement, hosted deployment, persistent audit
+storage, or review actions are implemented.
 
 ## 2026-06-01 AMW-007 Addendum
 
@@ -146,3 +147,13 @@ reserves future product-mode gates for retention windows, privacy rules,
 project-scoped access, JSON export shape, payload caps, hard deletion, and
 payload-free deletion receipts. Product promotion remains blocked; the next
 product architecture gap is command-safe accept/block/follow-up review actions.
+
+## 2026-06-02 AMW-009 Addendum
+
+AMW-009 defines command-safe review actions in
+`docs/planning/feature-specs/ai-map-workbench-review-actions.md`. Accept, block,
+and follow-up-required outcomes are product decisions over compact evidence, not
+map mutations, browser file writes, durable storage implementation, or hosted
+promotion. Product promotion remains blocked until `AMW-010` runs a
+quality-guardian/coordinator Go/No-go gate with the required visual, provider,
+audit, and review-action evidence.

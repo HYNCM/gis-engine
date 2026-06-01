@@ -63,7 +63,7 @@ trail through bounded commands, diagnostics, and hashes.
 | `diagnosticCounts` | yes | Count by severity. |
 | `diagnosticCodes` | optional | Bounded stable codes and paths only, no provider body or stack trace. |
 | `fromRevision` / `toRevision` | yes | Map revision movement only. |
-| `reviewOutcome` | after AMW-009 | Structured accept/block/follow-up decision, no direct `MapSpec` mutation. |
+| `reviewOutcome` | after AMW-009 | Structured accept/block/follow-up decision as defined in `ai-map-workbench-review-actions.md`, no direct `MapSpec` mutation. |
 
 Never persist raw prompts, raw provider request or response bodies, API keys,
 credential environment variable names, base URLs, request headers, feature
@@ -170,6 +170,14 @@ Deletion is a server-side operation, not a browser file write:
 - No raw prompt, raw provider body, credential, feature payload, screenshot, or
   full `MapSpec` persistence.
 - No new MCP tool names.
-- No command-safe review actions; those are `AMW-009`.
+- No runtime review action implementation; `AMW-009` is a design-only handoff.
 - No product app or hosted deployment promotion.
 
+## 2026-06-02 AMW-009 Addendum
+
+`AMW-009` defines the future `reviewOutcome` shape as a compact review decision
+record. Durable audit storage must still stay payload-free: review outcomes may
+reference audit record ids, prompt hashes, trace ids, provider ids, command
+evidence, diagnostic counts, reason codes, and follow-up task ids, but must not
+persist raw prompts, provider bodies, command bodies, patches, full map specs,
+feature payloads, screenshots, credentials, or browser state.

@@ -103,6 +103,17 @@ Future product-mode audit storage must keep records compact, retention-bound,
 access-controlled, export-capped, and free of raw prompts, provider raw bodies,
 credentials, feature payloads, screenshots, browser state, and full map specs.
 
+## Review Action Guardrails
+
+AMW-009 defines future accept, block, and follow-up-required review actions as
+structured decisions about existing evidence. This example does not implement
+review action controls or a review-decision endpoint yet.
+
+Future review decisions must reference compact audit, provider, delivery,
+command, and diagnostic evidence only. They must not directly mutate `MapSpec`,
+write browser files, retain raw provider payloads, store command bodies or
+patches, create hidden task state, or add new MCP tool names.
+
 ## Evidence
 
 The chat API returns compact review evidence:

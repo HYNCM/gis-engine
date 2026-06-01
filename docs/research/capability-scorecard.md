@@ -146,10 +146,20 @@ benchmark below was refreshed on 2026-05-31 from official sources recorded in
 ## 2026-06-01 AMW-008 Addendum
 
 - Developer experience stays at 8.0. Durable audit retention/export is now a
-  design handoff, but the workbench still lacks command-safe review actions,
+  design handoff, but the workbench still lacks review-action runtime behavior,
   visual product evidence, and a quality-guardian/coordinator promotion
   decision.
 - AI operability stays at 9.5 because AMW-008 adds no public AI schema, MCP
-  contract, durable storage runtime, or review-action runtime behavior. The
-  next score movement requires accepted AMW-009 review-action evidence or a
+  contract, durable storage runtime, or review-action runtime behavior. After
+  AMW-009 design acceptance, the next score movement requires implementation
+  evidence or a product-promotion gate.
+
+## 2026-06-02 AMW-009 Addendum
+
+- Developer experience stays at 8.0. Command-safe review actions are now a
+  design handoff, but no action controls, review-decision endpoint, durable
+  storage, visual product evidence, or product-promotion gate has landed.
+- AI operability stays at 9.5 because AMW-009 adds no public AI schema, MCP
+  contract, runtime review action behavior, or new command surface. The next
+  score movement requires implementation evidence or an accepted AMW-010
   product-promotion gate.

@@ -349,8 +349,8 @@ review actions, visual evidence, and promotion gates are accepted.
 | TASK-2026W23-AMW-006 | Freeze AI Map Workbench product boundary | P0 | `@coordinator`, `@product-strategist`, `@task-distributor` | done | `docs/planning/feature-specs/ai-map-workbench-product-boundary.md`; `docs/planning/sprint-2026-W23-ai-map-workbench-product-boundary.md`; `docs/reviews/amw-006-product-boundary-planning-2026-06-01.md` | app ownership, provider administration, durable audit, review actions, visual evidence, and promotion gates are defined before implementation or product promotion | planning review; `pnpm test:docs`; `pnpm check`; `git diff --check` |
 | TASK-2026W23-AMW-007 | Design provider credential and resource administration | P0 | `@ai-agent`, `@engine-agent`, `@docs-agent` | done | `docs/planning/feature-specs/ai-map-workbench-provider-administration.md`; `docs/reviews/amw-007-provider-resource-admin-2026-06-01.md`; `examples/ai-map-workbench/README.md` | provider profile lifecycle, allowed protocols, missing credential states, timeout/error behavior, prompt/body leak-hardening, and browser-safe metadata are specified before hosted or product use | provider/workbench tests or design review; `pnpm test:examples`; `pnpm test:docs`; `pnpm check` |
 | TASK-2026W23-AMW-008 | Design durable audit retention and export | P1 | `@engine-agent`, `@ai-agent`, `@docs-agent` | done | `docs/planning/feature-specs/ai-map-workbench-durable-audit.md`; `docs/reviews/amw-008-durable-audit-retention-export-2026-06-01.md`; `examples/ai-map-workbench/README.md` | retention, privacy, access control, export shape, payload caps, and deletion behavior are specified before persistent storage implementation | schema/design review if public; `pnpm test:docs`; `pnpm check`; `git diff --check` |
-| TASK-2026W23-AMW-009 | Define command-safe review actions | P1 | `@engine-agent`, `@ai-agent`, `@qa-agent` | queued | review action contract | accept, block, and follow-up-required actions produce structured review decisions without direct `MapSpec` mutation, browser file writes, or raw provider payload retention | command/evidence tests when implemented; `pnpm test:ai`; `pnpm test:examples`; `pnpm check` |
-| TASK-2026W23-AMW-010 | Run product-promotion Go-No-go gate | P1 | `@quality-guardian`, `@coordinator`, `@qa-agent` | todo | product-promotion gate report | gate decides whether AI Map Workbench stays in `examples/` or can move to a product app boundary, and records required visual/resource/audit evidence | `pnpm test:docs`; `pnpm check`; browser smoke or visual evidence; `git diff --check` |
+| TASK-2026W23-AMW-009 | Define command-safe review actions | P1 | `@engine-agent`, `@ai-agent`, `@qa-agent` | done | `docs/planning/feature-specs/ai-map-workbench-review-actions.md`; `docs/reviews/amw-009-command-safe-review-actions-2026-06-02.md`; `examples/ai-map-workbench/README.md` | accept, block, and follow-up-required actions are specified as structured review decisions without direct `MapSpec` mutation, browser file writes, raw provider payload retention, or new MCP tool names | design review; `pnpm test:docs`; `pnpm check`; `git diff --check` |
+| TASK-2026W23-AMW-010 | Run product-promotion Go-No-go gate | P1 | `@quality-guardian`, `@coordinator`, `@qa-agent` | queued | product-promotion gate report | gate decides whether AI Map Workbench stays in `examples/` or can move to a product app boundary, and records required visual/resource/audit/review-action evidence | `pnpm test:docs`; `pnpm check`; browser smoke or visual evidence; `git diff --check` |
 
 2026-05-31 AMW execution update: the runnable workbench is accepted as a
 product-evolution candidate by
@@ -386,8 +386,15 @@ the existing provider-normalization plus command-application path.
 evidence was refreshed, the AI Map Workbench product-boundary sprint was opened,
 provider credential/resource administration was accepted as a design handoff,
 and durable audit retention/export was accepted as a design handoff. The current
-workbench still has only latest-50 in-memory payload-free audit records; the
-next queued task is `TASK-2026W23-AMW-009` for command-safe review action design.
+workbench still had only latest-50 in-memory payload-free audit records; at that
+point the next queued task was `TASK-2026W23-AMW-009` for command-safe review
+action design.
+
+2026-06-02 AMW-009 planning update: command-safe review actions are accepted as
+a design handoff in
+`docs/planning/feature-specs/ai-map-workbench-review-actions.md` and
+`docs/reviews/amw-009-command-safe-review-actions-2026-06-02.md`. The next
+queued task is `TASK-2026W23-AMW-010` for the product-promotion Go/No-go gate.
 
 ## 2026-W22 MapLibre Source Drift Audit
 

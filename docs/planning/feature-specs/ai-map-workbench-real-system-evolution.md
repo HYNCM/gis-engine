@@ -131,4 +131,11 @@ and identity-field validation before hosted or product use.
 a planning handoff. Future product-mode storage must keep audit records compact,
 retention-bound, access-controlled, export-capped, and free of raw prompts,
 provider bodies, credentials, feature payloads, screenshots, and full map specs.
-The next planning task is `AMW-009` command-safe review action design.
+At that point, the next planning task was `AMW-009` command-safe review action
+design.
+
+2026-06-02 AMW-009 update: command-safe review action design is complete as a
+planning handoff. Future review decisions must stay compact, evidence-linked,
+and free of direct `MapSpec` mutation, browser file writes, raw provider
+payloads, command bodies, patches, screenshots, and new MCP tool names. The next
+planning task is `AMW-010` product-promotion Go/No-go.

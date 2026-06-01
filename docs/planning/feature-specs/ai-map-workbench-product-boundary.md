@@ -95,7 +95,7 @@ external fetches, write generated app files, or expose raw provider payloads.
 1. `AMW-006`: freeze this product boundary and the sprint DAG.
 2. `AMW-007`: design provider credential/resource administration.
 3. `AMW-008`: design durable audit retention, privacy, and export behavior.
-4. `AMW-009`: implement or specify command-safe review actions.
+4. `AMW-009`: specify command-safe review actions.
 5. `AMW-010`: run the product-promotion Go/No-go gate with visual evidence.
 
 ## 2026-06-01 AMW-007 Addendum
@@ -117,4 +117,15 @@ audit design preserves the current latest-50 in-memory audit behavior for the
 example and defines future product-mode retention, privacy, access control,
 export shape, payload caps, deletion behavior, and diagnostic paths before any
 persistent storage implementation. Product promotion remains blocked. The next
-task is command-safe review action design under `AMW-009`.
+task at that point was command-safe review action design under `AMW-009`.
+
+## 2026-06-02 AMW-009 Addendum
+
+`AMW-009` is captured in
+`docs/planning/feature-specs/ai-map-workbench-review-actions.md` and
+`docs/reviews/amw-009-command-safe-review-actions-2026-06-02.md`. The review
+action design defines `accepted`, `blocked`, and `follow-up-required` as compact
+review decisions that reference existing audit, provider, delivery, command, and
+diagnostic evidence without direct `MapSpec` mutation, browser file writes, raw
+provider payload retention, or new MCP tool names. Product promotion remains
+blocked. The next task is the product-promotion Go/No-go gate under `AMW-010`.

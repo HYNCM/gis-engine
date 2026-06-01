@@ -30,7 +30,9 @@ timeout/abort behavior, response size caps, and any required tests.
 This report satisfies `TASK-2026W23-AMW-007` as a design task and queued the
 durable audit retention/export design follow-up. After
 `docs/reviews/amw-008-durable-audit-retention-export-2026-06-01.md`, AMW-008 is
-closed and `TASK-2026W23-AMW-009` is the current next queued task.
+closed. After `docs/reviews/amw-009-command-safe-review-actions-2026-06-02.md`,
+AMW-009 is also closed and `TASK-2026W23-AMW-010` is the current next queued
+task.
 
 ## Evidence
 
@@ -80,5 +82,6 @@ Required for this design handoff:
 - `pnpm check`
 - `git diff --check`
 
-AMW-008 subsequently closed as durable audit retention/export design, so the
-current next queued task is `TASK-2026W23-AMW-009`.
+AMW-008 subsequently closed as durable audit retention/export design and AMW-009
+subsequently closed as command-safe review action design, so the current next
+queued task is `TASK-2026W23-AMW-010`.
