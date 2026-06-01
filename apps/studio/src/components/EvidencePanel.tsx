@@ -34,8 +34,10 @@ export default function EvidencePanel({ messages, serverState, onClose }: Props)
           <div className="bg-gray-800 rounded-lg p-3 space-y-1">
             <p className="text-gray-400 font-medium">Last Command</p>
             <div className="space-y-0.5 text-gray-300">
+              <p>Commands: <span className="font-mono">{cmd.commandCount ?? "--"}</span></p>
               <p>Committed: <span className={cmd.committed ? "text-green-400" : "text-red-400"}>{String(cmd.committed)}</span></p>
               <p>Rolled back: <span className={cmd.rolledBack ? "text-yellow-400" : "text-gray-500"}>{String(cmd.rolledBack)}</span></p>
+              {cmd.failed != null && <p>Failed: <span className={cmd.failed ? "text-red-400" : "text-gray-500"}>{String(cmd.failed)}</span></p>}
               <p>Paths changed: <span className="font-mono">{cmd.changedPathCount}</span></p>
             </div>
           </div>

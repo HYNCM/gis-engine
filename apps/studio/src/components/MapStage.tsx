@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import type { Map as MapLibreMap, StyleSpecification } from "maplibre-gl";
-import type { ServerState } from "../App";
+import type { BasemapOption, ServerState } from "../App";
 
 interface Props {
   serverState: ServerState | null; status: string;
   onSave: () => void; savedMsg: string;
-  basemaps: Array<{ id: string; label: string }>;
+  basemaps: BasemapOption[];
   currentBasemap: string;
   onChangeBasemap: (id: string) => void;
 }
@@ -97,7 +97,11 @@ export default function MapStage({ serverState, status, onSave, savedMsg, basema
         <div className="flex items-center gap-3">
           <select value={currentBasemap} onChange={(e) => onChangeBasemap(e.target.value)}
             className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-300 focus:outline-none focus:border-blue-500">
-            {basemaps.map((bm) => <option key={bm.id} value={bm.id}>{bm.label}</option>)}
+            {basemaps.map((bm) => (
+              <option key={bm.id} value={bm.id} disabled={!bm.enabled}>
+                {bm.missingCredential ? `${bm.label} (${bm.missingCredential})` : bm.label}
+              </option>
+            ))}
           </select>
           <p className="text-xs text-gray-500 font-mono">
             {serverState ? `v${serverState.summary.revision} · ${serverState.summary.layerCount} layers` : "--"}

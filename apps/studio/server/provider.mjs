@@ -63,7 +63,7 @@ function systemPrompt(summary) {
     "- Change point size: set 'circle-radius' (range 3-30)",
     "- Change line width: set 'line-width' (range 0.5-10)",
     "- Change opacity: set 'circle-opacity', 'line-opacity', or 'fill-opacity'",
-    "- Change basemap: action=setBasemap, layerId=osm|carto-light|carto-dark|satellite",
+    "- Change basemap: action=setBasemap, layerId=none|osm|arcgis-imagery|bing-aerial",
     "- Move camera: set view center [lng, lat] and zoom level (0-22)",
     "- Add a layer: provide layer type, source id, and paint properties",
     "- Remove a layer: provide layer id",

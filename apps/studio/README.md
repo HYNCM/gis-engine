@@ -48,6 +48,18 @@ MapLibre GL is imported on demand by the map stage, so the renderer package is
 kept out of the initial React entry path while the map canvas is still created
 automatically when the app opens.
 
+## Basemaps
+
+Studio supports OSM Standard, ArcGIS World Imagery, and Bing Aerial basemaps.
+MapSpec keeps those sources policy-safe by using relative `/api/tiles/...`
+proxy URLs; the server resolves the selected provider explicitly.
+
+Bing Aerial requires a server-side `BING_MAPS_KEY`:
+
+```bash
+BING_MAPS_KEY=... pnpm studio:server
+```
+
 ## Docker
 
 ```bash

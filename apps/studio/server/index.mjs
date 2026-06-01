@@ -17,7 +17,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { dirname, extname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { randomUUID } from "node:crypto";
 
 // ── Load provider ──
@@ -71,6 +71,8 @@ const MIME = new Map([
   [".json", "application/json; charset=utf-8"],
   [".svg", "image/svg+xml"],
   [".png", "image/png"],
+  [".jpg", "image/jpeg"],
+  [".jpeg", "image/jpeg"],
 ]);
 
 // ── Helpers ──
@@ -95,48 +97,123 @@ async function readJsonBody(req) {
 }
 
 // ── Basemap presets ──
-const BASEMAPS = {
+const TILE_PROXY_PREFIX = "/api/tiles";
+
+export const BASEMAPS = {
+  none: {
+    id: "none", label: "No basemap",
+    backgroundColor: "#020617",
+  },
   osm: {
-    id: "osm", label: "OpenStreetMap",
-    tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+    id: "osm", label: "OSM Standard",
+    tileProvider: "osm",
+    tiles: [`${TILE_PROXY_PREFIX}/osm/{z}/{x}/{y}.png`],
     attribution: "© OpenStreetMap contributors",
+    maxzoom: 19,
   },
-  "carto-light": {
-    id: "carto-light", label: "Carto Light",
-    tiles: ["https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"],
-    attribution: "© CARTO © OpenStreetMap",
-  },
-  "carto-dark": {
-    id: "carto-dark", label: "Carto Dark",
-    tiles: ["https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"],
-    attribution: "© CARTO © OpenStreetMap",
-  },
-  satellite: {
-    id: "satellite", label: "Satellite",
-    tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
+  "arcgis-imagery": {
+    id: "arcgis-imagery", label: "ArcGIS World Imagery",
+    tileProvider: "arcgis-imagery",
+    tiles: [`${TILE_PROXY_PREFIX}/arcgis-imagery/{z}/{x}/{y}.jpg`],
     attribution: "Esri, Maxar, Earthstar Geographics",
+    maxzoom: 23,
+  },
+  "bing-aerial": {
+    id: "bing-aerial", label: "Bing Aerial",
+    tileProvider: "bing-aerial",
+    tiles: [`${TILE_PROXY_PREFIX}/bing-aerial/{z}/{x}/{y}.jpeg`],
+    attribution: "© Microsoft Bing",
+    requiresEnv: "BING_MAPS_KEY",
+    maxzoom: 19,
   },
 };
 
-const DEFAULT_BASEMAP = "osm";
+export const DEFAULT_BASEMAP = "none";
 const BASEMAP_SOURCE_ID = "basemap";
 const BASEMAP_LAYER_ID = "basemap-layer";
+const BASEMAP_BACKGROUND_LAYER_ID = "basemap-background";
+const POINTS_LAYER_ID = "points-layer";
 
-function createInitialSpec(basemapId = DEFAULT_BASEMAP) {
+export function publicBasemapOptions() {
+  return Object.entries(BASEMAPS).map(([id, bm]) => {
+    const availability = basemapAvailability(id);
+    return {
+      id,
+      label: bm.label,
+      enabled: availability.enabled,
+      missingCredential: availability.missingCredential || undefined,
+      tileProvider: bm.tileProvider,
+    };
+  });
+}
+
+function normalizeBasemapId(value) {
+  const raw = typeof value === "string" ? value.toLowerCase().trim() : "";
+  if (raw === "osm" || raw === "openstreetmap" || raw === "open-street-map") return "osm";
+  if (raw === "arcgis" || raw === "esri" || raw === "satellite" || raw === "imagery" || raw === "arcgis-imagery") return "arcgis-imagery";
+  if (raw === "bing" || raw === "bing-aerial" || raw === "bing-maps") return "bing-aerial";
+  if (raw === "none" || raw === "no-basemap" || raw === "no basemap") return "none";
+  return BASEMAPS[raw] ? raw : DEFAULT_BASEMAP;
+}
+
+function basemapAvailability(basemapId) {
   const bm = BASEMAPS[basemapId] || BASEMAPS[DEFAULT_BASEMAP];
+  if (bm.requiresEnv && !process.env[bm.requiresEnv]?.trim()) {
+    return { enabled: false, missingCredential: bm.requiresEnv };
+  }
+  return { enabled: true };
+}
+
+function basemapUnavailableResult(spec, basemapId) {
+  const bm = BASEMAPS[basemapId] || BASEMAPS[DEFAULT_BASEMAP];
+  const availability = basemapAvailability(basemapId);
+  const missing = availability.missingCredential;
+  return {
+    status: "blocked",
+    nextSpec: spec,
+    diagnostics: [{
+      code: missing ? "STUDIO.BASEMAP_CREDENTIAL_REQUIRED" : "STUDIO.BASEMAP_UNAVAILABLE",
+      severity: "error",
+      path: "/basemap",
+      message: missing ? `${bm.label} requires ${missing} before Studio can proxy its tiles.` : `${bm.label} is not available.`,
+      fix: missing ? { kind: "manual", confidence: "high", message: `Set ${missing} on the Studio server, then retry the basemap change.` } : undefined,
+    }],
+    evidence: emptyCommandEvidence(),
+  };
+}
+
+export function createInitialSpec(basemapId = DEFAULT_BASEMAP) {
+  const bm = BASEMAPS[normalizeBasemapId(basemapId)] || BASEMAPS[DEFAULT_BASEMAP];
+  const basemapSources = bm.tiles
+    ? {
+        [BASEMAP_SOURCE_ID]: {
+          type: "raster",
+          tiles: bm.tiles,
+          tileSize: 256,
+          attribution: bm.attribution,
+          minzoom: 0,
+          maxzoom: bm.maxzoom ?? 19,
+        },
+      }
+    : {};
+  const basemapLayer = bm.tiles
+    ? {
+        id: BASEMAP_LAYER_ID,
+        type: "raster",
+        source: BASEMAP_SOURCE_ID,
+      }
+    : {
+        id: BASEMAP_BACKGROUND_LAYER_ID,
+        type: "background",
+        paint: { "background-color": bm.backgroundColor || "#020617" },
+      };
+
   return {
     version: "0.1",
     id: randomUUID(),
     revision: "0",
     sources: {
-      [BASEMAP_SOURCE_ID]: {
-        type: "raster",
-        tiles: bm.tiles,
-        tileSize: 256,
-        attribution: bm.attribution,
-        minzoom: 0,
-        maxzoom: 19,
-      },
+      ...basemapSources,
       points: {
         type: "geojson",
         data: {
@@ -151,13 +228,9 @@ function createInitialSpec(basemapId = DEFAULT_BASEMAP) {
       },
     },
     layers: [
+      basemapLayer,
       {
-        id: BASEMAP_LAYER_ID,
-        type: "raster",
-        source: BASEMAP_SOURCE_ID,
-      },
-      {
-        id: "points-layer",
+        id: POINTS_LAYER_ID,
         type: "circle",
         source: "points",
         paint: { "circle-radius": 8, "circle-color": "#3b82f6", "circle-stroke-width": 2, "circle-stroke-color": "#ffffff" },
@@ -168,104 +241,178 @@ function createInitialSpec(basemapId = DEFAULT_BASEMAP) {
 }
 
 // ── AI command mapping ──
-function applyProviderCommands(engine, output, spec) {
+export function applyProviderCommands(engine, output, spec) {
   const { action, layerId, paint, view, layer } = output;
   let commands = [];
+  let nextBasemap = activeBasemap;
 
   switch (action) {
     case "setPaint":
-      if (layerId && paint) commands = [{ type: "setPaint", layerId, paint }];
+      if (layerId && paint) commands = [studioCommand("setPaint", "set-paint", { layerId, paint })];
       break;
     case "setLayout":
-      if (layerId && paint) commands = [{ type: "setLayout", layerId, layout: paint }];
+      if (layerId && paint) commands = [studioCommand("setLayout", "set-layout", { layerId, layout: paint })];
       break;
     case "setView":
-      if (view?.center && view?.zoom != null) commands = [{ type: "setView", view }];
+      if (view?.center && view?.zoom != null) commands = [studioCommand("setView", "set-view", { view })];
       break;
     case "addLayer":
-      if (layer?.id && layer?.type && layer?.source) commands = [{ type: "addLayer", layer }];
+      if (layer?.id && layer?.type && layer?.source) commands = [studioCommand("addLayer", "add-layer", { layer })];
       break;
     case "removeLayer":
-      if (layerId) commands = [{ type: "removeLayer", layerId }];
+      if (layerId) commands = [studioCommand("removeLayer", "remove-layer", { layerId })];
       break;
     case "setBasemap": {
-      const bmId = layerId && BASEMAPS[layerId] ? layerId : DEFAULT_BASEMAP;
-      activeBasemap = bmId;
-      const bm = BASEMAPS[bmId];
-      commands = [
-        { type: "removeLayer", layerId: BASEMAP_LAYER_ID },
-        { type: "removeSource", sourceId: BASEMAP_SOURCE_ID },
-        { type: "addSource", source: { id: BASEMAP_SOURCE_ID, type: "raster", tiles: bm.tiles, tileSize: 256, attribution: bm.attribution, minzoom: 0, maxzoom: 19 } },
-        { type: "addLayer", layer: { id: BASEMAP_LAYER_ID, type: "raster", source: BASEMAP_SOURCE_ID, minzoom: 0, maxzoom: 19 }, beforeId: spec.layers[0]?.id },
-      ];
+      const bmId = normalizeBasemapId(layerId);
+      if (!basemapAvailability(bmId).enabled) return basemapUnavailableResult(spec, bmId);
+      nextBasemap = bmId;
+      commands = buildBasemapCommands(bmId, spec);
       break;
     }
     case "reset":
       activeBasemap = DEFAULT_BASEMAP;
-      return { status: "applied", nextSpec: createInitialSpec(), evidence: { committed: true, rolledBack: false, changedPathCount: 1 } };
+      return { status: "applied", nextSpec: createInitialSpec(), diagnostics: [], evidence: manualCommandEvidence(1) };
     default:
       // Fallback: try legacy intent parsing
       return applyLegacyIntent(engine, action, spec);
   }
 
   if (commands.length === 0) {
-    return { status: "ready", nextSpec: spec, evidence: { committed: false, rolledBack: false, changedPathCount: 0 } };
+    return { status: "ready", nextSpec: spec, diagnostics: [], evidence: emptyCommandEvidence() };
   }
 
   try {
     const result = engine.applyCommands(spec, commands, { traceId: `studio.${Date.now()}` });
     const nextSpec = result.committed && !result.rolledBack ? result.spec : spec;
     const failed = (result.results || []).some((r) => r.status === "failed");
+    if (!failed && result.committed && !result.rolledBack) activeBasemap = nextBasemap;
     return {
       status: failed ? "blocked" : "applied",
       nextSpec,
-      evidence: { committed: result.committed || false, rolledBack: result.rolledBack || false, changedPathCount: result.results?.filter((r) => r.status === "applied").length || 0 },
+      diagnostics: commandDiagnostics(result),
+      evidence: commandEvidence(result),
     };
   } catch (err) {
     console.error("Command apply error:", err.message);
-    return { status: "blocked", nextSpec: spec, evidence: { committed: false, rolledBack: false, changedPathCount: 0 } };
+    return { status: "blocked", nextSpec: spec, diagnostics: [], evidence: emptyCommandEvidence() };
   }
 }
 
-function applyLegacyIntent(engine, intent, spec) {
+export function applyLegacyIntent(engine, intent, spec) {
   const msg = (intent || "").toLowerCase();
+  const pointsLayer = spec.layers.find((layer) => layer.id === POINTS_LAYER_ID);
   let plan = null;
-  if (msg.includes("red")) plan = { intent: "setPaint", layerId: "points-layer", paint: { "circle-color": "#ef4444" } };
-  else if (msg.includes("blue")) plan = { intent: "setPaint", layerId: "points-layer", paint: { "circle-color": "#3b82f6" } };
-  else if (msg.includes("green")) plan = { intent: "setPaint", layerId: "points-layer", paint: { "circle-color": "#22c55e" } };
-  else if (msg.includes("larger") || msg.includes("bigger")) plan = { intent: "setPaint", layerId: "points-layer", paint: { "circle-radius": Math.min(30, (spec.layers[0]?.paint?.["circle-radius"] || 8) + 4) } };
-  else if (msg.includes("smaller") || msg.includes("decrease")) plan = { intent: "setPaint", layerId: "points-layer", paint: { "circle-radius": Math.max(3, (spec.layers[0]?.paint?.["circle-radius"] || 8) - 4) } };
+  if (msg.includes("red")) plan = { intent: "setPaint", layerId: POINTS_LAYER_ID, paint: { "circle-color": "#ef4444" } };
+  else if (msg.includes("blue")) plan = { intent: "setPaint", layerId: POINTS_LAYER_ID, paint: { "circle-color": "#3b82f6" } };
+  else if (msg.includes("green")) plan = { intent: "setPaint", layerId: POINTS_LAYER_ID, paint: { "circle-color": "#22c55e" } };
+  else if (msg.includes("larger") || msg.includes("bigger")) plan = { intent: "setPaint", layerId: POINTS_LAYER_ID, paint: { "circle-radius": Math.min(30, (pointsLayer?.paint?.["circle-radius"] || 8) + 4) } };
+  else if (msg.includes("smaller") || msg.includes("decrease")) plan = { intent: "setPaint", layerId: POINTS_LAYER_ID, paint: { "circle-radius": Math.max(3, (pointsLayer?.paint?.["circle-radius"] || 8) - 4) } };
   else if (msg.includes("hangzhou") || msg.includes("zoom")) plan = { intent: "setView", view: { center: [120.155, 30.274], zoom: 13 } };
   else if (msg.includes("reset")) plan = { intent: "reset" };
   // Basemap
   else if (msg.includes("osm") || msg.includes("openstreetmap")) plan = { intent: "setBasemap", layerId: "osm" };
-  else if (msg.includes("dark") || msg.includes("carto dark")) plan = { intent: "setBasemap", layerId: "carto-dark" };
-  else if (msg.includes("light") || msg.includes("carto light")) plan = { intent: "setBasemap", layerId: "carto-light" };
-  else if (msg.includes("satellite") || msg.includes("imagery")) plan = { intent: "setBasemap", layerId: "satellite" };
+  else if (msg.includes("arcgis") || msg.includes("esri") || msg.includes("satellite") || msg.includes("imagery")) plan = { intent: "setBasemap", layerId: "arcgis-imagery" };
+  else if (msg.includes("bing")) plan = { intent: "setBasemap", layerId: "bing-aerial" };
+  else if (msg.includes("no basemap") || msg.includes("remove basemap") || msg.includes("none basemap")) plan = { intent: "setBasemap", layerId: "none" };
 
-  if (!plan) return { status: "ready", nextSpec: spec, evidence: { committed: false, rolledBack: false, changedPathCount: 0 } };
-  if (plan.intent === "reset") { activeBasemap = DEFAULT_BASEMAP; return { status: "applied", nextSpec: createInitialSpec(), evidence: { committed: true, rolledBack: false, changedPathCount: 1 } }; }
+  if (!plan) return { status: "ready", nextSpec: spec, diagnostics: [], evidence: emptyCommandEvidence() };
+  if (plan.intent === "reset") {
+    activeBasemap = DEFAULT_BASEMAP;
+    return { status: "applied", nextSpec: createInitialSpec(), diagnostics: [], evidence: manualCommandEvidence(1) };
+  }
 
   let commands = [];
+  let nextBasemap = activeBasemap;
   if (plan.intent === "setBasemap") {
-    const bmId = plan.layerId && BASEMAPS[plan.layerId] ? plan.layerId : DEFAULT_BASEMAP;
-    activeBasemap = bmId;
-    const bm = BASEMAPS[bmId];
-    commands = [
-      { type: "removeSource", sourceId: BASEMAP_SOURCE_ID },
-      { type: "addSource", source: { id: BASEMAP_SOURCE_ID, type: "raster", tiles: bm.tiles, tileSize: 256, attribution: bm.attribution, minzoom: 0, maxzoom: 19 } },
-    ];
+    const bmId = normalizeBasemapId(plan.layerId);
+    if (!basemapAvailability(bmId).enabled) return basemapUnavailableResult(spec, bmId);
+    nextBasemap = bmId;
+    commands = buildBasemapCommands(bmId, spec);
   } else if (plan.intent === "setPaint") {
-    commands = [{ type: "setPaint", layerId: plan.layerId, paint: plan.paint }];
+    commands = [studioCommand("setPaint", "legacy-set-paint", { layerId: plan.layerId, paint: plan.paint })];
   } else if (plan.intent === "setView") {
-    commands = [{ type: "setView", view: plan.view }];
+    commands = [studioCommand("setView", "legacy-set-view", { view: plan.view })];
   }
-  if (commands.length === 0) return { status: "ready", nextSpec: spec, evidence: { committed: false, rolledBack: false, changedPathCount: 0 } };
+  if (commands.length === 0) return { status: "ready", nextSpec: spec, diagnostics: [], evidence: emptyCommandEvidence() };
 
   const result = engine.applyCommands(spec, commands, { traceId: `studio.legacy.${Date.now()}` });
   const nextSpec = result.committed && !result.rolledBack ? result.spec : spec;
   const failed = (result.results || []).some((r) => r.status === "failed");
-  return { status: failed ? "blocked" : "applied", nextSpec, evidence: { committed: result.committed || false, rolledBack: result.rolledBack || false, changedPathCount: result.results?.filter((r) => r.status === "applied").length || 0 } };
+  if (!failed && result.committed && !result.rolledBack) activeBasemap = nextBasemap;
+  return { status: failed ? "blocked" : "applied", nextSpec, diagnostics: commandDiagnostics(result), evidence: commandEvidence(result) };
+}
+
+export function buildBasemapCommands(basemapId, spec) {
+  const bm = BASEMAPS[basemapId] || BASEMAPS[DEFAULT_BASEMAP];
+  const commands = [];
+  if (spec.layers.some((layer) => layer.id === BASEMAP_LAYER_ID)) {
+    commands.push(studioCommand("removeLayer", "basemap-remove-raster-layer", { layerId: BASEMAP_LAYER_ID }));
+  }
+  if (spec.layers.some((layer) => layer.id === BASEMAP_BACKGROUND_LAYER_ID)) {
+    commands.push(studioCommand("removeLayer", "basemap-remove-background-layer", { layerId: BASEMAP_BACKGROUND_LAYER_ID }));
+  }
+  if (spec.sources[BASEMAP_SOURCE_ID]) {
+    commands.push(studioCommand("removeSource", "basemap-remove-source", { sourceId: BASEMAP_SOURCE_ID }));
+  }
+
+  const beforeLayerId = spec.layers.find((layer) => layer.id !== BASEMAP_LAYER_ID && layer.id !== BASEMAP_BACKGROUND_LAYER_ID)?.id;
+  if (bm.tiles) {
+    commands.push({
+      ...studioCommand("addSource", "basemap-add-source", {
+        sourceId: BASEMAP_SOURCE_ID,
+        source: { type: "raster", tiles: bm.tiles, tileSize: 256, attribution: bm.attribution, minzoom: 0, maxzoom: bm.maxzoom ?? 19 },
+      }),
+    });
+    commands.push({
+      ...studioCommand("addLayer", "basemap-add-raster-layer", {
+        layer: { id: BASEMAP_LAYER_ID, type: "raster", source: BASEMAP_SOURCE_ID },
+        beforeLayerId,
+      }),
+    });
+    return commands;
+  }
+
+  commands.push({
+    ...studioCommand("addLayer", "basemap-add-background-layer", {
+      layer: { id: BASEMAP_BACKGROUND_LAYER_ID, type: "background", paint: { "background-color": bm.backgroundColor || "#020617" } },
+      beforeLayerId,
+    }),
+  });
+  return commands;
+}
+
+function studioCommand(type, idPart, body) {
+  return {
+    id: `studio-${idPart}`,
+    version: "0.1",
+    type,
+    author: { type: "agent", id: "studio" },
+    ...body,
+  };
+}
+
+function commandDiagnostics(result) {
+  return (result.results || []).flatMap((entry) => entry.diagnostics || []);
+}
+
+function commandEvidence(result) {
+  const results = result.results || [];
+  const failed = results.some((entry) => entry.status === "failed");
+  return {
+    commandCount: results.length,
+    committed: result.committed || false,
+    rolledBack: result.rolledBack || false,
+    failed,
+    changedPathCount: results.reduce((count, entry) => count + (entry.changedPaths?.length || 0), 0),
+  };
+}
+
+function emptyCommandEvidence() {
+  return { commandCount: 0, committed: false, rolledBack: false, failed: false, changedPathCount: 0 };
+}
+
+function manualCommandEvidence(changedPathCount) {
+  return { commandCount: 1, committed: true, rolledBack: false, failed: false, changedPathCount };
 }
 
 // ── State ──
@@ -276,16 +423,10 @@ const auditRecords = [];
 
 function replaceActiveSpec(next) { activeSpec = next; activeEpoch++; }
 
-function statePayload(engine, status, spec) {
+export function statePayload(engine, status, spec) {
   const validation = engine.validateSpec(spec);
   const transform = engine.transformMapSpecToMapLibreStyle(spec);
-  // Filter basemap-related diagnostics that are expected with external tile hosts
-  const allDiags = [...(validation.diagnostics || []), ...(transform.diagnostics || [])];
-  const filtered = allDiags.filter((d) => {
-    if (d.code === "SECURITY.URL_BLOCKED" && d.path?.includes(BASEMAP_SOURCE_ID)) return false;
-    if (d.code === "SPEC.UNKNOWN_FIELD" && d.path?.includes(BASEMAP_SOURCE_ID)) return false;
-    return true;
-  });
+  const diagnostics = [...(validation.diagnostics || []), ...(transform.diagnostics || [])];
   return {
     status,
     spec,
@@ -298,8 +439,123 @@ function statePayload(engine, status, spec) {
       center: spec.view?.center || null,
       zoom: spec.view?.zoom || null,
     },
-    diagnostics: filtered,
+    diagnostics,
   };
+}
+
+function withCommandDiagnostics(payload, diagnostics = []) {
+  return {
+    ...payload,
+    diagnostics: [...(payload.diagnostics || []), ...diagnostics],
+  };
+}
+
+const TILE_PROVIDERS = {
+  osm: {
+    contentType: "image/png",
+    maxzoom: 19,
+    resolveUrl: ({ z, x, y }) => `https://tile.openstreetmap.org/${z}/${x}/${y}.png`,
+  },
+  "arcgis-imagery": {
+    contentType: "image/jpeg",
+    maxzoom: 23,
+    resolveUrl: ({ z, x, y }) => `https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`,
+  },
+  "bing-aerial": {
+    contentType: "image/jpeg",
+    maxzoom: 19,
+    resolveUrl: resolveBingTileUrl,
+  },
+};
+
+let bingMetadataCache = null;
+
+async function proxyBasemapTile(res, providerId, zValue, xValue, yValue) {
+  const provider = TILE_PROVIDERS[providerId];
+  if (!provider) return sendJson(res, { error: "Unknown tile provider" }, 404);
+
+  const coords = parseTileCoords(zValue, xValue, yValue, provider.maxzoom);
+  if (!coords) return sendJson(res, { error: "Invalid tile coordinates" }, 400);
+
+  try {
+    const upstreamUrl = await provider.resolveUrl(coords);
+    const upstream = await fetch(upstreamUrl, {
+      headers: {
+        "user-agent": "GIS Engine Studio/0.1 (explicit user-selected basemap proxy)",
+      },
+    });
+    if (!upstream.ok) return sendJson(res, { error: `Tile provider returned HTTP ${upstream.status}` }, 502);
+
+    const body = Buffer.from(await upstream.arrayBuffer());
+    res.writeHead(200, {
+      "Content-Type": upstream.headers.get("content-type") || provider.contentType,
+      "Cache-Control": "public, max-age=3600",
+      "Content-Length": body.byteLength,
+    });
+    res.end(body);
+    return undefined;
+  } catch (err) {
+    return sendJson(res, { error: err instanceof Error ? err.message : "Tile proxy failed" }, 503);
+  }
+}
+
+function parseTileCoords(zValue, xValue, yValue, maxzoom) {
+  const z = Number.parseInt(zValue, 10);
+  const x = Number.parseInt(xValue, 10);
+  const y = Number.parseInt(yValue, 10);
+  if (![z, x, y].every(Number.isInteger)) return null;
+  if (z < 0 || z > maxzoom) return null;
+  const limit = 2 ** z;
+  if (x < 0 || y < 0 || x >= limit || y >= limit) return null;
+  return { z, x, y };
+}
+
+async function resolveBingTileUrl({ z, x, y }) {
+  const key = process.env.BING_MAPS_KEY?.trim();
+  if (!key) throw new Error("Bing Aerial requires BING_MAPS_KEY.");
+
+  const metadata = await loadBingMetadata(key);
+  const subdomains = metadata.subdomains.length > 0 ? metadata.subdomains : ["t0"];
+  const subdomain = subdomains[Math.abs(x + y) % subdomains.length];
+  return metadata.imageUrl
+    .replace("{quadkey}", tileQuadKey(x, y, z))
+    .replace("{subdomain}", subdomain)
+    .replace("{culture}", "en-US");
+}
+
+async function loadBingMetadata(key) {
+  const now = Date.now();
+  if (bingMetadataCache?.key === key && bingMetadataCache.expiresAt > now) return bingMetadataCache.value;
+
+  const metadataUrl = new URL("https://dev.virtualearth.net/REST/V1/Imagery/Metadata/Aerial");
+  metadataUrl.searchParams.set("output", "json");
+  metadataUrl.searchParams.set("include", "ImageryProviders");
+  metadataUrl.searchParams.set("key", key);
+
+  const response = await fetch(metadataUrl);
+  if (!response.ok) throw new Error(`Bing metadata returned HTTP ${response.status}.`);
+  const payload = await response.json();
+  const resource = payload?.resourceSets?.[0]?.resources?.[0];
+  if (!resource?.imageUrl) throw new Error("Bing metadata did not include an imageUrl template.");
+
+  const value = {
+    imageUrl: String(resource.imageUrl).replace(/^http:/, "https:"),
+    subdomains: Array.isArray(resource.imageUrlSubdomains) ? resource.imageUrlSubdomains.map(String) : [],
+  };
+  bingMetadataCache = { key, value, expiresAt: now + 60 * 60 * 1000 };
+  return value;
+}
+
+function tileQuadKey(x, y, z) {
+  let quadKey = "";
+  for (let i = z; i > 0; i -= 1) {
+    let digit = 0;
+    const mask = 1 << (i - 1);
+    if ((x & mask) !== 0) digit += 1;
+    if ((y & mask) !== 0) digit += 2;
+    quadKey += String(digit);
+  }
+  return quadKey;
 }
 
 // ── Server ──
@@ -328,8 +584,13 @@ async function main() {
       if (req.method === "GET" && url.pathname === "/api/basemaps") {
         return sendJson(res, {
           current: activeBasemap,
-          options: Object.entries(BASEMAPS).map(([id, bm]) => ({ id, label: bm.label })),
+          options: publicBasemapOptions(),
         });
+      }
+
+      const tileMatch = url.pathname.match(/^\/api\/tiles\/([a-z0-9-]+)\/(\d+)\/(\d+)\/(\d+)\.(png|jpg|jpeg)$/i);
+      if (req.method === "GET" && tileMatch) {
+        return proxyBasemapTile(res, tileMatch[1], tileMatch[2], tileMatch[3], tileMatch[4]);
       }
 
       // POST /api/chat
@@ -368,7 +629,7 @@ async function main() {
           if (status === "applied") replaceActiveSpec(nextSpec);
 
           return sendJson(res, {
-            ...statePayload(engine, status, status === "applied" ? nextSpec : activeSpec),
+            ...withCommandDiagnostics(statePayload(engine, status, status === "applied" ? nextSpec : activeSpec), cmdResult.diagnostics),
             commandEvidence: cmdResult.evidence,
             provider: { providerId: "deepseek", confidence: result.providerOutput.confidence },
           });
@@ -379,7 +640,7 @@ async function main() {
         if (legacyResult.status === "applied") replaceActiveSpec(legacyResult.nextSpec);
 
         return sendJson(res, {
-          ...statePayload(engine, legacyResult.status, legacyResult.status === "applied" ? legacyResult.nextSpec : activeSpec),
+          ...withCommandDiagnostics(statePayload(engine, legacyResult.status, legacyResult.status === "applied" ? legacyResult.nextSpec : activeSpec), legacyResult.diagnostics),
           commandEvidence: legacyResult.evidence,
           provider: { providerId: "mock-ai" },
         });
@@ -467,7 +728,9 @@ async function main() {
   });
 }
 
-main().catch((err) => {
-  console.error("Failed to start server:", err);
-  process.exit(1);
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((err) => {
+    console.error("Failed to start server:", err);
+    process.exit(1);
+  });
+}

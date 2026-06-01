@@ -39,7 +39,7 @@ Add a new layer to the map.
 {
   type: "addLayer",
   layer: { id: "new-layer", type: "circle", source: "points", paint: { "circle-radius": 6 } },
-  beforeId: "existing-layer"  // optional: insert before this layer
+  beforeLayerId: "existing-layer"  // optional: insert before this layer
 }
 ```
 
@@ -56,7 +56,7 @@ Remove a layer by ID.
 Change layer z-order.
 
 ```typescript
-{ type: "reorderLayer", layerId: "my-layer", beforeId: "other-layer" }
+{ type: "reorderLayer", layerId: "my-layer", beforeLayerId: "other-layer" }
 ```
 
 ### addSource / removeSource
@@ -64,7 +64,7 @@ Change layer z-order.
 Add or remove data sources.
 
 ```typescript
-{ type: "addSource", source: { id: "new-source", type: "geojson", data: { ... } } }
+{ type: "addSource", sourceId: "new-source", source: { type: "geojson", data: { ... } } }
 { type: "removeSource", sourceId: "old-source" }
 ```
 
