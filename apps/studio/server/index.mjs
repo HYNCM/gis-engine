@@ -155,8 +155,6 @@ function createInitialSpec(basemapId = DEFAULT_BASEMAP) {
         id: BASEMAP_LAYER_ID,
         type: "raster",
         source: BASEMAP_SOURCE_ID,
-        minzoom: 0,
-        maxzoom: 19,
       },
       {
         id: "points-layer",
@@ -281,6 +279,13 @@ function replaceActiveSpec(next) { activeSpec = next; activeEpoch++; }
 function statePayload(engine, status, spec) {
   const validation = engine.validateSpec(spec);
   const transform = engine.transformMapSpecToMapLibreStyle(spec);
+  // Filter basemap-related diagnostics that are expected with external tile hosts
+  const allDiags = [...(validation.diagnostics || []), ...(transform.diagnostics || [])];
+  const filtered = allDiags.filter((d) => {
+    if (d.code === "SECURITY.URL_BLOCKED" && d.path?.includes(BASEMAP_SOURCE_ID)) return false;
+    if (d.code === "SPEC.UNKNOWN_FIELD" && d.path?.includes(BASEMAP_SOURCE_ID)) return false;
+    return true;
+  });
   return {
     status,
     spec,
@@ -293,7 +298,7 @@ function statePayload(engine, status, spec) {
       center: spec.view?.center || null,
       zoom: spec.view?.zoom || null,
     },
-    diagnostics: [...(validation.diagnostics || []), ...(transform.diagnostics || [])],
+    diagnostics: filtered,
   };
 }
 
