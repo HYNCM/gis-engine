@@ -128,6 +128,14 @@ promotion gate as No-go. The workbench remains under
 loop before any product app boundary, hosted deployment, persistent audit
 storage, or review-action runtime is implemented.
 
+AWP-001 opens that fresh planning loop in
+`docs/planning/feature-specs/ai-map-workbench-product-implementation.md` and
+`docs/planning/sprint-2026-W23-ai-map-workbench-product-implementation.md`.
+The first executable task is provider resource enforcement, not product app
+movement: server-side base URL policy, timeout/abort, response byte caps,
+stable diagnostics, and leak regression tests must land before durable audit or
+review-action runtime work.
+
 ## 2026-06-01 AMW-007 Addendum
 
 AMW-007 defines provider credential/resource administration in

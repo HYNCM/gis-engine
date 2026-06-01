@@ -148,3 +148,21 @@ Observed package versions from `npm view` on 2026-06-01:
 - Action: `@qa-agent` and `@quality-guardian` should require deterministic UI
   smoke or visual evidence before any workbench product-promotion Go.
 - Confidence: medium.
+
+## 2026-06-02 Post-AMW-010 Addendum
+
+Checked package signals again on 2026-06-02 after the AMW-010 No-go. The
+signals are unchanged from the W23 planning refresh for the packages relevant to
+this decision:
+
+- `@arcgis/core` 5.0.19, with `next` at 5.2.0-next.4.
+- `@arcgis/ai-components` 5.0.19, with `next` at 5.2.0-next.4.
+- `@modelcontextprotocol/sdk` 1.29.0.
+- `maplibre-gl` 5.24.0, with `next` at 6.0.0-11.
+- `mapbox-gl` 3.24.0, with `next` at 3.24.0-rc.1.
+
+The planning impact is focused: external signals still support AI Map Workbench
+product hardening, but they do not justify MapLibre package movement, MCP tool
+aliases, hosted deployment, or product promotion. The next bounded workstream is
+`AWP-001` through `AWP-007`, starting with provider resource enforcement under
+`TASK-2026W23-AWP-002`.

@@ -163,3 +163,15 @@ benchmark below was refreshed on 2026-05-31 from official sources recorded in
   contract, runtime review action behavior, or new command surface. The next
   score movement requires implementation evidence or an accepted AMW-010
   product-promotion gate.
+
+## 2026-06-02 AMW-010 / AWP-001 Addendum
+
+- Developer experience stays at 8.0. AMW-010 accepted the local example as Go
+  but recorded product app and hosted promotion as No-go, and AWP-001 opens the
+  implementation planning loop without adding runtime behavior.
+- AI operability stays at 9.5 because AWP-001 adds no public AI schema, MCP
+  contract, provider runtime enforcement, durable audit runtime, or review
+  decision endpoint.
+- The next score movement requires accepted implementation evidence from
+  `AWP-002` provider resource enforcement, `AWP-005` review decisions, and
+  `AWP-006` repeatable UI evidence, not planning text alone.

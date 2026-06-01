@@ -344,6 +344,36 @@ flowchart LR
 | TASK-2026W23-AMW-009 | AMW-006, AMW-008 | command-safe review action contract | design review; `pnpm test:docs`; `pnpm check`; `git diff --check` | done |
 | TASK-2026W23-AMW-010 | AMW-007, AMW-008, AMW-009 | product-promotion gate report | `pnpm test:docs`; `pnpm check`; browser smoke; `git diff --check` | done / no-go |
 
+2026-06-02 planning update: after AMW-010 returned the workstream to fresh
+planning state, the next edge is AI Map Workbench Product Implementation.
+`AWP-001` is complete as the new product implementation boundary and sprint
+DAG. `AWP-002` is the next queued task and is limited to provider resource
+enforcement inside the local/example boundary.
+
+```mermaid
+flowchart LR
+  A["TASK-2026W23-AWP-001 implementation loop"]
+  A --> B["TASK-2026W23-AWP-002 provider enforcement"]
+  A --> C["TASK-2026W23-AWP-003 product ownership"]
+  C --> D["TASK-2026W23-AWP-004 durable audit"]
+  B --> E["TASK-2026W23-AWP-005 review decisions"]
+  C --> E
+  B --> F["TASK-2026W23-AWP-006 UI evidence"]
+  E --> F
+  D --> G["TASK-2026W23-AWP-007 implementation gate"]
+  F --> G
+```
+
+| Task | Depends On | Evidence Target | Required Finish Gate | Status Rule |
+| --- | --- | --- | --- | --- |
+| TASK-2026W23-AWP-001 | AMW-010 | product implementation spec and sprint DAG | planning review; `pnpm test:docs`; `pnpm check`; `git diff --check` | done |
+| TASK-2026W23-AWP-002 | AWP-001, AMW-007 | provider enforcement implementation report | provider/workbench tests; leak regression tests; `pnpm test:examples`; `pnpm check`; `git diff --check` | queued P0 |
+| TASK-2026W23-AWP-003 | AWP-001 | product ownership decision note | planning review; `pnpm test:docs`; `git diff --check` | queued P0 |
+| TASK-2026W23-AWP-004 | AWP-003, AMW-008 | durable audit contract delta report | schema/design review; focused audit tests; `pnpm check`; `git diff --check` | queued P1 |
+| TASK-2026W23-AWP-005 | AWP-002, AWP-003, AMW-009 | review decision implementation report | schema/contract tests; workbench UI tests; `pnpm check`; `git diff --check` | queued P1 |
+| TASK-2026W23-AWP-006 | AWP-002, AWP-005 | browser smoke or visual evidence report | browser smoke or visual evidence; `pnpm test:examples`; `pnpm check`; `git diff --check` | queued P1 |
+| TASK-2026W23-AWP-007 | AWP-002 through AWP-006 | product implementation gate report | `pnpm test:docs`; `pnpm check`; browser smoke or visual evidence; release visual waiver or evidence; `git diff --check` | queued P1 |
+
 ## 阻断规则
 
 - public AI tool 或 public command surface 变更仍必须先通过 schema-sync、MCP contract tests 和 command replay tests。
