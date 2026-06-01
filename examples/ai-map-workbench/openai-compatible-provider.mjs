@@ -35,6 +35,9 @@ export async function callOpenAiCompatibleProvider(input) {
 
     const parsed = parseJsonObject(content);
     if (!parsed.ok) return providerError(profile, "/providerResponse", "Provider response content must be a JSON object.");
+    if (!isStructuredIntent(parsed.value.intent)) {
+      return providerError(profile, "/providerResponse", "Provider response must include structured intent.");
+    }
     if (hasUnsafeIntent(parsed.value.intent, { apiKey, message })) {
       return providerError(profile, "/providerResponse", "Provider response intent contains unsupported raw or sensitive content.");
     }
@@ -135,13 +138,17 @@ function isSafeReason(reason, forbiddenMarkers) {
     const normalizedMarker = marker.value.toLowerCase();
     return (
       normalizedReason.includes(normalizedMarker) ||
+      // Reverse matching removes short summaries such as "secret" when they are substrings of credentials or raw markers.
       (marker.allowReverse && normalizedReason.length >= 4 && normalizedMarker.includes(normalizedReason))
     );
   });
 }
 
+function isStructuredIntent(intent) {
+  return !!intent && typeof intent === "object" && !Array.isArray(intent);
+}
+
 function hasUnsafeIntent(intent, leakContext) {
-  if (intent === undefined) return false;
   const serializedIntent = JSON.stringify(intent);
   if (containsMarker(serializedIntent, leakContext.message) || containsMarker(serializedIntent, leakContext.apiKey)) return true;
   return hasUnsafeIntentKey(intent);
@@ -160,9 +167,23 @@ function isUnsafeIntentKey(key) {
 
 function isUnsafeProviderKey(key) {
   const normalizedKey = normalizeProviderKey(key);
-  return ["raw", "prompt", "secret", "apikey", "providertrace", "providerresponse"].some((marker) =>
-    normalizedKey.includes(marker)
-  );
+  return [
+    "raw",
+    "prompt",
+    "secret",
+    "apikey",
+    "providertrace",
+    "providerresponse",
+    "responsebody",
+    "response",
+    "authorization",
+    "accesstoken",
+    "bearertoken",
+    "credential",
+    "credentials",
+    "password",
+    "token"
+  ].some((marker) => normalizedKey.includes(marker));
 }
 
 function normalizeProviderKey(key) {

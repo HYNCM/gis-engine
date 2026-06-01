@@ -539,7 +539,19 @@ describe("ai-map-workbench OpenAI-compatible provider adapter", () => {
     expect(serialized).not.toContain(providerMarker);
   });
 
-  it.each(["api_key", "api-key", "provider_trace", "provider_response"])(
+  it.each([
+    "api_key",
+    "api-key",
+    "provider_trace",
+    "provider_response",
+    "response_body",
+    "responseBody",
+    "authorization",
+    "access_token",
+    "bearer_token",
+    "credential",
+    "password"
+  ])(
     "returns diagnostics when provider intent contains unsafe separator key %s",
     async (unsafeKey) => {
       const { callOpenAiCompatibleProvider } = await import(
@@ -588,6 +600,49 @@ describe("ai-map-workbench OpenAI-compatible provider adapter", () => {
     }
   );
 
+  it.each([
+    ["missing", {}],
+    ["null", { intent: null }],
+    ["string", { intent: "show poi circles" }],
+    ["array", { intent: [{ mapId: "ai-map-workbench" }] }]
+  ])("returns diagnostics when provider intent is %s", async (_caseName, contentBody) => {
+    const { callOpenAiCompatibleProvider } = await import(
+      "../../examples/ai-map-workbench/openai-compatible-provider.mjs"
+    );
+    const response = await callOpenAiCompatibleProvider({
+      profile,
+      apiKey,
+      message: rawMessage,
+      summary,
+      fetchImpl: async () =>
+        new Response(
+          JSON.stringify({
+            choices: [
+              {
+                message: {
+                  content: JSON.stringify({
+                    ...contentBody,
+                    response_body: rawProviderBody
+                  })
+                }
+              }
+            ]
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+    });
+
+    expect(response.ok).toBe(false);
+    expect(response.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: "CAPABILITY.UNSUPPORTED",
+        path: "/providerResponse"
+      })
+    );
+    expectProviderFailureSafe(response);
+  });
+
   it.each(["api_key", "provider_trace", "provider_response"])(
     "omits confidence reasons that contain markers under unsafe separator key %s",
     async (unsafeKey) => {
@@ -635,6 +690,54 @@ describe("ai-map-workbench OpenAI-compatible provider adapter", () => {
       expect(JSON.stringify(response.providerOutput)).not.toContain(providerMarker);
     }
   );
+
+  it("omits confidence markers from unsafe alias fields while keeping structured intent references", async () => {
+    const { callOpenAiCompatibleProvider } = await import(
+      "../../examples/ai-map-workbench/openai-compatible-provider.mjs"
+    );
+    const providerMarker = "provider-private-authorization-marker";
+    const response = await callOpenAiCompatibleProvider({
+      profile,
+      apiKey,
+      message: rawMessage,
+      summary,
+      fetchImpl: async () =>
+        new Response(
+          JSON.stringify({
+            choices: [
+              {
+                message: {
+                  content: JSON.stringify({
+                    intent: {
+                      mapId: "ai-map-workbench",
+                      targetDomains: ["feature-display"],
+                      styleEdits: [{ layerId: "poi-circles", paint: { "circle-color": "#ef4444" } }]
+                    },
+                    authorization: providerMarker,
+                    confidence: {
+                      level: "high",
+                      reasons: [
+                        providerMarker,
+                        "High confidence because the poi-circles layer is targeted for feature-display."
+                      ]
+                    }
+                  })
+                }
+              }
+            ]
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+    });
+
+    expect(response.ok).toBe(true);
+    if (!response.ok) throw new Error("Expected provider call to succeed.");
+    expect(response.providerOutput.confidence).toEqual({
+      level: "high",
+      reasons: ["High confidence because the poi-circles layer is targeted for feature-display."]
+    });
+    expect(JSON.stringify(response.providerOutput)).not.toContain(providerMarker);
+  });
 
   it("omits shortened sensitive confidence substrings", async () => {
     const { callOpenAiCompatibleProvider } = await import(
