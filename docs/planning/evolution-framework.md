@@ -253,6 +253,38 @@ Coordinator 在周规划之外，每月执行一次进化审查。
 - 进化收集或一个 agent 步骤失败时，workflow 应保留可用 artifact 并通过 warning 注释告知后续人工复核。
 - `agent-runner` 全局运行锁出现 stale lock 时应自动清理，并将该故障视为可恢复的调度问题。
 
+### Phase 3 自动化基础设施
+
+以下组件实现了自主编排和故障检测的 Phase 3 目标：
+
+| 组件 | 路径 | 功能 |
+| --- | --- | --- |
+| Agent Failure Recovery | `.github/workflows/agent-failure-recovery.yml` | 监控 agent workflow 失败，自动诊断、指数退避重试、创建 escalation issue、清理过期 artifact |
+| Agent Health Dashboard | `scripts/dashboard-generator.mjs` → `docs/planning/AGENT_HEALTH_DASHBOARD.md` | 每周自动生成 agent 执行健康、数据流异常、SLA 合规报告 |
+| SLA Enforcement Checker | `scripts/sla-checker.mjs` | 检查所有 agent 的 SLA 合规性，输出 warning/critical 违规和修复建议 |
+| HealthCheck 类 | `scripts/agent-runner.mjs` (HealthCheck) | 批量运行时自动检查报告覆盖、输入文件齐全性、输出格式标准 |
+
+**故障恢复流程**：
+
+```mermaid
+flowchart TD
+  A[Daily/Weekly/Monthly Workflow 失败] --> B{agent-failure-recovery 触发}
+  B --> C[诊断: 分析失败模式]
+  C --> D[重试: 指数退避 3 次]
+  D --> E{重试成功?}
+  E -->|是| F[清理过期 artifact]
+  E -->|否| G[创建 escalation issue @coordinator]
+  G --> H[人工介入修复]
+  H --> I[重新运行 workflow]
+```
+
+**SLA 违规处理**：
+
+| 级别 | 条件 | 动作 |
+| --- | --- | --- |
+| warning | 超过 SLA 但 < 2× SLA | 记录告警，监控 |
+| critical | 超过 2× SLA | 触发 escalation，执行 p0Action |
+
 ---
 
 ## 知识积累系统

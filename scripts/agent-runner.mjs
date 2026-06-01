@@ -462,6 +462,145 @@ class PlanningStateManager {
   }
 }
 
+// ── 健康检查 ──
+
+/** Agent 健康检查器 */
+class HealthCheck {
+  constructor(rootPath) {
+    this.root = rootPath;
+  }
+
+  /**
+   * 检查指定 agent 的输入文件是否齐全
+   * @returns {{ ok: boolean, missing: string[] }}
+   */
+  validateInputs(agentName) {
+    const missing = [];
+    const agentDef = AGENT_REGISTRY[agentName];
+    if (!agentDef) return { ok: true, missing: [] };
+
+    const requiredInputs = {
+      coordinator: ["docs/planning", "docs/research", "docs/reviews"],
+      "competitive-intel": ["docs/research"],
+      "code-reviewer": ["docs/reviews", "packages"],
+      "product-strategist": ["docs/planning/monthly-roadmap.md", "docs/research"],
+      "task-distributor": ["docs/planning/task-burndown.md", "docs/planning/dependency-graph.md"],
+      "quality-guardian": ["packages", "tests"],
+      "docs-agent": ["docs", "README.md", "CHANGELOG.md"],
+      "adapter-agent": ["packages/scene3d-three-adapter"],
+      "qa-agent": ["tests", "packages"],
+      "ai-agent": ["packages/ai"],
+      "engine-agent": ["packages/engine"],
+    };
+
+    const paths = requiredInputs[agentName] || [];
+    for (const p of paths) {
+      const fullPath = join(this.root, p);
+      try {
+        statSync(fullPath);
+      } catch {
+        missing.push(p);
+      }
+    }
+    return { ok: missing.length === 0, missing };
+  }
+
+  /**
+   * 检查报告输出格式是否符合标准
+   */
+  validateReportFormat(reportPath) {
+    const issues = [];
+    try {
+      const content = readFileSync(reportPath, "utf-8");
+
+      // 必须有 YAML front matter
+      if (!/^---[\s\S]*?---/.test(content)) {
+        issues.push("缺少 YAML front matter");
+      }
+
+      // 必须有 agent 字段
+      if (!/agent:/.test(content)) {
+        issues.push("缺少 agent 字段");
+      }
+
+      // 必须有 decision_level
+      if (!/decision_level:/.test(content)) {
+        issues.push("缺少 decision_level 字段");
+      }
+
+      // 必须有机生成标识
+      if (
+        !content.includes("automation-generated") &&
+        !content.includes("Automation Notice")
+      ) {
+        issues.push("缺少自动化生成标识");
+      }
+
+      return { valid: issues.length === 0, issues };
+    } catch {
+      return { valid: false, issues: ["无法读取报告文件"] };
+    }
+  }
+
+  /**
+   * 检查所有已调度 agent 的报告是否齐全
+   * @returns {{ ok: boolean, overdue: Array<{agent: string, expected: string, file: string}> }}
+   */
+  checkReportCoverage(dryRun = false) {
+    const overdue = [];
+    const now = new Date();
+    const todayStr = now.toISOString().slice(0, 10);
+
+    for (const [name, def] of Object.entries(AGENT_REGISTRY)) {
+      let expectedFile;
+      if (typeof def.outputFile === "function") {
+        // 日/周 agent 按当前周期检查
+        if (def.period === "daily") {
+          expectedFile = def.outputFile(todayStr);
+        } else if (def.period === "weekly") {
+          expectedFile = def.outputFile(getWeekStr());
+        } else {
+          continue; // ad-hoc agent 不强制
+        }
+      } else {
+        expectedFile = def.outputFile;
+      }
+
+      const reportPath = join(this.root, def.outputDir, expectedFile);
+      try {
+        const stats = statSync(reportPath);
+        const ageDays = (now - stats.mtime) / 86400000;
+        const maxAge = def.period === "daily" ? 2 : 8; // 每日 2 天、每周 8 天
+        if (ageDays > maxAge) {
+          overdue.push({
+            agent: name,
+            expected: expectedFile,
+            file: reportPath,
+            ageDays: Math.round(ageDays),
+          });
+        }
+      } catch {
+        overdue.push({
+          agent: name,
+          expected: expectedFile,
+          file: reportPath,
+          ageDays: null,
+        });
+      }
+    }
+
+    if (!dryRun && overdue.length > 0) {
+      console.warn("  ⚠️ 报告覆盖检查发现问题:");
+      for (const item of overdue) {
+        const ageStr = item.ageDays ? ` (${item.ageDays} 天前)` : " (不存在)";
+        console.warn(`    ⚠️ ${item.agent}: ${item.expected}${ageStr}`);
+      }
+    }
+
+    return { ok: overdue.length === 0, overdue };
+  }
+}
+
 /** 自动化生成的报告只是机器证据/模板，不能声明 advisory 或 blocking。 */
 function getReportDecisionLevel() {
   return "info";
@@ -677,10 +816,25 @@ Agent Runner — GIS Engine 多智能体调用脚本
     console.log(`   🔒 全局运行锁已获取`);
   }
 
-  // 初始化规划状态管理器
+  // 初始化规划状态管理器和健康检查
   const planningMgr = new PlanningStateManager(ROOT);
+  const healthChecker = new HealthCheck(ROOT);
 
   try {
+    // 批量运行时先执行健康检查
+    if (agentsToRun.length > 1) {
+      console.log(`🏥 运行 Agent 健康检查...`);
+      const coverage = healthChecker.checkReportCoverage(options.dryRun);
+      if (coverage.overdue.length > 0) {
+        console.warn(
+          `   ⚠️ ${coverage.overdue.length} 个报告逾期或缺失`,
+        );
+      } else {
+        console.log(`   ✅ 所有定期报告齐全`);
+      }
+      console.log("");
+    }
+
     for (const [name, def] of agentsToRun) {
       // 确定周期
       let period = options.period;

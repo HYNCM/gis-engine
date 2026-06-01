@@ -1,0 +1,224 @@
+# Agent Failure Recovery — 智能体故障恢复工作流
+#
+# 触发条件：当 Daily/Weekly/Monthly 工作流完成时自动运行
+#
+# 职责：
+#   1. 检测失败的 agent job
+#   2. 自动重试非阻断任务（指数退避）
+#   3. 创建 escalation issue（P0 阻断时）
+#   4. 归档失败证据供 coordinator 审查
+
+name: Agent Failure Recovery
+
+on:
+  workflow_run:
+    workflows:
+      - "Agent Daily Cadence"
+      - "Agent Weekly Cadence"
+      - "Agent Monthly Cadence"
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: write
+  issues: write
+  actions: read
+
+jobs:
+  # ── Job 1: 检测并诊断失败 ──
+  detect-failures:
+    name: "故障诊断"
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 分析失败原因
+        id: diagnose
+        run: |
+          echo "### Agent Workflow Failure Diagnostic" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          WORKFLOW_NAME="${{ github.event.workflow_run.name }}"
+          RUN_ID="${{ github.event.workflow_run.id }}"
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${RUN_ID}"
+
+          echo "| 属性 | 值 |" >> $GITHUB_STEP_SUMMARY
+          echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
+          echo "| 失败工作流 | ${WORKFLOW_NAME} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Run ID | [${RUN_ID}](${RUN_URL}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| 分支 | ${{ github.event.workflow_run.head_branch }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 事件 | ${{ github.event.workflow_run.event }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # 常见失败模式
+          echo "## 常见失败模式排查" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "1. **Schema build failure** → engine-agent 修复 TypeBox/JSON Schema" >> $GITHUB_STEP_SUMMARY
+          echo "2. **Test failure** → qa-agent review 测试输出" >> $GITHUB_STEP_SUMMARY
+          echo "3. **Missing input file** → upstream agent 补充产出" >> $GITHUB_STEP_SUMMARY
+          echo "4. **Network/dependency failure** → 自动重试" >> $GITHUB_STEP_SUMMARY
+          echo "5. **Lock contention** → stale lock 清理" >> $GITHUB_STEP_SUMMARY
+
+          # 写入诊断文件
+          mkdir -p diagnostics
+          cat > diagnostics/failure-report.md << 'DIAGEOF'
+          ---
+          agent: coordinator
+          period: $(date -u +%Y-%m-%d)
+          generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+          decision_level: emergency
+          ---
+
+          # Agent Workflow Failure Report
+
+          - **Failed workflow**: ${WORKFLOW_NAME}
+          - **Run ID**: ${RUN_ID}
+          - **Run URL**: ${RUN_URL}
+
+          ## Required Actions
+
+          1. [ ] coordinator reviews workflow logs
+          2. [ ] Identify root cause (schema/test/missing-input/network)
+          3. [ ] Assign owner and create follow-up task
+          4. [ ] Re-run failed job after fix
+
+          ## Recovery Steps
+
+          - If non-blocking (docs, intel): skip and continue next cycle
+          - If blocking (gate failure): escalate to quality-guardian
+          - If schema drift: run pnpm build:schema and re-commit
+          DIAGEOF
+
+      - name: 上传诊断 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: failure-diagnostics
+          path: diagnostics/
+          if-no-files-found: warn
+
+  # ── Job 2: 自动重试（指数退避） ──
+  retry-with-backoff:
+    name: "自动重试"
+    runs-on: ubuntu-latest
+    needs: [detect-failures]
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    strategy:
+      max-parallel: 1
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: 带指数退避的重试
+        run: |
+          set +e
+          MAX_ATTEMPTS=3
+          BASE_DELAY=30
+
+          for i in $(seq 1 $MAX_ATTEMPTS); do
+            echo "🔄 重试第 ${i}/${MAX_ATTEMPTS} 次..."
+
+            # 运行核心门禁
+            pnpm build:schema && pnpm check
+            STATUS=$?
+
+            if [ $STATUS -eq 0 ]; then
+              echo "✅ 第 ${i} 次重试成功"
+              exit 0
+            fi
+
+            if [ $i -lt $MAX_ATTEMPTS ]; then
+              DELAY=$((BASE_DELAY * (2 ** (i - 1))))
+              echo "⏳ 等待 ${DELAY}s 后重试..."
+              sleep $DELAY
+            fi
+          done
+
+          echo "❌ ${MAX_ATTEMPTS} 次重试全部失败"
+          exit 1
+
+  # ── Job 3: 创建 escalation issue ──
+  escalate:
+    name: "升级告警"
+    runs-on: ubuntu-latest
+    needs: [retry-with-backoff]
+    if: ${{ always() && needs.retry-with-backoff.result == 'failure' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 创建 escalation issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const workflowName = context.payload.workflow_run.name;
+            const runId = context.payload.workflow_run.id;
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`;
+
+            const title = `🚨 Agent Escalation: ${workflowName} failed after retries`;
+            const body = `
+          ## Emergency Escalation
+
+          - **Failed workflow**: \`${workflowName}\`
+          - **Run ID**: [${runId}](${runUrl})
+          - **Status**: 3 retry attempts exhausted
+
+          ### Required Actions
+          1. **@coordinator** reviews failure logs
+          2. **@quality-guardian** assesses gate impact
+          3. **@task-distributor** creates P0 follow-up tasks
+
+          ### Auto-generated Failure Report
+          See workflow artifacts: failure-diagnostics
+
+          ### Recovery Checklist
+          - [ ] Identify root cause
+          - [ ] Apply fix
+          - [ ] Re-run failed workflow
+          - [ ] Close this issue
+          `;
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['agent-escalation', 'P0', 'automation'],
+            });
+
+  # ── Job 4: 成功时清理 stale artifacts ──
+  cleanup:
+    name: "清理过期 artifacts"
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.payload.workflow_run.id,
+            });
+
+            const now = new Date();
+            for (const artifact of artifacts.data.artifacts) {
+              const ageHours = (now - new Date(artifact.created_at)) / 3600000;
+              if (ageHours > 72 && artifact.name.startsWith('failure-')) {
+                await github.rest.actions.deleteArtifact({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  artifact_id: artifact.id,
+                });
+                console.log(`🧹 已清理过期 artifact: ${artifact.name} (${ageHours.toFixed(1)}h)`);
+              }
+            }

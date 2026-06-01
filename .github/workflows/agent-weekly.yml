@@ -327,6 +327,35 @@ jobs:
           path: weekly-artifacts/
           if-no-files-found: warn
 
+  # ── Job 4.7: Agent Health Dashboard ──
+  health-dashboard:
+    name: "coordinator: Agent Health Dashboard"
+    runs-on: ubuntu-latest
+    needs: [evolution-patterns]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: 生成 Agent Health Dashboard
+        run: |
+          PERIOD=$(date -u +%Y-%m-%d)
+          node scripts/dashboard-generator.mjs --period "${PERIOD}"
+
+      - name: 收集 Dashboard artifact
+        run: |
+          mkdir -p weekly-artifacts/docs/planning
+          cp docs/planning/AGENT_HEALTH_DASHBOARD.md weekly-artifacts/docs/planning/AGENT_HEALTH_DASHBOARD.md
+
+      - name: 上传 Dashboard artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-health-dashboard
+          path: weekly-artifacts/
+          if-no-files-found: warn
+
   # ── Job 5: 单写入者序列化提交 ──
   coordinator-commit:
     name: "coordinator: 序列化提交 weekly artifacts"
@@ -338,6 +367,7 @@ jobs:
       - task-distributor
       - evolution-collector
       - evolution-patterns
+      - health-dashboard
     steps:
       - uses: actions/checkout@v4
 
@@ -351,6 +381,6 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "docs: weekly agent artifacts for ${{ github.event.inputs.week || 'current week' }}"
-          file_pattern: "docs/research/competitor-updates-*.md docs/planning/technical-debt-report.md docs/planning/weekly-digest.md docs/planning/task-burndown.md docs/planning/dependency-graph.md docs/planning/evolution-ledger.md docs/planning/evolution-snapshot-*.md docs/planning/evolution-patterns.md docs/planning/evolution-pitfalls.md"
+          file_pattern: "docs/research/competitor-updates-*.md docs/planning/technical-debt-report.md docs/planning/weekly-digest.md docs/planning/task-burndown.md docs/planning/dependency-graph.md docs/planning/evolution-ledger.md docs/planning/evolution-snapshot-*.md docs/planning/evolution-patterns.md docs/planning/evolution-pitfalls.md docs/planning/AGENT_HEALTH_DASHBOARD.md"
           commit_user_name: "coordinator[bot]"
           commit_user_email: "coordinator[bot]@gis-engine.dev"
