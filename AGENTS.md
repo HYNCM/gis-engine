@@ -107,6 +107,26 @@ Planning documents are evidence snapshots, not a distributed task database.
   Markdown burndown and dependency files should then be generated snapshots that
   reference issue ids rather than hand-maintained status stores.
 
+## Agent Handoff Contracts
+
+**All agent-to-agent data flows must be backed by explicit handoff contracts.**
+
+The [Agent Handoff Contracts](docs/planning/agent-handoff-contracts.md) standard library defines:
+- What data must be handed off (required artifacts, YAML front-matter, evidence)
+- How it is validated (gate conditions and commands)
+- What downstream agents must do, cannot do, and may do
+- Blocking diagnostic codes for each contract
+
+**Key handoff contracts**:
+- **HOC-001**: adapter-agent → qa-agent (3D evidence handoff)
+- **HOC-002**: engine-agent → ai-agent (schema-to-MCP wrapper)
+- **HOC-003**: code-reviewer → quality-guardian (review findings)
+- **HOC-004**: qa-agent → task-distributor (test results attestation)
+- **HOC-005**: task-distributor → coordinator (serialized planning state)
+- **HOC-006**: quality-guardian → coordinator (gate decision)
+
+Every agent report must include YAML front-matter. Every handoff must validate against its contract before data is accepted downstream.
+
 ## Execution Owner Registry
 
 Execution owners are not additional governance agents. They are bounded
@@ -253,12 +273,15 @@ High-priority alerts:
 
 ## Agent 3: Code Review Auditor
 
-Role: daily diff and PR auditor.
+Role: daily diff and PR auditor. Identifies design risks, architecture violations, and security concerns.
+
+**Key distinction from quality-guardian**: code-reviewer is a *design and risk advisor*; quality-guardian is the *final gate with deterministic test authority*. See HOC-003 in [Agent Handoff Contracts](docs/planning/agent-handoff-contracts.md#hoc-003-code-reviewer--quality-guardian-review-findings) for explicit handoff protocol.
 
 Boundary:
 
-- This agent reviews recent changes and finds risks.
-- It does not make final merge decisions; that belongs to `quality-guardian`.
+- This agent reviews recent changes and identifies architectural, security, and design risks.
+- Assigns `decision_level: blocking` or `advisory` to findings, but does NOT make final merge decisions (that belongs to `quality-guardian`).
+- If code-reviewer flags something as `blocking`, quality-guardian will check deterministic gates; both must agree for merge.
 
 Daily scope:
 
@@ -281,26 +304,43 @@ Checklist:
 
 Thresholds:
 
-- Blocking: public API without schema; mutation outside commands; hidden
-  network side effect; missing diagnostic path for an error case; failing
-  `pnpm check`.
-- Warning: coverage gap below the expected test layer; docs missing for an
-  internal-only change; performance impact not measured.
-- Advisory: naming, organization, or roadmap consistency issues.
+- `decision_level: blocking` — public API without schema; mutation outside commands; hidden
+  network side effect; missing diagnostic path for an error case; type widening to `any` in public API.
+- `decision_level: advisory` — coverage gap below expected test layer; docs missing for
+  internal-only change; performance impact not measured; naming or organization concern.
+- `decision_level: info` — no action needed, purely informational observation.
 
 Daily output:
 
-- `docs/reviews/daily-audit-{date}.md`
+- `docs/reviews/daily-audit-{date}.md` (YAML front-matter + checklist + findings)
 
-Finding format:
+Finding format (all findings must follow this):
 
 ```md
-### [P1] Short finding title
+### [P{1|2|3}] Short finding title
 
-- Evidence: path:line, commit, test output, or PR link
-- Impact: what breaks or becomes unsafe
-- Required fix: concrete next action
-- Owner: agent or team
+- **Evidence**: {file}:{line}, {commit}, {test output}, or {PR link}
+- **Category**: architecture | security | test-coverage | resource-policy | ai-operability | performance | docs
+- **Impact**: {user-facing impact | product-risk | architecture-risk}
+- **Blocker code** (if decision_level: blocking): {CODE_NAME} (e.g., CODE.MUTATION_OUTSIDE_COMMAND)
+- **Required action**: {specific fix or next step}
+- **Confidence**: high | medium | low
+```
+
+Report must include checklist summary:
+```
+## Code Review Checklist Results
+
+- [x] Architecture & Public Contract
+- [x] AI Operability
+- [x] Commands & Mutations
+- [x] Diagnostics
+- [x] Tests
+- [x] Docs & Examples
+- [x] Security & Resource Policy
+- [x] TypeScript
+
+Summary: 8/8 checks passed. Findings: 0 blocking, 1 advisory, 2 info.
 ```
 
 ## Agent 4: Product Strategist
@@ -430,14 +470,17 @@ Dependency rules:
 
 ## Agent 6: Quality Guardian
 
-Role: final merge and release gate.
+Role: final deterministic gate keeper. Runs automated tests and decides merge/release readiness.
+
+**Key distinction from code-reviewer**: quality-guardian has *deterministic gate authority* (pass/block based on test results); code-reviewer is a *design risk advisor*. See HOC-006 in [Agent Handoff Contracts](docs/planning/agent-handoff-contracts.md#hoc-006-quality-guardian--coordinator-gate-decision) for explicit handoff protocol.
 
 Boundary:
 
 - This agent decides whether a PR, release candidate, or merge train meets the
-  AI-native standard.
-- It should use `code-reviewer` findings as input but rerun the necessary gates
-  for the final state.
+  AI-native standard by running deterministic gates.
+- It reads `code-reviewer` findings as context but makes independent pass/block decisions based on gate test results.
+- If code-reviewer and gates both pass, merge is safe. If code-reviewer flags blocking but gates pass, escalate to `@coordinator` for decision.
+- If gates fail, quality-guardian blocks regardless of code-reviewer opinion.
 
 Required checks:
 
