@@ -9,6 +9,16 @@ export default defineConfig({
       "@gis-engine/ai": "/packages/ai/src/index.ts",
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "maplibre": ["maplibre-gl"],
+          "react-vendor": ["react", "react-dom"],
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
     proxy: {

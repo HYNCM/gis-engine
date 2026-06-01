@@ -1,0 +1,16 @@
+version: "3.8"
+
+services:
+  studio:
+    build:
+      context: ../..
+      dockerfile: apps/studio/Dockerfile
+    ports:
+      - "4321:4321"
+    environment:
+      - NODE_ENV=production
+      - HOST=0.0.0.0
+      - PORT=4321
+      # Optional: enable DeepSeek provider
+      # - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+    restart: unless-stopped

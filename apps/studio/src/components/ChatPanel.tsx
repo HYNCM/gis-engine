@@ -1,78 +1,42 @@
 import { useState, useRef, useEffect } from "react";
 import type { ChatMessage } from "../App";
 
-interface Props {
-  messages: ChatMessage[];
-  status: string;
-  onSend: (text: string) => void;
-  onToggle: () => void;
-}
+interface Props { messages: ChatMessage[]; status: string; onSend: (text: string) => void; onClose: () => void; }
 
-const QUICK_PROMPTS = [
-  { label: "Red Points", prompt: "make points red" },
-  { label: "Blue Points", prompt: "make points blue" },
+const PROMPTS = [
+  { label: "Red", prompt: "make points red" },
+  { label: "Blue", prompt: "make points blue" },
   { label: "Larger", prompt: "increase point size" },
-  { label: "Zoom Hangzhou", prompt: "zoom to Hangzhou" },
+  { label: "Smaller", prompt: "decrease point size" },
+  { label: "Hangzhou", prompt: "zoom to Hangzhou" },
   { label: "Reset", prompt: "reset" },
 ];
 
-export default function ChatPanel({ messages, status, onSend, onToggle }: Props) {
+export default function ChatPanel({ messages, status, onSend, onClose }: Props) {
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
-    onSend(input.trim());
-    setInput("");
+    if (!input.trim() || status === "thinking") return;
+    onSend(input.trim()); setInput("");
   };
 
   return (
     <>
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
-        <div>
-          <p className="text-xs text-brand-500 font-medium">GIS Engine</p>
-          <h1 className="text-lg font-semibold">AI Map Studio</h1>
-        </div>
-        <button
-          onClick={onToggle}
-          className="text-gray-500 hover:text-gray-300 text-lg"
-          title="Close panel"
-        >
-          &lt;&lt;
-        </button>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 shrink-0">
+        <div><p className="text-xs text-blue-400 font-medium tracking-wide">GIS ENGINE</p><h1 className="text-base font-semibold">AI Map Studio</h1></div>
+        <button onClick={onClose} className="text-gray-500 hover:text-gray-300 text-sm px-1" title="Close chat">✕</button>
       </div>
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
         {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-          >
-            <div
-              className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
-                msg.role === "user"
-                  ? "bg-brand-700 text-white"
-                  : "bg-gray-800 text-gray-200"
-              }`}
-            >
-              <p>{msg.content}</p>
-              {msg.status && (
-                <span
-                  className={`text-xs mt-1 inline-block ${
-                    msg.status === "applied"
-                      ? "text-green-400"
-                      : msg.status === "blocked"
-                        ? "text-red-400"
-                        : "text-gray-400"
-                  }`}
-                >
+          <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div className={`max-w-[88%] rounded-lg px-3 py-2 text-sm ${msg.role === "user" ? "bg-blue-700 text-white" : "bg-gray-800 text-gray-200"}`}>
+              <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+              {msg.status && msg.role === "assistant" && (
+                <span className={`text-xs mt-1 inline-block ${msg.status === "applied" ? "text-green-400" : msg.status === "blocked" ? "text-red-400" : "text-gray-500"}`}>
                   {msg.status}
                 </span>
               )}
@@ -82,44 +46,26 @@ export default function ChatPanel({ messages, status, onSend, onToggle }: Props)
         <div ref={bottomRef} />
       </div>
 
-      {/* Quick prompts */}
-      <div className="px-4 py-2 flex gap-1 flex-wrap border-t border-gray-800">
-        {QUICK_PROMPTS.map((qp) => (
-          <button
-            key={qp.label}
-            onClick={() => onSend(qp.prompt)}
-            className="text-xs px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300"
-          >
-            {qp.label}
+      <div className="px-4 py-2 flex gap-1.5 flex-wrap border-t border-gray-800 shrink-0">
+        {PROMPTS.map((p) => (
+          <button key={p.label} onClick={() => onSend(p.prompt)} disabled={status === "thinking"}
+            className="text-xs px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-gray-300 transition">
+            {p.label}
           </button>
         ))}
       </div>
 
-      {/* Input */}
-      <form onSubmit={handleSubmit} className="px-4 py-3 border-t border-gray-800">
+      <form onSubmit={handleSubmit} className="px-4 py-3 border-t border-gray-800 shrink-0">
         <div className="flex gap-2">
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Describe your map change..."
-            className="flex-1 bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand-500"
-            disabled={status === "thinking"}
-          />
-          <button
-            type="submit"
-            disabled={status === "thinking" || !input.trim()}
-            className="bg-brand-500 hover:bg-brand-700 disabled:opacity-50 text-white px-4 py-2 rounded text-sm font-medium"
-          >
-            {status === "thinking" ? "..." : "Send"}
+          <input value={input} onChange={(e) => setInput(e.target.value)}
+            placeholder={status === "thinking" ? "AI is thinking..." : "Describe your map change..."}
+            className="flex-1 bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition"
+            disabled={status === "thinking"} />
+          <button type="submit" disabled={status === "thinking" || !input.trim()}
+            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white px-4 py-2 rounded text-sm font-medium transition">
+            {status === "thinking" ? "···" : "Send"}
           </button>
         </div>
-        <p className="text-xs text-gray-500 mt-1">
-          {status === "thinking"
-            ? "AI is thinking..."
-            : status === "ready"
-              ? "Ready for next edit"
-              : status}
-        </p>
       </form>
     </>
   );
