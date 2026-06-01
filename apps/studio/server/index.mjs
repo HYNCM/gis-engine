@@ -157,14 +157,19 @@ function applyProviderCommands(engine, output, spec) {
     return { status: "ready", nextSpec: spec, evidence: { committed: false, rolledBack: false, changedPathCount: 0 } };
   }
 
-  const result = engine.applyCommands(spec, commands, { collectTrace: true });
-  const nextSpec = result.committed && !result.rolledBack ? result.spec : spec;
-  const failed = (result.results || []).some((r) => r.status === "failed");
-  return {
-    status: failed ? "blocked" : "applied",
-    nextSpec,
-    evidence: { committed: result.committed || false, rolledBack: result.rolledBack || false, changedPathCount: result.results?.filter((r) => r.status === "applied").length || 0 },
-  };
+  try {
+    const result = engine.applyCommands(spec, commands, { traceId: `studio.${Date.now()}` });
+    const nextSpec = result.committed && !result.rolledBack ? result.spec : spec;
+    const failed = (result.results || []).some((r) => r.status === "failed");
+    return {
+      status: failed ? "blocked" : "applied",
+      nextSpec,
+      evidence: { committed: result.committed || false, rolledBack: result.rolledBack || false, changedPathCount: result.results?.filter((r) => r.status === "applied").length || 0 },
+    };
+  } catch (err) {
+    console.error("Command apply error:", err.message);
+    return { status: "blocked", nextSpec: spec, evidence: { committed: false, rolledBack: false, changedPathCount: 0 } };
+  }
 }
 
 function applyLegacyIntent(engine, intent, spec) {
@@ -185,7 +190,7 @@ function applyLegacyIntent(engine, intent, spec) {
     : plan.intent === "setView" ? [{ type: "setView", view: plan.view }] : [];
   if (commands.length === 0) return { status: "ready", nextSpec: spec, evidence: { committed: false, rolledBack: false, changedPathCount: 0 } };
 
-  const result = engine.applyCommands(spec, commands, { collectTrace: true });
+  const result = engine.applyCommands(spec, commands, { traceId: `studio.legacy.${Date.now()}` });
   const nextSpec = result.committed && !result.rolledBack ? result.spec : spec;
   const failed = (result.results || []).some((r) => r.status === "failed");
   return { status: failed ? "blocked" : "applied", nextSpec, evidence: { committed: result.committed || false, rolledBack: result.rolledBack || false, changedPathCount: result.results?.filter((r) => r.status === "applied").length || 0 } };
@@ -262,6 +267,7 @@ async function main() {
             view: activeSpec.view,
           };
           const result = await provider.callOpenAiCompatibleProvider({ profile: ds, apiKey, message, summary });
+          console.log("DeepSeek result:", JSON.stringify(result).slice(0, 300));
 
           if (!result.ok) {
             return sendJson(res, { ...statePayload(engine, "ready", activeSpec), diagnostics: [{ code: "PROVIDER.ERROR", severity: "error", message: result.error || "Provider error" }], provider: { providerId: "deepseek" } });
