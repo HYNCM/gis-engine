@@ -88,9 +88,29 @@ environment variable names, base URLs, request headers, raw prompts, raw
 provider request bodies, and raw provider response bodies must stay server-only.
 
 Only mock mode and OpenAI-compatible chat completions are in scope for this
-example. Product or hosted use still needs the AMW provider-administration
-implementation follow-up: base URL scheme/host policy, timeout/abort behavior,
-response size limits, and product-owned credential/resource review.
+example. The server now enforces the provider-administration resource guardrails
+inside the local example boundary:
+
+- Provider base URLs must be absolute HTTPS URLs in product mode.
+- Product-mode custom providers block localhost, private-network, link-local,
+  file, data, blob, and other non-HTTPS targets.
+- Local HTTP provider fixtures are allowed only when the server is created with
+  `providerProductMode: false` for tests.
+- Provider requests use deterministic timeout/abort behavior.
+- Provider response bodies are byte-capped before JSON parsing.
+- Blocked provider resources return `CAPABILITY.UNSUPPORTED` at
+  `/providerProfile/baseUrl` without making a provider fetch.
+
+Optional server limits:
+
+```bash
+GIS_WORKBENCH_PROVIDER_TIMEOUT_MS=20000
+GIS_WORKBENCH_PROVIDER_RESPONSE_BYTE_CAP=65536
+```
+
+These guardrails do not approve product or hosted use. Product deployment still
+requires product ownership, authorization, durable audit, review-action runtime,
+repeatable UI evidence, and a later quality gate.
 
 ## Durable Audit Guardrails
 

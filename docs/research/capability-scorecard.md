@@ -175,3 +175,13 @@ benchmark below was refreshed on 2026-05-31 from official sources recorded in
 - The next score movement requires accepted implementation evidence from
   `AWP-002` provider resource enforcement, `AWP-005` review decisions, and
   `AWP-006` repeatable UI evidence, not planning text alone.
+
+## 2026-06-02 AWP-002 Addendum
+
+- Developer experience stays at 8.0. Provider resource enforcement is now
+  implemented for the local example, but product ownership, durable audit,
+  review-action runtime, and repeatable product workflow evidence remain open.
+- AI operability stays at 9.5 because the change hardens provider IO and
+  diagnostics without adding public MCP tools or new map mutation paths.
+- The next score movement requires `AWP-003` product ownership plus accepted
+  review-action and UI evidence, not provider enforcement alone.

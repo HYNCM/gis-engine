@@ -5,9 +5,14 @@ import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createInitialSpec } from "./initial-map.mjs";
 import { planMockAiEdit } from "./mock-ai.mjs";
-import { callOpenAiCompatibleProvider } from "./openai-compatible-provider.mjs";
+import {
+  DEFAULT_PROVIDER_REQUEST_TIMEOUT_MS,
+  DEFAULT_PROVIDER_RESPONSE_BYTE_CAP,
+  callOpenAiCompatibleProvider
+} from "./openai-compatible-provider.mjs";
 import {
   buildProviderProfiles,
+  providerDisabledDiagnostic,
   publicProviderProfiles,
   readProviderApiKey,
   resolveProviderProfile
@@ -33,7 +38,15 @@ export async function createWorkbenchServer(options = {}) {
   const env = options.env ?? process.env;
   const fetchImpl = options.fetchImpl ?? fetch;
   const plannerProvider = options.plannerProvider;
-  const providerProfiles = buildProviderProfiles(env);
+  const providerProfiles = buildProviderProfiles(env, { productMode: options.providerProductMode ?? true });
+  const providerRequestTimeoutMs = readPositiveInteger(
+    options.providerRequestTimeoutMs ?? env.GIS_WORKBENCH_PROVIDER_TIMEOUT_MS,
+    DEFAULT_PROVIDER_REQUEST_TIMEOUT_MS
+  );
+  const providerResponseByteCap = readPositiveInteger(
+    options.providerResponseByteCap ?? env.GIS_WORKBENCH_PROVIDER_RESPONSE_BYTE_CAP,
+    DEFAULT_PROVIDER_RESPONSE_BYTE_CAP
+  );
   const sessionId = options.sessionId ?? createSessionId();
   const auditRecords = [];
   let activeSpec = createInitialSpec();
@@ -121,12 +134,24 @@ export async function createWorkbenchServer(options = {}) {
             });
           }
 
+          const disabledDiagnostic = providerDisabledDiagnostic(providerProfile);
+          if (disabledDiagnostic && !providerProfile.enabled) {
+            return sendProviderBlocked(response, engine, activeSpec, auditRecords, {
+              sessionId,
+              fromRevision,
+              provider: blockedProviderEvidence({ providerId: providerProfile.id }),
+              diagnostics: [providerDiagnostic(disabledDiagnostic.path, disabledDiagnostic.message)]
+            });
+          }
+
           const providerResponse = await callOpenAiCompatibleProvider({
             profile: providerProfile,
             apiKey: readProviderApiKey(providerProfile, env),
             message,
             summary: summarizeSpec(planningSpec),
-            fetchImpl
+            fetchImpl,
+            timeoutMs: providerRequestTimeoutMs,
+            responseByteCap: providerResponseByteCap
           });
 
           if (!providerResponse.ok) {
@@ -678,6 +703,11 @@ function readSafePromptHash(input) {
 function readSafeTraceId(input) {
   const value = readString(input, "traceId");
   return value && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/.test(value) ? value : undefined;
+}
+
+function readPositiveInteger(value, fallback) {
+  const parsed = typeof value === "number" ? value : Number.parseInt(String(value ?? ""), 10);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
 
 function createSessionId() {

@@ -109,3 +109,14 @@ the highest security and AI-safety risk without requiring product promotion.
 Passing `AWP-002` does not make product promotion Go. Product movement requires
 the later `AWP-007` gate to accept provider enforcement, durable authorized
 audit, review-action runtime, product ownership, and repeatable visual evidence.
+
+## 2026-06-02 AWP-002 Addendum
+
+`AWP-002` is captured in
+`docs/reviews/awp-002-provider-resource-enforcement-2026-06-02.md`. Provider
+resource enforcement is now implemented in the local example boundary:
+server-side base URL policy blocks unsafe targets before fetch, provider
+requests use timeout/abort behavior, provider responses are byte-capped before
+JSON parsing, and browser-visible provider metadata remains credential- and
+URL-free. Product promotion remains No-go. The next task is `AWP-003` product
+app ownership and project model definition.

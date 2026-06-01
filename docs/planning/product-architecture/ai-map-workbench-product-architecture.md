@@ -136,6 +136,11 @@ movement: server-side base URL policy, timeout/abort, response byte caps,
 stable diagnostics, and leak regression tests must land before durable audit or
 review-action runtime work.
 
+AWP-002 implements that provider resource enforcement inside the current example
+boundary. The next architecture gap is AWP-003: product ownership, route/module
+boundary, project identity model, and non-go language before any product app
+movement or hosted deployment.
+
 ## 2026-06-01 AMW-007 Addendum
 
 AMW-007 defines provider credential/resource administration in

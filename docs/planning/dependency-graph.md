@@ -347,8 +347,8 @@ flowchart LR
 2026-06-02 planning update: after AMW-010 returned the workstream to fresh
 planning state, the next edge is AI Map Workbench Product Implementation.
 `AWP-001` is complete as the new product implementation boundary and sprint
-DAG. `AWP-002` is the next queued task and is limited to provider resource
-enforcement inside the local/example boundary.
+DAG. `AWP-002` is complete as provider resource enforcement inside the
+local/example boundary, and `AWP-003` is the next queued task.
 
 ```mermaid
 flowchart LR
@@ -367,7 +367,7 @@ flowchart LR
 | Task | Depends On | Evidence Target | Required Finish Gate | Status Rule |
 | --- | --- | --- | --- | --- |
 | TASK-2026W23-AWP-001 | AMW-010 | product implementation spec and sprint DAG | planning review; `pnpm test:docs`; `pnpm check`; `git diff --check` | done |
-| TASK-2026W23-AWP-002 | AWP-001, AMW-007 | provider enforcement implementation report | provider/workbench tests; leak regression tests; `pnpm test:examples`; `pnpm check`; `git diff --check` | queued P0 |
+| TASK-2026W23-AWP-002 | AWP-001, AMW-007 | provider enforcement implementation report | provider/workbench tests; leak regression tests; `pnpm test:examples`; `pnpm check`; `git diff --check` | done |
 | TASK-2026W23-AWP-003 | AWP-001 | product ownership decision note | planning review; `pnpm test:docs`; `git diff --check` | queued P0 |
 | TASK-2026W23-AWP-004 | AWP-003, AMW-008 | durable audit contract delta report | schema/design review; focused audit tests; `pnpm check`; `git diff --check` | queued P1 |
 | TASK-2026W23-AWP-005 | AWP-002, AWP-003, AMW-009 | review decision implementation report | schema/contract tests; workbench UI tests; `pnpm check`; `git diff --check` | queued P1 |

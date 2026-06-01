@@ -380,6 +380,59 @@ describe("ai-map-workbench selected provider API", () => {
     expect(result.diagnostics).toContainEqual(expect.objectContaining({ path: "/providerProfile" }));
   });
 
+  it("blocks selected providers with disallowed base URLs before fetch", async () => {
+    const apiKey = "blocked-provider-secret";
+    const blockedBaseUrl = "http://127.0.0.1:11434/v1";
+    const rawPrompt = "make points red with private task label";
+    const server = await createWorkbenchServer({
+      port: 0,
+      env: {
+        GIS_WORKBENCH_CUSTOM_PROVIDER_ID: "blocked-provider",
+        GIS_WORKBENCH_CUSTOM_PROVIDER_LABEL: "Blocked Provider",
+        GIS_WORKBENCH_CUSTOM_PROVIDER_BASE_URL: blockedBaseUrl,
+        GIS_WORKBENCH_CUSTOM_PROVIDER_MODEL: "blocked-model",
+        GIS_WORKBENCH_CUSTOM_PROVIDER_API_KEY_ENV: "BLOCKED_PROVIDER_API_KEY",
+        BLOCKED_PROVIDER_API_KEY: apiKey
+      },
+      fetchImpl: async () => {
+        throw new Error("fetch should not be called for blocked provider resources");
+      }
+    });
+    closeServer = server.close;
+
+    const providersResponse = await fetch(`${server.url}/api/providers`);
+    const providers = await providersResponse.json();
+    const response = await fetch(`${server.url}/api/chat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message: rawPrompt, providerId: "blocked-provider" })
+    });
+    const result = await response.json();
+    const auditResponse = await fetch(`${server.url}/api/audit`);
+    const audit = await auditResponse.json();
+
+    expect(providers.providers).toContainEqual(
+      expect.objectContaining({ id: "blocked-provider", enabled: false, missingCredential: false })
+    );
+    expect(response.ok).toBe(true);
+    expect(result.status).toBe("blocked");
+    expect(result.summary.revision).toBe("1");
+    expect(result.commandEvidence).toMatchObject({ commandCount: 0, committed: false, failed: false });
+    expect(result.diagnostics).toContainEqual(expect.objectContaining({ path: "/providerProfile/baseUrl" }));
+    expect(audit.records).toHaveLength(1);
+    expect(audit.records[0]).toMatchObject({
+      providerId: "blocked-provider",
+      status: "blocked",
+      commandCount: 0,
+      fromRevision: "1",
+      toRevision: "1"
+    });
+    const serialized = `${JSON.stringify(providers)}\n${JSON.stringify(result)}\n${JSON.stringify(audit)}`;
+    expect(serialized).not.toContain(apiKey);
+    expect(serialized).not.toContain(blockedBaseUrl);
+    expect(serialized).not.toContain(rawPrompt);
+  });
+
   it("does not echo request-controlled unknown provider ids into response or audit", async () => {
     const providerToken = "secret-provider-token private task label";
     const server = await createWorkbenchServer({ port: 0 });
@@ -888,6 +941,61 @@ describe("ai-map-workbench provider profiles", () => {
     );
     expect(readProviderApiKey(customProfile, env)).toBeUndefined();
   });
+
+  it.each([
+    ["non-https", "http://example.test/v1"],
+    ["localhost", "https://localhost/v1"],
+    ["private-ip", "https://192.168.1.10/v1"],
+    ["file-url", "file:///tmp/provider"]
+  ])("blocks product-mode custom provider base URL: %s", async (_caseName, baseUrl) => {
+    const { buildProviderProfiles, publicProviderProfiles } = await import(
+      "../../examples/ai-map-workbench/provider-profiles.mjs"
+    );
+    const profiles = buildProviderProfiles({
+      GIS_WORKBENCH_CUSTOM_PROVIDER_ID: "my-provider",
+      GIS_WORKBENCH_CUSTOM_PROVIDER_LABEL: "My Provider",
+      GIS_WORKBENCH_CUSTOM_PROVIDER_BASE_URL: baseUrl,
+      GIS_WORKBENCH_CUSTOM_PROVIDER_MODEL: "my-model",
+      GIS_WORKBENCH_CUSTOM_PROVIDER_API_KEY_ENV: "MY_PROVIDER_API_KEY",
+      MY_PROVIDER_API_KEY: "secret-custom-key"
+    });
+    const publicProfiles = publicProviderProfiles(profiles);
+
+    expect(publicProfiles).toContainEqual(
+      expect.objectContaining({
+        id: "my-provider",
+        enabled: false,
+        missingCredential: false
+      })
+    );
+    expect(JSON.stringify(publicProfiles)).not.toContain(baseUrl);
+    expect(JSON.stringify(publicProfiles)).not.toContain("secret-custom-key");
+  });
+
+  it("allows local HTTP custom provider base URLs only outside product mode", async () => {
+    const { buildProviderProfiles, publicProviderProfiles } = await import(
+      "../../examples/ai-map-workbench/provider-profiles.mjs"
+    );
+    const profiles = buildProviderProfiles(
+      {
+        GIS_WORKBENCH_CUSTOM_PROVIDER_ID: "local-fixture",
+        GIS_WORKBENCH_CUSTOM_PROVIDER_LABEL: "Local Fixture",
+        GIS_WORKBENCH_CUSTOM_PROVIDER_BASE_URL: "http://127.0.0.1:9999/v1",
+        GIS_WORKBENCH_CUSTOM_PROVIDER_MODEL: "fixture-model",
+        GIS_WORKBENCH_CUSTOM_PROVIDER_API_KEY_ENV: "LOCAL_FIXTURE_API_KEY",
+        LOCAL_FIXTURE_API_KEY: "secret-local-key"
+      },
+      { productMode: false }
+    );
+
+    expect(publicProviderProfiles(profiles)).toContainEqual(
+      expect.objectContaining({
+        id: "local-fixture",
+        enabled: true,
+        missingCredential: false
+      })
+    );
+  });
 });
 
 describe("ai-map-workbench OpenAI-compatible provider adapter", () => {
@@ -918,6 +1026,7 @@ describe("ai-map-workbench OpenAI-compatible provider adapter", () => {
           authorization: "Bearer secret-key",
           "content-type": "application/json"
         });
+        expect(init.signal).toBeInstanceOf(AbortSignal);
         const requestBody = JSON.parse(String(init.body));
         expect(requestBody.model).toBe("deepseek-v4-flash");
         expect(requestBody.response_format).toEqual({ type: "json_object" });
@@ -1533,6 +1642,138 @@ describe("ai-map-workbench OpenAI-compatible provider adapter", () => {
         severity: "error",
         code: "CAPABILITY.UNSUPPORTED",
         path: "/providerRequest"
+      })
+    );
+    expectProviderFailureSafe(response);
+  });
+
+  it("returns timeout diagnostics and aborts slow provider requests", async () => {
+    const { callOpenAiCompatibleProvider } = await import(
+      "../../examples/ai-map-workbench/openai-compatible-provider.mjs"
+    );
+    let sawAbort = false;
+    const response = await callOpenAiCompatibleProvider({
+      profile,
+      apiKey,
+      message: rawMessage,
+      summary,
+      timeoutMs: 5,
+      fetchImpl: async (_url: string, init: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init.signal?.addEventListener("abort", () => {
+            sawAbort = true;
+            reject(new DOMException("aborted", "AbortError"));
+          });
+        })
+    });
+
+    expect(response.ok).toBe(false);
+    expect(sawAbort).toBe(true);
+    expect(response.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: "CAPABILITY.UNSUPPORTED",
+        path: "/providerRequest/timeout"
+      })
+    );
+    expectProviderFailureSafe(response);
+  });
+
+  it("returns timeout diagnostics when provider response bodies do not finish", async () => {
+    const { callOpenAiCompatibleProvider } = await import(
+      "../../examples/ai-map-workbench/openai-compatible-provider.mjs"
+    );
+    const encoder = new TextEncoder();
+    const response = await callOpenAiCompatibleProvider({
+      profile,
+      apiKey,
+      message: rawMessage,
+      summary,
+      timeoutMs: 5,
+      fetchImpl: async () =>
+        new Response(
+          new ReadableStream({
+            start(controller) {
+              controller.enqueue(encoder.encode('{"choices":['));
+            }
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+    });
+
+    expect(response.ok).toBe(false);
+    expect(response.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: "CAPABILITY.UNSUPPORTED",
+        path: "/providerRequest/timeout"
+      })
+    );
+    expectProviderFailureSafe(response);
+  });
+
+  it("returns response size diagnostics before parsing oversized provider bodies", async () => {
+    const { callOpenAiCompatibleProvider } = await import(
+      "../../examples/ai-map-workbench/openai-compatible-provider.mjs"
+    );
+    const oversizedProviderBody = `${rawProviderBody} ${"x".repeat(128)}`;
+    const response = await callOpenAiCompatibleProvider({
+      profile,
+      apiKey,
+      message: rawMessage,
+      summary,
+      responseByteCap: 32,
+      fetchImpl: async () =>
+        new Response(oversizedProviderBody, {
+          status: 200,
+          headers: {
+            "content-type": "application/json",
+            "content-length": String(Buffer.byteLength(oversizedProviderBody))
+          }
+        })
+    });
+
+    expect(response.ok).toBe(false);
+    expect(response.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: "CAPABILITY.UNSUPPORTED",
+        path: "/providerResponse/size"
+      })
+    );
+    expectProviderFailureSafe(response);
+  });
+
+  it("caps chunked provider response bodies without content-length", async () => {
+    const { callOpenAiCompatibleProvider } = await import(
+      "../../examples/ai-map-workbench/openai-compatible-provider.mjs"
+    );
+    const encoder = new TextEncoder();
+    const response = await callOpenAiCompatibleProvider({
+      profile,
+      apiKey,
+      message: rawMessage,
+      summary,
+      responseByteCap: 32,
+      fetchImpl: async () =>
+        new Response(
+          new ReadableStream({
+            start(controller) {
+              controller.enqueue(encoder.encode('{"choices":['));
+              controller.enqueue(encoder.encode(`${rawProviderBody} ${"x".repeat(128)}`));
+              controller.close();
+            }
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+    });
+
+    expect(response.ok).toBe(false);
+    expect(response.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: "CAPABILITY.UNSUPPORTED",
+        path: "/providerResponse/size"
       })
     );
     expectProviderFailureSafe(response);

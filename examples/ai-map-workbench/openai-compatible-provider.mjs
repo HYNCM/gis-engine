@@ -1,35 +1,63 @@
 import { createHash, randomUUID } from "node:crypto";
 
 const CAPABILITY_UNSUPPORTED = "CAPABILITY.UNSUPPORTED";
+export const DEFAULT_PROVIDER_REQUEST_TIMEOUT_MS = 20_000;
+export const DEFAULT_PROVIDER_RESPONSE_BYTE_CAP = 64 * 1024;
+
+class ProviderTimeoutError extends Error {
+  constructor() {
+    super("provider-timeout");
+    this.name = "ProviderTimeoutError";
+  }
+}
 
 export async function callOpenAiCompatibleProvider(input) {
-  const { profile, apiKey, message, summary, fetchImpl = fetch } = input;
+  const {
+    profile,
+    apiKey,
+    message,
+    summary,
+    fetchImpl = fetch,
+    timeoutMs = DEFAULT_PROVIDER_REQUEST_TIMEOUT_MS,
+    responseByteCap = DEFAULT_PROVIDER_RESPONSE_BYTE_CAP
+  } = input;
   if (!apiKey) return providerError(profile, "/providerProfile", "Provider credential is not configured.");
 
+  const timeout = createProviderTimeout(timeoutMs);
+
   try {
-    const response = await fetchImpl(`${trimTrailingSlash(profile.baseUrl)}/chat/completions`, {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${apiKey}`,
-        "content-type": "application/json"
-      },
-      body: JSON.stringify({
-        model: profile.model,
-        temperature: 0,
-        messages: [
-          { role: "system", content: systemPrompt(summary) },
-          { role: "user", content: message }
-        ],
-        response_format: { type: "json_object" }
+    const response = await timeout.run(
+      fetchImpl(`${trimTrailingSlash(profile.baseUrl)}/chat/completions`, {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${apiKey}`,
+          "content-type": "application/json"
+        },
+        signal: timeout.signal,
+        body: JSON.stringify({
+          model: profile.model,
+          temperature: 0,
+          messages: [
+            { role: "system", content: systemPrompt(summary) },
+            { role: "user", content: message }
+          ],
+          response_format: { type: "json_object" }
+        })
       })
-    });
+    );
 
     if (!response.ok) {
       return providerError(profile, "/providerRequest", `Provider request failed with HTTP ${response.status}.`);
     }
 
-    const payload = await response.json();
-    const content = payload?.choices?.[0]?.message?.content;
+    const responseText = await timeout.run(readResponseTextWithinCap(response, responseByteCap, timeout.signal));
+    if (!responseText.ok) {
+      return providerError(profile, "/providerResponse/size", "Provider response exceeded the configured byte cap.");
+    }
+
+    const payload = parseJsonObject(responseText.value);
+    if (!payload.ok) return providerError(profile, "/providerRequest", "Provider response was not valid JSON.");
+    const content = payload.value?.choices?.[0]?.message?.content;
     if (typeof content !== "string") {
       return providerError(profile, "/providerResponse", "Provider response did not include message content.");
     }
@@ -59,8 +87,90 @@ export async function callOpenAiCompatibleProvider(input) {
       }
     };
   } catch (error) {
+    if (timeout.didTimeout() || error instanceof ProviderTimeoutError) {
+      return providerError(profile, "/providerRequest/timeout", "Provider request timed out.");
+    }
     return providerError(profile, "/providerRequest", "Provider request failed before a valid JSON response was received.");
+  } finally {
+    timeout.clear();
   }
+}
+
+function createProviderTimeout(timeoutMs) {
+  const abortController = new AbortController();
+  let timedOut = false;
+  let rejectTimeout = () => {};
+  const timeoutPromise = new Promise((_, reject) => {
+    rejectTimeout = reject;
+  });
+  const timeout = setTimeout(() => {
+    timedOut = true;
+    abortController.abort();
+    rejectTimeout(new ProviderTimeoutError());
+  }, timeoutMs);
+
+  return {
+    signal: abortController.signal,
+    didTimeout: () => timedOut,
+    run: (promise) => Promise.race([promise, timeoutPromise]),
+    clear: () => clearTimeout(timeout)
+  };
+}
+
+async function readResponseTextWithinCap(response, byteCap, signal) {
+  const contentLength = Number(response.headers.get("content-length"));
+  if (Number.isFinite(contentLength) && contentLength > byteCap) {
+    return { ok: false };
+  }
+
+  if (!response.body?.getReader) {
+    const value = await response.text();
+    return byteLength(value) <= byteCap ? { ok: true, value } : { ok: false };
+  }
+
+  const reader = response.body.getReader();
+  const cancelReader = () => {
+    reader.cancel().catch(() => {});
+  };
+  signal?.addEventListener("abort", cancelReader, { once: true });
+  const chunks = [];
+  let totalBytes = 0;
+  try {
+    while (true) {
+      throwIfProviderTimedOut(signal);
+      const { value, done } = await reader.read();
+      throwIfProviderTimedOut(signal);
+      if (done) break;
+      totalBytes += value.byteLength;
+      if (totalBytes > byteCap) {
+        reader.cancel().catch(() => {});
+        return { ok: false };
+      }
+      chunks.push(value);
+    }
+  } finally {
+    signal?.removeEventListener("abort", cancelReader);
+  }
+
+  return { ok: true, value: new TextDecoder().decode(concatUint8Arrays(chunks, totalBytes)) };
+}
+
+function throwIfProviderTimedOut(signal) {
+  if (signal?.aborted) throw new ProviderTimeoutError();
+}
+
+function concatUint8Arrays(chunks, totalBytes) {
+  const merged = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return merged;
+}
+
+function byteLength(value) {
+  return new TextEncoder().encode(value).byteLength;
 }
 
 function systemPrompt(summary) {

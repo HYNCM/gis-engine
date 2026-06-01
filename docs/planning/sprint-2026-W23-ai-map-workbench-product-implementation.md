@@ -39,7 +39,7 @@ prerequisite for any later hosted or product claim.
 | id | title | priority | complexity | owner | status | depends on | acceptance | finish gates |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | TASK-2026W23-AWP-001 | Freeze AI Map Workbench product implementation loop | P0 | S | `@coordinator`, `@product-strategist`, `@task-distributor` | done | AMW-010 | `docs/planning/feature-specs/ai-map-workbench-product-implementation.md`, this sprint DAG, and `docs/reviews/awp-001-product-implementation-planning-2026-06-02.md` define implementation order without product promotion. | planning review; `pnpm test:docs`; `pnpm check`; `git diff --check` |
-| TASK-2026W23-AWP-002 | Implement provider resource enforcement | P0 | M | `@ai-agent`, `@engine-agent`, `@qa-agent` | queued | AWP-001, AMW-007 | Server-side base URL policy, timeout/abort, response byte cap, stable diagnostics, and browser-safe provider metadata are enforced without moving the workbench out of `examples/`. | provider/workbench tests; leak regression tests; `pnpm test:examples`; `pnpm check`; `git diff --check` |
+| TASK-2026W23-AWP-002 | Implement provider resource enforcement | P0 | M | `@ai-agent`, `@engine-agent`, `@qa-agent` | done | AWP-001, AMW-007 | `docs/reviews/awp-002-provider-resource-enforcement-2026-06-02.md` records server-side base URL policy, timeout/abort, response byte cap, stable diagnostics, and browser-safe provider metadata enforcement without moving the workbench out of `examples/`. | provider/workbench tests; leak regression tests; `pnpm test:examples`; `pnpm check`; `git diff --check` |
 | TASK-2026W23-AWP-003 | Define product app ownership and project model | P0 | S | `@coordinator`, `@product-strategist`, `@docs-agent` | queued | AWP-001 | Product owner, route/module boundary, project identity model, and non-go boundaries are documented before any file movement or hosted app claim. | planning review; `pnpm test:docs`; `git diff --check` |
 | TASK-2026W23-AWP-004 | Add authorized durable audit contract | P1 | L | `@engine-agent`, `@ai-agent`, `@docs-agent` | queued | AWP-003, AMW-008 | Durable audit/export work is access-controlled, retention-bound, payload-capped, deletion-aware, and free of raw prompt/provider/command/map payloads. | schema/design review; focused audit tests; `pnpm check`; `git diff --check` |
 | TASK-2026W23-AWP-005 | Implement command-safe review decisions | P1 | L | `@engine-agent`, `@ai-agent`, `@qa-agent` | queued | AWP-002, AWP-003, AMW-009 | Accept, block, and follow-up-required decisions are append-only evidence linked to existing audit/provider/command diagnostics and never mutate `MapSpec` directly. | schema/contract tests; workbench UI tests; `pnpm check`; `git diff --check` |
@@ -62,9 +62,10 @@ flowchart LR
 
 ## Current Handoff
 
-`TASK-2026W23-AWP-001` is complete as planning evidence. The next queued task is
-`TASK-2026W23-AWP-002`, and it must stay limited to provider resource
-enforcement inside the current local/example boundary.
+`TASK-2026W23-AWP-002` is complete as provider resource enforcement evidence.
+The next queued task is `TASK-2026W23-AWP-003`, and it must stay limited to
+product app ownership, route/module boundary, project model, and non-go
+decision language before any file movement or hosted app claim.
 
 ## Finish Gate Rules
 

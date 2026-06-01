@@ -179,7 +179,8 @@ move to `TASK-2026W23-SQH-003`.
 | TASK-2026W23-AMW-009 | done | `docs/planning/feature-specs/ai-map-workbench-review-actions.md`; command-safe accept/block/follow-up review action design |
 | TASK-2026W23-AMW-010 | done / no-go | `docs/reviews/amw-010-product-promotion-go-no-go-2026-06-02.md`; local example Go, product app and hosted promotion No-go |
 | TASK-2026W23-AWP-001 | done | `docs/planning/feature-specs/ai-map-workbench-product-implementation.md`; `docs/planning/sprint-2026-W23-ai-map-workbench-product-implementation.md`; implementation loop opened without product promotion |
-| TASK-2026W23-AWP-002 | queued | provider resource enforcement inside the current local/example boundary |
+| TASK-2026W23-AWP-002 | done | `docs/reviews/awp-002-provider-resource-enforcement-2026-06-02.md`; provider base URL policy, timeout/abort, response byte cap, and leak regressions |
+| TASK-2026W23-AWP-003 | queued | product app ownership and project model before file movement or hosted claims |
 
 ## Next Handoff
 
@@ -204,7 +205,7 @@ move to `TASK-2026W23-SQH-003`.
   now `TASK-2026W23-AWP-001` through `AWP-007`; use it before any product app
   movement, hosted deployment, durable audit runtime, or review-action
   implementation.
-- `@ai-agent`, `@engine-agent`, and `@qa-agent`: take
-  `TASK-2026W23-AWP-002` next. Keep the work inside provider resource
-  enforcement: server-side URL policy, timeout/abort, response byte cap, stable
-  diagnostics, leak regression tests, and no product app movement.
+- `@coordinator`, `@product-strategist`, and `@docs-agent`: take
+  `TASK-2026W23-AWP-003` next. Define product ownership, route/module boundary,
+  project identity model, and non-go language before any file movement or
+  hosted app claim.
