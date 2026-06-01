@@ -32,7 +32,7 @@
     "example:ai-map-workbench": "pnpm build:schema && node examples/ai-map-workbench/server.mjs",
     "studio:dev": "pnpm --filter @gis-engine/studio dev",
     "studio:build": "pnpm --filter @gis-engine/studio build",
-    "studio:server": "node examples/ai-map-workbench/server.mjs",
+    "studio:server": "node apps/studio/server/index.mjs",
     "agent": "node scripts/agent-runner.mjs",
     "agent:daily": "node scripts/agent-runner.mjs all --daily",
     "agent:weekly": "node scripts/agent-runner.mjs all --weekly",

@@ -8,11 +8,13 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "server": "node ../examples/ai-map-workbench/server.mjs"
+    "server": "node server/index.mjs",
+    "start": "npm run build && npm run server"
   },
   "dependencies": {
     "@gis-engine/engine": "workspace:*",
     "@gis-engine/ai": "workspace:*",
+    "sql.js": "^1.12.0",
     "maplibre-gl": "^5.24.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0"
