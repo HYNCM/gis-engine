@@ -110,6 +110,25 @@ Passing `AWP-002` does not make product promotion Go. Product movement requires
 the later `AWP-007` gate to accept provider enforcement, durable authorized
 audit, review-action runtime, product ownership, and repeatable visual evidence.
 
+## AWP-003 Acceptance
+
+`AWP-003` must document product ownership before durable audit or review-action
+runtime work:
+
+- `@product-strategist` owns the product contract and review-console alignment.
+- `@coordinator` owns single-writer planning state and promotion gate language.
+- `@docs-agent` owns public wording alignment after user-facing behavior
+  changes.
+- Runtime/service ownership is still unassigned, so hosted/product movement
+  remains blocked.
+- Future product movement, if approved by `AWP-007`, is reserved for
+  `apps/review-console` with route shape `/review-console/workbench/:projectId`.
+- Current implementation remains under `examples/ai-map-workbench`.
+- Future project identity must use opaque `projectId`, session, map revision,
+  payload-free audit cursor, and append-only review decision references, not raw
+  prompts, provider bodies, command bodies, feature payloads, screenshots, or
+  full `MapSpec` retention.
+
 ## 2026-06-02 AWP-002 Addendum
 
 `AWP-002` is captured in
@@ -120,3 +139,11 @@ requests use timeout/abort behavior, provider responses are byte-capped before
 JSON parsing, and browser-visible provider metadata remains credential- and
 URL-free. Product promotion remains No-go. The next task is `AWP-003` product
 app ownership and project model definition.
+
+## 2026-06-02 AWP-003 Addendum
+
+`AWP-003` is captured in
+`docs/reviews/awp-003-product-ownership-project-model-2026-06-02.md`. Product
+ownership, future route/module boundary, project identity semantics, and No-go
+language are documented without moving files or promoting hosted use. The next
+task is `AWP-004` authorized durable audit contract.

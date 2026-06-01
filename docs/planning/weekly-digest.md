@@ -180,7 +180,8 @@ move to `TASK-2026W23-SQH-003`.
 | TASK-2026W23-AMW-010 | done / no-go | `docs/reviews/amw-010-product-promotion-go-no-go-2026-06-02.md`; local example Go, product app and hosted promotion No-go |
 | TASK-2026W23-AWP-001 | done | `docs/planning/feature-specs/ai-map-workbench-product-implementation.md`; `docs/planning/sprint-2026-W23-ai-map-workbench-product-implementation.md`; implementation loop opened without product promotion |
 | TASK-2026W23-AWP-002 | done | `docs/reviews/awp-002-provider-resource-enforcement-2026-06-02.md`; provider base URL policy, timeout/abort, response byte cap, and leak regressions |
-| TASK-2026W23-AWP-003 | queued | product app ownership and project model before file movement or hosted claims |
+| TASK-2026W23-AWP-003 | done | `docs/reviews/awp-003-product-ownership-project-model-2026-06-02.md`; product ownership, route/module boundary, project identity model, and non-go language |
+| TASK-2026W23-AWP-004 | queued | authorized durable audit contract scoped by project identity, access control, retention, deletion, export caps, and payload-free semantics |
 
 ## Next Handoff
 
@@ -205,7 +206,7 @@ move to `TASK-2026W23-SQH-003`.
   now `TASK-2026W23-AWP-001` through `AWP-007`; use it before any product app
   movement, hosted deployment, durable audit runtime, or review-action
   implementation.
-- `@coordinator`, `@product-strategist`, and `@docs-agent`: take
-  `TASK-2026W23-AWP-003` next. Define product ownership, route/module boundary,
-  project identity model, and non-go language before any file movement or
-  hosted app claim.
+- `@engine-agent`, `@ai-agent`, and `@docs-agent`: take
+  `TASK-2026W23-AWP-004` next. Define authorized durable audit behavior with
+  project-scoped access control, retention, deletion, export caps, and
+  payload-free semantics before any storage/runtime claim.

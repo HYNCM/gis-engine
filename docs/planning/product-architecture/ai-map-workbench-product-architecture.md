@@ -137,9 +137,20 @@ stable diagnostics, and leak regression tests must land before durable audit or
 review-action runtime work.
 
 AWP-002 implements that provider resource enforcement inside the current example
-boundary. The next architecture gap is AWP-003: product ownership, route/module
-boundary, project identity model, and non-go language before any product app
-movement or hosted deployment.
+boundary. It fed AWP-003 product ownership, route/module boundary, project
+identity model, and non-go language before any product app movement or hosted
+deployment.
+
+## 2026-06-02 AWP-003 Addendum
+
+AWP-003 defines product ownership and project identity in
+`docs/reviews/awp-003-product-ownership-project-model-2026-06-02.md`. The
+current implementation remains under `examples/ai-map-workbench`; future product
+movement, if approved by AWP-007, is reserved for `apps/review-console` with
+route shape `/review-console/workbench/:projectId`. The minimum project model
+uses an opaque `projectId`, session id, map id, revision, payload-free audit
+cursor, and append-only review decision references. Runtime/service ownership is
+still unassigned, so hosted deployment remains No-go.
 
 ## 2026-06-01 AMW-007 Addendum
 

@@ -183,5 +183,16 @@ benchmark below was refreshed on 2026-05-31 from official sources recorded in
   review-action runtime, and repeatable product workflow evidence remain open.
 - AI operability stays at 9.5 because the change hardens provider IO and
   diagnostics without adding public MCP tools or new map mutation paths.
-- The next score movement requires `AWP-003` product ownership plus accepted
-  review-action and UI evidence, not provider enforcement alone.
+- The next score movement requires product ownership plus accepted durable
+  audit, review-action, and UI evidence, not provider enforcement alone.
+
+## 2026-06-02 AWP-003 Addendum
+
+- Developer experience stays at 8.0. Product ownership, route/module boundary,
+  and project identity semantics are documented, but no product app movement,
+  durable audit runtime, review-action runtime, or repeatable UI evidence exists.
+- AI operability stays at 9.5 because project identity is payload-free and keeps
+  mutation through existing command evidence, but no new public tool or runtime
+  capability is added.
+- The next score movement requires `AWP-004` durable audit contract plus
+  accepted review-action and UI evidence, not ownership planning alone.
