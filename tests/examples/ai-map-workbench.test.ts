@@ -264,6 +264,188 @@ describe("ai-map-workbench API", () => {
   });
 });
 
+describe("ai-map-workbench durable audit contract", () => {
+  function compactAuditRecord(overrides: Record<string, unknown> = {}) {
+    return {
+      projectId: "project_demo",
+      sessionId: "workbench-session",
+      recordId: "record-1",
+      createdAt: "2026-06-02T00:00:00Z",
+      status: "applied",
+      providerId: "mock-ai",
+      promptHash: `sha256:${"a".repeat(64)}`,
+      traceId: "trace-1",
+      commandCount: 1,
+      diagnosticCounts: { error: 0, warning: 0, info: 0 },
+      diagnosticCodes: [{ code: "CAPABILITY.UNSUPPORTED", path: "/providerProfile" }],
+      fromRevision: "1",
+      toRevision: "2",
+      ...overrides
+    };
+  }
+
+  it("creates payload-free durable records and export envelopes", async () => {
+    const { createAuditExportEnvelope, createDurableAuditRecord } = await import(
+      "../../examples/ai-map-workbench/audit-contract.mjs"
+    );
+
+    const recordResult = createDurableAuditRecord(compactAuditRecord());
+    expect(recordResult.ok).toBe(true);
+    if (!recordResult.ok) throw new Error("Expected durable audit record to be accepted.");
+
+    expect(recordResult.record).toMatchObject({
+      recordVersion: "amw.audit.v1",
+      projectId: "project_demo",
+      sessionId: "workbench-session",
+      recordId: "record-1",
+      status: "applied",
+      commandCount: 1
+    });
+    expect(recordResult.record.diagnosticCodes).toEqual([{ code: "CAPABILITY.UNSUPPORTED", path: "/providerProfile" }]);
+
+    const exportResult = createAuditExportEnvelope({
+      principal: { role: "reviewer", projectIds: ["project_demo"] },
+      projectId: "project_demo",
+      generatedAt: "2026-06-02T00:01:00Z",
+      filters: { from: "2026-06-02T00:00:00Z", status: ["applied", "raw-provider-status"] },
+      records: [recordResult.record],
+      nextCursor: "cursor-1"
+    });
+
+    expect(exportResult.ok).toBe(true);
+    if (!exportResult.ok) throw new Error("Expected audit export to be accepted.");
+    expect(exportResult.envelope).toMatchObject({
+      auditExportVersion: "amw.audit.export.v1",
+      projectId: "project_demo",
+      nextCursor: "cursor-1"
+    });
+    expect(exportResult.envelope.filters.status).toEqual(["applied"]);
+    const serialized = JSON.stringify(exportResult.envelope);
+    expect(serialized).not.toMatch(/make points red|secret-key|provider raw body|West Lake|MapSpec/i);
+  });
+
+  it("rejects raw or oversized durable audit payloads with stable diagnostics", async () => {
+    const { createDurableAuditRecord } = await import("../../examples/ai-map-workbench/audit-contract.mjs");
+
+    const rawResult = createDurableAuditRecord(
+      compactAuditRecord({
+        rawPrompt: "make points red",
+        providerResponseBody: "provider raw body",
+        spec: { id: "ai-map-workbench" }
+      })
+    );
+    expect(rawResult.ok).toBe(false);
+    expect(rawResult.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: "AUDIT.CONTRACT_VIOLATION",
+        path: expect.stringMatching(/^\/auditPayload\//)
+      })
+    );
+
+    const tooManyDiagnostics = createDurableAuditRecord(
+      compactAuditRecord({
+        diagnosticCodes: Array.from({ length: 21 }, (_unused, index) => ({
+          code: `CAPABILITY.UNSUPPORTED.${index}`,
+          path: `/diagnostics/${index}`
+        }))
+      })
+    );
+    expect(tooManyDiagnostics.ok).toBe(false);
+    expect(tooManyDiagnostics.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: "AUDIT.CONTRACT_VIOLATION",
+        path: "/auditPayload/diagnostics"
+      })
+    );
+  });
+
+  it("authorizes audit operations by role and project scope", async () => {
+    const { authorizeAuditOperation, createAuditDeletionReceipt } = await import(
+      "../../examples/ai-map-workbench/audit-contract.mjs"
+    );
+
+    expect(
+      authorizeAuditOperation({
+        operation: "export",
+        principal: { role: "reviewer", projectIds: ["project_demo"] },
+        projectId: "project_demo"
+      })
+    ).toEqual({ ok: true });
+
+    const reviewerDelete = authorizeAuditOperation({
+      operation: "delete",
+      principal: { role: "reviewer", projectIds: ["project_demo"] },
+      projectId: "project_demo"
+    });
+    expect(reviewerDelete.ok).toBe(false);
+    expect(reviewerDelete.diagnostics).toContainEqual(expect.objectContaining({ path: "/auditAccess" }));
+
+    const wrongProject = authorizeAuditOperation({
+      operation: "export",
+      principal: { role: "reviewer", projectIds: ["project_other"] },
+      projectId: "project_demo"
+    });
+    expect(wrongProject.ok).toBe(false);
+    expect(wrongProject.diagnostics).toContainEqual(expect.objectContaining({ path: "/auditAccess" }));
+
+    const deletion = createAuditDeletionReceipt({
+      principal: { role: "admin", projectIds: ["project_demo"] },
+      projectId: "project_demo",
+      deletedAt: "2026-06-02T00:02:00Z",
+      actorId: "admin-1",
+      reasonCode: "retention-expired",
+      filterSummary: { sessionId: "workbench-session", status: "blocked" },
+      deletedCount: 3
+    });
+    expect(deletion.ok).toBe(true);
+    if (!deletion.ok) throw new Error("Expected deletion receipt to be accepted.");
+    expect(deletion.receipt).toMatchObject({
+      deletionReceiptVersion: "amw.audit.deletion.v1",
+      projectId: "project_demo",
+      deletedCount: 3
+    });
+    expect(JSON.stringify(deletion.receipt)).not.toMatch(/raw|prompt|providerResponse|MapSpec/i);
+  });
+
+  it("caps audit export pages and deletion batches", async () => {
+    const { createAuditDeletionReceipt, createAuditExportEnvelope, createDurableAuditRecord } = await import(
+      "../../examples/ai-map-workbench/audit-contract.mjs"
+    );
+    const recordResult = createDurableAuditRecord(compactAuditRecord());
+    if (!recordResult.ok) throw new Error("Expected durable audit record to be accepted.");
+
+    const oversizedExport = createAuditExportEnvelope({
+      principal: { role: "reviewer", projectIds: ["project_demo"] },
+      projectId: "project_demo",
+      generatedAt: "2026-06-02T00:03:00Z",
+      records: Array.from({ length: 501 }, () => recordResult.record)
+    });
+    expect(oversizedExport.ok).toBe(false);
+    expect(oversizedExport.diagnostics).toContainEqual(expect.objectContaining({ path: "/auditExport/size" }));
+
+    const mismatchedExport = createAuditExportEnvelope({
+      principal: { role: "reviewer", projectIds: ["project_demo"] },
+      projectId: "project_demo",
+      generatedAt: "2026-06-02T00:03:00Z",
+      records: [{ ...recordResult.record, projectId: "project_other" }]
+    });
+    expect(mismatchedExport.ok).toBe(false);
+    expect(mismatchedExport.diagnostics).toContainEqual(expect.objectContaining({ path: "/auditExport" }));
+
+    const oversizedDeletion = createAuditDeletionReceipt({
+      principal: { role: "admin", projectIds: ["project_demo"] },
+      projectId: "project_demo",
+      deletedAt: "2026-06-02T00:04:00Z",
+      actorId: "admin-1",
+      reasonCode: "manual-purge",
+      filterSummary: { sessionId: "workbench-session" },
+      deletedCount: 10_001
+    });
+    expect(oversizedDeletion.ok).toBe(false);
+    expect(oversizedDeletion.diagnostics).toContainEqual(expect.objectContaining({ path: "/auditDeletion/size" }));
+  });
+});
+
 describe("ai-map-workbench selected provider API", () => {
   it("serves safe provider metadata", async () => {
     const server = await createWorkbenchServer({
@@ -378,6 +560,59 @@ describe("ai-map-workbench selected provider API", () => {
     expect(result.status).toBe("blocked");
     expect(result.summary.revision).toBe("1");
     expect(result.diagnostics).toContainEqual(expect.objectContaining({ path: "/providerProfile" }));
+  });
+
+  it("blocks selected providers with disallowed base URLs before fetch", async () => {
+    const apiKey = "blocked-provider-secret";
+    const blockedBaseUrl = "http://127.0.0.1:11434/v1";
+    const rawPrompt = "make points red with private task label";
+    const server = await createWorkbenchServer({
+      port: 0,
+      env: {
+        GIS_WORKBENCH_CUSTOM_PROVIDER_ID: "blocked-provider",
+        GIS_WORKBENCH_CUSTOM_PROVIDER_LABEL: "Blocked Provider",
+        GIS_WORKBENCH_CUSTOM_PROVIDER_BASE_URL: blockedBaseUrl,
+        GIS_WORKBENCH_CUSTOM_PROVIDER_MODEL: "blocked-model",
+        GIS_WORKBENCH_CUSTOM_PROVIDER_API_KEY_ENV: "BLOCKED_PROVIDER_API_KEY",
+        BLOCKED_PROVIDER_API_KEY: apiKey
+      },
+      fetchImpl: async () => {
+        throw new Error("fetch should not be called for blocked provider resources");
+      }
+    });
+    closeServer = server.close;
+
+    const providersResponse = await fetch(`${server.url}/api/providers`);
+    const providers = await providersResponse.json();
+    const response = await fetch(`${server.url}/api/chat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message: rawPrompt, providerId: "blocked-provider" })
+    });
+    const result = await response.json();
+    const auditResponse = await fetch(`${server.url}/api/audit`);
+    const audit = await auditResponse.json();
+
+    expect(providers.providers).toContainEqual(
+      expect.objectContaining({ id: "blocked-provider", enabled: false, missingCredential: false })
+    );
+    expect(response.ok).toBe(true);
+    expect(result.status).toBe("blocked");
+    expect(result.summary.revision).toBe("1");
+    expect(result.commandEvidence).toMatchObject({ commandCount: 0, committed: false, failed: false });
+    expect(result.diagnostics).toContainEqual(expect.objectContaining({ path: "/providerProfile/baseUrl" }));
+    expect(audit.records).toHaveLength(1);
+    expect(audit.records[0]).toMatchObject({
+      providerId: "blocked-provider",
+      status: "blocked",
+      commandCount: 0,
+      fromRevision: "1",
+      toRevision: "1"
+    });
+    const serialized = `${JSON.stringify(providers)}\n${JSON.stringify(result)}\n${JSON.stringify(audit)}`;
+    expect(serialized).not.toContain(apiKey);
+    expect(serialized).not.toContain(blockedBaseUrl);
+    expect(serialized).not.toContain(rawPrompt);
   });
 
   it("does not echo request-controlled unknown provider ids into response or audit", async () => {
@@ -607,6 +842,176 @@ describe("ai-map-workbench selected provider API", () => {
   });
 });
 
+describe("ai-map-workbench review decision API", () => {
+  it("records accepted review decisions without mutating the active spec", async () => {
+    const server = await createWorkbenchServer({ port: 0 });
+    closeServer = server.close;
+
+    await fetch(`${server.url}/api/chat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message: "make points red" })
+    });
+    const beforeState = await (await fetch(`${server.url}/api/state`)).json();
+    const response = await fetch(`${server.url}/api/review-decision`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ outcome: "accepted", reasonCodes: ["review-accepted"] })
+    });
+    const result = await response.json();
+    const afterState = await (await fetch(`${server.url}/api/state`)).json();
+    const decisions = await (await fetch(`${server.url}/api/review-decisions`)).json();
+
+    expect(response.ok).toBe(true);
+    expect(result.status).toBe("reviewed");
+    expect(result.summary.revision).toBe("2");
+    expect(result.spec).toBeUndefined();
+    expect(result.style).toBeUndefined();
+    expect(result.validation).toBeUndefined();
+    expect(afterState.summary.revision).toBe(beforeState.summary.revision);
+    expect(result.commandEvidence).toMatchObject({ commandCount: 0, committed: false, failed: false });
+    expect(result.decision).toMatchObject({
+      recordVersion: "amw.review.v1",
+      outcome: "accepted",
+      providerId: "mock-ai",
+      auditRecordId: expect.stringMatching(/^workbench-/),
+      commandEvidence: expect.objectContaining({ commandCount: 1, committed: true })
+    });
+    expect(decisions.decisions).toHaveLength(1);
+    const serialized = `${JSON.stringify(result)}\n${JSON.stringify(decisions)}`;
+    expect(serialized).not.toMatch(/make points red|West Lake|MapSpec|commandBody|patch/i);
+  });
+
+  it("blocks review decisions that attempt direct map mutation or raw payload retention", async () => {
+    const server = await createWorkbenchServer({ port: 0 });
+    closeServer = server.close;
+
+    await fetch(`${server.url}/api/chat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message: "make points red" })
+    });
+    const response = await fetch(`${server.url}/api/review-decision`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        outcome: "blocked",
+        reasonCodes: ["manual-review-blocked"],
+        rawPrompt: "make points red",
+        commands: [{ type: "setPaint" }],
+        spec: { id: "ai-map-workbench" }
+      })
+    });
+    const result = await response.json();
+    const decisions = await (await fetch(`${server.url}/api/review-decisions`)).json();
+
+    expect(response.ok).toBe(true);
+    expect(result.status).toBe("blocked");
+    expect(result.decision).toBeNull();
+    expect(result.summary.revision).toBe("2");
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: "REVIEW.CONTRACT_VIOLATION",
+        path: "/reviewAction/commandSafety"
+      })
+    );
+    expect(decisions.decisions).toEqual([]);
+    expect(JSON.stringify(result)).not.toContain("make points red");
+    expect(result.spec).toBeUndefined();
+    expect(result.style).toBeUndefined();
+    expect(result.validation).toBeUndefined();
+  });
+
+  it("authorizes review decisions by project-scoped reviewer role", async () => {
+    const server = await createWorkbenchServer({
+      port: 0,
+      reviewPrincipal: { role: "service", projectIds: ["project_demo"] }
+    });
+    closeServer = server.close;
+
+    await fetch(`${server.url}/api/chat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message: "make points red" })
+    });
+    const response = await fetch(`${server.url}/api/review-decision`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ outcome: "accepted", reasonCodes: ["review-accepted"] })
+    });
+    const result = await response.json();
+
+    expect(response.ok).toBe(true);
+    expect(result.status).toBe("blocked");
+    expect(result.decision).toBeNull();
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: "REVIEW.CONTRACT_VIOLATION",
+        path: "/reviewDecision/authorization"
+      })
+    );
+    expect(result.spec).toBeUndefined();
+    expect(result.style).toBeUndefined();
+    expect(result.validation).toBeUndefined();
+  });
+
+  it("requires follow-up ids for follow-up review decisions", async () => {
+    const server = await createWorkbenchServer({ port: 0 });
+    closeServer = server.close;
+
+    await fetch(`${server.url}/api/chat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message: "make points red" })
+    });
+    const blockedResponse = await fetch(`${server.url}/api/review-decision`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ outcome: "follow-up-required", reasonCodes: ["visual-evidence-required"] })
+    });
+    const blocked = await blockedResponse.json();
+    expect(blocked.status).toBe("blocked");
+    expect(blocked.diagnostics).toContainEqual(expect.objectContaining({ path: "/reviewAction/followUp" }));
+
+    const acceptedResponse = await fetch(`${server.url}/api/review-decision`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        outcome: "follow-up-required",
+        reasonCodes: ["visual-evidence-required"],
+        followUpTaskIds: ["TASK-2026W23-AWP-006"]
+      })
+    });
+    const accepted = await acceptedResponse.json();
+    expect(accepted.status).toBe("reviewed");
+    expect(accepted.decision).toMatchObject({
+      outcome: "follow-up-required",
+      followUpTaskIds: ["TASK-2026W23-AWP-006"]
+    });
+  });
+
+  it("does not accept blocked evidence as an accepted review decision", async () => {
+    const server = await createWorkbenchServer({ port: 0 });
+    closeServer = server.close;
+
+    await fetch(`${server.url}/api/chat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message: "build a terrain city" })
+    });
+    const response = await fetch(`${server.url}/api/review-decision`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ outcome: "accepted", reasonCodes: ["review-accepted"] })
+    });
+    const result = await response.json();
+
+    expect(result.status).toBe("blocked");
+    expect(result.diagnostics).toContainEqual(expect.objectContaining({ path: "/reviewAction/evidence" }));
+    expect(result.summary.revision).toBe("1");
+  });
+});
+
 describe("ai-map-workbench provider selector UI contract", () => {
   it("serves provider selector markup and browser code that sends providerId", async () => {
     const server = await createWorkbenchServer({ port: 0 });
@@ -619,6 +1024,10 @@ describe("ai-map-workbench provider selector UI contract", () => {
 
     expect(html).toContain('id="provider-select"');
     expect(html).toContain('id="provider-status"');
+    expect(html).toContain('id="review-list"');
+    expect(html).toContain('data-review-outcome="accepted"');
+    expect(html).toContain('data-review-outcome="blocked"');
+    expect(html).toContain('data-review-outcome="follow-up-required"');
     expect(html).toContain('aria-describedby="provider-status"');
     expect(html).toContain('role="status"');
     expect(appJs).toContain('fetchJson("/api/providers")');
@@ -626,6 +1035,8 @@ describe("ai-map-workbench provider selector UI contract", () => {
     expect(appJs).toContain('provider.id === "mock-ai" && provider.enabled');
     expect(appJs).toContain("(missing credential)");
     expect(appJs).toContain("providerId: selectedProviderId");
+    expect(appJs).toContain('postJson("/api/review-decision"');
+    expect(appJs).toContain('fetchJson("/api/review-decisions")');
     const chatPostBody = /postJson\("\/api\/chat",\s*\{([^}]+)\}\)/.exec(appJs)?.[1] ?? "";
     expect(chatPostBody).toContain("message");
     expect(chatPostBody).toContain("providerId: selectedProviderId");
@@ -637,6 +1048,7 @@ describe("ai-map-workbench provider selector UI contract", () => {
 
   it("executes provider selection without leaking credentials or rewriting completed evidence", async () => {
     const chatRequests: unknown[] = [];
+    const reviewRequests: unknown[] = [];
     let providerFetchCount = 0;
     const server = await createWorkbenchServer({
       port: 0,
@@ -683,6 +1095,9 @@ describe("ai-map-workbench provider selector UI contract", () => {
       page.on("request", (request) => {
         if (request.url() === `${server.url}/api/chat`) {
           chatRequests.push(JSON.parse(request.postData() ?? "{}"));
+        }
+        if (request.url() === `${server.url}/api/review-decision`) {
+          reviewRequests.push(JSON.parse(request.postData() ?? "{}"));
         }
       });
       await page.route("**/vendor/maplibre-gl.js", async (route) => {
@@ -748,12 +1163,127 @@ describe("ai-map-workbench provider selector UI contract", () => {
         Provider: "deepseek"
       });
 
+      await Promise.all([
+        page.waitForResponse((response) => response.url() === `${server.url}/api/review-decision`),
+        page.click('[data-review-outcome="accepted"]')
+      ]);
+      expect(reviewRequests.at(-1)).toEqual({ outcome: "accepted", reasonCodes: ["review-accepted"] });
+      expect(JSON.stringify(reviewRequests.at(-1))).not.toMatch(/server-secret-key|apiKey|baseUrl|https:\/\/|raw|MapSpec/i);
+      const reviewText = await page.locator("#review-list").textContent();
+      expect(reviewText).toContain("accepted");
+      expect(reviewText).toContain("review-accepted");
+
       await selectedProvider.selectOption("mock-ai");
       expect(await selectedProvider.inputValue()).toBe("mock-ai");
       expect(await page.locator("#provider-status").textContent()).toBe("Next request: Mock AI");
       expect(await providerEvidenceRows(page)).toMatchObject({
         Provider: "deepseek"
       });
+    } finally {
+      await browser.close();
+    }
+  }, 30_000);
+});
+
+describe("ai-map-workbench repeatable UI evidence", () => {
+  it("captures provider, evidence rail, audit, and review decision states", async () => {
+    const consoleErrors: string[] = [];
+    const pageErrors: string[] = [];
+    const server = await createWorkbenchServer({ port: 0 });
+    closeServer = server.close;
+    const browser = await chromium.launch();
+    try {
+      const page = await browser.newPage();
+      page.on("console", (message) => {
+        if (message.type() === "error") consoleErrors.push(message.text());
+      });
+      page.on("pageerror", (error) => {
+        pageErrors.push(error.message);
+      });
+      await page.route("**/vendor/maplibre-gl.js", async (route) => {
+        await route.fulfill({
+          contentType: "text/javascript",
+          body: `
+            window.maplibregl = {
+              Map: class {
+                constructor(options) {
+                  const container = document.getElementById(options.container);
+                  const canvas = document.createElement("canvas");
+                  canvas.width = 800;
+                  canvas.height = 600;
+                  canvas.style.width = "100%";
+                  canvas.style.height = "100%";
+                  canvas.dataset.testid = "stub-map-canvas";
+                  container.append(canvas);
+                }
+                addControl() {}
+                getZoom() { return 11; }
+                jumpTo() {}
+                on() {}
+                resize() {}
+                setStyle() {}
+              },
+              NavigationControl: class {}
+            };
+          `
+        });
+      });
+
+      await page.goto(server.url);
+      await page.waitForSelector("#provider-select option", { state: "attached" });
+      const initialEvidence = await workbenchUiEvidence(page);
+      expect(initialEvidence.status).toBe("Ready");
+      expect(initialEvidence.canvasCount).toBe(1);
+      expect(initialEvidence.map.width).toBeGreaterThan(300);
+      expect(initialEvidence.map.height).toBeGreaterThan(300);
+      expect(initialEvidence.sections).toEqual([
+        "Summary",
+        "Provider",
+        "Diagnostics",
+        "Feature query",
+        "Session audit",
+        "Review decisions",
+        "Last command"
+      ]);
+      expect(initialEvidence.providerOptions).toContainEqual(
+        expect.objectContaining({ value: "mock-ai", disabled: false })
+      );
+      expect(initialEvidence.diagnosticsText).toBe("No diagnostics.");
+      expect(initialEvidence.auditText).toBe("No session records.");
+      expect(initialEvidence.reviewText).toBe("No review decisions.");
+
+      await page.click('[data-prompt="make points red"]');
+      await page.waitForFunction(() => document.querySelector("#status-pill")?.textContent?.trim() === "Applied");
+      await page.click('[data-review-outcome="accepted"]');
+      await page.waitForFunction(() => document.querySelector("#status-pill")?.textContent?.trim() === "Reviewed");
+      await page.click('[data-review-outcome="blocked"]');
+      await page.click('[data-review-outcome="follow-up-required"]');
+      await page.waitForFunction(() => document.querySelector("#review-list")?.textContent?.includes("follow-up-required"));
+
+      const finalEvidence = await workbenchUiEvidence(page);
+      expect(finalEvidence.status).toBe("Reviewed");
+      expect(finalEvidence.summaryRows).toMatchObject({
+        Revision: "2",
+        Commands: "1"
+      });
+      expect(finalEvidence.providerRows).toMatchObject({
+        Provider: "mock",
+        "Raw prompt": "not provided"
+      });
+      expect(finalEvidence.auditText).toContain("applied / 1 command(s)");
+      expect(finalEvidence.auditText).toContain("1 -> 2 / mock-ai");
+      expect(finalEvidence.reviewText).toContain("accepted / review-accepted");
+      expect(finalEvidence.reviewText).toContain("blocked / manual-review-blocked");
+      expect(finalEvidence.reviewText).toContain("follow-up-required / visual-evidence-required");
+      expect(finalEvidence.diagnosticsText).toBe("No diagnostics.");
+      expect(finalEvidence.commandJson).toMatchObject({
+        commandEvidence: expect.objectContaining({ commandCount: 1, committed: true }),
+        results: [expect.objectContaining({ commandId: "cmd-mock-red-points", status: "applied" })]
+      });
+      const serializedEvidence = JSON.stringify(finalEvidence);
+      expect(serializedEvidence).not.toMatch(/apiKey|baseUrl|server-secret|provider raw body/i);
+      expect(consoleErrors).toEqual([]);
+      expect(pageErrors).toEqual([]);
     } finally {
       await browser.close();
     }
@@ -769,6 +1299,44 @@ async function providerEvidenceRows(page: Page) {
       if (label) rows[label] = value ?? "";
     }
     return rows;
+  });
+}
+
+async function workbenchUiEvidence(page: Page) {
+  return page.evaluate(() => {
+    const rectOf = (selector: string) => {
+      const element = document.querySelector(selector);
+      if (!element) return { width: 0, height: 0 };
+      const rect = element.getBoundingClientRect();
+      return { width: Math.round(rect.width), height: Math.round(rect.height) };
+    };
+    const rowsFromDefinitionList = (selector: string) => {
+      const rows: Record<string, string> = {};
+      for (const term of document.querySelectorAll(`${selector} dt`)) {
+        const label = term.textContent?.trim();
+        const value = term.nextElementSibling?.textContent?.trim();
+        if (label) rows[label] = value ?? "";
+      }
+      return rows;
+    };
+    return {
+      status: document.querySelector("#status-pill")?.textContent?.trim() ?? "",
+      map: rectOf("#map"),
+      canvasCount: document.querySelectorAll("canvas").length,
+      canvas: rectOf("canvas"),
+      sections: [...document.querySelectorAll(".evidence-section h3")].map((heading) => heading.textContent?.trim() ?? ""),
+      providerOptions: [...document.querySelectorAll("#provider-select option")].map((option) => ({
+        value: (option as HTMLOptionElement).value,
+        text: option.textContent?.trim() ?? "",
+        disabled: (option as HTMLOptionElement).disabled
+      })),
+      summaryRows: rowsFromDefinitionList("#summary-list"),
+      providerRows: rowsFromDefinitionList("#provider-list"),
+      diagnosticsText: document.querySelector("#diagnostics-list")?.textContent?.trim() ?? "",
+      auditText: document.querySelector("#audit-list")?.textContent?.trim() ?? "",
+      reviewText: document.querySelector("#review-list")?.textContent?.trim() ?? "",
+      commandJson: JSON.parse(document.querySelector("#command-json")?.textContent ?? "{}")
+    };
   });
 }
 
@@ -888,6 +1456,61 @@ describe("ai-map-workbench provider profiles", () => {
     );
     expect(readProviderApiKey(customProfile, env)).toBeUndefined();
   });
+
+  it.each([
+    ["non-https", "http://example.test/v1"],
+    ["localhost", "https://localhost/v1"],
+    ["private-ip", "https://192.168.1.10/v1"],
+    ["file-url", "file:///tmp/provider"]
+  ])("blocks product-mode custom provider base URL: %s", async (_caseName, baseUrl) => {
+    const { buildProviderProfiles, publicProviderProfiles } = await import(
+      "../../examples/ai-map-workbench/provider-profiles.mjs"
+    );
+    const profiles = buildProviderProfiles({
+      GIS_WORKBENCH_CUSTOM_PROVIDER_ID: "my-provider",
+      GIS_WORKBENCH_CUSTOM_PROVIDER_LABEL: "My Provider",
+      GIS_WORKBENCH_CUSTOM_PROVIDER_BASE_URL: baseUrl,
+      GIS_WORKBENCH_CUSTOM_PROVIDER_MODEL: "my-model",
+      GIS_WORKBENCH_CUSTOM_PROVIDER_API_KEY_ENV: "MY_PROVIDER_API_KEY",
+      MY_PROVIDER_API_KEY: "secret-custom-key"
+    });
+    const publicProfiles = publicProviderProfiles(profiles);
+
+    expect(publicProfiles).toContainEqual(
+      expect.objectContaining({
+        id: "my-provider",
+        enabled: false,
+        missingCredential: false
+      })
+    );
+    expect(JSON.stringify(publicProfiles)).not.toContain(baseUrl);
+    expect(JSON.stringify(publicProfiles)).not.toContain("secret-custom-key");
+  });
+
+  it("allows local HTTP custom provider base URLs only outside product mode", async () => {
+    const { buildProviderProfiles, publicProviderProfiles } = await import(
+      "../../examples/ai-map-workbench/provider-profiles.mjs"
+    );
+    const profiles = buildProviderProfiles(
+      {
+        GIS_WORKBENCH_CUSTOM_PROVIDER_ID: "local-fixture",
+        GIS_WORKBENCH_CUSTOM_PROVIDER_LABEL: "Local Fixture",
+        GIS_WORKBENCH_CUSTOM_PROVIDER_BASE_URL: "http://127.0.0.1:9999/v1",
+        GIS_WORKBENCH_CUSTOM_PROVIDER_MODEL: "fixture-model",
+        GIS_WORKBENCH_CUSTOM_PROVIDER_API_KEY_ENV: "LOCAL_FIXTURE_API_KEY",
+        LOCAL_FIXTURE_API_KEY: "secret-local-key"
+      },
+      { productMode: false }
+    );
+
+    expect(publicProviderProfiles(profiles)).toContainEqual(
+      expect.objectContaining({
+        id: "local-fixture",
+        enabled: true,
+        missingCredential: false
+      })
+    );
+  });
 });
 
 describe("ai-map-workbench OpenAI-compatible provider adapter", () => {
@@ -918,6 +1541,7 @@ describe("ai-map-workbench OpenAI-compatible provider adapter", () => {
           authorization: "Bearer secret-key",
           "content-type": "application/json"
         });
+        expect(init.signal).toBeInstanceOf(AbortSignal);
         const requestBody = JSON.parse(String(init.body));
         expect(requestBody.model).toBe("deepseek-v4-flash");
         expect(requestBody.response_format).toEqual({ type: "json_object" });
@@ -1533,6 +2157,138 @@ describe("ai-map-workbench OpenAI-compatible provider adapter", () => {
         severity: "error",
         code: "CAPABILITY.UNSUPPORTED",
         path: "/providerRequest"
+      })
+    );
+    expectProviderFailureSafe(response);
+  });
+
+  it("returns timeout diagnostics and aborts slow provider requests", async () => {
+    const { callOpenAiCompatibleProvider } = await import(
+      "../../examples/ai-map-workbench/openai-compatible-provider.mjs"
+    );
+    let sawAbort = false;
+    const response = await callOpenAiCompatibleProvider({
+      profile,
+      apiKey,
+      message: rawMessage,
+      summary,
+      timeoutMs: 5,
+      fetchImpl: async (_url: string, init: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init.signal?.addEventListener("abort", () => {
+            sawAbort = true;
+            reject(new DOMException("aborted", "AbortError"));
+          });
+        })
+    });
+
+    expect(response.ok).toBe(false);
+    expect(sawAbort).toBe(true);
+    expect(response.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: "CAPABILITY.UNSUPPORTED",
+        path: "/providerRequest/timeout"
+      })
+    );
+    expectProviderFailureSafe(response);
+  });
+
+  it("returns timeout diagnostics when provider response bodies do not finish", async () => {
+    const { callOpenAiCompatibleProvider } = await import(
+      "../../examples/ai-map-workbench/openai-compatible-provider.mjs"
+    );
+    const encoder = new TextEncoder();
+    const response = await callOpenAiCompatibleProvider({
+      profile,
+      apiKey,
+      message: rawMessage,
+      summary,
+      timeoutMs: 5,
+      fetchImpl: async () =>
+        new Response(
+          new ReadableStream({
+            start(controller) {
+              controller.enqueue(encoder.encode('{"choices":['));
+            }
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+    });
+
+    expect(response.ok).toBe(false);
+    expect(response.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: "CAPABILITY.UNSUPPORTED",
+        path: "/providerRequest/timeout"
+      })
+    );
+    expectProviderFailureSafe(response);
+  });
+
+  it("returns response size diagnostics before parsing oversized provider bodies", async () => {
+    const { callOpenAiCompatibleProvider } = await import(
+      "../../examples/ai-map-workbench/openai-compatible-provider.mjs"
+    );
+    const oversizedProviderBody = `${rawProviderBody} ${"x".repeat(128)}`;
+    const response = await callOpenAiCompatibleProvider({
+      profile,
+      apiKey,
+      message: rawMessage,
+      summary,
+      responseByteCap: 32,
+      fetchImpl: async () =>
+        new Response(oversizedProviderBody, {
+          status: 200,
+          headers: {
+            "content-type": "application/json",
+            "content-length": String(Buffer.byteLength(oversizedProviderBody))
+          }
+        })
+    });
+
+    expect(response.ok).toBe(false);
+    expect(response.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: "CAPABILITY.UNSUPPORTED",
+        path: "/providerResponse/size"
+      })
+    );
+    expectProviderFailureSafe(response);
+  });
+
+  it("caps chunked provider response bodies without content-length", async () => {
+    const { callOpenAiCompatibleProvider } = await import(
+      "../../examples/ai-map-workbench/openai-compatible-provider.mjs"
+    );
+    const encoder = new TextEncoder();
+    const response = await callOpenAiCompatibleProvider({
+      profile,
+      apiKey,
+      message: rawMessage,
+      summary,
+      responseByteCap: 32,
+      fetchImpl: async () =>
+        new Response(
+          new ReadableStream({
+            start(controller) {
+              controller.enqueue(encoder.encode('{"choices":['));
+              controller.enqueue(encoder.encode(`${rawProviderBody} ${"x".repeat(128)}`));
+              controller.close();
+            }
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+    });
+
+    expect(response.ok).toBe(false);
+    expect(response.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: "CAPABILITY.UNSUPPORTED",
+        path: "/providerResponse/size"
       })
     );
     expectProviderFailureSafe(response);

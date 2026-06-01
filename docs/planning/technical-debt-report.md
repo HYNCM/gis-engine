@@ -111,17 +111,70 @@ serialized planning closure。
 2026-05-31 planning refresh: MapLibre Source Drift Audit 已打开，`MLD-001`
 完成边界和 sprint DAG。MapLibre/Mapbox drift 债务转入 `MLD-002` execution。
 
+2026-06-01 MLD closure update: `MLD-002` adapter/source drift evidence,
+`MLD-003` resource/delivery evidence, and `MLD-004` package movement No-go 已
+完成序列化。MapLibre drift 债务不再是“执行 MLD-002”，而是“任何未来包移动必须
+先创建新任务并刷新官方 package/changelog evidence、example loading compatibility
+和 strict visual gates”。
+
+2026-06-01 W23 planning refresh: W23 competitor/package evidence 已刷新，AI
+Map Workbench Product Boundary 已打开并完成 `AMW-006`；`AMW-007` 已完成
+provider credential/resource administration 设计收口；`AMW-008` 已完成 durable
+audit retention/export 设计收口；`AMW-009` 已完成 command-safe review actions
+设计收口；`AMW-010` 已完成 product-promotion No-go gate。当前债务转为
+promotion blocker implementation：在 product app 或 hosted use 前，必须先实现
+provider resource enforcement、durable authorized audit、review-action runtime
+和 release-grade visual evidence。
+
+2026-06-02 AWP-001 update: AI Map Workbench Product Implementation fresh
+planning loop 已打开。`AWP-001` 把 AMW-010 blockers 拆成新的实现 DAG，当前最高
+优先级债务转为 `AWP-002` provider resource enforcement：在任何 hosted 或 product
+claim 之前，先补 server-side base URL policy、timeout/abort、response byte cap、
+stable diagnostics 和 provider leak regressions。
+
+2026-06-02 AWP-002 update: provider resource enforcement 已落地。当前最高优先级
+债务转为 `AWP-003` product app ownership and project model：在 durable audit
+和 review-action runtime 之前，必须先定义 product owner、route/module boundary、
+project identity model 和 non-go 语言，避免把 example 误移动成 hosted/product
+surface。
+
+2026-06-02 AWP-003 update: product ownership 和 project model 已由
+`docs/reviews/awp-003-product-ownership-project-model-2026-06-02.md` 记录。当前
+最高优先级债务转为 `AWP-004` authorized durable audit contract：在 review-action
+runtime 和产品化 gate 之前，必须定义 project-scoped access control、retention、
+deletion、export caps 和 payload-free audit semantics。
+
+2026-06-02 AWP-004 update: authorized durable audit contract 已由
+`docs/reviews/awp-004-authorized-durable-audit-contract-2026-06-02.md` 记录。当前
+最高优先级债务转为 `AWP-005` command-safe review decisions：必须把 accept、block
+和 follow-up-required 决策做成 append-only evidence，而不是第二条 map mutation
+path。
+
+2026-06-02 AWP-005 update: command-safe review decisions 已由
+`docs/reviews/awp-005-command-safe-review-decisions-2026-06-02.md` 记录。当前最高
+优先级债务转为 `AWP-006` repeatable workbench UI evidence：需要把 provider
+selector、evidence rails、diagnostics、audit 和 review-decision states 形成可重复
+浏览器证据。
+
+2026-06-02 AWP-006 update: repeatable workbench UI evidence 已由
+`docs/reviews/awp-006-repeatable-workbench-ui-evidence-2026-06-02.md` 记录。当前
+最高优先级转为 `AWP-007` product implementation Go-No-go gate。
+
+2026-06-02 AWP-007 update: product implementation gate 已由
+`docs/reviews/awp-007-product-implementation-go-no-go-2026-06-02.md` 记录。AWP
+批次以 local example hardening Go、product/hosted promotion No-go 收口。
+
 ## 债务优先级
 
 | 排名 | 债务 | 得分 | 证据 | 建议修复 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | MapLibre source drift audit pending | 0.24 | 2026-05-31 package checks confirm MapLibre 5.24.0 stable plus v6 prerelease line and Mapbox PMTiles source pressure | execute `TASK-2026W22-MLD-002` before dependency movement | high |
-| 2 | Next planning loop pending | 0.18 | Generated App Review Console and Spatial Query Evidence Hardening are both closed; new implementation work needs refreshed evidence first | run competitive-intel, product-strategist, coordinator, and task-distributor | high |
+| 1 | Future MapLibre package movement gate | 0.12 | `MLD-004` blocks package movement in this batch; current code remains on the existing `maplibre-gl` range | create a new package-movement task only after official source refresh and strict visual evidence are available | high |
+| 2 | Future workbench product promotion scope | 0.11 | `AWP-007` keeps product/hosted promotion No-go after closing the local implementation batch | open a fresh product-app promotion task only with runtime ownership, storage/auth/export scope, and release evidence | high |
 
 ## 修复顺序
 
-1. 先执行 `TASK-2026W22-MLD-002`：审计 adapter/source compatibility against drift signals。
-2. 后续再按 MLD gate 结果决定是否执行 PMTiles archive metadata gate 或 package movement。
+1. 后续若要移动 MapLibre package，先开新任务并刷新官方 package/changelog evidence、example loading compatibility 和 strict visual gates。
+2. 若要推进 AI Map Workbench product app movement，先开新 promotion task，并明确 runtime/service ownership、durable storage/auth/export scope 和 release evidence。
 3. 下一步若要推进 stable runtime promotion，必须先形成明确的 promotion
    rubric、browser matrix evidence 和 guardrail diagnostics，不得直接把
    `view.mode: "scene3d"` 视为稳定。
@@ -133,11 +186,18 @@ serialized planning closure。
 
 ## 结论
 
-如果只做一件事，下一步优先执行 `TASK-2026W22-MLD-002`。Generated-app delivery
+如果只做一件事，下一步优先处理 future MapLibre package movement gate 或新建
+AI Map Workbench product promotion scope，但都必须先开明确任务。Generated-app delivery
 review fixtures、source readiness review cards、spatial-analysis review cards、
 prompt-to-delivery QA scenarios、docs/release wording guardrails、SQH boundary
 planning、explicit query capability gate 和 invalid/source diagnostics 已完成。
 Result caps and deterministic fixture hashes 以及 generated-app delivery query
-mapping、quality gate and closure 也已完成。MapLibre Source Drift Audit 已进入
-执行队列。SceneView3D stable
-runtime 仍保持 blocker state，直到新的 explicit approval arrives。
+mapping、quality gate and closure 也已完成。MapLibre Source Drift Audit 已通过
+MLD-004 收口为 package movement No-go。AI Map Workbench Product Boundary 已
+打开并完成 provider credential/resource administration、durable audit
+retention/export、review actions 和 AMW-010 No-go gate；AWP-001 已打开新的产品
+实现批次，AWP-002 provider resource enforcement 已落地，AWP-003 product
+ownership/project model 已记录，AWP-004 durable audit contract 已落地。SceneView3D
+stable runtime 仍保持 blocker state，直到新的 explicit approval arrives。AWP-005
+command-safe review decisions、AWP-006 repeatable UI evidence 和 AWP-007 gate
+均已落地；product/hosted promotion 仍 No-go。

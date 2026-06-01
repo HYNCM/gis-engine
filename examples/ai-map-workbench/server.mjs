@@ -5,13 +5,19 @@ import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createInitialSpec } from "./initial-map.mjs";
 import { planMockAiEdit } from "./mock-ai.mjs";
-import { callOpenAiCompatibleProvider } from "./openai-compatible-provider.mjs";
+import {
+  DEFAULT_PROVIDER_REQUEST_TIMEOUT_MS,
+  DEFAULT_PROVIDER_RESPONSE_BYTE_CAP,
+  callOpenAiCompatibleProvider
+} from "./openai-compatible-provider.mjs";
 import {
   buildProviderProfiles,
+  providerDisabledDiagnostic,
   publicProviderProfiles,
   readProviderApiKey,
   resolveProviderProfile
 } from "./provider-profiles.mjs";
+import { createReviewDecision } from "./review-decisions.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicRoot = resolve(__dirname, "public");
@@ -33,9 +39,20 @@ export async function createWorkbenchServer(options = {}) {
   const env = options.env ?? process.env;
   const fetchImpl = options.fetchImpl ?? fetch;
   const plannerProvider = options.plannerProvider;
-  const providerProfiles = buildProviderProfiles(env);
+  const providerProfiles = buildProviderProfiles(env, { productMode: options.providerProductMode ?? true });
+  const providerRequestTimeoutMs = readPositiveInteger(
+    options.providerRequestTimeoutMs ?? env.GIS_WORKBENCH_PROVIDER_TIMEOUT_MS,
+    DEFAULT_PROVIDER_REQUEST_TIMEOUT_MS
+  );
+  const providerResponseByteCap = readPositiveInteger(
+    options.providerResponseByteCap ?? env.GIS_WORKBENCH_PROVIDER_RESPONSE_BYTE_CAP,
+    DEFAULT_PROVIDER_RESPONSE_BYTE_CAP
+  );
   const sessionId = options.sessionId ?? createSessionId();
+  const projectId = options.projectId ?? "project_demo";
+  const reviewPrincipal = options.reviewPrincipal ?? { role: "reviewer", projectIds: [projectId] };
   const auditRecords = [];
+  const reviewDecisions = [];
   let activeSpec = createInitialSpec();
   let activeEpoch = 0;
 
@@ -56,6 +73,48 @@ export async function createWorkbenchServer(options = {}) {
         return sendJson(response, {
           sessionId,
           records: auditRecords
+        });
+      }
+
+      if (request.method === "GET" && url.pathname === "/api/review-decisions") {
+        return sendJson(response, {
+          sessionId,
+          projectId,
+          decisions: reviewDecisions
+        });
+      }
+
+      if (request.method === "POST" && url.pathname === "/api/review-decision") {
+        const body = await readJsonBody(request);
+        const reviewResult = createReviewDecision({
+          request: body,
+          evidence: auditRecords.at(-1),
+          principal: reviewPrincipal,
+          projectId,
+          decisionId: `review-${reviewDecisions.length + 1}`,
+          createdAt: new Date().toISOString()
+        });
+
+        if (!reviewResult.ok) {
+          return sendJson(response, {
+            status: "blocked",
+            summary: summarizeSpec(activeSpec),
+            decision: null,
+            decisions: reviewDecisions,
+            diagnostics: reviewResult.diagnostics,
+            commandEvidence: commandEvidence([], false, false)
+          });
+        }
+
+        reviewDecisions.push(reviewResult.decision);
+        if (reviewDecisions.length > 50) reviewDecisions.splice(0, reviewDecisions.length - 50);
+        return sendJson(response, {
+          status: "reviewed",
+          summary: summarizeSpec(activeSpec),
+          decision: reviewResult.decision,
+          decisions: reviewDecisions,
+          diagnostics: [],
+          commandEvidence: commandEvidence([], false, false)
         });
       }
 
@@ -121,12 +180,24 @@ export async function createWorkbenchServer(options = {}) {
             });
           }
 
+          const disabledDiagnostic = providerDisabledDiagnostic(providerProfile);
+          if (disabledDiagnostic && !providerProfile.enabled) {
+            return sendProviderBlocked(response, engine, activeSpec, auditRecords, {
+              sessionId,
+              fromRevision,
+              provider: blockedProviderEvidence({ providerId: providerProfile.id }),
+              diagnostics: [providerDiagnostic(disabledDiagnostic.path, disabledDiagnostic.message)]
+            });
+          }
+
           const providerResponse = await callOpenAiCompatibleProvider({
             profile: providerProfile,
             apiKey: readProviderApiKey(providerProfile, env),
             message,
             summary: summarizeSpec(planningSpec),
-            fetchImpl
+            fetchImpl,
+            timeoutMs: providerRequestTimeoutMs,
+            responseByteCap: providerResponseByteCap
           });
 
           if (!providerResponse.ok) {
@@ -632,6 +703,7 @@ function compactGenerationEvidence(evidence) {
 }
 
 function appendAuditRecord(records, input) {
+  const diagnosticCodes = compactDiagnosticCodes(input.diagnostics ?? []);
   records.push({
     id: `${input.sessionId}.${records.length + 1}`,
     sessionId: input.sessionId,
@@ -642,10 +714,18 @@ function appendAuditRecord(records, input) {
     ...(input.traceId ? { traceId: input.traceId } : {}),
     commandCount: input.commandCount,
     diagnosticCounts: countDiagnostics(input.diagnostics ?? []),
+    ...(diagnosticCodes.length > 0 ? { diagnosticCodes } : {}),
     fromRevision: input.fromRevision,
     toRevision: input.toRevision
   });
   if (records.length > 50) records.splice(0, records.length - 50);
+}
+
+function compactDiagnosticCodes(diagnostics) {
+  return diagnostics
+    .filter((diagnostic) => typeof diagnostic.code === "string" && typeof diagnostic.path === "string")
+    .slice(0, 20)
+    .map((diagnostic) => ({ code: diagnostic.code, path: diagnostic.path }));
 }
 
 function countDiagnostics(diagnostics) {
@@ -678,6 +758,11 @@ function readSafePromptHash(input) {
 function readSafeTraceId(input) {
   const value = readString(input, "traceId");
   return value && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/.test(value) ? value : undefined;
+}
+
+function readPositiveInteger(value, fallback) {
+  const parsed = typeof value === "number" ? value : Number.parseInt(String(value ?? ""), 10);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
 
 function createSessionId() {

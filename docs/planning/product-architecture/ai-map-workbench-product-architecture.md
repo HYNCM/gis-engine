@@ -111,3 +111,110 @@ product app, hosted service, or real-provider integration yet. Promotion require
 a separate app boundary spec, credential/resource-policy review, durable audit
 design, repeatable visual evidence, and explicit accept/block/follow-up review
 actions.
+
+## 2026-06-01 AMW-006 Addendum
+
+AMW-005 added optional server-side OpenAI-compatible provider profiles while
+preserving the local/example boundary: browser code sees safe provider metadata
+and sends only `providerId`; the server owns credential lookup, provider calls,
+normalization, command application, and payload-free audit evidence.
+
+AMW-006 opened the product-boundary planning batch, AMW-007 completed provider
+credential/resource administration as a design handoff, AMW-008 completed
+durable audit retention/export as a design handoff, AMW-009 completed
+command-safe review action design as a design handoff, and AMW-010 closed the
+promotion gate as No-go. The workbench remains under
+`examples/ai-map-workbench`; future product movement requires a fresh planning
+loop before any product app boundary, hosted deployment, persistent audit
+storage, or review-action runtime is implemented.
+
+AWP-001 opens that fresh planning loop in
+`docs/planning/feature-specs/ai-map-workbench-product-implementation.md` and
+`docs/planning/sprint-2026-W23-ai-map-workbench-product-implementation.md`.
+The first executable task is provider resource enforcement, not product app
+movement: server-side base URL policy, timeout/abort, response byte caps,
+stable diagnostics, and leak regression tests must land before durable audit or
+review-action runtime work.
+
+AWP-002 implements that provider resource enforcement inside the current example
+boundary. It fed AWP-003 product ownership, route/module boundary, project
+identity model, and non-go language before any product app movement or hosted
+deployment.
+
+## 2026-06-02 AWP-003 Addendum
+
+AWP-003 defines product ownership and project identity in
+`docs/reviews/awp-003-product-ownership-project-model-2026-06-02.md`. The
+current implementation remains under `examples/ai-map-workbench`; future product
+movement, if approved by AWP-007, is reserved for `apps/review-console` with
+route shape `/review-console/workbench/:projectId`. The minimum project model
+uses an opaque `projectId`, session id, map id, revision, payload-free audit
+cursor, and append-only review decision references. Runtime/service ownership is
+still unassigned, so hosted deployment remains No-go.
+
+## 2026-06-02 AWP-004 Addendum
+
+AWP-004 adds `examples/ai-map-workbench/audit-contract.mjs` as a pure durable
+audit contract scaffold. It defines compact record/export/deletion shapes,
+project-scoped role authorization, export and deletion caps, and raw-payload
+rejection without changing `/api/audit` storage behavior. Durable database,
+export endpoint, auth UI, and hosted deployment remain No-go.
+
+## 2026-06-02 AWP-005 Addendum
+
+AWP-005 adds local command-safe review decisions through
+`examples/ai-map-workbench/review-decisions.mjs`, `POST /api/review-decision`,
+`GET /api/review-decisions`, and UI controls. Decisions are append-only
+in-memory evidence linked to compact audit records and do not return full
+`MapSpec` or feature payloads from the review endpoint. Product promotion,
+durable review storage, browser file writes, and hosted deployment remain
+No-go.
+
+## 2026-06-02 AWP-006 Addendum
+
+AWP-006 adds repeatable UI smoke evidence for the local workbench. The evidence
+uses `tests/examples/ai-map-workbench.test.ts` plus browser smoke to cover
+provider selector state, evidence rails, diagnostics, session audit, command
+JSON, and accept/block/follow-up review decision states. This evidence keeps the
+surface under `examples/ai-map-workbench`; it does not create release-grade
+visual snapshots, durable review storage, hosted deployment, or product app
+movement.
+
+## 2026-06-02 AWP-007 Addendum
+
+AWP-007 closes the product implementation batch as local example hardening Go
+and product/hosted promotion No-go. The current architecture remains an example
+surface under `examples/ai-map-workbench`; future product movement still needs a
+fresh promotion task with runtime/service ownership, durable storage, auth and
+export implementation scope, secret management, and release-grade visual
+evidence.
+
+## 2026-06-01 AMW-007 Addendum
+
+AMW-007 defines provider credential/resource administration in
+`docs/planning/feature-specs/ai-map-workbench-provider-administration.md`. The
+design records current server-only profile behavior and reserves future gates
+for base URL policy, timeout/abort behavior, response size caps, and public
+metadata validation. Product promotion remains blocked; the next product
+architecture gap has advanced to command-safe review action design after
+AMW-008.
+
+## 2026-06-01 AMW-008 Addendum
+
+AMW-008 defines durable audit retention/export in
+`docs/planning/feature-specs/ai-map-workbench-durable-audit.md`. The design
+keeps the current local audit endpoint as latest-50 in-memory evidence and
+reserves future product-mode gates for retention windows, privacy rules,
+project-scoped access, JSON export shape, payload caps, hard deletion, and
+payload-free deletion receipts. Product promotion remains blocked; the next
+product architecture gap is command-safe accept/block/follow-up review actions.
+
+## 2026-06-02 AMW-009 Addendum
+
+AMW-009 defines command-safe review actions in
+`docs/planning/feature-specs/ai-map-workbench-review-actions.md`. Accept, block,
+and follow-up-required outcomes are product decisions over compact evidence, not
+map mutations, browser file writes, durable storage implementation, or hosted
+promotion. Product promotion remains blocked until `AMW-010` runs a
+quality-guardian/coordinator Go/No-go gate with the required visual, provider,
+audit, and review-action evidence.

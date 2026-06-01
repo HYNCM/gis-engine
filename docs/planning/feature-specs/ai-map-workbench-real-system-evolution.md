@@ -113,3 +113,36 @@ the active map spec unchanged.
 3. `AMW-004`: add bounded session audit records and run the promotion gate that
    decides whether the workbench remains an example or graduates to the
    generated-app review console.
+
+## 2026-06-01 Addendum
+
+AMW-002 through AMW-005 are complete. AMW-005 added server-side provider
+profiles while keeping credentials and provider calls on the server and keeping
+the workbench under `examples/ai-map-workbench`.
+
+The next slice is not direct promotion. `AMW-006` froze the product-boundary
+plan in `docs/planning/feature-specs/ai-map-workbench-product-boundary.md` and
+`docs/planning/sprint-2026-W23-ai-map-workbench-product-boundary.md`; `AMW-007`
+completed provider credential/resource administration as a planning handoff.
+Future code work must add base URL policy, timeout/abort, response size caps,
+and identity-field validation before hosted or product use.
+
+2026-06-01 AMW-008 update: durable audit retention/export design is complete as
+a planning handoff. Future product-mode storage must keep audit records compact,
+retention-bound, access-controlled, export-capped, and free of raw prompts,
+provider bodies, credentials, feature payloads, screenshots, and full map specs.
+At that point, the next planning task was `AMW-009` command-safe review action
+design.
+
+2026-06-02 AMW-009 update: command-safe review action design is complete as a
+planning handoff. Future review decisions must stay compact, evidence-linked,
+and free of direct `MapSpec` mutation, browser file writes, raw provider
+payloads, command bodies, patches, screenshots, and new MCP tool names. That
+handoff fed `AMW-010` product-promotion Go/No-go.
+
+2026-06-02 AMW-010 update: product promotion is No-go. The local
+provider-gated example remains Go under `examples/ai-map-workbench`, but future
+real-system movement must start from a fresh planning loop and implement
+product ownership, provider resource enforcement, durable authorized audit,
+review-action runtime, and release-grade visual evidence before hosted or
+product claims.

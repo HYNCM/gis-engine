@@ -275,8 +275,12 @@ as the quality gate and serialized closure. The next edge returns to planning
 state before any new implementation task is opened.
 
 2026-05-31 planning update: the next edge is MapLibre Source Drift Audit.
-`MLD-001` is complete as boundary/spec/DAG planning; `MLD-002` is the next
-queued execution task.
+`MLD-001` is complete as boundary/spec/DAG planning.
+
+2026-06-01 closure update: `MLD-002` is accepted as adapter/source drift
+evidence, `MLD-003` closes resource/delivery evidence, and `MLD-004` records a
+package-movement no-go. The next edge returns to planning state before any
+future dependency movement task is opened.
 
 ```mermaid
 flowchart LR
@@ -308,9 +312,73 @@ flowchart LR
 | Task | Depends On | Evidence Target | Required Finish Gate | Status Rule |
 | --- | --- | --- | --- | --- |
 | TASK-2026W22-MLD-001 | SQH-006 | boundary spec and sprint DAG | planning review; `pnpm test:docs`; `pnpm check`; `git diff --check` | done |
-| TASK-2026W22-MLD-002 | MLD-001 | adapter/source compatibility report | `pnpm test:adapter`; `pnpm test:resources`; `pnpm test:snapshot:smoke`; `pnpm check` | queued P0 |
-| TASK-2026W22-MLD-003 | MLD-002 | resource and delivery evidence | `pnpm test:resources`; `pnpm test:ai`; `pnpm test:docs`; `pnpm check` | todo |
-| TASK-2026W22-MLD-004 | MLD-003 | package movement Go-No-go | `pnpm build:schema`; `pnpm check`; visual gate or waiver rationale | todo |
+| TASK-2026W22-MLD-002 | MLD-001 | adapter/source compatibility report | `pnpm test:adapter`; `pnpm test:resources`; `pnpm test:snapshot:smoke`; `pnpm check` | done |
+| TASK-2026W22-MLD-003 | MLD-002 | resource and delivery evidence | `pnpm test:resources`; `pnpm test:ai`; `pnpm test:docs`; `pnpm check` | done |
+| TASK-2026W22-MLD-004 | MLD-003 | package movement Go-No-go | `pnpm build:schema`; `pnpm check`; visual gate or waiver rationale | done / no-go |
+
+2026-06-02 planning update: after MLD closure and AMW-005 provider-profile
+evidence, the next edge is AI Map Workbench Product Boundary. `AMW-006` is
+complete as product boundary/spec/DAG planning, `AMW-007` is complete as
+provider credential/resource administration design, and `AMW-008` is complete
+as durable audit retention/export design. `AMW-009` is complete as
+command-safe review action design, and `AMW-010` is complete as a
+product-promotion No-go gate. This path does not move MapLibre packages or
+promote the workbench out of `examples/`; future product work must start from a
+fresh planning loop.
+
+```mermaid
+flowchart LR
+  A["TASK-2026W23-AMW-006 product boundary"]
+  A --> B["TASK-2026W23-AMW-007 provider credential/resource admin"]
+  A --> C["TASK-2026W23-AMW-008 durable audit"]
+  C --> D["TASK-2026W23-AMW-009 review actions"]
+  B --> E["TASK-2026W23-AMW-010 product-promotion gate"]
+  D --> E
+```
+
+| Task | Depends On | Evidence Target | Required Finish Gate | Status Rule |
+| --- | --- | --- | --- | --- |
+| TASK-2026W23-AMW-006 | AMW-005, MLD-004 | product boundary spec and sprint DAG | planning review; `pnpm test:docs`; `pnpm check`; `git diff --check` | done |
+| TASK-2026W23-AMW-007 | AMW-006 | provider credential/resource administration design | provider/workbench tests or design review; `pnpm test:examples`; `pnpm test:docs`; `pnpm check` | done |
+| TASK-2026W23-AMW-008 | AMW-006 | durable audit retention/export design | schema/design review if public; `pnpm test:docs`; `pnpm check`; `git diff --check` | done |
+| TASK-2026W23-AMW-009 | AMW-006, AMW-008 | command-safe review action contract | design review; `pnpm test:docs`; `pnpm check`; `git diff --check` | done |
+| TASK-2026W23-AMW-010 | AMW-007, AMW-008, AMW-009 | product-promotion gate report | `pnpm test:docs`; `pnpm check`; browser smoke; `git diff --check` | done / no-go |
+
+2026-06-02 planning update: after AMW-010 returned the workstream to fresh
+planning state, the next edge is AI Map Workbench Product Implementation.
+`AWP-001` is complete as the new product implementation boundary and sprint
+DAG. `AWP-002` is complete as provider resource enforcement inside the
+local/example boundary, `AWP-003` is complete as product ownership/project model
+decision evidence, `AWP-004` is complete as authorized durable audit contract
+evidence, `AWP-005` is complete as command-safe review decision evidence,
+`AWP-006` is complete as repeatable UI evidence, and `AWP-007` is complete as
+the product implementation Go-No-go gate. The AWP implementation batch is
+closed with local example hardening Go and product/hosted promotion No-go.
+
+```mermaid
+flowchart LR
+  A["TASK-2026W23-AWP-001 implementation loop"]
+  A --> B["TASK-2026W23-AWP-002 provider enforcement"]
+  A --> C["TASK-2026W23-AWP-003 product ownership"]
+  C --> D["TASK-2026W23-AWP-004 durable audit"]
+  B --> E["TASK-2026W23-AWP-005 review decisions"]
+  C --> E
+  D --> E
+  B --> F["TASK-2026W23-AWP-006 UI evidence"]
+  E --> F
+  D --> G["TASK-2026W23-AWP-007 implementation gate"]
+  F --> G
+```
+
+| Task | Depends On | Evidence Target | Required Finish Gate | Status Rule |
+| --- | --- | --- | --- | --- |
+| TASK-2026W23-AWP-001 | AMW-010 | product implementation spec and sprint DAG | planning review; `pnpm test:docs`; `pnpm check`; `git diff --check` | done |
+| TASK-2026W23-AWP-002 | AWP-001, AMW-007 | provider enforcement implementation report | provider/workbench tests; leak regression tests; `pnpm test:examples`; `pnpm check`; `git diff --check` | done |
+| TASK-2026W23-AWP-003 | AWP-001 | product ownership decision note | planning review; `pnpm test:docs`; `git diff --check` | done |
+| TASK-2026W23-AWP-004 | AWP-003, AMW-008 | durable audit contract delta report | schema/design review; focused audit tests; `pnpm check`; `git diff --check` | done |
+| TASK-2026W23-AWP-005 | AWP-002, AWP-003, AWP-004, AMW-009 | review decision implementation report | schema/contract tests; workbench UI tests; `pnpm check`; `git diff --check` | done |
+| TASK-2026W23-AWP-006 | AWP-002, AWP-005 | browser smoke or visual evidence report | browser smoke or visual evidence; `pnpm test:examples`; `pnpm check`; `git diff --check` | done |
+| TASK-2026W23-AWP-007 | AWP-002 through AWP-006 | product implementation gate report | `pnpm test:docs`; `pnpm check`; browser smoke or visual evidence; release visual waiver or evidence; `git diff --check` | done / no-go |
 
 ## 阻断规则
 

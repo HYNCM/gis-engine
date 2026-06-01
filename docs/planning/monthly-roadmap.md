@@ -165,7 +165,62 @@ Spatial Query Evidence Hardening sprint 已关闭，下一步回到 planning sta
 竞品、产品设计和任务 DAG。
 2026-05-31 planning refresh: MapLibre/Mapbox package evidence 仍显示 source
 drift 压力。下一批任务打开为 MapLibre Source Drift Audit；`MLD-001` 已冻结
-边界和 sprint DAG，下一步执行 `TASK-2026W22-MLD-002`。
+边界和 sprint DAG。
+2026-06-01 MLD closure update: `MLD-002` 已由
+`docs/reviews/mld-002-maplibre-drift-audit-2026-05-31.md` 接受为
+adapter/source compatibility evidence；`MLD-003` 关闭 resource/delivery
+evidence；`MLD-004` 记录本批次 MapLibre package movement No-go。`SourceLoader`
+已作为 contract-only surface 存在，但 runtime source loading 仍不在本批次范围。
+2026-06-01 W23 planning refresh: 当前竞品/package evidence 已刷新到
+`docs/research/competitor-updates-2026-W23.md`。下一批任务打开为 AI Map
+Workbench Product Boundary；`AMW-006` 已冻结产品边界和 sprint DAG，`AMW-007`
+已由 `docs/planning/feature-specs/ai-map-workbench-provider-administration.md`
+与 `docs/reviews/amw-007-provider-resource-admin-2026-06-01.md` 收口 provider
+credential/resource administration design，`AMW-008` 已由
+`docs/planning/feature-specs/ai-map-workbench-durable-audit.md` 与
+`docs/reviews/amw-008-durable-audit-retention-export-2026-06-01.md` 收口
+durable audit retention/export design，`AMW-009` 已由
+`docs/planning/feature-specs/ai-map-workbench-review-actions.md` 与
+`docs/reviews/amw-009-command-safe-review-actions-2026-06-02.md` 收口
+command-safe review action design，`AMW-010` 已由
+`docs/reviews/amw-010-product-promotion-go-no-go-2026-06-02.md` 收口为
+product-promotion No-go。`examples/ai-map-workbench` 可继续作为本地
+provider-gated example 使用，但不得直接推成 product app 或 hosted system。
+
+2026-06-02 fresh planning loop: AMW-010 之后的新批次已打开为 AI Map
+Workbench Product Implementation。`AWP-001` 由
+`docs/planning/feature-specs/ai-map-workbench-product-implementation.md`、
+`docs/planning/sprint-2026-W23-ai-map-workbench-product-implementation.md` 和
+`docs/reviews/awp-001-product-implementation-planning-2026-06-02.md` 收口为
+planning-only 边界冻结；下一项执行任务是 `TASK-2026W23-AWP-002` provider
+resource enforcement。该批次仍不允许 hosted deployment、product app movement、
+auth/database、browser-visible provider URL/credential 或新 MCP tool name。
+
+2026-06-02 AWP-002 execution update: provider resource enforcement 已在
+`examples/ai-map-workbench` 内落地，并由
+`docs/reviews/awp-002-provider-resource-enforcement-2026-06-02.md` 记录。下一项
+执行任务是 `TASK-2026W23-AWP-003` product app ownership and project model。
+
+2026-06-02 AWP-003 execution update: product app ownership and project model 已由
+`docs/reviews/awp-003-product-ownership-project-model-2026-06-02.md` 记录。下一项
+执行任务是 `TASK-2026W23-AWP-004` authorized durable audit contract。
+
+2026-06-02 AWP-004 execution update: authorized durable audit contract 已由
+`docs/reviews/awp-004-authorized-durable-audit-contract-2026-06-02.md` 和
+`examples/ai-map-workbench/audit-contract.mjs` 记录。下一项执行任务是
+`TASK-2026W23-AWP-005` command-safe review decisions。
+
+2026-06-02 AWP-005 execution update: command-safe review decisions 已由
+`docs/reviews/awp-005-command-safe-review-decisions-2026-06-02.md` 记录。下一项
+执行任务是 `TASK-2026W23-AWP-006` repeatable workbench UI evidence。
+
+2026-06-02 AWP-006 execution update: repeatable workbench UI evidence 已由
+`docs/reviews/awp-006-repeatable-workbench-ui-evidence-2026-06-02.md` 记录。下一项
+执行任务是 `TASK-2026W23-AWP-007` product implementation Go-No-go gate。
+
+2026-06-02 AWP-007 gate update: product implementation gate 已由
+`docs/reviews/awp-007-product-implementation-go-no-go-2026-06-02.md` 记录。AWP
+批次以 local example hardening Go、product/hosted promotion No-go 收口。
 
 ## 2026-W22 Iteration Path
 
@@ -173,10 +228,12 @@ drift 压力。下一批任务打开为 MapLibre Source Drift Audit；`MLD-001` 
 | --- | --- | --- | --- |
 | P0 | Generated App Review Console | Turn generated-app delivery evidence into an inspectable acceptance handoff | `GIR-001` through `GIR-006` are done; next work starts from a fresh planning loop |
 | P0 | Spatial Query Evidence Hardening | Make point/bbox query evidence explicit, bounded, and delivery-mappable | `SQH-001` through `SQH-006` are done; next work starts from a fresh planning loop |
-| P0 | MapLibre Source Drift Audit | Audit MapLibre/Mapbox source and renderer drift before package movement | `MLD-001` is done; `MLD-002` audits adapter/source compatibility |
+| P0 | MapLibre Source Drift Audit | Audit MapLibre/Mapbox source and renderer drift before package movement | `MLD-001` through `MLD-004` are done; package movement remains no-go until a future task refreshes official evidence and strict visual gates |
+| P0 | AI Map Workbench product boundary | Define the gates before the provider-gated example can become a product review surface | `AMW-006` through `AMW-010` are done; product promotion is No-go and future product work starts from a fresh planning loop |
+| P0 | AI Map Workbench product implementation | Close AMW-010 product blockers without promoting the example | `AWP-001` through `AWP-007` are done; local example hardening is Go and product/hosted promotion remains No-go |
 | P0 | SceneView3D governance | Keep stable `view.mode: "scene3d"` blocked after SRC-006 No-go | future stable runtime work starts only from a new accepted promotion task |
 | P0 | AI natural-language app generation | Make feature display, spatial analysis, and scene browsing capability boundaries machine-readable | `get_context_summary` and `explain_spec` expose `capabilitySummary` with schema-tested MCP output |
-| P0 | Next planning loop | Refresh competitor evidence, product design, and task DAG for natural-language map app generation | competitive-intel, product-strategist, coordinator, and task-distributor produce the next iteration plan |
+| P0 | W23 planning refresh | Refresh competitor evidence, product design, and task DAG for the next bounded workstream | done through `AMW-010`; next bounded workstream needs a fresh planning loop |
 | P0 | Multi-agent execution efficiency | Route agent work by model tier and reasoning effort while preserving evidence-first gates | `AGENTS.md` and `scripts/agent-runner.mjs` expose `model_policy` guidance for scheduled and human/Codex orchestration |
 | P1 | SceneView3D lifecycle evidence | Close path-stable lifecycle diagnostics and keep adapter-local runtime semantics deterministic | adapter tests and smoke lifecycle contract pass |
 | P1 | MapLibre/vector compatibility | Add a version-drift audit checklist before changing `maplibre-gl` | checklist names transformer, resource-policy, smoke/visual snapshot, and release-runner implications |
@@ -218,10 +275,12 @@ drift 压力。下一批任务打开为 MapLibre Source Drift Audit；`MLD-001` 
 
 | 排名 | 事项 | 得分 | 证据 | 行动 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | Generated App Review Console | done | delivery sections, source readiness, spatial readiness, prompt-to-delivery QA, and release wording guardrails are complete through `GIR-006` | start the next planning loop before opening more implementation tasks | high |
-| 2 | Spatial Query Evidence Hardening | done | `SQH-006` records a quality-gate pass and closure after `SQH-005` mapped query states into delivery | start the next planning loop before opening more implementation tasks | high |
-| 3 | MapLibre Source Drift Audit | 5.90 | 2026-05-31 package evidence shows MapLibre 5.24.0 stable with v6 prerelease line and Mapbox PMTiles source pressure | execute `TASK-2026W22-MLD-002` next | high |
-| 4 | SceneView3D promotion readiness | parked / no-go | W22 evidence and beta gate are complete; W23 promotion-readiness package and gate are complete, and SRC-006 records No-go | future promotion requires a new stable-runtime task and Go decision | high |
+| 1 | Generated App Review Console | done | delivery sections, source readiness, spatial readiness, prompt-to-delivery QA, and release wording guardrails are complete through `GIR-006` | consumed by later SQH, MLD, and AMW planning loops | high |
+| 2 | Spatial Query Evidence Hardening | done | `SQH-006` records a quality-gate pass and closure after `SQH-005` mapped query states into delivery | consumed by MLD closure and AMW-006 planning refresh | high |
+| 3 | MapLibre Source Drift Audit | done / package movement no-go | `MLD-002` adapter/source audit, `MLD-003` resource/delivery evidence, and `MLD-004` Go-No-go gate are recorded | open a new package-movement task only after refreshed official evidence, example loading compatibility, and strict visual gates are available | high |
+| 4 | AI Map Workbench product boundary | done / product promotion no-go | `AMW-006` freezes the product boundary, `AMW-007` records provider credential/resource administration design, `AMW-008` records durable audit retention/export design, `AMW-009` records command-safe review action design, and `AMW-010` records the No-go promotion gate | consumed by the fresh AWP implementation loop | high |
+| 5 | AI Map Workbench product implementation | done / product no-go | `AWP-001` through `AWP-007` close the local implementation batch; provider enforcement, product ownership, durable audit contract, review decisions, UI evidence, and the implementation gate are recorded | open a fresh explicit product-app promotion task only if runtime ownership, storage/auth/export scope, and release evidence are accepted | high |
+| 6 | SceneView3D promotion readiness | parked / no-go | W22 evidence and beta gate are complete; W23 promotion-readiness package and gate are complete, and SRC-006 records No-go | future promotion requires a new stable-runtime task and Go decision | high |
 
 已完成并保留回归证据：
 
@@ -286,7 +345,18 @@ drift 压力。下一批任务打开为 MapLibre Source Drift Audit；`MLD-001` 
 10. MapLibre Source Drift Audit 已打开：
    [maplibre-source-drift-audit.md](./feature-specs/maplibre-source-drift-audit.md)
    与 [sprint-2026-W22-maplibre-source-drift-audit.md](./sprint-2026-W22-maplibre-source-drift-audit.md)。
-   当前最高优先级执行任务是 `TASK-2026W22-MLD-002`。
+   `TASK-2026W22-MLD-002` through `TASK-2026W22-MLD-004` 已关闭；package
+   movement 当前为 No-go，下一步应回到 planning state。
+11. W23 planning refresh 已打开 AI Map Workbench Product Boundary：
+   [ai-map-workbench-product-boundary.md](./feature-specs/ai-map-workbench-product-boundary.md)
+   与 [sprint-2026-W23-ai-map-workbench-product-boundary.md](./sprint-2026-W23-ai-map-workbench-product-boundary.md)。
+   `TASK-2026W23-AMW-006` through `TASK-2026W23-AMW-010` 已关闭；product
+   promotion 当前为 No-go，后续产品化必须从 fresh planning loop 开始。
+12. Fresh planning loop 已打开 AI Map Workbench Product Implementation：
+   [ai-map-workbench-product-implementation.md](./feature-specs/ai-map-workbench-product-implementation.md)
+   与 [sprint-2026-W23-ai-map-workbench-product-implementation.md](./sprint-2026-W23-ai-map-workbench-product-implementation.md)。
+   `TASK-2026W23-AWP-001` 至 `TASK-2026W23-AWP-007` 已关闭；local example
+   hardening Go，product/hosted promotion 仍 No-go。
 
 ## Feature Spec 建议
 
@@ -301,5 +371,9 @@ drift 压力。下一批任务打开为 MapLibre Source Drift Audit；`MLD-001` 
 | `docs/planning/feature-specs/sceneview3d-promotion-readiness.md` | active rubric | W23 promotion evidence matrix、owner split、blockers、readiness states |
 | `docs/planning/feature-specs/command-conflict-replay-audit.md` | done | `baseRevision`、`traceId`、`author`、`reason`、`sourcePromptHash`、`SuggestedFix` |
 | `docs/planning/feature-specs/natural-language-map-app-generation.md` | W23 active | prompt、capabilitySummary、MapSpec、commands、diagnostics、snapshot/export evidence |
+| `docs/planning/feature-specs/ai-map-workbench-product-boundary.md` | W23 active | provider administration、durable audit、review actions、visual evidence、product promotion gate |
+| `docs/planning/feature-specs/ai-map-workbench-provider-administration.md` | W23 active | provider lifecycle、browser-safe metadata、base URL policy、timeout/size diagnostics、leak hardening |
+| `docs/planning/feature-specs/ai-map-workbench-durable-audit.md` | W23 active | retention、privacy、access control、export shape、payload caps、deletion behavior |
+| `docs/planning/feature-specs/ai-map-workbench-review-actions.md` | W23 active | accept/block/follow-up decision model、command-safety、payload caps、diagnostic paths |
 | `docs/planning/feature-specs/spatial-analysis-readiness.md` | W23 active | point/bbox query readiness、blocked analysis operations、future contract gates |
 | `docs/planning/feature-specs/generated-app-review-console.md` | W22 active | delivery review sections、acceptance states、source/spatial readiness cards、scene browsing blockers |

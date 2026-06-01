@@ -335,7 +335,9 @@ mutation, external model calls, hidden file writes, external basemap/resource
 fetches, or stable SceneView3D runtime claims. AMW-005 adds optional
 server-side OpenAI-compatible provider calls while preserving the browser/key
 boundary, command-only mutation path, payload-free audit, and product-promotion
-hold.
+hold. AMW-006 opens the next product-boundary planning batch and keeps the
+workbench inside `examples/` until provider administration, durable audit,
+review actions, visual evidence, and promotion gates are accepted.
 
 | id | title | priority | owner | status | evidence target | acceptance | finish gates |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -344,6 +346,11 @@ hold.
 | TASK-2026W22-AMW-003 | Add provider-gated workbench evidence | P1 | `@ai-agent`, `@qa-agent`, `@docs-agent` | done | `docs/reviews/amw-003-provider-workbench-evidence-2026-05-31.md`; `tests/examples/ai-map-workbench.test.ts`; `examples/ai-map-workbench` | injected provider output goes through provider normalization, command skeletons, `applyCommands`, compact generation evidence, visible provider/session evidence, and payload-free audit records | `pnpm vitest run tests/examples/ai-map-workbench.test.ts`; `pnpm test:examples`; browser smoke; `pnpm check`; `git diff --check` |
 | TASK-2026W22-AMW-004 | Decide example-to-product promotion gate | P1 | `@quality-guardian`, `@coordinator` | done | `docs/reviews/amw-004-promotion-gate-2026-05-31.md` | the workbench passes the provider-gated local-system gate and remains under `examples/ai-map-workbench`; product-app or hosted promotion is held pending app boundary, provider credential/resource review, durable audit, visual evidence, and review actions | `pnpm test:docs`; `pnpm check`; `git diff --check` |
 | TASK-2026W22-AMW-005 | Add server-side provider profiles | P1 | `@ai-agent`, `@docs-agent` | done | `docs/reviews/amw-005-provider-profiles-2026-05-31.md`; `examples/ai-map-workbench`; `tests/examples/ai-map-workbench.test.ts` | server-side DeepSeek/OpenAI-compatible provider profiles are implemented under `examples/ai-map-workbench`; API keys remain server-only; provider output still normalizes through `normalizeWorkbenchProviderPlan` and `applyCommands`; selector evidence remains scoped to the last completed payload | provider/workbench tests; docs test; `pnpm check`; AMW-005 review |
+| TASK-2026W23-AMW-006 | Freeze AI Map Workbench product boundary | P0 | `@coordinator`, `@product-strategist`, `@task-distributor` | done | `docs/planning/feature-specs/ai-map-workbench-product-boundary.md`; `docs/planning/sprint-2026-W23-ai-map-workbench-product-boundary.md`; `docs/reviews/amw-006-product-boundary-planning-2026-06-01.md` | app ownership, provider administration, durable audit, review actions, visual evidence, and promotion gates are defined before implementation or product promotion | planning review; `pnpm test:docs`; `pnpm check`; `git diff --check` |
+| TASK-2026W23-AMW-007 | Design provider credential and resource administration | P0 | `@ai-agent`, `@engine-agent`, `@docs-agent` | done | `docs/planning/feature-specs/ai-map-workbench-provider-administration.md`; `docs/reviews/amw-007-provider-resource-admin-2026-06-01.md`; `examples/ai-map-workbench/README.md` | provider profile lifecycle, allowed protocols, missing credential states, timeout/error behavior, prompt/body leak-hardening, and browser-safe metadata are specified before hosted or product use | provider/workbench tests or design review; `pnpm test:examples`; `pnpm test:docs`; `pnpm check` |
+| TASK-2026W23-AMW-008 | Design durable audit retention and export | P1 | `@engine-agent`, `@ai-agent`, `@docs-agent` | done | `docs/planning/feature-specs/ai-map-workbench-durable-audit.md`; `docs/reviews/amw-008-durable-audit-retention-export-2026-06-01.md`; `examples/ai-map-workbench/README.md` | retention, privacy, access control, export shape, payload caps, and deletion behavior are specified before persistent storage implementation | schema/design review if public; `pnpm test:docs`; `pnpm check`; `git diff --check` |
+| TASK-2026W23-AMW-009 | Define command-safe review actions | P1 | `@engine-agent`, `@ai-agent`, `@qa-agent` | done | `docs/planning/feature-specs/ai-map-workbench-review-actions.md`; `docs/reviews/amw-009-command-safe-review-actions-2026-06-02.md`; `examples/ai-map-workbench/README.md` | accept, block, and follow-up-required actions are specified as structured review decisions without direct `MapSpec` mutation, browser file writes, raw provider payload retention, or new MCP tool names | design review; `pnpm test:docs`; `pnpm check`; `git diff --check` |
+| TASK-2026W23-AMW-010 | Run product-promotion Go-No-go gate | P1 | `@quality-guardian`, `@coordinator`, `@qa-agent` | done / no-go | `docs/reviews/amw-010-product-promotion-go-no-go-2026-06-02.md` | local provider-gated example remains Go under `examples/ai-map-workbench`, while product app movement and hosted promotion remain No-go until product ownership, provider resource enforcement, durable audit, review-action runtime, and release-grade visual evidence exist | `pnpm test:docs`; `pnpm check`; browser smoke; `git diff --check` |
 
 2026-05-31 AMW execution update: the runnable workbench is accepted as a
 product-evolution candidate by
@@ -375,6 +382,95 @@ OpenAI-compatible chat completions from the Node server only, preserve
 credential-free browser/audit evidence, and keep all resulting map changes on
 the existing provider-normalization plus command-application path.
 
+2026-06-01 AMW-006 through AMW-008 planning update: W23 competitor/package
+evidence was refreshed, the AI Map Workbench product-boundary sprint was opened,
+provider credential/resource administration was accepted as a design handoff,
+and durable audit retention/export was accepted as a design handoff. The current
+workbench still had only latest-50 in-memory payload-free audit records; at that
+point the next queued task was `TASK-2026W23-AMW-009` for command-safe review
+action design.
+
+2026-06-02 AMW-009 planning update: command-safe review actions are accepted as
+a design handoff in
+`docs/planning/feature-specs/ai-map-workbench-review-actions.md` and
+`docs/reviews/amw-009-command-safe-review-actions-2026-06-02.md`. That handoff
+fed `TASK-2026W23-AMW-010` for the product-promotion Go/No-go gate.
+
+2026-06-02 AMW-010 gate update: product promotion is closed as No-go in
+`docs/reviews/amw-010-product-promotion-go-no-go-2026-06-02.md`. The local
+provider-gated example remains usable under `examples/ai-map-workbench`, but it
+must not move to a product app, hosted system, durable audit workflow, or
+review-action runtime without a new planning loop and fresh implementation
+tasks.
+
+## 2026-06-02 AI Map Workbench Product Implementation
+
+AMW-010 returned the workstream to planning state. The fresh product
+implementation loop is now opened under `AWP-*` task ids so it does not silently
+extend the closed AMW product-boundary batch. The workbench remains under
+`examples/ai-map-workbench`; product app movement, hosted deployment, auth,
+database, product provider admin UI, browser-visible provider URLs/credentials,
+and new MCP tool names remain out of scope.
+
+| id | title | priority | owner | status | evidence target | acceptance | finish gates |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| TASK-2026W23-AWP-001 | Freeze AI Map Workbench product implementation loop | P0 | `@coordinator`, `@product-strategist`, `@task-distributor` | done | `docs/planning/feature-specs/ai-map-workbench-product-implementation.md`; `docs/planning/sprint-2026-W23-ai-map-workbench-product-implementation.md`; `docs/reviews/awp-001-product-implementation-planning-2026-06-02.md` | implementation order is defined from AMW-010 blockers without product promotion or hosted scope creep | planning review; `pnpm test:docs`; `pnpm check`; `git diff --check` |
+| TASK-2026W23-AWP-002 | Implement provider resource enforcement | P0 | `@ai-agent`, `@engine-agent`, `@qa-agent` | done | `docs/reviews/awp-002-provider-resource-enforcement-2026-06-02.md`; `examples/ai-map-workbench`; `tests/examples/ai-map-workbench.test.ts` | server-side base URL policy, timeout/abort, response byte cap, stable diagnostics, and browser-safe metadata are enforced without moving the workbench out of `examples/` | provider/workbench tests; leak regression tests; `pnpm test:examples`; `pnpm check`; `git diff --check` |
+| TASK-2026W23-AWP-003 | Define product app ownership and project model | P0 | `@coordinator`, `@product-strategist`, `@docs-agent` | done | `docs/reviews/awp-003-product-ownership-project-model-2026-06-02.md` | product owner, route/module boundary, project identity model, and non-go boundaries are documented before file movement or hosted claims | planning review; `pnpm test:docs`; `git diff --check` |
+| TASK-2026W23-AWP-004 | Add authorized durable audit contract | P1 | `@engine-agent`, `@ai-agent`, `@docs-agent` | done | `docs/reviews/awp-004-authorized-durable-audit-contract-2026-06-02.md`; `examples/ai-map-workbench/audit-contract.mjs`; `tests/examples/ai-map-workbench.test.ts` | durable audit/export behavior is access-controlled, retention-bound, payload-capped, deletion-aware, and free of raw prompt/provider/command/map payloads | schema/design review; focused audit tests; `pnpm check`; `git diff --check` |
+| TASK-2026W23-AWP-005 | Implement command-safe review decisions | P1 | `@engine-agent`, `@ai-agent`, `@qa-agent` | done | `docs/reviews/awp-005-command-safe-review-decisions-2026-06-02.md`; `examples/ai-map-workbench/review-decisions.mjs`; `examples/ai-map-workbench/public`; `tests/examples/ai-map-workbench.test.ts` | accept, block, and follow-up-required decisions are append-only evidence linked to existing audit/provider/command diagnostics and never mutate `MapSpec` directly | schema/contract tests; workbench UI tests; `pnpm check`; `git diff --check` |
+| TASK-2026W23-AWP-006 | Add repeatable workbench UI evidence | P1 | `@qa-agent`, `@docs-agent` | done | `docs/reviews/awp-006-repeatable-workbench-ui-evidence-2026-06-02.md`; `tests/examples/ai-map-workbench.test.ts`; browser smoke at `http://127.0.0.1:4324/` | provider selector, evidence rails, diagnostics, audit, and review-action states have deterministic UI evidence | browser smoke or visual evidence; `pnpm test:examples`; `pnpm check`; `git diff --check` |
+| TASK-2026W23-AWP-007 | Run product implementation Go-No-go gate | P1 | `@quality-guardian`, `@coordinator` | done / no-go | `docs/reviews/awp-007-product-implementation-go-no-go-2026-06-02.md` | local example hardening is accepted as closed, while product app movement and hosted promotion remain No-go | `pnpm test:docs`; `pnpm check`; browser smoke or visual evidence; release visual waiver or evidence; `git diff --check` |
+
+2026-06-02 AWP-001 planning update: product implementation planning is accepted
+in `docs/reviews/awp-001-product-implementation-planning-2026-06-02.md`. The
+next queued task is `TASK-2026W23-AWP-002` provider resource enforcement, and it
+must stay inside the current local/example boundary.
+
+2026-06-02 AWP-002 execution update: provider resource enforcement is accepted
+in `docs/reviews/awp-002-provider-resource-enforcement-2026-06-02.md`. Base URL
+policy, timeout/abort, response byte caps, blocked-resource diagnostics, and
+leak regression coverage now exist inside the example boundary. The next queued
+task is `TASK-2026W23-AWP-003` product app ownership and project model.
+
+2026-06-02 AWP-003 execution update: product ownership and project model are
+accepted in
+`docs/reviews/awp-003-product-ownership-project-model-2026-06-02.md`. The future
+route/module boundary is reserved for `apps/review-console` and
+`/review-console/workbench/:projectId`, while the current implementation stays
+under `examples/ai-map-workbench`. The next queued task is
+`TASK-2026W23-AWP-004` authorized durable audit contract.
+
+2026-06-02 AWP-004 execution update: authorized durable audit contract helpers
+are accepted in
+`docs/reviews/awp-004-authorized-durable-audit-contract-2026-06-02.md`. The
+contract covers compact records, project-scoped authorization, export caps,
+deletion receipts, and raw-payload rejection without adding durable storage or
+export endpoints. The next queued task is `TASK-2026W23-AWP-005` command-safe
+review decisions.
+
+2026-06-02 AWP-005 execution update: command-safe review decisions are accepted
+in `docs/reviews/awp-005-command-safe-review-decisions-2026-06-02.md`. The local
+example now records accept, block, and follow-up-required decisions as
+append-only in-memory evidence, linked to compact audit/provider/command
+diagnostics without direct `MapSpec` mutation. The next queued task is
+`TASK-2026W23-AWP-006` repeatable workbench UI evidence.
+
+2026-06-02 AWP-006 execution update: repeatable workbench UI evidence is
+accepted in
+`docs/reviews/awp-006-repeatable-workbench-ui-evidence-2026-06-02.md`. The local
+example now has deterministic smoke coverage for provider selector, evidence
+rails, diagnostics, audit, command JSON, and accept/block/follow-up review
+decision states. The next queued task is `TASK-2026W23-AWP-007` product
+implementation Go-No-go gate.
+
+2026-06-02 AWP-007 gate update: product implementation gate is accepted in
+`docs/reviews/awp-007-product-implementation-go-no-go-2026-06-02.md`. The AWP
+batch is closed as local example hardening Go and product/hosted promotion
+No-go. Future product movement must start from a new explicit promotion task or
+planning loop with runtime ownership, durable storage/auth/export scope, and
+release evidence defined up front.
+
 ## 2026-W22 MapLibre Source Drift Audit
 
 2026-05-31 planning update: refreshed package evidence keeps MapLibre/Mapbox
@@ -382,14 +478,23 @@ source drift as the next bounded product slice. This sprint audits compatibility
 before any dependency movement and does not add MCP aliases, PMTiles archive
 parsing, vector decoding, hidden fetches, or stable SceneView3D runtime support.
 
+2026-06-01 closure update: `MLD-002` is accepted through
+`docs/reviews/mld-002-maplibre-drift-audit-2026-05-31.md`; `MLD-003` closes the
+resource/delivery evidence boundary; `MLD-004` records a no-go for MapLibre
+package movement in this batch. `SourceLoader` now exists as an exported
+contract-only surface, but runtime source loading remains adapter-owned until a
+separate implementation task is approved.
+
 | id | title | priority | owner | status | evidence target | acceptance | finish gates |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | TASK-2026W22-MLD-001 | Freeze MapLibre source drift audit boundary | P0 | `@product-strategist`, `@task-distributor` | done | `docs/planning/feature-specs/maplibre-source-drift-audit.md`; `docs/planning/sprint-2026-W22-maplibre-source-drift-audit.md` | audit scope excludes package upgrades, MCP aliases, PMTiles archive parsing, vector decoding, and stable SceneView3D promotion | planning review; `pnpm test:docs`; `pnpm check`; `git diff --check` |
-| TASK-2026W22-MLD-002 | Audit adapter and source compatibility against drift signals | P0 | `@engine-agent`, `@qa-agent` | todo | adapter/source compatibility report | transformer, MapLibre adapter, query, vector, PMTiles, and fill-extrusion fixtures are compared against current package metadata and drift assumptions | `pnpm test:adapter`; `pnpm test:resources`; `pnpm test:snapshot:smoke`; `pnpm check` |
-| TASK-2026W22-MLD-003 | Map resource policy and delivery evidence for source drift | P1 | `@engine-agent`, `@ai-agent`, `@docs-agent` | todo | resource/delivery evidence report | generated-app delivery and resource-policy docs name exact PMTiles/vector boundaries without archive parsing or hidden fetches | `pnpm test:resources`; `pnpm test:ai`; `pnpm test:docs`; `pnpm check` |
-| TASK-2026W22-MLD-004 | Publish MapLibre drift Go-No-go gate | P1 | `@quality-guardian`, `@coordinator` | todo | quality gate report | no-go, conditional, or go-candidate decision names visual snapshot requirements before dependency movement | `pnpm build:schema`; `pnpm check`; visual gate or explicit non-rendering waiver |
+| TASK-2026W22-MLD-002 | Audit adapter and source compatibility against drift signals | P0 | `@engine-agent`, `@qa-agent` | done | `docs/reviews/mld-002-maplibre-drift-audit-2026-05-31.md`; `packages/engine/src/sources/contract.ts`; visual harness ESM/UMD resolver | transformer, MapLibre adapter, query, vector, PMTiles, and fill-extrusion fixtures are compared against current package metadata and drift assumptions | `pnpm test:adapter`; `pnpm test:resources`; `pnpm test:snapshot:smoke`; `pnpm check` |
+| TASK-2026W22-MLD-003 | Map resource policy and delivery evidence for source drift | P1 | `@engine-agent`, `@ai-agent`, `@docs-agent` | done | `docs/reviews/mld-003-resource-delivery-evidence-2026-06-01.md` | generated-app delivery and resource-policy docs name exact PMTiles/vector boundaries without archive parsing or hidden fetches | `pnpm test:resources`; `pnpm test:ai`; `pnpm test:docs`; `pnpm check` |
+| TASK-2026W22-MLD-004 | Publish MapLibre drift Go-No-go gate | P1 | `@quality-guardian`, `@coordinator` | done / no-go | `docs/reviews/mld-004-go-no-go-2026-06-01.md` | package movement remains blocked until a future task refreshes official source evidence and accepts strict visual evidence | `pnpm build:schema`; `pnpm check`; visual gate or explicit non-rendering waiver |
 
-The next queued task is `MLD-002`.
+The MLD batch is closed. The next edge returns to planning state; any future
+MapLibre package movement must start as a separate task with refreshed official
+evidence and release-capable visual gates.
 
 ---
 

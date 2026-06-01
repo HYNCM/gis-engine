@@ -104,3 +104,139 @@ benchmark below was refreshed on 2026-05-31 from official sources recorded in
 - 3D readiness stays at 5.4 and ecosystem/data readiness stays at 7.0 because
   this refresh does not promote SceneView3D stable runtime, PMTiles archive
   parsing, vector tile decoding, or cloud-native feature queries.
+
+## 2026-06-01 Post-MLD Addendum
+
+- 2D performance stays at 6.5 because `MLD-002` through `MLD-004` closed the
+  MapLibre source drift audit as compatibility evidence and a package-movement
+  No-go, not as an upgrade.
+- The next 2D performance score bump requires a separate package-movement task
+  with refreshed official package/changelog evidence, example loading
+  compatibility, deterministic gates, and strict visual snapshot evidence.
+- AI operability, 3D readiness, developer experience, and ecosystem/data
+  readiness stay unchanged because this closure does not add source parsers,
+  hidden fetches, MCP aliases, or stable SceneView3D runtime.
+
+## 2026-06-01 W23 Planning Refresh Addendum
+
+- AI operability stays at 9.5. The current run refreshed W23 evidence and
+  opened the AI Map Workbench product-boundary task batch, but it did not add
+  new public schemas, MCP tools, or review-action runtime behavior.
+- Developer experience stays at 8.0 until the AMW product-boundary batch
+  accepts provider credential/resource administration, durable audit semantics,
+  command-safe review actions, and visual evidence. The pressure is now clear,
+  but the score should move only after accepted implementation or gate evidence.
+- 2D performance stays at 6.5 because `maplibre-gl` remains on the current
+  range and `MLD-004` remains a package-movement No-go.
+- 3D readiness stays at 5.4 because SceneView3D stable runtime remains blocked
+  after SRC-006.
+- Ecosystem/data readiness stays at 7.0 because cloud-native source signals
+  remain promotion candidates, not parser/query implementations.
+
+## 2026-06-01 AMW-007 Addendum
+
+- Developer experience stays at 8.0. Provider credential/resource
+  administration is now a design handoff, but the workbench still lacks durable
+  audit retention/export, review actions, visual product evidence, and a
+  quality-guardian/coordinator promotion decision.
+- AI operability stays at 9.5 because no public AI schema or MCP contract
+  changed. The next score movement requires accepted durable audit or review
+  action evidence, not design text alone.
+
+## 2026-06-01 AMW-008 Addendum
+
+- Developer experience stays at 8.0. Durable audit retention/export is now a
+  design handoff, but the workbench still lacks review-action runtime behavior,
+  visual product evidence, and a quality-guardian/coordinator promotion
+  decision.
+- AI operability stays at 9.5 because AMW-008 adds no public AI schema, MCP
+  contract, durable storage runtime, or review-action runtime behavior. After
+  AMW-009 design acceptance, the next score movement requires implementation
+  evidence or a product-promotion gate.
+
+## 2026-06-02 AMW-009 Addendum
+
+- Developer experience stays at 8.0. Command-safe review actions are now a
+  design handoff, but no action controls, review-decision endpoint, durable
+  storage, visual product evidence, or product-promotion gate has landed.
+- AI operability stays at 9.5 because AMW-009 adds no public AI schema, MCP
+  contract, runtime review action behavior, or new command surface. The next
+  score movement requires implementation evidence or an accepted AMW-010
+  product-promotion gate.
+
+## 2026-06-02 AMW-010 / AWP-001 Addendum
+
+- Developer experience stays at 8.0. AMW-010 accepted the local example as Go
+  but recorded product app and hosted promotion as No-go, and AWP-001 opens the
+  implementation planning loop without adding runtime behavior.
+- AI operability stays at 9.5 because AWP-001 adds no public AI schema, MCP
+  contract, provider runtime enforcement, durable audit runtime, or review
+  decision endpoint.
+- The next score movement requires accepted implementation evidence from
+  `AWP-002` provider resource enforcement, `AWP-005` review decisions, and
+  `AWP-006` repeatable UI evidence, not planning text alone.
+
+## 2026-06-02 AWP-002 Addendum
+
+- Developer experience stays at 8.0. Provider resource enforcement is now
+  implemented for the local example, but product ownership, durable audit,
+  review-action runtime, and repeatable product workflow evidence remain open.
+- AI operability stays at 9.5 because the change hardens provider IO and
+  diagnostics without adding public MCP tools or new map mutation paths.
+- The next score movement requires product ownership plus accepted durable
+  audit, review-action, and UI evidence, not provider enforcement alone.
+
+## 2026-06-02 AWP-003 Addendum
+
+- Developer experience stays at 8.0. Product ownership, route/module boundary,
+  and project identity semantics are documented, but no product app movement,
+  durable audit runtime, review-action runtime, or repeatable UI evidence exists.
+- AI operability stays at 9.5 because project identity is payload-free and keeps
+  mutation through existing command evidence, but no new public tool or runtime
+  capability is added.
+- The next score movement requires durable audit contract plus accepted
+  review-action and UI evidence, not ownership planning alone.
+
+## 2026-06-02 AWP-004 Addendum
+
+- Developer experience stays at 8.0. Durable audit contract helpers now make
+  project-scoped access, export caps, deletion receipts, and raw-payload
+  rejection testable, but there is still no product app, durable store, export
+  endpoint, review-action runtime, or repeatable UI evidence.
+- AI operability stays at 9.5 because audit evidence remains compact and
+  payload-free without adding public MCP tools or direct mutation paths.
+- The next score movement requires command-safe review decisions plus accepted
+  repeatable UI evidence, not audit contract helpers alone.
+
+## 2026-06-02 AWP-005 Addendum
+
+- Developer experience stays at 8.0. Local review decision controls now make
+  accept/block/follow-up outcomes usable inside the example, but product app
+  movement, durable review storage, hosted deployment, and repeatable UI
+  evidence remain open.
+- AI operability stays at 9.5 because decisions are append-only compact evidence
+  and do not create new mutation paths or MCP tool names.
+- The next score movement requires `AWP-006` repeatable UI evidence and the
+  later `AWP-007` product implementation gate, not review decision runtime
+  alone.
+
+## 2026-06-02 AWP-006 Addendum
+
+- Developer experience stays at 8.0. Repeatable UI smoke evidence now covers
+  provider selector, evidence rails, diagnostics, audit, command JSON, and
+  review-decision states, but product app movement and hosted deployment remain
+  blocked.
+- AI operability stays at 9.5 because the UI evidence confirms command-only
+  mutation and compact review/audit evidence without adding MCP tool names.
+- The next score movement requires the `AWP-007` product implementation gate;
+  repeatable local smoke alone is not a product promotion decision.
+
+## 2026-06-02 AWP-007 Addendum
+
+- Developer experience stays at 8.0. The AWP batch is closed with local example
+  hardening Go, but product app movement and hosted deployment remain No-go.
+- AI operability stays at 9.5 because the gate preserves schema/command/MCP
+  boundaries and avoids promoting local evidence into a product claim.
+- Future score movement requires a new product-app promotion task with runtime
+  ownership, durable storage/auth/export scope, and release-grade visual
+  evidence.

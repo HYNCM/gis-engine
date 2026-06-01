@@ -31,6 +31,12 @@ Current package evidence: `package.json` declares `maplibre-gl` as `^5.24.0`.
 Before changing that range or the lockfile, run this checklist against the exact
 candidate version and keep the evidence with the PR or gate report.
 
+2026-06-01 closure note: `MLD-002` through `MLD-004` closed the current drift
+audit without package movement. PMTiles/vector delivery boundaries remain
+readiness/evidence-only, `SourceLoader` remains contract-only, and package
+movement is no-go until a future task refreshes official package/changelog
+evidence and accepts strict visual evidence in the same dependency state.
+
 ## Upgrade Intake
 
 - [ ] Record the current installed version from the lockfile and the proposed

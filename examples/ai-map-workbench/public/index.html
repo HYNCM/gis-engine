@@ -107,6 +107,16 @@
             </section>
 
             <section class="evidence-section">
+              <h3>Review decisions</h3>
+              <div class="review-actions" aria-label="Review decision actions">
+                <button type="button" data-review-outcome="accepted">Accept</button>
+                <button type="button" data-review-outcome="blocked">Block</button>
+                <button type="button" data-review-outcome="follow-up-required">Follow up</button>
+              </div>
+              <div id="review-list" class="audit-list"></div>
+            </section>
+
+            <section class="evidence-section">
               <h3>Last command</h3>
               <pre id="command-json" class="code-panel">{}</pre>
             </section>
