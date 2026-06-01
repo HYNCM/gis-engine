@@ -74,6 +74,10 @@ and a non-empty API key are present. Provider output must be JSON with
 structured `intent` and optional bounded `confidence`; it is still normalized
 through `normalizeWorkbenchProviderPlan` and committed only through
 `applyCommands`.
+Evidence-facing provider ids and trace ids are accepted only as short
+machine-readable tokens. Unsafe values are replaced or omitted before responses
+or audit records are written, and prompt hashes must use the `sha256:*` evidence
+shape.
 
 ## Evidence
 

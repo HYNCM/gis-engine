@@ -36,19 +36,22 @@ export type WorkbenchProviderPlanResponse =
 const forbiddenOutputFields = ["rawPrompt", "prompt", "promptText", "javascript", "commands", "mapSpec", "patch"] as const;
 
 export function normalizeWorkbenchProviderPlan(input: WorkbenchProviderPlanInput): WorkbenchProviderPlanResponse {
+  const providerId = normalizeProviderId(input.providerId);
+  const promptHash = normalizePromptHash(input.promptHash);
+  const traceId = normalizeTraceId(input.traceId);
   const forbidden = forbiddenOutputFields.filter((field) => hasOwn(input, field));
   if (forbidden.length > 0) {
     return { ok: false, diagnostics: [unsupportedProviderOutputDiagnostic(forbidden)] };
   }
 
-  if (!input.promptHash || !input.intent) {
-    return { ok: false, diagnostics: [unsupportedProviderOutputDiagnostic(input.promptHash ? ["intent"] : ["promptHash"])] };
+  if (!promptHash || !input.intent) {
+    return { ok: false, diagnostics: [unsupportedProviderOutputDiagnostic(promptHash ? ["intent"] : ["promptHash"])] };
   }
 
   const plan = planMapGenerationRequest({
-    promptHash: input.promptHash,
-    ...(input.traceId ? { traceId: input.traceId } : {}),
-    plannerId: input.providerId ?? "workbench-provider",
+    promptHash,
+    ...(traceId ? { traceId } : {}),
+    plannerId: providerId,
     intent: input.intent
   });
 
@@ -61,7 +64,7 @@ export function normalizeWorkbenchProviderPlan(input: WorkbenchProviderPlanInput
     result: {
       plan,
       provider: {
-        providerId: input.providerId ?? "workbench-provider",
+        providerId,
         retainedRawPrompt: false,
         ...(input.confidence ? { confidence: input.confidence } : {})
       }
@@ -86,4 +89,17 @@ function unsupportedProviderOutputDiagnostic(fields: readonly string[]): Diagnos
 
 function hasOwn(input: WorkbenchProviderPlanInput, field: (typeof forbiddenOutputFields)[number]): boolean {
   return Object.prototype.hasOwnProperty.call(input, field);
+}
+
+function normalizeProviderId(providerId: string | undefined): string {
+  if (!providerId) return "workbench-provider";
+  return /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(providerId) ? providerId : "workbench-provider";
+}
+
+function normalizePromptHash(promptHash: string | undefined): string | undefined {
+  return promptHash && /^sha256:[A-Za-z0-9._:-]{1,96}$/.test(promptHash) ? promptHash : undefined;
+}
+
+function normalizeTraceId(traceId: string | undefined): string | undefined {
+  return traceId && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/.test(traceId) ? traceId : undefined;
 }

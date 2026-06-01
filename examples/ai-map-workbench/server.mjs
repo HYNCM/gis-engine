@@ -373,8 +373,8 @@ async function applyProviderOutput({
     appendAuditRecord(auditRecords, {
       sessionId,
       providerId: provider.providerId,
-      promptHash: readString(providerOutput, "promptHash"),
-      traceId: readString(providerOutput, "traceId"),
+      promptHash: readSafePromptHash(providerOutput),
+      traceId: readSafeTraceId(providerOutput),
       status: "blocked",
       commandCount: 0,
       diagnostics: providerPlan.diagnostics,
@@ -525,8 +525,8 @@ function staleProviderResult({
   appendAuditRecord(auditRecords, {
     sessionId,
     providerId: provider.providerId,
-    promptHash: readString(providerOutput, "promptHash"),
-    traceId: readString(providerOutput, "traceId"),
+    promptHash: readSafePromptHash(providerOutput),
+    traceId: readSafeTraceId(providerOutput),
     status: "blocked",
     commandCount: 0,
     diagnostics,
@@ -578,14 +578,18 @@ function providerDiagnostic(path, message) {
 }
 
 function blockedProviderEvidence(providerOutput) {
-  const providerId =
+  const rawProviderId =
     providerOutput && typeof providerOutput === "object" && typeof providerOutput.providerId === "string"
       ? providerOutput.providerId
       : "unknown-provider";
   return {
-    providerId,
+    providerId: safeEvidenceProviderId(rawProviderId),
     retainedRawPrompt: false
   };
+}
+
+function safeEvidenceProviderId(providerId) {
+  return /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(providerId) ? providerId : "workbench-provider";
 }
 
 function plannerConfidence(confidence) {
@@ -664,6 +668,16 @@ function readString(input, key) {
   if (!input || typeof input !== "object") return undefined;
   const value = input[key];
   return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+function readSafePromptHash(input) {
+  const value = readString(input, "promptHash");
+  return value && /^sha256:[A-Za-z0-9._:-]{1,96}$/.test(value) ? value : undefined;
+}
+
+function readSafeTraceId(input) {
+  const value = readString(input, "traceId");
+  return value && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/.test(value) ? value : undefined;
 }
 
 function createSessionId() {

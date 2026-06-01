@@ -56,4 +56,51 @@ describe("workbench provider plan normalization", () => {
       })
     ]);
   });
+
+  it("normalizes unsafe provider ids before exposing planner evidence", () => {
+    const rawProviderId = "secret provider token private task label";
+    const rawTraceId = "secret trace token private task label";
+    const response = normalizeWorkbenchProviderPlan({
+      providerId: rawProviderId,
+      promptHash: "sha256:provider-feature-display",
+      traceId: rawTraceId,
+      intent: {
+        mapId: "provider-feature-display",
+        targetDomains: ["feature-display"],
+        styleEdits: [{ layerId: "poi-circles", paint: { "circle-color": "#ef4444" } }]
+      }
+    });
+
+    expect(response.ok).toBe(true);
+    if (!response.ok) throw new Error("Expected provider plan to normalize.");
+    expect(response.result.provider.providerId).toBe("workbench-provider");
+    expect(response.result.plan.provenance.plannerId).toBe("workbench-provider");
+    expect(response.result.plan.traceId).not.toBe(rawTraceId);
+    const serialized = JSON.stringify(response.result);
+    expect(serialized).not.toContain(rawProviderId);
+    expect(serialized).not.toContain(rawTraceId);
+  });
+
+  it("blocks unsafe prompt hash values before planner evidence is created", () => {
+    const rawPromptHash = "make points red with private task label";
+    const response = normalizeWorkbenchProviderPlan({
+      providerId: "fixture-provider",
+      promptHash: rawPromptHash,
+      intent: {
+        mapId: "provider-feature-display",
+        targetDomains: ["feature-display"],
+        styleEdits: [{ layerId: "poi-circles", paint: { "circle-color": "#ef4444" } }]
+      }
+    });
+
+    expect(response.ok).toBe(false);
+    expect(response.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.CapabilityUnsupported,
+        path: "/providerOutput"
+      })
+    );
+    expect(JSON.stringify(response)).not.toContain(rawPromptHash);
+  });
 });

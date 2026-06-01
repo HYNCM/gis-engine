@@ -136,11 +136,13 @@ describe("ai-map-workbench API", () => {
   });
 
   it("blocks unsafe provider output without mutating the active spec", async () => {
+    const providerToken = "secret unsafe provider token";
     const server = await createWorkbenchServer({
       port: 0,
       plannerProvider: async () => ({
-        providerId: "unsafe-provider",
-        promptHash: "sha256:unsafe-server-provider",
+        providerId: providerToken,
+        promptHash: providerToken,
+        traceId: providerToken,
         rawPrompt: "make points red",
         javascript: "map.setPaintProperty('poi-circles', 'circle-color', 'red')"
       })
@@ -157,11 +159,52 @@ describe("ai-map-workbench API", () => {
       })
     });
     const result = await response.json();
+    const auditResponse = await fetch(`${server.url}/api/audit`);
+    const audit = await auditResponse.json();
 
     expect(response.ok).toBe(true);
     expect(result.status).toBe("blocked");
+    expect(result.provider).toMatchObject({ providerId: "workbench-provider", retainedRawPrompt: false });
     expect(result.summary.revision).toBe("1");
     expect(result.diagnostics.map((diagnostic: { code: string }) => diagnostic.code)).toContain("CAPABILITY.UNSUPPORTED");
+    const serialized = `${JSON.stringify(result)}\n${JSON.stringify(audit)}`;
+    expect(serialized).not.toContain(providerToken);
+  });
+
+  it("does not echo unsafe injected provider ids into successful evidence or audit", async () => {
+    const providerToken = "secret provider token private task label";
+    const server = await createWorkbenchServer({
+      port: 0,
+      plannerProvider: async () => ({
+        providerId: providerToken,
+        promptHash: "sha256:server-provider",
+        traceId: providerToken,
+        intent: {
+          mapId: "server-provider",
+          targetDomains: ["feature-display"],
+          styleEdits: [{ layerId: "poi-circles", paint: { "circle-color": "#ef4444" } }]
+        }
+      })
+    });
+    closeServer = server.close;
+
+    const response = await fetch(`${server.url}/api/chat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message: "make the point layer red with provider mode" })
+    });
+    const result = await response.json();
+    const auditResponse = await fetch(`${server.url}/api/audit`);
+    const audit = await auditResponse.json();
+
+    expect(response.ok).toBe(true);
+    expect(result.status).toBe("applied");
+    expect(result.provider).toMatchObject({ providerId: "workbench-provider", retainedRawPrompt: false });
+    expect(result.generationEvidence.planner.plannerId).toBe("workbench-provider");
+    expect(audit.records[0]).toMatchObject({ providerId: "workbench-provider", status: "applied" });
+    const serialized = `${JSON.stringify(result)}\n${JSON.stringify(audit)}`;
+    expect(serialized).not.toContain(providerToken);
+    expect(serialized).not.toContain("make the point layer red");
   });
 
   it("queries inline map features through the engine", async () => {
