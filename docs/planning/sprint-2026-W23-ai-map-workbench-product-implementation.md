@@ -44,7 +44,7 @@ prerequisite for any later hosted or product claim.
 | TASK-2026W23-AWP-004 | Add authorized durable audit contract | P1 | L | `@engine-agent`, `@ai-agent`, `@docs-agent` | done | AWP-003, AMW-008 | `docs/reviews/awp-004-authorized-durable-audit-contract-2026-06-02.md` records access-controlled, retention-bound, payload-capped, deletion-aware durable audit/export contract helpers without adding storage or endpoints. | schema/design review; focused audit tests; `pnpm check`; `git diff --check` |
 | TASK-2026W23-AWP-005 | Implement command-safe review decisions | P1 | L | `@engine-agent`, `@ai-agent`, `@qa-agent` | done | AWP-002, AWP-003, AWP-004, AMW-009 | `docs/reviews/awp-005-command-safe-review-decisions-2026-06-02.md` records accept, block, and follow-up-required decisions as append-only evidence linked to existing audit/provider/command diagnostics without mutating `MapSpec` directly. | schema/contract tests; workbench UI tests; `pnpm check`; `git diff --check` |
 | TASK-2026W23-AWP-006 | Add repeatable workbench UI evidence | P1 | M | `@qa-agent`, `@docs-agent` | done | AWP-002, AWP-005 | `docs/reviews/awp-006-repeatable-workbench-ui-evidence-2026-06-02.md` records deterministic smoke evidence for provider selector, evidence rails, diagnostics, audit, and review-action states. | browser smoke or visual evidence; `pnpm test:examples`; `pnpm check`; `git diff --check` |
-| TASK-2026W23-AWP-007 | Run product implementation Go-No-go gate | P1 | S | `@quality-guardian`, `@coordinator` | queued | AWP-002, AWP-003, AWP-004, AWP-005, AWP-006 | Gate decides whether implementation blockers are closed enough for a later product-app promotion task, while preserving AMW-010 No-go until evidence is accepted. | `pnpm test:docs`; `pnpm check`; browser smoke or visual evidence; release visual waiver or evidence; `git diff --check` |
+| TASK-2026W23-AWP-007 | Run product implementation Go-No-go gate | P1 | S | `@quality-guardian`, `@coordinator` | done / no-go | AWP-002, AWP-003, AWP-004, AWP-005, AWP-006 | `docs/reviews/awp-007-product-implementation-go-no-go-2026-06-02.md` closes the implementation batch as local hardening Go and product/hosted promotion No-go. | `pnpm test:docs`; `pnpm check`; browser smoke or visual evidence; release visual waiver or evidence; `git diff --check` |
 
 ```mermaid
 flowchart LR
@@ -63,10 +63,10 @@ flowchart LR
 
 ## Current Handoff
 
-`TASK-2026W23-AWP-006` is complete as repeatable workbench UI smoke evidence.
-The next queued task is `TASK-2026W23-AWP-007`, and it must run the product
-implementation Go-No-go gate while preserving the AMW-010 No-go until evidence
-is accepted.
+`TASK-2026W23-AWP-007` is complete as the product implementation Go-No-go gate.
+This AWP batch is closed: the local example hardening is Go, while product app
+movement and hosted promotion remain No-go. Any future product movement needs a
+new explicit promotion task or planning loop.
 
 ## Finish Gate Rules
 

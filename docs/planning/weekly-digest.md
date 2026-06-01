@@ -184,7 +184,7 @@ move to `TASK-2026W23-SQH-003`.
 | TASK-2026W23-AWP-004 | done | `docs/reviews/awp-004-authorized-durable-audit-contract-2026-06-02.md`; durable audit contract helpers for project-scoped access, export caps, deletion receipts, and raw-payload rejection |
 | TASK-2026W23-AWP-005 | done | `docs/reviews/awp-005-command-safe-review-decisions-2026-06-02.md`; command-safe review decisions as append-only evidence, not direct `MapSpec` mutation |
 | TASK-2026W23-AWP-006 | done | `docs/reviews/awp-006-repeatable-workbench-ui-evidence-2026-06-02.md`; repeatable workbench UI evidence for provider, evidence, diagnostics, audit, and review-decision states |
-| TASK-2026W23-AWP-007 | queued | product implementation Go-No-go gate after AWP-002 through AWP-006 evidence |
+| TASK-2026W23-AWP-007 | done / no-go | `docs/reviews/awp-007-product-implementation-go-no-go-2026-06-02.md`; local example hardening Go, product/hosted promotion No-go |
 
 ## Next Handoff
 
@@ -209,6 +209,6 @@ move to `TASK-2026W23-SQH-003`.
   now `TASK-2026W23-AWP-001` through `AWP-007`; use it before any product app
   movement, hosted deployment, durable audit runtime, or review-action
   implementation.
-- `@quality-guardian` and `@coordinator`: take `TASK-2026W23-AWP-007` next.
-  Run the product implementation Go-No-go gate using AWP-002 through AWP-006
-  evidence while preserving AMW-010 No-go unless the gate explicitly changes it.
+- `@coordinator` and `@product-strategist`: the AWP implementation batch is
+  closed. Open a fresh product-app promotion task only if runtime ownership,
+  storage/auth/export implementation scope, and release evidence are accepted.

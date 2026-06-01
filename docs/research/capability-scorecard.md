@@ -230,3 +230,13 @@ benchmark below was refreshed on 2026-05-31 from official sources recorded in
   mutation and compact review/audit evidence without adding MCP tool names.
 - The next score movement requires the `AWP-007` product implementation gate;
   repeatable local smoke alone is not a product promotion decision.
+
+## 2026-06-02 AWP-007 Addendum
+
+- Developer experience stays at 8.0. The AWP batch is closed with local example
+  hardening Go, but product app movement and hosted deployment remain No-go.
+- AI operability stays at 9.5 because the gate preserves schema/command/MCP
+  boundaries and avoids promoting local evidence into a product claim.
+- Future score movement requires a new product-app promotion task with runtime
+  ownership, durable storage/auth/export scope, and release-grade visual
+  evidence.

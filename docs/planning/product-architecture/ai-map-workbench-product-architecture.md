@@ -180,6 +180,15 @@ surface under `examples/ai-map-workbench`; it does not create release-grade
 visual snapshots, durable review storage, hosted deployment, or product app
 movement.
 
+## 2026-06-02 AWP-007 Addendum
+
+AWP-007 closes the product implementation batch as local example hardening Go
+and product/hosted promotion No-go. The current architecture remains an example
+surface under `examples/ai-map-workbench`; future product movement still needs a
+fresh promotion task with runtime/service ownership, durable storage, auth and
+export implementation scope, secret management, and release-grade visual
+evidence.
+
 ## 2026-06-01 AMW-007 Addendum
 
 AMW-007 defines provider credential/resource administration in

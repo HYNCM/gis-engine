@@ -227,3 +227,12 @@ example now has deterministic smoke evidence for provider selector, evidence
 rails, diagnostics, session audit, command JSON, and review-decision states
 without product movement or release-grade visual snapshot claims. The next task
 is `AWP-007` product implementation Go-No-go gate.
+
+## 2026-06-02 AWP-007 Addendum
+
+`AWP-007` is captured in
+`docs/reviews/awp-007-product-implementation-go-no-go-2026-06-02.md`. The AWP
+implementation batch is closed as local example hardening Go and product/hosted
+promotion No-go. Product movement remains blocked until a fresh explicit task
+defines runtime/service ownership, durable storage/auth/export implementation
+scope, and release-grade visual evidence.

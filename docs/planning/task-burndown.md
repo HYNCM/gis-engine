@@ -420,7 +420,7 @@ and new MCP tool names remain out of scope.
 | TASK-2026W23-AWP-004 | Add authorized durable audit contract | P1 | `@engine-agent`, `@ai-agent`, `@docs-agent` | done | `docs/reviews/awp-004-authorized-durable-audit-contract-2026-06-02.md`; `examples/ai-map-workbench/audit-contract.mjs`; `tests/examples/ai-map-workbench.test.ts` | durable audit/export behavior is access-controlled, retention-bound, payload-capped, deletion-aware, and free of raw prompt/provider/command/map payloads | schema/design review; focused audit tests; `pnpm check`; `git diff --check` |
 | TASK-2026W23-AWP-005 | Implement command-safe review decisions | P1 | `@engine-agent`, `@ai-agent`, `@qa-agent` | done | `docs/reviews/awp-005-command-safe-review-decisions-2026-06-02.md`; `examples/ai-map-workbench/review-decisions.mjs`; `examples/ai-map-workbench/public`; `tests/examples/ai-map-workbench.test.ts` | accept, block, and follow-up-required decisions are append-only evidence linked to existing audit/provider/command diagnostics and never mutate `MapSpec` directly | schema/contract tests; workbench UI tests; `pnpm check`; `git diff --check` |
 | TASK-2026W23-AWP-006 | Add repeatable workbench UI evidence | P1 | `@qa-agent`, `@docs-agent` | done | `docs/reviews/awp-006-repeatable-workbench-ui-evidence-2026-06-02.md`; `tests/examples/ai-map-workbench.test.ts`; browser smoke at `http://127.0.0.1:4324/` | provider selector, evidence rails, diagnostics, audit, and review-action states have deterministic UI evidence | browser smoke or visual evidence; `pnpm test:examples`; `pnpm check`; `git diff --check` |
-| TASK-2026W23-AWP-007 | Run product implementation Go-No-go gate | P1 | `@quality-guardian`, `@coordinator` | queued | product implementation gate report | gate decides whether blockers are closed enough for a later product-app promotion task, while preserving AMW-010 No-go until evidence is accepted | `pnpm test:docs`; `pnpm check`; browser smoke or visual evidence; release visual waiver or evidence; `git diff --check` |
+| TASK-2026W23-AWP-007 | Run product implementation Go-No-go gate | P1 | `@quality-guardian`, `@coordinator` | done / no-go | `docs/reviews/awp-007-product-implementation-go-no-go-2026-06-02.md` | local example hardening is accepted as closed, while product app movement and hosted promotion remain No-go | `pnpm test:docs`; `pnpm check`; browser smoke or visual evidence; release visual waiver or evidence; `git diff --check` |
 
 2026-06-02 AWP-001 planning update: product implementation planning is accepted
 in `docs/reviews/awp-001-product-implementation-planning-2026-06-02.md`. The
@@ -463,6 +463,13 @@ example now has deterministic smoke coverage for provider selector, evidence
 rails, diagnostics, audit, command JSON, and accept/block/follow-up review
 decision states. The next queued task is `TASK-2026W23-AWP-007` product
 implementation Go-No-go gate.
+
+2026-06-02 AWP-007 gate update: product implementation gate is accepted in
+`docs/reviews/awp-007-product-implementation-go-no-go-2026-06-02.md`. The AWP
+batch is closed as local example hardening Go and product/hosted promotion
+No-go. Future product movement must start from a new explicit promotion task or
+planning loop with runtime ownership, durable storage/auth/export scope, and
+release evidence defined up front.
 
 ## 2026-W22 MapLibre Source Drift Audit
 

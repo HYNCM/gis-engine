@@ -351,8 +351,9 @@ DAG. `AWP-002` is complete as provider resource enforcement inside the
 local/example boundary, `AWP-003` is complete as product ownership/project model
 decision evidence, `AWP-004` is complete as authorized durable audit contract
 evidence, `AWP-005` is complete as command-safe review decision evidence,
-`AWP-006` is complete as repeatable UI evidence, and `AWP-007` is the next
-queued task.
+`AWP-006` is complete as repeatable UI evidence, and `AWP-007` is complete as
+the product implementation Go-No-go gate. The AWP implementation batch is
+closed with local example hardening Go and product/hosted promotion No-go.
 
 ```mermaid
 flowchart LR
@@ -377,7 +378,7 @@ flowchart LR
 | TASK-2026W23-AWP-004 | AWP-003, AMW-008 | durable audit contract delta report | schema/design review; focused audit tests; `pnpm check`; `git diff --check` | done |
 | TASK-2026W23-AWP-005 | AWP-002, AWP-003, AWP-004, AMW-009 | review decision implementation report | schema/contract tests; workbench UI tests; `pnpm check`; `git diff --check` | done |
 | TASK-2026W23-AWP-006 | AWP-002, AWP-005 | browser smoke or visual evidence report | browser smoke or visual evidence; `pnpm test:examples`; `pnpm check`; `git diff --check` | done |
-| TASK-2026W23-AWP-007 | AWP-002 through AWP-006 | product implementation gate report | `pnpm test:docs`; `pnpm check`; browser smoke or visual evidence; release visual waiver or evidence; `git diff --check` | queued P1 |
+| TASK-2026W23-AWP-007 | AWP-002 through AWP-006 | product implementation gate report | `pnpm test:docs`; `pnpm check`; browser smoke or visual evidence; release visual waiver or evidence; `git diff --check` | done / no-go |
 
 ## 阻断规则
 
