@@ -62,19 +62,21 @@ export async function createWorkbenchServer(options = {}) {
       if (request.method === "POST" && url.pathname === "/api/chat") {
         const body = await readJsonBody(request);
         const message = typeof body.message === "string" ? body.message : "";
-        const providerId = typeof body.providerId === "string" ? body.providerId : undefined;
-        const fromRevision = activeSpec.revision ?? "0";
+        const providerId = normalizeProviderId(body.providerId);
+        const planningSpec = activeSpec;
+        const fromRevision = planningSpec.revision ?? "0";
 
         if (plannerProvider && !providerId) {
           const providerOutput = await plannerProvider({
             message,
-            spec: structuredClone(activeSpec),
-            summary: summarizeSpec(activeSpec)
+            spec: structuredClone(planningSpec),
+            summary: summarizeSpec(planningSpec)
           });
           const providerResult = await applyProviderOutput({
             engine,
             ai,
-            activeSpec,
+            baseSpec: planningSpec,
+            getActiveSpec: () => activeSpec,
             providerOutput,
             sessionId,
             auditRecords,
@@ -112,7 +114,7 @@ export async function createWorkbenchServer(options = {}) {
             profile: providerProfile,
             apiKey: readProviderApiKey(providerProfile, env),
             message,
-            summary: summarizeSpec(activeSpec),
+            summary: summarizeSpec(planningSpec),
             fetchImpl
           });
 
@@ -128,7 +130,8 @@ export async function createWorkbenchServer(options = {}) {
           const providerResult = await applyProviderOutput({
             engine,
             ai,
-            activeSpec,
+            baseSpec: planningSpec,
+            getActiveSpec: () => activeSpec,
             providerOutput: providerResponse.providerOutput,
             sessionId,
             auditRecords,
@@ -318,7 +321,32 @@ function summarizeSpec(spec) {
   };
 }
 
-async function applyProviderOutput({ engine, ai, activeSpec, providerOutput, sessionId, auditRecords, fromRevision }) {
+function normalizeProviderId(value) {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+async function applyProviderOutput({
+  engine,
+  ai,
+  baseSpec,
+  getActiveSpec,
+  providerOutput,
+  sessionId,
+  auditRecords,
+  fromRevision
+}) {
+  const initialStaleResult = staleProviderResult({
+    engine,
+    currentSpec: getActiveSpec(),
+    providerOutput,
+    sessionId,
+    auditRecords,
+    fromRevision
+  });
+  if (initialStaleResult) return initialStaleResult;
+
   const providerPlan = ai.normalizeWorkbenchProviderPlan(providerOutput);
 
   if (!providerPlan.ok) {
@@ -332,11 +360,11 @@ async function applyProviderOutput({ engine, ai, activeSpec, providerOutput, ses
       commandCount: 0,
       diagnostics: providerPlan.diagnostics,
       fromRevision,
-      toRevision: activeSpec.revision ?? "0"
+      toRevision: baseSpec.revision ?? "0"
     });
     return {
       payload: {
-        ...statePayload(engine, "blocked", activeSpec),
+        ...statePayload(engine, "blocked", baseSpec),
         provider,
         plan: null,
         results: [],
@@ -350,8 +378,8 @@ async function applyProviderOutput({ engine, ai, activeSpec, providerOutput, ses
   const plan = providerPlan.result.plan;
   const skeleton = engine.createMapGenerationCommandSkeleton({
     ...plan.request,
-    mapId: plan.request.mapId ?? activeSpec.id,
-    baseSpec: activeSpec
+    mapId: plan.request.mapId ?? baseSpec.id,
+    baseSpec
   });
 
   if (skeleton.status === "blocked") {
@@ -364,11 +392,11 @@ async function applyProviderOutput({ engine, ai, activeSpec, providerOutput, ses
       commandCount: 0,
       diagnostics: skeleton.diagnostics,
       fromRevision,
-      toRevision: activeSpec.revision ?? "0"
+      toRevision: baseSpec.revision ?? "0"
     });
     return {
       payload: {
-        ...statePayload(engine, "blocked", activeSpec),
+        ...statePayload(engine, "blocked", baseSpec),
         provider: providerPlan.result.provider,
         plan,
         results: [],
@@ -400,11 +428,11 @@ async function applyProviderOutput({ engine, ai, activeSpec, providerOutput, ses
       commandCount: 0,
       diagnostics: generationEvidence.diagnostics,
       fromRevision,
-      toRevision: activeSpec.revision ?? "0"
+      toRevision: baseSpec.revision ?? "0"
     });
     return {
       payload: {
-        ...statePayload(engine, "blocked", activeSpec),
+        ...statePayload(engine, "blocked", baseSpec),
         provider: providerPlan.result.provider,
         plan,
         results: [],
@@ -415,11 +443,21 @@ async function applyProviderOutput({ engine, ai, activeSpec, providerOutput, ses
     };
   }
 
-  const applied = engine.applyCommands(activeSpec, skeleton.commands, {
+  const preApplyStaleResult = staleProviderResult({
+    engine,
+    currentSpec: getActiveSpec(),
+    providerOutput,
+    sessionId,
+    auditRecords,
+    fromRevision
+  });
+  if (preApplyStaleResult) return preApplyStaleResult;
+
+  const applied = engine.applyCommands(baseSpec, skeleton.commands, {
     collectTrace: true,
     traceId: skeleton.traceId
   });
-  const nextSpec = applied.committed && !applied.rolledBack ? applied.spec : activeSpec;
+  const nextSpec = applied.committed && !applied.rolledBack ? applied.spec : baseSpec;
 
   const failed = applied.results.some((result) => result.status === "failed");
   const status = failed ? "blocked" : "applied";
@@ -444,6 +482,36 @@ async function applyProviderOutput({ engine, ai, activeSpec, providerOutput, ses
       results: applied.results,
       traces: applied.traces ?? [],
       commandEvidence: commandEvidence(applied.results, applied.committed, applied.rolledBack)
+    }
+  };
+}
+
+function staleProviderResult({ engine, currentSpec, providerOutput, sessionId, auditRecords, fromRevision }) {
+  if ((currentSpec.revision ?? "0") === fromRevision) return undefined;
+  const provider = blockedProviderEvidence(providerOutput);
+  const diagnostics = [
+    providerDiagnostic("/providerRevision", "Provider output is stale because the active map revision changed.")
+  ];
+  appendAuditRecord(auditRecords, {
+    sessionId,
+    providerId: provider.providerId,
+    promptHash: readString(providerOutput, "promptHash"),
+    traceId: readString(providerOutput, "traceId"),
+    status: "blocked",
+    commandCount: 0,
+    diagnostics,
+    fromRevision,
+    toRevision: currentSpec.revision ?? "0"
+  });
+  return {
+    payload: {
+      ...statePayload(engine, "blocked", currentSpec),
+      provider,
+      plan: null,
+      results: [],
+      traces: [],
+      diagnostics,
+      commandEvidence: commandEvidence([], false, false)
     }
   };
 }

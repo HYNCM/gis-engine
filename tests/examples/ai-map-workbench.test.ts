@@ -239,45 +239,84 @@ describe("ai-map-workbench selected provider API", () => {
   });
 
   it("uses selected provider output through the command path", async () => {
+    const apiKey = "secret-deepseek-key";
+    const rawProviderBody = JSON.stringify({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              intent: {
+                mapId: "ai-map-workbench",
+                targetDomains: ["feature-display"],
+                styleEdits: [{ layerId: "poi-circles", paint: { "circle-color": "#ef4444" } }]
+              },
+              confidence: { level: "medium", reasons: ["Provider returned red point intent."] }
+            })
+          }
+        }
+      ]
+    });
     const server = await createWorkbenchServer({
       port: 0,
-      env: { DEEPSEEK_API_KEY: "secret-deepseek-key" },
+      env: { DEEPSEEK_API_KEY: apiKey },
       fetchImpl: async () =>
-        new Response(
-          JSON.stringify({
-            choices: [
-              {
-                message: {
-                  content: JSON.stringify({
-                    intent: {
-                      mapId: "ai-map-workbench",
-                      targetDomains: ["feature-display"],
-                      styleEdits: [{ layerId: "poi-circles", paint: { "circle-color": "#ef4444" } }]
-                    },
-                    confidence: { level: "medium", reasons: ["Provider returned red point intent."] }
-                  })
-                }
-              }
-            ]
-          }),
-          { status: 200, headers: { "content-type": "application/json" } }
-        )
+        new Response(rawProviderBody, { status: 200, headers: { "content-type": "application/json" } })
     });
     closeServer = server.close;
 
+    const rawPrompt = "make points red";
     const response = await fetch(`${server.url}/api/chat`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ message: "make points red", providerId: "deepseek" })
+      body: JSON.stringify({ message: rawPrompt, providerId: "deepseek" })
     });
     const result = await response.json();
+    const auditResponse = await fetch(`${server.url}/api/audit`);
+    const audit = await auditResponse.json();
 
     expect(response.ok).toBe(true);
     expect(result.status).toBe("applied");
     expect(result.provider).toMatchObject({ providerId: "deepseek", retainedRawPrompt: false });
     expect(result.summary.revision).toBe("2");
     expect(result.generationEvidence.planner.provided).toBe(true);
-    expect(JSON.stringify(result)).not.toContain("secret-deepseek-key");
+    expect(audit.records).toHaveLength(1);
+    expect(audit.records[0]).toMatchObject({
+      providerId: "deepseek",
+      status: "applied",
+      commandCount: 1,
+      fromRevision: "1",
+      toRevision: "2"
+    });
+    const serialized = `${JSON.stringify(result)}\n${JSON.stringify(audit)}`;
+    expect(serialized).not.toContain(rawPrompt);
+    expect(serialized).not.toContain(apiKey);
+    expect(serialized).not.toContain(rawProviderBody);
+    expect(JSON.stringify(audit)).not.toContain("West Lake");
+  });
+
+  it("treats blank and padded mock provider ids as mock planner requests", async () => {
+    const server = await createWorkbenchServer({ port: 0 });
+    closeServer = server.close;
+
+    const blankResponse = await fetch(`${server.url}/api/chat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message: "make points red", providerId: "   " })
+    });
+    const blankResult = await blankResponse.json();
+    const paddedMockResponse = await fetch(`${server.url}/api/chat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message: "reset", providerId: " mock-ai " })
+    });
+    const paddedMockResult = await paddedMockResponse.json();
+
+    expect(blankResponse.ok).toBe(true);
+    expect(blankResult.status).toBe("applied");
+    expect(blankResult.summary.revision).toBe("2");
+    expect(paddedMockResponse.ok).toBe(true);
+    expect(paddedMockResult.status).toBe("reset");
+    expect(paddedMockResult.summary.revision).toBe("1");
   });
 
   it("blocks missing selected providers without mutating the spec", async () => {
@@ -340,6 +379,80 @@ describe("ai-map-workbench selected provider API", () => {
     expect(serialized).not.toContain(apiKey);
     expect(serialized).not.toContain(rawProviderBody);
     expect(JSON.stringify(audit)).not.toContain("West Lake");
+  });
+
+  it("blocks stale selected provider output when another chat changes the revision first", async () => {
+    let resolveProviderResponse: ((response: Response) => void) | undefined;
+    let providerStarted: (() => void) | undefined;
+    const providerStartedPromise = new Promise<void>((resolve) => {
+      providerStarted = resolve;
+    });
+    const server = await createWorkbenchServer({
+      port: 0,
+      env: { DEEPSEEK_API_KEY: "secret-deepseek-key" },
+      fetchImpl: async () => {
+        providerStarted?.();
+        return new Promise<Response>((resolve) => {
+          resolveProviderResponse = resolve;
+        });
+      }
+    });
+    closeServer = server.close;
+
+    const staleProviderPromise = fetch(`${server.url}/api/chat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message: "make points red through provider", providerId: "deepseek" })
+    });
+    await providerStartedPromise;
+
+    const mockResponse = await fetch(`${server.url}/api/chat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message: "make points red" })
+    });
+    const mockResult = await mockResponse.json();
+    resolveProviderResponse?.(
+      new Response(
+        JSON.stringify({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  intent: {
+                    mapId: "ai-map-workbench",
+                    targetDomains: ["feature-display"],
+                    styleEdits: [{ layerId: "poi-circles", paint: { "circle-color": "#ef4444" } }]
+                  }
+                })
+              }
+            }
+          ]
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      )
+    );
+
+    const staleProviderResponse = await staleProviderPromise;
+    const staleProviderResult = await staleProviderResponse.json();
+    const auditResponse = await fetch(`${server.url}/api/audit`);
+    const audit = await auditResponse.json();
+
+    expect(mockResult.status).toBe("applied");
+    expect(mockResult.summary.revision).toBe("2");
+    expect(staleProviderResponse.ok).toBe(true);
+    expect(staleProviderResult.status).toBe("blocked");
+    expect(staleProviderResult.summary.revision).toBe("2");
+    expect(staleProviderResult.commandEvidence).toMatchObject({ commandCount: 0, committed: false, failed: false });
+    expect(staleProviderResult.diagnostics).toContainEqual(expect.objectContaining({ path: "/providerRevision" }));
+    expect(audit.records).toHaveLength(2);
+    expect(audit.records[1]).toMatchObject({
+      providerId: "deepseek",
+      status: "blocked",
+      commandCount: 0,
+      fromRevision: "1",
+      toRevision: "2"
+    });
   });
 });
 
