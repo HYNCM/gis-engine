@@ -419,7 +419,7 @@ and new MCP tool names remain out of scope.
 | TASK-2026W23-AWP-003 | Define product app ownership and project model | P0 | `@coordinator`, `@product-strategist`, `@docs-agent` | done | `docs/reviews/awp-003-product-ownership-project-model-2026-06-02.md` | product owner, route/module boundary, project identity model, and non-go boundaries are documented before file movement or hosted claims | planning review; `pnpm test:docs`; `git diff --check` |
 | TASK-2026W23-AWP-004 | Add authorized durable audit contract | P1 | `@engine-agent`, `@ai-agent`, `@docs-agent` | done | `docs/reviews/awp-004-authorized-durable-audit-contract-2026-06-02.md`; `examples/ai-map-workbench/audit-contract.mjs`; `tests/examples/ai-map-workbench.test.ts` | durable audit/export behavior is access-controlled, retention-bound, payload-capped, deletion-aware, and free of raw prompt/provider/command/map payloads | schema/design review; focused audit tests; `pnpm check`; `git diff --check` |
 | TASK-2026W23-AWP-005 | Implement command-safe review decisions | P1 | `@engine-agent`, `@ai-agent`, `@qa-agent` | done | `docs/reviews/awp-005-command-safe-review-decisions-2026-06-02.md`; `examples/ai-map-workbench/review-decisions.mjs`; `examples/ai-map-workbench/public`; `tests/examples/ai-map-workbench.test.ts` | accept, block, and follow-up-required decisions are append-only evidence linked to existing audit/provider/command diagnostics and never mutate `MapSpec` directly | schema/contract tests; workbench UI tests; `pnpm check`; `git diff --check` |
-| TASK-2026W23-AWP-006 | Add repeatable workbench UI evidence | P1 | `@qa-agent`, `@docs-agent` | queued | browser smoke or visual evidence report | provider selector, evidence rails, diagnostics, audit, and review-action states have deterministic UI evidence | browser smoke or visual evidence; `pnpm test:examples`; `pnpm check`; `git diff --check` |
+| TASK-2026W23-AWP-006 | Add repeatable workbench UI evidence | P1 | `@qa-agent`, `@docs-agent` | done | `docs/reviews/awp-006-repeatable-workbench-ui-evidence-2026-06-02.md`; `tests/examples/ai-map-workbench.test.ts`; browser smoke at `http://127.0.0.1:4324/` | provider selector, evidence rails, diagnostics, audit, and review-action states have deterministic UI evidence | browser smoke or visual evidence; `pnpm test:examples`; `pnpm check`; `git diff --check` |
 | TASK-2026W23-AWP-007 | Run product implementation Go-No-go gate | P1 | `@quality-guardian`, `@coordinator` | queued | product implementation gate report | gate decides whether blockers are closed enough for a later product-app promotion task, while preserving AMW-010 No-go until evidence is accepted | `pnpm test:docs`; `pnpm check`; browser smoke or visual evidence; release visual waiver or evidence; `git diff --check` |
 
 2026-06-02 AWP-001 planning update: product implementation planning is accepted
@@ -455,6 +455,14 @@ example now records accept, block, and follow-up-required decisions as
 append-only in-memory evidence, linked to compact audit/provider/command
 diagnostics without direct `MapSpec` mutation. The next queued task is
 `TASK-2026W23-AWP-006` repeatable workbench UI evidence.
+
+2026-06-02 AWP-006 execution update: repeatable workbench UI evidence is
+accepted in
+`docs/reviews/awp-006-repeatable-workbench-ui-evidence-2026-06-02.md`. The local
+example now has deterministic smoke coverage for provider selector, evidence
+rails, diagnostics, audit, command JSON, and accept/block/follow-up review
+decision states. The next queued task is `TASK-2026W23-AWP-007` product
+implementation Go-No-go gate.
 
 ## 2026-W22 MapLibre Source Drift Audit
 

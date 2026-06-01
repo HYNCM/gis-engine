@@ -166,6 +166,22 @@ adding product storage:
   evidence rejection, payload leak rejection, command-safety rejection, and UI
   request shape.
 
+## AWP-006 Acceptance
+
+`AWP-006` must add repeatable UI smoke evidence for the local workbench:
+
+- Provider selector state distinguishes enabled mock provider metadata from
+  credential-missing external provider metadata without exposing credentials,
+  base URLs, raw prompts, or provider bodies.
+- Evidence rails are visible for summary, provider, diagnostics, feature query,
+  session audit, review decisions, and last command.
+- Browser-driven tests prove map/canvas framing is non-empty and command/audit
+  evidence updates after a prompt.
+- Review decision controls prove accepted, blocked, and follow-up-required
+  states are visible without mutating `MapSpec` or writing browser files.
+- This remains local smoke evidence, not release-grade visual snapshot evidence
+  or hosted/product promotion.
+
 ## 2026-06-02 AWP-002 Addendum
 
 `AWP-002` is captured in
@@ -202,3 +218,12 @@ now supports local in-memory review decisions through compact API/UI controls
 without direct `MapSpec` mutation, browser file writes, durable storage, hosted
 promotion, or new MCP tool names. The next task is `AWP-006` repeatable
 workbench UI evidence.
+
+## 2026-06-02 AWP-006 Addendum
+
+`AWP-006` is captured in
+`docs/reviews/awp-006-repeatable-workbench-ui-evidence-2026-06-02.md`. The local
+example now has deterministic smoke evidence for provider selector, evidence
+rails, diagnostics, session audit, command JSON, and review-decision states
+without product movement or release-grade visual snapshot claims. The next task
+is `AWP-007` product implementation Go-No-go gate.

@@ -170,6 +170,16 @@ in-memory evidence linked to compact audit records and do not return full
 durable review storage, browser file writes, and hosted deployment remain
 No-go.
 
+## 2026-06-02 AWP-006 Addendum
+
+AWP-006 adds repeatable UI smoke evidence for the local workbench. The evidence
+uses `tests/examples/ai-map-workbench.test.ts` plus browser smoke to cover
+provider selector state, evidence rails, diagnostics, session audit, command
+JSON, and accept/block/follow-up review decision states. This evidence keeps the
+surface under `examples/ai-map-workbench`; it does not create release-grade
+visual snapshots, durable review storage, hosted deployment, or product app
+movement.
+
 ## 2026-06-01 AMW-007 Addendum
 
 AMW-007 defines provider credential/resource administration in

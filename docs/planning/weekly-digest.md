@@ -183,7 +183,8 @@ move to `TASK-2026W23-SQH-003`.
 | TASK-2026W23-AWP-003 | done | `docs/reviews/awp-003-product-ownership-project-model-2026-06-02.md`; product ownership, route/module boundary, project identity model, and non-go language |
 | TASK-2026W23-AWP-004 | done | `docs/reviews/awp-004-authorized-durable-audit-contract-2026-06-02.md`; durable audit contract helpers for project-scoped access, export caps, deletion receipts, and raw-payload rejection |
 | TASK-2026W23-AWP-005 | done | `docs/reviews/awp-005-command-safe-review-decisions-2026-06-02.md`; command-safe review decisions as append-only evidence, not direct `MapSpec` mutation |
-| TASK-2026W23-AWP-006 | queued | repeatable workbench UI evidence for provider, evidence, diagnostics, audit, and review-decision states |
+| TASK-2026W23-AWP-006 | done | `docs/reviews/awp-006-repeatable-workbench-ui-evidence-2026-06-02.md`; repeatable workbench UI evidence for provider, evidence, diagnostics, audit, and review-decision states |
+| TASK-2026W23-AWP-007 | queued | product implementation Go-No-go gate after AWP-002 through AWP-006 evidence |
 
 ## Next Handoff
 
@@ -208,7 +209,6 @@ move to `TASK-2026W23-SQH-003`.
   now `TASK-2026W23-AWP-001` through `AWP-007`; use it before any product app
   movement, hosted deployment, durable audit runtime, or review-action
   implementation.
-- `@qa-agent` and `@docs-agent`: take `TASK-2026W23-AWP-006` next. Capture
-  repeatable workbench UI evidence for provider selector, evidence rails,
-  diagnostics, audit, and review-decision states before the product
-  implementation gate.
+- `@quality-guardian` and `@coordinator`: take `TASK-2026W23-AWP-007` next.
+  Run the product implementation Go-No-go gate using AWP-002 through AWP-006
+  evidence while preserving AMW-010 No-go unless the gate explicitly changes it.

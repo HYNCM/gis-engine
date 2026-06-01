@@ -219,3 +219,14 @@ benchmark below was refreshed on 2026-05-31 from official sources recorded in
 - The next score movement requires `AWP-006` repeatable UI evidence and the
   later `AWP-007` product implementation gate, not review decision runtime
   alone.
+
+## 2026-06-02 AWP-006 Addendum
+
+- Developer experience stays at 8.0. Repeatable UI smoke evidence now covers
+  provider selector, evidence rails, diagnostics, audit, command JSON, and
+  review-decision states, but product app movement and hosted deployment remain
+  blocked.
+- AI operability stays at 9.5 because the UI evidence confirms command-only
+  mutation and compact review/audit evidence without adding MCP tool names.
+- The next score movement requires the `AWP-007` product implementation gate;
+  repeatable local smoke alone is not a product promotion decision.

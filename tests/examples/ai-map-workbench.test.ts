@@ -1185,6 +1185,111 @@ describe("ai-map-workbench provider selector UI contract", () => {
   }, 30_000);
 });
 
+describe("ai-map-workbench repeatable UI evidence", () => {
+  it("captures provider, evidence rail, audit, and review decision states", async () => {
+    const consoleErrors: string[] = [];
+    const pageErrors: string[] = [];
+    const server = await createWorkbenchServer({ port: 0 });
+    closeServer = server.close;
+    const browser = await chromium.launch();
+    try {
+      const page = await browser.newPage();
+      page.on("console", (message) => {
+        if (message.type() === "error") consoleErrors.push(message.text());
+      });
+      page.on("pageerror", (error) => {
+        pageErrors.push(error.message);
+      });
+      await page.route("**/vendor/maplibre-gl.js", async (route) => {
+        await route.fulfill({
+          contentType: "text/javascript",
+          body: `
+            window.maplibregl = {
+              Map: class {
+                constructor(options) {
+                  const container = document.getElementById(options.container);
+                  const canvas = document.createElement("canvas");
+                  canvas.width = 800;
+                  canvas.height = 600;
+                  canvas.style.width = "100%";
+                  canvas.style.height = "100%";
+                  canvas.dataset.testid = "stub-map-canvas";
+                  container.append(canvas);
+                }
+                addControl() {}
+                getZoom() { return 11; }
+                jumpTo() {}
+                on() {}
+                resize() {}
+                setStyle() {}
+              },
+              NavigationControl: class {}
+            };
+          `
+        });
+      });
+
+      await page.goto(server.url);
+      await page.waitForSelector("#provider-select option", { state: "attached" });
+      const initialEvidence = await workbenchUiEvidence(page);
+      expect(initialEvidence.status).toBe("Ready");
+      expect(initialEvidence.canvasCount).toBe(1);
+      expect(initialEvidence.map.width).toBeGreaterThan(300);
+      expect(initialEvidence.map.height).toBeGreaterThan(300);
+      expect(initialEvidence.sections).toEqual([
+        "Summary",
+        "Provider",
+        "Diagnostics",
+        "Feature query",
+        "Session audit",
+        "Review decisions",
+        "Last command"
+      ]);
+      expect(initialEvidence.providerOptions).toContainEqual(
+        expect.objectContaining({ value: "mock-ai", disabled: false })
+      );
+      expect(initialEvidence.diagnosticsText).toBe("No diagnostics.");
+      expect(initialEvidence.auditText).toBe("No session records.");
+      expect(initialEvidence.reviewText).toBe("No review decisions.");
+
+      await page.click('[data-prompt="make points red"]');
+      await page.waitForFunction(() => document.querySelector("#status-pill")?.textContent?.trim() === "Applied");
+      await page.click('[data-review-outcome="accepted"]');
+      await page.waitForFunction(() => document.querySelector("#status-pill")?.textContent?.trim() === "Reviewed");
+      await page.click('[data-review-outcome="blocked"]');
+      await page.click('[data-review-outcome="follow-up-required"]');
+      await page.waitForFunction(() => document.querySelector("#review-list")?.textContent?.includes("follow-up-required"));
+
+      const finalEvidence = await workbenchUiEvidence(page);
+      expect(finalEvidence.status).toBe("Reviewed");
+      expect(finalEvidence.summaryRows).toMatchObject({
+        Revision: "2",
+        Commands: "1"
+      });
+      expect(finalEvidence.providerRows).toMatchObject({
+        Provider: "mock",
+        "Raw prompt": "not provided"
+      });
+      expect(finalEvidence.auditText).toContain("applied / 1 command(s)");
+      expect(finalEvidence.auditText).toContain("1 -> 2 / mock-ai");
+      expect(finalEvidence.reviewText).toContain("accepted / review-accepted");
+      expect(finalEvidence.reviewText).toContain("blocked / manual-review-blocked");
+      expect(finalEvidence.reviewText).toContain("follow-up-required / visual-evidence-required");
+      expect(finalEvidence.diagnosticsText).toBe("No diagnostics.");
+      expect(finalEvidence.commandJson).toMatchObject({
+        commandEvidence: expect.objectContaining({ commandCount: 1, committed: true }),
+        results: [expect.objectContaining({ commandId: "cmd-mock-red-points", status: "applied" })]
+      });
+      const serializedEvidence = JSON.stringify(finalEvidence);
+      expect(serializedEvidence).not.toMatch(/apiKey|baseUrl|server-secret|provider raw body/i);
+      expect(consoleErrors).toEqual([]);
+      expect(pageErrors).toEqual([]);
+    } finally {
+      await browser.close();
+    }
+  }, 30_000);
+});
+
 async function providerEvidenceRows(page: Page) {
   return page.locator("#provider-list").evaluate((list) => {
     const rows: Record<string, string> = {};
@@ -1194,6 +1299,44 @@ async function providerEvidenceRows(page: Page) {
       if (label) rows[label] = value ?? "";
     }
     return rows;
+  });
+}
+
+async function workbenchUiEvidence(page: Page) {
+  return page.evaluate(() => {
+    const rectOf = (selector: string) => {
+      const element = document.querySelector(selector);
+      if (!element) return { width: 0, height: 0 };
+      const rect = element.getBoundingClientRect();
+      return { width: Math.round(rect.width), height: Math.round(rect.height) };
+    };
+    const rowsFromDefinitionList = (selector: string) => {
+      const rows: Record<string, string> = {};
+      for (const term of document.querySelectorAll(`${selector} dt`)) {
+        const label = term.textContent?.trim();
+        const value = term.nextElementSibling?.textContent?.trim();
+        if (label) rows[label] = value ?? "";
+      }
+      return rows;
+    };
+    return {
+      status: document.querySelector("#status-pill")?.textContent?.trim() ?? "",
+      map: rectOf("#map"),
+      canvasCount: document.querySelectorAll("canvas").length,
+      canvas: rectOf("canvas"),
+      sections: [...document.querySelectorAll(".evidence-section h3")].map((heading) => heading.textContent?.trim() ?? ""),
+      providerOptions: [...document.querySelectorAll("#provider-select option")].map((option) => ({
+        value: (option as HTMLOptionElement).value,
+        text: option.textContent?.trim() ?? "",
+        disabled: (option as HTMLOptionElement).disabled
+      })),
+      summaryRows: rowsFromDefinitionList("#summary-list"),
+      providerRows: rowsFromDefinitionList("#provider-list"),
+      diagnosticsText: document.querySelector("#diagnostics-list")?.textContent?.trim() ?? "",
+      auditText: document.querySelector("#audit-list")?.textContent?.trim() ?? "",
+      reviewText: document.querySelector("#review-list")?.textContent?.trim() ?? "",
+      commandJson: JSON.parse(document.querySelector("#command-json")?.textContent ?? "{}")
+    };
   });
 }
 
