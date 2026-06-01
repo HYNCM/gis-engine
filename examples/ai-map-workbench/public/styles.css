@@ -40,7 +40,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -62,7 +63,8 @@ button:active {
 }
 
 button:focus-visible,
-input:focus-visible {
+input:focus-visible,
+select:focus-visible {
   outline: 3px solid rgba(11, 143, 111, 0.28);
   outline-offset: 2px;
 }
@@ -303,6 +305,35 @@ h3 {
   color: var(--ink-soft);
   font-size: 14px;
   line-height: 1.42;
+}
+
+.provider-picker {
+  display: grid;
+  gap: 7px;
+  padding: 0 22px 14px;
+}
+
+.provider-picker label {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.provider-picker select {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  padding: 0 10px;
+}
+
+.provider-status {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .prompt-bank {
@@ -665,6 +696,10 @@ h3 {
 
   .prompt-bank {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding-inline: 14px;
+  }
+
+  .provider-picker {
     padding-inline: 14px;
   }
 

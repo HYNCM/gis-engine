@@ -1,6 +1,8 @@
 const messagesEl = document.querySelector("#messages");
 const chatForm = document.querySelector("#chat-form");
 const chatInput = document.querySelector("#chat-input");
+const providerSelect = document.querySelector("#provider-select");
+const providerStatus = document.querySelector("#provider-status");
 const statusPill = document.querySelector("#status-pill");
 const summaryList = document.querySelector("#summary-list");
 const providerList = document.querySelector("#provider-list");
@@ -16,6 +18,8 @@ const chatPanelToggle = document.querySelector("#toggle-chat-panel");
 const evidencePanelToggle = document.querySelector("#toggle-evidence-panel");
 
 let map;
+let providerProfiles = [];
+let selectedProviderId = "mock-ai";
 
 const statusLabels = {
   applied: "Applied",
@@ -34,6 +38,18 @@ async function init() {
   initSidebarControls();
   appendMessage("assistant", "Ready. Try changing point color, point size, or the Hangzhou camera.");
   renderFeatureQuery({ features: [], diagnostics: [] });
+  await loadProviders();
+  providerSelect.addEventListener("change", () => {
+    const profile = providerProfiles.find((provider) => provider.id === providerSelect.value && provider.enabled);
+    if (!profile) {
+      providerSelect.value = selectedProviderId;
+      renderProviderStatus();
+      return;
+    }
+    selectedProviderId = profile.id;
+    renderProviderStatus();
+    renderProviderEvidence({});
+  });
   document.querySelectorAll("[data-prompt]").forEach((button) => {
     button.addEventListener("click", () => {
       const prompt = button.getAttribute("data-prompt");
@@ -57,6 +73,58 @@ async function init() {
 
   const state = await fetchJson("/api/state");
   applyPayload(state);
+}
+
+async function loadProviders() {
+  try {
+    const result = await fetchJson("/api/providers");
+    providerProfiles = Array.isArray(result.providers) ? result.providers : [];
+  } catch (error) {
+    providerProfiles = [
+      {
+        id: "mock-ai",
+        label: "Mock AI",
+        model: "deterministic-mock",
+        enabled: true,
+        missingCredential: false
+      }
+    ];
+  }
+
+  const mockProvider = providerProfiles.find((provider) => provider.id === "mock-ai" && provider.enabled);
+  const fallbackProvider = providerProfiles.find((provider) => provider.enabled);
+  selectedProviderId = (mockProvider ?? fallbackProvider)?.id ?? "";
+  renderProviderOptions();
+  renderProviderStatus();
+}
+
+function renderProviderOptions() {
+  const options = providerProfiles.map((provider) => {
+    const option = document.createElement("option");
+    option.value = provider.id;
+    option.disabled = !provider.enabled;
+    option.textContent = `${provider.label ?? provider.id} / ${provider.model ?? "model unknown"}`;
+    return option;
+  });
+  providerSelect.replaceChildren(...options);
+  providerSelect.value = selectedProviderId;
+}
+
+function renderProviderStatus() {
+  const profile = providerProfiles.find((provider) => provider.id === selectedProviderId);
+  if (!profile) {
+    providerStatus.textContent = "No ready provider.";
+    return;
+  }
+  if (profile.missingCredential) {
+    providerStatus.textContent = "Missing server credential.";
+    return;
+  }
+  providerStatus.textContent = `${profile.label ?? profile.id} ready.`;
+}
+
+function selectedProviderProfile() {
+  return providerProfiles.find((provider) => provider.id === selectedProviderId);
 }
 
 function initSidebarControls() {
@@ -90,7 +158,7 @@ function setSidebarCollapsed(side, button, collapsed) {
 async function submitPrompt(message) {
   appendMessage("user", message);
   setStatus("ready");
-  const payload = await postJson("/api/chat", { message });
+  const payload = await postJson("/api/chat", { message, providerId: selectedProviderId });
   appendMessage("assistant", payload.plan?.reply ?? "The workbench returned structured evidence.");
   applyPayload(payload);
 }
@@ -184,8 +252,11 @@ function renderProviderEvidence(payload) {
   const evidence = payload.generationEvidence;
   const planner = evidence?.planner;
   const delivery = evidence?.delivery;
+  const evidenceProviderId = provider?.providerId ?? selectedProviderId ?? "mock-ai";
+  const evidenceProfile = providerProfiles.find((profile) => profile.id === evidenceProviderId);
   const rows = [
-    ["Provider", provider?.providerId ?? "mock"],
+    ["Provider", evidenceProviderId],
+    ["Model", evidenceProfile?.model ?? "--"],
     ["Raw prompt", provider?.retainedRawPrompt === false ? "not retained" : "not provided"],
     ["Planner", planner?.provided ? planner.plannerId : "mock fallback"],
     ["Confidence", provider?.confidence?.level ?? planner?.confidence?.level ?? "--"],

@@ -563,6 +563,25 @@ describe("ai-map-workbench selected provider API", () => {
   });
 });
 
+describe("ai-map-workbench provider selector UI contract", () => {
+  it("serves provider selector markup and browser code that sends providerId", async () => {
+    const server = await createWorkbenchServer({ port: 0 });
+    closeServer = server.close;
+
+    const htmlResponse = await fetch(`${server.url}/`);
+    const html = await htmlResponse.text();
+    const appResponse = await fetch(`${server.url}/app.js`);
+    const appJs = await appResponse.text();
+
+    expect(html).toContain('id="provider-select"');
+    expect(html).toContain('id="provider-status"');
+    expect(appJs).toContain('fetchJson("/api/providers")');
+    expect(appJs).toContain("providerId: selectedProviderId");
+    expect(appJs).not.toContain("apiKey");
+    expect(appJs).not.toContain("baseUrl");
+  });
+});
+
 describe("ai-map-workbench provider profiles", () => {
   it("returns mock plus safe DeepSeek metadata without leaking credentials", async () => {
     const { buildProviderProfiles, publicProviderProfiles } = await import(
