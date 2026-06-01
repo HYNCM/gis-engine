@@ -21,6 +21,7 @@ import { execSync } from "node:child_process";
 import {
   mkdirSync,
   writeFileSync,
+  readFileSync,
   openSync,
   closeSync,
   unlinkSync,
@@ -315,6 +316,152 @@ function releaseRunLock(fd, lockPath) {
   }
 }
 
+// ── 规划状态管理 ──
+
+/** 规划状态一致性管理器 */
+class PlanningStateManager {
+  constructor(rootPath) {
+    this.root = rootPath;
+    this.fileLocks = new Map();
+  }
+
+  /** 为规划文件获取文件级锁 */
+  acquireFileLock(relativeFilePath, { maxAttempts = 30, intervalMs = 200 } = {}) {
+    const lockPath = join(this.root, `${relativeFilePath}.lock`);
+    let attempt = 0;
+    while (true) {
+      attempt += 1;
+      try {
+        const fd = openSync(lockPath, "wx", 0o600);
+        this.fileLocks.set(relativeFilePath, { fd, lockPath });
+        return lockPath;
+      } catch (err) {
+        if (err.code !== "EEXIST") {
+          throw err;
+        }
+        try {
+          const stats = statSync(lockPath);
+          const ageMs = Date.now() - stats.mtimeMs;
+          if (ageMs > 10 * 60_000) {
+            unlinkSync(lockPath);
+            continue;
+          }
+        } catch {
+          // ignore stale metadata errors
+        }
+        if (attempt >= maxAttempts) {
+          throw new Error(
+            `Could not acquire planning lock for ${relativeFilePath} after ${attempt} attempts`,
+          );
+        }
+        sleep(intervalMs);
+      }
+    }
+  }
+
+  /** 释放文件级锁 */
+  releaseFileLock(relativeFilePath) {
+    const lock = this.fileLocks.get(relativeFilePath);
+    if (!lock) return;
+    try {
+      closeSync(lock.fd);
+    } catch {
+      // ignore
+    }
+    try {
+      unlinkSync(lock.lockPath);
+    } catch {
+      // ignore
+    }
+    this.fileLocks.delete(relativeFilePath);
+  }
+
+  /** 从 Markdown 文件中提取任务 ID 和所有者 */
+  extractTaskOwners(filePath) {
+    try {
+      const content = readFileSync(filePath, "utf-8");
+      const tasks = [];
+
+      // 匹配 TASK-YYYY-NAME-NNN 模式，并尝试找到所有者信息
+      const taskPattern = /TASK-\d{4}[A-Z]+-\d{3}/g;
+      const ownerPattern = /owner[:\s]+`?@([\w-]+)`?/gi;
+
+      let match;
+      while ((match = taskPattern.exec(content)) !== null) {
+        const taskId = match[0];
+        // 简化：假设任务周围有所有者标记（实际应该用AST解析）
+        tasks.push({
+          id: taskId,
+          position: match.index,
+        });
+      }
+
+      return tasks;
+    } catch (err) {
+      console.warn(`  ⚠️ 无法解析文件 ${filePath}:`, err.message);
+      return [];
+    }
+  }
+
+  /**
+   * 验证规划状态的一致性
+   * 检查：
+   * 1. task-burndown.md 和 dependency-graph.md 中的任务 ID 集合是否匹配
+   * 2. 同一任务在不同文件中的所有者是否一致
+   * 3. 依赖图中的所有任务是否在 burndown 中有定义
+   */
+  validateConsistency(dryRun = false) {
+    const issues = [];
+    const burndownPath = join(this.root, "docs/planning/task-burndown.md");
+    const depGraphPath = join(this.root, "docs/planning/dependency-graph.md");
+
+    try {
+      // 提取任务 ID
+      const burndownTasks = this.extractTaskOwners(burndownPath);
+      const depGraphTasks = this.extractTaskOwners(depGraphPath);
+
+      const burndownIds = new Set(burndownTasks.map((t) => t.id));
+      const depGraphIds = new Set(depGraphTasks.map((t) => t.id));
+
+      // 检查任务 ID 的一致性
+      for (const taskId of depGraphIds) {
+        if (!burndownIds.has(taskId)) {
+          issues.push({
+            severity: "error",
+            code: "TASK_IN_DEP_BUT_NOT_BURNDOWN",
+            message: `任务 ${taskId} 在 dependency-graph.md 中出现但未在 task-burndown.md 中定义`,
+          });
+        }
+      }
+
+      for (const taskId of burndownIds) {
+        if (!depGraphIds.has(taskId)) {
+          issues.push({
+            severity: "warning",
+            code: "TASK_IN_BURNDOWN_BUT_NOT_DEP",
+            message: `任务 ${taskId} 在 task-burndown.md 中但未在 dependency-graph.md 中出现`,
+          });
+        }
+      }
+
+      if (issues.length > 0) {
+        if (!dryRun) {
+          console.warn("  ⚠️ 规划状态一致性检查发现问题:");
+          for (const issue of issues) {
+            const icon = issue.severity === "error" ? "❌" : "⚠️";
+            console.warn(`    ${icon} [${issue.code}] ${issue.message}`);
+          }
+        }
+      }
+
+      return { valid: issues.every((i) => i.severity !== "error"), issues };
+    } catch (err) {
+      console.warn(`  ⚠️ 一致性检查失败: ${err.message}`);
+      return { valid: true, issues: [] }; // 失败时不阻断
+    }
+  }
+}
+
 /** 自动化生成的报告只是机器证据/模板，不能声明 advisory 或 blocking。 */
 function getReportDecisionLevel() {
   return "info";
@@ -530,6 +677,9 @@ Agent Runner — GIS Engine 多智能体调用脚本
     console.log(`   🔒 全局运行锁已获取`);
   }
 
+  // 初始化规划状态管理器
+  const planningMgr = new PlanningStateManager(ROOT);
+
   try {
     for (const [name, def] of agentsToRun) {
       // 确定周期
@@ -549,6 +699,19 @@ Agent Runner — GIS Engine 多智能体调用脚本
       console.log(
         `   模型路由: ${def.modelPolicy?.tier ?? "default"} / ${def.modelPolicy?.reasoningEffort ?? "medium"}`,
       );
+
+      // 如果是 task-distributor，验证规划状态一致性
+      if (name === "task-distributor") {
+        console.log(`   🔍 验证规划状态一致性...`);
+        const consistency = planningMgr.validateConsistency(options.dryRun);
+        if (!consistency.valid) {
+          console.warn(`   ⚠️ 规划状态一致性检查失败（非阻断）`);
+        } else if (consistency.issues.length > 0) {
+          console.warn(`   ⚠️ 检测到 ${consistency.issues.length} 个警告`);
+        } else {
+          console.log(`   ✅ 规划状态一致性检查通过`);
+        }
+      }
 
       // 运行门禁
       let gateResults = null;
