@@ -1,8 +1,8 @@
 ---
 agent: docs-agent
-period: 2026-05-25
-generated_at: 2026-05-25T01:56:25Z
-repo_revision: "d3c0137b2dd047f1b322e20c36256f5c0dcd31d8"
+period: 2026-05-30
+generated_at: 2026-05-30T01:46:36Z
+repo_revision: "9001a51fe52f5193f7ca44490f41ebc0756888be"
 inputs:
   - AGENTS.md
   - README.md
@@ -10,6 +10,6 @@ owner: "@docs-agent"
 decision_level: info
 ---
 
-# Documentation Audit: 2026-05-25
+# Documentation Audit: 2026-05-30
 
 > ⚠️ 本报告为 automation-generated machine evidence/template，不是已完成的 docs-agent 审查；补充实质文档审计前不得作为 advisory/blocking 决策依据。
