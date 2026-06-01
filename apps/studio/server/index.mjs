@@ -22,6 +22,7 @@ import { randomUUID } from "node:crypto";
 
 // ── Load provider ──
 const provider = await import("./provider.mjs");
+const maplibreCapabilities = await import("./maplibre-capabilities.mjs");
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..", "..", "..");
@@ -242,7 +243,7 @@ export function createInitialSpec(basemapId = DEFAULT_BASEMAP) {
 
 // ── AI command mapping ──
 export function applyProviderCommands(engine, output, spec) {
-  const { action, layerId, paint, view, layer } = output;
+  const { action, layerId, paint, view, layer, message } = output;
   let commands = [];
   let nextBasemap = activeBasemap;
 
@@ -272,6 +273,18 @@ export function applyProviderCommands(engine, output, spec) {
     case "reset":
       activeBasemap = DEFAULT_BASEMAP;
       return { status: "applied", nextSpec: createInitialSpec(), diagnostics: [], evidence: manualCommandEvidence(1) };
+    case "unsupported":
+      return {
+        status: "blocked",
+        nextSpec: spec,
+        diagnostics: [{
+          code: "STUDIO.MAPLIBRE_CAPABILITY_UNSUPPORTED",
+          severity: "error",
+          path: "/providerOutput/action",
+          message: message || "The requested MapLibre capability is known, but Studio does not have a safe command contract for it yet.",
+        }],
+        evidence: emptyCommandEvidence(),
+      };
     default:
       // Fallback: try legacy intent parsing
       return applyLegacyIntent(engine, action, spec);
@@ -588,6 +601,10 @@ async function main() {
         });
       }
 
+      if (req.method === "GET" && url.pathname === "/api/maplibre-capabilities") {
+        return sendJson(res, maplibreCapabilities.MAPLIBRE_CAPABILITY_REGISTRY);
+      }
+
       const tileMatch = url.pathname.match(/^\/api\/tiles\/([a-z0-9-]+)\/(\d+)\/(\d+)\/(\d+)\.(png|jpg|jpeg)$/i);
       if (req.method === "GET" && tileMatch) {
         return proxyBasemapTile(res, tileMatch[1], tileMatch[2], tileMatch[3], tileMatch[4]);
@@ -615,7 +632,13 @@ async function main() {
             layerIds: (activeSpec.layers || []).map((l) => l.id),
             view: activeSpec.view,
           };
-          const result = await provider.callOpenAiCompatibleProvider({ profile: ds, apiKey, message, summary });
+          const result = await provider.callOpenAiCompatibleProvider({
+            profile: ds,
+            apiKey,
+            message,
+            summary,
+            capabilityPrompt: maplibreCapabilities.buildMapLibreCapabilityPrompt(),
+          });
           console.log("DeepSeek result:", JSON.stringify(result).slice(0, 300));
 
           if (!result.ok) {

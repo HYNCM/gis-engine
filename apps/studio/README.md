@@ -60,6 +60,13 @@ Bing Aerial requires a server-side `BING_MAPS_KEY`:
 BING_MAPS_KEY=... pnpm studio:server
 ```
 
+## MapLibre Capability Registry
+
+Studio exposes an AI-facing MapLibre GL JS 5.24.0 capability registry at
+`GET /api/maplibre-capabilities`. Provider prompts include the same registry so
+models can distinguish currently commanded GIS Engine abilities from broader
+MapLibre abilities that still need a schema/command contract before mutation.
+
 ## Docker
 
 ```bash

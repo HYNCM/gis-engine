@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import * as engine from "@gis-engine/engine";
 import {
+  applyProviderCommands,
   applyLegacyIntent,
   buildBasemapCommands,
   createInitialSpec,
@@ -118,6 +119,23 @@ describe("AI Map Studio server state", () => {
         code: "STUDIO.BASEMAP_CREDENTIAL_REQUIRED",
         severity: "error",
         path: "/basemap"
+      })
+    ]);
+  });
+
+  it("blocks known MapLibre capabilities that do not have a command contract yet", () => {
+    const result = applyProviderCommands(engine, {
+      action: "unsupported",
+      message: "Terrain needs a command contract."
+    }, createInitialSpec());
+
+    expect(result.status).toBe("blocked");
+    expect(result.evidence).toMatchObject({ commandCount: 0, committed: false });
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({
+        code: "STUDIO.MAPLIBRE_CAPABILITY_UNSUPPORTED",
+        path: "/providerOutput/action",
+        message: "Terrain needs a command contract."
       })
     ]);
   });

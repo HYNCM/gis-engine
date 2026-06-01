@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 
 export async function callOpenAiCompatibleProvider(input) {
-  const { profile, apiKey, message, summary, fetchImpl = fetch } = input;
+  const { profile, apiKey, message, summary, capabilityPrompt, fetchImpl = fetch } = input;
   if (!apiKey) return providerError(profile, "Provider credential is not configured.");
 
   try {
@@ -12,7 +12,7 @@ export async function callOpenAiCompatibleProvider(input) {
         model: profile.model,
         temperature: 0,
         messages: [
-          { role: "system", content: systemPrompt(summary) },
+          { role: "system", content: systemPrompt(summary, capabilityPrompt) },
           { role: "user", content: message },
         ],
         response_format: { type: "json_object" },
@@ -43,6 +43,7 @@ export async function callOpenAiCompatibleProvider(input) {
         paint: parsed.value.paint || null,
         view: parsed.value.view || null,
         layer: parsed.value.layer || null,
+        message: typeof parsed.value.message === "string" ? parsed.value.message : null,
         confidence: sanitizeConfidence(parsed.value.confidence),
       },
     };
@@ -51,7 +52,7 @@ export async function callOpenAiCompatibleProvider(input) {
   }
 }
 
-function systemPrompt(summary) {
+function systemPrompt(summary, capabilityPrompt = "") {
   const layerInfo = summary.layers > 0
     ? `There ${summary.layers === 1 ? "is" : "are"} ${summary.layers} layer(s). Layer IDs: ${(summary.layerIds || []).join(", ") || "points-layer"}.`
     : "No layers exist yet.";
@@ -69,22 +70,28 @@ function systemPrompt(summary) {
     "- Remove a layer: provide layer id",
     "- Reset map: restore to default state",
     "",
+    "## MapLibre Capability Context",
+    capabilityPrompt || "No expanded MapLibre capability registry was provided. Use only the listed Available Actions.",
+    "",
     `## Current Map State\n${JSON.stringify(summary, null, 2)}`,
     "",
     layerInfo,
     "",
     "## Response Format (STRICT)",
     "{",
-    '  "action": "setPaint" | "setLayout" | "setView" | "addLayer" | "removeLayer" | "setBasemap" | "reset",',
+    '  "action": "setPaint" | "setLayout" | "setView" | "addLayer" | "removeLayer" | "setBasemap" | "reset" | "unsupported",',
     '  "layerId": "target-layer-id",          // for setPaint/setLayout/removeLayer/setBasemap (basemap id for setBasemap)',
     '  "paint": { "circle-color": "#ef4444" }, // for setPaint',
     '  "view": { "center": [120.15, 30.28], "zoom": 13 }, // for setView',
     '  "layer": { "id": "new-layer", "type": "circle", "source": "points", "paint": { "circle-radius": 8 } }, // for addLayer',
+    '  "message": "short reason when action is unsupported",',
     '  "confidence": { "score": 0.95, "level": "high" }',
     "}",
     "",
     "## Rules",
     "- ALWAYS use exact layer IDs from the current map state",
+    "- Use the MapLibre capability context to understand what the renderer can do and whether GIS Engine has a safe command contract for it",
+    "- If the requested MapLibre ability is listed as not-yet-commanded, do not invent DOM/browser mutations; return the closest safe command only when it preserves user intent",
     "- For color changes, use hex colors like #ef4444, #3b82f6, #22c55e",
     "- For setView, always include both center [lng, lat] and zoom",
     "- Return ONLY the JSON object, no markdown, no explanation",
