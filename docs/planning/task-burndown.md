@@ -335,7 +335,9 @@ mutation, external model calls, hidden file writes, external basemap/resource
 fetches, or stable SceneView3D runtime claims. AMW-005 adds optional
 server-side OpenAI-compatible provider calls while preserving the browser/key
 boundary, command-only mutation path, payload-free audit, and product-promotion
-hold.
+hold. AMW-006 opens the next product-boundary planning batch and keeps the
+workbench inside `examples/` until provider administration, durable audit,
+review actions, visual evidence, and promotion gates are accepted.
 
 | id | title | priority | owner | status | evidence target | acceptance | finish gates |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -344,6 +346,11 @@ hold.
 | TASK-2026W22-AMW-003 | Add provider-gated workbench evidence | P1 | `@ai-agent`, `@qa-agent`, `@docs-agent` | done | `docs/reviews/amw-003-provider-workbench-evidence-2026-05-31.md`; `tests/examples/ai-map-workbench.test.ts`; `examples/ai-map-workbench` | injected provider output goes through provider normalization, command skeletons, `applyCommands`, compact generation evidence, visible provider/session evidence, and payload-free audit records | `pnpm vitest run tests/examples/ai-map-workbench.test.ts`; `pnpm test:examples`; browser smoke; `pnpm check`; `git diff --check` |
 | TASK-2026W22-AMW-004 | Decide example-to-product promotion gate | P1 | `@quality-guardian`, `@coordinator` | done | `docs/reviews/amw-004-promotion-gate-2026-05-31.md` | the workbench passes the provider-gated local-system gate and remains under `examples/ai-map-workbench`; product-app or hosted promotion is held pending app boundary, provider credential/resource review, durable audit, visual evidence, and review actions | `pnpm test:docs`; `pnpm check`; `git diff --check` |
 | TASK-2026W22-AMW-005 | Add server-side provider profiles | P1 | `@ai-agent`, `@docs-agent` | done | `docs/reviews/amw-005-provider-profiles-2026-05-31.md`; `examples/ai-map-workbench`; `tests/examples/ai-map-workbench.test.ts` | server-side DeepSeek/OpenAI-compatible provider profiles are implemented under `examples/ai-map-workbench`; API keys remain server-only; provider output still normalizes through `normalizeWorkbenchProviderPlan` and `applyCommands`; selector evidence remains scoped to the last completed payload | provider/workbench tests; docs test; `pnpm check`; AMW-005 review |
+| TASK-2026W23-AMW-006 | Freeze AI Map Workbench product boundary | P0 | `@coordinator`, `@product-strategist`, `@task-distributor` | done | `docs/planning/feature-specs/ai-map-workbench-product-boundary.md`; `docs/planning/sprint-2026-W23-ai-map-workbench-product-boundary.md`; `docs/reviews/amw-006-product-boundary-planning-2026-06-01.md` | app ownership, provider administration, durable audit, review actions, visual evidence, and promotion gates are defined before implementation or product promotion | planning review; `pnpm test:docs`; `pnpm check`; `git diff --check` |
+| TASK-2026W23-AMW-007 | Design provider credential and resource administration | P0 | `@ai-agent`, `@engine-agent`, `@docs-agent` | todo | provider/resource administration design | provider profile lifecycle, allowed protocols, missing credential states, timeout/error behavior, prompt/body leak-hardening, and browser-safe metadata are specified before hosted or product use | provider/workbench tests or design review; `pnpm test:examples`; `pnpm test:docs`; `pnpm check` |
+| TASK-2026W23-AMW-008 | Design durable audit retention and export | P1 | `@engine-agent`, `@ai-agent`, `@docs-agent` | todo | durable audit design | retention, privacy, access control, export shape, payload caps, and deletion behavior are specified before persistent storage implementation | schema/design review if public; `pnpm test:docs`; `pnpm check`; `git diff --check` |
+| TASK-2026W23-AMW-009 | Define command-safe review actions | P1 | `@engine-agent`, `@ai-agent`, `@qa-agent` | todo | review action contract | accept, block, and follow-up-required actions produce structured review decisions without direct `MapSpec` mutation, browser file writes, or raw provider payload retention | command/evidence tests when implemented; `pnpm test:ai`; `pnpm test:examples`; `pnpm check` |
+| TASK-2026W23-AMW-010 | Run product-promotion Go-No-go gate | P1 | `@quality-guardian`, `@coordinator`, `@qa-agent` | todo | product-promotion gate report | gate decides whether AI Map Workbench stays in `examples/` or can move to a product app boundary, and records required visual/resource/audit evidence | `pnpm test:docs`; `pnpm check`; browser smoke or visual evidence; `git diff --check` |
 
 2026-05-31 AMW execution update: the runnable workbench is accepted as a
 product-evolution candidate by
@@ -374,6 +381,11 @@ safe public metadata, accept browser-selected `providerId` values, call
 OpenAI-compatible chat completions from the Node server only, preserve
 credential-free browser/audit evidence, and keep all resulting map changes on
 the existing provider-normalization plus command-application path.
+
+2026-06-01 AMW-006 planning update: W23 competitor/package evidence was
+refreshed and the AI Map Workbench product-boundary sprint was opened. The
+workbench remains under `examples/ai-map-workbench`; the next queued task is
+`TASK-2026W23-AMW-007`.
 
 ## 2026-W22 MapLibre Source Drift Audit
 

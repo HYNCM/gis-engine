@@ -172,6 +172,9 @@ move to `TASK-2026W23-SQH-003`.
 | TASK-2026W22-MLD-002 | done | `docs/reviews/mld-002-maplibre-drift-audit-2026-05-31.md`; `packages/engine/src/sources/contract.ts`; adapter/source compatibility evidence |
 | TASK-2026W22-MLD-003 | done | `docs/reviews/mld-003-resource-delivery-evidence-2026-06-01.md`; PMTiles/vector resource and delivery boundary evidence |
 | TASK-2026W22-MLD-004 | done / no-go | `docs/reviews/mld-004-go-no-go-2026-06-01.md`; package movement blocked pending refreshed official evidence and strict visual gates |
+| TASK-2026W22-AMW-001 through AMW-005 | done | `examples/ai-map-workbench`; provider-gated local review surface, provider profiles, and promotion hold evidence |
+| TASK-2026W23-AMW-006 | done | `docs/research/competitor-updates-2026-W23.md`; `docs/planning/feature-specs/ai-map-workbench-product-boundary.md`; `docs/planning/sprint-2026-W23-ai-map-workbench-product-boundary.md`; `docs/reviews/amw-006-product-boundary-planning-2026-06-01.md` |
+| TASK-2026W23-AMW-007 | queued | provider credential and resource administration design before hosted/product use |
 
 ## Next Handoff
 
@@ -182,24 +185,18 @@ move to `TASK-2026W23-SQH-003`.
   or an approved release waiver.
 - `@adapter-agent` / `@qa-agent`: keep lifecycle, snapshot, query, and visual
   evidence disjoint and adapter-local.
-- `@competitive-intel`, `@product-strategist`, and `@task-distributor`: start
-  the next short loop for AI-native natural-language map application generation.
-- `@engine-agent` / `@ai-agent`: implement the first W23 NLA contract slices
-  only after schema, command, diagnostics, and MCP output contracts are clear.
-- `@qa-agent` / `@docs-agent`: plan prompt evidence scenarios and public docs
-  around validation, trace, snapshot, and export artifacts.
-- `@competitive-intel`, `@product-strategist`, `@coordinator`, and
-  `@task-distributor`: start the next planning loop because the current AIN
-  batch is closed. Refresh market/product signals before opening new
-  implementation tasks.
 - `@coordinator`, `@competitive-intel`, `@product-strategist`, and
-  `@task-distributor`: `TASK-2026W22-GIR-006` is done, so return to planning
-  state and open the next evidence-backed task batch only after refreshed
-  signals are recorded.
-- `@coordinator`, `@competitive-intel`, `@product-strategist`, and
-  `@task-distributor`: MLD closure is recorded through `MLD-004`; return to
-  planning state before opening any future dependency movement task.
+  `@task-distributor`: the prior NLA, AIN, GIR, SQH, and MLD planning-loop
+  handoffs are consumed by `AMW-006`. Do not reopen them unless fresh evidence
+  creates a new task.
 - `@quality-guardian` / `@coordinator`: keep MapLibre package movement blocked
   until a future run refreshes official package evidence, scopes example
   loading compatibility, and accepts strict visual evidence or an explicit
   conditional waiver.
+- `@ai-agent`, `@engine-agent`, and `@docs-agent`: take
+  `TASK-2026W23-AMW-007` next. Design provider credential/resource
+  administration for AI Map Workbench without moving it out of `examples/`,
+  adding arbitrary provider templates, exposing browser secrets, or changing
+  MCP tool names.
+- `@qa-agent` and `@quality-guardian`: prepare future AMW visual/product gate
+  evidence only after AMW-007 through AMW-009 have owner reports.

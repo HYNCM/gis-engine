@@ -113,3 +113,15 @@ the active map spec unchanged.
 3. `AMW-004`: add bounded session audit records and run the promotion gate that
    decides whether the workbench remains an example or graduates to the
    generated-app review console.
+
+## 2026-06-01 Addendum
+
+AMW-002 through AMW-005 are complete. AMW-005 added server-side provider
+profiles while keeping credentials and provider calls on the server and keeping
+the workbench under `examples/ai-map-workbench`.
+
+The next slice is not direct promotion. `AMW-006` freezes the product-boundary
+plan in `docs/planning/feature-specs/ai-map-workbench-product-boundary.md` and
+`docs/planning/sprint-2026-W23-ai-map-workbench-product-boundary.md`. `AMW-007`
+must design provider credential/resource administration before hosted use,
+durable audit, review actions, or product app movement.

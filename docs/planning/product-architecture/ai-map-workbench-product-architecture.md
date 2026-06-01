@@ -111,3 +111,16 @@ product app, hosted service, or real-provider integration yet. Promotion require
 a separate app boundary spec, credential/resource-policy review, durable audit
 design, repeatable visual evidence, and explicit accept/block/follow-up review
 actions.
+
+## 2026-06-01 AMW-006 Addendum
+
+AMW-005 added optional server-side OpenAI-compatible provider profiles while
+preserving the local/example boundary: browser code sees safe provider metadata
+and sends only `providerId`; the server owns credential lookup, provider calls,
+normalization, command application, and payload-free audit evidence.
+
+AMW-006 opens the product-boundary planning batch. The next implementation task
+is AMW-007, which must design provider credential/resource administration
+before any product app movement, hosted deployment, durable audit, or review
+actions are implemented. The workbench remains under `examples/ai-map-workbench`
+until a future quality gate accepts the full product boundary.

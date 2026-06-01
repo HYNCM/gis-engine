@@ -116,3 +116,19 @@ benchmark below was refreshed on 2026-05-31 from official sources recorded in
 - AI operability, 3D readiness, developer experience, and ecosystem/data
   readiness stay unchanged because this closure does not add source parsers,
   hidden fetches, MCP aliases, or stable SceneView3D runtime.
+
+## 2026-06-01 W23 Planning Refresh Addendum
+
+- AI operability stays at 9.5. The current run refreshed W23 evidence and
+  opened the AI Map Workbench product-boundary task batch, but it did not add
+  new public schemas, MCP tools, or review-action runtime behavior.
+- Developer experience stays at 8.0 until the AMW product-boundary batch
+  accepts provider credential/resource administration, durable audit semantics,
+  command-safe review actions, and visual evidence. The pressure is now clear,
+  but the score should move only after accepted implementation or gate evidence.
+- 2D performance stays at 6.5 because `maplibre-gl` remains on the current
+  range and `MLD-004` remains a package-movement No-go.
+- 3D readiness stays at 5.4 because SceneView3D stable runtime remains blocked
+  after SRC-006.
+- Ecosystem/data readiness stays at 7.0 because cloud-native source signals
+  remain promotion candidates, not parser/query implementations.
