@@ -448,6 +448,47 @@ describe("ai-map-workbench OpenAI-compatible provider adapter", () => {
     });
   });
 
+  it("allows single-token prompts that match structured intent values", async () => {
+    const { callOpenAiCompatibleProvider } = await import(
+      "../../examples/ai-map-workbench/openai-compatible-provider.mjs"
+    );
+    const response = await callOpenAiCompatibleProvider({
+      profile,
+      apiKey,
+      message: "poi-circles",
+      summary,
+      fetchImpl: async () =>
+        new Response(
+          JSON.stringify({
+            choices: [
+              {
+                message: {
+                  content: JSON.stringify({
+                    intent: {
+                      mapId: "ai-map-workbench",
+                      targetDomains: ["feature-display"],
+                      styleEdits: [{ layerId: "poi-circles", paint: { "circle-color": "#ef4444" } }]
+                    },
+                    confidence: {
+                      level: "medium",
+                      reasons: ["The poi-circles layer is the requested target."]
+                    }
+                  })
+                }
+              }
+            ]
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+    });
+
+    expect(response.ok).toBe(true);
+    if (!response.ok) throw new Error("Expected provider call to succeed.");
+    expect(response.providerOutput.intent).toMatchObject({
+      styleEdits: [{ layerId: "poi-circles", paint: { "circle-color": "#ef4444" } }]
+    });
+  });
+
   it("bounds provider confidence reasons before returning provider output", async () => {
     const { callOpenAiCompatibleProvider } = await import(
       "../../examples/ai-map-workbench/openai-compatible-provider.mjs"

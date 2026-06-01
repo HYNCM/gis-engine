@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
-import { DiagnosticCodes } from "@gis-engine/engine";
+
+const CAPABILITY_UNSUPPORTED = "CAPABILITY.UNSUPPORTED";
 
 export async function callOpenAiCompatibleProvider(input) {
   const { profile, apiKey, message, summary, fetchImpl = fetch } = input;
@@ -110,7 +111,7 @@ function sanitizeConfidence(value, leakContext) {
 
 function collectForbiddenMarkers({ apiKey, message, providerValue }) {
   const markers = [];
-  for (const marker of [apiKey, message]) {
+  for (const marker of [apiKey, unsafePromptMarker(message)]) {
     if (typeof marker === "string" && marker.length > 0) markers.push({ value: marker, allowReverse: true });
   }
   collectUnsafeProviderMarkers(providerValue, markers);
@@ -150,8 +151,22 @@ function isStructuredIntent(intent) {
 
 function hasUnsafeIntent(intent, leakContext) {
   const serializedIntent = JSON.stringify(intent);
-  if (containsMarker(serializedIntent, leakContext.message) || containsMarker(serializedIntent, leakContext.apiKey)) return true;
+  if (
+    containsMarker(serializedIntent, unsafePromptMarker(leakContext.message)) ||
+    containsMarker(serializedIntent, leakContext.apiKey)
+  ) {
+    return true;
+  }
   return hasUnsafeIntentKey(intent);
+}
+
+function unsafePromptMarker(message) {
+  if (typeof message !== "string") return undefined;
+  const trimmed = message.trim();
+  if (trimmed.length === 0) return undefined;
+  const wordCount = trimmed.split(/\s+/).filter(Boolean).length;
+  if (wordCount >= 2) return trimmed;
+  return trimmed.length >= 24 || /[.!?]/.test(trimmed) ? trimmed : undefined;
 }
 
 function hasUnsafeIntentKey(value) {
@@ -167,6 +182,7 @@ function isUnsafeIntentKey(key) {
 
 function isUnsafeProviderKey(key) {
   const normalizedKey = normalizeProviderKey(key);
+  // Keys are normalized before matching so separator and camel-case sensitive aliases share one policy.
   return [
     "raw",
     "prompt",
@@ -204,7 +220,7 @@ function providerError(profile, path, message) {
     diagnostics: [
       {
         severity: "error",
-        code: DiagnosticCodes.CapabilityUnsupported,
+        code: CAPABILITY_UNSUPPORTED,
         message,
         path,
         fix: { kind: "manual", confidence: "high", message: "Check provider configuration or return structured intent JSON." }
