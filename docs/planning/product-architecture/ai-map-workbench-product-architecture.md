@@ -152,6 +152,14 @@ uses an opaque `projectId`, session id, map id, revision, payload-free audit
 cursor, and append-only review decision references. Runtime/service ownership is
 still unassigned, so hosted deployment remains No-go.
 
+## 2026-06-02 AWP-004 Addendum
+
+AWP-004 adds `examples/ai-map-workbench/audit-contract.mjs` as a pure durable
+audit contract scaffold. It defines compact record/export/deletion shapes,
+project-scoped role authorization, export and deletion caps, and raw-payload
+rejection without changing `/api/audit` storage behavior. Durable database,
+export endpoint, auth UI, and hosted deployment remain No-go.
+
 ## 2026-06-01 AMW-007 Addendum
 
 AMW-007 defines provider credential/resource administration in

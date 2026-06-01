@@ -129,6 +129,23 @@ runtime work:
   prompts, provider bodies, command bodies, feature payloads, screenshots, or
   full `MapSpec` retention.
 
+## AWP-004 Acceptance
+
+`AWP-004` must turn the durable audit design into a testable contract without
+adding product storage:
+
+- Durable audit records use a compact `amw.audit.v1` shape and reject raw
+  prompts, provider bodies, command bodies, patches, screenshots, feature
+  payloads, credentials, and full `MapSpec` payloads.
+- Audit operations are role- and project-scoped before export/delete behavior is
+  promoted.
+- Export envelopes are capped by record count and byte size and contain only
+  project-matching compact records.
+- Deletion receipts are admin-only, reason-coded, filter-bounded, count-capped,
+  and payload-free.
+- `/api/audit` remains latest-50 in-memory local evidence; no database, export
+  endpoint, auth UI, browser write, or hosted deployment is added.
+
 ## 2026-06-02 AWP-002 Addendum
 
 `AWP-002` is captured in
@@ -147,3 +164,12 @@ app ownership and project model definition.
 ownership, future route/module boundary, project identity semantics, and No-go
 language are documented without moving files or promoting hosted use. The next
 task is `AWP-004` authorized durable audit contract.
+
+## 2026-06-02 AWP-004 Addendum
+
+`AWP-004` is captured in
+`docs/reviews/awp-004-authorized-durable-audit-contract-2026-06-02.md`. The
+durable audit boundary is now represented by pure contract helpers and focused
+tests for compact records, project-scoped authorization, export caps, deletion
+receipts, and raw-payload rejection. Durable storage and export endpoints remain
+blocked. The next task is `AWP-005` command-safe review decisions.

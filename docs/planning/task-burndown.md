@@ -417,7 +417,7 @@ and new MCP tool names remain out of scope.
 | TASK-2026W23-AWP-001 | Freeze AI Map Workbench product implementation loop | P0 | `@coordinator`, `@product-strategist`, `@task-distributor` | done | `docs/planning/feature-specs/ai-map-workbench-product-implementation.md`; `docs/planning/sprint-2026-W23-ai-map-workbench-product-implementation.md`; `docs/reviews/awp-001-product-implementation-planning-2026-06-02.md` | implementation order is defined from AMW-010 blockers without product promotion or hosted scope creep | planning review; `pnpm test:docs`; `pnpm check`; `git diff --check` |
 | TASK-2026W23-AWP-002 | Implement provider resource enforcement | P0 | `@ai-agent`, `@engine-agent`, `@qa-agent` | done | `docs/reviews/awp-002-provider-resource-enforcement-2026-06-02.md`; `examples/ai-map-workbench`; `tests/examples/ai-map-workbench.test.ts` | server-side base URL policy, timeout/abort, response byte cap, stable diagnostics, and browser-safe metadata are enforced without moving the workbench out of `examples/` | provider/workbench tests; leak regression tests; `pnpm test:examples`; `pnpm check`; `git diff --check` |
 | TASK-2026W23-AWP-003 | Define product app ownership and project model | P0 | `@coordinator`, `@product-strategist`, `@docs-agent` | done | `docs/reviews/awp-003-product-ownership-project-model-2026-06-02.md` | product owner, route/module boundary, project identity model, and non-go boundaries are documented before file movement or hosted claims | planning review; `pnpm test:docs`; `git diff --check` |
-| TASK-2026W23-AWP-004 | Add authorized durable audit contract | P1 | `@engine-agent`, `@ai-agent`, `@docs-agent` | queued | durable audit contract delta report | durable audit/export behavior is access-controlled, retention-bound, payload-capped, deletion-aware, and free of raw prompt/provider/command/map payloads | schema/design review; focused audit tests; `pnpm check`; `git diff --check` |
+| TASK-2026W23-AWP-004 | Add authorized durable audit contract | P1 | `@engine-agent`, `@ai-agent`, `@docs-agent` | done | `docs/reviews/awp-004-authorized-durable-audit-contract-2026-06-02.md`; `examples/ai-map-workbench/audit-contract.mjs`; `tests/examples/ai-map-workbench.test.ts` | durable audit/export behavior is access-controlled, retention-bound, payload-capped, deletion-aware, and free of raw prompt/provider/command/map payloads | schema/design review; focused audit tests; `pnpm check`; `git diff --check` |
 | TASK-2026W23-AWP-005 | Implement command-safe review decisions | P1 | `@engine-agent`, `@ai-agent`, `@qa-agent` | queued | review-decision implementation report | accept, block, and follow-up-required decisions are append-only evidence linked to existing audit/provider/command diagnostics and never mutate `MapSpec` directly | schema/contract tests; workbench UI tests; `pnpm check`; `git diff --check` |
 | TASK-2026W23-AWP-006 | Add repeatable workbench UI evidence | P1 | `@qa-agent`, `@docs-agent` | queued | browser smoke or visual evidence report | provider selector, evidence rails, diagnostics, audit, and review-action states have deterministic UI evidence | browser smoke or visual evidence; `pnpm test:examples`; `pnpm check`; `git diff --check` |
 | TASK-2026W23-AWP-007 | Run product implementation Go-No-go gate | P1 | `@quality-guardian`, `@coordinator` | queued | product implementation gate report | gate decides whether blockers are closed enough for a later product-app promotion task, while preserving AMW-010 No-go until evidence is accepted | `pnpm test:docs`; `pnpm check`; browser smoke or visual evidence; release visual waiver or evidence; `git diff --check` |
@@ -440,6 +440,14 @@ route/module boundary is reserved for `apps/review-console` and
 `/review-console/workbench/:projectId`, while the current implementation stays
 under `examples/ai-map-workbench`. The next queued task is
 `TASK-2026W23-AWP-004` authorized durable audit contract.
+
+2026-06-02 AWP-004 execution update: authorized durable audit contract helpers
+are accepted in
+`docs/reviews/awp-004-authorized-durable-audit-contract-2026-06-02.md`. The
+contract covers compact records, project-scoped authorization, export caps,
+deletion receipts, and raw-payload rejection without adding durable storage or
+export endpoints. The next queued task is `TASK-2026W23-AWP-005` command-safe
+review decisions.
 
 ## 2026-W22 MapLibre Source Drift Audit
 

@@ -119,9 +119,15 @@ AMW-008 defines future durable audit retention/export behavior, but this example
 does not implement a database, export endpoint, auth system, browser file write,
 or persistent review workflow.
 
+`audit-contract.mjs` now contains pure contract helpers for the future durable
+audit boundary. They validate compact record/export/deletion shapes, role and
+project-scope authorization, payload caps, export caps, and payload-free
+deletion receipts. These helpers do not add storage or public endpoints.
+
 Future product-mode audit storage must keep records compact, retention-bound,
-access-controlled, export-capped, and free of raw prompts, provider raw bodies,
-credentials, feature payloads, screenshots, browser state, and full map specs.
+access-controlled, export-capped, deletion-aware, project-scoped, and free of
+raw prompts, provider raw bodies, credentials, feature payloads, screenshots,
+browser state, command bodies, patches, and full map specs.
 
 ## Review Action Guardrails
 
@@ -145,8 +151,8 @@ The chat API returns compact review evidence:
   the server-side command transaction.
 - `/api/audit`: the latest 50 payload-free session records with provider id,
   prompt hash when available, trace id, status, command count, diagnostic
-  counts, and revision movement. Durable retention/export is design-only until
-  a later implementation adds schemas, authorization, caps, and tests.
+  counts, and revision movement. Durable storage/export endpoints are still
+  absent; the durable audit contract is exercised by focused tests only.
 
 The audit endpoint intentionally does not store raw prompts, provider raw
 outputs, map specs, feature payloads, screenshots, credentials, or browser

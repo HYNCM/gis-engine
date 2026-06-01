@@ -264,6 +264,188 @@ describe("ai-map-workbench API", () => {
   });
 });
 
+describe("ai-map-workbench durable audit contract", () => {
+  function compactAuditRecord(overrides: Record<string, unknown> = {}) {
+    return {
+      projectId: "project_demo",
+      sessionId: "workbench-session",
+      recordId: "record-1",
+      createdAt: "2026-06-02T00:00:00Z",
+      status: "applied",
+      providerId: "mock-ai",
+      promptHash: `sha256:${"a".repeat(64)}`,
+      traceId: "trace-1",
+      commandCount: 1,
+      diagnosticCounts: { error: 0, warning: 0, info: 0 },
+      diagnosticCodes: [{ code: "CAPABILITY.UNSUPPORTED", path: "/providerProfile" }],
+      fromRevision: "1",
+      toRevision: "2",
+      ...overrides
+    };
+  }
+
+  it("creates payload-free durable records and export envelopes", async () => {
+    const { createAuditExportEnvelope, createDurableAuditRecord } = await import(
+      "../../examples/ai-map-workbench/audit-contract.mjs"
+    );
+
+    const recordResult = createDurableAuditRecord(compactAuditRecord());
+    expect(recordResult.ok).toBe(true);
+    if (!recordResult.ok) throw new Error("Expected durable audit record to be accepted.");
+
+    expect(recordResult.record).toMatchObject({
+      recordVersion: "amw.audit.v1",
+      projectId: "project_demo",
+      sessionId: "workbench-session",
+      recordId: "record-1",
+      status: "applied",
+      commandCount: 1
+    });
+    expect(recordResult.record.diagnosticCodes).toEqual([{ code: "CAPABILITY.UNSUPPORTED", path: "/providerProfile" }]);
+
+    const exportResult = createAuditExportEnvelope({
+      principal: { role: "reviewer", projectIds: ["project_demo"] },
+      projectId: "project_demo",
+      generatedAt: "2026-06-02T00:01:00Z",
+      filters: { from: "2026-06-02T00:00:00Z", status: ["applied", "raw-provider-status"] },
+      records: [recordResult.record],
+      nextCursor: "cursor-1"
+    });
+
+    expect(exportResult.ok).toBe(true);
+    if (!exportResult.ok) throw new Error("Expected audit export to be accepted.");
+    expect(exportResult.envelope).toMatchObject({
+      auditExportVersion: "amw.audit.export.v1",
+      projectId: "project_demo",
+      nextCursor: "cursor-1"
+    });
+    expect(exportResult.envelope.filters.status).toEqual(["applied"]);
+    const serialized = JSON.stringify(exportResult.envelope);
+    expect(serialized).not.toMatch(/make points red|secret-key|provider raw body|West Lake|MapSpec/i);
+  });
+
+  it("rejects raw or oversized durable audit payloads with stable diagnostics", async () => {
+    const { createDurableAuditRecord } = await import("../../examples/ai-map-workbench/audit-contract.mjs");
+
+    const rawResult = createDurableAuditRecord(
+      compactAuditRecord({
+        rawPrompt: "make points red",
+        providerResponseBody: "provider raw body",
+        spec: { id: "ai-map-workbench" }
+      })
+    );
+    expect(rawResult.ok).toBe(false);
+    expect(rawResult.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: "AUDIT.CONTRACT_VIOLATION",
+        path: expect.stringMatching(/^\/auditPayload\//)
+      })
+    );
+
+    const tooManyDiagnostics = createDurableAuditRecord(
+      compactAuditRecord({
+        diagnosticCodes: Array.from({ length: 21 }, (_unused, index) => ({
+          code: `CAPABILITY.UNSUPPORTED.${index}`,
+          path: `/diagnostics/${index}`
+        }))
+      })
+    );
+    expect(tooManyDiagnostics.ok).toBe(false);
+    expect(tooManyDiagnostics.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: "AUDIT.CONTRACT_VIOLATION",
+        path: "/auditPayload/diagnostics"
+      })
+    );
+  });
+
+  it("authorizes audit operations by role and project scope", async () => {
+    const { authorizeAuditOperation, createAuditDeletionReceipt } = await import(
+      "../../examples/ai-map-workbench/audit-contract.mjs"
+    );
+
+    expect(
+      authorizeAuditOperation({
+        operation: "export",
+        principal: { role: "reviewer", projectIds: ["project_demo"] },
+        projectId: "project_demo"
+      })
+    ).toEqual({ ok: true });
+
+    const reviewerDelete = authorizeAuditOperation({
+      operation: "delete",
+      principal: { role: "reviewer", projectIds: ["project_demo"] },
+      projectId: "project_demo"
+    });
+    expect(reviewerDelete.ok).toBe(false);
+    expect(reviewerDelete.diagnostics).toContainEqual(expect.objectContaining({ path: "/auditAccess" }));
+
+    const wrongProject = authorizeAuditOperation({
+      operation: "export",
+      principal: { role: "reviewer", projectIds: ["project_other"] },
+      projectId: "project_demo"
+    });
+    expect(wrongProject.ok).toBe(false);
+    expect(wrongProject.diagnostics).toContainEqual(expect.objectContaining({ path: "/auditAccess" }));
+
+    const deletion = createAuditDeletionReceipt({
+      principal: { role: "admin", projectIds: ["project_demo"] },
+      projectId: "project_demo",
+      deletedAt: "2026-06-02T00:02:00Z",
+      actorId: "admin-1",
+      reasonCode: "retention-expired",
+      filterSummary: { sessionId: "workbench-session", status: "blocked" },
+      deletedCount: 3
+    });
+    expect(deletion.ok).toBe(true);
+    if (!deletion.ok) throw new Error("Expected deletion receipt to be accepted.");
+    expect(deletion.receipt).toMatchObject({
+      deletionReceiptVersion: "amw.audit.deletion.v1",
+      projectId: "project_demo",
+      deletedCount: 3
+    });
+    expect(JSON.stringify(deletion.receipt)).not.toMatch(/raw|prompt|providerResponse|MapSpec/i);
+  });
+
+  it("caps audit export pages and deletion batches", async () => {
+    const { createAuditDeletionReceipt, createAuditExportEnvelope, createDurableAuditRecord } = await import(
+      "../../examples/ai-map-workbench/audit-contract.mjs"
+    );
+    const recordResult = createDurableAuditRecord(compactAuditRecord());
+    if (!recordResult.ok) throw new Error("Expected durable audit record to be accepted.");
+
+    const oversizedExport = createAuditExportEnvelope({
+      principal: { role: "reviewer", projectIds: ["project_demo"] },
+      projectId: "project_demo",
+      generatedAt: "2026-06-02T00:03:00Z",
+      records: Array.from({ length: 501 }, () => recordResult.record)
+    });
+    expect(oversizedExport.ok).toBe(false);
+    expect(oversizedExport.diagnostics).toContainEqual(expect.objectContaining({ path: "/auditExport/size" }));
+
+    const mismatchedExport = createAuditExportEnvelope({
+      principal: { role: "reviewer", projectIds: ["project_demo"] },
+      projectId: "project_demo",
+      generatedAt: "2026-06-02T00:03:00Z",
+      records: [{ ...recordResult.record, projectId: "project_other" }]
+    });
+    expect(mismatchedExport.ok).toBe(false);
+    expect(mismatchedExport.diagnostics).toContainEqual(expect.objectContaining({ path: "/auditExport" }));
+
+    const oversizedDeletion = createAuditDeletionReceipt({
+      principal: { role: "admin", projectIds: ["project_demo"] },
+      projectId: "project_demo",
+      deletedAt: "2026-06-02T00:04:00Z",
+      actorId: "admin-1",
+      reasonCode: "manual-purge",
+      filterSummary: { sessionId: "workbench-session" },
+      deletedCount: 10_001
+    });
+    expect(oversizedDeletion.ok).toBe(false);
+    expect(oversizedDeletion.diagnostics).toContainEqual(expect.objectContaining({ path: "/auditDeletion/size" }));
+  });
+});
+
 describe("ai-map-workbench selected provider API", () => {
   it("serves safe provider metadata", async () => {
     const server = await createWorkbenchServer({

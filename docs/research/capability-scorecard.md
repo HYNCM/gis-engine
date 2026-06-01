@@ -194,5 +194,16 @@ benchmark below was refreshed on 2026-05-31 from official sources recorded in
 - AI operability stays at 9.5 because project identity is payload-free and keeps
   mutation through existing command evidence, but no new public tool or runtime
   capability is added.
-- The next score movement requires `AWP-004` durable audit contract plus
-  accepted review-action and UI evidence, not ownership planning alone.
+- The next score movement requires durable audit contract plus accepted
+  review-action and UI evidence, not ownership planning alone.
+
+## 2026-06-02 AWP-004 Addendum
+
+- Developer experience stays at 8.0. Durable audit contract helpers now make
+  project-scoped access, export caps, deletion receipts, and raw-payload
+  rejection testable, but there is still no product app, durable store, export
+  endpoint, review-action runtime, or repeatable UI evidence.
+- AI operability stays at 9.5 because audit evidence remains compact and
+  payload-free without adding public MCP tools or direct mutation paths.
+- The next score movement requires `AWP-005` command-safe review decisions plus
+  accepted repeatable UI evidence, not audit contract helpers alone.

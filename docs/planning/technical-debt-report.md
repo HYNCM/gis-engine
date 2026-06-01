@@ -144,16 +144,22 @@ surface。
 runtime 和产品化 gate 之前，必须定义 project-scoped access control、retention、
 deletion、export caps 和 payload-free audit semantics。
 
+2026-06-02 AWP-004 update: authorized durable audit contract 已由
+`docs/reviews/awp-004-authorized-durable-audit-contract-2026-06-02.md` 记录。当前
+最高优先级债务转为 `AWP-005` command-safe review decisions：必须把 accept、block
+和 follow-up-required 决策做成 append-only evidence，而不是第二条 map mutation
+path。
+
 ## 债务优先级
 
 | 排名 | 债务 | 得分 | 证据 | 建议修复 | 置信度 |
 | --- | ---: | ---: | --- | --- | --- |
-| 1 | AWP durable audit contract | 0.15 | `AWP-003` closes product ownership/project model; `AWP-004` must define project-scoped access control, retention, deletion, export caps, and payload-free audit semantics before runtime decisions | execute `TASK-2026W23-AWP-004` before review-action runtime or product gate work | high |
+| 1 | AWP command-safe review decisions | 0.15 | `AWP-004` closes authorized durable audit contract; `AWP-005` must implement accept, block, and follow-up-required decisions as append-only evidence linked to compact audit/provider/command diagnostics | execute `TASK-2026W23-AWP-005` before UI evidence or product gate work | high |
 | 2 | Future MapLibre package movement gate | 0.12 | `MLD-004` blocks package movement in this batch; current code remains on the existing `maplibre-gl` range | create a new package-movement task only after official source refresh and strict visual evidence are available | high |
 
 ## 修复顺序
 
-1. 执行 `TASK-2026W23-AWP-004`：定义 authorized durable audit contract，先锁定 access control、retention、deletion、export caps 和 payload-free semantics，再考虑任何持久化实现。
+1. 执行 `TASK-2026W23-AWP-005`：实现 command-safe review decisions，确保 accept/block/follow-up-required 只写 append-only decision evidence，不直接改 `MapSpec`、不写浏览器文件、不新增 MCP tool name。
 2. 后续若要移动 MapLibre package，先开新任务并刷新官方 package/changelog evidence、example loading compatibility 和 strict visual gates。
 3. 下一步若要推进 stable runtime promotion，必须先形成明确的 promotion
    rubric、browser matrix evidence 和 guardrail diagnostics，不得直接把
@@ -166,7 +172,7 @@ deletion、export caps 和 payload-free audit semantics。
 
 ## 结论
 
-如果只做一件事，下一步优先执行 `TASK-2026W23-AWP-004`。Generated-app delivery
+如果只做一件事，下一步优先执行 `TASK-2026W23-AWP-005`。Generated-app delivery
 review fixtures、source readiness review cards、spatial-analysis review cards、
 prompt-to-delivery QA scenarios、docs/release wording guardrails、SQH boundary
 planning、explicit query capability gate 和 invalid/source diagnostics 已完成。
@@ -176,5 +182,5 @@ MLD-004 收口为 package movement No-go。AI Map Workbench Product Boundary 已
 打开并完成 provider credential/resource administration、durable audit
 retention/export、review actions 和 AMW-010 No-go gate；AWP-001 已打开新的产品
 实现批次，AWP-002 provider resource enforcement 已落地，AWP-003 product
-ownership/project model 已记录。SceneView3D stable runtime 仍保持 blocker state，
-直到新的 explicit approval arrives。
+ownership/project model 已记录，AWP-004 durable audit contract 已落地。SceneView3D
+stable runtime 仍保持 blocker state，直到新的 explicit approval arrives。
