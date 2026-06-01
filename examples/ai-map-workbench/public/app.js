@@ -48,7 +48,6 @@ async function init() {
     }
     selectedProviderId = profile.id;
     renderProviderStatus();
-    renderProviderEvidence({});
   });
   document.querySelectorAll("[data-prompt]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -103,11 +102,16 @@ function renderProviderOptions() {
     const option = document.createElement("option");
     option.value = provider.id;
     option.disabled = !provider.enabled;
-    option.textContent = `${provider.label ?? provider.id} / ${provider.model ?? "model unknown"}`;
+    option.textContent = formatProviderOptionLabel(provider);
     return option;
   });
   providerSelect.replaceChildren(...options);
   providerSelect.value = selectedProviderId;
+}
+
+function formatProviderOptionLabel(provider) {
+  const availability = provider.enabled ? "" : provider.missingCredential ? " (missing credential)" : " (unavailable)";
+  return `${provider.label ?? provider.id} / ${provider.model ?? "model unknown"}${availability}`;
 }
 
 function renderProviderStatus() {
@@ -121,10 +125,6 @@ function renderProviderStatus() {
     return;
   }
   providerStatus.textContent = `${profile.label ?? profile.id} ready.`;
-}
-
-function selectedProviderProfile() {
-  return providerProfiles.find((provider) => provider.id === selectedProviderId);
 }
 
 function initSidebarControls() {
@@ -252,8 +252,10 @@ function renderProviderEvidence(payload) {
   const evidence = payload.generationEvidence;
   const planner = evidence?.planner;
   const delivery = evidence?.delivery;
-  const evidenceProviderId = provider?.providerId ?? selectedProviderId ?? "mock-ai";
-  const evidenceProfile = providerProfiles.find((profile) => profile.id === evidenceProviderId);
+  const evidenceProviderId = provider?.providerId ?? "mock";
+  const evidenceProfile = provider?.providerId
+    ? providerProfiles.find((profile) => profile.id === provider.providerId)
+    : undefined;
   const rows = [
     ["Provider", evidenceProviderId],
     ["Model", evidenceProfile?.model ?? "--"],

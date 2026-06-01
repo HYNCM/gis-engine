@@ -575,10 +575,20 @@ describe("ai-map-workbench provider selector UI contract", () => {
 
     expect(html).toContain('id="provider-select"');
     expect(html).toContain('id="provider-status"');
+    expect(html).toContain('aria-describedby="provider-status"');
+    expect(html).toContain('role="status"');
     expect(appJs).toContain('fetchJson("/api/providers")');
+    expect(appJs).toContain("option.disabled = !provider.enabled");
+    expect(appJs).toContain('provider.id === "mock-ai" && provider.enabled');
+    expect(appJs).toContain("(missing credential)");
     expect(appJs).toContain("providerId: selectedProviderId");
+    const chatPostBody = /postJson\("\/api\/chat",\s*\{([^}]+)\}\)/.exec(appJs)?.[1] ?? "";
+    expect(chatPostBody).toContain("message");
+    expect(chatPostBody).toContain("providerId: selectedProviderId");
+    expect(chatPostBody).not.toMatch(/apiKey|baseUrl|raw/i);
     expect(appJs).not.toContain("apiKey");
     expect(appJs).not.toContain("baseUrl");
+    expect(appJs).not.toContain("renderProviderEvidence({})");
   });
 });
 
