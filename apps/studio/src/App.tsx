@@ -7,25 +7,13 @@ export interface ServerState {
   status: "ready" | "loading" | "blocked" | "applied";
   spec: Record<string, unknown>;
   style: Record<string, unknown> | null;
-  summary: {
-    mapId: string; revision: string; sourceCount: number; layerCount: number;
-    center: [number, number] | null; zoom: number | null;
-  };
+  summary: { mapId: string; revision: string; sourceCount: number; layerCount: number; center: [number, number] | null; zoom: number | null };
   diagnostics: Array<{ code: string; severity: string; path?: string; message: string }>;
   commandEvidence?: { committed: boolean; rolledBack: boolean; changedPathCount: number };
   provider?: { providerId: string; confidence?: { score: number; level: string } };
 }
 
-export interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
-  status?: string;
-  evidence?: {
-    commandEvidence?: ServerState["commandEvidence"];
-    provider?: ServerState["provider"];
-    diagnostics?: ServerState["diagnostics"];
-  };
-}
+export interface ChatMessage { role: "user" | "assistant"; content: string; status?: string; evidence?: { commandEvidence?: ServerState["commandEvidence"]; provider?: ServerState["provider"]; diagnostics?: ServerState["diagnostics"] }; }
 
 export default function App() {
   const [serverState, setServerState] = useState<ServerState | null>(null);
@@ -34,59 +22,48 @@ export default function App() {
   const [leftOpen, setLeftOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(true);
   const [savedMsg, setSavedMsg] = useState("");
+  const [providerId, setProviderId] = useState("mock-ai");
+  const [providers, setProviders] = useState<Array<{ id: string; label: string; enabled: boolean }>>([]);
 
   const fetchState = useCallback(async () => {
-    try {
-      const res = await fetch("/api/state");
-      const data: ServerState = await res.json();
-      setServerState(data); setStatus(data.status);
-    } catch { setStatus("disconnected"); }
+    try { const res = await fetch("/api/state"); const d: ServerState = await res.json(); setServerState(d); setStatus(d.status); } catch { setStatus("disconnected"); }
+  }, []);
+
+  const fetchProviders = useCallback(async () => {
+    try { const res = await fetch("/api/providers"); const d = await res.json(); setProviders(d.providers || []); } catch { /* ignore */ }
   }, []);
 
   useEffect(() => {
-    fetchState();
+    fetchState(); fetchProviders();
     setMessages([{ role: "assistant", content: "Welcome to AI Map Studio. Try: 'make points red', 'zoom to Hangzhou'." }]);
-  }, [fetchState]);
+  }, [fetchState, fetchProviders]);
 
   const sendMessage = async (text: string) => {
-    setMessages((p) => [...p, { role: "user", content: text }]);
-    setStatus("thinking");
+    setMessages((p) => [...p, { role: "user", content: text }]); setStatus("thinking");
     try {
-      const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: text }) });
+      const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: text, providerId }) });
       const data: ServerState = await res.json();
-      const cmd = data.commandEvidence; const diags = data.diagnostics || [];
-      const errs = diags.filter((d) => d.severity === "error").length;
+      const cmd = data.commandEvidence; const diags = data.diagnostics || []; const errs = diags.filter((d) => d.severity === "error").length;
       const reply = data.status === "applied" ? `Done. ${cmd?.changedPathCount ?? 0} path(s) changed.` : data.status === "blocked" ? `Blocked${errs ? `: ${errs} error(s)` : ""}. See evidence.` : `Status: ${data.status}.`;
-
       setMessages((p) => [...p, { role: "assistant", content: reply, status: data.status, evidence: { commandEvidence: cmd, provider: data.provider, diagnostics: diags } }]);
       setStatus(data.status);
       if (data.status === "applied") setServerState(data);
-    } catch (err) {
-      setMessages((p) => [...p, { role: "assistant", content: `Error: ${err instanceof Error ? err.message : "Is the server running on port 4321?"}` }]);
-      setStatus("blocked");
-    }
+    } catch (err) { setMessages((p) => [...p, { role: "assistant", content: `Error: ${err instanceof Error ? err.message : "Is the server running?"}` }]); setStatus("blocked"); }
   };
 
   const saveMap = async () => {
     try {
       const name = `Map ${serverState?.summary.revision || "0"}`;
-      const res = await fetch("/api/maps/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: serverState?.summary.mapId, name }),
-      });
+      const res = await fetch("/api/maps/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: serverState?.summary.mapId, name }) });
       const data = await res.json();
-      if (data.ok) {
-        setSavedMsg(`Saved: ${name}`);
-        setTimeout(() => setSavedMsg(""), 2000);
-      }
+      if (data.ok) { setSavedMsg(`Saved: ${name}`); setTimeout(() => setSavedMsg(""), 2000); }
     } catch { setSavedMsg("Save failed"); }
   };
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-950">
       <div className={`panel bg-gray-900 border-r border-gray-800 flex flex-col transition-all ${leftOpen ? "w-96" : "w-0"}`}>
-        {leftOpen && <ChatPanel messages={messages} status={status} onSend={sendMessage} onClose={() => setLeftOpen(false)} />}
+        {leftOpen && <ChatPanel messages={messages} status={status} onSend={sendMessage} onClose={() => setLeftOpen(false)} providerId={providerId} providers={providers} onProviderChange={setProviderId} />}
       </div>
       {!leftOpen && <button onClick={() => setLeftOpen(true)} className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-gray-800/80 hover:bg-gray-700 text-gray-400 hover:text-white px-1.5 py-5 rounded-r" title="Chat">▸</button>}
       <div className="flex-1 relative"><MapStage serverState={serverState} status={status} onSave={saveMap} savedMsg={savedMsg} /></div>
