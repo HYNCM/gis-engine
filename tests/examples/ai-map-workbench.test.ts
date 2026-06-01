@@ -336,6 +336,34 @@ describe("ai-map-workbench selected provider API", () => {
     expect(result.diagnostics).toContainEqual(expect.objectContaining({ path: "/providerProfile" }));
   });
 
+  it("does not echo request-controlled unknown provider ids into response or audit", async () => {
+    const providerToken = "secret-provider-token private task label";
+    const server = await createWorkbenchServer({ port: 0 });
+    closeServer = server.close;
+
+    const response = await fetch(`${server.url}/api/chat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message: "make points red", providerId: providerToken })
+    });
+    const result = await response.json();
+    const auditResponse = await fetch(`${server.url}/api/audit`);
+    const audit = await auditResponse.json();
+
+    expect(response.ok).toBe(true);
+    expect(result.status).toBe("blocked");
+    expect(result.provider).toMatchObject({ providerId: "unknown-provider", retainedRawPrompt: false });
+    expect(audit.records).toHaveLength(1);
+    expect(audit.records[0]).toMatchObject({
+      providerId: "unknown-provider",
+      status: "blocked",
+      commandCount: 0
+    });
+    const serialized = `${JSON.stringify(result)}\n${JSON.stringify(audit)}`;
+    expect(serialized).not.toContain(providerToken);
+    expect(serialized).not.toContain("make points red");
+  });
+
   it("blocks provider HTTP failures without leaking prompt, credentials, or provider body into response or audit", async () => {
     const rawPrompt = "make points red with private task label";
     const apiKey = "secret-deepseek-key";
@@ -452,6 +480,85 @@ describe("ai-map-workbench selected provider API", () => {
       commandCount: 0,
       fromRevision: "1",
       toRevision: "2"
+    });
+  });
+
+  it("blocks stale provider output when reset restores the same revision while provider is pending", async () => {
+    let resolveProviderResponse: ((response: Response) => void) | undefined;
+    let providerStarted: (() => void) | undefined;
+    const providerStartedPromise = new Promise<void>((resolve) => {
+      providerStarted = resolve;
+    });
+    const server = await createWorkbenchServer({
+      port: 0,
+      env: { DEEPSEEK_API_KEY: "secret-deepseek-key" },
+      fetchImpl: async () => {
+        providerStarted?.();
+        return new Promise<Response>((resolve) => {
+          resolveProviderResponse = resolve;
+        });
+      }
+    });
+    closeServer = server.close;
+
+    const staleProviderPromise = fetch(`${server.url}/api/chat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message: "make points red through provider", providerId: "deepseek" })
+    });
+    await providerStartedPromise;
+
+    const resetResponse = await fetch(`${server.url}/api/chat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message: "reset" })
+    });
+    const resetResult = await resetResponse.json();
+    resolveProviderResponse?.(
+      new Response(
+        JSON.stringify({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  intent: {
+                    mapId: "ai-map-workbench",
+                    targetDomains: ["feature-display"],
+                    styleEdits: [{ layerId: "poi-circles", paint: { "circle-color": "#ef4444" } }]
+                  }
+                })
+              }
+            }
+          ]
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      )
+    );
+
+    const staleProviderResponse = await staleProviderPromise;
+    const staleProviderResult = await staleProviderResponse.json();
+    const currentStateResponse = await fetch(`${server.url}/api/state`);
+    const currentState = await currentStateResponse.json();
+    const auditResponse = await fetch(`${server.url}/api/audit`);
+    const audit = await auditResponse.json();
+
+    expect(resetResult.status).toBe("reset");
+    expect(resetResult.summary.revision).toBe("1");
+    expect(staleProviderResponse.ok).toBe(true);
+    expect(staleProviderResult.status).toBe("blocked");
+    expect(staleProviderResult.summary.revision).toBe("1");
+    expect(staleProviderResult.commandEvidence).toMatchObject({ commandCount: 0, committed: false, failed: false });
+    expect(staleProviderResult.diagnostics).toContainEqual(expect.objectContaining({ path: "/providerRevision" }));
+    expect(
+      currentState.spec.layers.find((layer: { id: string }) => layer.id === "poi-circles")?.paint?.["circle-color"]
+    ).toBe("#2563eb");
+    expect(audit.records).toHaveLength(2);
+    expect(audit.records[1]).toMatchObject({
+      providerId: "deepseek",
+      status: "blocked",
+      commandCount: 0,
+      fromRevision: "1",
+      toRevision: "1"
     });
   });
 });

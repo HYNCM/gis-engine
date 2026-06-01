@@ -37,6 +37,12 @@ export async function createWorkbenchServer(options = {}) {
   const sessionId = options.sessionId ?? createSessionId();
   const auditRecords = [];
   let activeSpec = createInitialSpec();
+  let activeEpoch = 0;
+
+  function replaceActiveSpec(nextSpec) {
+    activeSpec = nextSpec;
+    activeEpoch += 1;
+  }
 
   const server = createServer(async (request, response) => {
     try {
@@ -64,6 +70,7 @@ export async function createWorkbenchServer(options = {}) {
         const message = typeof body.message === "string" ? body.message : "";
         const providerId = normalizeProviderId(body.providerId);
         const planningSpec = activeSpec;
+        const planningEpoch = activeEpoch;
         const fromRevision = planningSpec.revision ?? "0";
 
         if (plannerProvider && !providerId) {
@@ -77,12 +84,16 @@ export async function createWorkbenchServer(options = {}) {
             ai,
             baseSpec: planningSpec,
             getActiveSpec: () => activeSpec,
+            getActiveEpoch: () => activeEpoch,
             providerOutput,
             sessionId,
             auditRecords,
-            fromRevision
+            fromRevision,
+            fromEpoch: planningEpoch
           });
-          if (providerResult.activeSpec) activeSpec = providerResult.activeSpec;
+          if (providerResult.activeSpec && providerResult.activeSpec !== activeSpec) {
+            replaceActiveSpec(providerResult.activeSpec);
+          }
           return sendJson(response, providerResult.payload);
         }
 
@@ -94,7 +105,7 @@ export async function createWorkbenchServer(options = {}) {
               sessionId,
               fromRevision,
               provider: {
-                providerId,
+                providerId: "unknown-provider",
                 retainedRawPrompt: false
               },
               diagnostics: [providerDiagnostic("/providerProfile", "Selected provider profile is not configured.")]
@@ -132,19 +143,23 @@ export async function createWorkbenchServer(options = {}) {
             ai,
             baseSpec: planningSpec,
             getActiveSpec: () => activeSpec,
+            getActiveEpoch: () => activeEpoch,
             providerOutput: providerResponse.providerOutput,
             sessionId,
             auditRecords,
-            fromRevision
+            fromRevision,
+            fromEpoch: planningEpoch
           });
-          if (providerResult.activeSpec) activeSpec = providerResult.activeSpec;
+          if (providerResult.activeSpec && providerResult.activeSpec !== activeSpec) {
+            replaceActiveSpec(providerResult.activeSpec);
+          }
           return sendJson(response, providerResult.payload);
         }
 
         const plan = planMockAiEdit(message);
 
         if (plan.status === "reset") {
-          activeSpec = createInitialSpec();
+          replaceActiveSpec(createInitialSpec());
           appendAuditRecord(auditRecords, {
             sessionId,
             providerId: "mock-ai",
@@ -187,7 +202,7 @@ export async function createWorkbenchServer(options = {}) {
           traceId: `workbench.${plan.intent}.${activeSpec.revision ?? "0"}`
         });
         if (applied.committed && !applied.rolledBack) {
-          activeSpec = applied.spec;
+          replaceActiveSpec(applied.spec);
         }
 
         const failed = applied.results.some((result) => result.status === "failed");
@@ -227,7 +242,7 @@ export async function createWorkbenchServer(options = {}) {
       }
 
       if (request.method === "POST" && url.pathname === "/api/reset") {
-        activeSpec = createInitialSpec();
+        replaceActiveSpec(createInitialSpec());
         return sendJson(response, statePayload(engine, "reset", activeSpec));
       }
 
@@ -332,18 +347,22 @@ async function applyProviderOutput({
   ai,
   baseSpec,
   getActiveSpec,
+  getActiveEpoch,
   providerOutput,
   sessionId,
   auditRecords,
-  fromRevision
+  fromRevision,
+  fromEpoch
 }) {
   const initialStaleResult = staleProviderResult({
     engine,
     currentSpec: getActiveSpec(),
+    currentEpoch: getActiveEpoch(),
     providerOutput,
     sessionId,
     auditRecords,
-    fromRevision
+    fromRevision,
+    fromEpoch
   });
   if (initialStaleResult) return initialStaleResult;
 
@@ -446,10 +465,12 @@ async function applyProviderOutput({
   const preApplyStaleResult = staleProviderResult({
     engine,
     currentSpec: getActiveSpec(),
+    currentEpoch: getActiveEpoch(),
     providerOutput,
     sessionId,
     auditRecords,
-    fromRevision
+    fromRevision,
+    fromEpoch
   });
   if (preApplyStaleResult) return preApplyStaleResult;
 
@@ -486,8 +507,17 @@ async function applyProviderOutput({
   };
 }
 
-function staleProviderResult({ engine, currentSpec, providerOutput, sessionId, auditRecords, fromRevision }) {
-  if ((currentSpec.revision ?? "0") === fromRevision) return undefined;
+function staleProviderResult({
+  engine,
+  currentSpec,
+  currentEpoch,
+  providerOutput,
+  sessionId,
+  auditRecords,
+  fromRevision,
+  fromEpoch
+}) {
+  if ((currentSpec.revision ?? "0") === fromRevision && currentEpoch === fromEpoch) return undefined;
   const provider = blockedProviderEvidence(providerOutput);
   const diagnostics = [
     providerDiagnostic("/providerRevision", "Provider output is stale because the active map revision changed.")
