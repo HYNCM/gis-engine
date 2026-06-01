@@ -5,6 +5,13 @@ import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createInitialSpec } from "./initial-map.mjs";
 import { planMockAiEdit } from "./mock-ai.mjs";
+import { callOpenAiCompatibleProvider } from "./openai-compatible-provider.mjs";
+import {
+  buildProviderProfiles,
+  publicProviderProfiles,
+  readProviderApiKey,
+  resolveProviderProfile
+} from "./provider-profiles.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicRoot = resolve(__dirname, "public");
@@ -23,7 +30,10 @@ export async function createWorkbenchServer(options = {}) {
   const port = options.port ?? 4321;
   const engine = await loadEngine();
   const ai = await loadAi();
+  const env = options.env ?? process.env;
+  const fetchImpl = options.fetchImpl ?? fetch;
   const plannerProvider = options.plannerProvider;
+  const providerProfiles = buildProviderProfiles(env);
   const sessionId = options.sessionId ?? createSessionId();
   const auditRecords = [];
   let activeSpec = createInitialSpec();
@@ -43,137 +53,89 @@ export async function createWorkbenchServer(options = {}) {
         });
       }
 
+      if (request.method === "GET" && url.pathname === "/api/providers") {
+        return sendJson(response, {
+          providers: publicProviderProfiles(providerProfiles)
+        });
+      }
+
       if (request.method === "POST" && url.pathname === "/api/chat") {
         const body = await readJsonBody(request);
         const message = typeof body.message === "string" ? body.message : "";
+        const providerId = typeof body.providerId === "string" ? body.providerId : undefined;
         const fromRevision = activeSpec.revision ?? "0";
 
-        if (plannerProvider) {
+        if (plannerProvider && !providerId) {
           const providerOutput = await plannerProvider({
             message,
             spec: structuredClone(activeSpec),
             summary: summarizeSpec(activeSpec)
           });
-          const providerPlan = ai.normalizeWorkbenchProviderPlan(providerOutput);
-
-          if (!providerPlan.ok) {
-            const provider = blockedProviderEvidence(providerOutput);
-            appendAuditRecord(auditRecords, {
-              sessionId,
-              providerId: provider.providerId,
-              promptHash: readString(providerOutput, "promptHash"),
-              traceId: readString(providerOutput, "traceId"),
-              status: "blocked",
-              commandCount: 0,
-              diagnostics: providerPlan.diagnostics,
-              fromRevision,
-              toRevision: activeSpec.revision ?? "0"
-            });
-            return sendJson(response, {
-              ...statePayload(engine, "blocked", activeSpec),
-              provider,
-              plan: null,
-              results: [],
-              traces: [],
-              diagnostics: providerPlan.diagnostics,
-              commandEvidence: commandEvidence([], false, false)
-            });
-          }
-
-          const plan = providerPlan.result.plan;
-          const skeleton = engine.createMapGenerationCommandSkeleton({
-            ...plan.request,
-            mapId: plan.request.mapId ?? activeSpec.id,
-            baseSpec: activeSpec
-          });
-
-          if (skeleton.status === "blocked") {
-            appendAuditRecord(auditRecords, {
-              sessionId,
-              providerId: providerPlan.result.provider.providerId,
-              promptHash: plan.provenance.promptHash,
-              traceId: skeleton.traceId,
-              status: "blocked",
-              commandCount: 0,
-              diagnostics: skeleton.diagnostics,
-              fromRevision,
-              toRevision: activeSpec.revision ?? "0"
-            });
-            return sendJson(response, {
-              ...statePayload(engine, "blocked", activeSpec),
-              provider: providerPlan.result.provider,
-              plan,
-              results: [],
-              traces: [],
-              diagnostics: skeleton.diagnostics,
-              commandEvidence: commandEvidence([], false, false)
-            });
-          }
-
-          const generationEvidence = await ai.createGenerationEvidenceBundle({
-            promptHash: plan.provenance.promptHash,
-            skeleton,
-            planner: {
-              plan,
-              ...(providerPlan.result.provider.confidence
-                ? { confidence: plannerConfidence(providerPlan.result.provider.confidence) }
-                : {})
-            }
-          });
-
-          if (!generationEvidence.ok) {
-            appendAuditRecord(auditRecords, {
-              sessionId,
-              providerId: providerPlan.result.provider.providerId,
-              promptHash: plan.provenance.promptHash,
-              traceId: skeleton.traceId,
-              status: "blocked",
-              commandCount: 0,
-              diagnostics: generationEvidence.diagnostics,
-              fromRevision,
-              toRevision: activeSpec.revision ?? "0"
-            });
-            return sendJson(response, {
-              ...statePayload(engine, "blocked", activeSpec),
-              provider: providerPlan.result.provider,
-              plan,
-              results: [],
-              traces: [],
-              diagnostics: generationEvidence.diagnostics,
-              commandEvidence: commandEvidence([], false, false)
-            });
-          }
-
-          const applied = engine.applyCommands(activeSpec, skeleton.commands, {
-            collectTrace: true,
-            traceId: skeleton.traceId
-          });
-          if (applied.committed && !applied.rolledBack) {
-            activeSpec = applied.spec;
-          }
-
-          const failed = applied.results.some((result) => result.status === "failed");
-          const status = failed ? "blocked" : "applied";
-          appendAuditRecord(auditRecords, {
+          const providerResult = await applyProviderOutput({
+            engine,
+            ai,
+            activeSpec,
+            providerOutput,
             sessionId,
-            providerId: providerPlan.result.provider.providerId,
-            promptHash: plan.provenance.promptHash,
-            traceId: applied.traceId,
-            status,
-            commandCount: applied.results.length,
-            diagnostics: applied.results.flatMap((result) => result.diagnostics),
-            fromRevision,
-            toRevision: activeSpec.revision ?? "0"
+            auditRecords,
+            fromRevision
           });
-          return sendJson(response, {
-            ...statePayload(engine, status, activeSpec),
-            provider: providerPlan.result.provider,
-            plan,
-            generationEvidence: compactGenerationEvidence(generationEvidence.result),
-            results: applied.results,
-            traces: applied.traces ?? [],
-            commandEvidence: commandEvidence(applied.results, applied.committed, applied.rolledBack)
+          if (providerResult.activeSpec) activeSpec = providerResult.activeSpec;
+          return sendJson(response, providerResult.payload);
+        }
+
+        if (providerId && providerId !== "mock-ai") {
+          const providerProfile = resolveProviderProfile(providerProfiles, providerId);
+
+          if (!providerProfile) {
+            return sendProviderBlocked(response, engine, activeSpec, auditRecords, {
+              sessionId,
+              fromRevision,
+              provider: {
+                providerId,
+                retainedRawPrompt: false
+              },
+              diagnostics: [providerDiagnostic("/providerProfile", "Selected provider profile is not configured.")]
+            });
+          }
+
+          if (providerProfile.protocol !== "openai-chat-completions") {
+            return sendProviderBlocked(response, engine, activeSpec, auditRecords, {
+              sessionId,
+              fromRevision,
+              provider: blockedProviderEvidence({ providerId: providerProfile.id }),
+              diagnostics: [providerDiagnostic("/providerProfile", "Selected provider protocol is not supported.")]
+            });
+          }
+
+          const providerResponse = await callOpenAiCompatibleProvider({
+            profile: providerProfile,
+            apiKey: readProviderApiKey(providerProfile, env),
+            message,
+            summary: summarizeSpec(activeSpec),
+            fetchImpl
           });
+
+          if (!providerResponse.ok) {
+            return sendProviderBlocked(response, engine, activeSpec, auditRecords, {
+              sessionId,
+              fromRevision,
+              provider: providerResponse.provider,
+              diagnostics: providerResponse.diagnostics
+            });
+          }
+
+          const providerResult = await applyProviderOutput({
+            engine,
+            ai,
+            activeSpec,
+            providerOutput: providerResponse.providerOutput,
+            sessionId,
+            auditRecords,
+            fromRevision
+          });
+          if (providerResult.activeSpec) activeSpec = providerResult.activeSpec;
+          return sendJson(response, providerResult.payload);
         }
 
         const plan = planMockAiEdit(message);
@@ -353,6 +315,167 @@ function summarizeSpec(spec) {
     revision: spec.revision ?? "0",
     sourceCount: Object.keys(spec.sources).length,
     layerCount: spec.layers.length
+  };
+}
+
+async function applyProviderOutput({ engine, ai, activeSpec, providerOutput, sessionId, auditRecords, fromRevision }) {
+  const providerPlan = ai.normalizeWorkbenchProviderPlan(providerOutput);
+
+  if (!providerPlan.ok) {
+    const provider = blockedProviderEvidence(providerOutput);
+    appendAuditRecord(auditRecords, {
+      sessionId,
+      providerId: provider.providerId,
+      promptHash: readString(providerOutput, "promptHash"),
+      traceId: readString(providerOutput, "traceId"),
+      status: "blocked",
+      commandCount: 0,
+      diagnostics: providerPlan.diagnostics,
+      fromRevision,
+      toRevision: activeSpec.revision ?? "0"
+    });
+    return {
+      payload: {
+        ...statePayload(engine, "blocked", activeSpec),
+        provider,
+        plan: null,
+        results: [],
+        traces: [],
+        diagnostics: providerPlan.diagnostics,
+        commandEvidence: commandEvidence([], false, false)
+      }
+    };
+  }
+
+  const plan = providerPlan.result.plan;
+  const skeleton = engine.createMapGenerationCommandSkeleton({
+    ...plan.request,
+    mapId: plan.request.mapId ?? activeSpec.id,
+    baseSpec: activeSpec
+  });
+
+  if (skeleton.status === "blocked") {
+    appendAuditRecord(auditRecords, {
+      sessionId,
+      providerId: providerPlan.result.provider.providerId,
+      promptHash: plan.provenance.promptHash,
+      traceId: skeleton.traceId,
+      status: "blocked",
+      commandCount: 0,
+      diagnostics: skeleton.diagnostics,
+      fromRevision,
+      toRevision: activeSpec.revision ?? "0"
+    });
+    return {
+      payload: {
+        ...statePayload(engine, "blocked", activeSpec),
+        provider: providerPlan.result.provider,
+        plan,
+        results: [],
+        traces: [],
+        diagnostics: skeleton.diagnostics,
+        commandEvidence: commandEvidence([], false, false)
+      }
+    };
+  }
+
+  const generationEvidence = await ai.createGenerationEvidenceBundle({
+    promptHash: plan.provenance.promptHash,
+    skeleton,
+    planner: {
+      plan,
+      ...(providerPlan.result.provider.confidence
+        ? { confidence: plannerConfidence(providerPlan.result.provider.confidence) }
+        : {})
+    }
+  });
+
+  if (!generationEvidence.ok) {
+    appendAuditRecord(auditRecords, {
+      sessionId,
+      providerId: providerPlan.result.provider.providerId,
+      promptHash: plan.provenance.promptHash,
+      traceId: skeleton.traceId,
+      status: "blocked",
+      commandCount: 0,
+      diagnostics: generationEvidence.diagnostics,
+      fromRevision,
+      toRevision: activeSpec.revision ?? "0"
+    });
+    return {
+      payload: {
+        ...statePayload(engine, "blocked", activeSpec),
+        provider: providerPlan.result.provider,
+        plan,
+        results: [],
+        traces: [],
+        diagnostics: generationEvidence.diagnostics,
+        commandEvidence: commandEvidence([], false, false)
+      }
+    };
+  }
+
+  const applied = engine.applyCommands(activeSpec, skeleton.commands, {
+    collectTrace: true,
+    traceId: skeleton.traceId
+  });
+  const nextSpec = applied.committed && !applied.rolledBack ? applied.spec : activeSpec;
+
+  const failed = applied.results.some((result) => result.status === "failed");
+  const status = failed ? "blocked" : "applied";
+  appendAuditRecord(auditRecords, {
+    sessionId,
+    providerId: providerPlan.result.provider.providerId,
+    promptHash: plan.provenance.promptHash,
+    traceId: applied.traceId,
+    status,
+    commandCount: applied.results.length,
+    diagnostics: applied.results.flatMap((result) => result.diagnostics),
+    fromRevision,
+    toRevision: nextSpec.revision ?? "0"
+  });
+  return {
+    activeSpec: nextSpec,
+    payload: {
+      ...statePayload(engine, status, nextSpec),
+      provider: providerPlan.result.provider,
+      plan,
+      generationEvidence: compactGenerationEvidence(generationEvidence.result),
+      results: applied.results,
+      traces: applied.traces ?? [],
+      commandEvidence: commandEvidence(applied.results, applied.committed, applied.rolledBack)
+    }
+  };
+}
+
+function sendProviderBlocked(response, engine, activeSpec, auditRecords, input) {
+  appendAuditRecord(auditRecords, {
+    sessionId: input.sessionId,
+    providerId: input.provider.providerId,
+    status: "blocked",
+    commandCount: 0,
+    diagnostics: input.diagnostics,
+    fromRevision: input.fromRevision,
+    toRevision: activeSpec.revision ?? "0"
+  });
+  return sendJson(response, {
+    ...statePayload(engine, "blocked", activeSpec),
+    provider: input.provider,
+    plan: null,
+    results: [],
+    traces: [],
+    diagnostics: input.diagnostics,
+    commandEvidence: commandEvidence([], false, false)
+  });
+}
+
+function providerDiagnostic(path, message) {
+  return {
+    severity: "error",
+    code: "CAPABILITY.UNSUPPORTED",
+    message,
+    path,
+    fix: { kind: "manual", confidence: "high", message: "Select a configured provider profile." }
   };
 }
 
