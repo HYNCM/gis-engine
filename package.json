@@ -43,7 +43,9 @@
     "docs:dev": "cd docs/website && pnpm docs:dev",
     "docs:build": "cd docs/website && pnpm docs:build",
     "docs:preview": "cd docs/website && pnpm docs:preview",
-    "size:check": "du -sk packages/*/dist | sort -rn"
+    "size:check": "du -sk packages/*/dist | sort -rn",
+    "build:cdn": "node scripts/build-cdn.mjs",
+    "publish:dry": "pnpm build && pnpm -r publish --dry-run --no-git-checks"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
