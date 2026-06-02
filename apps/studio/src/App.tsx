@@ -5,7 +5,7 @@ import EvidencePanel from "./components/EvidencePanel";
 
 export interface ServerState {
   status: "ready" | "loading" | "blocked" | "applied"; spec: Record<string, unknown>; style: Record<string, unknown> | null;
-  summary: { mapId: string; revision: string; sourceCount: number; layerCount: number; center: [number, number] | null; zoom: number | null };
+  summary: { mapId: string; revision: string; sourceCount: number; layerCount: number; center: [number, number] | null; zoom: number | null; bounds?: [number, number, number, number] | null };
   diagnostics: Array<{ code: string; severity: string; path?: string; message: string }>;
   commandEvidence?: { commandCount?: number; committed: boolean; rolledBack: boolean; failed?: boolean; changedPathCount: number };
   provider?: { providerId: string; confidence?: { score: number; level: string } };

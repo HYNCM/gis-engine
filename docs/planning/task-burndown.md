@@ -496,6 +496,29 @@ The MLD batch is closed. The next edge returns to planning state; any future
 MapLibre package movement must start as a separate task with refreshed official
 evidence and release-capable visual gates.
 
+## 2026-W23 MapLibre Capability Commands
+
+2026-06-03 planning update: Studio returned to fresh planning state after the
+local workbench implementation gate, and the next bounded slice stays inside
+direct product experience. `MLC-001` stands as a new MapLibre capability
+mini-slice rather than a continuation of the earlier drift or workbench task
+chains. This batch closes a small, command-safe MapLibre capability surface
+for layer filter, zoom-range, ordering, visibility, and camera fitting without
+reopening package drift, MCP aliases, terrain/projection work, or stable
+SceneView3D runtime promotion.
+
+2026-06-03 execution update: `MLC-001` is accepted through
+`docs/planning/feature-specs/maplibre-capability-commands.md` and
+`docs/reviews/mlc-001-maplibre-capability-commands-2026-06-03.md`. Studio now
+maps provider actions for `setFilter`, `setLayerZoomRange`, `reorderLayer`,
+`fitBounds`, and `setLayout.visibility` into `MapCommand` execution, and the
+frontend consumes `summary.bounds` when `fitBounds` is the active camera
+intent.
+
+| id | title | priority | owner | status | evidence target | acceptance | finish gates |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| TASK-2026W23-MLC-001 | Close the Studio MapLibre capability command loop | P1 | `@engine-agent`, `@ai-agent`, `@docs-agent` | done | `docs/planning/feature-specs/maplibre-capability-commands.md`; `docs/reviews/mlc-001-maplibre-capability-commands-2026-06-03.md` | Studio exposes filter, zoom range, ordering, visibility, and fit-bounds through schema-shaped provider actions, `MapCommand`, structured diagnostics, and bounds-aware camera sync | `pnpm build:schema`; `pnpm test:commands`; `pnpm test:adapter`; `pnpm test:studio`; `pnpm test:snapshot:visual`; `pnpm check`; `git diff --check` |
+
 ---
 
 ## Evolution Tracking

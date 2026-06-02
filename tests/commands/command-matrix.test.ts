@@ -138,6 +138,43 @@ const cases: CommandMatrixCase[] = [
     }
   },
   {
+    name: "setFilter",
+    spec: baseSpec({
+      sources: { points: inlineGeoJsonSource },
+      layers: [pointLayer]
+    }),
+    command: {
+      id: "cmd-set-filter",
+      version: "0.1",
+      type: "setFilter",
+      baseRevision: "1",
+      layerId: "points",
+      filter: ["==", ["get", "category"], "landmark"]
+    },
+    assertSpec: (spec) => {
+      expect(spec.layers[0]?.filter).toEqual(["==", ["get", "category"], "landmark"]);
+    }
+  },
+  {
+    name: "setLayerZoomRange",
+    spec: baseSpec({
+      sources: { points: inlineGeoJsonSource },
+      layers: [pointLayer]
+    }),
+    command: {
+      id: "cmd-set-layer-zoom-range",
+      version: "0.1",
+      type: "setLayerZoomRange",
+      baseRevision: "1",
+      layerId: "points",
+      minzoom: 10,
+      maxzoom: 18
+    },
+    assertSpec: (spec) => {
+      expect(spec.layers[0]).toMatchObject({ minzoom: 10, maxzoom: 18 });
+    }
+  },
+  {
     name: "setView",
     spec: baseSpec({ view: { mode: "map2d", center: [0, 0], zoom: 2, pitch: 15 } }),
     command: {

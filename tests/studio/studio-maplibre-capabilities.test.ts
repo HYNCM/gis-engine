@@ -85,4 +85,145 @@ describe("Studio MapLibre capability registry", () => {
       },
     });
   });
+
+  it("normalizes provider filter and layer zoom-range outputs", async () => {
+    const fetchImpl = async (_url: string, init: { body?: string }) => {
+      const requestBody = JSON.parse(init.body || "{}");
+      expect(requestBody.messages?.[0]?.content).toContain("setFilter");
+      expect(requestBody.messages?.[0]?.content).toContain("setLayerZoomRange");
+      return {
+        ok: true,
+        json: async () => ({
+          choices: [{
+            message: {
+              content: JSON.stringify({
+                action: "setFilter",
+                layerId: "points-layer",
+                filter: ["==", ["get", "category"], "museum"],
+                minzoom: 8,
+                maxzoom: 16,
+                confidence: { score: 0.9 }
+              })
+            }
+          }],
+        }),
+      };
+    };
+
+    const result = await callOpenAiCompatibleProvider({
+      profile: { id: "fixture-provider", baseUrl: "https://example.invalid", model: "fixture-model" },
+      apiKey: "sk-test",
+      message: "show only museums between zoom 8 and 16",
+      summary: { sources: ["points"], layers: 1, layerIds: ["points-layer"], sourceProperties: { points: ["category", "name"] }, view: {} },
+      capabilityPrompt: buildMapLibreCapabilityPrompt(),
+      fetchImpl,
+    });
+
+    expect(result).toMatchObject({
+      ok: true,
+      providerOutput: {
+        action: "setFilter",
+        layerId: "points-layer",
+        filter: ["==", ["get", "category"], "museum"],
+        minzoom: 8,
+        maxzoom: 16,
+        confidence: { score: 0.9, level: "high" }
+      },
+    });
+  });
+
+  it("normalizes provider layout and reorder outputs", async () => {
+    const fetchImpl = async (_url: string, init: { body?: string }) => {
+      const requestBody = JSON.parse(init.body || "{}");
+      expect(requestBody.messages?.[0]?.content).toContain("setLayout");
+      expect(requestBody.messages?.[0]?.content).toContain("reorderLayer");
+      expect(requestBody.messages?.[0]?.content).toContain("beforeLayerId");
+      return {
+        ok: true,
+        json: async () => ({
+          choices: [{
+            message: {
+              content: JSON.stringify({
+                action: "reorderLayer",
+                layerId: "labels-layer",
+                beforeLayerId: "points-layer",
+                layout: { visibility: "none" },
+                confidence: { score: 0.8 }
+              })
+            }
+          }],
+        }),
+      };
+    };
+
+    const result = await callOpenAiCompatibleProvider({
+      profile: { id: "fixture-provider", baseUrl: "https://example.invalid", model: "fixture-model" },
+      apiKey: "sk-test",
+      message: "hide labels and move them behind points",
+      summary: {
+        sources: ["points"],
+        layers: 2,
+        layerIds: ["points-layer", "labels-layer"],
+        layerDetails: [
+          { id: "points-layer", type: "circle", source: "points" },
+          { id: "labels-layer", type: "symbol-lite", source: "points", minzoom: 10 }
+        ],
+        sourceProperties: { points: ["category", "name"] },
+        view: {}
+      },
+      capabilityPrompt: buildMapLibreCapabilityPrompt(),
+      fetchImpl,
+    });
+
+    expect(result).toMatchObject({
+      ok: true,
+      providerOutput: {
+        action: "reorderLayer",
+        layerId: "labels-layer",
+        beforeLayerId: "points-layer",
+        layout: { visibility: "none" },
+        confidence: { score: 0.8, level: "high" }
+      },
+    });
+  });
+
+  it("normalizes provider fitBounds outputs", async () => {
+    const fetchImpl = async (_url: string, init: { body?: string }) => {
+      const requestBody = JSON.parse(init.body || "{}");
+      expect(requestBody.messages?.[0]?.content).toContain("fitBounds");
+      expect(requestBody.messages?.[0]?.content).toContain("[west, south, east, north]");
+      return {
+        ok: true,
+        json: async () => ({
+          choices: [{
+            message: {
+              content: JSON.stringify({
+                action: "fitBounds",
+                bounds: [120.145, 30.245, 120.172, 30.274],
+                confidence: { score: 0.88 }
+              })
+            }
+          }],
+        }),
+      };
+    };
+
+    const result = await callOpenAiCompatibleProvider({
+      profile: { id: "fixture-provider", baseUrl: "https://example.invalid", model: "fixture-model" },
+      apiKey: "sk-test",
+      message: "show all points",
+      summary: { sources: ["points"], layers: 1, layerIds: ["points-layer"], sourceProperties: { points: ["category", "name"] }, view: {} },
+      capabilityPrompt: buildMapLibreCapabilityPrompt(),
+      fetchImpl,
+    });
+
+    expect(result).toMatchObject({
+      ok: true,
+      providerOutput: {
+        action: "fitBounds",
+        bounds: [120.145, 30.245, 120.172, 30.274],
+        confidence: { score: 0.88, level: "high" }
+      },
+    });
+  });
 });

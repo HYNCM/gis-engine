@@ -1,5 +1,5 @@
 import { Type, type Static } from "@sinclair/typebox";
-import { CapabilityRequestSchema, InteractionSpecSchema, LayerSpecSchema, SourceSpecSchema } from "./map-spec.schema.js";
+import { CapabilityRequestSchema, InteractionSpecSchema, LayerFilterSchema, LayerSpecSchema, SourceSpecSchema } from "./map-spec.schema.js";
 import { SceneCameraSchema, SceneLayerSchema, SceneSourceSchema } from "./sceneview3d.schema.js";
 
 const CommandBaseSchema = Type.Object(
@@ -49,6 +49,19 @@ export const MapCommandSchema = Type.Union([
   Type.Composite([CommandBaseSchema, Type.Object({ type: Type.Literal("setLayout"), layerId: Type.String(), layout: PaintLayoutSchema })], {
     additionalProperties: false
   }),
+  Type.Composite([
+    CommandBaseSchema,
+    Type.Object({ type: Type.Literal("setFilter"), layerId: Type.String(), filter: Type.Union([LayerFilterSchema, Type.Null()]) })
+  ], { additionalProperties: false }),
+  Type.Composite([
+    CommandBaseSchema,
+    Type.Object({
+      type: Type.Literal("setLayerZoomRange"),
+      layerId: Type.String(),
+      minzoom: Type.Number({ minimum: 0, maximum: 24 }),
+      maxzoom: Type.Number({ minimum: 0, maximum: 24 })
+    })
+  ], { additionalProperties: false }),
   Type.Composite([
     CommandBaseSchema,
     Type.Object({ type: Type.Literal("reorderLayer"), layerId: Type.String(), beforeLayerId: Type.Optional(Type.String()) })

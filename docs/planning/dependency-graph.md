@@ -380,6 +380,22 @@ flowchart LR
 | TASK-2026W23-AWP-006 | AWP-002, AWP-005 | browser smoke or visual evidence report | browser smoke or visual evidence; `pnpm test:examples`; `pnpm check`; `git diff --check` | done |
 | TASK-2026W23-AWP-007 | AWP-002 through AWP-006 | product implementation gate report | `pnpm test:docs`; `pnpm check`; browser smoke or visual evidence; release visual waiver or evidence; `git diff --check` | done / no-go |
 
+2026-06-03 planning update: after Studio returned to fresh planning state, the
+next bounded slice is a direct capability-command closure for the public
+MapLibre editing loop. `MLC-001` is tracked as a new mini-slice instead of an
+extension of the earlier MLD/AWP chains, and it keeps the work inside
+Studio/provider/product UX territory without reopening package drift, MCP
+tooling, terrain/projection, or stable SceneView3D promotion.
+
+```mermaid
+flowchart LR
+  A["TASK-2026W23-MLC-001 Studio capability command closure"]
+```
+
+| Task | Depends On | Evidence Target | Required Finish Gate | Status Rule |
+| --- | --- | --- | --- | --- |
+| TASK-2026W23-MLC-001 | fresh planning state after 2026-06-03 gate review | capability-command spec and implementation review | `pnpm build:schema`; `pnpm test:commands`; `pnpm test:adapter`; `pnpm test:studio`; `pnpm test:snapshot:visual`; `pnpm check`; `git diff --check` | done |
+
 ## 阻断规则
 
 - public AI tool 或 public command surface 变更仍必须先通过 schema-sync、MCP contract tests 和 command replay tests。

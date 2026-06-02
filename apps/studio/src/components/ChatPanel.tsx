@@ -12,6 +12,7 @@ interface Props {
 const PROMPTS = [
   { label: "Red", prompt: "make points red" }, { label: "Blue", prompt: "make points blue" },
   { label: "Larger", prompt: "increase point size" }, { label: "Smaller", prompt: "decrease point size" },
+  { label: "Landmarks", prompt: "show only landmarks" }, { label: "Zoom 12+", prompt: "make points visible above zoom 12" },
   { label: "Hangzhou", prompt: "zoom to Hangzhou" }, { label: "Reset", prompt: "reset" },
 ];
 

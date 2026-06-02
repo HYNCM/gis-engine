@@ -61,6 +61,25 @@ describe("MapSpecToMapLibreStyleTransformer", () => {
     expect(result.style?.layers[0]?.["source-layer"]).toBe("districts");
   });
 
+  it("forwards layer filters and zoom ranges to MapLibre style layers", () => {
+    const spec = structuredClone(before) as MapSpec;
+    spec.layers[0] = {
+      ...spec.layers[0]!,
+      filter: ["==", ["get", "category"], "landmark"],
+      minzoom: 9,
+      maxzoom: 17
+    };
+
+    const result = transformMapSpecToMapLibreStyle(spec);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.style?.layers[0]).toMatchObject({
+      filter: ["==", ["get", "category"], "landmark"],
+      minzoom: 9,
+      maxzoom: 17
+    });
+  });
+
   it("returns capability-only diagnostics for schema-valid unsupported layers", () => {
     const spec = structuredClone(before) as MapSpec;
     spec.layers[0] = {

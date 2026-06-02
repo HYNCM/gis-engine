@@ -6,7 +6,7 @@ import {
 } from "../diagnostics/codes.js";
 import type { Diagnostic, MapSpec, SceneResourcePolicy, SceneView3DExtension, ValidationReport } from "../types.js";
 import { MapSpecSchema, SceneView3DExtensionSchema } from "./schemas/index.js";
-import { validateExpression } from "./expression-validator.js";
+import { validateExpression, validateFilterExpression } from "./expression-validator.js";
 import { defaultResourcePolicy, validateResourcePolicy, validateResourceUrl, type ResourcePolicy } from "./resource-policy.js";
 
 const ajv = new Ajv({ allErrors: true, strict: false });
@@ -238,6 +238,25 @@ function validateSemanticRules(spec: MapSpec): Diagnostic[] {
           message: 'Set view.mode to "map2_5d" or request capabilities.dimensions ["2_5d"], then add "fill-extrusion-lite" to capabilities.experimental.'
         }
       });
+    }
+
+    if (layer.minzoom !== undefined && layer.maxzoom !== undefined && layer.minzoom > layer.maxzoom) {
+      diagnostics.push({
+        severity: "error",
+        code: DiagnosticCodes.LayerZoomRangeInvalid,
+        message: `Layer "${layer.id}" minzoom (${layer.minzoom}) must be less than or equal to maxzoom (${layer.maxzoom}).`,
+        path: `${layerPath}/minzoom`,
+        relatedResources: [{ kind: "layer", id: layer.id }],
+        fix: {
+          kind: "manual",
+          confidence: "high",
+          message: "Choose a minzoom less than or equal to maxzoom, or reset the layer range to 0-24."
+        }
+      });
+    }
+
+    if (layer.filter) {
+      diagnostics.push(...validateFilterExpression(layer.filter, `${layerPath}/filter`));
     }
 
     if (layer.paint) {

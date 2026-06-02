@@ -243,7 +243,7 @@ export function createInitialSpec(basemapId = DEFAULT_BASEMAP) {
 
 // ── AI command mapping ──
 export function applyProviderCommands(engine, output, spec) {
-  const { action, layerId, paint, view, layer, message } = output;
+  const { action, layerId, paint, layout, filter, view, bounds, layer, minzoom, maxzoom, beforeLayerId, message } = output;
   let commands = [];
   let nextBasemap = activeBasemap;
 
@@ -252,7 +252,17 @@ export function applyProviderCommands(engine, output, spec) {
       if (layerId && paint) commands = [studioCommand("setPaint", "set-paint", { layerId, paint })];
       break;
     case "setLayout":
-      if (layerId && paint) commands = [studioCommand("setLayout", "set-layout", { layerId, layout: paint })];
+      if (layerId && (layout || paint)) {
+        commands = [studioCommand("setLayout", "set-layout", { layerId, layout: layout || paint })];
+      }
+      break;
+    case "setFilter":
+      if (layerId && (Array.isArray(filter) || filter === null)) commands = [studioCommand("setFilter", "set-filter", { layerId, filter })];
+      break;
+    case "setLayerZoomRange":
+      if (layerId && Number.isFinite(minzoom) && Number.isFinite(maxzoom)) {
+        commands = [studioCommand("setLayerZoomRange", "set-layer-zoom-range", { layerId, minzoom, maxzoom })];
+      }
       break;
     case "setView":
       if (view?.center && view?.zoom != null) commands = [studioCommand("setView", "set-view", { view })];
@@ -262,6 +272,14 @@ export function applyProviderCommands(engine, output, spec) {
       break;
     case "removeLayer":
       if (layerId) commands = [studioCommand("removeLayer", "remove-layer", { layerId })];
+      break;
+    case "reorderLayer":
+      if (layerId) {
+        commands = [studioCommand("reorderLayer", "reorder-layer", beforeLayerId ? { layerId, beforeLayerId } : { layerId })];
+      }
+      break;
+    case "fitBounds":
+      if (isBoundsArray(bounds)) commands = [studioCommand("fitBounds", "fit-bounds", { bounds })];
       break;
     case "setBasemap": {
       const bmId = normalizeBasemapId(layerId);
@@ -315,7 +333,18 @@ export function applyLegacyIntent(engine, intent, spec) {
   const msg = (intent || "").toLowerCase();
   const pointsLayer = spec.layers.find((layer) => layer.id === POINTS_LAYER_ID);
   let plan = null;
-  if (msg.includes("red")) plan = { intent: "setPaint", layerId: POINTS_LAYER_ID, paint: { "circle-color": "#ef4444" } };
+  const category = categoryFromPrompt(msg);
+  const zoomRange = zoomRangeFromPrompt(msg);
+  const layerBounds = boundsFromPrompt(msg, spec);
+  if (layerBounds) {
+    plan = { intent: "fitBounds", bounds: layerBounds };
+  } else if (msg.includes("clear filter") || msg.includes("remove filter") || msg.includes("show all") || msg.includes("显示全部") || msg.includes("取消筛选")) {
+    plan = { intent: "setFilter", layerId: POINTS_LAYER_ID, filter: null };
+  } else if (category) {
+    plan = { intent: "setFilter", layerId: POINTS_LAYER_ID, filter: ["==", ["get", "category"], category] };
+  } else if (zoomRange) {
+    plan = { intent: "setLayerZoomRange", layerId: POINTS_LAYER_ID, ...zoomRange };
+  } else if (msg.includes("red")) plan = { intent: "setPaint", layerId: POINTS_LAYER_ID, paint: { "circle-color": "#ef4444" } };
   else if (msg.includes("blue")) plan = { intent: "setPaint", layerId: POINTS_LAYER_ID, paint: { "circle-color": "#3b82f6" } };
   else if (msg.includes("green")) plan = { intent: "setPaint", layerId: POINTS_LAYER_ID, paint: { "circle-color": "#22c55e" } };
   else if (msg.includes("larger") || msg.includes("bigger")) plan = { intent: "setPaint", layerId: POINTS_LAYER_ID, paint: { "circle-radius": Math.min(30, (pointsLayer?.paint?.["circle-radius"] || 8) + 4) } };
@@ -343,6 +372,12 @@ export function applyLegacyIntent(engine, intent, spec) {
     commands = buildBasemapCommands(bmId, spec);
   } else if (plan.intent === "setPaint") {
     commands = [studioCommand("setPaint", "legacy-set-paint", { layerId: plan.layerId, paint: plan.paint })];
+  } else if (plan.intent === "setFilter") {
+    commands = [studioCommand("setFilter", "legacy-set-filter", { layerId: plan.layerId, filter: plan.filter })];
+  } else if (plan.intent === "setLayerZoomRange") {
+    commands = [studioCommand("setLayerZoomRange", "legacy-set-layer-zoom-range", { layerId: plan.layerId, minzoom: plan.minzoom, maxzoom: plan.maxzoom })];
+  } else if (plan.intent === "fitBounds") {
+    commands = [studioCommand("fitBounds", "legacy-fit-bounds", { bounds: plan.bounds })];
   } else if (plan.intent === "setView") {
     commands = [studioCommand("setView", "legacy-set-view", { view: plan.view })];
   }
@@ -428,6 +463,101 @@ function manualCommandEvidence(changedPathCount) {
   return { commandCount: 1, committed: true, rolledBack: false, failed: false, changedPathCount };
 }
 
+function categoryFromPrompt(message) {
+  if (message.includes("landmark") || message.includes("地标")) return "landmark";
+  if (message.includes("museum") || message.includes("博物馆")) return "museum";
+  if (message.includes("temple") || message.includes("寺") || message.includes("寺庙")) return "temple";
+  if (message.includes("lake") || message.includes("湖")) return "lake";
+  return null;
+}
+
+function zoomRangeFromPrompt(message) {
+  if (!(message.includes("zoom range") || message.includes("visible") || message.includes("hide") || message.includes("缩放") || message.includes("可见"))) {
+    return null;
+  }
+
+  const between = message.match(/(?:zoom|缩放)[^\d]*(\d+(?:\.\d+)?)[^\d]+(?:to|and|-|到|至)[^\d]*(\d+(?:\.\d+)?)/);
+  if (between) return normalizeZoomRange(Number(between[1]), Number(between[2]));
+
+  const above = message.match(/(?:above|after|from|over|>=|大于|超过|以上|之后)[^\d]*(\d+(?:\.\d+)?)/);
+  if (above) return normalizeZoomRange(Number(above[1]), 24);
+
+  const below = message.match(/(?:below|under|before|<=|小于|低于|以下|之前)[^\d]*(\d+(?:\.\d+)?)/);
+  if (below) return normalizeZoomRange(0, Number(below[1]));
+
+  return null;
+}
+
+function normalizeZoomRange(minzoom, maxzoom) {
+  const min = Math.max(0, Math.min(24, minzoom));
+  const max = Math.max(0, Math.min(24, maxzoom));
+  return min <= max ? { minzoom: min, maxzoom: max } : { minzoom: max, maxzoom: min };
+}
+
+function boundsFromPrompt(message, spec) {
+  const wantsFit = [
+    "show all points",
+    "zoom to all points",
+    "fit points",
+    "fit to points",
+    "fit bounds",
+    "显示所有点",
+    "显示全部点",
+    "缩放到全部点",
+    "适配全部点",
+  ].some((pattern) => message.includes(pattern));
+  if (!wantsFit) return null;
+  return boundsForLayer(spec, POINTS_LAYER_ID);
+}
+
+function boundsForLayer(spec, layerId) {
+  const layer = spec.layers.find((candidate) => candidate.id === layerId);
+  if (!layer?.source) return null;
+  return boundsForSource(spec.sources?.[layer.source]);
+}
+
+function boundsForSource(source) {
+  if (source?.type !== "geojson" || typeof source.data === "string") return null;
+  const bounds = { west: Infinity, south: Infinity, east: -Infinity, north: -Infinity };
+  collectCoordinatesFromGeoJson(source.data, bounds);
+  if (!Number.isFinite(bounds.west) || !Number.isFinite(bounds.south) || !Number.isFinite(bounds.east) || !Number.isFinite(bounds.north)) {
+    return null;
+  }
+  return [bounds.west, bounds.south, bounds.east, bounds.north];
+}
+
+function collectCoordinatesFromGeoJson(value, bounds) {
+  if (!value || typeof value !== "object") return;
+  if (Array.isArray(value)) {
+    if (value.length >= 2 && typeof value[0] === "number" && typeof value[1] === "number") {
+      const lng = value[0];
+      const lat = value[1];
+      bounds.west = Math.min(bounds.west, lng);
+      bounds.south = Math.min(bounds.south, lat);
+      bounds.east = Math.max(bounds.east, lng);
+      bounds.north = Math.max(bounds.north, lat);
+      return;
+    }
+    for (const entry of value) collectCoordinatesFromGeoJson(entry, bounds);
+    return;
+  }
+  if (value.type === "FeatureCollection" && Array.isArray(value.features)) {
+    for (const feature of value.features) collectCoordinatesFromGeoJson(feature, bounds);
+    return;
+  }
+  if (value.type === "Feature") {
+    collectCoordinatesFromGeoJson(value.geometry, bounds);
+    return;
+  }
+  if (Object.hasOwn(value, "coordinates")) {
+    collectCoordinatesFromGeoJson(value.coordinates, bounds);
+  }
+}
+
+function isBoundsArray(value) {
+  return Array.isArray(value) && value.length === 4 && value.every((entry) => typeof entry === "number" && Number.isFinite(entry));
+}
+
 // ── State ──
 let activeSpec = createInitialSpec();
 let activeBasemap = DEFAULT_BASEMAP;
@@ -451,6 +581,7 @@ export function statePayload(engine, status, spec) {
       layerCount: (spec.layers || []).length,
       center: spec.view?.center || null,
       zoom: spec.view?.zoom || null,
+      bounds: spec.view?.bounds || null,
     },
     diagnostics,
   };
@@ -571,6 +702,20 @@ function tileQuadKey(x, y, z) {
   return quadKey;
 }
 
+function sourcePropertiesSummary(spec) {
+  return Object.fromEntries(Object.entries(spec.sources || {}).map(([sourceId, source]) => [sourceId, collectGeoJsonPropertyKeys(source)]));
+}
+
+function collectGeoJsonPropertyKeys(source) {
+  if (source?.type !== "geojson" || typeof source.data === "string") return [];
+  const features = source.data?.type === "FeatureCollection" && Array.isArray(source.data.features)
+    ? source.data.features
+    : source.data?.type === "Feature"
+      ? [source.data]
+      : [];
+  return Array.from(new Set(features.flatMap((feature) => Object.keys(feature?.properties || {})))).sort();
+}
+
 // ── Server ──
 async function main() {
   const engine = await loadEngine();
@@ -630,6 +775,15 @@ async function main() {
             sources: Object.keys(activeSpec.sources || {}),
             layers: (activeSpec.layers || []).length,
             layerIds: (activeSpec.layers || []).map((l) => l.id),
+            layerDetails: (activeSpec.layers || []).map((l) => ({
+              id: l.id,
+              type: l.type,
+              source: l.source,
+              filter: l.filter,
+              minzoom: l.minzoom,
+              maxzoom: l.maxzoom,
+            })),
+            sourceProperties: sourcePropertiesSummary(activeSpec),
             view: activeSpec.view,
           };
           const result = await provider.callOpenAiCompatibleProvider({

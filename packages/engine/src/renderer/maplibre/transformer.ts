@@ -37,6 +37,9 @@ export interface MapLibreLayer {
   type: "background" | "raster" | "fill" | "line" | "circle" | "symbol" | "fill-extrusion";
   source?: string;
   "source-layer"?: string;
+  filter?: unknown[];
+  minzoom?: number;
+  maxzoom?: number;
   layout?: Record<string, unknown>;
   paint?: Record<string, unknown>;
 }
@@ -141,6 +144,9 @@ function transformLayer(spec: MapSpec, layer: LayerSpec, index: number, diagnost
   if (layer.type !== "background" && layer.source) styleLayer.source = layer.source;
   const sourceLayer = sourceLayerFor(spec, layer);
   if (sourceLayer) styleLayer["source-layer"] = sourceLayer;
+  if (layer.filter) styleLayer.filter = layer.filter;
+  if (layer.minzoom !== undefined) styleLayer.minzoom = layer.minzoom;
+  if (layer.maxzoom !== undefined) styleLayer.maxzoom = layer.maxzoom;
   if (layer.paint) styleLayer.paint = layer.paint;
   if (layer.layout) styleLayer.layout = layer.layout;
 

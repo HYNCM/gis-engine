@@ -45,6 +45,59 @@ describe("command patch generation", () => {
     expect(result.results[0]?.patch?.[0]?.op).toBe("add");
   });
 
+  it("sets and clears layer filters through explicit commands", () => {
+    const setResult = applyCommands(before as MapSpec, [
+      {
+        id: "cmd-set-filter",
+        version: "0.1",
+        type: "setFilter",
+        baseRevision: "1",
+        layerId: "district-fill",
+        filter: ["==", ["get", "category"], "landmark"]
+      }
+    ]);
+
+    expect(setResult.spec.layers[0]?.filter).toEqual(["==", ["get", "category"], "landmark"]);
+    expect(setResult.results[0]?.changedPaths).toEqual(["/layers/0/filter", "/revision"]);
+
+    const clearResult = applyCommands(setResult.spec, [
+      {
+        id: "cmd-clear-filter",
+        version: "0.1",
+        type: "setFilter",
+        baseRevision: "2",
+        layerId: "district-fill",
+        filter: null
+      }
+    ]);
+
+    expect(clearResult.spec.layers[0]).not.toHaveProperty("filter");
+    expect(clearResult.results[0]?.changedPaths).toEqual(["/layers/0/filter", "/revision"]);
+  });
+
+  it("blocks inverted layer zoom ranges before patch application", () => {
+    const result = buildPatch(
+      {
+        id: "cmd-invalid-zoom-range",
+        version: "0.1",
+        type: "setLayerZoomRange",
+        layerId: "district-fill",
+        minzoom: 16,
+        maxzoom: 8
+      },
+      before as MapSpec
+    );
+
+    expect(result.patch).toEqual([]);
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.LayerZoomRangeInvalid,
+        path: "/minzoom"
+      })
+    ]);
+  });
+
   it("reorders layers with remove and add operations", () => {
     const spec = structuredClone(before) as MapSpec;
     spec.layers.push({ id: "district-line", type: "line", source: "districts" });

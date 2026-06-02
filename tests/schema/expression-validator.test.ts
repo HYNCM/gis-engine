@@ -29,6 +29,31 @@ describe("expression validator", () => {
     expect(report.diagnostics).toEqual([]);
   });
 
+  it("accepts boolean filter expressions on layers", () => {
+    const spec = withPaintAndLayout(
+      { "circle-color": "#2563eb" },
+      {},
+      ["all", ["==", ["get", "category"], "museum"], ["has", "name"]]
+    );
+
+    const report = validateSpec(spec);
+
+    expect(report.valid).toBe(true);
+    expect(report.diagnostics).toEqual([]);
+  });
+
+  it("reports non-boolean layer filters", () => {
+    const report = validateSpec(withPaintAndLayout({ "circle-color": "#2563eb" }, {}, ["get", "category"]));
+
+    expect(report.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionTypeMismatch,
+        path: "/layers/0/filter"
+      })
+    );
+  });
+
   it("reports unknown operators", () => {
     const unknown = validateSpec(withPaintAndLayout({ "circle-color": ["coalesce", ["get", "kind"], "#2563eb"] }));
 
@@ -56,7 +81,7 @@ describe("expression validator", () => {
   });
 });
 
-function withPaintAndLayout(paint: Record<string, unknown>, layout: Record<string, unknown> = {}): MapSpec {
+function withPaintAndLayout(paint: Record<string, unknown>, layout: Record<string, unknown> = {}, filter?: unknown[]): MapSpec {
   return {
     version: "0.1",
     id: "expression-test",
@@ -75,6 +100,7 @@ function withPaintAndLayout(paint: Record<string, unknown>, layout: Record<strin
         id: "points",
         type: "circle",
         source: "points",
+        ...(filter ? { filter: filter as MapSpec["layers"][number]["filter"] } : {}),
         paint,
         layout
       }

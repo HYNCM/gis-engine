@@ -32,7 +32,7 @@ export class MapLibreAdapter implements RendererAdapter {
       dimensions: ["2d", "2_5d"],
       sources: ["geojson", "raster", "pmtiles", "vector"],
       layers: ["background", "raster", "fill", "line", "circle", "symbol-lite", "fill-extrusion-lite"],
-      expressions: ["get", "literal", "case", "match", "interpolate", "step", "zoom", "to-number", "to-string"],
+      expressions: ["get", "has", "literal", "case", "match", "interpolate", "step", "zoom", "all", "any", "!", "==", "!=", ">", "<", ">=", "<=", "in", "to-number", "to-string"],
       queries: ["point", "bbox"],
       snapshot: {
         supported: true,

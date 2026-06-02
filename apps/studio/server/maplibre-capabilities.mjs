@@ -66,8 +66,8 @@ export const MAPLIBRE_CAPABILITY_REGISTRY = {
       maplibreApis: ["addLayer", "moveLayer", "removeLayer", "setPaintProperty", "setLayoutProperty", "setFilter", "setLayerZoomRange"],
       aiInvocation: {
         status: "partially-implemented",
-        implementedVia: ["setPaint", "setLayout", "addLayer", "removeLayer", "reorderLayer"],
-        requiresContractFor: ["heatmap", "hillshade", "color-relief", "custom layers", "full filter syntax", "source-layer targeting"],
+        implementedVia: ["setPaint", "setLayout", "setFilter", "setLayerZoomRange", "addLayer", "removeLayer", "reorderLayer"],
+        requiresContractFor: ["heatmap", "hillshade", "color-relief", "custom layers", "advanced filter synthesis", "source-layer targeting"],
       },
     },
     {

@@ -66,6 +66,12 @@ export function buildPatch(command: MapCommand, spec: MapSpec): BuildPatchResult
       return { patch: patchRecordMerge(`/layers/${index}/layout`, layer.layout, command.layout), diagnostics: [] };
     }
 
+    case "setFilter":
+      return setFilter(command.layerId, command.filter, spec);
+
+    case "setLayerZoomRange":
+      return setLayerZoomRange(command.layerId, command.minzoom, command.maxzoom, spec);
+
     case "setView":
       return { patch: [{ op: "replace", path: "/view", value: { ...spec.view, ...command.view } }], diagnostics: [] };
 
@@ -278,6 +284,47 @@ function reorderLayer(layerId: string, beforeLayerId: string | undefined, spec: 
 
 function hasSameLayerOrder(current: MapSpec["layers"], next: MapSpec["layers"]): boolean {
   return current.length === next.length && current.every((layer, index) => layer.id === next[index]?.id);
+}
+
+function setFilter(layerId: string, filter: unknown[] | null, spec: MapSpec): BuildPatchResult {
+  const index = spec.layers.findIndex((layer) => layer.id === layerId);
+  if (index < 0) return missingLayer(layerId, "/layerId", "Add the layer before setting a filter, or update layerId to an existing layer.");
+  const layer = spec.layers[index];
+  if (!layer) return missingLayer(layerId, "/layerId", "Add the layer before setting a filter, or update layerId to an existing layer.");
+
+  if (filter === null) {
+    if (!Object.hasOwn(layer, "filter")) return { patch: [], diagnostics: [], skipped: true };
+    return { patch: [{ op: "remove", path: `/layers/${index}/filter` }], diagnostics: [] };
+  }
+
+  return {
+    patch: [{ op: Object.hasOwn(layer, "filter") ? "replace" : "add", path: `/layers/${index}/filter`, value: filter }],
+    diagnostics: []
+  };
+}
+
+function setLayerZoomRange(layerId: string, minzoom: number, maxzoom: number, spec: MapSpec): BuildPatchResult {
+  const index = spec.layers.findIndex((layer) => layer.id === layerId);
+  if (index < 0) return missingLayer(layerId, "/layerId", "Add the layer before setting its zoom range, or update layerId to an existing layer.");
+  const layer = spec.layers[index];
+  if (!layer) return missingLayer(layerId, "/layerId", "Add the layer before setting its zoom range, or update layerId to an existing layer.");
+  if (minzoom > maxzoom) {
+    return failed({
+      code: DiagnosticCodes.LayerZoomRangeInvalid,
+      message: `Layer zoom range minzoom (${minzoom}) must be less than or equal to maxzoom (${maxzoom}).`,
+      path: "/minzoom",
+      relatedResources: [{ kind: "layer", id: layerId }],
+      fix: manualFix("Choose a minzoom less than or equal to maxzoom, or reset the layer range to 0-24.", "high")
+    });
+  }
+
+  return {
+    patch: [
+      { op: Object.hasOwn(layer, "minzoom") ? "replace" : "add", path: `/layers/${index}/minzoom`, value: minzoom },
+      { op: Object.hasOwn(layer, "maxzoom") ? "replace" : "add", path: `/layers/${index}/maxzoom`, value: maxzoom }
+    ],
+    diagnostics: []
+  };
 }
 
 function patchRecordMerge(path: string, current: Record<string, unknown> | undefined, next: Record<string, unknown>): JsonPatchOperation[] {

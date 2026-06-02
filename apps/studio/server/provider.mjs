@@ -41,8 +41,14 @@ export async function callOpenAiCompatibleProvider(input) {
         action: parsed.value.action || parsed.value.intent,
         layerId: parsed.value.layerId || null,
         paint: parsed.value.paint || null,
+        layout: parsed.value.layout || null,
+        filter: Object.hasOwn(parsed.value, "filter") ? parsed.value.filter : undefined,
         view: parsed.value.view || null,
+        bounds: isBoundsArray(parsed.value.bounds) ? parsed.value.bounds : undefined,
         layer: parsed.value.layer || null,
+        minzoom: typeof parsed.value.minzoom === "number" ? parsed.value.minzoom : undefined,
+        maxzoom: typeof parsed.value.maxzoom === "number" ? parsed.value.maxzoom : undefined,
+        beforeLayerId: typeof parsed.value.beforeLayerId === "string" ? parsed.value.beforeLayerId : undefined,
         message: typeof parsed.value.message === "string" ? parsed.value.message : null,
         confidence: sanitizeConfidence(parsed.value.confidence),
       },
@@ -64,6 +70,11 @@ function systemPrompt(summary, capabilityPrompt = "") {
     "- Change point size: set 'circle-radius' (range 3-30)",
     "- Change line width: set 'line-width' (range 0.5-10)",
     "- Change opacity: set 'circle-opacity', 'line-opacity', or 'fill-opacity'",
+    "- Change layout state: action=setLayout, layerId=target layer, layout={...}; use visibility none/visible to hide or show a layer",
+    "- Filter a layer: action=setFilter, layerId=target layer, filter=MapLibre boolean expression array; use null to clear",
+    "- Set layer zoom visibility: action=setLayerZoomRange, layerId=target layer, minzoom/maxzoom numbers in 0-24",
+    "- Reorder layers: action=reorderLayer, layerId=target layer, optional beforeLayerId=anchor layer; omit beforeLayerId to move the layer to the top",
+    "- Fit the map to bounds: action=fitBounds, bounds=[west, south, east, north]",
     "- Change basemap: action=setBasemap, layerId=none|osm|arcgis-imagery|bing-aerial",
     "- Move camera: set view center [lng, lat] and zoom level (0-22)",
     "- Add a layer: provide layer type, source id, and paint properties",
@@ -79,9 +90,14 @@ function systemPrompt(summary, capabilityPrompt = "") {
     "",
     "## Response Format (STRICT)",
     "{",
-    '  "action": "setPaint" | "setLayout" | "setView" | "addLayer" | "removeLayer" | "setBasemap" | "reset" | "unsupported",',
-    '  "layerId": "target-layer-id",          // for setPaint/setLayout/removeLayer/setBasemap (basemap id for setBasemap)',
+    '  "action": "setPaint" | "setLayout" | "setFilter" | "setLayerZoomRange" | "reorderLayer" | "fitBounds" | "setView" | "addLayer" | "removeLayer" | "setBasemap" | "reset" | "unsupported",',
+    '  "layerId": "target-layer-id",          // for layer edits/removeLayer/setBasemap (basemap id for setBasemap)',
     '  "paint": { "circle-color": "#ef4444" }, // for setPaint',
+    '  "layout": { "visibility": "none" },    // for setLayout',
+    '  "filter": ["==", ["get", "category"], "landmark"], // for setFilter; null clears it',
+    '  "minzoom": 10, "maxzoom": 18,          // for setLayerZoomRange',
+    '  "beforeLayerId": "labels-layer",       // optional for reorderLayer; omit to move layer to the top',
+    '  "bounds": [120.145, 30.245, 120.172, 30.274], // for fitBounds',
     '  "view": { "center": [120.15, 30.28], "zoom": 13 }, // for setView',
     '  "layer": { "id": "new-layer", "type": "circle", "source": "points", "paint": { "circle-radius": 8 } }, // for addLayer',
     '  "message": "short reason when action is unsupported",',
@@ -90,10 +106,16 @@ function systemPrompt(summary, capabilityPrompt = "") {
     "",
     "## Rules",
     "- ALWAYS use exact layer IDs from the current map state",
+    "- Layer IDs in the current map state are ordered from bottom to top",
     "- Use the MapLibre capability context to understand what the renderer can do and whether GIS Engine has a safe command contract for it",
     "- If the requested MapLibre ability is listed as not-yet-commanded, do not invent DOM/browser mutations; return the closest safe command only when it preserves user intent",
     "- For color changes, use hex colors like #ef4444, #3b82f6, #22c55e",
     "- For setView, always include both center [lng, lat] and zoom",
+    "- For setLayout visibility changes, use layout {\"visibility\": \"none\"} to hide and {\"visibility\": \"visible\"} to show",
+    "- For filters, prefer expression form such as [\"==\", [\"get\", \"category\"], \"museum\"]",
+    "- For zoom ranges, use minzoom <= maxzoom and keep values between 0 and 24",
+    "- For reorderLayer, use beforeLayerId only when the anchor layer exists; omit it to move the layer to the end of the layer list",
+    "- For fitBounds, bounds must use [west, south, east, north] in lng/lat coordinates",
     "- Return ONLY the JSON object, no markdown, no explanation",
     "- If unsure about any field, set confidence to 'low'",
   ].join("\n");
@@ -109,6 +131,9 @@ function parseJsonObject(content) {
 
 function trimTrailingSlash(s) { return s?.replace(/\/+$/, "") ?? ""; }
 function hashPrompt(msg) { return `sha256:${createHash("sha256").update(msg).digest("hex").slice(0, 16)}`; }
+function isBoundsArray(value) {
+  return Array.isArray(value) && value.length === 4 && value.every((entry) => typeof entry === "number" && Number.isFinite(entry));
+}
 function sanitizeConfidence(c) {
   if (!c || typeof c !== "object") return undefined;
   const score = typeof c.score === "number" ? Math.max(0, Math.min(1, c.score)) : undefined;

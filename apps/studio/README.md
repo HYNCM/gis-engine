@@ -67,6 +67,15 @@ Studio exposes an AI-facing MapLibre GL JS 5.24.0 capability registry at
 models can distinguish currently commanded GIS Engine abilities from broader
 MapLibre abilities that still need a schema/command contract before mutation.
 
+The current commanded MapLibre layer controls include paint/layout edits,
+layer visibility through `layout.visibility`, layer filters, layer zoom
+visibility ranges, and layer reordering.
+Natural-language requests such as "show only landmarks", "clear filter",
+"hide labels", "make points visible above zoom 12", "move labels behind
+points", or "show all points" are converted into `setLayout`, `setFilter`,
+`setLayerZoomRange`, `reorderLayer`, and `fitBounds` commands before the
+server returns a new style.
+
 ## Docker
 
 ```bash

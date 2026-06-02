@@ -70,6 +70,11 @@ v0.1 的必交付能力以本文件为准，测试和 CI 以 [CI 与测试策略
 | `circle` | 半径、颜色、描边、透明度、简单数据驱动样式 |
 | `symbol-lite` | 文本字段、图标字段、基础显示开关，不承诺完整 collision 和 text shaping |
 
+稳定 2D 图层还支持 `filter`、`minzoom`、`maxzoom`。`setFilter` 和
+`setLayerZoomRange` 是公开 command 契约，AI 必须通过 `apply_commands` 修改这些
+字段；filter 先覆盖常用 boolean/comparison expression 子集，高级 filter 自动合成
+仍保持后续扩展。
+
 ### 实验图层
 
 | 图层 | 说明 |
@@ -87,6 +92,12 @@ v0.1 的必交付能力以本文件为准，测试和 CI 以 [CI 与测试策略
 - `interpolate`
 - `step`
 - `zoom`
+- `has`
+- `all`
+- `any`
+- `!`
+- `==` / `!=` / `>` / `<` / `>=` / `<=`
+- `in`
 - `to-number`
 - `to-string`
 
@@ -175,7 +186,10 @@ v0.1 必须支持：
 - `addSource` 幂等。
 - `addLayer` 顺序稳定。
 - `setPaint` 只修改目标 paint 路径。
+- `setFilter` 设置或清除目标 layer filter。
+- `setLayerZoomRange` 只修改目标 layer 的 `minzoom` / `maxzoom`。
 - `setView` 不破坏 source/layer。
+- `fitBounds` 作为 command-level camera intent 保持 deterministic replay。
 - `removeLayer` 处理不存在 id。
 - `reorderLayer` 保持确定性。
 - 失败时返回诊断和 rollback patch。

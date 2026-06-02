@@ -1,6 +1,8 @@
 import { Type, type Static } from "@sinclair/typebox";
+import type { Expression } from "../../types.js";
 
 const JsonValueSchema = Type.Unknown();
+export const LayerFilterSchema = Type.Unsafe<Expression>({ type: "array", minItems: 1 });
 
 const DimensionSchema = Type.Union([Type.Literal("2d"), Type.Literal("2_5d"), Type.Literal("3d")]);
 const RendererSchema = Type.Union([Type.Literal("maplibre"), Type.Literal("webgl2-lite"), Type.Literal("scene3d")]);
@@ -118,6 +120,9 @@ export const LayerSpecSchema = Type.Object(
       Type.Literal("fill-extrusion-lite")
     ]),
     source: Type.Optional(Type.String()),
+    filter: Type.Optional(LayerFilterSchema),
+    minzoom: Type.Optional(Type.Number({ minimum: 0, maximum: 24 })),
+    maxzoom: Type.Optional(Type.Number({ minimum: 0, maximum: 24 })),
     layout: Type.Optional(Type.Record(Type.String(), JsonValueSchema)),
     paint: Type.Optional(Type.Record(Type.String(), JsonValueSchema)),
     metadata: Type.Optional(Type.Record(Type.String(), JsonValueSchema))

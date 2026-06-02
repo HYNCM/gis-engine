@@ -65,6 +65,100 @@ describe("AI Map Studio server state", () => {
     expect(result.diagnostics).toEqual([]);
   });
 
+  it("applies layer filters and zoom ranges through schema-shaped commands", () => {
+    const filtered = applyLegacyIntent(engine, "show only landmarks", createInitialSpec());
+
+    expect(filtered.status).toBe("applied");
+    expect(filtered.evidence).toMatchObject({ commandCount: 1, committed: true, rolledBack: false, failed: false });
+    expect(layerById(filtered.nextSpec, "points-layer")?.filter).toEqual(["==", ["get", "category"], "landmark"]);
+    expect(statePayload(engine, filtered.status, filtered.nextSpec).style?.layers.find((layer: { id: string }) => layer.id === "points-layer")).toMatchObject({
+      filter: ["==", ["get", "category"], "landmark"]
+    });
+
+    const ranged = applyLegacyIntent(engine, "make points visible above zoom 12", filtered.nextSpec);
+    expect(ranged.status).toBe("applied");
+    expect(layerById(ranged.nextSpec, "points-layer")).toMatchObject({ minzoom: 12, maxzoom: 24 });
+  });
+
+  it("fits the current demo points into view through fitBounds commands", () => {
+    const result = applyLegacyIntent(engine, "show all points", createInitialSpec());
+
+    expect(result.status).toBe("applied");
+    expect(result.nextSpec.view).toMatchObject({ bounds: [120.145, 30.245, 120.172, 30.274] });
+    expect(statePayload(engine, result.status, result.nextSpec).summary).toMatchObject({
+      center: null,
+      zoom: null,
+      bounds: [120.145, 30.245, 120.172, 30.274]
+    });
+  });
+
+  it("accepts provider setFilter and setLayerZoomRange actions", () => {
+    const filtered = applyProviderCommands(engine, {
+      action: "setFilter",
+      layerId: "points-layer",
+      filter: ["==", ["get", "category"], "museum"]
+    }, createInitialSpec());
+
+    expect(filtered.status).toBe("applied");
+    expect(layerById(filtered.nextSpec, "points-layer")?.filter).toEqual(["==", ["get", "category"], "museum"]);
+
+    const ranged = applyProviderCommands(engine, {
+      action: "setLayerZoomRange",
+      layerId: "points-layer",
+      minzoom: 8,
+      maxzoom: 16
+    }, filtered.nextSpec);
+
+    expect(ranged.status).toBe("applied");
+    expect(layerById(ranged.nextSpec, "points-layer")).toMatchObject({ minzoom: 8, maxzoom: 16 });
+  });
+
+  it("accepts provider fitBounds actions", () => {
+    const fit = applyProviderCommands(engine, {
+      action: "fitBounds",
+      bounds: [120.145, 30.245, 120.172, 30.274]
+    }, createInitialSpec());
+
+    expect(fit.status).toBe("applied");
+    expect(fit.nextSpec.view).toMatchObject({ bounds: [120.145, 30.245, 120.172, 30.274] });
+  });
+
+  it("accepts provider reorderLayer actions and layout visibility objects", () => {
+    const spec = {
+      ...createInitialSpec(),
+      layers: [
+        ...createInitialSpec().layers,
+        {
+          id: "labels-layer",
+          type: "symbol-lite",
+          source: "points",
+          layout: { visibility: "visible" }
+        }
+      ]
+    };
+
+    const hidden = applyProviderCommands(engine, {
+      action: "setLayout",
+      layerId: "labels-layer",
+      layout: { visibility: "none" }
+    }, spec);
+
+    expect(hidden.status).toBe("applied");
+    expect(layerById(hidden.nextSpec, "labels-layer")?.layout).toMatchObject({ visibility: "none" });
+
+    const reordered = applyProviderCommands(engine, {
+      action: "reorderLayer",
+      layerId: "points-layer"
+    }, hidden.nextSpec);
+
+    expect(reordered.status).toBe("applied");
+    expect(reordered.nextSpec.layers.map((layer: { id: string }) => layer.id)).toEqual([
+      "basemap-background",
+      "labels-layer",
+      "points-layer"
+    ]);
+  });
+
   it("builds basemap commands with current command schema fields", () => {
     const commands = buildBasemapCommands("osm", createInitialSpec());
 

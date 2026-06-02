@@ -60,6 +60,9 @@ export interface MapSpec {
 - `layers` 是有序数组，顺序即渲染顺序。
 - layer id 必须唯一。
 - layer source 必须引用已存在 source。
+- 稳定 2D layer 可声明 `filter`、`minzoom`、`maxzoom`；filter 必须是
+  boolean MapLibre expression 子集，zoom range 必须满足 `0 <= minzoom <=
+  maxzoom <= 24`。
 - `revision` 由 runtime 维护，用于并发冲突检测。
 - 实验字段只能进入 `extensions`。
 - `extensions.scene3d` 必须按 `SceneView3DExtensionSchema` 演进；当前
@@ -98,6 +101,8 @@ export type MapCommand =
   | RemoveLayerCommand
   | SetPaintCommand
   | SetLayoutCommand
+  | SetFilterCommand
+  | SetLayerZoomRangeCommand
   | ReorderLayerCommand
   | SetViewCommand
   | FitBoundsCommand

@@ -8,6 +8,7 @@ export const DiagnosticCodes = {
   LayerNotFound: "LAYER.NOT_FOUND",
   LayerSourceMissing: "LAYER.SOURCE_MISSING",
   LayerSourceIncompatible: "LAYER.SOURCE_INCOMPATIBLE",
+  LayerZoomRangeInvalid: "LAYER.ZOOM_RANGE_INVALID",
   ExpressionTypeMismatch: "EXPR.TYPE_MISMATCH",
   ExpressionUnknownOperator: "EXPR.UNKNOWN_OPERATOR",
   ExpressionInvalidArity: "EXPR.INVALID_ARITY",

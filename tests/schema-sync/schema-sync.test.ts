@@ -98,6 +98,25 @@ describe("schema sync gate", () => {
         interactions: { hover: true, click: true }
       })
     ).toBe(true);
+    expect(
+      validateCommand({
+        id: "cmd-filter",
+        version: "0.1",
+        type: "setFilter",
+        layerId: "points",
+        filter: ["==", ["get", "category"], "museum"]
+      })
+    ).toBe(true);
+    expect(
+      validateCommand({
+        id: "cmd-zoom-range",
+        version: "0.1",
+        type: "setLayerZoomRange",
+        layerId: "points",
+        minzoom: 9,
+        maxzoom: 18
+      })
+    ).toBe(true);
     expect(validateCommand({ id: "cmd-view", version: "0.1", type: "setView", view: { zoom: 8 }, unexpected: true })).toBe(false);
     expect(validateCommand.errors?.some((error) => error.keyword === "additionalProperties")).toBe(true);
   });

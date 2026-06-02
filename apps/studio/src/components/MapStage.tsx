@@ -74,7 +74,19 @@ export default function MapStage({ serverState, status, onSave, savedMsg, basema
     map.setStyle(style, { diff: false });
     map.once("style.load", () => {
       const target = serverState.summary;
-      if (target.center && target.zoom != null) map.flyTo({ center: target.center, zoom: target.zoom, duration: 600 });
+      if (target.center && target.zoom != null) {
+        map.flyTo({ center: target.center, zoom: target.zoom, duration: 600 });
+        return;
+      }
+      if (target.bounds) {
+        map.fitBounds(
+          [
+            [target.bounds[0], target.bounds[1]],
+            [target.bounds[2], target.bounds[3]],
+          ],
+          { duration: 600, padding: 40 }
+        );
+      }
     });
   }, [mapReadyToken, serverState?.style, serverState?.summary.revision]);
 

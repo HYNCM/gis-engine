@@ -101,6 +101,9 @@ export interface LayerSpec {
   id: string;
   type: "background" | "raster" | "fill" | "line" | "circle" | "symbol-lite" | "fill-extrusion-lite";
   source?: string;
+  filter?: Expression;
+  minzoom?: number;
+  maxzoom?: number;
   layout?: Record<string, unknown>;
   paint?: Record<string, unknown>;
   metadata?: Record<string, unknown>;
@@ -287,6 +290,19 @@ export interface SetLayoutCommand extends MapCommandBase {
   layout: Record<string, unknown>;
 }
 
+export interface SetFilterCommand extends MapCommandBase {
+  type: "setFilter";
+  layerId: string;
+  filter: Expression | null;
+}
+
+export interface SetLayerZoomRangeCommand extends MapCommandBase {
+  type: "setLayerZoomRange";
+  layerId: string;
+  minzoom: number;
+  maxzoom: number;
+}
+
 export interface ReorderLayerCommand extends MapCommandBase {
   type: "reorderLayer";
   layerId: string;
@@ -353,6 +369,8 @@ export type MapCommand =
   | RemoveLayerCommand
   | SetPaintCommand
   | SetLayoutCommand
+  | SetFilterCommand
+  | SetLayerZoomRangeCommand
   | ReorderLayerCommand
   | SetViewCommand
   | SetCapabilitiesCommand
