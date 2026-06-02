@@ -41,7 +41,8 @@ const SLA_DEFS = {
     maxLatencyHours: 48,
     dir: "docs/research",
     filePattern: /competitor-updates-.*\.md/,
-    p0Action: "skip this week's competitor update; orchestrator uses last available",
+    p0Action:
+      "skip this week's competitor update; orchestrator uses last available",
   },
   quality: {
     agent: "quality",

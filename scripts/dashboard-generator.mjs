@@ -336,9 +336,7 @@ function generateDashboard(metrics, anomalies, period) {
   }
 
   lines.push("");
-  lines.push(
-    "> ℹ️ ad-hoc agent (builder) 无固定 SLA。",
-  );
+  lines.push("> ℹ️ ad-hoc agent (builder) 无固定 SLA。");
 
   lines.push("");
 
