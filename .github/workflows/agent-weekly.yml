@@ -5,10 +5,10 @@
 #   2. 手动触发
 #
 # 执行的智能体任务：
-#   - competitive-intel：分析竞品动向，更新 capability-scorecard
-#   - product-strategist：更新技术债务报告
-#   - coordinator：生成本周摘要和优先级
-#   - task-distributor：更新任务燃尽图和依赖图
+#   - product：分析竞品动向，更新 capability-scorecard
+#   - product：更新技术债务报告
+#   - orchestrator：生成本周摘要和优先级
+#   - orchestrator：更新任务燃尽图和依赖图
 
 name: Agent Weekly Cadence
 
@@ -63,7 +63,7 @@ jobs:
           echo "path=${REPORT_PATH}" >> $GITHUB_OUTPUT
 
           echo "---" > "${REPORT_PATH}"
-          echo "agent: competitive-intel" >> "${REPORT_PATH}"
+          echo "agent: product" >> "${REPORT_PATH}"
           echo "period: ${WEEK}" >> "${REPORT_PATH}"
           echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "${REPORT_PATH}"
           echo "repo_revision: \"${{ github.sha }}\"" >> "${REPORT_PATH}"
@@ -78,7 +78,7 @@ jobs:
           echo "" >> "${REPORT_PATH}"
           echo "## Executive Summary" >> "${REPORT_PATH}"
           echo "" >> "${REPORT_PATH}"
-          echo "> ⚠️ 本报告为 automation-generated evidence/template，不是已完成的 competitive-intel 审查；补充 dated evidence、影响、行动和置信度前不得作为 advisory/blocking 决策依据。" >> "${REPORT_PATH}"
+          echo "> ⚠️ 本报告为 automation-generated evidence/template，不是已完成的 product 审查；补充 dated evidence、影响、行动和置信度前不得作为 advisory/blocking 决策依据。" >> "${REPORT_PATH}"
           echo "" >> "${REPORT_PATH}"
           echo "## New Releases" >> "${REPORT_PATH}"
           echo "" >> "${REPORT_PATH}"
@@ -135,7 +135,7 @@ jobs:
         run: |
           DATE=$(date -u +%Y-%m)
           echo "---" > docs/planning/technical-debt-report.md
-          echo "agent: product-strategist" >> docs/planning/technical-debt-report.md
+          echo "agent: product" >> docs/planning/technical-debt-report.md
           echo "period: ${DATE}" >> docs/planning/technical-debt-report.md
           echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> docs/planning/technical-debt-report.md
           echo "repo_revision: \"${{ github.sha }}\"" >> docs/planning/technical-debt-report.md
@@ -148,7 +148,7 @@ jobs:
           echo "" >> docs/planning/technical-debt-report.md
           echo "# Technical Debt Report: ${DATE}" >> docs/planning/technical-debt-report.md
           echo "" >> docs/planning/technical-debt-report.md
-          echo "> ⚠️ 本报告为 automation-generated evidence/template，不是已完成的 product-strategist 审查；补充证据、影响、行动和置信度前不得作为 advisory/blocking 决策依据。" >> docs/planning/technical-debt-report.md
+          echo "> ⚠️ 本报告为 automation-generated evidence/template，不是已完成的 product 审查；补充证据、影响、行动和置信度前不得作为 advisory/blocking 决策依据。" >> docs/planning/technical-debt-report.md
 
           mkdir -p weekly-artifacts/docs/planning
           cp docs/planning/technical-debt-report.md weekly-artifacts/docs/planning/technical-debt-report.md
@@ -178,7 +178,7 @@ jobs:
           fi
 
           echo "---" > docs/planning/weekly-digest.md
-          echo "agent: coordinator" >> docs/planning/weekly-digest.md
+          echo "agent: orchestrator" >> docs/planning/weekly-digest.md
           echo "period: ${WEEK}" >> docs/planning/weekly-digest.md
           echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> docs/planning/weekly-digest.md
           echo "repo_revision: \"${{ github.sha }}\"" >> docs/planning/weekly-digest.md

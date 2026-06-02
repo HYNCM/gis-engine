@@ -58,7 +58,7 @@ jobs:
           {
             cat << ALERTEOF
 ---
-agent: coordinator
+agent: orchestrator
 period: emergency
 generated_at: ${DATE}
 repo_revision: "${GITHUB_SHA}"

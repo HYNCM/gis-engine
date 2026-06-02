@@ -143,21 +143,21 @@ export default function EvidencePanel({
           <div className="grid grid-cols-3 gap-1">
             <button
               disabled={!canReview}
-              onClick={() => onReviewDecision("accepted")}
+              onClick={() => onReviewDecision?.("accepted")}
               className="rounded bg-green-900/50 px-2 py-1 text-green-200 disabled:opacity-30"
             >
               Accept
             </button>
             <button
               disabled={!canReview}
-              onClick={() => onReviewDecision("blocked")}
+              onClick={() => onReviewDecision?.("blocked")}
               className="rounded bg-red-900/50 px-2 py-1 text-red-200 disabled:opacity-30"
             >
               Block
             </button>
             <button
               disabled={!canReview}
-              onClick={() => onReviewDecision("follow-up-required")}
+              onClick={() => onReviewDecision?.("follow-up-required")}
               className="rounded bg-yellow-900/50 px-2 py-1 text-yellow-100 disabled:opacity-30"
             >
               Follow

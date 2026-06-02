@@ -6,9 +6,9 @@
 #   3. Push：向 main 分支推送时运行（快速反馈）
 #
 # 执行的智能体任务：
-#   - code-reviewer：审查最近 24 小时代码变更
-#   - quality-guardian：检查待 merge PR 的质量门禁
-#   - docs-agent：自动更新文档一致性
+#   - quality：审查最近 24 小时代码变更
+#   - quality：检查待 merge PR 的质量门禁
+#   - docs：自动更新文档一致性
 
 name: Agent Daily Cadence
 
@@ -75,7 +75,7 @@ jobs:
           REPORT="docs/reviews/daily-audit-${DATE}.md"
           mkdir -p docs/reviews
           echo "---" > "${REPORT}"
-          echo "agent: code-reviewer" >> "${REPORT}"
+          echo "agent: quality" >> "${REPORT}"
           echo "period: ${DATE}" >> "${REPORT}"
           echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "${REPORT}"
           echo "repo_revision: \"${{ github.sha }}\"" >> "${REPORT}"
@@ -88,7 +88,7 @@ jobs:
           echo "" >> "${REPORT}"
           echo "# code-reviewer 每日审计报告" >> "${REPORT}"
           echo "" >> "${REPORT}"
-          echo "> ⚠️ 本报告为 automation-generated machine evidence/template，不是已完成的 code-reviewer 审查；补充实质 diff 审计前不得作为 advisory/blocking 决策依据。" >> "${REPORT}"
+          echo "> ⚠️ 本报告为 automation-generated machine evidence/template，不是已完成的 quality 审查；补充实质 diff 审计前不得作为 advisory/blocking 决策依据。" >> "${REPORT}"
           echo "" >> "${REPORT}"
           echo "**触发**: ${{ github.event_name }}" >> "${REPORT}"
           echo "" >> "${REPORT}"
@@ -148,7 +148,7 @@ jobs:
           mkdir -p docs/reviews
           DATE=$(date -u +%Y-%m-%d)
           echo "---" > docs/reviews/quality-gate-${DATE}.md
-          echo "agent: quality-guardian" >> docs/reviews/quality-gate-${DATE}.md
+          echo "agent: quality" >> docs/reviews/quality-gate-${DATE}.md
           echo "period: ${DATE}" >> docs/reviews/quality-gate-${DATE}.md
           echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> docs/reviews/quality-gate-${DATE}.md
           echo "repo_revision: \"${{ github.sha }}\"" >> docs/reviews/quality-gate-${DATE}.md
@@ -157,7 +157,7 @@ jobs:
           echo "" >> docs/reviews/quality-gate-${DATE}.md
           echo "# Quality Gate: ${DATE}" >> docs/reviews/quality-gate-${DATE}.md
           echo "" >> docs/reviews/quality-gate-${DATE}.md
-          echo "> ⚠️ 本报告为 automation-generated machine evidence/template，不是已完成的 quality-guardian gate；补充完整门禁判定前不得作为 blocking merge/release 决策依据。" >> docs/reviews/quality-gate-${DATE}.md
+          echo "> ⚠️ 本报告为 automation-generated machine evidence/template，不是已完成的 quality gate；补充完整门禁判定前不得作为 blocking merge/release 决策依据。" >> docs/reviews/quality-gate-${DATE}.md
           echo "" >> docs/reviews/quality-gate-${DATE}.md
           echo "## Gate Results" >> docs/reviews/quality-gate-${DATE}.md
           echo "" >> docs/reviews/quality-gate-${DATE}.md
@@ -222,7 +222,7 @@ jobs:
           mkdir -p docs/reviews
           REPORT="docs/reviews/documentation-audit-${DATE}.md"
           echo "---" > "${REPORT}"
-          echo "agent: docs-agent" >> "${REPORT}"
+          echo "agent: docs" >> "${REPORT}"
           echo "period: ${DATE}" >> "${REPORT}"
           echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "${REPORT}"
           echo "repo_revision: \"${{ github.sha }}\"" >> "${REPORT}"
@@ -235,7 +235,7 @@ jobs:
           echo "" >> "${REPORT}"
           echo "# Documentation Audit: ${DATE}" >> "${REPORT}"
           echo "" >> "${REPORT}"
-          echo "> ⚠️ 本报告为 automation-generated machine evidence/template，不是已完成的 docs-agent 审查；补充实质文档审计前不得作为 advisory/blocking 决策依据。" >> "${REPORT}"
+          echo "> ⚠️ 本报告为 automation-generated machine evidence/template，不是已完成的 docs 审查；补充实质文档审计前不得作为 advisory/blocking 决策依据。" >> "${REPORT}"
 
           mkdir -p daily-artifacts/docs/reviews
           cp "${REPORT}" "daily-artifacts/${REPORT}"

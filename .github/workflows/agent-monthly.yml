@@ -5,10 +5,10 @@
 #   2. 手动触发
 #
 # 执行的智能体任务：
-#   - product-strategist：刷新月度路线图
-#   - coordinator：审批优先级和权衡
-#   - quality-guardian：验证发布就绪证据
-#   - task-distributor：创建 sprint 任务批次
+#   - product：刷新月度路线图
+#   - orchestrator：审批优先级和权衡
+#   - quality：验证发布就绪证据
+#   - orchestrator：创建 sprint 任务批次
 
 name: Agent Monthly Cadence
 
@@ -78,7 +78,7 @@ jobs:
           fi
 
           echo "---" > docs/planning/monthly-roadmap.md
-          echo "agent: product-strategist" >> docs/planning/monthly-roadmap.md
+          echo "agent: product" >> docs/planning/monthly-roadmap.md
           echo "period: ${MONTH}" >> docs/planning/monthly-roadmap.md
           echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> docs/planning/monthly-roadmap.md
           echo "repo_revision: \"${{ github.sha }}\"" >> docs/planning/monthly-roadmap.md
@@ -133,7 +133,7 @@ jobs:
           DATE=$(date -u +%Y-%m-%d)
           mkdir -p docs/reviews
           echo "---" > docs/reviews/release-readiness-${DATE}.md
-          echo "agent: quality-guardian" >> docs/reviews/release-readiness-${DATE}.md
+          echo "agent: quality" >> docs/reviews/release-readiness-${DATE}.md
           echo "period: $(date -u +%Y-%m)" >> docs/reviews/release-readiness-${DATE}.md
           echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> docs/reviews/release-readiness-${DATE}.md
           echo "repo_revision: \"${{ github.sha }}\"" >> docs/reviews/release-readiness-${DATE}.md
