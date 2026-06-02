@@ -4,10 +4,14 @@ import {
   applyProviderCommands,
   applyLegacyIntent,
   buildBasemapCommands,
+  buildProviders,
   createInitialSpec,
+  publicProviderProfiles,
   publicBasemapOptions,
   statePayload
 } from "../../apps/studio/server/index.mjs";
+import { appendAuditRecord } from "../../apps/studio/server/audit.mjs";
+import { createReviewDecision } from "../../apps/studio/server/review-decisions.mjs";
 
 function layerById(spec: ReturnType<typeof createInitialSpec>, layerId: string) {
   return spec.layers.find((layer: { id: string }) => layer.id === layerId);
@@ -40,6 +44,29 @@ describe("AI Map Studio server state", () => {
     } else {
       expect(bing).toMatchObject({ enabled: false, missingCredential: "BING_MAPS_KEY" });
     }
+  });
+
+  it("keeps provider public metadata credential- and URL-free", () => {
+    const profiles = buildProviders({
+      DEEPSEEK_API_KEY: "sk-secret-provider-key",
+      DEEPSEEK_BASE_URL: "https://secret-provider.example",
+      DEEPSEEK_MODEL: "deepseek-test-model"
+    });
+    const publicProfiles = publicProviderProfiles(profiles);
+
+    expect(publicProfiles.find((profile: { id: string }) => profile.id === "deepseek")).toMatchObject({
+      id: "deepseek",
+      label: "DeepSeek",
+      protocol: "openai-chat-completions",
+      model: "deepseek-test-model",
+      enabled: true,
+      missingCredential: false
+    });
+    const serialized = JSON.stringify(publicProfiles);
+    expect(serialized).not.toContain("sk-secret-provider-key");
+    expect(serialized).not.toContain("secret-provider.example");
+    expect(serialized).not.toContain("DEEPSEEK_API_KEY");
+    expect(serialized).not.toContain("baseUrl");
   });
 
   it("keeps remote basemap sources behind policy-safe Studio proxy URLs", () => {
@@ -232,5 +259,102 @@ describe("AI Map Studio server state", () => {
         message: "Terrain needs a command contract."
       })
     ]);
+  });
+
+  it("creates compact Studio audit records for command evidence", () => {
+    const records: unknown[] = [];
+    const record = appendAuditRecord(records, {
+      sessionId: "studio.test",
+      status: "applied",
+      providerId: "mock-ai",
+      promptHash: "sha256:studio-test",
+      traceId: "trace-studio-test",
+      commandCount: 1,
+      diagnostics: [],
+      fromRevision: "1",
+      toRevision: "2"
+    });
+
+    expect(records).toHaveLength(1);
+    expect(record).toMatchObject({
+      recordVersion: "studio.audit.v1",
+      status: "applied",
+      providerId: "mock-ai",
+      commandCount: 1,
+      fromRevision: "1",
+      toRevision: "2"
+    });
+    const serialized = JSON.stringify(record);
+    expect(serialized).not.toMatch(/make points red|West Lake|MapSpec|commandBody|patch|baseUrl|apiKey/i);
+  });
+
+  it("records Studio review decisions without mutating map state", () => {
+    const auditRecord = appendAuditRecord([], {
+      sessionId: "studio.test",
+      status: "applied",
+      providerId: "mock-ai",
+      promptHash: "sha256:studio-test",
+      traceId: "trace-studio-test",
+      commandCount: 1,
+      diagnostics: [],
+      fromRevision: "1",
+      toRevision: "2"
+    });
+
+    const review = createReviewDecision({
+      request: { outcome: "accepted", reasonCodes: ["review-accepted"] },
+      evidence: auditRecord,
+      principal: { role: "reviewer", projectIds: ["project_studio"] },
+      projectId: "project_studio",
+      decisionId: "review-1",
+      createdAt: "2026-06-03T00:00:00Z"
+    });
+
+    expect(review.ok).toBe(true);
+    if (!review.ok) throw new Error("Expected review decision to be accepted.");
+    expect(review.decision).toMatchObject({
+      recordVersion: "studio.review.v1",
+      outcome: "accepted",
+      auditRecordId: auditRecord.id,
+      providerId: "mock-ai",
+      commandEvidence: expect.objectContaining({ commandCount: 1, committed: true })
+    });
+    expect(JSON.stringify(review.decision)).not.toMatch(/MapSpec|commandBody|patch|rawPrompt|West Lake/i);
+  });
+
+  it("blocks Studio review decisions that attempt direct map mutation", () => {
+    const auditRecord = appendAuditRecord([], {
+      sessionId: "studio.test",
+      status: "applied",
+      providerId: "mock-ai",
+      commandCount: 1,
+      diagnostics: [],
+      fromRevision: "1",
+      toRevision: "2"
+    });
+
+    const review = createReviewDecision({
+      request: {
+        outcome: "blocked",
+        reasonCodes: ["manual-review-blocked"],
+        rawPrompt: "make points red",
+        commands: [{ type: "setPaint" }],
+        spec: { id: "unsafe" }
+      },
+      evidence: auditRecord,
+      principal: { role: "reviewer", projectIds: ["project_studio"] },
+      projectId: "project_studio",
+      decisionId: "review-1",
+      createdAt: "2026-06-03T00:00:00Z"
+    });
+
+    expect(review.ok).toBe(false);
+    expect(review.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: "STUDIO.REVIEW_CONTRACT_VIOLATION",
+        path: "/reviewAction/commandSafety"
+      })
+    );
+    expect(JSON.stringify(review)).not.toContain("make points red");
   });
 });

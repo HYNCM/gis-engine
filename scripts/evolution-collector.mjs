@@ -406,9 +406,7 @@ function extractGateResultRows(content) {
     if (!headerLine.startsWith("|")) continue;
 
     const headers = splitMarkdownRow(headerLine).map((h) => h.toLowerCase());
-    const gateIndex = headers.findIndex((h) =>
-      ["gate", "command"].includes(h),
-    );
+    const gateIndex = headers.findIndex((h) => ["gate", "command"].includes(h));
     const resultIndex = headers.findIndex(
       (h) => h === "result" || h === "status",
     );
@@ -455,17 +453,17 @@ function normalizeGateResult(cell) {
   if (/^(✅\s*)?(pass|passed|green|ok)\b/.test(value) || value === "✅") {
     return "pass";
   }
-  if (/^(❌\s*)?(fail|failed|blocked|block|red)\b/.test(value) || value === "❌") {
+  if (
+    /^(❌\s*)?(fail|failed|blocked|block|red)\b/.test(value) ||
+    value === "❌"
+  ) {
     return "fail";
   }
   return null;
 }
 
 function normalizeOwner(owner) {
-  return owner
-    .trim()
-    .replace(/`/g, "")
-    .replace(/^@/, "");
+  return owner.trim().replace(/`/g, "").replace(/^@/, "");
 }
 
 // ── D4: 知识提取 ──
@@ -806,7 +804,7 @@ function generateLedgerEntry(week, metrics) {
   const { d1, d2, d3, d4, d5, d6 } = metrics;
 
   let entry = `\n### ${week}\n\n`;
-  entry += `> 本条目由 \`scripts/evolution-collector.mjs\` 自动生成，作为 coordinator/evolution-guardian 的度量输入。补充实际工时、人工复核和影响判断前，不得用于规则调整或 blocking 决策。\n\n`;
+  entry += `> 本条目由 \`scripts/evolution-collector.mjs\` 自动生成，作为 orchestrator/evolution-guardian 的度量输入。补充实际工时、人工复核和影响判断前，不得用于规则调整或 blocking 决策。\n\n`;
 
   // D1
   entry += `#### D1：估算准确度\n\n`;

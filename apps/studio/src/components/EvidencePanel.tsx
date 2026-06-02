@@ -1,14 +1,25 @@
-import type { ChatMessage, ServerState } from "../App";
+import type {
+  AuditRecord,
+  ChatMessage,
+  ReviewDecision,
+  ServerState,
+} from "../App";
 
 interface Props {
   messages: ChatMessage[];
   serverState: ServerState | null;
+  auditRecords?: AuditRecord[];
+  reviewDecisions?: ReviewDecision[];
+  onReviewDecision?: (outcome: ReviewDecision["outcome"]) => void;
   onClose: () => void;
 }
 
 export default function EvidencePanel({
   messages,
   serverState,
+  auditRecords = [],
+  reviewDecisions = [],
+  onReviewDecision,
   onClose,
 }: Props) {
   const lastMsg = messages
@@ -18,6 +29,8 @@ export default function EvidencePanel({
   const diags = ev?.diagnostics || serverState?.diagnostics || [];
   const cmd = ev?.commandEvidence || serverState?.commandEvidence;
   const provider = ev?.provider || serverState?.provider;
+  const latestAudit = auditRecords.at(-1);
+  const canReview = Boolean(latestAudit);
 
   return (
     <>
@@ -26,19 +39,18 @@ export default function EvidencePanel({
           <p className="text-xs text-blue-400 font-medium tracking-wide">
             EVIDENCE
           </p>
-          <h2 className="text-sm font-semibold">Command Trail</h2>
+          <h2 className="text-sm font-semibold">Review Trail</h2>
         </div>
         <button
           onClick={onClose}
           className="text-gray-500 hover:text-gray-300 text-sm px-1"
           title="Close evidence"
         >
-          ✕
+          x
         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 text-xs">
-        {/* Map Summary */}
         {serverState && (
           <div className="bg-gray-800 rounded-lg p-3 space-y-1">
             <p className="text-gray-400 font-medium">Map Summary</p>
@@ -59,11 +71,14 @@ export default function EvidencePanel({
           </div>
         )}
 
-        {/* Command Evidence */}
         {cmd && (
           <div className="bg-gray-800 rounded-lg p-3 space-y-1">
             <p className="text-gray-400 font-medium">Last Command</p>
             <div className="space-y-0.5 text-gray-300">
+              <p>
+                Commands:{" "}
+                <span className="font-mono">{cmd.commandCount ?? "--"}</span>
+              </p>
               <p>
                 Committed:{" "}
                 <span
@@ -82,6 +97,16 @@ export default function EvidencePanel({
                   {String(cmd.rolledBack)}
                 </span>
               </p>
+              {cmd.failed != null && (
+                <p>
+                  Failed:{" "}
+                  <span
+                    className={cmd.failed ? "text-red-400" : "text-gray-500"}
+                  >
+                    {String(cmd.failed)}
+                  </span>
+                </p>
+              )}
               <p>
                 Paths changed:{" "}
                 <span className="font-mono">{cmd.changedPathCount}</span>
@@ -90,7 +115,6 @@ export default function EvidencePanel({
           </div>
         )}
 
-        {/* Provider Info */}
         {provider && (
           <div className="bg-gray-800 rounded-lg p-3 space-y-1">
             <p className="text-gray-400 font-medium">AI Provider</p>
@@ -101,10 +125,135 @@ export default function EvidencePanel({
                 {(provider.confidence.score * 100).toFixed(0)}%)
               </p>
             )}
+            {provider.promptHash && (
+              <p className="text-gray-500 font-mono break-all">
+                prompt: {provider.promptHash}
+              </p>
+            )}
+            {provider.traceId && (
+              <p className="text-gray-500 font-mono break-all">
+                trace: {provider.traceId}
+              </p>
+            )}
           </div>
         )}
 
-        {/* Diagnostics */}
+        <div className="bg-gray-800 rounded-lg p-3 space-y-2">
+          <p className="text-gray-400 font-medium">Review Decision</p>
+          <div className="grid grid-cols-3 gap-1">
+            <button
+              disabled={!canReview}
+              onClick={() => onReviewDecision("accepted")}
+              className="rounded bg-green-900/50 px-2 py-1 text-green-200 disabled:opacity-30"
+            >
+              Accept
+            </button>
+            <button
+              disabled={!canReview}
+              onClick={() => onReviewDecision("blocked")}
+              className="rounded bg-red-900/50 px-2 py-1 text-red-200 disabled:opacity-30"
+            >
+              Block
+            </button>
+            <button
+              disabled={!canReview}
+              onClick={() => onReviewDecision("follow-up-required")}
+              className="rounded bg-yellow-900/50 px-2 py-1 text-yellow-100 disabled:opacity-30"
+            >
+              Follow
+            </button>
+          </div>
+          {latestAudit ? (
+            <p className="text-gray-500">
+              Evidence: <span className="font-mono">{latestAudit.id}</span>
+            </p>
+          ) : (
+            <p className="text-gray-600 italic">No audit record yet</p>
+          )}
+        </div>
+
+        {latestAudit && (
+          <div className="bg-gray-800 rounded-lg p-3 space-y-1">
+            <p className="text-gray-400 font-medium">Replay Context</p>
+            <p className="text-gray-300">
+              Revision{" "}
+              <span className="font-mono">{latestAudit.fromRevision}</span> to{" "}
+              <span className="font-mono">{latestAudit.toRevision}</span>
+            </p>
+            <p className="text-gray-500">
+              Provider{" "}
+              <span className="font-mono">{latestAudit.providerId}</span>,{" "}
+              {latestAudit.commandCount} command(s)
+            </p>
+            {latestAudit.promptHash && (
+              <p className="text-gray-600 font-mono break-all">
+                {latestAudit.promptHash}
+              </p>
+            )}
+          </div>
+        )}
+
+        <div className="space-y-1">
+          <p className="text-gray-400 font-medium">
+            Session Audit ({auditRecords.length})
+          </p>
+          {auditRecords.length === 0 ? (
+            <p className="text-gray-600 italic">No session records</p>
+          ) : (
+            auditRecords
+              .slice(-5)
+              .reverse()
+              .map((record) => (
+                <div key={record.id} className="rounded bg-gray-800/70 p-2">
+                  <div className="flex justify-between gap-2">
+                    <span className="font-mono text-gray-300">
+                      {record.status}
+                    </span>
+                    <span className="text-gray-500">
+                      {record.fromRevision} to {record.toRevision}
+                    </span>
+                  </div>
+                  <p className="text-gray-500">
+                    {record.providerId} / {record.commandCount} command(s)
+                  </p>
+                  <p className="text-gray-600">
+                    errors {record.diagnosticCounts.error}, warnings{" "}
+                    {record.diagnosticCounts.warning}
+                  </p>
+                </div>
+              ))
+          )}
+        </div>
+
+        <div className="space-y-1">
+          <p className="text-gray-400 font-medium">
+            Review History ({reviewDecisions.length})
+          </p>
+          {reviewDecisions.length === 0 ? (
+            <p className="text-gray-600 italic">No review decisions</p>
+          ) : (
+            reviewDecisions
+              .slice(-5)
+              .reverse()
+              .map((decision) => (
+                <div
+                  key={decision.decisionId}
+                  className="rounded bg-gray-800/70 p-2"
+                >
+                  <p className="font-mono text-gray-300">{decision.outcome}</p>
+                  <p className="text-gray-500">
+                    {decision.reasonCodes.join(", ")}
+                  </p>
+                  {decision.followUpTaskIds && (
+                    <p className="text-gray-600">
+                      {decision.followUpTaskIds.join(", ")}
+                    </p>
+                  )}
+                </div>
+              ))
+          )}
+        </div>
+
         <div className="space-y-1">
           <p className="text-gray-400 font-medium">
             Diagnostics ({diags.length})
@@ -129,13 +278,15 @@ export default function EvidencePanel({
           )}
         </div>
 
-        {/* No data state */}
-        {!cmd && !provider && diags.length === 0 && (
-          <div className="text-center py-8 text-gray-600">
-            <p>Send a message to see</p>
-            <p>command evidence here.</p>
-          </div>
-        )}
+        {!cmd &&
+          !provider &&
+          diags.length === 0 &&
+          auditRecords.length === 0 && (
+            <div className="text-center py-8 text-gray-600">
+              <p>Send a message to see</p>
+              <p>review evidence here.</p>
+            </div>
+          )}
       </div>
     </>
   );

@@ -73,7 +73,10 @@ function extractTableRows(content, sectionHeader) {
   // 跳过表头行
   let headerSkipped = false;
   while ((match = tableRegex.exec(section)) !== null) {
-    const cells = match[0].split("|").map((c) => c.trim()).filter(Boolean);
+    const cells = match[0]
+      .split("|")
+      .map((c) => c.trim())
+      .filter(Boolean);
     if (!headerSkipped) {
       headerSkipped = true;
       continue;
@@ -107,7 +110,10 @@ function extractPatternsPitfalls(reportPath) {
 
     // 1. 从架构评估中提取评分证据作为 pattern
     if (content.includes("架构") || content.includes("Architecture")) {
-      const scoreRows = extractTableRows(content, "(?:架构|Architecture).*(?:评分|Assessment|Score)");
+      const scoreRows = extractTableRows(
+        content,
+        "(?:架构|Architecture).*(?:评分|Assessment|Score)",
+      );
       for (const row of scoreRows) {
         const score = parseFloat(row[1]);
         if (score >= 8.5 && row[0].length > 5) {
@@ -162,7 +168,9 @@ function extractPatternsPitfalls(reportPath) {
       if (riskText.length > 30) {
         results.pitfalls.push({
           title: `Residual Risk: ${shortPath}`,
-          description: riskText.replace(/^##\s+Residual Risk\s*/i, "").slice(0, 350),
+          description: riskText
+            .replace(/^##\s+Residual Risk\s*/i, "")
+            .slice(0, 350),
           source: shortPath,
         });
       }
@@ -324,18 +332,14 @@ function generatePatternsMarkdown(patterns, monthStr) {
   lines.push("");
   lines.push("# Evolution Pattern Library");
   lines.push("");
-  lines.push(
-    "此库记录从已完成任务和架构评估中自动提取的可复用设计模式。",
-  );
+  lines.push("此库记录从已完成任务和架构评估中自动提取的可复用设计模式。");
   lines.push("每个 pattern 包含已验证的方法及其证据来源。");
   lines.push("");
 
   if (patterns.length === 0) {
     lines.push("*本月尚未提取任何 pattern。*");
     lines.push("");
-    lines.push(
-      "> 💡 当 review 报告中包含 high-confidence 的 Evidence 条目、",
-    );
+    lines.push("> 💡 当 review 报告中包含 high-confidence 的 Evidence 条目、");
     lines.push(
       "> 架构评估中包含 >= 8.5 分的维度、或存在全部通过的门禁组合时，",
     );
@@ -387,12 +391,8 @@ function generatePitfallsMarkdown(pitfalls, monthStr) {
   if (pitfalls.length === 0) {
     lines.push("*本月尚未提取任何 pitfall。*");
     lines.push("");
-    lines.push(
-      "> 💡 当 review 报告中包含 Residual Risk 节、blocking 级发现、",
-    );
-    lines.push(
-      "> 或 Technical Debt / Known Issues 节时，本提取器将自动收录。",
-    );
+    lines.push("> 💡 当 review 报告中包含 Residual Risk 节、blocking 级发现、");
+    lines.push("> 或 Technical Debt / Known Issues 节时，本提取器将自动收录。");
   } else {
     let pitNum = 1;
     for (const pit of pitfalls) {
@@ -465,11 +465,17 @@ async function main() {
 
     mkdirSync(dirname(patternsPath), { recursive: true });
 
-    const patternsMarkdown = generatePatternsMarkdown(uniquePatterns, options.month);
+    const patternsMarkdown = generatePatternsMarkdown(
+      uniquePatterns,
+      options.month,
+    );
     writeFileSync(patternsPath, patternsMarkdown, "utf-8");
     console.log(`   📄 已生成 Pattern 库: ${patternsPath}`);
 
-    const pitfallsMarkdown = generatePitfallsMarkdown(uniquePitfalls, options.month);
+    const pitfallsMarkdown = generatePitfallsMarkdown(
+      uniquePitfalls,
+      options.month,
+    );
     writeFileSync(pitfallsPath, pitfallsMarkdown, "utf-8");
     console.log(`   📄 已生成 Pitfall 库: ${pitfallsPath}`);
 

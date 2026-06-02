@@ -48,34 +48,6 @@ MapLibre GL is imported on demand by the map stage, so the renderer package is
 kept out of the initial React entry path while the map canvas is still created
 automatically when the app opens.
 
-## Basemaps
-
-Studio supports OSM Standard, ArcGIS World Imagery, and Bing Aerial basemaps.
-MapSpec keeps those sources policy-safe by using relative `/api/tiles/...`
-proxy URLs; the server resolves the selected provider explicitly.
-
-Bing Aerial requires a server-side `BING_MAPS_KEY`:
-
-```bash
-BING_MAPS_KEY=... pnpm studio:server
-```
-
-## MapLibre Capability Registry
-
-Studio exposes an AI-facing MapLibre GL JS 5.24.0 capability registry at
-`GET /api/maplibre-capabilities`. Provider prompts include the same registry so
-models can distinguish currently commanded GIS Engine abilities from broader
-MapLibre abilities that still need a schema/command contract before mutation.
-
-The current commanded MapLibre layer controls include paint/layout edits,
-layer visibility through `layout.visibility`, layer filters, layer zoom
-visibility ranges, and layer reordering.
-Natural-language requests such as "show only landmarks", "clear filter",
-"hide labels", "make points visible above zoom 12", "move labels behind
-points", or "show all points" are converted into `setLayout`, `setFilter`,
-`setLayerZoomRange`, `reorderLayer`, and `fitBounds` commands before the
-server returns a new style.
-
 ## Docker
 
 ```bash

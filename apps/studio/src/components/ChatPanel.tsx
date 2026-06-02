@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import type { ChatMessage } from "../App";
+import type { ChatMessage, ProviderProfile } from "../App";
 
 interface Props {
   messages: ChatMessage[];
@@ -7,7 +7,7 @@ interface Props {
   onSend: (text: string) => void;
   onClose: () => void;
   providerId: string;
-  providers: Array<{ id: string; label: string; enabled: boolean }>;
+  providers: ProviderProfile[];
   onProviderChange: (id: string) => void;
 }
 
@@ -16,6 +16,8 @@ const PROMPTS = [
   { label: "Blue", prompt: "make points blue" },
   { label: "Larger", prompt: "increase point size" },
   { label: "Smaller", prompt: "decrease point size" },
+  { label: "Landmarks", prompt: "show only landmarks" },
+  { label: "Zoom 12+", prompt: "make points visible above zoom 12" },
   { label: "Hangzhou", prompt: "zoom to Hangzhou" },
   { label: "Reset", prompt: "reset" },
 ];
@@ -72,14 +74,14 @@ export default function ChatPanel({
         >
           {enabledProviders.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.label}
+              {p.label}{p.model ? ` / ${p.model}` : ""}
             </option>
           ))}
           {providers
             .filter((p) => !p.enabled)
             .map((p) => (
               <option key={p.id} value={p.id} disabled>
-                {p.label} (API key needed)
+                {p.label}{p.model ? ` / ${p.model}` : ""} ({p.missingCredential ? "credential needed" : "unavailable"})
               </option>
             ))}
         </select>

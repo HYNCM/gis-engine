@@ -17,43 +17,80 @@
  */
 
 import { execSync } from "node:child_process";
-import { mkdirSync, writeFileSync, readFileSync, readdirSync, statSync } from "node:fs";
+import {
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  readdirSync,
+  statSync,
+} from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
 
-// ── Agent 注册表 (与 agent-runner.mjs 保持同步) ──
+// ── Agent 注册表 (v2.0: 11→5 agents, 与 agent-runner.mjs 保持同步) ──
 const AGENTS = {
-  coordinator: { period: "weekly", dir: "docs/planning", file: "weekly-digest.md", cadence: "weekly" },
-  "competitive-intel": { period: "weekly", dir: "docs/research", filePattern: /competitor-updates-.*\.md/, cadence: "weekly" },
-  "code-reviewer": { period: "daily", dir: "docs/reviews", filePattern: /daily-audit-.*\.md/, cadence: "daily" },
-  "product-strategist": { period: "monthly", dir: "docs/planning", file: "monthly-roadmap.md", cadence: "monthly" },
-  "task-distributor": { period: "weekly", dir: "docs/planning", file: "task-burndown.md", cadence: "weekly" },
-  "quality-guardian": { period: "daily", dir: "docs/reviews", filePattern: /quality-gate-.*\.md/, cadence: "daily" },
-  "docs-agent": { period: "weekly", dir: "docs/reviews", filePattern: /documentation-audit-.*\.md/, cadence: "weekly" },
-  "adapter-agent": { period: "ad-hoc", dir: "docs/reviews", filePattern: /adapter-report-.*\.md/, cadence: "ad-hoc" },
-  "qa-agent": { period: "ad-hoc", dir: "docs/reviews", filePattern: /qa-evidence-.*\.md/, cadence: "ad-hoc" },
-  "ai-agent": { period: "ad-hoc", dir: "docs/reviews", filePattern: /ai-contract-audit-.*\.md/, cadence: "ad-hoc" },
-  "engine-agent": { period: "ad-hoc", dir: "docs/reviews", filePattern: /engine-contract-delta-.*\.md/, cadence: "ad-hoc" },
+  orchestrator: {
+    period: "weekly",
+    dir: "docs/planning",
+    file: "weekly-digest.md",
+    cadence: "weekly",
+  },
+  product: {
+    period: "weekly",
+    dir: "docs/research",
+    filePattern: /competitor-updates-.*\.md/,
+    cadence: "weekly",
+  },
+  quality: {
+    period: "daily",
+    dir: "docs/reviews",
+    filePattern: /quality-gate-.*\.md/,
+    cadence: "daily",
+  },
+  builder: {
+    period: "ad-hoc",
+    dir: "docs/reviews",
+    filePattern: /builder-evidence-.*\.md/,
+    cadence: "ad-hoc",
+  },
+  docs: {
+    period: "weekly",
+    dir: "docs/reviews",
+    filePattern: /documentation-audit-.*\.md/,
+    cadence: "weekly",
+  },
 };
 
-// ── 数据流定义 ──
+// ── 数据流定义 (v2.0: HOC-N1/N2/N3) ──
 const DATA_FLOWS = [
-  { from: "code-reviewer", to: "quality-guardian", description: "每日审查发现 → 质量门禁输入" },
-  { from: "competitive-intel", to: "coordinator", description: "竞品报告 → 周报摘要" },
-  { from: "product-strategist", to: "coordinator", description: "路线图 → 周报优先级" },
-  { from: "task-distributor", to: "coordinator", description: "燃尽图/DAG → 序列化规划状态" },
-  { from: "quality-guardian", to: "coordinator", description: "门禁决策 → 发布就绪判定" },
-  { from: "adapter-agent", to: "qa-agent", description: "适配器证据 → 视觉验证 (HOC-001)" },
-  { from: "engine-agent", to: "ai-agent", description: "Schema → MCP wrapper (HOC-002)" },
+  {
+    from: "product",
+    to: "orchestrator",
+    description: "竞品报告 + 优先级 → 周报规划 (HOC-N1)",
+  },
+  {
+    from: "builder",
+    to: "quality",
+    description: "实现证据 + 测试结果 → 门禁 (HOC-N2)",
+  },
+  {
+    from: "quality",
+    to: "orchestrator",
+    description: "门禁通过/阻断 → 发布就绪 (HOC-N3)",
+  },
 ];
 
 function getGitSha() {
   try {
-    return execSync("git rev-parse --short HEAD", { cwd: ROOT }).toString().trim();
-  } catch { return "unknown"; }
+    return execSync("git rev-parse --short HEAD", { cwd: ROOT })
+      .toString()
+      .trim();
+  } catch {
+    return "unknown";
+  }
 }
 
 function getDateStr() {
@@ -85,7 +122,9 @@ function findLatestReport(agentName, agentDef) {
           latestTime = stats.mtimeMs;
           latest = { file, mtime: stats.mtime, size: stats.size };
         }
-      } catch { /* skip */ }
+      } catch {
+        /* skip */
+      }
     }
 
     // 如果有 YAML front matter，用 generated_at 修正时间
@@ -102,7 +141,9 @@ function findLatestReport(agentName, agentDef) {
             }
           }
         }
-      } catch { /* use file mtime */ }
+      } catch {
+        /* use file mtime */
+      }
     }
 
     return latest;
@@ -134,7 +175,8 @@ function computeHealthMetrics() {
       else if (ageDays < 1) status = "fresh";
       else status = "ok";
     } else {
-      if (def.cadence === "ad-hoc") status = "ok"; // ad-hoc 不强制
+      if (def.cadence === "ad-hoc")
+        status = "ok"; // ad-hoc 不强制
       else status = "missing";
     }
 
@@ -142,7 +184,9 @@ function computeHealthMetrics() {
       agent: name,
       period: def.cadence,
       lastFile: latest?.file || "—",
-      lastRun: latest ? (latest.generatedAt || latest.mtime).toISOString() : "—",
+      lastRun: latest
+        ? (latest.generatedAt || latest.mtime).toISOString()
+        : "—",
       status,
       ageDays: ageDays ? Math.round(ageDays) : null,
     });
@@ -188,7 +232,7 @@ function detectDataFlowAnomalies() {
     if (fromReport && toReport) {
       const fromDate = fromReport.generatedAt || fromReport.mtime;
       const toDate = toReport.generatedAt || toReport.mtime;
-      if (toDate < fromDate && (fromDate - toDate) > 86400000) {
+      if (toDate < fromDate && fromDate - toDate > 86400000) {
         anomalies.push({
           flow: `${flow.from} → ${flow.to}`,
           description: flow.description,
@@ -212,7 +256,7 @@ function generateDashboard(metrics, anomalies, period) {
   lines.push(`generated_at: ${new Date().toISOString()}`);
   lines.push(`repo_revision: "${getGitSha()}"`);
   lines.push(`period: ${period}`);
-  lines.push("agent: coordinator");
+  lines.push("agent: orchestrator");
   lines.push("decision_level: info");
   lines.push("---");
   lines.push("");
@@ -221,9 +265,7 @@ function generateDashboard(metrics, anomalies, period) {
   lines.push(
     "> ⚠️ 本 Dashboard 由 `scripts/dashboard-generator.mjs` 自动生成。",
   );
-  lines.push(
-    "> 状态为自动化推断，需 coordinator 审查后确认。",
-  );
+  lines.push("> 状态为自动化推断，需 orchestrator 审查后确认。");
   lines.push("");
 
   // ── 执行健康 ──
@@ -276,13 +318,10 @@ function generateDashboard(metrics, anomalies, period) {
   lines.push("| --- | --- | --- | --- | --- |");
 
   const slaDefs = {
-    coordinator: { maxDays: 8, desc: "周一 00:00 UTC" },
-    "competitive-intel": { maxDays: 8, desc: "周一 00:00 UTC" },
-    "code-reviewer": { maxDays: 2, desc: "每日 00:00 UTC" },
-    "quality-guardian": { maxDays: 2, desc: "每日 00:00 UTC" },
-    "product-strategist": { maxDays: 35, desc: "每月 1 日 00:00 UTC" },
-    "task-distributor": { maxDays: 8, desc: "周一 00:00 UTC" },
-    "docs-agent": { maxDays: 8, desc: "周一 00:00 UTC" },
+    orchestrator: { maxDays: 8, desc: "周一 00:00 UTC" },
+    product: { maxDays: 8, desc: "周一 00:00 UTC" },
+    quality: { maxDays: 2, desc: "每日 00:00 UTC" },
+    docs: { maxDays: 8, desc: "周一 00:00 UTC" },
   };
 
   for (const m of metrics) {
@@ -297,7 +336,9 @@ function generateDashboard(metrics, anomalies, period) {
   }
 
   lines.push("");
-  lines.push("> ℹ️ ad-hoc agent (adapter-agent, qa-agent, ai-agent, engine-agent) 无固定 SLA。");
+  lines.push(
+    "> ℹ️ ad-hoc agent (builder) 无固定 SLA。",
+  );
 
   lines.push("");
 
@@ -309,9 +350,13 @@ function generateDashboard(metrics, anomalies, period) {
 
   for (const m of metrics) {
     if (m.status === "missing") {
-      actionItems.push(`- [ ] **@${m.agent}**: 无任何报告产出 → 确认 agent 是否已激活`);
+      actionItems.push(
+        `- [ ] **@${m.agent}**: 无任何报告产出 → 确认 agent 是否已激活`,
+      );
     } else if (m.status === "overdue") {
-      actionItems.push(`- [ ] **@${m.agent}**: 报告逾期 ${m.ageDays} 天 → 手动触发或检查 cron`);
+      actionItems.push(
+        `- [ ] **@${m.agent}**: 报告逾期 ${m.ageDays} 天 → 手动触发或检查 cron`,
+      );
     }
   }
 
@@ -330,8 +375,12 @@ function generateDashboard(metrics, anomalies, period) {
   lines.push("");
 
   // ── 统计 ──
-  const okCount = metrics.filter((m) => m.status === "ok" || m.status === "fresh").length;
-  const problemCount = metrics.filter((m) => m.status === "overdue" || m.status === "missing").length;
+  const okCount = metrics.filter(
+    (m) => m.status === "ok" || m.status === "fresh",
+  ).length;
+  const problemCount = metrics.filter(
+    (m) => m.status === "overdue" || m.status === "missing",
+  ).length;
   lines.push("## Summary");
   lines.push("");
   lines.push(`- **健康 agent**: ${okCount}/${metrics.length}`);
@@ -363,9 +412,15 @@ async function main() {
   console.log(`🔍 检测数据流异常...`);
   const anomalies = detectDataFlowAnomalies();
 
-  const okCount = metrics.filter((m) => m.status === "ok" || m.status === "fresh").length;
-  const problemCount = metrics.filter((m) => m.status === "overdue" || m.status === "missing").length;
-  console.log(`   ✅ ${okCount} 健康, 🔴 ${problemCount} 问题, ⚠️ ${anomalies.length} 数据流异常`);
+  const okCount = metrics.filter(
+    (m) => m.status === "ok" || m.status === "fresh",
+  ).length;
+  const problemCount = metrics.filter(
+    (m) => m.status === "overdue" || m.status === "missing",
+  ).length;
+  console.log(
+    `   ✅ ${okCount} 健康, 🔴 ${problemCount} 问题, ⚠️ ${anomalies.length} 数据流异常`,
+  );
   console.log("");
 
   const dashboard = generateDashboard(metrics, anomalies, period);

@@ -23,64 +23,46 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
 
-// ── SLA 定义 ──
+// ── SLA 定义 (v2.0: 11→5 agents) ──
 const SLA_DEFS = {
-  coordinator: {
-    agent: "coordinator",
-    description: "coordinator 周报",
+  orchestrator: {
+    agent: "orchestrator",
+    description: "orchestrator 周报",
     cadence: "weekly",
     maxLatencyHours: 48,
     dir: "docs/planning",
     file: "weekly-digest.md",
-    p0Action: "auto-escalate to @product-strategist for interim roadmap",
+    p0Action: "auto-escalate to @product for interim roadmap",
   },
-  "competitive-intel": {
-    agent: "competitive-intel",
-    description: "竞品分析",
+  product: {
+    agent: "product",
+    description: "竞品分析 + 路线图",
     cadence: "weekly",
     maxLatencyHours: 48,
     dir: "docs/research",
     filePattern: /competitor-updates-.*\.md/,
-    p0Action: "skip this week's competitor update; coordinator uses last available",
+    p0Action: "skip this week's competitor update; orchestrator uses last available",
   },
-  "code-reviewer": {
-    agent: "code-reviewer",
-    description: "代码审查",
-    cadence: "daily",
-    maxLatencyHours: 24,
-    dir: "docs/reviews",
-    filePattern: /daily-audit-.*\.md/,
-    p0Action: "quality-guardian cannot merge until code-reviewer clears",
-  },
-  "quality-guardian": {
-    agent: "quality-guardian",
-    description: "质量门禁",
+  quality: {
+    agent: "quality",
+    description: "代码审查 + 质量门禁",
     cadence: "daily",
     maxLatencyHours: 24,
     dir: "docs/reviews",
     filePattern: /quality-gate-.*\.md/,
-    p0Action: "block all merges until quality-guardian runs",
+    p0Action: "block all merges until quality runs",
   },
-  "product-strategist": {
-    agent: "product-strategist",
-    description: "路线图规划",
-    cadence: "monthly",
-    maxLatencyHours: 168, // 7 days
-    dir: "docs/planning",
-    file: "monthly-roadmap.md",
-    p0Action: "coordinator uses last month's roadmap",
+  builder: {
+    agent: "builder",
+    description: "实现 + 测试 (ad-hoc)",
+    cadence: "ad-hoc",
+    maxLatencyHours: 0, // no SLA for ad-hoc
+    dir: "docs/reviews",
+    filePattern: /builder-evidence-.*\.md/,
+    p0Action: "no SLA escalation for ad-hoc agent",
   },
-  "task-distributor": {
-    agent: "task-distributor",
-    description: "任务拆解",
-    cadence: "weekly",
-    maxLatencyHours: 48,
-    dir: "docs/planning",
-    file: "task-burndown.md",
-    p0Action: "coordinator serializes planning state directly",
-  },
-  "docs-agent": {
-    agent: "docs-agent",
+  docs: {
+    agent: "docs",
     description: "文档审计",
     cadence: "weekly",
     maxLatencyHours: 72,
@@ -107,7 +89,8 @@ function findLatestReport(slaDef) {
     for (const file of files) {
       let match = false;
       if (slaDef.file && file === slaDef.file) match = true;
-      else if (slaDef.filePattern && slaDef.filePattern.test(file)) match = true;
+      else if (slaDef.filePattern && slaDef.filePattern.test(file))
+        match = true;
       if (!match) continue;
 
       try {
@@ -116,7 +99,9 @@ function findLatestReport(slaDef) {
           latestTime = stats.mtimeMs;
           latest = { file, mtime: stats.mtime };
         }
-      } catch { /* skip */ }
+      } catch {
+        /* skip */
+      }
     }
 
     // 如果有 YAML front matter generated_at，用那个时间
@@ -133,7 +118,9 @@ function findLatestReport(slaDef) {
             }
           }
         }
-      } catch { /* use mtime */ }
+      } catch {
+        /* use mtime */
+      }
     }
 
     return latest;
@@ -209,7 +196,7 @@ function main() {
 
     if (!dryRun && criticals.length > 0) {
       console.log(`🚨 ${criticals.length} 个 agent 达到 critical SLA 违规`);
-      console.log(`   需要 coordinator 人工介入`);
+      console.log(`   需要 orchestrator 人工介入`);
     }
   } else {
     console.log(`✅ 所有 agent 均在 SLA 范围内`);

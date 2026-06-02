@@ -16,7 +16,13 @@
  */
 
 import { execSync } from "node:child_process";
-import { mkdirSync, writeFileSync, readFileSync, cpSync, existsSync } from "node:fs";
+import {
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  cpSync,
+  existsSync,
+} from "node:fs";
 import { join, dirname, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -94,9 +100,10 @@ function generatePackageJson(pkgName, version) {
     {
       name: `@gis-engine/${pkgName}`,
       version,
-      description: pkgName === "engine"
-        ? "AI-native MapSpec runtime, command system, diagnostics, and renderer adapters."
-        : "AI + MCP tools for GIS Engine MapSpec documents.",
+      description:
+        pkgName === "engine"
+          ? "AI-native MapSpec runtime, command system, diagnostics, and renderer adapters."
+          : "AI + MCP tools for GIS Engine MapSpec documents.",
       license: "Apache-2.0",
       type: "module",
       main: `./index.js`,

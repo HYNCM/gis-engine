@@ -29,4 +29,19 @@ describe("AI Map Studio bundle", () => {
     expect(mapStageSource).not.toMatch(/^import\s+"maplibre-gl\/dist\/maplibre-gl\.css";$/m);
     expect(mapStageSource).toContain('import("maplibre-gl")');
   });
+
+  it("keeps audit and review controls in the Studio evidence rail", () => {
+    const evidenceSource = readRepoFile("apps/studio/src/components/EvidencePanel.tsx");
+    const appSource = readRepoFile("apps/studio/src/App.tsx");
+
+    expect(evidenceSource).toContain("Session Audit");
+    expect(evidenceSource).toContain("Review Decision");
+    expect(evidenceSource).toContain("Review History");
+    expect(evidenceSource).toContain('onReviewDecision("accepted")');
+    expect(evidenceSource).toContain('onReviewDecision("blocked")');
+    expect(evidenceSource).toContain('onReviewDecision("follow-up-required")');
+    expect(appSource).toContain('fetch("/api/audit")');
+    expect(appSource).toContain('fetch("/api/review-decisions")');
+    expect(appSource).toContain('fetch("/api/review-decision"');
+  });
 });

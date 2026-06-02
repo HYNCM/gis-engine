@@ -6,8 +6,8 @@
  *   node scripts/agent-runner.mjs <agent-name> [options]
  *
  * 示例：
- *   node scripts/agent-runner.mjs code-reviewer --period 2026-05-24
- *   node scripts/agent-runner.mjs coordinator --week 2026-W22
+ *   node scripts/agent-runner.mjs quality --period 2026-06-03
+ *   node scripts/agent-runner.mjs orchestrator --week 2026-W23
  *   node scripts/agent-runner.mjs all --daily
  *
  * 此脚本封装了智能体的标准调用流程：
@@ -33,24 +33,24 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
 
-// ── 智能体注册表 ──
+// ── 智能体注册表 (v2.0: 11→5 agents, 2026-06-03) ──
 const AGENT_REGISTRY = {
-  coordinator: {
-    role: "chief planning and orchestration agent",
+  orchestrator: {
+    role: "chief planning, orchestration, and task decomposition agent",
     period: "weekly",
     modelPolicy: {
       tier: "frontier-planning",
       reasoningEffort: "high",
       routingNote:
-        "Use for cross-agent conflict resolution, roadmap tradeoffs, and Go/No-go planning state.",
+        "Use for cross-agent conflict resolution, roadmap tradeoffs, Go/No-go planning state, and GitHub Issue creation.",
     },
     outputDir: "docs/planning",
     outputFile: "weekly-digest.md",
-    gates: [], // coordinator 不直接跑测试，而是汇总
+    gates: [],
     gateDecisionLevel: "advisory",
   },
-  "competitive-intel": {
-    role: "evidence-first competitor and standards analyst",
+  product: {
+    role: "evidence-first competitor analyst, roadmap owner, and feature-priority driver",
     period: "weekly",
     modelPolicy: {
       tier: "frontier-research",
@@ -63,56 +63,14 @@ const AGENT_REGISTRY = {
     gates: [],
     gateDecisionLevel: "advisory",
   },
-  "code-reviewer": {
-    role: "daily diff and PR auditor",
-    period: "daily",
-    modelPolicy: {
-      tier: "coding-review",
-      reasoningEffort: "high",
-      routingNote:
-        "Use for architecture, schema, diagnostics, resource-policy, and regression risk review.",
-    },
-    outputDir: "docs/reviews",
-    outputFile: (period) => `daily-audit-${period}.md`,
-    gates: ["pnpm build:schema", "pnpm check"],
-    gateDecisionLevel: "blocking",
-  },
-  "product-strategist": {
-    role: "roadmap and feature-priority owner",
-    period: "monthly",
-    modelPolicy: {
-      tier: "frontier-product",
-      reasoningEffort: "medium",
-      routingNote:
-        "Use for product scoring, user-value tradeoffs, and next-sprint roadmap synthesis.",
-    },
-    outputDir: "docs/planning",
-    outputFile: "monthly-roadmap.md",
-    gates: [],
-    gateDecisionLevel: "advisory",
-  },
-  "task-distributor": {
-    role: "planning-to-execution decomposition agent",
-    period: "weekly",
-    modelPolicy: {
-      tier: "planning-coding",
-      reasoningEffort: "medium",
-      routingNote:
-        "Use for owner split, DAG updates, task sequencing, and serialized planning state.",
-    },
-    outputDir: "docs/planning",
-    outputFile: "task-burndown.md",
-    gates: [],
-    gateDecisionLevel: "advisory",
-  },
-  "quality-guardian": {
-    role: "final merge and release gate",
+  quality: {
+    role: "unified design reviewer and deterministic gate keeper",
     period: "daily",
     modelPolicy: {
       tier: "frontier-quality",
       reasoningEffort: "high",
       routingNote:
-        "Use for blocking merge/release gate decisions and waiver review.",
+        "Use for blocking merge/release gate decisions, architecture review, and waiver review.",
     },
     outputDir: "docs/reviews",
     outputFile: (period) => `quality-gate-${period}.md`,
@@ -124,96 +82,39 @@ const AGENT_REGISTRY = {
     ],
     gateDecisionLevel: "blocking",
   },
-  "docs-agent": {
-    role: "documentation ledger and release notes",
+  builder: {
+    role: "implementation agent with focus areas: engine, ai, adapter, qa",
+    period: "ad-hoc",
+    modelPolicy: {
+      tier: "coding-implementation",
+      reasoningEffort: "medium",
+      routingNote:
+        "Use for bounded implementation slices with schema, MCP, adapter, or diagnostic implications.",
+    },
+    outputDir: "docs/reviews",
+    outputFile: (period) => `builder-evidence-${period}.md`,
+    gates: ["pnpm build:schema", "pnpm check", "pnpm test"],
+    gateDecisionLevel: "advisory",
+  },
+  docs: {
+    role: "documentation ledger, release notes, public status alignment",
     period: "weekly",
-    cadences: ["daily", "weekly"],
     modelPolicy: {
       tier: "efficient-docs",
       reasoningEffort: "low",
       routingNote:
-        "Use for documentation consistency, link audits, and release-note alignment after evidence exists.",
+        "Use for documentation consistency, link audits, release-note alignment after evidence exists.",
     },
     outputDir: "docs/reviews",
     outputFile: (period) => `documentation-audit-${period}.md`,
     gates: [],
     gateDecisionLevel: "advisory",
   },
-  "adapter-agent": {
-    role: "renderer adapter implementation",
-    period: "ad-hoc",
-    modelPolicy: {
-      tier: "coding-implementation",
-      reasoningEffort: "high",
-      routingNote:
-        "Use for adapter-local implementation, renderer evidence APIs, and dependency-boundary work.",
-    },
-    outputDir: "docs/reviews",
-    outputFile: (period) => `adapter-report-${period}.md`,
-    gates: [
-      "pnpm --filter @gis-engine/scene3d-three-adapter build",
-      "pnpm test:adapter",
-    ],
-    gateDecisionLevel: "advisory",
-  },
-  "qa-agent": {
-    role: "visual evidence and release runner",
-    period: "ad-hoc",
-    modelPolicy: {
-      tier: "coding-browser-qa",
-      reasoningEffort: "medium",
-      routingNote:
-        "Use for deterministic smoke, browser visual evidence, fixtures, and release-runner reports.",
-    },
-    outputDir: "docs/reviews",
-    outputFile: (period) => `qa-evidence-${period}.md`,
-    gates: [
-      "pnpm test:snapshot:visual",
-      "pnpm test:release:scene3d",
-      "pnpm test:perf:nightly",
-    ],
-    gateDecisionLevel: "advisory",
-  },
-  "ai-agent": {
-    role: "MCP tools and AI contracts",
-    period: "ad-hoc",
-    modelPolicy: {
-      tier: "coding-ai-contract",
-      reasoningEffort: "high",
-      routingNote:
-        "Use for MCP schemas, context summaries, output schemas, and AI-facing diagnostics.",
-    },
-    outputDir: "docs/reviews",
-    outputFile: (period) => `ai-contract-audit-${period}.md`,
-    gates: ["pnpm test:ai"],
-    gateDecisionLevel: "advisory",
-  },
-  "engine-agent": {
-    role: "public schemas, commands, diagnostics",
-    period: "ad-hoc",
-    modelPolicy: {
-      tier: "coding-contract",
-      reasoningEffort: "high",
-      routingNote:
-        "Use for TypeBox schemas, commands, diagnostics, resource policy, and runtime contracts.",
-    },
-    outputDir: "docs/reviews",
-    outputFile: (period) => `engine-contract-delta-${period}.md`,
-    gates: [
-      "pnpm build:schema",
-      "pnpm test:schema",
-      "pnpm test:schema-sync",
-      "pnpm test:commands",
-      "pnpm test:patch",
-      "pnpm test:runtime",
-    ],
-    gateDecisionLevel: "advisory",
-  },
   "evolution-guardian": {
-    role: "self-evolving ecosystem metrics collector (coordinator subset)",
+    role: "self-evolving ecosystem metrics collector (orchestrator subset)",
     period: "weekly",
-    reportAgent: "coordinator",
-    owner: "@coordinator (evolution-guardian)",
+    reportAgent: "orchestrator",
+    owner: "@orchestrator (evolution-guardian)",
     modelPolicy: {
       tier: "frontier-planning",
       reasoningEffort: "medium",
@@ -267,7 +168,10 @@ function getGitSha() {
 }
 
 function sleep(ms) {
-  if (typeof Atomics !== "undefined" && typeof SharedArrayBuffer !== "undefined") {
+  if (
+    typeof Atomics !== "undefined" &&
+    typeof SharedArrayBuffer !== "undefined"
+  ) {
     Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
     return;
   }
@@ -296,7 +200,9 @@ function acquireRunLock(lockPath, { maxAttempts = 50, intervalMs = 100 } = {}) {
         // ignore stale metadata errors
       }
       if (attempt >= maxAttempts) {
-        throw new Error(`Could not acquire agent-runner lock at ${lockPath} after ${attempt} attempts`);
+        throw new Error(
+          `Could not acquire agent-runner lock at ${lockPath} after ${attempt} attempts`,
+        );
       }
       sleep(intervalMs);
     }
@@ -326,7 +232,10 @@ class PlanningStateManager {
   }
 
   /** 为规划文件获取文件级锁 */
-  acquireFileLock(relativeFilePath, { maxAttempts = 30, intervalMs = 200 } = {}) {
+  acquireFileLock(
+    relativeFilePath,
+    { maxAttempts = 30, intervalMs = 200 } = {},
+  ) {
     const lockPath = join(this.root, `${relativeFilePath}.lock`);
     let attempt = 0;
     while (true) {
@@ -480,17 +389,16 @@ class HealthCheck {
     if (!agentDef) return { ok: true, missing: [] };
 
     const requiredInputs = {
-      coordinator: ["docs/planning", "docs/research", "docs/reviews"],
-      "competitive-intel": ["docs/research"],
-      "code-reviewer": ["docs/reviews", "packages"],
-      "product-strategist": ["docs/planning/monthly-roadmap.md", "docs/research"],
-      "task-distributor": ["docs/planning/task-burndown.md", "docs/planning/dependency-graph.md"],
-      "quality-guardian": ["packages", "tests"],
-      "docs-agent": ["docs", "README.md", "CHANGELOG.md"],
-      "adapter-agent": ["packages/scene3d-three-adapter"],
-      "qa-agent": ["tests", "packages"],
-      "ai-agent": ["packages/ai"],
-      "engine-agent": ["packages/engine"],
+      orchestrator: ["docs/planning", "docs/research", "docs/reviews"],
+      product: ["docs/research"],
+      quality: ["packages", "tests", "docs/reviews"],
+      builder: [
+        "packages/engine",
+        "packages/ai",
+        "packages/scene3d-three-adapter",
+        "tests",
+      ],
+      docs: ["docs", "README.md", "CHANGELOG.md"],
     };
 
     const paths = requiredInputs[agentName] || [];
@@ -752,12 +660,12 @@ Agent Runner — GIS Engine 多智能体调用脚本
   --period <str>   指定周期 (如 2026-05-24, 2026-W22, 2026-05)
   --dry-run        预览报告目标，不运行门禁或写文件
   --all            运行所有智能体（与 --daily / --weekly 搭配使用）
-  --daily          筛选每日 cadence 智能体（code-reviewer、quality-guardian、docs-agent）
+  --daily          筛选每日 cadence 智能体（quality、docs）
   --weekly         筛选每周智能体
 
 示例:
-  node scripts/agent-runner.mjs code-reviewer --period 2026-05-24
-  node scripts/agent-runner.mjs coordinator --period 2026-W22
+  node scripts/agent-runner.mjs quality --period 2026-06-03
+  node scripts/agent-runner.mjs orchestrator --period 2026-W23
   node scripts/agent-runner.mjs all --daily
 `);
     process.exit(0);
@@ -826,9 +734,7 @@ Agent Runner — GIS Engine 多智能体调用脚本
       console.log(`🏥 运行 Agent 健康检查...`);
       const coverage = healthChecker.checkReportCoverage(options.dryRun);
       if (coverage.overdue.length > 0) {
-        console.warn(
-          `   ⚠️ ${coverage.overdue.length} 个报告逾期或缺失`,
-        );
+        console.warn(`   ⚠️ ${coverage.overdue.length} 个报告逾期或缺失`);
       } else {
         console.log(`   ✅ 所有定期报告齐全`);
       }
@@ -854,8 +760,8 @@ Agent Runner — GIS Engine 多智能体调用脚本
         `   模型路由: ${def.modelPolicy?.tier ?? "default"} / ${def.modelPolicy?.reasoningEffort ?? "medium"}`,
       );
 
-      // 如果是 task-distributor，验证规划状态一致性
-      if (name === "task-distributor") {
+      // 如果是 orchestrator，验证规划状态一致性
+      if (name === "orchestrator") {
         console.log(`   🔍 验证规划状态一致性...`);
         const consistency = planningMgr.validateConsistency(options.dryRun);
         if (!consistency.valid) {
