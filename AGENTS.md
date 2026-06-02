@@ -6,26 +6,23 @@ must be created separately by the automation layer when needed.
 
 ## Design Review Summary
 
-The original six-agent design has the right direction: AI-native planning needs
-market signals, repo-quality signals, product judgment, task decomposition, and
-merge gates. The main risks were operational:
+The original six-agent + five-execution-owner design proved over-engineered for
+the current team size. The 2026-06-03 upgrade consolidates 11 roles into 5
+agents, eliminating role overlap, handoff latency, and report flooding:
 
-- Role overlap: `code-reviewer` and `quality-guardian` both owned merge quality
-  without a clear boundary.
-- Weak evidence rules: competitor reports could drift into unsourced claims.
-- Cadence ambiguity: weekly, daily, monthly, and emergency outputs were listed
-  but not tied to concrete inputs and handoff contracts.
-- Gate inconsistency: test coverage was described as both `> 80%` and blocking
-  only below `70%`.
-- Over-broad monitoring: social/community sources may require credentials,
-  consent, or manual review.
-- Missing repo alignment: the system must reflect the current GIS Engine
-  contracts, scripts, MCP tool names, and snapshot gate semantics.
+| Old (11 roles) | New (5 agents) | Rationale |
+| --- | --- | --- |
+| `coordinator` + `task-distributor` | **`@orchestrator`** | Shared planning state, coupled outputs, eliminate HOC-005 |
+| `competitive-intel` + `product-strategist` | **`@product`** | Competitor signals directly feed priority formula, eliminate timing drift |
+| `code-reviewer` + `quality-guardian` | **`@quality`** | Review and gate were always a single decision pipeline (HOC-003) |
+| `adapter-agent` + `qa-agent` + `engine-agent` + `ai-agent` | **`@builder`** | Four ad-hoc execution owners with uneven load; merge into one with focus areas |
+| `docs-agent` | **`@docs`** | Retained — clear, non-overlapping scope |
 
-The optimized design keeps six governance agents but adds an execution owner
-registry for implementation work. Governance agents plan, review, and gate;
-execution owners implement bounded slices and return evidence artifacts. This
-keeps planning authority separate from code ownership.
+Key improvements:
+- **Event-driven over schedule-driven**: PR events trigger review/gate, not daily cron
+- **Real issue tracker**: GitHub Issues replace markdown task burndowns
+- **3 handoff contracts** (was 6): @product→@orchestrator, @builder→@quality, @quality→@orchestrator
+- **Activated evolution metrics**: D1-D6 now sourced from GitHub API, not manual templates
 
 ## Repository Rules
 
@@ -71,7 +68,7 @@ checked in the current run and the source/date are recorded.
 Every agent report should begin with this front matter:
 
 ```yaml
-agent: coordinator | competitive-intel | code-reviewer | product-strategist | task-distributor | quality-guardian | adapter-agent | qa-agent | engine-agent | ai-agent | docs-agent
+agent: orchestrator | product | quality | builder | docs
 period: YYYY-Www | YYYY-MM | YYYY-MM-DD | ad-hoc
 generated_at: YYYY-MM-DDTHH:mm:ssZ
 repo_revision: "<git sha or unknown>"
@@ -94,15 +91,15 @@ Planning documents are evidence snapshots, not a distributed task database.
 
 - `docs/planning/task-burndown.md`, sprint plans, and dependency graphs record
   the state observed or approved during one agent run.
-- Only `coordinator` or `task-distributor` may write planning state updates.
+- Only `@orchestrator` may write planning state updates.
   Other agents must propose status changes in their own reports.
-- If multiple agents produce competing updates, `coordinator` is the single
+- If multiple agents produce competing updates, `@orchestrator` is the single
   writer that resolves and applies the merged state.
 - Do not let multiple agents concurrently edit the same planning markdown file.
   Batch updates into one serialized commit.
-- Execution owners must not write planning state directly. They produce code,
-  tests, evidence reports, or review findings; `coordinator` or
-  `task-distributor` serializes accepted status changes into planning markdown.
+- Execution work must not write planning state directly. They produce code,
+  tests, evidence reports, or review findings; `@orchestrator`
+  serializes accepted status changes into planning markdown.
 - When a real issue tracker is available, it becomes the canonical task state.
   Markdown burndown and dependency files should then be generated snapshots that
   reference issue ids rather than hand-maintained status stores.
@@ -117,54 +114,51 @@ The [Agent Handoff Contracts](docs/planning/agent-handoff-contracts.md) standard
 - What downstream agents must do, cannot do, and may do
 - Blocking diagnostic codes for each contract
 
-**Key handoff contracts**:
-- **HOC-001**: adapter-agent → qa-agent (3D evidence handoff)
-- **HOC-002**: engine-agent → ai-agent (schema-to-MCP wrapper)
-- **HOC-003**: code-reviewer → quality-guardian (review findings)
-- **HOC-004**: qa-agent → task-distributor (test results attestation)
-- **HOC-005**: task-distributor → coordinator (serialized planning state)
-- **HOC-006**: quality-guardian → coordinator (gate decision)
+**Key handoff contracts** (simplified from 6 to 3, 2026-06-03):
+- **HOC-N1**: @product → @orchestrator (competitor signals + priority recommendations)
+- **HOC-N2**: @builder → @quality (implementation evidence + test results)
+- **HOC-N3**: @quality → @orchestrator (gate pass/block + release readiness)
 
 Every agent report must include YAML front-matter. Every handoff must validate against its contract before data is accepted downstream.
 
-## Execution Owner Registry
+## @builder: Implementation Agent
 
-Execution owners are not additional governance agents. They are bounded
-implementation owners assigned by `task-distributor` and reviewed by
-`code-reviewer` / `quality-guardian`.
+`@builder` is the single implementation agent, consolidating the former
+`adapter-agent`, `qa-agent`, `engine-agent`, and `ai-agent`. It works in
+**focus areas** rather than separate roles:
 
-| Owner | Scope | May Write | Must Not Do | Handoff Artifact |
-| --- | --- | --- | --- | --- |
-| `adapter-agent` | Renderer adapter implementation and adapter-local capability evidence | `packages/scene3d-three-adapter/*`, adapter tests, adapter README | Enable stable `view.mode: "scene3d"` or add Three/Cesium dependencies to core packages | Adapter implementation report and resource/snapshot/query evidence |
-| `qa-agent` | Deterministic smoke, browser visual evidence, fixtures, release-runner reports | snapshot tests, visual fixtures, evidence reports under docs or test artifacts | Decide merge/release readiness | Visual evidence report and test output |
-| `engine-agent` | Public schemas, commands, diagnostics, resource policy, runtime contracts | `packages/engine/src/*`, schema fixtures, command/resource tests | Pull renderer dependencies into `@gis-engine/engine` | Contract delta report with schema/check evidence |
-| `ai-agent` | MCP tools, context summaries, output schemas, AI-facing diagnostics | `packages/ai/src/*`, AI/MCP tests | Invent undocumented tool names or omit output schemas | MCP contract report |
-| `docs-agent` | Documentation ledger, release notes, public status alignment | README, CHANGELOG, docs | Override technical or release gate decisions | Documentation audit report |
+| Focus Area | Scope | May Write | Must Not Do |
+| --- | --- | --- | --- |
+| `engine` | Public schemas, commands, diagnostics, resource policy, runtime contracts | `packages/engine/src/*`, schema fixtures, command/resource tests | Pull renderer dependencies into `@gis-engine/engine` |
+| `ai` | MCP tools, context summaries, output schemas, AI-facing diagnostics | `packages/ai/src/*`, AI/MCP tests | Invent undocumented tool names or omit output schemas |
+| `adapter` | Renderer adapter implementation and adapter-local capability evidence | `packages/scene3d-three-adapter/*`, adapter tests, adapter README | Enable stable `view.mode: "scene3d"` or add Three/Cesium to core |
+| `qa` | Deterministic smoke, browser visual evidence, fixtures, release-runner reports | snapshot tests, visual fixtures, evidence reports | Decide merge/release readiness (that belongs to @quality) |
 
-For the current SceneView3D path, `adapter-agent` owns the
-`@gis-engine/scene3d-three-adapter` implementation, `qa-agent` owns real
-renderer visual evidence, `engine-agent` only participates if public contracts
-must change, and `ai-agent` only participates if MCP exposes new evidence.
+For the current SceneView3D path, `@builder` owns the full adapter→evidence→test
+pipeline within a single agent, eliminating the HOC-001/HOC-002/HOC-004 handoff latency.
 
-## Agent 1: Coordinator
+## @docs: Documentation Agent
 
-Role: chief planning and orchestration agent.
+| Scope | May Write | Must Not Do |
+| --- | --- | --- |
+| Documentation ledger, release notes, public status alignment | README, CHANGELOG, docs | Override technical or release gate decisions |
+
+## Agent 1: @orchestrator (was Coordinator + Task Distributor)
+
+Role: chief planning, orchestration, and task decomposition agent.
 
 Primary responsibility:
 
-- Start the weekly planning cycle on Monday 00:00 UTC or when explicitly
-  invoked.
-- Request inputs from `competitive-intel`, `code-reviewer`, and
-  `product-strategist`.
+- Start the weekly planning cycle on Monday 00:00 UTC or when explicitly invoked.
+- Request inputs from `@product` and `@quality`.
 - Resolve conflicts between market pressure, technical debt, and release gates.
-- Publish the final prioritized plan.
+- Decompose approved roadmap items into GitHub Issues with owner assignments.
+- Publish the final prioritized plan and maintain the dependency graph.
 
 Inputs:
 
-- `docs/research/competitor-updates-{week}.md`
-- `docs/research/capability-scorecard.md`
-- `docs/reviews/daily-audit-{date}.md`
-- `docs/planning/monthly-roadmap.md`
+- `docs/research/competitor-updates-{week}.md` and `docs/research/capability-scorecard.md` (from @product)
+- Gate decisions from @quality (via HOC-N3)
 - CI status and current repo diff
 
 Outputs:
@@ -172,6 +166,7 @@ Outputs:
 - Weekly digest: `docs/planning/weekly-digest.md`
 - Monthly roadmap: `docs/planning/monthly-roadmap.md`
 - Emergency alert: `docs/alerts/critical-gaps.md`
+- GitHub Issues for sprint tasks with labels, milestones, and dependencies
 
 Decision rules:
 
@@ -185,34 +180,32 @@ Decision rules:
   `decision_level: emergency`, names the P0 user or production impact, and
   includes the recovery owner, rollback plan, and follow-up task target.
 
-Coordinator workflow:
+Orchestrator workflow:
 
 1. Confirm repo state and current CI status.
-2. Collect reports from specialist agents.
+2. Collect reports from @product and @quality.
 3. Deduplicate findings and merge related risks.
 4. Assign priority using the product scoring model.
-5. Produce roadmap and send accepted work to `task-distributor`.
-6. Ask `quality-guardian` to validate release or merge readiness when needed.
+5. Create/update GitHub Issues for accepted work with owner assignments.
+6. Ask @quality to validate release or merge readiness when needed.
 
 Emergency workflow:
 
 1. Write or update `docs/alerts/critical-gaps.md` with the emergency reason,
    affected users/systems, time window, and rollback plan.
-2. Ask `quality-guardian` for an emergency gate decision.
-3. Ask `task-distributor` to create follow-up P0/P1 tasks for any compressed
-   schema, test, snapshot, documentation, or release-evidence work.
+2. Ask @quality for an emergency gate decision.
+3. Create follow-up P0/P1 GitHub Issues for any compressed schema, test,
+   snapshot, documentation, or release-evidence work.
 4. Close emergency mode only after the follow-up tasks have owners and dates.
 
-## Agent 2: Competitive Intelligence
+## Agent 2: @product (was Competitive Intelligence + Product Strategist)
 
-Role: evidence-first competitor and standards analyst.
+Role: evidence-first competitor analyst, roadmap owner, and feature-priority driver.
 
 Boundary:
 
 - This agent is on the critical path when external releases, standards, or
   dependency behavior may change the roadmap.
-- For routine adapter implementation, use the latest dated feasibility report
-  instead of rechecking the market every run.
 - Any refreshed 3D adapter recommendation must record checked source URLs and
   dates before it is used to change implementation direction.
 
@@ -235,21 +228,24 @@ Approved default sources:
 - Standards documents and release notes.
 - arXiv or publisher pages for papers.
 
-Optional sources such as Reddit, Discord, Twitter/X, and private Slack are
-allowed only when access is available and the user explicitly asks for them.
-
-Weekly output:
+Weekly outputs:
 
 - `docs/research/competitor-updates-{week}.md`
 - `docs/research/capability-scorecard.md`
 
-Report sections:
+Monthly outputs:
 
-1. Executive summary with dated evidence.
-2. New releases and source links.
-3. API or spec changes that threaten GIS Engine assumptions.
-4. Capability scorecard.
-5. Recommended follow-up tasks.
+- `docs/planning/monthly-roadmap.md` (collaborative with @orchestrator)
+- `docs/planning/feature-specs/{feature}.md`
+- `docs/planning/technical-debt-report.md`
+
+Product lens:
+
+1. AI safety: generated maps are verifiable, traceable, and rollback-friendly.
+2. Collaboration: multiple agents or humans can edit through commands.
+3. Adaptivity: styles, layers, and interactions can be changed by data and diagnostics.
+4. Diagnostics: config, data, and performance problems are machine-readable.
+5. Multi-dimensional roadmap: 2D first, then 3D/AR/VR through adapters.
 
 Scorecard dimensions:
 
@@ -261,33 +257,44 @@ Scorecard dimensions:
 | Developer experience | API clarity, docs, examples, migration support |
 | Ecosystem | plugins, community, integrations, release health |
 
-Use a 0 to 10 score. Include one evidence note per score. If evidence is weak,
-mark confidence as `low` instead of inventing precision.
+Use a 0 to 10 score. Include one evidence note per score.
+
+Priority formula:
+
+```txt
+priority =
+  competitor_threat * 0.35 +
+  ai_operability_gain * 0.30 +
+  user_value * 0.20 +
+  technical_debt_reduction * 0.10 -
+  delivery_risk * 0.05
+```
+
+Each factor scored 0-10. Include short justification per score.
 
 High-priority alerts:
 
 - Competitor introduces schema-driven or AI-friendly map editing.
 - Competitor changes a style/spec contract that affects adapter strategy.
-- 3D Tiles, WebGPU, PMTiles, or GeoParquet support changes in a way that impacts
-  the roadmap.
+- 3D Tiles, WebGPU, PMTiles, or GeoParquet support changes that impact the roadmap.
 
-## Agent 3: Code Review Auditor
+Roadmap guardrails:
 
-Role: daily diff and PR auditor. Identifies design risks, architecture violations, and security concerns.
+- v0.x must not promise a complete renderer replacement for MapLibre or Cesium.
+- Any 3D work must define `MapSpec` extension boundaries before implementation.
+- Any collaboration work must define command conflict semantics before UI work.
+- Any AI tool expansion must include tool input schema, output schema,
+  diagnostics, and contract tests.
 
-**Key distinction from quality-guardian**: code-reviewer is a *design and risk advisor*; quality-guardian is the *final gate with deterministic test authority*. See HOC-003 in [Agent Handoff Contracts](docs/planning/agent-handoff-contracts.md#hoc-003-code-reviewer--quality-guardian-review-findings) for explicit handoff protocol.
+## Agent 3: @quality (was Code Review Auditor + Quality Guardian)
+
+Role: unified design reviewer and deterministic gate keeper. Runs automated tests and makes merge/release pass/block decisions.
 
 Boundary:
 
-- This agent reviews recent changes and identifies architectural, security, and design risks.
-- Assigns `decision_level: blocking` or `advisory` to findings, but does NOT make final merge decisions (that belongs to `quality-guardian`).
-- If code-reviewer flags something as `blocking`, quality-guardian will check deterministic gates; both must agree for merge.
-
-Daily scope:
-
-- Last 24 hours of commits, open PR diffs, or the user-specified diff.
-- Files touching public schemas, commands, runtime, renderer adapters, MCP
-  tools, diagnostics, tests, docs, examples, and package metadata.
+- This agent both audits code for architectural risks AND runs deterministic gates.
+- It is the single decision point for PR merge and release readiness.
+- On each PR: run review checklist → run gate tests → issue pass/block decision.
 
 Checklist:
 
@@ -310,179 +317,11 @@ Thresholds:
   internal-only change; performance impact not measured; naming or organization concern.
 - `decision_level: info` — no action needed, purely informational observation.
 
-Daily output:
+Output per PR:
 
-- `docs/reviews/daily-audit-{date}.md` (YAML front-matter + checklist + findings)
+- PR review comment with checklist summary + findings (not a separate dated markdown file).
 
-Finding format (all findings must follow this):
-
-```md
-### [P{1|2|3}] Short finding title
-
-- **Evidence**: {file}:{line}, {commit}, {test output}, or {PR link}
-- **Category**: architecture | security | test-coverage | resource-policy | ai-operability | performance | docs
-- **Impact**: {user-facing impact | product-risk | architecture-risk}
-- **Blocker code** (if decision_level: blocking): {CODE_NAME} (e.g., CODE.MUTATION_OUTSIDE_COMMAND)
-- **Required action**: {specific fix or next step}
-- **Confidence**: high | medium | low
-```
-
-Report must include checklist summary:
-```
-## Code Review Checklist Results
-
-- [x] Architecture & Public Contract
-- [x] AI Operability
-- [x] Commands & Mutations
-- [x] Diagnostics
-- [x] Tests
-- [x] Docs & Examples
-- [x] Security & Resource Policy
-- [x] TypeScript
-
-Summary: 8/8 checks passed. Findings: 0 blocking, 1 advisory, 2 info.
-```
-
-## Agent 4: Product Strategist
-
-Role: roadmap and feature-priority owner.
-
-Inputs:
-
-- Competitor intelligence.
-- Daily audit summaries.
-- User feedback and issue themes.
-- Current roadmap and release checklist.
-- Technical debt report.
-
-Product lens:
-
-1. AI safety: generated maps are verifiable, traceable, and rollback-friendly.
-2. Collaboration: multiple agents or humans can edit through commands.
-3. Adaptivity: styles, layers, and interactions can be changed by data and
-   diagnostics.
-4. Diagnostics: config, data, and performance problems are machine-readable.
-5. Multi-dimensional roadmap: 2D first, then 3D/AR/VR through adapters rather
-   than a premature unified abstraction.
-
-Priority formula:
-
-```txt
-priority =
-  competitor_threat * 0.35 +
-  ai_operability_gain * 0.30 +
-  user_value * 0.20 +
-  technical_debt_reduction * 0.10 -
-  delivery_risk * 0.05
-```
-
-Each factor is scored from 0 to 10. `delivery_risk` is also 0 to 10, where 10
-means high risk. The final score must include a short justification.
-
-Monthly outputs:
-
-- `docs/planning/monthly-roadmap.md`
-- `docs/planning/feature-specs/{feature}.md`
-- `docs/planning/technical-debt-report.md`
-
-Roadmap guardrails:
-
-- v0.x must not promise a complete renderer replacement for MapLibre or Cesium.
-- Any 3D work must define `MapSpec` extension boundaries before implementation.
-- Any collaboration work must define command conflict semantics before UI work.
-- Any AI tool expansion must include tool input schema, output schema,
-  diagnostics, and contract tests.
-
-## Agent 5: Task Distributor
-
-Role: planning-to-execution decomposition agent.
-
-Inputs:
-
-- Approved roadmap item.
-- Feature spec.
-- Current release checklist.
-- Open blockers and dependencies.
-
-Outputs:
-
-- Sprint plan: `docs/planning/sprint-{week}.md`
-- Burndown: `docs/planning/task-burndown.md`
-- Dependency graph: `docs/planning/dependency-graph.md`
-
-Execution assignment:
-
-- Assign work to execution owners from the registry, not only to governance
-  agents.
-- Keep write scopes disjoint when multiple execution owners work in parallel.
-- For SceneView3D renderer evidence, the default owner split is:
-  `adapter-agent` for adapter-local evidence APIs, `qa-agent` for browser visual
-  capture, `engine-agent` for contract changes, `ai-agent` for MCP exposure,
-  and `docs-agent` for status and release note alignment.
-- Planning state is updated only after the owning execution report, review
-  finding, or gate output exists.
-
-State management:
-
-- Treat markdown task state as a run snapshot. It is not safe for multiple
-  agents to update it independently.
-- `task-distributor` owns task ids, dependency ordering, and generated burndown
-  snapshots.
-- Status transitions must be proposed by worker or reviewer reports and then
-  applied by one `task-distributor` run or by `coordinator`.
-- If GitHub Issues, Linear, Jira, or another tracker is connected, task state
-  belongs there. Markdown files should reference tracker ids and summarize the
-  current state.
-
-Task template:
-
-```yaml
-id: TASK-YYYYWww-001
-title: "Short imperative title"
-epic: "Roadmap epic"
-priority: P0 | P1 | P2 | P3
-complexity: S | M | L | XL
-owner: "@agent-or-team"
-status: todo | doing | blocked | review | done
-requirements:
-  - schema first when public contract changes
-  - command driven for state mutation
-  - diagnostics for failure modes
-  - focused tests for changed behavior
-acceptance_criteria:
-  - "[ ] schema and type sync pass"
-  - "[ ] command replay or adapter contract tests pass"
-  - "[ ] MCP tool contract updated when relevant"
-  - "[ ] docs and example updated when public behavior changes"
-dependencies:
-  - TASK-YYYYWww-000
-due_date: YYYY-MM-DD
-estimated_hours: 0
-```
-
-Dependency rules:
-
-- Schema tasks precede implementation tasks for public capabilities.
-- Implementation tasks precede docs and example polishing.
-- Snapshot and adapter contract work must land before release validation.
-- P0 incident fixes may compress the sequence, but the follow-up task must close
-  the missing contract/test/docs work.
-
-## Agent 6: Quality Guardian
-
-Role: final deterministic gate keeper. Runs automated tests and decides merge/release readiness.
-
-**Key distinction from code-reviewer**: quality-guardian has *deterministic gate authority* (pass/block based on test results); code-reviewer is a *design risk advisor*. See HOC-006 in [Agent Handoff Contracts](docs/planning/agent-handoff-contracts.md#hoc-006-quality-guardian--coordinator-gate-decision) for explicit handoff protocol.
-
-Boundary:
-
-- This agent decides whether a PR, release candidate, or merge train meets the
-  AI-native standard by running deterministic gates.
-- It reads `code-reviewer` findings as context but makes independent pass/block decisions based on gate test results.
-- If code-reviewer and gates both pass, merge is safe. If code-reviewer flags blocking but gates pass, escalate to `@coordinator` for decision.
-- If gates fail, quality-guardian blocks regardless of code-reviewer opinion.
-
-Required checks:
+Required gates:
 
 | Gate | PR | Release |
 | --- | --- | --- |
@@ -496,45 +335,35 @@ Required checks:
 
 Visual snapshot waiver:
 
-- A waiver is allowed only when `code-reviewer` or `coordinator` explicitly
-  labels the change as non-rendering and records why visual output cannot
-  change.
+- A waiver is allowed only when the change is explicitly labeled as non-rendering
+  and records why visual output cannot change.
 - Waiver candidates include docs-only, schema-only, type-only, MCP-only, and
   command logic changes that do not affect renderer adapters, style
   transformation, snapshot code, resources, examples, or visual fixtures.
 - Waiver is not allowed when the change touches renderer adapters, layer/source
   transformation, styles, snapshots, visual fixtures, URLs, tiles, workers,
   browser examples, or resource policy.
-- Waived PRs must still pass deterministic gates and smoke snapshots. Release
-  candidates must either run strict visual snapshots in a release-capable
-  environment or record a coordinator-approved release waiver.
+- Waived PRs must still pass deterministic gates and smoke snapshots.
 
 SceneView3D renderer evidence rules:
 
 - `@gis-engine/scene3d-three-adapter` evidence must pass resource-policy checks
   before renderer visual evidence can be accepted.
-- A renderer evidence report may satisfy the SceneView3D release visual gate
-  only when it names the renderer, report path, nonblank frame metrics, and any
-  diagnostics.
-- Waiver-only SceneView3D release gates may keep an alpha scaffold moving, but
-  cannot justify beta or stable runtime support.
-- Stable `view.mode: "scene3d"` remains blocked until `quality-guardian`
-  accepts real renderer snapshot/query/visual evidence and `coordinator`
-  records the promotion decision.
+- Stable `view.mode: "scene3d"` remains blocked until @quality accepts real
+  renderer snapshot/query/visual evidence and @orchestrator records the promotion decision.
 
 Emergency bypass:
 
-- `quality-guardian` may issue a conditional pass for a P0 fix only when the
-  input contains `decision_level: emergency` from `coordinator`.
+- @quality may issue a conditional pass for a P0 fix only when the input
+  contains `decision_level: emergency` from @orchestrator.
 - The emergency artifact must name the user/system impact, rollback plan, owner,
   time limit, and follow-up task ids.
-- Minimal gates still apply: schema validation for public inputs, deterministic
-  tests that are relevant to the touched area, resource policy checks for any
-  URL/tile/worker changes, and a smoke snapshot when rendering may be affected.
+- Minimal gates still apply: schema validation, deterministic tests, resource
+  policy checks, and smoke snapshot when rendering may be affected.
 - The bypass cannot be used to relax schema contracts, disable diagnostics,
   hide security/resource-policy failures, or skip tests for convenience.
 - Any skipped contract, visual snapshot, documentation, or release evidence must
-  be converted into a P0/P1 follow-up task by `task-distributor`.
+  be converted into a P0/P1 follow-up GitHub Issue.
 - Emergency bypass expires when the immediate incident is mitigated or within
   48 hours, whichever comes first.
 
@@ -565,48 +394,36 @@ Required before merge:
 
 ## End-to-End Cadence
 
-Daily:
+Daily (event-driven, not cron):
 
-1. `code-reviewer` audits the recent diff.
-2. `quality-guardian` checks any merge-ready PRs.
+1. PR opened/updated → @quality runs review checklist + gate tests → pass/block comment.
+2. PR merged → @docs verifies changelog and doc alignment.
 
-Weekly:
+Weekly (Monday):
 
-1. `competitive-intel` publishes competitor updates and scorecard deltas.
-2. `product-strategist` converts new signals into roadmap recommendations.
-3. `coordinator` publishes the weekly digest.
-4. `task-distributor` updates sprint tasks and dependency graph.
+1. @product publishes competitor updates and scorecard.
+2. @orchestrator publishes weekly digest, creates/moves GitHub Issues.
 
 Monthly:
 
-1. `product-strategist` refreshes the roadmap.
-2. `coordinator` approves priorities and tradeoffs.
-3. `task-distributor` creates sprint-ready task batches.
-4. `quality-guardian` validates release readiness evidence.
+1. @product refreshes roadmap and technical debt report.
+2. @orchestrator approves priorities and tradeoffs.
+3. @quality validates release readiness evidence.
 
 Emergency:
 
-1. Any agent can raise a critical gap when a competitor, security issue,
-   architecture break, or release blocker is found.
-2. `coordinator` writes `docs/alerts/critical-gaps.md`.
-3. `task-distributor` creates P0/P1 remediation tasks.
-4. `quality-guardian` defines the recovery gate.
-5. If `decision_level: emergency` is used, `quality-guardian` may apply the
-   emergency bypass rules above and must record every waived gate plus the
-   follow-up task that closes it.
+1. Any agent can raise a critical gap.
+2. @orchestrator writes `docs/alerts/critical-gaps.md`.
+3. @orchestrator creates P0/P1 GitHub Issues.
+4. @quality defines the recovery gate.
 
-Adapter Evidence Cycle:
+Adapter Evidence Cycle (simplified):
 
-1. `product-strategist` confirms the capability boundary and promotion target.
-2. `task-distributor` assigns disjoint execution owners.
-3. `adapter-agent` implements adapter-local capability, load, snapshot, query,
-   or evidence APIs without changing core runtime stability.
-4. `qa-agent` produces deterministic smoke or browser visual evidence.
-5. `code-reviewer` audits the diff and evidence for architecture, resource, and
-   test gaps.
-6. `quality-guardian` runs the required gates and issues pass/block/waiver.
-7. `coordinator` updates planning state and decides whether the capability can
-   move from scaffold to beta.
+1. @product confirms capability boundary and promotion target.
+2. @orchestrator creates GitHub Issue with owner assignment.
+3. @builder implements adapter-local evidence (adapter → qa focus areas).
+4. @quality runs required gates and issues pass/block/waiver.
+5. @orchestrator updates planning state.
 
 ## Evolution Ecosystem
 
@@ -661,9 +478,9 @@ of `coordinator`**. Once per month, coordinator performs an evolution review:
 | Estimation baseline tweak (< 2×) | Auto | None needed | Auto-revert after 4 weeks no improvement |
 | Gate threshold adjustment | Auto-suggest | Coordinator | Manual revert |
 | Weight micro-adjustment (< 0.05) | Auto-suggest | Coordinator | Manual revert |
-| Responsibility redistribution | Auto-suggest | Coordinator + product-strategist | Manual revert |
-| Agent create/merge/delete | Manual proposal | Coordinator + product-strategist | Git revert |
-| AGENTS.md structural change | Manual proposal | Coordinator | Git revert |
+| Responsibility redistribution | Auto-suggest | Orchestrator + product | Manual revert |
+| Agent create/merge/delete | Manual proposal | Orchestrator + product | Git revert |
+| AGENTS.md structural change | Manual proposal | Orchestrator | Git revert |
 
 ### Safety Boundaries
 
@@ -683,31 +500,30 @@ Completed tasks feed two growing libraries stored in the evolution ledger:
   Patterns reused 3+ times are promoted to "verified" and pre-filled in
   new task templates.
 - **Pitfall Library**: Common mistakes observed in rework and gate failures.
-  Code-reviewer checks new diffs against known pitfalls.
+  @quality checks new diffs against known pitfalls.
 
 At least one new pattern or pitfall should be extracted per sprint.
 
 ### Invocation
 
 ```txt
-@coordinator 生成本月进化趋势报告
-@coordinator 审查当前估算基准是否需要校准
-@coordinator 检查 W23-W26 瓶颈复发模式
-@task-distributor 为新任务推荐匹配的设计模式
+@orchestrator 生成本月进化趋势报告
+@orchestrator 审查当前估算基准是否需要校准
+@orchestrator 检查 W23-W26 瓶颈复发模式
+@orchestrator 为新任务推荐匹配的设计模式
 ```
 
 ## Invocation Examples
 
 ```txt
-@coordinator 启动本周产品规划
-@competitive-intel 分析本周竞品动向，并更新 capability-scorecard
-@code-reviewer 审查最近 24 小时代码变更
-@product-strategist 基于竞品分析和技术债规划 v0.2
-@task-distributor 将 v0.2 规划拆解为 sprint DAG
-@quality-guardian 检查待 merge PR 是否符合 AI 原生标准
-@task-distributor 将 SceneView3D renderer evidence 分配给 adapter-agent 和 qa-agent
-@adapter-agent 在 scene3d-three-adapter 内实现 renderer evidence handoff
-@qa-agent 生成 SceneView3D browser visual evidence report
+@orchestrator 启动本周产品规划
+@product 分析本周竞品动向，并更新 capability-scorecard
+@quality 检查待 merge PR 是否符合 AI 原生标准
+@product 基于竞品分析和技术债规划 v0.3
+@orchestrator 将 v0.3 规划拆解为 sprint issues
+@builder 在 scene3d-three-adapter 内实现 renderer evidence
+@quality 验证发布就绪门禁
+@docs 更新 CHANGELOG 和文档站
 ```
 
 ## Automation Infrastructure
@@ -719,19 +535,11 @@ executable pipeline.
 
 ### Automation Principles
 
-1. **Schedule-driven, not push-driven**: Agents run on cron schedules (daily,
-   weekly, monthly). Push events provide fast feedback but do not replace the
-   scheduled cadence.
-2. **Template-first, content-second**: Automation generates standardized
-   templates with gate results. AI agents (Copilot/Copilot Chat) fill in
-   substantive analysis and decisions.
-3. **Evidence-before-claim**: Automated gates must pass before an agent report
-   can move from `advisory` to `blocking`.
-4. **Human-in-the-loop for blocking decisions**: Automated pipelines can open
-   issues and suggest fixes, but merge/release decisions with
-   `decision_level: blocking` require explicit human or coordinator approval.
-5. **Single writer per artifact**: Only one agent or pipeline job writes to a
-   given planning artifact per cycle. Conflicts are resolved by `coordinator`.
+1. **Event-driven, not schedule-driven**: PR events provide fast feedback; weekly/monthly cadences remain for market sensing and strategic planning.
+2. **Template-first, content-second**: Automation generates standardized templates with gate results. AI agents (Copilot/Copilot Chat) fill in substantive analysis and decisions.
+3. **Evidence-before-claim**: Automated gates must pass before an agent report can move from `advisory` to `blocking`.
+4. **Human-in-the-loop for blocking decisions**: Automated pipelines can open issues and suggest fixes, but merge/release decisions with `decision_level: blocking` require explicit human or @orchestrator approval.
+5. **Single writer per artifact**: Only one agent or pipeline job writes to a given planning artifact per cycle. Conflicts are resolved by @orchestrator.
 
 ### Model and Reasoning Routing
 
@@ -744,15 +552,14 @@ front matter. When it does not, use these rows as human/Codex routing guidance.
 
 | Agent or task class | Recommended model tier | Reasoning effort | Use when |
 | --- | --- | --- | --- |
-| `coordinator` | frontier-planning | high | resolving competing evidence, writing final roadmap state, or deciding whether planned work is complete |
-| `competitive-intel` | frontier-research | high | checking current releases, standards, or dependency behavior that can alter priority |
-| `quality-guardian` | frontier-quality | high | issuing blocking pass/fail/waiver decisions for merge, release, or stable-runtime promotion |
-| `code-reviewer` | coding-review | high | auditing public schemas, commands, diagnostics, resource policy, adapters, MCP tools, and regressions |
-| `engine-agent`, `ai-agent`, `adapter-agent` | coding-implementation | medium to high | implementing bounded code slices with schema, MCP, adapter, or diagnostic implications |
-| `qa-agent` | coding-browser-qa | medium | producing deterministic smoke, browser visual, fixture, and release-runner evidence |
-| `product-strategist`, `task-distributor` | planning-coding | medium | translating approved evidence into roadmap scores, task DAGs, owner splits, and dependencies |
-| `docs-agent` | efficient-docs | low to medium | aligning documentation, links, release notes, and planning ledgers after evidence exists |
-| `evolution-guardian` (coordinator subset) | frontier-planning | medium to high | monthly evolution reviews: analyzing 4-week metric trends, auto-suggesting rule adjustments, calibrating estimation baselines and decision weights |
+| `@orchestrator` | frontier-planning | high | resolving competing evidence, writing final roadmap state, or deciding whether planned work is complete |
+| `@product` | frontier-research | high | checking current releases, standards, or dependency behavior that can alter priority |
+| `@quality` | frontier-quality | high | issuing blocking pass/fail/waiver decisions for merge, release, or stable-runtime promotion |
+| `@builder` (engine/ai focus) | coding-implementation | medium to high | implementing bounded code slices with schema, MCP, adapter, or diagnostic implications |
+| `@builder` (qa focus) | coding-browser-qa | medium | producing deterministic smoke, browser visual, fixture, and release-runner evidence |
+| `@builder` (adapter focus) | coding-implementation | medium to high | implementing adapter-local evidence without changing core runtime |
+| `@docs` | efficient-docs | low to medium | aligning documentation, links, release notes, and planning ledgers after evidence exists |
+| `evolution-guardian` (@orchestrator subset) | frontier-planning | medium to high | monthly evolution reviews: analyzing 4-week metric trends, auto-suggesting rule adjustments, calibrating estimation baselines and decision weights |
 
 Escalate to a stronger tier when a lower-tier run finds a P0/P1 risk, when
 external evidence conflicts, when the task touches security/resource policy, or
@@ -774,9 +581,9 @@ agent owns its follow-up maintenance.
 
 | Artifact | Location | Purpose |
 | --- | --- | --- |
-| Daily workflow | `.github/workflows/agent-daily.yml` | Triggers code-reviewer, quality-guardian, and docs-agent daily |
-| Weekly workflow | `.github/workflows/agent-weekly.yml` | Triggers competitive-intel, product-strategist, coordinator, and task-distributor weekly |
-| Monthly workflow | `.github/workflows/agent-monthly.yml` | Triggers product-strategist roadmap refresh and quality-guardian release readiness |
+| Daily workflow | `.github/workflows/agent-daily.yml` | Triggers @quality and @docs daily |
+| Weekly workflow | `.github/workflows/agent-weekly.yml` | Triggers @product and @orchestrator weekly |
+| Monthly workflow | `.github/workflows/agent-monthly.yml` | Triggers @product roadmap refresh and @quality release readiness |
 | Auto-fix pipeline | `.github/workflows/auto-fix.yml` | Diagnoses and auto-fixes schema sync, test, and doc link issues on PR |
 | Agent runner | `scripts/agent-runner.mjs` | CLI tool to invoke any agent locally or in CI |
 | Doc generator | `scripts/doc-generator.mjs` | Auto-generates changelog entries, feature matrix, API skeleton, and link audits |
@@ -788,31 +595,27 @@ agent owns its follow-up maintenance.
 ```mermaid
 flowchart TD
   subgraph Daily["Daily (00:00 UTC)"]
-    CR["code-reviewer: 审计最近 24h diff"]
-    QG["quality-guardian: 运行门禁"]
-    DA["docs-agent: 检查文档完整性"]
+    Q["@quality: 审查最近 PR + 运行门禁"]
+    D["@docs: 检查文档完整性"]
   end
 
   subgraph Weekly["Weekly (Monday 00:00 UTC)"]
-    CI["competitive-intel: 竞品报告 + scorecard"]
-    PS["product-strategist: 技术债务更新"]
-    CO["coordinator: 周报摘要 + 优先级"]
-    TD["task-distributor: 燃尽图 + 依赖图"]
+    P["@product: 竞品报告 + scorecard + 技术债务"]
+    O["@orchestrator: 周报摘要 + 优先级 + Issue 分发"]
   end
 
   subgraph Monthly["Monthly (1st 00:00 UTC)"]
-    MR["product-strategist: 月度路线图"]
-    RR["quality-guardian: 发布就绪验证"]
+    MR["@product: 月度路线图刷新"]
+    RR["@quality: 发布就绪验证"]
   end
 
   subgraph OnPR["On PR"]
     AF["auto-fix: 诊断 + 自动修复"]
+    PRQ["@quality: 即时审查 + 门禁"]
   end
 
-  CR --> CO
-  CI --> CO
-  PS --> CO
-  CO --> TD
+  P --> O
+  Q --> O
   MR --> RR
 ```
 
@@ -823,16 +626,16 @@ agent. It handles front-matter generation, gate execution, and report output.
 
 ```bash
 # Run a single agent
-node scripts/agent-runner.mjs code-reviewer --period 2026-05-24
+node scripts/agent-runner.mjs quality --period 2026-06-03
 
 # Run all daily agents
 node scripts/agent-runner.mjs all --daily
 
 # Dry-run: generate template only, skip gates
-node scripts/agent-runner.mjs quality-guardian --dry-run
+node scripts/agent-runner.mjs quality --dry-run
 
 # Run with explicit period override
-node scripts/agent-runner.mjs coordinator --period 2026-W22
+node scripts/agent-runner.mjs orchestrator --period 2026-W23
 ```
 
 Agent runner exit codes:
@@ -871,7 +674,7 @@ attempts to fix deterministic issues automatically:
 | --- | --- | --- |
 | Schema sync drift | Re-run `pnpm build:schema` and commit regenerated JSON | Review schema diff for unintended changes |
 | Missing test fixtures | Flag in PR comment | Create fixtures manually |
-| Broken doc links | Report in CI output | `@docs-agent` to update references |
+| Broken doc links | Report in CI output | `@docs` to update references |
 | Type-only regressions | Report with diagnostic codes | Developer fixes type errors |
 
 Auto-fix will NEVER:
@@ -888,17 +691,11 @@ follows the AGENTS.md invocation examples:
 
 | @mention | Agent | Scope |
 | --- | --- | --- |
-| `@coordinator` | coordinator | 启动本周产品规划，汇总报告 |
-| `@competitive-intel` | competitive-intel | 竞品分析 + scorecard 更新 |
-| `@code-reviewer` | code-reviewer | 审查最近 24h 代码变更 |
-| `@product-strategist` | product-strategist | 路线图规划 + 优先级排序 |
-| `@task-distributor` | task-distributor | 任务拆解 + owner 分配 |
-| `@quality-guardian` | quality-guardian | 质量门禁检查 |
-| `@docs-agent` | docs-agent | 文档审计和更新 |
-| `@adapter-agent` | adapter-agent | 适配器实现和证据 |
-| `@qa-agent` | qa-agent | 视觉证据 + release runner |
-| `@ai-agent` | ai-agent | MCP 契约 + AI 工具 |
-| `@engine-agent` | engine-agent | Schema/命令/诊断契约 |
+| `@orchestrator` | orchestrator | 启动本周产品规划，汇总报告，创建 Issues |
+| `@product` | product | 竞品分析 + scorecard + 路线图 + 优先级 |
+| `@quality` | quality | 代码审查 + 质量门禁 + 发布就绪 |
+| `@builder` | builder | 实现 + 测试 + 证据（engine/ai/adapter/qa focus） |
+| `@docs` | docs | 文档审计和更新 |
 
 ### Automated Testing Integration
 
