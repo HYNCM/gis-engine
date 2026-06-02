@@ -26,7 +26,9 @@
       "import": "./dist/tools/*.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "publishConfig": {
     "access": "public"
   },

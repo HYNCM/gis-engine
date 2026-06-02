@@ -2,18 +2,25 @@ import { defineConfig } from "vitepress";
 
 export default defineConfig({
   title: "GIS Engine",
-  description: "AI-native, schema-first map engine — deterministic, replayable, auditable.",
+  description:
+    "AI-native, schema-first map engine — deterministic, replayable, auditable.",
   lang: "en-US",
   base: "/gis-engine/",
   lastUpdated: true,
   cleanUrls: true,
 
   head: [
-    ["link", { rel: "icon", type: "image/svg+xml", href: "/gis-engine/favicon.svg" }],
+    [
+      "link",
+      { rel: "icon", type: "image/svg+xml", href: "/gis-engine/favicon.svg" },
+    ],
   ],
 
   themeConfig: {
-    logo: { light: "/gis-engine/logo-light.svg", dark: "/gis-engine/logo-dark.svg" },
+    logo: {
+      light: "/gis-engine/logo-light.svg",
+      dark: "/gis-engine/logo-dark.svg",
+    },
     nav: [
       { text: "Guide", link: "/guide/what-is-gis-engine" },
       { text: "API", link: "/api/engine" },

@@ -18,7 +18,9 @@ import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { dirname, extname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
+import { appendAuditRecord } from "./audit.mjs";
+import { createReviewDecision } from "./review-decisions.mjs";
 
 // ── Load provider ──
 const provider = await import("./provider.mjs");
@@ -562,7 +564,11 @@ function isBoundsArray(value) {
 let activeSpec = createInitialSpec();
 let activeBasemap = DEFAULT_BASEMAP;
 let activeEpoch = 0;
+const sessionId = `studio.${randomUUID()}`;
+const projectId = normalizeProjectId(process.env.STUDIO_PROJECT_ID);
+const reviewPrincipal = { role: "reviewer", projectIds: [projectId] };
 const auditRecords = [];
+const reviewDecisions = [];
 
 function replaceActiveSpec(next) { activeSpec = next; activeEpoch++; }
 
@@ -716,6 +722,28 @@ function collectGeoJsonPropertyKeys(source) {
   return Array.from(new Set(features.flatMap((feature) => Object.keys(feature?.properties || {})))).sort();
 }
 
+function appendStudioAudit(input) {
+  return appendAuditRecord(auditRecords, {
+    sessionId,
+    providerId: input.providerId,
+    status: input.status,
+    promptHash: input.promptHash,
+    traceId: input.traceId,
+    commandCount: input.commandEvidence?.commandCount ?? 0,
+    diagnostics: input.diagnostics ?? [],
+    fromRevision: input.fromRevision,
+    toRevision: input.toRevision
+  });
+}
+
+function normalizeProjectId(value) {
+  return typeof value === "string" && /^project_[A-Za-z0-9][A-Za-z0-9_-]{0,62}$/.test(value) ? value : "project_studio";
+}
+
+function hashPrompt(message) {
+  return `sha256:${createHash("sha256").update(message).digest("hex").slice(0, 16)}`;
+}
+
 // ── Server ──
 async function main() {
   const engine = await loadEngine();
@@ -750,6 +778,46 @@ async function main() {
         return sendJson(res, maplibreCapabilities.MAPLIBRE_CAPABILITY_REGISTRY);
       }
 
+      // GET /api/review-decisions
+      if (req.method === "GET" && url.pathname === "/api/review-decisions") {
+        return sendJson(res, { sessionId, projectId, decisions: reviewDecisions });
+      }
+
+      // POST /api/review-decision
+      if (req.method === "POST" && url.pathname === "/api/review-decision") {
+        const body = await readJsonBody(req);
+        const reviewResult = createReviewDecision({
+          request: body,
+          evidence: auditRecords.at(-1),
+          principal: reviewPrincipal,
+          projectId,
+          decisionId: `review-${reviewDecisions.length + 1}`,
+          createdAt: new Date().toISOString()
+        });
+
+        if (!reviewResult.ok) {
+          return sendJson(res, {
+            status: "blocked",
+            summary: statePayload(engine, "ready", activeSpec).summary,
+            decision: null,
+            decisions: reviewDecisions,
+            diagnostics: reviewResult.diagnostics,
+            commandEvidence: emptyCommandEvidence()
+          });
+        }
+
+        reviewDecisions.push(reviewResult.decision);
+        if (reviewDecisions.length > 50) reviewDecisions.splice(0, reviewDecisions.length - 50);
+        return sendJson(res, {
+          status: "reviewed",
+          summary: statePayload(engine, "ready", activeSpec).summary,
+          decision: reviewResult.decision,
+          decisions: reviewDecisions,
+          diagnostics: [],
+          commandEvidence: emptyCommandEvidence()
+        });
+      }
+
       const tileMatch = url.pathname.match(/^\/api\/tiles\/([a-z0-9-]+)\/(\d+)\/(\d+)\/(\d+)\.(png|jpg|jpeg)$/i);
       if (req.method === "GET" && tileMatch) {
         return proxyBasemapTile(res, tileMatch[1], tileMatch[2], tileMatch[3], tileMatch[4]);
@@ -760,6 +828,7 @@ async function main() {
         const body = await readJsonBody(req);
         const message = typeof body.message === "string" ? body.message.trim() : "";
         const providerId = typeof body.providerId === "string" ? body.providerId : "mock-ai";
+        const fromRevision = activeSpec.revision || "0";
         if (!message) return sendJson(res, { ...statePayload(engine, "ready", activeSpec), diagnostics: [{ code: "INPUT.EMPTY", severity: "error", message: "Empty message" }] }, 400);
 
         // DeepSeek / OpenAI-compatible provider
@@ -768,7 +837,16 @@ async function main() {
           const ds = profiles.find((p) => p.id === "deepseek");
           const apiKey = process.env.DEEPSEEK_API_KEY?.trim();
           if (!ds?.enabled || !apiKey) {
-            return sendJson(res, { ...statePayload(engine, "ready", activeSpec), diagnostics: [{ code: "PROVIDER.UNAVAILABLE", severity: "error", message: "DeepSeek API key not configured. Set DEEPSEEK_API_KEY." }] });
+            const diagnostics = [{ code: "PROVIDER.UNAVAILABLE", severity: "error", path: "/providerProfile", message: "DeepSeek API key not configured. Set DEEPSEEK_API_KEY." }];
+            appendStudioAudit({
+              providerId: "deepseek",
+              status: "blocked",
+              commandEvidence: emptyCommandEvidence(),
+              diagnostics,
+              fromRevision,
+              toRevision: activeSpec.revision || "0"
+            });
+            return sendJson(res, { ...statePayload(engine, "ready", activeSpec), diagnostics });
           }
 
           const summary = {
@@ -796,7 +874,16 @@ async function main() {
           console.log("DeepSeek result:", JSON.stringify(result).slice(0, 300));
 
           if (!result.ok) {
-            return sendJson(res, { ...statePayload(engine, "ready", activeSpec), diagnostics: [{ code: "PROVIDER.ERROR", severity: "error", message: result.error || "Provider error" }], provider: { providerId: "deepseek" } });
+            const diagnostics = [{ code: "PROVIDER.ERROR", severity: "error", path: "/providerResponse", message: result.error || "Provider error" }];
+            appendStudioAudit({
+              providerId: "deepseek",
+              status: "blocked",
+              commandEvidence: emptyCommandEvidence(),
+              diagnostics,
+              fromRevision,
+              toRevision: activeSpec.revision || "0"
+            });
+            return sendJson(res, { ...statePayload(engine, "ready", activeSpec), diagnostics, provider: { providerId: "deepseek" } });
           }
 
           // Parse AI action into commands (new structured format)
@@ -804,22 +891,49 @@ async function main() {
           const nextSpec = cmdResult.nextSpec;
           const status = cmdResult.status;
           if (status === "applied") replaceActiveSpec(nextSpec);
+          const diagnostics = cmdResult.diagnostics;
+          appendStudioAudit({
+            providerId: "deepseek",
+            status,
+            promptHash: result.providerOutput.promptHash,
+            traceId: result.providerOutput.traceId,
+            commandEvidence: cmdResult.evidence,
+            diagnostics,
+            fromRevision,
+            toRevision: (status === "applied" ? nextSpec : activeSpec).revision || "0"
+          });
 
           return sendJson(res, {
-            ...withCommandDiagnostics(statePayload(engine, status, status === "applied" ? nextSpec : activeSpec), cmdResult.diagnostics),
+            ...withCommandDiagnostics(statePayload(engine, status, status === "applied" ? nextSpec : activeSpec), diagnostics),
             commandEvidence: cmdResult.evidence,
-            provider: { providerId: "deepseek", confidence: result.providerOutput.confidence },
+            provider: {
+              providerId: "deepseek",
+              confidence: result.providerOutput.confidence,
+              promptHash: result.providerOutput.promptHash,
+              traceId: result.providerOutput.traceId
+            },
           });
         }
 
         // Mock AI
         const legacyResult = applyLegacyIntent(engine, message, activeSpec);
         if (legacyResult.status === "applied") replaceActiveSpec(legacyResult.nextSpec);
+        const promptHash = hashPrompt(message);
+        appendStudioAudit({
+          providerId: "mock-ai",
+          status: legacyResult.status,
+          promptHash,
+          traceId: `studio.mock.${Date.now()}`,
+          commandEvidence: legacyResult.evidence,
+          diagnostics: legacyResult.diagnostics,
+          fromRevision,
+          toRevision: (legacyResult.status === "applied" ? legacyResult.nextSpec : activeSpec).revision || "0"
+        });
 
         return sendJson(res, {
           ...withCommandDiagnostics(statePayload(engine, legacyResult.status, legacyResult.status === "applied" ? legacyResult.nextSpec : activeSpec), legacyResult.diagnostics),
           commandEvidence: legacyResult.evidence,
-          provider: { providerId: "mock-ai" },
+          provider: { providerId: "mock-ai", promptHash },
         });
       }
 
@@ -861,7 +975,7 @@ async function main() {
 
       // GET /api/audit
       if (req.method === "GET" && url.pathname === "/api/audit") {
-        return sendJson(res, { records: auditRecords.slice(-50) });
+        return sendJson(res, { sessionId, projectId, records: auditRecords.slice(-50) });
       }
 
       // ── Static files (production) ──

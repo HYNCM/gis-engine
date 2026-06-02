@@ -30,9 +30,17 @@ export async function saveMap(id, name, spec, revision) {
   const json = JSON.stringify(spec);
   const existing = db.exec("SELECT id FROM maps WHERE id = ?", [id]);
   if (existing.length > 0 && existing[0].values.length > 0) {
-    db.run("UPDATE maps SET name = ?, spec = ?, revision = ?, updated_at = datetime('now') WHERE id = ?", [name, json, revision, id]);
+    db.run(
+      "UPDATE maps SET name = ?, spec = ?, revision = ?, updated_at = datetime('now') WHERE id = ?",
+      [name, json, revision, id],
+    );
   } else {
-    db.run("INSERT INTO maps (id, name, spec, revision) VALUES (?, ?, ?, ?)", [id, name, json, revision]);
+    db.run("INSERT INTO maps (id, name, spec, revision) VALUES (?, ?, ?, ?)", [
+      id,
+      name,
+      json,
+      revision,
+    ]);
   }
   return { id, name, revision };
 }
@@ -44,23 +52,38 @@ export async function loadMap(id) {
   const cols = result[0].columns;
   const row = result[0].values[0];
   const obj = {};
-  cols.forEach((c, i) => { obj[c] = row[i]; });
+  cols.forEach((c, i) => {
+    obj[c] = row[i];
+  });
   return {
-    id: obj.id, name: obj.name,
-    spec: JSON.parse(obj.spec), revision: obj.revision,
-    createdAt: obj.created_at, updatedAt: obj.updated_at,
+    id: obj.id,
+    name: obj.name,
+    spec: JSON.parse(obj.spec),
+    revision: obj.revision,
+    createdAt: obj.created_at,
+    updatedAt: obj.updated_at,
   };
 }
 
 export async function listMaps() {
   const db = await getDb();
-  const result = db.exec("SELECT id, name, revision, created_at, updated_at FROM maps ORDER BY updated_at DESC");
+  const result = db.exec(
+    "SELECT id, name, revision, created_at, updated_at FROM maps ORDER BY updated_at DESC",
+  );
   if (result.length === 0) return [];
   const cols = result[0].columns;
   return result[0].values.map((row) => {
     const obj = {};
-    cols.forEach((c, i) => { obj[c] = row[i]; });
-    return { id: obj.id, name: obj.name, revision: obj.revision, createdAt: obj.created_at, updatedAt: obj.updated_at };
+    cols.forEach((c, i) => {
+      obj[c] = row[i];
+    });
+    return {
+      id: obj.id,
+      name: obj.name,
+      revision: obj.revision,
+      createdAt: obj.created_at,
+      updatedAt: obj.updated_at,
+    };
   });
 }
 
