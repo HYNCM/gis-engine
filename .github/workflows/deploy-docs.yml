@@ -25,6 +25,8 @@ jobs:
   build:
     name: "构建文档站"
     runs-on: ubuntu-latest
+    outputs:
+      pages_available: ${{ steps.pages.outputs.available }}
     steps:
       - uses: actions/checkout@v4
 
@@ -45,16 +47,56 @@ jobs:
       - name: 构建文档站
         run: cd docs/website && pnpm docs:build
 
+      - name: 检查 GitHub Pages 可用性
+        id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          gh api "repos/${GITHUB_REPOSITORY}/pages" >/tmp/pages.json 2>/tmp/pages-error.txt
+          status=$?
+          set -e
+
+          if [ "$status" -eq 0 ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          set +e
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/pages" -f build_type=workflow >/tmp/pages-create.json 2>/tmp/pages-create-error.txt
+          create_status=$?
+          set -e
+
+          if [ "$create_status" -eq 0 ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "available=false" >> "$GITHUB_OUTPUT"
+          {
+            echo "### GitHub Pages deployment skipped"
+            echo
+            echo "Docs build completed, but this repository cannot currently use GitHub Pages workflow deployment."
+            echo
+            echo '```txt'
+            cat /tmp/pages-error.txt
+            cat /tmp/pages-create-error.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Setup Pages
+        if: steps.pages.outputs.available == 'true'
         uses: actions/configure-pages@v4
 
       - name: Upload artifact
+        if: steps.pages.outputs.available == 'true'
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs/website/.vitepress/dist
 
   deploy:
     name: "部署到 GitHub Pages"
+    if: needs.build.outputs.pages_available == 'true'
     environment:
       name: "github-pages"
       url: ${{ steps.deployment.outputs.page_url }}
