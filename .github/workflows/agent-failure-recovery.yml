@@ -44,9 +44,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TARGET: ${{ github.event.inputs.target_workflow || 'all' }}
         run: |
+          set -euo pipefail
           FAILED=0
-          echo "## Agent Workflow Health" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## Agent Workflow Health"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
 
           WORKFLOWS=("Agent Daily Cadence" "Agent Weekly Cadence" "Agent Monthly Cadence")
 
@@ -55,30 +58,26 @@ jobs:
               continue
             fi
 
-            echo "🔍 ${WF}..." >> $GITHUB_STEP_SUMMARY
+            echo "checking ${WF}..." >> "$GITHUB_STEP_SUMMARY"
 
             RUN_INFO=$(gh run list --workflow="${WF}" --limit 1 --json conclusion,status,databaseId 2>/dev/null || echo "[]")
-            CONCLUSION=$(echo "${RUN_INFO}" | python3 -c "
-import json,sys
-d=json.load(sys.stdin)
-print(d[0].get('conclusion','') if d else '')
-" 2>/dev/null || echo "")
+            CONCLUSION=$(echo "${RUN_INFO}" | jq -r '.[0].conclusion // ""' 2>/dev/null || echo "")
 
             if [ "${CONCLUSION}" = "failure" ]; then
               FAILED=$((FAILED + 1))
-              echo "- ❌ ${WF}: 失败" >> $GITHUB_STEP_SUMMARY
+              echo "- [FAIL] ${WF}" >> "$GITHUB_STEP_SUMMARY"
             elif [ "${CONCLUSION}" = "success" ]; then
-              echo "- ✅ ${WF}: 成功" >> $GITHUB_STEP_SUMMARY
+              echo "- [OK] ${WF}" >> "$GITHUB_STEP_SUMMARY"
             else
-              echo "- ⚪ ${WF}: ${CONCLUSION:-未运行}" >> $GITHUB_STEP_SUMMARY
+              echo "- [N/A] ${WF}: ${CONCLUSION:-not run}" >> "$GITHUB_STEP_SUMMARY"
             fi
           done
 
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "failed=${FAILED}" >> $GITHUB_OUTPUT
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "failed=${FAILED}" >> "$GITHUB_OUTPUT"
 
           if [ "${FAILED}" -eq 0 ]; then
-            echo "✅ All agent workflows healthy" >> $GITHUB_STEP_SUMMARY
+            echo "All agent workflows healthy" >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - uses: pnpm/action-setup@v4
@@ -103,16 +102,17 @@ print(d[0].get('conclusion','') if d else '')
 
       - name: 创建 escalation issue
         if: ${{ steps.health.outputs.failed > 0 }}
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const title = '🚨 Agent Escalation: Workflow failure detected';
-            const body = `## Agent Workflow Failure Detected
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create \
+            --title "Agent Escalation: Workflow failure detected" \
+            --body "## Agent Workflow Failure Detected
 
           The automated health check detected one or more agent workflow failures.
 
           **Actions required:**
-          - @coordinator reviews [Actions tab](${process.env.GITHUB_SERVER_URL}/${context.repo.owner}/${context.repo.repo}/actions)
+          - @orchestrator reviews the Actions tab
           - Identify root cause and assign owner
           - Run \`pnpm build:schema && pnpm check\` locally to verify
 
@@ -120,13 +120,5 @@ print(d[0].get('conclusion','') if d else '')
           1. Check the failed workflow logs
           2. Apply fix and push to main
           3. Monitor the next scheduled run
-          4. Close this issue when resolved
-          `;
-
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title,
-              body,
-              labels: ['agent-escalation', 'automation'],
-            });
+          4. Close this issue when resolved" \
+            --label "agent-escalation,automation"
