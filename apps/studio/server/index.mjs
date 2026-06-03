@@ -912,6 +912,16 @@ const reviewDecisions = [];
 export const STUDIO_LOCAL_HANDOFF_VERSION = "studio.local-handoff.v1";
 export const STUDIO_LOCAL_REVIEW_LEDGER_VERSION = "studio.review-ledger.v1";
 export const STUDIO_LOCAL_REVIEW_EXPORT_VERSION = "studio.review-export.v1";
+const REVIEW_EXPORT_KINDS = new Set(["all", "audit", "review"]);
+const REVIEW_EXPORT_STATUSES = new Set([
+  "all",
+  "applied",
+  "blocked",
+  "ready",
+  "reviewed",
+  "accepted",
+  "follow-up-required",
+]);
 
 function replaceActiveSpec(next) {
   activeSpec = next;
@@ -1151,6 +1161,22 @@ function parseExportLimit(value) {
   return clampInteger(parsed, 10, 1, 25);
 }
 
+function parseExportKind(value) {
+  const normalized = typeof value === "string" ? value.trim().toLowerCase() : "";
+  return REVIEW_EXPORT_KINDS.has(normalized) ? normalized : "all";
+}
+
+function parseExportStatus(value) {
+  const normalized =
+    typeof value === "string"
+      ? value
+          .trim()
+          .toLowerCase()
+          .replace(/[_\s]+/g, "-")
+      : "";
+  return REVIEW_EXPORT_STATUSES.has(normalized) ? normalized : "all";
+}
+
 function buildAuditExportEvent(record) {
   return {
     kind: "audit",
@@ -1203,13 +1229,35 @@ function buildReviewExportTimeline(map) {
   });
 }
 
+function eventMatchesReviewExportFilters(event, filters) {
+  if (filters.kind !== "all" && event.kind !== filters.kind) {
+    return false;
+  }
+  if (filters.status !== "all" && event.status !== filters.status) {
+    return false;
+  }
+  return true;
+}
+
+function countEventsByKind(events, kind) {
+  return events.reduce(
+    (count, event) => (event?.kind === kind ? count + 1 : count),
+    0,
+  );
+}
+
 export function buildSavedMapReviewExport(map, options = {}) {
   const cursor = parseExportCursor(options.cursor);
   const limit = parseExportLimit(options.limit);
+  const kind = parseExportKind(options.kind);
+  const status = parseExportStatus(options.status);
   const timeline = buildReviewExportTimeline(map);
-  const events = timeline.slice(cursor, cursor + limit);
+  const filteredTimeline = timeline.filter((event) =>
+    eventMatchesReviewExportFilters(event, { kind, status }),
+  );
+  const events = filteredTimeline.slice(cursor, cursor + limit);
   const nextCursor =
-    cursor + events.length < timeline.length ? cursor + events.length : null;
+    cursor + events.length < filteredTimeline.length ? cursor + events.length : null;
 
   return {
     reviewExportVersion: STUDIO_LOCAL_REVIEW_EXPORT_VERSION,
@@ -1237,14 +1285,21 @@ export function buildSavedMapReviewExport(map, options = {}) {
     filters: {
       cursor,
       limit,
+      kind,
+      status,
     },
     summary: {
       totalEventCount: timeline.length,
+      matchingEventCount: filteredTimeline.length,
       auditEventCount: Array.isArray(map?.auditRecords) ? map.auditRecords.length : 0,
       reviewEventCount: Array.isArray(map?.reviewDecisions)
         ? map.reviewDecisions.length
         : 0,
+      matchingAuditEventCount: countEventsByKind(filteredTimeline, "audit"),
+      matchingReviewEventCount: countEventsByKind(filteredTimeline, "review"),
       returnedEventCount: events.length,
+      pageNewestEventAt: events[0]?.timestamp || null,
+      pageOldestEventAt: events.at(-1)?.timestamp || null,
     },
     events,
     nextCursor,
@@ -1751,6 +1806,8 @@ async function main() {
           buildSavedMapReviewExport(map, {
             cursor: url.searchParams.get("cursor"),
             limit: url.searchParams.get("limit"),
+            kind: url.searchParams.get("kind"),
+            status: url.searchParams.get("status"),
           }),
         );
       }

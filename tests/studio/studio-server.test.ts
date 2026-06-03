@@ -465,12 +465,19 @@ describe("AI Map Studio server state", () => {
       filters: {
         cursor: 0,
         limit: 2,
+        kind: "all",
+        status: "all",
       },
       summary: {
         totalEventCount: 3,
+        matchingEventCount: 3,
         auditEventCount: 2,
         reviewEventCount: 1,
+        matchingAuditEventCount: 2,
+        matchingReviewEventCount: 1,
         returnedEventCount: 2,
+        pageNewestEventAt: "2026-06-03T00:03:00Z",
+        pageOldestEventAt: "2026-06-03T00:02:00Z",
       },
       nextCursor: 2,
       events: [
@@ -483,6 +490,205 @@ describe("AI Map Studio server state", () => {
           kind: "audit",
           eventId: "studio.test.2",
           status: "blocked",
+        }),
+      ],
+    });
+  });
+
+  it("filters Studio local review export timelines by kind and status", () => {
+    const exportEnvelope = buildSavedMapReviewExport(
+      {
+        id: "map-1",
+        name: "Studio Export",
+        revision: "4",
+        basemapId: "osm",
+        createdAt: "2026-06-03T00:00:00Z",
+        updatedAt: "2026-06-03T00:05:00Z",
+        auditRecords: [
+          {
+            id: "studio.test.1",
+            sessionId: "studio.test",
+            timestamp: "2026-06-03T00:01:00Z",
+            status: "applied",
+            providerId: "mock-ai",
+            commandCount: 2,
+            diagnosticCounts: { error: 0, warning: 0, info: 0 },
+            fromRevision: "2",
+            toRevision: "3",
+          },
+          {
+            id: "studio.test.2",
+            sessionId: "studio.test",
+            timestamp: "2026-06-03T00:02:00Z",
+            status: "blocked",
+            providerId: "mock-ai",
+            commandCount: 0,
+            diagnosticCounts: { error: 1, warning: 0, info: 0 },
+            fromRevision: "3",
+            toRevision: "3",
+          },
+        ],
+        reviewDecisions: [
+          {
+            decisionId: "review-1",
+            createdAt: "2026-06-03T00:03:00Z",
+            outcome: "accepted",
+            providerId: "mock-ai",
+            deliveryStatus: "applied",
+            commandEvidence: {
+              commandCount: 1,
+              committed: true,
+              rolledBack: false,
+              failed: false,
+              changedPathCount: 1,
+            },
+            diagnosticCounts: { error: 0, warning: 0, info: 0 },
+            reasonCodes: ["review-accepted"],
+          },
+          {
+            decisionId: "review-2",
+            createdAt: "2026-06-03T00:04:00Z",
+            outcome: "follow-up-required",
+            providerId: "mock-ai",
+            deliveryStatus: "reviewed",
+            commandEvidence: {
+              commandCount: 0,
+              committed: false,
+              rolledBack: false,
+              failed: false,
+              changedPathCount: 0,
+            },
+            diagnosticCounts: { error: 0, warning: 1, info: 0 },
+            reasonCodes: ["delivery-needs-confirmation"],
+            followUpTaskIds: ["TASK-2026W23-SLX-002"],
+          },
+        ],
+      },
+      { cursor: "0", limit: "5", kind: "review", status: "follow-up-required" },
+    );
+
+    expect(exportEnvelope).toMatchObject({
+      filters: {
+        cursor: 0,
+        limit: 5,
+        kind: "review",
+        status: "follow-up-required",
+      },
+      summary: {
+        totalEventCount: 4,
+        matchingEventCount: 1,
+        auditEventCount: 2,
+        reviewEventCount: 2,
+        matchingAuditEventCount: 0,
+        matchingReviewEventCount: 1,
+        returnedEventCount: 1,
+        pageNewestEventAt: "2026-06-03T00:04:00Z",
+        pageOldestEventAt: "2026-06-03T00:04:00Z",
+      },
+      nextCursor: null,
+      events: [
+        expect.objectContaining({
+          kind: "review",
+          eventId: "review-2",
+          status: "follow-up-required",
+          followUpTaskIds: ["TASK-2026W23-SLX-002"],
+        }),
+      ],
+    });
+  });
+
+  it("supports custom review export page sizes for filtered timelines", () => {
+    const exportEnvelope = buildSavedMapReviewExport(
+      {
+        id: "map-1",
+        name: "Studio Export",
+        revision: "4",
+        basemapId: "osm",
+        createdAt: "2026-06-03T00:00:00Z",
+        updatedAt: "2026-06-03T00:05:00Z",
+        auditRecords: [
+          {
+            id: "studio.test.1",
+            sessionId: "studio.test",
+            timestamp: "2026-06-03T00:01:00Z",
+            status: "applied",
+            providerId: "mock-ai",
+            commandCount: 2,
+            diagnosticCounts: { error: 0, warning: 0, info: 0 },
+            fromRevision: "2",
+            toRevision: "3",
+          },
+          {
+            id: "studio.test.2",
+            sessionId: "studio.test",
+            timestamp: "2026-06-03T00:02:00Z",
+            status: "blocked",
+            providerId: "mock-ai",
+            commandCount: 0,
+            diagnosticCounts: { error: 1, warning: 0, info: 0 },
+            fromRevision: "3",
+            toRevision: "3",
+          },
+        ],
+        reviewDecisions: [
+          {
+            decisionId: "review-1",
+            createdAt: "2026-06-03T00:03:00Z",
+            outcome: "accepted",
+            providerId: "mock-ai",
+            deliveryStatus: "applied",
+            commandEvidence: {
+              commandCount: 1,
+              committed: true,
+              rolledBack: false,
+              failed: false,
+              changedPathCount: 1,
+            },
+            diagnosticCounts: { error: 0, warning: 0, info: 0 },
+            reasonCodes: ["review-accepted"],
+          },
+          {
+            decisionId: "review-2",
+            createdAt: "2026-06-03T00:04:00Z",
+            outcome: "follow-up-required",
+            providerId: "mock-ai",
+            deliveryStatus: "reviewed",
+            commandEvidence: {
+              commandCount: 0,
+              committed: false,
+              rolledBack: false,
+              failed: false,
+              changedPathCount: 0,
+            },
+            diagnosticCounts: { error: 0, warning: 1, info: 0 },
+            reasonCodes: ["delivery-needs-confirmation"],
+            followUpTaskIds: ["TASK-2026W23-SLX-003"],
+          },
+        ],
+      },
+      { cursor: "0", limit: "1", kind: "review", status: "all" },
+    );
+
+    expect(exportEnvelope).toMatchObject({
+      filters: {
+        cursor: 0,
+        limit: 1,
+        kind: "review",
+        status: "all",
+      },
+      summary: {
+        matchingEventCount: 2,
+        matchingReviewEventCount: 2,
+        returnedEventCount: 1,
+        pageNewestEventAt: "2026-06-03T00:04:00Z",
+        pageOldestEventAt: "2026-06-03T00:04:00Z",
+      },
+      nextCursor: 1,
+      events: [
+        expect.objectContaining({
+          kind: "review",
+          eventId: "review-2",
+          status: "follow-up-required",
         }),
       ],
     });

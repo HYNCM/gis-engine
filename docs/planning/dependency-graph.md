@@ -455,6 +455,35 @@ flowchart LR
 | --- | --- | --- | --- | --- |
 | TASK-2026W23-SLX-001 | TASK-2026W23-SLR-001 | local review-export spec and implementation review | `pnpm test:studio`; `pnpm studio:build`; `pnpm test:docs`; `pnpm check`; `git diff --check` | done |
 
+2026-06-03 planning update: after `SLX-001`, the next bounded Studio slice
+stayed local and added stable filter semantics to the review export envelope.
+`SLX-002` keeps pagination and export inspection side-effect-free while making
+saved audit/review timelines queryable by kind and status inside the same local
+surface.
+
+```mermaid
+flowchart LR
+  A["TASK-2026W23-MLC-001 Studio capability command closure"] --> B["TASK-2026W23-SLW-001 Studio local workspace continuity"] --> C["TASK-2026W23-SLH-001 Studio local handoff envelope"] --> D["TASK-2026W23-SLR-001 Studio local review ledger"] --> E["TASK-2026W23-SLX-001 Studio local review export"] --> F["TASK-2026W23-SLX-002 Studio local review export filters"]
+```
+
+| Task | Depends On | Evidence Target | Required Finish Gate | Status Rule |
+| --- | --- | --- | --- | --- |
+| TASK-2026W23-SLX-002 | TASK-2026W23-SLX-001 | local filtered review-export spec and implementation review | `pnpm test:studio`; `pnpm studio:build`; `pnpm test:docs`; `pnpm check`; `git diff --check` | done |
+
+2026-06-03 planning update: after `SLX-002`, the next bounded Studio slice
+stayed local and turned review export inspection into a more readable timeline
+surface. `SLX-003` keeps the export envelope side-effect-free while moving the
+left rail from JSON-first inspection to event-first product UX.
+
+```mermaid
+flowchart LR
+  A["TASK-2026W23-MLC-001 Studio capability command closure"] --> B["TASK-2026W23-SLW-001 Studio local workspace continuity"] --> C["TASK-2026W23-SLH-001 Studio local handoff envelope"] --> D["TASK-2026W23-SLR-001 Studio local review ledger"] --> E["TASK-2026W23-SLX-001 Studio local review export"] --> F["TASK-2026W23-SLX-002 Studio local review export filters"] --> G["TASK-2026W23-SLX-003 Studio local review export timeline UX"]
+```
+
+| Task | Depends On | Evidence Target | Required Finish Gate | Status Rule |
+| --- | --- | --- | --- | --- |
+| TASK-2026W23-SLX-003 | TASK-2026W23-SLX-002 | local review-export timeline UX spec and implementation review | `pnpm test:studio`; `pnpm studio:build`; `pnpm test:docs`; `pnpm check`; `git diff --check` | done |
+
 ## 阻断规则
 
 - public AI tool 或 public command surface 变更仍必须先通过 schema-sync、MCP contract tests 和 command replay tests。

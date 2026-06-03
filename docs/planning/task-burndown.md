@@ -593,6 +593,43 @@ rail inspection surface for paginated saved review evidence.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | TASK-2026W23-SLX-001 | Add Studio local review export | P1 | `@builder`, `@docs` | done | `docs/planning/feature-specs/studio-local-review-export.md`; `docs/reviews/slx-001-studio-local-review-export-2026-06-03.md` | Studio exposes an inspectable side-effect-free paginated review export envelope for saved maps without `MapSpec` or raw payload leakage | `pnpm test:studio`; `pnpm studio:build`; `pnpm test:docs`; `pnpm check`; `git diff --check` |
 
+## 2026-W23 Studio Local Review Export Filters
+
+2026-06-03 planning update: after `SLX-001`, Studio had a compact paginated
+saved review export surface, but timeline inspection still required manual
+reading across full pages. The next bounded slice stays local and adds
+server-side kind/status filters plus page window summary so reviewers can narrow
+saved audit/review evidence without leaving the export envelope.
+
+2026-06-03 execution update: `SLX-002` is accepted through
+`docs/planning/feature-specs/studio-local-review-export-filters.md` and
+`docs/reviews/slx-002-studio-local-review-export-filters-2026-06-03.md`.
+Studio now exposes additive `kind/status` review-export filters and filter-aware
+left-rail inspection while preserving the local payload-free boundary.
+
+| id | title | priority | owner | status | evidence target | acceptance | finish gates |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| TASK-2026W23-SLX-002 | Add Studio local review export filters | P1 | `@builder`, `@docs` | done | `docs/planning/feature-specs/studio-local-review-export-filters.md`; `docs/reviews/slx-002-studio-local-review-export-filters-2026-06-03.md` | Studio review export supports filter-aware local timeline inspection without `MapSpec`, raw payload leakage, or file-output behavior | `pnpm test:studio`; `pnpm studio:build`; `pnpm test:docs`; `pnpm check`; `git diff --check` |
+
+## 2026-W23 Studio Local Review Export Timeline UX
+
+2026-06-03 planning update: after `SLX-002`, Studio could filter saved review
+export envelopes, but the left rail still defaulted to raw JSON. The next
+bounded slice stays local and upgrades export inspection into a directly
+readable time-sliced review surface with event cards, page-size control, and
+dual pagination.
+
+2026-06-03 execution update: `SLX-003` is accepted through
+`docs/planning/feature-specs/studio-local-review-export-timeline-ux.md` and
+`docs/reviews/slx-003-studio-local-review-export-timeline-ux-2026-06-03.md`.
+Studio now exposes event-card review export inspection with `Newer` / `Older`
+navigation, adjustable page size, and a folded raw envelope while preserving
+the local payload-free boundary.
+
+| id | title | priority | owner | status | evidence target | acceptance | finish gates |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| TASK-2026W23-SLX-003 | Add Studio local review export timeline UX | P1 | `@builder`, `@docs` | done | `docs/planning/feature-specs/studio-local-review-export-timeline-ux.md`; `docs/reviews/slx-003-studio-local-review-export-timeline-ux-2026-06-03.md` | Studio review export surfaces returned events directly with filter-aware dual pagination and page-size control, without `MapSpec`, raw payload leakage, or file-output behavior | `pnpm test:studio`; `pnpm studio:build`; `pnpm test:docs`; `pnpm check`; `git diff --check` |
+
 ---
 
 ## Evolution Tracking

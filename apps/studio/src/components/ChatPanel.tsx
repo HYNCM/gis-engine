@@ -3,6 +3,10 @@ import type {
   ChatMessage,
   ProviderProfile,
   SavedMapReviewExport,
+  SavedMapReviewExportEvent,
+  SavedMapReviewExportKind,
+  SavedMapReviewExportQuery,
+  SavedMapReviewExportStatus,
   SavedMapHandoff,
   SavedMapReviewLedger,
   SavedMapSummary,
@@ -23,7 +27,7 @@ interface Props {
   selectedExport: SavedMapReviewExport | null;
   onInspectMap: (id: string) => void;
   onInspectLedger: (id: string) => void;
-  onInspectExport: (id: string, cursor?: number) => void;
+  onInspectExport: (id: string, query?: SavedMapReviewExportQuery) => void;
   onLoadMap: (id: string) => void;
   onDeleteMap: (id: string) => void;
 }
@@ -38,6 +42,57 @@ const PROMPTS = [
   { label: "Hangzhou", prompt: "zoom to Hangzhou" },
   { label: "Reset", prompt: "reset" },
 ];
+
+const EXPORT_KIND_OPTIONS = [
+  { label: "All", value: "all" },
+  { label: "Audit", value: "audit" },
+  { label: "Review", value: "review" },
+] as const;
+
+const EXPORT_STATUS_OPTIONS: Array<{
+  label: string;
+  value: SavedMapReviewExportStatus;
+}> = [
+  { label: "All statuses", value: "all" },
+  { label: "Applied", value: "applied" },
+  { label: "Blocked", value: "blocked" },
+  { label: "Ready", value: "ready" },
+  { label: "Reviewed", value: "reviewed" },
+  { label: "Accepted", value: "accepted" },
+  { label: "Follow-up", value: "follow-up-required" },
+];
+
+const EXPORT_LIMIT_OPTIONS = [5, 10, 15, 25] as const;
+
+function eventKindLabel(kind: SavedMapReviewExportKind | "audit" | "review") {
+  if (kind === "audit") return "Audit";
+  if (kind === "review") return "Review";
+  return "All";
+}
+
+function eventStatusTone(event: SavedMapReviewExportEvent) {
+  if (event.status === "accepted" || event.status === "applied") {
+    return "bg-green-950/40 text-green-200 border-green-900/60";
+  }
+  if (event.status === "blocked") {
+    return "bg-red-950/40 text-red-200 border-red-900/60";
+  }
+  if (event.status === "follow-up-required") {
+    return "bg-amber-950/40 text-amber-200 border-amber-900/60";
+  }
+  return "bg-gray-900 text-gray-300 border-gray-800";
+}
+
+function exportEventSummary(event: SavedMapReviewExportEvent) {
+  if (event.kind === "audit") {
+    return `revision ${event.fromRevision ?? "?"} -> ${event.toRevision ?? "?"} · ${
+      event.commandCount ?? 0
+    } command(s)`;
+  }
+  return `delivery ${event.deliveryStatus ?? "unknown"} · ${
+    event.commandEvidence?.commandCount ?? 0
+  } command(s)`;
+}
 
 export default function ChatPanel({
   messages,
@@ -264,7 +319,7 @@ export default function ChatPanel({
             <label className="text-xs text-gray-500">Review Export</label>
             <span className="text-[11px] text-gray-600">
               {selectedExport.summary.returnedEventCount}/
-              {selectedExport.summary.totalEventCount}
+              {selectedExport.summary.matchingEventCount}
             </span>
           </div>
           <div className="rounded border border-gray-800 bg-gray-900/70 p-2">
@@ -273,8 +328,14 @@ export default function ChatPanel({
             </p>
             <p className="mt-1 text-[11px] text-gray-500">
               v{selectedExport.workspace.revision} ·{" "}
-              {selectedExport.workspace.basemapId} · audit{" "}
+              {selectedExport.workspace.basemapId} · matched{" "}
+              {selectedExport.summary.matchingEventCount}/
+              {selectedExport.summary.totalEventCount}
+            </p>
+            <p className="mt-1 text-[11px] text-gray-600">
+              audit {selectedExport.summary.matchingAuditEventCount}/
               {selectedExport.summary.auditEventCount} · review{" "}
+              {selectedExport.summary.matchingReviewEventCount}/
               {selectedExport.summary.reviewEventCount}
             </p>
             <p className="mt-1 text-[11px] text-gray-600">
@@ -282,27 +343,201 @@ export default function ChatPanel({
               {selectedExport.filters.limit}
             </p>
             <p className="mt-1 text-[11px] text-gray-600">
+              kind {selectedExport.filters.kind} · status{" "}
+              {selectedExport.filters.status}
+            </p>
+            {selectedExport.summary.pageNewestEventAt &&
+              selectedExport.summary.pageOldestEventAt && (
+                <p className="mt-1 text-[11px] text-gray-600">
+                  {new Date(
+                    selectedExport.summary.pageNewestEventAt,
+                  ).toLocaleString()}{" "}
+                  →{" "}
+                  {new Date(
+                    selectedExport.summary.pageOldestEventAt,
+                  ).toLocaleString()}
+                </p>
+              )}
+            <p className="mt-1 text-[11px] text-gray-600">
               {selectedExport.reviewExportVersion}
             </p>
-            {selectedExport.nextCursor !== null && (
-              <div className="mt-2 flex justify-end">
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <div className="flex overflow-hidden rounded border border-gray-800">
+                {EXPORT_KIND_OPTIONS.map((option) => {
+                  const active = selectedExport.filters.kind === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      onClick={() =>
+                        onInspectExport(selectedExport.workspace.mapId, {
+                          kind: option.value,
+                          status: selectedExport.filters.status,
+                          limit: selectedExport.filters.limit,
+                        })
+                      }
+                      disabled={status === "thinking"}
+                      className={`px-2 py-1 text-[11px] transition ${
+                        active
+                          ? "bg-blue-900/50 text-blue-100"
+                          : "bg-gray-900 text-gray-400 hover:bg-gray-800 hover:text-gray-200"
+                      } disabled:opacity-40`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <label className="flex items-center gap-1 text-[11px] text-gray-500">
+                Status
+                <select
+                  value={selectedExport.filters.status}
+                  onChange={(event) =>
+                    onInspectExport(selectedExport.workspace.mapId, {
+                      kind: selectedExport.filters.kind,
+                      status: event.target.value as SavedMapReviewExportStatus,
+                      limit: selectedExport.filters.limit,
+                    })
+                  }
+                  disabled={status === "thinking"}
+                  className="rounded border border-gray-800 bg-gray-950 px-2 py-1 text-[11px] text-gray-300 focus:outline-none focus:border-blue-500 disabled:opacity-40"
+                >
+                  {EXPORT_STATUS_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex items-center gap-1 text-[11px] text-gray-500">
+                Page size
+                <select
+                  value={selectedExport.filters.limit}
+                  onChange={(event) =>
+                    onInspectExport(selectedExport.workspace.mapId, {
+                      kind: selectedExport.filters.kind,
+                      status: selectedExport.filters.status,
+                      limit: Number.parseInt(event.target.value, 10),
+                    })
+                  }
+                  disabled={status === "thinking"}
+                  className="rounded border border-gray-800 bg-gray-950 px-2 py-1 text-[11px] text-gray-300 focus:outline-none focus:border-blue-500 disabled:opacity-40"
+                >
+                  {EXPORT_LIMIT_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="mt-3">
+              <div className="mb-2 flex items-center justify-between">
+                <label className="text-xs text-gray-500">Returned Events</label>
+                <span className="text-[11px] text-gray-600">
+                  {selectedExport.summary.returnedEventCount}/
+                  {selectedExport.summary.matchingEventCount}
+                </span>
+              </div>
+              {selectedExport.events.length === 0 ? (
+                <p className="rounded border border-dashed border-gray-800 bg-gray-950/60 px-2 py-2 text-[11px] text-gray-500">
+                  No events match the current filters.
+                </p>
+              ) : (
+                <div className="max-h-48 space-y-2 overflow-y-auto pr-1">
+                  {selectedExport.events.map((event) => (
+                    <div
+                      key={`${event.kind}:${event.eventId}`}
+                      className="rounded border border-gray-800 bg-gray-950/70 p-2"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-medium text-gray-200">
+                            {eventKindLabel(event.kind)} · {event.status}
+                          </p>
+                          <p className="text-[10px] text-gray-500">
+                            {new Date(event.timestamp).toLocaleString()}
+                          </p>
+                        </div>
+                        <span
+                          className={`rounded border px-1.5 py-0.5 text-[10px] ${eventStatusTone(event)}`}
+                        >
+                          {event.status}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-[11px] text-gray-400">
+                        provider {event.providerId} · {exportEventSummary(event)}
+                      </p>
+                      <p className="mt-1 text-[10px] text-gray-500">
+                        diagnostics e{event.diagnosticCounts.error} / w
+                        {event.diagnosticCounts.warning} / i
+                        {event.diagnosticCounts.info}
+                      </p>
+                      {event.reasonCodes && event.reasonCodes.length > 0 && (
+                        <p className="mt-1 text-[10px] text-gray-500">
+                          reasons {event.reasonCodes.join(", ")}
+                        </p>
+                      )}
+                      {event.followUpTaskIds && event.followUpTaskIds.length > 0 && (
+                        <p className="mt-1 text-[10px] text-gray-500">
+                          follow-up {event.followUpTaskIds.join(", ")}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="mt-2 flex items-center justify-between">
+              {selectedExport.filters.cursor > 0 ? (
                 <button
                   onClick={() =>
                     onInspectExport(
                       selectedExport.workspace.mapId,
-                      selectedExport.nextCursor ?? 0,
+                      {
+                        cursor: Math.max(
+                          selectedExport.filters.cursor -
+                            selectedExport.filters.limit,
+                          0,
+                        ),
+                        kind: selectedExport.filters.kind,
+                        status: selectedExport.filters.status,
+                        limit: selectedExport.filters.limit,
+                      },
                     )
+                  }
+                  disabled={status === "thinking"}
+                  className="rounded bg-gray-800 px-2 py-1 text-[11px] text-gray-300 transition hover:bg-gray-700 disabled:opacity-40"
+                >
+                  Newer
+                </button>
+              ) : (
+                <span />
+              )}
+              {selectedExport.nextCursor !== null && (
+                <button
+                  onClick={() =>
+                    onInspectExport(selectedExport.workspace.mapId, {
+                      cursor: selectedExport.nextCursor ?? 0,
+                      kind: selectedExport.filters.kind,
+                      status: selectedExport.filters.status,
+                      limit: selectedExport.filters.limit,
+                    })
                   }
                   disabled={status === "thinking"}
                   className="rounded bg-gray-800 px-2 py-1 text-[11px] text-gray-300 transition hover:bg-gray-700 disabled:opacity-40"
                 >
                   Older
                 </button>
-              </div>
-            )}
-            <pre className="mt-2 max-h-48 overflow-auto rounded bg-gray-950 p-2 text-[10px] leading-4 text-gray-400">
-              {JSON.stringify(selectedExport, null, 2)}
-            </pre>
+              )}
+            </div>
+            <details className="mt-2 rounded border border-gray-800 bg-gray-950/60 p-2">
+              <summary className="cursor-pointer text-[11px] text-gray-400">
+                Raw Envelope
+              </summary>
+              <pre className="mt-2 max-h-48 overflow-auto text-[10px] leading-4 text-gray-400">
+                {JSON.stringify(selectedExport, null, 2)}
+              </pre>
+            </details>
           </div>
         </div>
       )}

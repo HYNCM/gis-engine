@@ -226,6 +226,23 @@ export interface SavedMapReviewExportEvent {
   followUpTaskIds?: string[];
 }
 
+export type SavedMapReviewExportKind = "all" | "audit" | "review";
+export type SavedMapReviewExportStatus =
+  | "all"
+  | "applied"
+  | "blocked"
+  | "ready"
+  | "reviewed"
+  | "accepted"
+  | "follow-up-required";
+
+export interface SavedMapReviewExportQuery {
+  cursor?: number;
+  kind?: SavedMapReviewExportKind;
+  status?: SavedMapReviewExportStatus;
+  limit?: number;
+}
+
 export interface SavedMapReviewExport {
   reviewExportVersion: string;
   generatedAt: string;
@@ -249,12 +266,19 @@ export interface SavedMapReviewExport {
   filters: {
     cursor: number;
     limit: number;
+    kind: SavedMapReviewExportKind;
+    status: SavedMapReviewExportStatus;
   };
   summary: {
     totalEventCount: number;
+    matchingEventCount: number;
     auditEventCount: number;
     reviewEventCount: number;
+    matchingAuditEventCount: number;
+    matchingReviewEventCount: number;
     returnedEventCount: number;
+    pageNewestEventAt: string | null;
+    pageOldestEventAt: string | null;
   };
   events: SavedMapReviewExportEvent[];
   nextCursor: number | null;
@@ -648,11 +672,19 @@ export default function App() {
   );
 
   const inspectSavedMapExport = useCallback(
-    async (mapId: string, cursor = 0) => {
+    async (mapId: string, query: SavedMapReviewExportQuery = {}) => {
       try {
-        const response = await fetch(
-          `/api/maps/${mapId}/review-export?cursor=${cursor}`,
-        );
+        const cursor = query.cursor ?? 0;
+        const kind = query.kind ?? "all";
+        const statusFilter = query.status ?? "all";
+        const limit = query.limit ?? 10;
+        const params = new URLSearchParams({
+          cursor: String(cursor),
+          kind,
+          status: statusFilter,
+          limit: String(limit),
+        });
+        const response = await fetch(`/api/maps/${mapId}/review-export?${params}`);
         const data = (await response.json()) as
           | SavedMapReviewExport
           | { error?: string };

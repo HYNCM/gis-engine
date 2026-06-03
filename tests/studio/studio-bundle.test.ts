@@ -59,6 +59,17 @@ describe("AI Map Studio bundle", () => {
     expect(appSource).toContain('/api/maps/${mapId}/handoff');
     expect(appSource).toContain('/api/maps/${mapId}/review-ledger');
     expect(appSource).toContain('/api/maps/${mapId}/review-export');
+    expect(appSource).toContain('const kind = query.kind ?? "all"');
+    expect(appSource).toContain('const statusFilter = query.status ?? "all"');
+    expect(appSource).toContain('const limit = query.limit ?? 10');
+    expect(appSource).toContain("new URLSearchParams({");
     expect(appSource).toContain('/api/maps/${mapId}/load');
+    expect(chatSource).toContain("All statuses");
+    expect(chatSource).toContain("Follow-up");
+    expect(chatSource).toContain("Page size");
+    expect(chatSource).toContain("Returned Events");
+    expect(chatSource).toContain("Raw Envelope");
+    expect(chatSource).toContain("Newer");
+    expect(chatSource).toContain("Older");
   });
 });
