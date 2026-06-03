@@ -3,6 +3,37 @@
 AI and MCP tool layer for GIS Engine. It wraps the public `@gis-engine/engine`
 contracts without reaching into renderer internals.
 
+## Quick Start
+
+### As an MCP Server (Claude Desktop / Cursor)
+
+Add to your MCP configuration:
+```json
+{
+  "mcpServers": {
+    "gis-engine": {
+      "command": "node",
+      "args": ["node_modules/@gis-engine/ai/dist/mcp/server.js"]
+    }
+  }
+}
+```
+
+### Programmatic Usage
+
+```typescript
+import { callGisEngineTool, listGisEngineTools } from "@gis-engine/ai";
+
+// List available tools
+const tools = listGisEngineTools();
+
+// Call a tool
+const result = await callGisEngineTool({
+  name: "validate_spec",
+  arguments: { spec: myMapSpec }
+});
+```
+
 ## Install
 
 ```bash
@@ -103,3 +134,7 @@ node node_modules/@gis-engine/ai/dist/mcp/server.js
 
 The server communicates over stdio and returns structured diagnostics for tool
 input or execution failures.
+
+## API Reference
+
+See the full API documentation at [gis-engine.dev/api/ai](https://gis-engine.dev/api/ai).

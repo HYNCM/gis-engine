@@ -25,7 +25,7 @@ export default defineConfig({
       { text: "Guide", link: "/guide/what-is-gis-engine" },
       { text: "API", link: "/api/engine" },
       { text: "MCP", link: "/mcp/overview" },
-      { text: "Playground", link: "https://gis-engine.dev/playground" },
+      { text: "Examples", link: "https://github.com/HYNCM/gis-engine/tree/main/examples" },
     ],
 
     sidebar: {

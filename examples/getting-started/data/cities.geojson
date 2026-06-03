@@ -1,0 +1,115 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Tokyo",
+        "population": 37400068
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [139.6503, 35.6762]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Delhi",
+        "population": 30290936
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [77.1025, 28.7041]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Shanghai",
+        "population": 27058480
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [121.4737, 31.2304]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Sao Paulo",
+        "population": 22043028
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-46.6333, -23.5505]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Mexico City",
+        "population": 21782378
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-99.1332, 19.4326]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Cairo",
+        "population": 20900517
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [31.2357, 30.0444]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Mumbai",
+        "population": 20411274
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [72.8777, 19.076]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Beijing",
+        "population": 20384000
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [116.4074, 39.9042]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "London",
+        "population": 9304016
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-0.1278, 51.5074]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "New York",
+        "population": 8336817
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-74.006, 40.7128]
+      }
+    }
+  ]
+}

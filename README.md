@@ -1,51 +1,59 @@
 # GIS Engine
 
-> **AI-native, schema-first map engine.** Deterministic, replayable, auditable.
-> Built for AI agents and human developers who need a stricter contract than
-> traditional map SDKs can offer.
+GIS Engine is a schema-first map rendering SDK with AI-powered generation.
 
 [![CI](https://github.com/HYNCM/gis-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/HYNCM/gis-engine/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
+## Quick Start
+
+**Scaffold a new project:**
+
 ```bash
-npm install @gis-engine/engine @gis-engine/ai
-# Or scaffold a new project:
-npx create-gis-map my-map --template vite-ts
+npx create-gis-map my-map
+cd my-map && open index.html
 ```
 
+**Generate a map with AI:**
+
+```bash
+npx create-gis-map my-map --generate -p mock
+```
+
+**Install the SDK directly:**
+
+```bash
+npm install @gis-engine/engine maplibre-gl
+```
+
+**Or use from CDN:**
+
 ```html
-<!-- Or from CDN: -->
 <script type="module">
 import { createMap, applyCommands } from "https://unpkg.com/@gis-engine/engine";
 </script>
 ```
 
-**[Quick Start](https://github.com/HYNCM/gis-engine#quick-start) ·
-[MCP Tools](https://github.com/HYNCM/gis-engine#mcp-tools-for-ai) ·
-[CLI](packages/cli/README.md) ·
-[Documentation](https://github.com/HYNCM/gis-engine/tree/main/docs)**
+## Package Overview
 
----
-
-AI-native, TypeScript-first map runtime for building, validating, replaying,
-snapshotting, and exporting 2D web map applications, with evidence-gated 3D
-contract scaffolds.
-
-GIS Engine has completed the 2026-05-17 v0.2 checkpoint, the
-2026-05-18 SceneView3D v1 preparation pass, and the 2026-05-24 W23
-promotion-readiness plus automation-hardening follow-up on top of the v0.1
-runtime base. The W23 SceneView3D promotion-readiness package is Go, but stable
-`view.mode: "scene3d"` remains blocked until the stable renderer contract gate
-accepts real renderer evidence.
-The current implementation proves this evidence-first generation loop:
-
-```txt
-prompt hash + structured intent -> planMapGenerationRequest -> capabilitySummary -> MapGenerationCommandSkeleton -> apply_commands -> diagnostics -> snapshot/export/example evidence
+```
+@gis-engine/cli ──→ @gis-engine/engine (core MapSpec, commands, validation)
+     │                    ↑
+     └──→ @gis-engine/ai ─┘  (MCP tools, AI orchestration, generation evidence)
 ```
 
-Generated-app scene browsing is an extension-only delivery signal. It consumes
-`extensions.scene3d`, `sceneBrowsing.state`, `stableRuntimeBlocked`, and stable
-runtime blocker codes; it must not be cited as stable renderer evidence.
+- **@gis-engine/engine** — Core runtime: `MapSpec` schema, command system, validation, diagnostics, snapshots, and renderer adapters.
+- **@gis-engine/ai** — AI layer: MCP tools, generation orchestration, and evidence bundles.
+- **@gis-engine/cli** — Developer CLI: project scaffolding and generation workflows.
+- **@gis-engine/scene3d** / **@gis-engine/scene3d-three-adapter** — Experimental 3D scene contracts and Three.js adapter scaffold.
+
+## Learn More
+
+- **Package READMEs:** [CLI](packages/cli/README.md) · [Engine](packages/engine/README.md) · [AI](packages/ai/README.md)
+- **Documentation:** [Full docs](https://github.com/HYNCM/gis-engine/tree/main/docs) · [Quick start guide](./docs/quickstart.md)
+- **Examples:** [basic-geojson](examples/basic-geojson) · [raster-basemap](examples/raster-basemap) · [pmtiles-local](examples/pmtiles-local) · [vector-tile-url](examples/vector-tile-url) · [ai-map-edit](examples/ai-map-edit) · [fill-extrusion-lite](examples/fill-extrusion-lite) · [ai-map-workbench](examples/ai-map-workbench)
+
+---
 
 ## Why This Exists
 
@@ -57,22 +65,9 @@ Traditional map SDKs are powerful, but AI agents need a stricter contract:
 - Snapshot validation to prove the map actually rendered.
 - MCP tools that operate on public schemas, not private renderer internals.
 
-## Current Implementation Status
-
-| Area | Status | Notes |
-| --- | --- | --- |
-| Workspace scaffold | Functional | Root workspace, `@gis-engine/engine`, `@gis-engine/ai`, `@gis-engine/scene3d`, `@gis-engine/scene3d-three-adapter`, and `@gis-engine/cli` build through `pnpm -r build`. |
-| `MapSpec` schema | Functional | TypeBox schemas cover GeoJSON, raster, PMTiles, generic vector tiles, `SceneView3DExtensionSchema`, command contracts, diagnostics, and strict capability reports. |
-| Runtime validation | Functional | `validateSpec` runs schema, semantic, expression, resource policy, experimental 2.5D, `extensions.scene3d` schema/source URL/layer-reference checks, loader-level scene resource load plan checks, mock 3D snapshot/query contracts, release visual gate rules, and reserved `scene3d` runtime boundary checks. |
-| Command system | Functional | `applyCommands` returns transaction metadata, trace ids, optional audit traces via `collectTrace`, command sequence ids, JSON Patch output, inverse patch, dry-run shape, deterministic layer order behavior, SceneView3D preparation command patches, and `baseRevision` conflict rejection. |
-| Patch utilities | Functional | JSON Pointer normalization, apply, invert, changed path sorting, and validation utilities are covered by tests. |
-| Diagnostics | Functional | Diagnostic registry covers schema, source/layer references, expressions, resource URL policy, command failures, unsupported capabilities, and snapshot errors. |
-| Renderer adapter | Functional MVP | `MockAdapter` and `MapLibreAdapter` implement the renderer contract; MapLibre transformation covers GeoJSON, raster, PMTiles, and generic vector sources. |
-| Snapshot harness | Functional | Node smoke snapshots are deterministic; Playwright visual snapshots cover a GeoJSON scene and a generated local MVT vector tile scene. |
-| AI tools | Functional | MCP exposes `validate_spec`, `apply_commands`, `export_spec`, `get_context_summary`, `snapshot_spec`, `explain_spec`, and `export_example_app` with input and output schemas. `get_context_summary` and `explain_spec` include `capabilitySummary` for feature display, spatial analysis, and scene browsing, plus gated extension-only SceneView3D context when `extensions.scene3d` exists. `planMapGenerationRequest()` accepts prompt hashes plus structured intent and rejects raw prompt retention by default; `createGenerationEvidenceBundle()` composes existing tools and now includes planner, delivery, source-readiness, and extension-only scene browsing evidence without adding a `generate_map_app` alias. |
-| Examples/fixtures | Functional | Basic GeoJSON, AI map edit, raster-basemap, pmtiles-local, vector-tile-url, fill-extrusion-lite, and scene3d-extension examples plus schema/command/snapshot fixtures exist. `apps/studio` and `examples/ai-map-workbench` are reference apps and local review surfaces, not hosted products or GA applications. |
-| CI/test gates | Functional | `pnpm build:schema` and `pnpm check` are required finish gates; strict visual snapshots require a browser/WebGL-capable runner. |
-| SceneView3D promotion | Handoff-ready / stable no-go | W23 promotion-readiness evidence is accepted and SRC-006 records a stable-runtime No-go. Generated-app scene browsing delivery consumes `extensions.scene3d` and blocker summaries only; it is not stable renderer evidence. |
+AI-native, TypeScript-first map runtime for building, validating, replaying,
+snapshotting, and exporting 2D web map applications, with evidence-gated 3D
+contract scaffolds.
 
 ## Current Runtime Shape
 
@@ -138,3 +133,48 @@ The current `MapLibreAdapter` is still an MVP renderer binding. It transforms su
 GIS Engine will not attempt to replace Cesium or MapLibre in the current line. It does not ship full 3D Tiles, full WebGPU rendering, complete Mapbox expression compatibility, complete symbol collision/text shaping, GeoParquet analytics, or a full enterprise GIS platform.
 
 Those are staged for later versions after the AI-operable `MapSpec`, command system, diagnostics, snapshot validation, and adapter contracts are stable.
+
+---
+
+## Project Status
+
+> **This section contains internal tracking notes.** It is intended for
+> project maintainers and contributors, not end users.
+
+GIS Engine has completed the 2026-05-17 v0.2 checkpoint, the
+2026-05-18 SceneView3D v1 preparation pass, and the 2026-05-24 W23
+promotion-readiness plus automation-hardening follow-up on top of the v0.1
+runtime base. The W23 SceneView3D promotion-readiness package is Go, but stable
+`view.mode: "scene3d"` remains blocked until the stable renderer contract gate
+accepts real renderer evidence.
+
+The current implementation proves this evidence-first generation loop:
+
+```txt
+prompt hash + structured intent -> planMapGenerationRequest -> capabilitySummary -> MapGenerationCommandSkeleton -> apply_commands -> diagnostics -> snapshot/export/example evidence
+```
+
+Generated-app scene browsing is an extension-only delivery signal. It consumes
+`extensions.scene3d`, `sceneBrowsing.state`, `stableRuntimeBlocked`, and stable
+runtime blocker codes; it must not be cited as stable renderer evidence.
+
+### Implementation Status
+
+| Area | Status | Notes |
+| --- | --- | --- |
+| Workspace scaffold | Functional | Root workspace, `@gis-engine/engine`, `@gis-engine/ai`, `@gis-engine/scene3d`, `@gis-engine/scene3d-three-adapter`, and `@gis-engine/cli` build through `pnpm -r build`. |
+| `MapSpec` schema | Functional | TypeBox schemas cover GeoJSON, raster, PMTiles, generic vector tiles, `SceneView3DExtensionSchema`, command contracts, diagnostics, and strict capability reports. |
+| Runtime validation | Functional | `validateSpec` runs schema, semantic, expression, resource policy, experimental 2.5D, `extensions.scene3d` schema/source URL/layer-reference checks, loader-level scene resource load plan checks, mock 3D snapshot/query contracts, release visual gate rules, and reserved `scene3d` runtime boundary checks. |
+| Command system | Functional | `applyCommands` returns transaction metadata, trace ids, optional audit traces via `collectTrace`, command sequence ids, JSON Patch output, inverse patch, dry-run shape, deterministic layer order behavior, SceneView3D preparation command patches, and `baseRevision` conflict rejection. |
+| Patch utilities | Functional | JSON Pointer normalization, apply, invert, changed path sorting, and validation utilities are covered by tests. |
+| Diagnostics | Functional | Diagnostic registry covers schema, source/layer references, expressions, resource URL policy, command failures, unsupported capabilities, and snapshot errors. |
+| Renderer adapter | Functional MVP | `MockAdapter` and `MapLibreAdapter` implement the renderer contract; MapLibre transformation covers GeoJSON, raster, PMTiles, and generic vector sources. |
+| Snapshot harness | Functional | Node smoke snapshots are deterministic; Playwright visual snapshots cover a GeoJSON scene and a generated local MVT vector tile scene. |
+| AI tools | Functional | MCP exposes `validate_spec`, `apply_commands`, `export_spec`, `get_context_summary`, `snapshot_spec`, `explain_spec`, and `export_example_app` with input and output schemas. `get_context_summary` and `explain_spec` include `capabilitySummary` for feature display, spatial analysis, and scene browsing, plus gated extension-only SceneView3D context when `extensions.scene3d` exists. `planMapGenerationRequest()` accepts prompt hashes plus structured intent and rejects raw prompt retention by default; `createGenerationEvidenceBundle()` composes existing tools and now includes planner, delivery, source-readiness, and extension-only scene browsing evidence without adding a `generate_map_app` alias. |
+| Examples/fixtures | Functional | Basic GeoJSON, AI map edit, raster-basemap, pmtiles-local, vector-tile-url, fill-extrusion-lite, and scene3d-extension examples plus schema/command/snapshot fixtures exist. `apps/studio` and `examples/ai-map-workbench` are reference apps and local review surfaces, not hosted products or GA applications. |
+| CI/test gates | Functional | `pnpm build:schema` and `pnpm check` are required finish gates; strict visual snapshots require a browser/WebGL-capable runner. |
+| SceneView3D promotion | Handoff-ready / stable no-go | W23 promotion-readiness evidence is accepted and SRC-006 records a stable-runtime No-go. Generated-app scene browsing delivery consumes `extensions.scene3d` and blocker summaries only; it is not stable renderer evidence. |
+
+## License
+
+[Apache 2.0](LICENSE)
