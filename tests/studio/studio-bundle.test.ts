@@ -47,13 +47,15 @@ describe("AI Map Studio bundle", () => {
     expect(chatSource).toContain("onInspectExport(map.id)");
     expect(chatSource).toContain("onLoadMap(map.id)");
     expect(chatSource).toContain("onDeleteMap(map.id)");
-    expect(evidenceSource).toContain("Review reason");
+    expect(evidenceSource).toContain("Review reasons");
     expect(evidenceSource).toContain("Record review");
     expect(evidenceSource).toContain("Follow-up task ids");
     expect(evidenceSource).toContain('setReviewComposerOutcome("accepted")');
     expect(evidenceSource).toContain('setReviewComposerOutcome("blocked")');
     expect(evidenceSource).toContain('setReviewComposerOutcome("follow-up-required")');
-    expect(evidenceSource).toContain("TASK-2026W23-SER-001");
+    expect(evidenceSource).toContain("selectedReasonCodes");
+    expect(evidenceSource).toContain("toggleReasonCode(");
+    expect(evidenceSource).toContain('type="checkbox"');
     expect(appSource).toContain('fetch("/api/audit")');
     expect(appSource).toContain('fetch("/api/review-decisions")');
     expect(appSource).toContain('fetch("/api/review-decision"');

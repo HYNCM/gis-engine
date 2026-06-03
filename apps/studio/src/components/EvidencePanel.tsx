@@ -65,8 +65,9 @@ export default function EvidencePanel({
 }: Props) {
   const [reviewOutcome, setReviewOutcome] =
     useState<ReviewDecision["outcome"]>("accepted");
-  const [reviewReason, setReviewReason] =
-    useState<ReviewDecisionReasonCode>("review-accepted");
+  const [selectedReasonCodes, setSelectedReasonCodes] = useState<
+    ReviewDecisionReasonCode[]
+  >(["review-accepted"]);
   const [followUpTaskInput, setFollowUpTaskInput] = useState("");
   const lastMsg = messages
     .filter((m) => m.role === "assistant" && m.evidence)
@@ -90,9 +91,11 @@ export default function EvidencePanel({
         (latestAudit.status === "blocked" ||
           latestAudit.diagnosticCounts.error > 0)
       ? "Accepted decisions require non-blocked evidence."
+      : selectedReasonCodes.length === 0
+        ? "Select at least one review reason."
       : reviewOutcome === "follow-up-required" && followUpTaskIds.length === 0
         ? "Follow-up decisions require at least one task id."
-        : reviewOutcome === "follow-up-required" &&
+      : reviewOutcome === "follow-up-required" &&
             invalidFollowUpTaskIds.length > 0
           ? "Follow-up task ids must match TASK-YYYYWww-ABC-000."
           : null;
@@ -100,17 +103,26 @@ export default function EvidencePanel({
 
   const setReviewComposerOutcome = (outcome: ReviewDecision["outcome"]) => {
     setReviewOutcome(outcome);
-    setReviewReason(REVIEW_REASON_OPTIONS[outcome][0].value);
+    setSelectedReasonCodes([REVIEW_REASON_OPTIONS[outcome][0].value]);
     if (outcome !== "follow-up-required") {
       setFollowUpTaskInput("");
     }
+  };
+
+  const toggleReasonCode = (reasonCode: ReviewDecisionReasonCode) => {
+    if (reviewOutcome === "accepted") return;
+    setSelectedReasonCodes((current) =>
+      current.includes(reasonCode)
+        ? current.filter((currentReason) => currentReason !== reasonCode)
+        : [...current, reasonCode],
+    );
   };
 
   const submitReview = () => {
     if (!onReviewDecision || !canSubmitReview) return;
     onReviewDecision({
       outcome: reviewOutcome,
-      reasonCodes: [reviewReason],
+      reasonCodes: selectedReasonCodes,
       ...(reviewOutcome === "follow-up-required"
         ? { followUpTaskIds }
         : {}),
@@ -260,23 +272,35 @@ export default function EvidencePanel({
               Follow
             </button>
           </div>
-          <label className="block text-gray-500">
-            <span className="mb-1 block">Review reason</span>
-            <select
-              value={reviewReason}
-              onChange={(event) =>
-                setReviewReason(event.target.value as ReviewDecisionReasonCode)
-              }
-              disabled={!canReview}
-              className="w-full rounded border border-gray-700 bg-gray-900 px-2 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-blue-500 disabled:opacity-30"
-            >
-              {REVIEW_REASON_OPTIONS[reviewOutcome].map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="space-y-1">
+            <p className="text-gray-500">Review reasons</p>
+            <div className="space-y-1">
+              {REVIEW_REASON_OPTIONS[reviewOutcome].map((option) => {
+                const checked = selectedReasonCodes.includes(option.value);
+                return (
+                  <label
+                    key={option.value}
+                    className="flex items-center gap-2 text-gray-300"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleReasonCode(option.value)}
+                      disabled={!canReview || reviewOutcome === "accepted"}
+                      className="h-3.5 w-3.5 rounded border-gray-600 bg-gray-900 text-blue-500 focus:ring-blue-500 disabled:opacity-30"
+                    />
+                    <span>{option.label}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+          {selectedReasonCodes.length > 0 && (
+            <p className="text-[11px] text-gray-600">
+              Selected {selectedReasonCodes.length} reason
+              {selectedReasonCodes.length === 1 ? "" : "s"}.
+            </p>
+          )}
           {reviewOutcome === "follow-up-required" && (
             <label className="block text-gray-500">
               <span className="mb-1 block">Follow-up task ids</span>
