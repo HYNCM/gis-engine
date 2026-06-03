@@ -5,6 +5,8 @@
  * without retaining raw credentials or server-only configuration.
  */
 
+import type { ProviderProfile } from "./provider-http.js";
+
 export interface ProviderDiagnostic {
   providerId: string;
   status: "ready" | "mock" | "unconfigured";
@@ -80,4 +82,41 @@ export function createProviderDiagnostics(
       `PROVIDER.CONFIG_REQUIRED`,
     ],
   };
+}
+
+// ── Provider profile resolution ────────────────────────────────────────
+
+/**
+ * Maps known provider IDs to their API key environment variable.
+ */
+export const CLI_API_KEY_ENVS: Record<string, string> = {
+  deepseek: "DEEPSEEK_API_KEY",
+  openai: "OPENAI_API_KEY",
+};
+
+/**
+ * Build a ProviderProfile from CLI config values.
+ * Uses DEFAULT_MODELS / DEFAULT_BASE_URLS when not explicitly provided.
+ */
+export function resolveProviderProfile(
+  providerId: string,
+  options?: { model?: string; baseUrl?: string }
+): ProviderProfile {
+  const id = providerId.toLowerCase();
+  return {
+    id,
+    model: options?.model ?? DEFAULT_MODELS[id] ?? "",
+    baseUrl: options?.baseUrl ?? DEFAULT_BASE_URLS[id] ?? "",
+  };
+}
+
+/**
+ * Read the API key for a provider from environment variables.
+ * Returns undefined if no key is configured.
+ */
+export function readProviderApiKey(providerId: string): string | undefined {
+  const envKey = CLI_API_KEY_ENVS[providerId.toLowerCase()];
+  if (!envKey) return undefined;
+  const value = process.env[envKey];
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
 }

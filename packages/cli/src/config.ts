@@ -14,6 +14,8 @@ export interface CliConfig {
   provider: string;
   model?: string;
   baseUrl?: string;
+  apiKey?: string;
+  timeout?: number;
   generate: boolean;
   prompt?: string;
   yes: boolean;
@@ -22,7 +24,7 @@ export interface CliConfig {
   version: boolean;
 }
 
-const DEFAULTS: Omit<CliConfig, "projectName" | "prompt" | "model" | "baseUrl"> = {
+const DEFAULTS: Omit<CliConfig, "projectName" | "prompt" | "model" | "baseUrl" | "apiKey" | "timeout"> = {
   template: "static-html",
   provider: "mock",
   generate: false,
@@ -37,6 +39,8 @@ interface FileConfig {
   provider?: string;
   model?: string;
   baseUrl?: string;
+  apiKey?: string;
+  timeout?: number;
 }
 
 function loadFileConfig(): FileConfig {
@@ -58,6 +62,8 @@ export function parseArgs(argv: string[]): CliConfig {
   let provider = fileConfig.provider ?? DEFAULTS.provider;
   let model = fileConfig.model;
   let baseUrl = fileConfig.baseUrl;
+  let apiKey = fileConfig.apiKey;
+  let timeout = fileConfig.timeout;
   let generate = DEFAULTS.generate;
   let prompt: string | undefined;
   let yes = DEFAULTS.yes;
@@ -102,6 +108,21 @@ export function parseArgs(argv: string[]): CliConfig {
     } else if (arg.startsWith("--base-url=")) {
       baseUrl = arg.slice("--base-url=".length);
       i++;
+    } else if (arg === "--api-key") {
+      apiKey = argv[++i] ?? apiKey;
+      i++;
+    } else if (arg.startsWith("--api-key=")) {
+      apiKey = arg.slice("--api-key=".length);
+      i++;
+    } else if (arg === "--timeout") {
+      const raw = argv[++i];
+      const parsed = raw ? Number(raw) : NaN;
+      if (Number.isFinite(parsed) && parsed > 0) timeout = parsed;
+      i++;
+    } else if (arg.startsWith("--timeout=")) {
+      const parsed = Number(arg.slice("--timeout=".length));
+      if (Number.isFinite(parsed) && parsed > 0) timeout = parsed;
+      i++;
     } else if (arg === "--template" || arg === "-t") {
       template = argv[++i] ?? template;
       i++;
@@ -139,6 +160,13 @@ export function parseArgs(argv: string[]): CliConfig {
   if (process.env.GIS_ENGINE_BASE_URL && !argv.some(a => a.startsWith("--base-url"))) {
     baseUrl = process.env.GIS_ENGINE_BASE_URL;
   }
+  if (process.env.GIS_ENGINE_API_KEY && !argv.some(a => a.startsWith("--api-key"))) {
+    apiKey = process.env.GIS_ENGINE_API_KEY;
+  }
+  if (process.env.GIS_ENGINE_TIMEOUT && !argv.some(a => a.startsWith("--timeout"))) {
+    const parsed = Number(process.env.GIS_ENGINE_TIMEOUT);
+    if (Number.isFinite(parsed) && parsed > 0) timeout = parsed;
+  }
 
-  return { projectName, template, provider, model, baseUrl, generate, prompt, yes, dryRun, help, version };
+  return { projectName, template, provider, model, baseUrl, apiKey, timeout, generate, prompt, yes, dryRun, help, version };
 }

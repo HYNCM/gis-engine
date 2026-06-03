@@ -5,6 +5,7 @@
 CLI for scaffolding and generating GIS Engine map projects. Provides two modes: **scaffold** (default) for creating projects from templates, and **generate** (`--generate` flag) for running the full AI pipeline from a natural-language prompt to a validated MapSpec bundle.
 
 - **Package**: `@gis-engine/cli`
+- **Version**: 0.3.0
 - **Binary**: `create-gis-map`
 - **Repository**: [github.com/HYNCM/gis-engine](https://github.com/HYNCM/gis-engine)
 
@@ -57,12 +58,12 @@ npm run dev
 npx create-gis-map my-map --generate
 ```
 
-This runs the full generate pipeline with the `mock` provider (deterministic, no external calls). The output includes `map.json`, `delivery-summary.json`, `evidence.json`, and `diagnostics.json`.
+This runs the full generate pipeline with the `mock` provider. Mock mode requires **no API key** and produces deterministic output -- every run yields the same result. The output includes `map.json`, `delivery-summary.json`, `evidence.json`, and `diagnostics.json`.
 
-To use a real provider:
+To use a real provider, set the provider-specific API key and pass a prompt:
 
 ```bash
-npx create-gis-map my-map --generate -p deepseek --prompt "A map of NYC parks"
+DEEPSEEK_API_KEY=sk-xxx npx create-gis-map my-map --generate -p deepseek --prompt "显示北京地铁站"
 ```
 
 ### 4. Preview without writing
@@ -94,6 +95,8 @@ create-gis-map <project-name> [options]
 | `--base-url <url>` | | API base URL for OpenAI-compatible provider | per-provider default |
 | `--generate` | `-g` | Run the AI generate pipeline instead of scaffolding | `false` |
 | `--prompt <text>` | | Prompt text for generate mode | (built-in default) |
+| `--api-key <key>` | | API key for OpenAI-compatible providers. Overrides provider-specific env vars (`DEEPSEEK_API_KEY`, `OPENAI_API_KEY`). | (from env) |
+| `--timeout <ms>` | | HTTP request timeout in milliseconds for provider API calls | `30000` |
 | `--yes` | `-y` | Skip directory-exists check (overwrite). Also accepts `--force`. | `false` |
 | `--dry-run` | | Preview files without writing | `false` |
 | `--help` | `-h` | Show help message | |
@@ -120,11 +123,17 @@ npx create-gis-map my-map --generate
 # AI generate with deepseek provider
 npx create-gis-map my-map --generate -p deepseek
 
+# AI generate with deepseek provider and API key inline
+DEEPSEEK_API_KEY=sk-xxx npx create-gis-map my-map --generate -p deepseek --prompt "显示北京地铁站"
+
 # AI generate with custom model and base URL
 npx create-gis-map my-map --generate -p deepseek --model deepseek-chat --base-url https://api.deepseek.com/v1
 
 # AI generate with custom prompt
 npx create-gis-map my-map --generate --prompt "A map of NYC parks"
+
+# AI generate with explicit API key and timeout
+npx create-gis-map my-map --generate -p openai --api-key sk-xxx --timeout 60000
 
 # Dry-run: preview output without writing
 npx create-gis-map my-map --generate --dry-run
@@ -140,18 +149,38 @@ The CLI supports three built-in provider profiles. The provider controls how the
 
 | Provider | Mode | Status | Description |
 |---|---|---|---|
-| `mock` | mock | mock | Deterministic output, no external calls. Default for development and testing. |
-| `deepseek` | openai-compatible | unconfigured | DeepSeek API. Requires base URL and API key. |
-| `openai` | openai-compatible | unconfigured | OpenAI API. Requires base URL and API key. |
+| `mock` | mock | ready | Deterministic output, no external calls, no API key required. Default for development and testing. |
+| `deepseek` | openai-compatible | requires API key | DeepSeek API. Requires `DEEPSEEK_API_KEY` or `--api-key`. |
+| `openai` | openai-compatible | requires API key | OpenAI API. Requires `OPENAI_API_KEY` or `--api-key`. |
 
-The `mock` provider requires no configuration and produces deterministic output suitable for local development and CI. The `deepseek` and `openai` providers are OpenAI-compatible and require server-side configuration. Default model and base URL values are:
+### Mock Provider
 
-| Provider | Default Model | Default Base URL |
-|---|---|---|
-| `deepseek` | `deepseek-chat` | `https://api.deepseek.com/v1` |
-| `openai` | `gpt-4o-mini` | `https://api.openai.com/v1` |
+The `mock` provider requires **no configuration and no API key**. It produces deterministic output suitable for local development, CI pipelines, and testing. Every run with the mock provider yields the same result given the same inputs, making it fully reproducible.
 
-Override with `--model` and `--base-url` flags or `GIS_ENGINE_MODEL` / `GIS_ENGINE_BASE_URL` environment variables.
+### Real Provider Defaults
+
+The `deepseek` and `openai` providers are OpenAI-compatible and require an API key. Default model and base URL values are:
+
+| Provider | Default Model | Default Base URL | API Key Env Var |
+|---|---|---|---|
+| `deepseek` | `deepseek-chat` | `https://api.deepseek.com/v1` | `DEEPSEEK_API_KEY` |
+| `openai` | `gpt-4o-mini` | `https://api.openai.com/v1` | `OPENAI_API_KEY` |
+
+Override with `--model`, `--base-url`, and `--api-key` flags or the corresponding environment variables.
+
+### API Key Management
+
+Real providers require an API key, resolved in the following priority order:
+
+```
+--api-key flag > GIS_ENGINE_API_KEY env var > provider-specific env var (DEEPSEEK_API_KEY / OPENAI_API_KEY)
+```
+
+- **`DEEPSEEK_API_KEY`** -- Used when the provider is `deepseek`. Set it in your shell or pass via `--api-key`.
+- **`OPENAI_API_KEY`** -- Used when the provider is `openai`. Set it in your shell or pass via `--api-key`.
+- **`GIS_ENGINE_API_KEY`** -- A provider-agnostic override that takes precedence over the provider-specific variables above.
+
+If no API key is found, the CLI exits with a clear error message indicating which variable to set.
 
 ### Configuration Priority
 
@@ -170,11 +199,14 @@ CLI flags > environment variables > ~/.gis-engine/config.json > defaults
 | `GIS_ENGINE_PROMPT` | `--prompt` |
 | `GIS_ENGINE_MODEL` | `--model` |
 | `GIS_ENGINE_BASE_URL` | `--base-url` |
+| `GIS_ENGINE_API_KEY` | `--api-key` |
+| `GIS_ENGINE_TIMEOUT` | `--timeout` |
 
 Example:
 
 ```bash
 export GIS_ENGINE_PROVIDER=deepseek
+export DEEPSEEK_API_KEY=sk-xxx
 npx create-gis-map my-map --generate
 ```
 
@@ -187,7 +219,9 @@ Create `~/.gis-engine/config.json` to set defaults that persist across invocatio
   "provider": "deepseek",
   "template": "vite-ts",
   "model": "deepseek-chat",
-  "baseUrl": "https://api.deepseek.com/v1"
+  "baseUrl": "https://api.deepseek.com/v1",
+  "apiKey": "sk-xxx",
+  "timeout": 30000
 }
 ```
 
@@ -244,16 +278,16 @@ The `--generate` flag activates the full AI generate pipeline. Instead of scaffo
 ### Pipeline Steps
 
 ```
-Step 1: Provider plan normalization
-Step 2: Plan map generation request    (planMapGenerationRequest)
-Step 3: Create command skeleton        (createMapGenerationCommandSkeleton)
-Step 4: Apply commands and validate     (applyCommands + validateSpec)
-Step 5: Create evidence bundle         (createGenerationEvidenceBundle)
+Step 1: Resolve provider intent          (HTTP call for real providers, deterministic for mock)
+Step 2: Provider plan normalization      (normalizeWorkbenchProviderPlan)
+Step 3: Create command skeleton          (createMapGenerationCommandSkeleton)
+Step 4: Apply commands and validate      (applyCommands + validateSpec)
+Step 5: Create evidence bundle           (createGenerationEvidenceBundle)
 ```
 
-**Step 1 -- Provider plan normalization.** The selected provider profile is validated and normalized. The mock provider resolves immediately with deterministic diagnostics. OpenAI-compatible providers require server-side configuration and will report `unconfigured` status at the CLI level.
+**Step 1 -- Resolve provider intent.** The pipeline resolves the user's intent by contacting the selected provider. For real providers (`deepseek`, `openai`), this is an HTTP call to the provider's API using the configured API key and timeout. For the `mock` provider, intent resolution is deterministic and requires no network access -- it returns a fixed intent immediately.
 
-**Step 2 -- Plan map generation request.** The planner converts the normalized provider plan and intent into a structured `MapGenerationRequest` describing what should be generated.
+**Step 2 -- Provider plan normalization.** The selected provider profile is validated and normalized into a structured plan. The mock provider resolves with deterministic diagnostics. Real providers incorporate the HTTP response from Step 1 into the normalized plan.
 
 **Step 3 -- Create command skeleton.** The request is decomposed into a base spec and a sequence of commands (the command-pattern skeleton). Each command represents a discrete, replayable edit to the spec.
 
@@ -349,32 +383,30 @@ const map = await createMap(container, spec, { renderer: "maplibre" });
 
 ```ts
 import {
-  planMapGenerationRequest,
   createMapGenerationCommandSkeleton,
   applyCommands,
   validateSpec,
 } from "@gis-engine/engine";
 import {
-  createGenerationEvidenceBundle,
+  resolveProviderIntent,
   normalizeWorkbenchProviderPlan,
+  createGenerationEvidenceBundle,
 } from "@gis-engine/ai";
 
-// 1. Normalize provider plan
-const providerResult = normalizeWorkbenchProviderPlan({
+// 1. Resolve provider intent (HTTP call for real providers, deterministic for mock)
+const intent = await resolveProviderIntent({
   providerId: "mock",
-  intent: { targetDomains: ["feature-display"] },
+  prompt: "A map of NYC parks",
 });
 
-// 2. Plan generation request
-const plan = planMapGenerationRequest({
-  promptHash: "abc123",
-  traceId: "sdk-example",
-  plannerId: "sdk-mock",
-  intent: { targetDomains: ["feature-display"] },
+// 2. Normalize provider plan
+const providerResult = normalizeWorkbenchProviderPlan({
+  providerId: "mock",
+  intent,
 });
 
 // 3. Create command skeleton
-const skeleton = createMapGenerationCommandSkeleton(plan.request);
+const skeleton = createMapGenerationCommandSkeleton(providerResult.plan);
 
 // 4. Apply commands and validate
 const applied = applyCommands(skeleton.baseSpec, skeleton.commands, {
@@ -387,7 +419,7 @@ const validation = validateSpec(applied.spec);
 const evidence = await createGenerationEvidenceBundle({
   promptHash: "abc123",
   skeleton,
-  planner: { plan },
+  planner: { plan: providerResult.plan },
 });
 ```
 

@@ -9,6 +9,7 @@
  *   npx create-gis-map <project-name> [options]
  *   npx create-gis-map <project-name> --template vite-ts
  *   npx create-gis-map <project-name> --generate [--provider mock] [--prompt "..."]
+ *   npx create-gis-map <project-name> --generate -p deepseek --api-key sk-xxx --timeout 30000
  *
  * Options:
  *   --template, -t   Template to use: static-html | vite-ts | mapspec (default: static-html)
@@ -18,6 +19,8 @@
  *   --generate, -g   Run the full AI generate pipeline instead of scaffolding
  *   --prompt         Prompt text for the generate pipeline (no raw prompt retained)
  *   --yes, -y        Skip directory-exists confirmation (overwrite)
+ *   --api-key        API key for provider (overrides env var)
+ *   --timeout        Provider request timeout in ms (default: 20000)
  *   --dry-run        Preview files without writing
  *   --help, -h       Show this help message
  *   --version, -v    Print CLI version
@@ -57,6 +60,8 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
       model: config.model,
       baseUrl: config.baseUrl,
       prompt: config.prompt,
+      apiKey: config.apiKey,
+      timeout: config.timeout,
       dryRun: config.dryRun,
     });
 
@@ -148,6 +153,8 @@ Options:
   -p, --provider   AI provider profile id (default: mock)
       --model      Model name for OpenAI-compatible provider
       --base-url   API base URL for OpenAI-compatible provider
+      --api-key    API key for provider (or set DEEPSEEK_API_KEY / OPENAI_API_KEY env)
+      --timeout    Provider request timeout in ms (default: 20000)
   -g, --generate   Run AI generate pipeline instead of scaffolding
       --prompt     Prompt text for generate mode
   -y, --yes        Skip directory-exists check (overwrite)
@@ -167,7 +174,7 @@ Examples:
 }
 
 function getVersion(): string {
-  return "0.2.0";
+  return "0.3.0";
 }
 
 // CLI entry — only run main() when executed directly (not when imported).

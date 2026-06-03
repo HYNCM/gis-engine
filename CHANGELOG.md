@@ -2,11 +2,26 @@
 
 ## Unreleased
 
-- Added `--yes` / `--force` / `-y` flag to `create-gis-map` to skip directory-exists check and allow overwrite in CI and scripted usage.
-- Added `--model` and `--base-url` flags to `create-gis-map` for configuring OpenAI-compatible provider endpoints, with `GIS_ENGINE_MODEL` and `GIS_ENGINE_BASE_URL` env var support and sensible defaults per provider (`deepseek-chat` / `gpt-4o-mini`).
+## [0.3.0] - 2026-06-04
+
+### Added
+- Provider HTTP layer: real OpenAI-compatible API calls from CLI generate pipeline
+- `--api-key` flag and `DEEPSEEK_API_KEY`/`OPENAI_API_KEY` env var support
+- `--timeout` flag for provider request timeout (default: 20s)
+- Confidence sanitization and unsafe intent detection (adapted from workbench)
+- CLI-specific system prompt for first-generation (no existing map)
+- 20 new provider HTTP tests + 13 provider profile/config tests (total: 93 CLI tests)
+- `--yes` / `--force` / `-y` flag to `create-gis-map` to skip directory-exists check and allow overwrite in CI and scripted usage.
+- `--model` and `--base-url` flags to `create-gis-map` for configuring OpenAI-compatible provider endpoints, with `GIS_ENGINE_MODEL` and `GIS_ENGINE_BASE_URL` env var support and sensible defaults per provider (`deepseek-chat` / `gpt-4o-mini`).
 - Updated `createProviderDiagnostics()` to accept an optional `options` parameter for `model` and `baseUrl`, reporting default-vs-custom usage in diagnostics.
 - Cleaned dead `unhandledRejection` workaround from CLI tests — `bin.ts` `isDirectExecution` guard prevents side-effect on barrel import.
 - CLI test suite expanded from 39 to 52 tests covering `--yes`, `--model`, `--base-url`, env var priority, and provider model/baseUrl diagnostics.
+
+### Changed
+- `hashPrompt()` now produces `sha256:<32-hex>` format (was 16-char truncated hex)
+- Generate pipeline resolves intent from provider instead of hardcoded `targetDomains`
+- Pipeline step 1 is now "Resolve provider intent" (HTTP call for real providers, deterministic for mock)
+- CLI version bumped to 0.3.0
 
 ## [0.2.0] - 2026-06-03
 

@@ -2,9 +2,11 @@
  * CLI generate command — full pipeline from prompt to evidence output.
  *
  * Pipeline:
- *   prompt hash → provider structured plan → planMapGenerationRequest()
- *   → createMapGenerationCommandSkeleton() → applyCommands()
- *   → validateSpec() → createGenerationEvidenceBundle()
+ *   1. Resolve provider intent (HTTP call for real providers, deterministic for mock)
+ *   2. Provider plan normalization (normalizeWorkbenchProviderPlan)
+ *   3. Create command skeleton (createMapGenerationCommandSkeleton)
+ *   4. Apply commands and validate (applyCommands + validateSpec)
+ *   5. Create evidence bundle (createGenerationEvidenceBundle)
  *   → write evidence files (no raw prompt retention)
  */
 
@@ -12,7 +14,6 @@ import { createHash } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import {
-  planMapGenerationRequest,
   createMapGenerationCommandSkeleton,
   applyCommands,
   validateSpec,
@@ -21,7 +22,16 @@ import {
   createGenerationEvidenceBundle,
   normalizeWorkbenchProviderPlan,
 } from "@gis-engine/ai";
-import { createProviderDiagnostics } from "./provider.js";
+import {
+  createProviderDiagnostics,
+  resolveProviderProfile,
+  readProviderApiKey,
+  CLI_API_KEY_ENVS,
+} from "./provider.js";
+import {
+  callProvider,
+  type ProviderConfidence,
+} from "./provider-http.js";
 
 export interface GenerateOptions {
   projectName: string;
@@ -29,6 +39,8 @@ export interface GenerateOptions {
   model?: string;
   baseUrl?: string;
   prompt?: string;
+  apiKey?: string;
+  timeout?: number;
   dryRun: boolean;
 }
 
@@ -43,10 +55,12 @@ export interface GenerateResult {
 }
 
 /**
- * Hash a prompt string with SHA-256. The raw prompt is never retained.
+ * Hash a prompt string with SHA-256.
+ * Produces "sha256:<32-hex>" format compatible with normalizeWorkbenchProviderPlan.
+ * The raw prompt is never retained.
  */
 export function hashPrompt(prompt: string): string {
-  return createHash("sha256").update(prompt).digest("hex").slice(0, 16);
+  return `sha256:${createHash("sha256").update(prompt).digest("hex").slice(0, 32)}`;
 }
 
 /**
@@ -64,10 +78,57 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
   console.log(`   Provider:    ${opts.provider}`);
   if (opts.model) console.log(`   Model:       ${opts.model}`);
   if (opts.baseUrl) console.log(`   Base URL:    ${opts.baseUrl}`);
+  if (opts.timeout) console.log(`   Timeout:     ${opts.timeout}ms`);
   console.log(`   Trace:       ${traceId}`);
 
-  // Step 1: Provider plan normalization
-  console.log(`\n  [1/5] Provider plan normalization...`);
+  // Step 1: Resolve provider intent
+  console.log(`\n  [1/5] Resolving provider intent...`);
+
+  let intent: Record<string, unknown>;
+  let providerConfidence: ProviderConfidence | undefined;
+
+  if (opts.provider === "mock") {
+    // Mock: deterministic, no HTTP call
+    intent = { targetDomains: ["feature-display"] };
+    console.log(`  ✓ Mock provider: deterministic intent`);
+  } else {
+    // Real provider: HTTP call
+    const profile = resolveProviderProfile(opts.provider, {
+      model: opts.model,
+      baseUrl: opts.baseUrl,
+    });
+    const apiKey = opts.apiKey ?? readProviderApiKey(opts.provider);
+    if (!apiKey) {
+      const envKey = CLI_API_KEY_ENVS[opts.provider.toLowerCase()] ?? `${opts.provider.toUpperCase()}_API_KEY`;
+      console.error(`  ❌ No API key found. Set ${envKey} environment variable or pass --api-key.`);
+      process.exit(1);
+    }
+
+    const providerResult = await callProvider({
+      profile,
+      apiKey,
+      message: promptText,
+      timeoutMs: opts.timeout,
+    });
+
+    if (!providerResult.ok) {
+      console.error(`  ❌ Provider call failed:`);
+      for (const d of providerResult.diagnostics) {
+        console.error(`    [${d.code}] ${d.message}`);
+      }
+      process.exit(1);
+    }
+
+    intent = providerResult.providerOutput.intent;
+    providerConfidence = providerResult.providerOutput.confidence;
+    console.log(`  ✓ Provider: ${profile.id} (${profile.model})`);
+    if (providerConfidence) {
+      console.log(`  ✓ Confidence: ${providerConfidence.level} (${providerConfidence.reasons.length} reasons)`);
+    }
+  }
+
+  // Step 2: Provider plan normalization
+  console.log(`  [2/5] Provider plan normalization...`);
   const providerDiag = createProviderDiagnostics(opts.provider, {
     model: opts.model,
     baseUrl: opts.baseUrl,
@@ -77,9 +138,8 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
     providerId: opts.provider,
     promptHash,
     traceId,
-    intent: {
-      targetDomains: ["feature-display"],
-    },
+    intent,
+    ...(providerConfidence ? { confidence: providerConfidence } : {}),
   };
 
   const providerResult = normalizeWorkbenchProviderPlan(providerInput);
@@ -87,21 +147,9 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
     console.error(`  ❌ Provider plan failed:`, providerResult.diagnostics);
     process.exit(1);
   }
-  console.log(`  ✓ Provider plan: ${providerResult.result.provider.providerId} (${providerResult.result.plan.status})`);
 
-  // Step 2: Plan map generation request
-  console.log(`  [2/5] Planning generation request...`);
-  const planInput = {
-    promptHash,
-    traceId,
-    plannerId: `cli-${opts.provider}`,
-    intent: {
-      targetDomains: ["feature-display" as const],
-    },
-  };
-
-  const plan = planMapGenerationRequest(planInput);
-  console.log(`  ✓ Plan: ${plan.status}, ${plan.diagnostics.length} diagnostics`);
+  const plan = providerResult.result.plan;
+  console.log(`  ✓ Provider plan: ${providerResult.result.provider.providerId} (${plan.status})`);
 
   // Step 3: Create command skeleton
   console.log(`  [3/5] Creating command skeleton...`);
@@ -123,7 +171,10 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
   const evidenceInput = {
     promptHash,
     skeleton,
-    planner: { plan },
+    planner: {
+      plan,
+      ...(providerConfidence ? { confidence: providerConfidence } : {}),
+    },
   };
 
   const evidenceResult = await createGenerationEvidenceBundle(evidenceInput);
@@ -149,6 +200,7 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
       layerCount: validation.stats.layerCount,
     },
     evidenceStatus: evidenceResult.ok ? "ok" : "diagnostics",
+    ...(providerConfidence ? { confidence: providerConfidence } : {}),
     retainedRawPrompt: false,
     generatedAt: new Date().toISOString(),
   };

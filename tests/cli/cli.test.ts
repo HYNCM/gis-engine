@@ -2,6 +2,9 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import {
   parseArgs,
   createProviderDiagnostics,
+  resolveProviderProfile,
+  readProviderApiKey,
+  CLI_API_KEY_ENVS,
   getTemplate,
   TEMPLATES,
   hashPrompt,
@@ -12,7 +15,7 @@ import {
 // ---------------------------------------------------------------------------
 
 describe("cli-config-parseArgs", () => {
-  const ENV_KEYS = ["GIS_ENGINE_TEMPLATE", "GIS_ENGINE_PROVIDER", "GIS_ENGINE_PROMPT", "GIS_ENGINE_MODEL", "GIS_ENGINE_BASE_URL"];
+  const ENV_KEYS = ["GIS_ENGINE_TEMPLATE", "GIS_ENGINE_PROVIDER", "GIS_ENGINE_PROMPT", "GIS_ENGINE_MODEL", "GIS_ENGINE_BASE_URL", "GIS_ENGINE_API_KEY", "GIS_ENGINE_TIMEOUT"];
   const savedEnv: Record<string, string | undefined> = {};
 
   beforeEach(() => {
@@ -45,6 +48,8 @@ describe("cli-config-parseArgs", () => {
     expect(config.prompt).toBeUndefined();
     expect(config.model).toBeUndefined();
     expect(config.baseUrl).toBeUndefined();
+    expect(config.apiKey).toBeUndefined();
+    expect(config.timeout).toBeUndefined();
   });
 
   it("sets template via --template flag", () => {
@@ -221,6 +226,49 @@ describe("cli-config-parseArgs", () => {
     expect(config.yes).toBe(true);
     expect(config.dryRun).toBe(true);
   });
+
+  it("sets apiKey via --api-key flag", () => {
+    const config = parseArgs(["--api-key", "sk-test-123"]);
+    expect(config.apiKey).toBe("sk-test-123");
+  });
+
+  it("sets apiKey via --api-key=value equals form", () => {
+    const config = parseArgs(["--api-key=sk-test-456"]);
+    expect(config.apiKey).toBe("sk-test-456");
+  });
+
+  it("sets timeout via --timeout flag", () => {
+    const config = parseArgs(["--timeout", "30000"]);
+    expect(config.timeout).toBe(30000);
+  });
+
+  it("sets timeout via --timeout=value equals form", () => {
+    const config = parseArgs(["--timeout=15000"]);
+    expect(config.timeout).toBe(15000);
+  });
+
+  it("ignores invalid timeout values", () => {
+    const config = parseArgs(["--timeout", "abc"]);
+    expect(config.timeout).toBeUndefined();
+  });
+
+  it("reads apiKey from GIS_ENGINE_API_KEY env var", () => {
+    process.env.GIS_ENGINE_API_KEY = "sk-env-key";
+    const config = parseArgs([]);
+    expect(config.apiKey).toBe("sk-env-key");
+  });
+
+  it("reads timeout from GIS_ENGINE_TIMEOUT env var", () => {
+    process.env.GIS_ENGINE_TIMEOUT = "25000";
+    const config = parseArgs([]);
+    expect(config.timeout).toBe(25000);
+  });
+
+  it("flag overrides env var for apiKey", () => {
+    process.env.GIS_ENGINE_API_KEY = "sk-env-key";
+    const config = parseArgs(["--api-key", "sk-flag-key"]);
+    expect(config.apiKey).toBe("sk-flag-key");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -382,10 +430,10 @@ describe("cli-templates", () => {
 // ---------------------------------------------------------------------------
 
 describe("cli-generate-hashPrompt", () => {
-  it("returns a 16-character hex string", () => {
+  it("returns sha256:<32-hex> format", () => {
     const hash = hashPrompt("Create a map with GeoJSON points");
-    expect(hash).toHaveLength(16);
-    expect(hash).toMatch(/^[0-9a-f]{16}$/);
+    expect(hash).toMatch(/^sha256:[0-9a-f]{32}$/);
+    expect(hash).toHaveLength(39); // "sha256:" (7) + 32 hex chars
   });
 
   it("is deterministic — same input yields same hash", () => {
@@ -400,10 +448,10 @@ describe("cli-generate-hashPrompt", () => {
     expect(a).not.toBe(b);
   });
 
-  it("handles empty string without error", () => {
-    const hash = hashPrompt("");
-    expect(hash).toHaveLength(16);
-    expect(hash).toMatch(/^[0-9a-f]{16}$/);
+  it("matches the normalizeWorkbenchProviderPlan regex", () => {
+    const hash = hashPrompt("test prompt");
+    // normalizeWorkbenchProviderPlan validates: /^sha256:[A-Za-z0-9._:-]{1,96}$/
+    expect(hash).toMatch(/^sha256:[A-Za-z0-9._:-]{1,96}$/);
   });
 });
 
@@ -421,18 +469,119 @@ describe("cli-no-raw-prompt-retention", () => {
   });
 
   it("hash is irreversible — not base64 or similar reversible encoding", () => {
-    const prompt = "Show me population density";
+    const prompt = "Show me population density across major cities in the world";
     const hash = hashPrompt(prompt);
 
-    // A 16-char hex string cannot be base64-decoded back to the prompt
-    // Verify the output space (16 hex chars) is far smaller than the input
-    expect(hash.length).toBeLessThan(prompt.length);
+    // The hash value after "sha256:" is 32 hex chars — far smaller than long prompts
+    const hexPart = hash.slice(7); // strip "sha256:"
+    expect(hexPart).toHaveLength(32);
 
-    // Verify it is purely hex, not a reversible encoding
-    expect(hash).toMatch(/^[0-9a-f]{16}$/);
+    // Verify it is purely hex after the prefix
+    expect(hexPart).toMatch(/^[0-9a-f]{32}$/);
 
     // Attempt base64 decode — should not yield the original prompt
-    const decoded = Buffer.from(hash, "base64").toString("utf-8");
+    const decoded = Buffer.from(hexPart, "base64").toString("utf-8");
     expect(decoded).not.toContain(prompt);
+
+    // The hash does not contain any recognizable substring from the prompt
+    expect(hash).not.toContain("population");
+    expect(hash).not.toContain("density");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// provider.ts — resolveProviderProfile, readProviderApiKey, CLI_API_KEY_ENVS
+// ---------------------------------------------------------------------------
+
+describe("cli-provider-profile", () => {
+  const ENV_KEYS = ["DEEPSEEK_API_KEY", "OPENAI_API_KEY"];
+  const savedEnv: Record<string, string | undefined> = {};
+
+  beforeEach(() => {
+    for (const key of ENV_KEYS) {
+      savedEnv[key] = process.env[key];
+      delete process.env[key];
+    }
+  });
+
+  afterEach(() => {
+    for (const key of ENV_KEYS) {
+      if (savedEnv[key] !== undefined) {
+        process.env[key] = savedEnv[key];
+      } else {
+        delete process.env[key];
+      }
+    }
+  });
+
+  it("CLI_API_KEY_ENVS maps deepseek to DEEPSEEK_API_KEY", () => {
+    expect(CLI_API_KEY_ENVS["deepseek"]).toBe("DEEPSEEK_API_KEY");
+  });
+
+  it("CLI_API_KEY_ENVS maps openai to OPENAI_API_KEY", () => {
+    expect(CLI_API_KEY_ENVS["openai"]).toBe("OPENAI_API_KEY");
+  });
+
+  it("resolveProviderProfile uses defaults for deepseek", () => {
+    const profile = resolveProviderProfile("deepseek");
+    expect(profile.id).toBe("deepseek");
+    expect(profile.model).toBe("deepseek-chat");
+    expect(profile.baseUrl).toBe("https://api.deepseek.com/v1");
+  });
+
+  it("resolveProviderProfile uses defaults for openai", () => {
+    const profile = resolveProviderProfile("openai");
+    expect(profile.id).toBe("openai");
+    expect(profile.model).toBe("gpt-4o-mini");
+    expect(profile.baseUrl).toBe("https://api.openai.com/v1");
+  });
+
+  it("resolveProviderProfile overrides with custom model and baseUrl", () => {
+    const profile = resolveProviderProfile("deepseek", {
+      model: "deepseek-v2",
+      baseUrl: "https://custom.api.com/v1",
+    });
+    expect(profile.model).toBe("deepseek-v2");
+    expect(profile.baseUrl).toBe("https://custom.api.com/v1");
+  });
+
+  it("resolveProviderProfile lowercases the id", () => {
+    const profile = resolveProviderProfile("DeepSeek");
+    expect(profile.id).toBe("deepseek");
+  });
+
+  it("resolveProviderProfile returns empty strings for unknown provider", () => {
+    const profile = resolveProviderProfile("unknown-provider");
+    expect(profile.id).toBe("unknown-provider");
+    expect(profile.model).toBe("");
+    expect(profile.baseUrl).toBe("");
+  });
+
+  it("readProviderApiKey returns undefined when no env var set", () => {
+    expect(readProviderApiKey("deepseek")).toBeUndefined();
+  });
+
+  it("readProviderApiKey reads DEEPSEEK_API_KEY", () => {
+    process.env.DEEPSEEK_API_KEY = "sk-deepseek-test";
+    expect(readProviderApiKey("deepseek")).toBe("sk-deepseek-test");
+  });
+
+  it("readProviderApiKey reads OPENAI_API_KEY", () => {
+    process.env.OPENAI_API_KEY = "sk-openai-test";
+    expect(readProviderApiKey("openai")).toBe("sk-openai-test");
+  });
+
+  it("readProviderApiKey trims whitespace", () => {
+    process.env.DEEPSEEK_API_KEY = "  sk-trimmed  ";
+    expect(readProviderApiKey("deepseek")).toBe("sk-trimmed");
+  });
+
+  it("readProviderApiKey returns undefined for empty string", () => {
+    process.env.DEEPSEEK_API_KEY = "";
+    expect(readProviderApiKey("deepseek")).toBeUndefined();
+  });
+
+  it("readProviderApiKey returns undefined for unknown provider", () => {
+    expect(readProviderApiKey("unknown")).toBeUndefined();
   });
 });
