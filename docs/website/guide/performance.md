@@ -121,4 +121,3 @@ configuration before optimizing engine code.
 
 - [Custom Adapters](/guide/custom-adapters) — building adapters for specialized benchmarks
 - [Snapshot Testing](/guide/snapshot-testing) — deterministic rendering assertions
-- [Performance Benchmarks](/engineering/performance-benchmarks) — internal engineering notes
