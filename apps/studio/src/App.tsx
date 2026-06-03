@@ -107,6 +107,25 @@ export interface ReviewDecision {
   followUpTaskIds?: string[];
 }
 
+export type ReviewDecisionOutcome = ReviewDecision["outcome"];
+export type ReviewDecisionReasonCode =
+  | "review-accepted"
+  | "manual-review-blocked"
+  | "provider-output-blocked"
+  | "provider-resource-follow-up"
+  | "audit-retention-follow-up"
+  | "visual-evidence-required"
+  | "delivery-needs-confirmation"
+  | "spatial-query-follow-up"
+  | "scene3d-extension-only"
+  | "product-promotion-required";
+
+export interface ReviewDecisionRequest {
+  outcome: ReviewDecisionOutcome;
+  reasonCodes: ReviewDecisionReasonCode[];
+  followUpTaskIds?: string[];
+}
+
 export interface SavedMapSummary {
   id: string;
   name: string;
@@ -315,8 +334,6 @@ export interface SavedMapReviewExport {
   nextCursor: number | null;
 }
 
-const FOLLOW_UP_TASK_ID = "TASK-2026W23-SER-001";
-
 function buildLoadedWorkspaceEvidence(
   auditRecords: AuditRecord[] = [],
   reviewDecisions: ReviewDecision[] = [],
@@ -524,23 +541,19 @@ export default function App() {
   };
 
   const submitReviewDecision = useCallback(
-    async (outcome: ReviewDecision["outcome"]) => {
-      const request =
-        outcome === "accepted"
-          ? { outcome, reasonCodes: ["review-accepted"] }
-          : outcome === "blocked"
-            ? { outcome, reasonCodes: ["manual-review-blocked"] }
-            : {
-                outcome,
-                reasonCodes: ["delivery-needs-confirmation"],
-                followUpTaskIds: [FOLLOW_UP_TASK_ID],
-              };
-
+    async (request: ReviewDecisionRequest) => {
+      const payload = {
+        outcome: request.outcome,
+        reasonCodes: request.reasonCodes,
+        ...(request.followUpTaskIds && request.followUpTaskIds.length > 0
+          ? { followUpTaskIds: request.followUpTaskIds }
+          : {}),
+      };
       try {
         const response = await fetch("/api/review-decision", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(request),
+          body: JSON.stringify(payload),
         });
         const data = await response.json();
         const diagnostics = data.diagnostics || [];

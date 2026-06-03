@@ -1,7 +1,10 @@
+import { useState } from "react";
 import type {
   AuditRecord,
   ChatMessage,
   ReviewDecision,
+  ReviewDecisionReasonCode,
+  ReviewDecisionRequest,
   ServerState,
 } from "../App";
 
@@ -10,9 +13,47 @@ interface Props {
   serverState: ServerState | null;
   auditRecords?: AuditRecord[];
   reviewDecisions?: ReviewDecision[];
-  onReviewDecision?: (outcome: ReviewDecision["outcome"]) => void;
+  onReviewDecision?: (request: ReviewDecisionRequest) => void;
   onClose: () => void;
 }
+
+const FOLLOW_UP_TASK_ID_PATTERN = /^TASK-\d{4}W\d{2}-[A-Z]+-\d{3}$/;
+
+const REVIEW_REASON_OPTIONS: Record<
+  ReviewDecision["outcome"],
+  Array<{ label: string; value: ReviewDecisionReasonCode }>
+> = {
+  accepted: [{ label: "Accepted", value: "review-accepted" }],
+  blocked: [
+    { label: "Manual block", value: "manual-review-blocked" },
+    { label: "Provider output", value: "provider-output-blocked" },
+    { label: "Visual evidence", value: "visual-evidence-required" },
+    { label: "Scene3D boundary", value: "scene3d-extension-only" },
+    { label: "Promotion required", value: "product-promotion-required" },
+  ],
+  "follow-up-required": [
+    {
+      label: "Delivery confirmation",
+      value: "delivery-needs-confirmation",
+    },
+    {
+      label: "Provider resources",
+      value: "provider-resource-follow-up",
+    },
+    {
+      label: "Audit retention",
+      value: "audit-retention-follow-up",
+    },
+    {
+      label: "Spatial query",
+      value: "spatial-query-follow-up",
+    },
+    {
+      label: "Promotion required",
+      value: "product-promotion-required",
+    },
+  ],
+};
 
 export default function EvidencePanel({
   messages,
@@ -22,6 +63,11 @@ export default function EvidencePanel({
   onReviewDecision,
   onClose,
 }: Props) {
+  const [reviewOutcome, setReviewOutcome] =
+    useState<ReviewDecision["outcome"]>("accepted");
+  const [reviewReason, setReviewReason] =
+    useState<ReviewDecisionReasonCode>("review-accepted");
+  const [followUpTaskInput, setFollowUpTaskInput] = useState("");
   const lastMsg = messages
     .filter((m) => m.role === "assistant" && m.evidence)
     .at(-1);
@@ -31,6 +77,45 @@ export default function EvidencePanel({
   const provider = ev?.provider || serverState?.provider;
   const latestAudit = auditRecords.at(-1);
   const canReview = Boolean(latestAudit);
+  const followUpTaskIds = followUpTaskInput
+    .split(",")
+    .map((taskId) => taskId.trim())
+    .filter(Boolean);
+  const invalidFollowUpTaskIds = followUpTaskIds.filter(
+    (taskId) => !FOLLOW_UP_TASK_ID_PATTERN.test(taskId),
+  );
+  const reviewValidation = !latestAudit
+    ? "No audit record yet."
+    : reviewOutcome === "accepted" &&
+        (latestAudit.status === "blocked" ||
+          latestAudit.diagnosticCounts.error > 0)
+      ? "Accepted decisions require non-blocked evidence."
+      : reviewOutcome === "follow-up-required" && followUpTaskIds.length === 0
+        ? "Follow-up decisions require at least one task id."
+        : reviewOutcome === "follow-up-required" &&
+            invalidFollowUpTaskIds.length > 0
+          ? "Follow-up task ids must match TASK-YYYYWww-ABC-000."
+          : null;
+  const canSubmitReview = canReview && reviewValidation === null;
+
+  const setReviewComposerOutcome = (outcome: ReviewDecision["outcome"]) => {
+    setReviewOutcome(outcome);
+    setReviewReason(REVIEW_REASON_OPTIONS[outcome][0].value);
+    if (outcome !== "follow-up-required") {
+      setFollowUpTaskInput("");
+    }
+  };
+
+  const submitReview = () => {
+    if (!onReviewDecision || !canSubmitReview) return;
+    onReviewDecision({
+      outcome: reviewOutcome,
+      reasonCodes: [reviewReason],
+      ...(reviewOutcome === "follow-up-required"
+        ? { followUpTaskIds }
+        : {}),
+    });
+  };
 
   return (
     <>
@@ -140,35 +225,73 @@ export default function EvidencePanel({
 
         <div className="bg-gray-800 rounded-lg p-3 space-y-2">
           <p className="text-gray-400 font-medium">Review Decision</p>
-          <div className="grid grid-cols-3 gap-1">
+          <div className="flex overflow-hidden rounded border border-gray-700">
             <button
               disabled={!canReview}
-              onClick={() => {
-                if (onReviewDecision) onReviewDecision("accepted");
-              }}
-              className="rounded bg-green-900/50 px-2 py-1 text-green-200 disabled:opacity-30"
+              onClick={() => setReviewComposerOutcome("accepted")}
+              className={`flex-1 px-2 py-1 text-xs transition ${
+                reviewOutcome === "accepted"
+                  ? "bg-green-900/50 text-green-200"
+                  : "bg-gray-900 text-gray-400 hover:bg-gray-800 hover:text-gray-200"
+              } disabled:opacity-30`}
             >
               Accept
             </button>
             <button
               disabled={!canReview}
-              onClick={() => {
-                if (onReviewDecision) onReviewDecision("blocked");
-              }}
-              className="rounded bg-red-900/50 px-2 py-1 text-red-200 disabled:opacity-30"
+              onClick={() => setReviewComposerOutcome("blocked")}
+              className={`flex-1 px-2 py-1 text-xs transition ${
+                reviewOutcome === "blocked"
+                  ? "bg-red-900/50 text-red-200"
+                  : "bg-gray-900 text-gray-400 hover:bg-gray-800 hover:text-gray-200"
+              } disabled:opacity-30`}
             >
               Block
             </button>
             <button
               disabled={!canReview}
-              onClick={() => {
-                if (onReviewDecision) onReviewDecision("follow-up-required");
-              }}
-              className="rounded bg-yellow-900/50 px-2 py-1 text-yellow-100 disabled:opacity-30"
+              onClick={() => setReviewComposerOutcome("follow-up-required")}
+              className={`flex-1 px-2 py-1 text-xs transition ${
+                reviewOutcome === "follow-up-required"
+                  ? "bg-yellow-900/50 text-yellow-100"
+                  : "bg-gray-900 text-gray-400 hover:bg-gray-800 hover:text-gray-200"
+              } disabled:opacity-30`}
             >
               Follow
             </button>
           </div>
+          <label className="block text-gray-500">
+            <span className="mb-1 block">Review reason</span>
+            <select
+              value={reviewReason}
+              onChange={(event) =>
+                setReviewReason(event.target.value as ReviewDecisionReasonCode)
+              }
+              disabled={!canReview}
+              className="w-full rounded border border-gray-700 bg-gray-900 px-2 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-blue-500 disabled:opacity-30"
+            >
+              {REVIEW_REASON_OPTIONS[reviewOutcome].map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          {reviewOutcome === "follow-up-required" && (
+            <label className="block text-gray-500">
+              <span className="mb-1 block">Follow-up task ids</span>
+              <input
+                value={followUpTaskInput}
+                onChange={(event) => setFollowUpTaskInput(event.target.value)}
+                disabled={!canReview}
+                placeholder="TASK-2026W23-SER-001"
+                className="w-full rounded border border-gray-700 bg-gray-900 px-2 py-1.5 text-xs text-gray-200 placeholder-gray-600 focus:outline-none focus:border-blue-500 disabled:opacity-30"
+              />
+              <span className="mt-1 block text-[10px] text-gray-600">
+                Comma-separated ids stay bounded to the compact review record.
+              </span>
+            </label>
+          )}
           {latestAudit ? (
             <p className="text-gray-500">
               Evidence: <span className="font-mono">{latestAudit.id}</span>
@@ -176,6 +299,22 @@ export default function EvidencePanel({
           ) : (
             <p className="text-gray-600 italic">No audit record yet</p>
           )}
+          <div className="flex items-center justify-between gap-2">
+            {reviewValidation ? (
+              <p className="text-[11px] text-amber-300">{reviewValidation}</p>
+            ) : (
+              <span className="text-[11px] text-gray-600">
+                Outcome stays append-only and payload-free.
+              </span>
+            )}
+            <button
+              disabled={!canSubmitReview}
+              onClick={submitReview}
+              className="rounded bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-blue-500 disabled:opacity-30"
+            >
+              Record review
+            </button>
+          </div>
         </div>
 
         {latestAudit && (
