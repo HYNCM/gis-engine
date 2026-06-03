@@ -925,6 +925,76 @@ describe("AI Map Studio server state", () => {
     expect(JSON.stringify(review.decision)).not.toMatch(/MapSpec|commandBody|patch|rawPrompt|West Lake/i);
   });
 
+  it("rejects accepted review decisions with extra reason codes", () => {
+    const auditRecord = appendAuditRecord([], {
+      sessionId: "studio.test",
+      status: "applied",
+      providerId: "mock-ai",
+      commandCount: 1,
+      diagnostics: [],
+      fromRevision: "1",
+      toRevision: "2"
+    });
+
+    const review = createReviewDecision({
+      request: {
+        outcome: "accepted",
+        reasonCodes: ["review-accepted", "visual-evidence-required"]
+      },
+      evidence: auditRecord,
+      principal: { role: "reviewer", projectIds: ["project_studio"] },
+      projectId: "project_studio",
+      decisionId: "review-1",
+      createdAt: "2026-06-03T00:00:00Z"
+    });
+
+    expect(review.ok).toBe(false);
+    expect(review.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: "STUDIO.REVIEW_CONTRACT_VIOLATION",
+        path: "/reviewAction/reasons"
+      })
+    );
+  });
+
+  it("deduplicates multi-select Studio review reasons for blocked and follow-up decisions", () => {
+    const auditRecord = appendAuditRecord([], {
+      sessionId: "studio.test",
+      status: "applied",
+      providerId: "mock-ai",
+      commandCount: 1,
+      diagnostics: [],
+      fromRevision: "1",
+      toRevision: "2"
+    });
+
+    const review = createReviewDecision({
+      request: {
+        outcome: "follow-up-required",
+        reasonCodes: [
+          "delivery-needs-confirmation",
+          "audit-retention-follow-up",
+          "delivery-needs-confirmation"
+        ],
+        followUpTaskIds: ["TASK-2026W23-SER-001", "TASK-2026W23-SER-001"]
+      },
+      evidence: auditRecord,
+      principal: { role: "reviewer", projectIds: ["project_studio"] },
+      projectId: "project_studio",
+      decisionId: "review-1",
+      createdAt: "2026-06-03T00:00:00Z"
+    });
+
+    expect(review.ok).toBe(true);
+    if (!review.ok) throw new Error("Expected review decision to be accepted.");
+    expect(review.decision).toMatchObject({
+      recordVersion: "studio.review.v1",
+      outcome: "follow-up-required",
+      reasonCodes: ["delivery-needs-confirmation", "audit-retention-follow-up"],
+      followUpTaskIds: ["TASK-2026W23-SER-001"]
+    });
+  });
+
   it("blocks Studio review decisions that attempt direct map mutation", () => {
     const auditRecord = appendAuditRecord([], {
       sessionId: "studio.test",

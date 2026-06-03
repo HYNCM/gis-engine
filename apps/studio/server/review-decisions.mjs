@@ -63,6 +63,9 @@ export function createReviewDecision(input) {
   const followUpTaskIds = normalizeFollowUpTaskIds(request.followUpTaskIds);
   if (!followUpTaskIds.ok) return followUpTaskIds;
 
+  const reasonValidation = validateOutcomeReasonCodes(outcome, reasonCodes.value);
+  if (!reasonValidation.ok) return reasonValidation;
+
   const evidenceCheck = validateOutcomeAgainstEvidence(outcome, evidence, followUpTaskIds.value);
   if (!evidenceCheck.ok) return evidenceCheck;
 
@@ -112,6 +115,24 @@ function validateOutcomeAgainstEvidence(outcome, evidence, followUpTaskIds) {
     return reviewError("/reviewAction/followUp", "Follow-up decisions require a task id.");
   }
   return { ok: true };
+}
+
+function validateOutcomeReasonCodes(outcome, reasonCodes) {
+  if (outcome === "accepted") {
+    return reasonCodes.length === 1 && reasonCodes[0] === "review-accepted"
+      ? { ok: true }
+      : reviewError(
+          "/reviewAction/reasons",
+          "Accepted decisions require the review-accepted reason."
+        );
+  }
+
+  return reasonCodes.includes("review-accepted")
+    ? reviewError(
+        "/reviewAction/reasons",
+        "Blocked and follow-up decisions cannot use the review-accepted reason."
+      )
+    : { ok: true };
 }
 
 function normalizeReasonCodes(value) {

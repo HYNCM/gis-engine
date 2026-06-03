@@ -80,8 +80,9 @@ provider payloads or full map specs:
 Accepted, blocked, and follow-up decisions stay bounded to compact command and
 diagnostic evidence so the review surface remains replayable without leaking
 provider credentials, URLs, prompts, or full spec payloads.
-The evidence rail now lets reviewers choose one or more bounded reason codes
-and enter one or more follow-up task ids before recording a local follow-up
+Accepted decisions stay locked to the single `review-accepted` reason, while
+blocked and follow-up decisions can choose one or more bounded reason codes and
+enter one or more follow-up task ids before recording a local follow-up
 decision, instead of hardcoding the review outcome metadata in the browser.
 
 ## Local Persistence
