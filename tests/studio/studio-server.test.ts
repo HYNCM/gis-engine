@@ -4,6 +4,7 @@ import {
   applyProviderCommands,
   applyLegacyIntent,
   buildSavedMapHandoff,
+  buildSavedMapReviewExport,
   buildSavedMapReviewLedger,
   buildBasemapCommands,
   buildProviders,
@@ -226,6 +227,10 @@ describe("AI Map Studio server state", () => {
       action: "review-ledger",
       mapId: "demo-map",
     });
+    expect(parseMapRoute("/api/maps/demo-map/review-export")).toEqual({
+      action: "review-export",
+      mapId: "demo-map",
+    });
     expect(parseMapRoute("/api/maps/demo-map/load")).toEqual({
       action: "load",
       mapId: "demo-map",
@@ -391,6 +396,95 @@ describe("AI Map Studio server state", () => {
       review: {
         decisionCount: 2,
       },
+    });
+  });
+
+  it("builds a paginated Studio local review export envelope", () => {
+    const exportEnvelope = buildSavedMapReviewExport(
+      {
+        id: "map-1",
+        name: "Studio Export",
+        revision: "4",
+        basemapId: "osm",
+        createdAt: "2026-06-03T00:00:00Z",
+        updatedAt: "2026-06-03T00:05:00Z",
+        auditRecords: [
+          {
+            id: "studio.test.1",
+            sessionId: "studio.test",
+            timestamp: "2026-06-03T00:01:00Z",
+            status: "applied",
+            providerId: "mock-ai",
+            commandCount: 2,
+            diagnosticCounts: { error: 0, warning: 0, info: 0 },
+            fromRevision: "2",
+            toRevision: "3",
+          },
+          {
+            id: "studio.test.2",
+            sessionId: "studio.test",
+            timestamp: "2026-06-03T00:02:00Z",
+            status: "blocked",
+            providerId: "mock-ai",
+            commandCount: 0,
+            diagnosticCounts: { error: 1, warning: 0, info: 0 },
+            fromRevision: "3",
+            toRevision: "3",
+          },
+        ],
+        reviewDecisions: [
+          {
+            decisionId: "review-1",
+            createdAt: "2026-06-03T00:03:00Z",
+            outcome: "accepted",
+            providerId: "mock-ai",
+            deliveryStatus: "applied",
+            commandEvidence: {
+              commandCount: 1,
+              committed: true,
+              rolledBack: false,
+              failed: false,
+              changedPathCount: 1,
+            },
+            diagnosticCounts: { error: 0, warning: 0, info: 0 },
+            reasonCodes: ["review-accepted"],
+          },
+        ],
+      },
+      { cursor: "0", limit: "2" },
+    );
+
+    expect(exportEnvelope).toMatchObject({
+      reviewExportVersion: "studio.review-export.v1",
+      workspace: {
+        mapId: "map-1",
+        name: "Studio Export",
+        revision: "4",
+        basemapId: "osm",
+      },
+      filters: {
+        cursor: 0,
+        limit: 2,
+      },
+      summary: {
+        totalEventCount: 3,
+        auditEventCount: 2,
+        reviewEventCount: 1,
+        returnedEventCount: 2,
+      },
+      nextCursor: 2,
+      events: [
+        expect.objectContaining({
+          kind: "review",
+          eventId: "review-1",
+          status: "accepted",
+        }),
+        expect.objectContaining({
+          kind: "audit",
+          eventId: "studio.test.2",
+          status: "blocked",
+        }),
+      ],
     });
   });
 

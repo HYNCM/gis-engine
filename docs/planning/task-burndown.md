@@ -575,6 +575,24 @@ rail inspection surface for compact saved-workspace evidence.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | TASK-2026W23-SLR-001 | Add Studio local review ledger | P1 | `@builder`, `@docs` | done | `docs/planning/feature-specs/studio-local-review-ledger.md`; `docs/reviews/slr-001-studio-local-review-ledger-2026-06-03.md` | Studio exposes an inspectable side-effect-free review ledger for saved maps without `MapSpec` or raw payload leakage | `pnpm test:studio`; `pnpm studio:build`; `pnpm test:docs`; `pnpm check`; `git diff --check` |
 
+## 2026-W23 Studio Local Review Export
+
+2026-06-03 planning update: after `SLR-001`, Studio had a compact saved review
+ledger, but evidence still arrived as one unpaged JSON block. The next bounded
+slice stays local and adds a paginated review export envelope so reviewers can
+consume saved audit/review chronology as a bounded timeline without downloading
+files.
+
+2026-06-03 execution update: `SLX-001` is accepted through
+`docs/planning/feature-specs/studio-local-review-export.md` and
+`docs/reviews/slx-001-studio-local-review-export-2026-06-03.md`. Studio now
+exposes a side-effect-free `/api/maps/:id/review-export` envelope and a left
+rail inspection surface for paginated saved review evidence.
+
+| id | title | priority | owner | status | evidence target | acceptance | finish gates |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| TASK-2026W23-SLX-001 | Add Studio local review export | P1 | `@builder`, `@docs` | done | `docs/planning/feature-specs/studio-local-review-export.md`; `docs/reviews/slx-001-studio-local-review-export-2026-06-03.md` | Studio exposes an inspectable side-effect-free paginated review export envelope for saved maps without `MapSpec` or raw payload leakage | `pnpm test:studio`; `pnpm studio:build`; `pnpm test:docs`; `pnpm check`; `git diff --check` |
+
 ---
 
 ## Evolution Tracking

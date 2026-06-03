@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import type {
   ChatMessage,
   ProviderProfile,
+  SavedMapReviewExport,
   SavedMapHandoff,
   SavedMapReviewLedger,
   SavedMapSummary,
@@ -19,8 +20,10 @@ interface Props {
   currentMapId: string | null;
   selectedHandoff: SavedMapHandoff | null;
   selectedLedger: SavedMapReviewLedger | null;
+  selectedExport: SavedMapReviewExport | null;
   onInspectMap: (id: string) => void;
   onInspectLedger: (id: string) => void;
+  onInspectExport: (id: string, cursor?: number) => void;
   onLoadMap: (id: string) => void;
   onDeleteMap: (id: string) => void;
 }
@@ -48,8 +51,10 @@ export default function ChatPanel({
   currentMapId,
   selectedHandoff,
   selectedLedger,
+  selectedExport,
   onInspectMap,
   onInspectLedger,
+  onInspectExport,
   onLoadMap,
   onDeleteMap,
 }: Props) {
@@ -149,6 +154,13 @@ export default function ChatPanel({
                     </span>
                     <div className="flex flex-wrap justify-end gap-1">
                       <button
+                        onClick={() => onInspectExport(map.id)}
+                        disabled={status === "thinking"}
+                        className="rounded bg-gray-800 px-2 py-1 text-[11px] text-gray-300 transition hover:bg-gray-700 disabled:opacity-40"
+                      >
+                        Export
+                      </button>
+                      <button
                         onClick={() => onInspectLedger(map.id)}
                         disabled={status === "thinking"}
                         className="rounded bg-gray-800 px-2 py-1 text-[11px] text-gray-300 transition hover:bg-gray-700 disabled:opacity-40"
@@ -241,6 +253,55 @@ export default function ChatPanel({
             </p>
             <pre className="mt-2 max-h-48 overflow-auto rounded bg-gray-950 p-2 text-[10px] leading-4 text-gray-400">
               {JSON.stringify(selectedLedger, null, 2)}
+            </pre>
+          </div>
+        </div>
+      )}
+
+      {selectedExport && (
+        <div className="px-4 py-3 border-b border-gray-800 shrink-0">
+          <div className="mb-2 flex items-center justify-between">
+            <label className="text-xs text-gray-500">Review Export</label>
+            <span className="text-[11px] text-gray-600">
+              {selectedExport.summary.returnedEventCount}/
+              {selectedExport.summary.totalEventCount}
+            </span>
+          </div>
+          <div className="rounded border border-gray-800 bg-gray-900/70 p-2">
+            <p className="text-xs font-medium text-gray-200">
+              {selectedExport.workspace.name}
+            </p>
+            <p className="mt-1 text-[11px] text-gray-500">
+              v{selectedExport.workspace.revision} ·{" "}
+              {selectedExport.workspace.basemapId} · audit{" "}
+              {selectedExport.summary.auditEventCount} · review{" "}
+              {selectedExport.summary.reviewEventCount}
+            </p>
+            <p className="mt-1 text-[11px] text-gray-600">
+              cursor {selectedExport.filters.cursor} · limit{" "}
+              {selectedExport.filters.limit}
+            </p>
+            <p className="mt-1 text-[11px] text-gray-600">
+              {selectedExport.reviewExportVersion}
+            </p>
+            {selectedExport.nextCursor !== null && (
+              <div className="mt-2 flex justify-end">
+                <button
+                  onClick={() =>
+                    onInspectExport(
+                      selectedExport.workspace.mapId,
+                      selectedExport.nextCursor ?? 0,
+                    )
+                  }
+                  disabled={status === "thinking"}
+                  className="rounded bg-gray-800 px-2 py-1 text-[11px] text-gray-300 transition hover:bg-gray-700 disabled:opacity-40"
+                >
+                  Older
+                </button>
+              </div>
+            )}
+            <pre className="mt-2 max-h-48 overflow-auto rounded bg-gray-950 p-2 text-[10px] leading-4 text-gray-400">
+              {JSON.stringify(selectedExport, null, 2)}
             </pre>
           </div>
         </div>

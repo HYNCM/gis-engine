@@ -84,6 +84,7 @@ provider credentials, URLs, prompts, or full spec payloads.
 - `GET /api/maps/:id` returns a saved map payload
 - `GET /api/maps/:id/handoff` returns a side-effect-free local handoff envelope
 - `GET /api/maps/:id/review-ledger` returns a compact evidence-only local review ledger
+- `GET /api/maps/:id/review-export` returns a paginated compact review export envelope
 - `POST /api/maps/:id/load` restores a saved map into the active Studio session
 - `DELETE /api/maps/:id` removes a saved map from local storage
 
@@ -91,7 +92,8 @@ Saved Studio entries keep the active basemap plus the same compact audit and
 review evidence shown in the right-hand rail, so a local workspace can be
 reloaded without falling back to raw prompt or provider payload storage.
 The left rail can also inspect a saved workspace handoff envelope or compact
-review ledger in place without writing files or downloading an export archive.
+review ledger in place, or page through a compact review export envelope,
+without writing files or downloading an export archive.
 
 ## MapLibre Capability Registry
 

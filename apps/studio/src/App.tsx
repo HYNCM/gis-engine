@@ -203,6 +203,63 @@ export interface SavedMapReviewLedger {
   };
 }
 
+export interface SavedMapReviewExportEvent {
+  kind: "audit" | "review";
+  eventId: string;
+  timestamp: string;
+  status: string;
+  providerId: string;
+  promptHash?: string;
+  traceId?: string;
+  commandCount?: number;
+  diagnosticCounts: {
+    error: number;
+    warning: number;
+    info: number;
+  };
+  diagnosticCodes?: Array<{ code: string; path: string }>;
+  fromRevision?: string;
+  toRevision?: string;
+  deliveryStatus?: string;
+  commandEvidence?: NonNullable<ServerState["commandEvidence"]>;
+  reasonCodes?: string[];
+  followUpTaskIds?: string[];
+}
+
+export interface SavedMapReviewExport {
+  reviewExportVersion: string;
+  generatedAt: string;
+  workspace: {
+    mapId: string;
+    name: string;
+    revision: string;
+    basemapId: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+  handoff: {
+    status:
+      | "needs-review"
+      | "accepted"
+      | "blocked"
+      | "follow-up-required";
+    latestReviewDecisionId: string | null;
+    latestReviewOutcome: string | null;
+  };
+  filters: {
+    cursor: number;
+    limit: number;
+  };
+  summary: {
+    totalEventCount: number;
+    auditEventCount: number;
+    reviewEventCount: number;
+    returnedEventCount: number;
+  };
+  events: SavedMapReviewExportEvent[];
+  nextCursor: number | null;
+}
+
 const FOLLOW_UP_TASK_ID = "TASK-2026W23-SER-001";
 
 function buildLoadedWorkspaceEvidence(
@@ -258,6 +315,8 @@ export default function App() {
   );
   const [selectedLedger, setSelectedLedger] =
     useState<SavedMapReviewLedger | null>(null);
+  const [selectedExport, setSelectedExport] =
+    useState<SavedMapReviewExport | null>(null);
 
   const flashSavedMsg = useCallback((message: string) => {
     setSavedMsg(message);
@@ -544,6 +603,7 @@ export default function App() {
         }
         setSelectedHandoff(data as SavedMapHandoff);
         setSelectedLedger(null);
+        setSelectedExport(null);
       } catch (error) {
         setMessages((previous) => [
           ...previous,
@@ -573,12 +633,45 @@ export default function App() {
         }
         setSelectedLedger(data as SavedMapReviewLedger);
         setSelectedHandoff(null);
+        setSelectedExport(null);
       } catch (error) {
         setMessages((previous) => [
           ...previous,
           {
             role: "assistant",
             content: `Ledger error: ${error instanceof Error ? error.message : "Unknown error"}`,
+          },
+        ]);
+      }
+    },
+    [],
+  );
+
+  const inspectSavedMapExport = useCallback(
+    async (mapId: string, cursor = 0) => {
+      try {
+        const response = await fetch(
+          `/api/maps/${mapId}/review-export?cursor=${cursor}`,
+        );
+        const data = (await response.json()) as
+          | SavedMapReviewExport
+          | { error?: string };
+        if (!response.ok) {
+          throw new Error(
+            "error" in data && typeof data.error === "string"
+              ? data.error
+              : "Export inspect failed",
+          );
+        }
+        setSelectedExport(data as SavedMapReviewExport);
+        setSelectedHandoff(null);
+        setSelectedLedger(null);
+      } catch (error) {
+        setMessages((previous) => [
+          ...previous,
+          {
+            role: "assistant",
+            content: `Export error: ${error instanceof Error ? error.message : "Unknown error"}`,
           },
         ]);
       }
@@ -599,6 +692,9 @@ export default function App() {
           current?.workspace.mapId === mapId ? null : current,
         );
         setSelectedLedger((current) =>
+          current?.workspace.mapId === mapId ? null : current,
+        );
+        setSelectedExport((current) =>
           current?.workspace.mapId === mapId ? null : current,
         );
         flashSavedMsg("Deleted saved map");
@@ -642,8 +738,10 @@ export default function App() {
             currentMapId={serverState?.summary.mapId || null}
             selectedHandoff={selectedHandoff}
             selectedLedger={selectedLedger}
+            selectedExport={selectedExport}
             onInspectMap={inspectSavedMap}
             onInspectLedger={inspectSavedMapLedger}
+            onInspectExport={inspectSavedMapExport}
             onLoadMap={loadSavedMap}
             onDeleteMap={deleteSavedMap}
           />

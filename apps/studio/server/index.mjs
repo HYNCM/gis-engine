@@ -911,6 +911,7 @@ const auditRecords = [];
 const reviewDecisions = [];
 export const STUDIO_LOCAL_HANDOFF_VERSION = "studio.local-handoff.v1";
 export const STUDIO_LOCAL_REVIEW_LEDGER_VERSION = "studio.review-ledger.v1";
+export const STUDIO_LOCAL_REVIEW_EXPORT_VERSION = "studio.review-export.v1";
 
 function replaceActiveSpec(next) {
   activeSpec = next;
@@ -960,6 +961,13 @@ export function parseMapRoute(pathname) {
   const loadMatch = pathname.match(/^\/api\/maps\/([a-zA-Z0-9-]+)\/load$/);
   if (loadMatch) {
     return { action: "load", mapId: loadMatch[1] };
+  }
+
+  const reviewExportMatch = pathname.match(
+    /^\/api\/maps\/([a-zA-Z0-9-]+)\/review-export$/,
+  );
+  if (reviewExportMatch) {
+    return { action: "review-export", mapId: reviewExportMatch[1] };
   }
 
   const reviewLedgerMatch = pathname.match(
@@ -1125,6 +1133,121 @@ export function buildSavedMapReviewLedger(map) {
         : 0,
       decisions: Array.isArray(map.reviewDecisions) ? map.reviewDecisions : [],
     },
+  };
+}
+
+function clampInteger(value, fallback, min, max) {
+  if (!Number.isInteger(value)) return fallback;
+  return Math.max(min, Math.min(max, value));
+}
+
+function parseExportCursor(value) {
+  const parsed = Number.parseInt(value ?? "", 10);
+  return clampInteger(parsed, 0, 0, 10_000);
+}
+
+function parseExportLimit(value) {
+  const parsed = Number.parseInt(value ?? "", 10);
+  return clampInteger(parsed, 10, 1, 25);
+}
+
+function buildAuditExportEvent(record) {
+  return {
+    kind: "audit",
+    eventId: record.id,
+    timestamp: record.timestamp,
+    status: record.status,
+    providerId: record.providerId,
+    ...(record.promptHash ? { promptHash: record.promptHash } : {}),
+    ...(record.traceId ? { traceId: record.traceId } : {}),
+    commandCount: record.commandCount,
+    diagnosticCounts: record.diagnosticCounts,
+    ...(record.diagnosticCodes ? { diagnosticCodes: record.diagnosticCodes } : {}),
+    fromRevision: record.fromRevision,
+    toRevision: record.toRevision,
+  };
+}
+
+function buildReviewExportEvent(decision) {
+  return {
+    kind: "review",
+    eventId: decision.decisionId,
+    timestamp: decision.createdAt,
+    status: decision.outcome,
+    providerId: decision.providerId,
+    ...(decision.promptHash ? { promptHash: decision.promptHash } : {}),
+    ...(decision.traceId ? { traceId: decision.traceId } : {}),
+    deliveryStatus: decision.deliveryStatus,
+    commandEvidence: decision.commandEvidence,
+    diagnosticCounts: decision.diagnosticCounts,
+    ...(decision.diagnosticCodes
+      ? { diagnosticCodes: decision.diagnosticCodes }
+      : {}),
+    reasonCodes: decision.reasonCodes,
+    ...(decision.followUpTaskIds
+      ? { followUpTaskIds: decision.followUpTaskIds }
+      : {}),
+  };
+}
+
+function buildReviewExportTimeline(map) {
+  const auditEvents = Array.isArray(map?.auditRecords)
+    ? map.auditRecords.map((record) => buildAuditExportEvent(record))
+    : [];
+  const reviewEvents = Array.isArray(map?.reviewDecisions)
+    ? map.reviewDecisions.map((decision) => buildReviewExportEvent(decision))
+    : [];
+
+  return [...auditEvents, ...reviewEvents].sort((left, right) => {
+    return Date.parse(right.timestamp) - Date.parse(left.timestamp);
+  });
+}
+
+export function buildSavedMapReviewExport(map, options = {}) {
+  const cursor = parseExportCursor(options.cursor);
+  const limit = parseExportLimit(options.limit);
+  const timeline = buildReviewExportTimeline(map);
+  const events = timeline.slice(cursor, cursor + limit);
+  const nextCursor =
+    cursor + events.length < timeline.length ? cursor + events.length : null;
+
+  return {
+    reviewExportVersion: STUDIO_LOCAL_REVIEW_EXPORT_VERSION,
+    generatedAt: new Date().toISOString(),
+    workspace: {
+      mapId: map.id,
+      name: map.name,
+      revision: map.revision,
+      basemapId: map.basemapId || detectBasemapFromSpec(map.spec),
+      createdAt: map.createdAt,
+      updatedAt: map.updatedAt,
+    },
+    handoff: {
+      status: savedWorkspaceHandoffStatus(map.reviewDecisions),
+      latestReviewDecisionId:
+        Array.isArray(map?.reviewDecisions) && map.reviewDecisions.length > 0
+          ? map.reviewDecisions[map.reviewDecisions.length - 1]?.decisionId ||
+            null
+          : null,
+      latestReviewOutcome:
+        Array.isArray(map?.reviewDecisions) && map.reviewDecisions.length > 0
+          ? map.reviewDecisions[map.reviewDecisions.length - 1]?.outcome || null
+          : null,
+    },
+    filters: {
+      cursor,
+      limit,
+    },
+    summary: {
+      totalEventCount: timeline.length,
+      auditEventCount: Array.isArray(map?.auditRecords) ? map.auditRecords.length : 0,
+      reviewEventCount: Array.isArray(map?.reviewDecisions)
+        ? map.reviewDecisions.length
+        : 0,
+      returnedEventCount: events.length,
+    },
+    events,
+    nextCursor,
   };
 }
 
@@ -1618,6 +1741,18 @@ async function main() {
         const map = await store.loadMap(mapRoute.mapId);
         if (!map) return sendJson(res, { error: "Not found" }, 404);
         return sendJson(res, buildSavedMapReviewLedger(map));
+      }
+
+      if (req.method === "GET" && mapRoute?.action === "review-export") {
+        const map = await store.loadMap(mapRoute.mapId);
+        if (!map) return sendJson(res, { error: "Not found" }, 404);
+        return sendJson(
+          res,
+          buildSavedMapReviewExport(map, {
+            cursor: url.searchParams.get("cursor"),
+            limit: url.searchParams.get("limit"),
+          }),
+        );
       }
 
       if (req.method === "GET" && mapRoute?.action === "item") {
