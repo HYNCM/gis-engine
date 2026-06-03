@@ -173,6 +173,11 @@ export interface SavedMapReviewLedger {
     followUpTaskIds: string[];
     reasonCodes: string[];
   };
+  filters: {
+    auditStatus: SavedMapReviewLedgerAuditStatus;
+    reviewOutcome: SavedMapReviewLedgerReviewOutcome;
+    limit: number;
+  };
   summary: {
     auditStatusCounts: {
       applied: number;
@@ -192,15 +197,41 @@ export interface SavedMapReviewLedger {
     };
     latestAuditRecordId: string | null;
     latestReviewDecisionId: string | null;
+    matchingAuditRecordCount: number;
+    matchingReviewDecisionCount: number;
+    returnedAuditRecordCount: number;
+    returnedReviewDecisionCount: number;
   };
   audit: {
     recordCount: number;
+    matchingRecordCount: number;
+    returnedRecordCount: number;
     records: AuditRecord[];
   };
   review: {
     decisionCount: number;
+    matchingDecisionCount: number;
+    returnedDecisionCount: number;
     decisions: ReviewDecision[];
   };
+}
+
+export type SavedMapReviewLedgerAuditStatus =
+  | "all"
+  | "applied"
+  | "blocked"
+  | "ready"
+  | "reviewed";
+export type SavedMapReviewLedgerReviewOutcome =
+  | "all"
+  | "accepted"
+  | "blocked"
+  | "follow-up-required";
+
+export interface SavedMapReviewLedgerQuery {
+  auditStatus?: SavedMapReviewLedgerAuditStatus;
+  reviewOutcome?: SavedMapReviewLedgerReviewOutcome;
+  limit?: number;
 }
 
 export interface SavedMapReviewExportEvent {
@@ -642,9 +673,17 @@ export default function App() {
   );
 
   const inspectSavedMapLedger = useCallback(
-    async (mapId: string) => {
+    async (mapId: string, query: SavedMapReviewLedgerQuery = {}) => {
       try {
-        const response = await fetch(`/api/maps/${mapId}/review-ledger`);
+        const auditStatus = query.auditStatus ?? "all";
+        const reviewOutcome = query.reviewOutcome ?? "all";
+        const limit = query.limit ?? 25;
+        const params = new URLSearchParams({
+          audit_status: auditStatus,
+          review_outcome: reviewOutcome,
+          limit: String(limit),
+        });
+        const response = await fetch(`/api/maps/${mapId}/review-ledger?${params}`);
         const data = (await response.json()) as
           | SavedMapReviewLedger
           | { error?: string };

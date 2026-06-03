@@ -912,6 +912,19 @@ const reviewDecisions = [];
 export const STUDIO_LOCAL_HANDOFF_VERSION = "studio.local-handoff.v1";
 export const STUDIO_LOCAL_REVIEW_LEDGER_VERSION = "studio.review-ledger.v1";
 export const STUDIO_LOCAL_REVIEW_EXPORT_VERSION = "studio.review-export.v1";
+const REVIEW_LEDGER_AUDIT_STATUSES = new Set([
+  "all",
+  "applied",
+  "blocked",
+  "ready",
+  "reviewed",
+]);
+const REVIEW_LEDGER_REVIEW_OUTCOMES = new Set([
+  "all",
+  "accepted",
+  "blocked",
+  "follow-up-required",
+]);
 const REVIEW_EXPORT_KINDS = new Set(["all", "audit", "review"]);
 const REVIEW_EXPORT_STATUSES = new Set([
   "all",
@@ -1098,7 +1111,62 @@ function sumDiagnosticCounts(auditRecords = []) {
   );
 }
 
-export function buildSavedMapReviewLedger(map) {
+function parseLedgerAuditStatus(value) {
+  const normalized =
+    typeof value === "string"
+      ? value
+          .trim()
+          .toLowerCase()
+          .replace(/[_\s]+/g, "-")
+      : "";
+  return REVIEW_LEDGER_AUDIT_STATUSES.has(normalized) ? normalized : "all";
+}
+
+function parseLedgerReviewOutcome(value) {
+  const normalized =
+    typeof value === "string"
+      ? value
+          .trim()
+          .toLowerCase()
+          .replace(/[_\s]+/g, "-")
+      : "";
+  return REVIEW_LEDGER_REVIEW_OUTCOMES.has(normalized) ? normalized : "all";
+}
+
+function parseLedgerLimit(value) {
+  const parsed = Number.parseInt(value ?? "", 10);
+  return clampInteger(parsed, 25, 1, 50);
+}
+
+function filterLedgerRecords(records, field, selected, limit) {
+  const allRecords = Array.isArray(records) ? records : [];
+  const matchingRecords =
+    selected === "all"
+      ? allRecords
+      : allRecords.filter((record) => record?.[field] === selected);
+  return {
+    totalCount: allRecords.length,
+    matchingCount: matchingRecords.length,
+    returnedRecords: matchingRecords.slice(-limit),
+  };
+}
+
+export function buildSavedMapReviewLedger(map, options = {}) {
+  const auditStatus = parseLedgerAuditStatus(options.auditStatus);
+  const reviewOutcome = parseLedgerReviewOutcome(options.reviewOutcome);
+  const limit = parseLedgerLimit(options.limit);
+  const auditSelection = filterLedgerRecords(
+    map.auditRecords,
+    "status",
+    auditStatus,
+    limit,
+  );
+  const reviewSelection = filterLedgerRecords(
+    map.reviewDecisions,
+    "outcome",
+    reviewOutcome,
+    limit,
+  );
   const latestAuditRecord =
     Array.isArray(map?.auditRecords) && map.auditRecords.length > 0
       ? map.auditRecords[map.auditRecords.length - 1]
@@ -1126,22 +1194,33 @@ export function buildSavedMapReviewLedger(map) {
       followUpTaskIds: latestReviewDecision?.followUpTaskIds || [],
       reasonCodes: latestReviewDecision?.reasonCodes || [],
     },
+    filters: {
+      auditStatus,
+      reviewOutcome,
+      limit,
+    },
     summary: {
       auditStatusCounts: summarizeAuditStatuses(map.auditRecords),
       reviewOutcomeCounts: summarizeReviewOutcomes(map.reviewDecisions),
       diagnosticTotals: sumDiagnosticCounts(map.auditRecords),
       latestAuditRecordId: latestAuditRecord?.id || null,
       latestReviewDecisionId: latestReviewDecision?.decisionId || null,
+      matchingAuditRecordCount: auditSelection.matchingCount,
+      matchingReviewDecisionCount: reviewSelection.matchingCount,
+      returnedAuditRecordCount: auditSelection.returnedRecords.length,
+      returnedReviewDecisionCount: reviewSelection.returnedRecords.length,
     },
     audit: {
-      recordCount: Array.isArray(map.auditRecords) ? map.auditRecords.length : 0,
-      records: Array.isArray(map.auditRecords) ? map.auditRecords : [],
+      recordCount: auditSelection.totalCount,
+      matchingRecordCount: auditSelection.matchingCount,
+      returnedRecordCount: auditSelection.returnedRecords.length,
+      records: auditSelection.returnedRecords,
     },
     review: {
-      decisionCount: Array.isArray(map.reviewDecisions)
-        ? map.reviewDecisions.length
-        : 0,
-      decisions: Array.isArray(map.reviewDecisions) ? map.reviewDecisions : [],
+      decisionCount: reviewSelection.totalCount,
+      matchingDecisionCount: reviewSelection.matchingCount,
+      returnedDecisionCount: reviewSelection.returnedRecords.length,
+      decisions: reviewSelection.returnedRecords,
     },
   };
 }
@@ -1795,7 +1874,14 @@ async function main() {
       if (req.method === "GET" && mapRoute?.action === "review-ledger") {
         const map = await store.loadMap(mapRoute.mapId);
         if (!map) return sendJson(res, { error: "Not found" }, 404);
-        return sendJson(res, buildSavedMapReviewLedger(map));
+        return sendJson(
+          res,
+          buildSavedMapReviewLedger(map, {
+            auditStatus: url.searchParams.get("audit_status"),
+            reviewOutcome: url.searchParams.get("review_outcome"),
+            limit: url.searchParams.get("limit"),
+          }),
+        );
       }
 
       if (req.method === "GET" && mapRoute?.action === "review-export") {
