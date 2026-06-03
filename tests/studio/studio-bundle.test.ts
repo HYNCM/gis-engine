@@ -40,7 +40,9 @@ describe("AI Map Studio bundle", () => {
     expect(evidenceSource).toContain("Review History");
     expect(chatSource).toContain("Saved Maps");
     expect(chatSource).toContain("Workspace Handoff");
+    expect(chatSource).toContain("Review Ledger");
     expect(chatSource).toContain("onInspectMap(map.id)");
+    expect(chatSource).toContain("onInspectLedger(map.id)");
     expect(chatSource).toContain("onLoadMap(map.id)");
     expect(chatSource).toContain("onDeleteMap(map.id)");
     expect(evidenceSource).toContain('onReviewDecision("accepted")');
@@ -53,6 +55,7 @@ describe("AI Map Studio bundle", () => {
     expect(appSource).toContain("buildLoadedWorkspaceEvidence(");
     expect(appSource).toContain("loadedEvidence");
     expect(appSource).toContain('/api/maps/${mapId}/handoff');
+    expect(appSource).toContain('/api/maps/${mapId}/review-ledger');
     expect(appSource).toContain('/api/maps/${mapId}/load');
   });
 });

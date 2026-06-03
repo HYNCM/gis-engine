@@ -151,6 +151,58 @@ export interface SavedMapHandoff {
   };
 }
 
+export interface SavedMapReviewLedger {
+  reviewLedgerVersion: string;
+  exportedAt: string;
+  workspace: {
+    mapId: string;
+    name: string;
+    revision: string;
+    basemapId: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+  handoff: {
+    status:
+      | "needs-review"
+      | "accepted"
+      | "blocked"
+      | "follow-up-required";
+    latestReviewDecisionId: string | null;
+    latestReviewOutcome: string | null;
+    followUpTaskIds: string[];
+    reasonCodes: string[];
+  };
+  summary: {
+    auditStatusCounts: {
+      applied: number;
+      blocked: number;
+      ready: number;
+      reviewed: number;
+    };
+    reviewOutcomeCounts: {
+      accepted: number;
+      blocked: number;
+      followUpRequired: number;
+    };
+    diagnosticTotals: {
+      error: number;
+      warning: number;
+      info: number;
+    };
+    latestAuditRecordId: string | null;
+    latestReviewDecisionId: string | null;
+  };
+  audit: {
+    recordCount: number;
+    records: AuditRecord[];
+  };
+  review: {
+    decisionCount: number;
+    decisions: ReviewDecision[];
+  };
+}
+
 const FOLLOW_UP_TASK_ID = "TASK-2026W23-SER-001";
 
 function buildLoadedWorkspaceEvidence(
@@ -204,6 +256,8 @@ export default function App() {
   const [selectedHandoff, setSelectedHandoff] = useState<SavedMapHandoff | null>(
     null,
   );
+  const [selectedLedger, setSelectedLedger] =
+    useState<SavedMapReviewLedger | null>(null);
 
   const flashSavedMsg = useCallback((message: string) => {
     setSavedMsg(message);
@@ -489,12 +543,42 @@ export default function App() {
           );
         }
         setSelectedHandoff(data as SavedMapHandoff);
+        setSelectedLedger(null);
       } catch (error) {
         setMessages((previous) => [
           ...previous,
           {
             role: "assistant",
             content: `Inspect error: ${error instanceof Error ? error.message : "Unknown error"}`,
+          },
+        ]);
+      }
+    },
+    [],
+  );
+
+  const inspectSavedMapLedger = useCallback(
+    async (mapId: string) => {
+      try {
+        const response = await fetch(`/api/maps/${mapId}/review-ledger`);
+        const data = (await response.json()) as
+          | SavedMapReviewLedger
+          | { error?: string };
+        if (!response.ok) {
+          throw new Error(
+            "error" in data && typeof data.error === "string"
+              ? data.error
+              : "Ledger inspect failed",
+          );
+        }
+        setSelectedLedger(data as SavedMapReviewLedger);
+        setSelectedHandoff(null);
+      } catch (error) {
+        setMessages((previous) => [
+          ...previous,
+          {
+            role: "assistant",
+            content: `Ledger error: ${error instanceof Error ? error.message : "Unknown error"}`,
           },
         ]);
       }
@@ -512,6 +596,9 @@ export default function App() {
         }
         await fetchMaps();
         setSelectedHandoff((current) =>
+          current?.workspace.mapId === mapId ? null : current,
+        );
+        setSelectedLedger((current) =>
           current?.workspace.mapId === mapId ? null : current,
         );
         flashSavedMsg("Deleted saved map");
@@ -554,7 +641,9 @@ export default function App() {
             savedMaps={savedMaps}
             currentMapId={serverState?.summary.mapId || null}
             selectedHandoff={selectedHandoff}
+            selectedLedger={selectedLedger}
             onInspectMap={inspectSavedMap}
+            onInspectLedger={inspectSavedMapLedger}
             onLoadMap={loadSavedMap}
             onDeleteMap={deleteSavedMap}
           />

@@ -4,6 +4,7 @@ import {
   applyProviderCommands,
   applyLegacyIntent,
   buildSavedMapHandoff,
+  buildSavedMapReviewLedger,
   buildBasemapCommands,
   buildProviders,
   createInitialSpec,
@@ -221,6 +222,10 @@ describe("AI Map Studio server state", () => {
       action: "handoff",
       mapId: "demo-map",
     });
+    expect(parseMapRoute("/api/maps/demo-map/review-ledger")).toEqual({
+      action: "review-ledger",
+      mapId: "demo-map",
+    });
     expect(parseMapRoute("/api/maps/demo-map/load")).toEqual({
       action: "load",
       mapId: "demo-map",
@@ -298,6 +303,93 @@ describe("AI Map Studio server state", () => {
       evidence: {
         auditRecordCount: 1,
         reviewDecisionCount: 1,
+      },
+    });
+  });
+
+  it("builds a compact Studio local review ledger", () => {
+    const ledger = buildSavedMapReviewLedger({
+      id: "map-1",
+      name: "Studio Ledger",
+      revision: "4",
+      basemapId: "osm",
+      createdAt: "2026-06-03T00:00:00Z",
+      updatedAt: "2026-06-03T00:05:00Z",
+      auditRecords: [
+        {
+          id: "studio.test.1",
+          sessionId: "studio.test",
+          status: "applied",
+          providerId: "mock-ai",
+          commandCount: 2,
+          diagnosticCounts: { error: 0, warning: 1, info: 0 },
+          fromRevision: "3",
+          toRevision: "4",
+        },
+        {
+          id: "studio.test.2",
+          sessionId: "studio.test",
+          status: "blocked",
+          providerId: "mock-ai",
+          commandCount: 0,
+          diagnosticCounts: { error: 1, warning: 0, info: 0 },
+          fromRevision: "4",
+          toRevision: "4",
+        },
+      ],
+      reviewDecisions: [
+        {
+          decisionId: "review-1",
+          outcome: "accepted",
+          reasonCodes: ["review-accepted"],
+        },
+        {
+          decisionId: "review-2",
+          outcome: "follow-up-required",
+          reasonCodes: ["delivery-needs-confirmation"],
+          followUpTaskIds: ["TASK-2026W23-SLR-001"],
+        },
+      ],
+    });
+
+    expect(ledger).toMatchObject({
+      reviewLedgerVersion: "studio.review-ledger.v1",
+      workspace: {
+        mapId: "map-1",
+        name: "Studio Ledger",
+        revision: "4",
+        basemapId: "osm",
+      },
+      handoff: {
+        status: "follow-up-required",
+        latestReviewDecisionId: "review-2",
+        followUpTaskIds: ["TASK-2026W23-SLR-001"],
+      },
+      summary: {
+        auditStatusCounts: {
+          applied: 1,
+          blocked: 1,
+          ready: 0,
+          reviewed: 0,
+        },
+        reviewOutcomeCounts: {
+          accepted: 1,
+          blocked: 0,
+          followUpRequired: 1,
+        },
+        diagnosticTotals: {
+          error: 1,
+          warning: 1,
+          info: 0,
+        },
+        latestAuditRecordId: "studio.test.2",
+        latestReviewDecisionId: "review-2",
+      },
+      audit: {
+        recordCount: 2,
+      },
+      review: {
+        decisionCount: 2,
       },
     });
   });

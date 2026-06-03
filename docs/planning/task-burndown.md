@@ -557,6 +557,24 @@ saved review context instead of leaving the last transient command visible.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | TASK-2026W23-SLH-001 | Add Studio local handoff envelope | P1 | `@builder`, `@docs` | done | `docs/planning/feature-specs/studio-local-handoff-envelope.md`; `docs/reviews/slh-001-studio-local-handoff-envelope-2026-06-03.md` | Studio exposes an inspectable side-effect-free handoff envelope for saved maps without file write/download behavior or raw payload leakage | `pnpm test:studio`; `pnpm studio:build`; `pnpm test:docs`; `pnpm check`; `git diff --check` |
 
+## 2026-W23 Studio Local Review Ledger
+
+2026-06-03 planning update: after `SLH-001`, Studio had a saved-workspace
+handoff surface, but compact review evidence still rode inside the larger
+handoff JSON. The next bounded slice stays local and adds an evidence-only
+review ledger so reviewers can inspect compact audit/review trails without
+defaulting to full saved workspace state.
+
+2026-06-03 execution update: `SLR-001` is accepted through
+`docs/planning/feature-specs/studio-local-review-ledger.md` and
+`docs/reviews/slr-001-studio-local-review-ledger-2026-06-03.md`. Studio now
+exposes a side-effect-free `/api/maps/:id/review-ledger` envelope and a left
+rail inspection surface for compact saved-workspace evidence.
+
+| id | title | priority | owner | status | evidence target | acceptance | finish gates |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| TASK-2026W23-SLR-001 | Add Studio local review ledger | P1 | `@builder`, `@docs` | done | `docs/planning/feature-specs/studio-local-review-ledger.md`; `docs/reviews/slr-001-studio-local-review-ledger-2026-06-03.md` | Studio exposes an inspectable side-effect-free review ledger for saved maps without `MapSpec` or raw payload leakage | `pnpm test:studio`; `pnpm studio:build`; `pnpm test:docs`; `pnpm check`; `git diff --check` |
+
 ---
 
 ## Evolution Tracking

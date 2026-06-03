@@ -426,6 +426,21 @@ flowchart LR
 | --- | --- | --- | --- | --- |
 | TASK-2026W23-SLH-001 | TASK-2026W23-SLW-001 | local handoff spec and implementation review | `pnpm test:studio`; `pnpm studio:build`; `pnpm test:docs`; `pnpm check`; `git diff --check` | done |
 
+2026-06-03 planning update: after `SLH-001`, the next bounded Studio slice
+stayed local and split compact review evidence into its own read surface.
+`SLR-001` keeps handoff and ledger semantics distinct: handoff still carries
+saved workspace state, while the review ledger focuses on compact audit/review
+history only.
+
+```mermaid
+flowchart LR
+  A["TASK-2026W23-MLC-001 Studio capability command closure"] --> B["TASK-2026W23-SLW-001 Studio local workspace continuity"] --> C["TASK-2026W23-SLH-001 Studio local handoff envelope"] --> D["TASK-2026W23-SLR-001 Studio local review ledger"]
+```
+
+| Task | Depends On | Evidence Target | Required Finish Gate | Status Rule |
+| --- | --- | --- | --- | --- |
+| TASK-2026W23-SLR-001 | TASK-2026W23-SLH-001 | local review-ledger spec and implementation review | `pnpm test:studio`; `pnpm studio:build`; `pnpm test:docs`; `pnpm check`; `git diff --check` | done |
+
 ## 阻断规则
 
 - public AI tool 或 public command surface 变更仍必须先通过 schema-sync、MCP contract tests 和 command replay tests。

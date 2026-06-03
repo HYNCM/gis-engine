@@ -3,6 +3,7 @@ import type {
   ChatMessage,
   ProviderProfile,
   SavedMapHandoff,
+  SavedMapReviewLedger,
   SavedMapSummary,
 } from "../App";
 
@@ -17,7 +18,9 @@ interface Props {
   savedMaps: SavedMapSummary[];
   currentMapId: string | null;
   selectedHandoff: SavedMapHandoff | null;
+  selectedLedger: SavedMapReviewLedger | null;
   onInspectMap: (id: string) => void;
+  onInspectLedger: (id: string) => void;
   onLoadMap: (id: string) => void;
   onDeleteMap: (id: string) => void;
 }
@@ -44,7 +47,9 @@ export default function ChatPanel({
   savedMaps,
   currentMapId,
   selectedHandoff,
+  selectedLedger,
   onInspectMap,
+  onInspectLedger,
   onLoadMap,
   onDeleteMap,
 }: Props) {
@@ -142,7 +147,14 @@ export default function ChatPanel({
                     <span className="text-[10px] text-gray-600">
                       {new Date(map.updatedAt).toLocaleString()}
                     </span>
-                    <div className="flex gap-1">
+                    <div className="flex flex-wrap justify-end gap-1">
+                      <button
+                        onClick={() => onInspectLedger(map.id)}
+                        disabled={status === "thinking"}
+                        className="rounded bg-gray-800 px-2 py-1 text-[11px] text-gray-300 transition hover:bg-gray-700 disabled:opacity-40"
+                      >
+                        Ledger
+                      </button>
                       <button
                         onClick={() => onInspectMap(map.id)}
                         disabled={status === "thinking"}
@@ -196,6 +208,39 @@ export default function ChatPanel({
             </p>
             <pre className="mt-2 max-h-48 overflow-auto rounded bg-gray-950 p-2 text-[10px] leading-4 text-gray-400">
               {JSON.stringify(selectedHandoff, null, 2)}
+            </pre>
+          </div>
+        </div>
+      )}
+
+      {selectedLedger && (
+        <div className="px-4 py-3 border-b border-gray-800 shrink-0">
+          <div className="mb-2 flex items-center justify-between">
+            <label className="text-xs text-gray-500">Review Ledger</label>
+            <span className="text-[11px] text-gray-600">
+              {selectedLedger.handoff.status}
+            </span>
+          </div>
+          <div className="rounded border border-gray-800 bg-gray-900/70 p-2">
+            <p className="text-xs font-medium text-gray-200">
+              {selectedLedger.workspace.name}
+            </p>
+            <p className="mt-1 text-[11px] text-gray-500">
+              v{selectedLedger.workspace.revision} ·{" "}
+              {selectedLedger.workspace.basemapId} · audit{" "}
+              {selectedLedger.audit.recordCount} · review{" "}
+              {selectedLedger.review.decisionCount}
+            </p>
+            <p className="mt-1 text-[11px] text-gray-600">
+              accepted {selectedLedger.summary.reviewOutcomeCounts.accepted} ·
+              blocked {selectedLedger.summary.reviewOutcomeCounts.blocked} ·
+              follow-up {selectedLedger.summary.reviewOutcomeCounts.followUpRequired}
+            </p>
+            <p className="mt-1 text-[11px] text-gray-600">
+              {selectedLedger.reviewLedgerVersion}
+            </p>
+            <pre className="mt-2 max-h-48 overflow-auto rounded bg-gray-950 p-2 text-[10px] leading-4 text-gray-400">
+              {JSON.stringify(selectedLedger, null, 2)}
             </pre>
           </div>
         </div>
