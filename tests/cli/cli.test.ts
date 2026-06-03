@@ -7,27 +7,12 @@ import {
   hashPrompt,
 } from "@gis-engine/cli";
 
-// Suppress the unhandled rejection from bin.ts auto-invoking main() at
-// module load time.  The barrel re-export in index.ts pulls in bin.ts, which
-// calls main() with the real process.argv (empty during tests).  This causes
-// a process.exit(1) that vitest converts into a thrown error, producing an
-// unhandled rejection in the .catch() handler.
-process.on("unhandledRejection", (err: unknown) => {
-  if (
-    err instanceof Error &&
-    err.message.includes("process.exit unexpectedly called")
-  ) {
-    return; // swallow — expected side-effect of importing the CLI barrel
-  }
-  throw err; // re-throw anything else so real bugs are not hidden
-});
-
 // ---------------------------------------------------------------------------
 // config.ts — parseArgs
 // ---------------------------------------------------------------------------
 
 describe("cli-config-parseArgs", () => {
-  const ENV_KEYS = ["GIS_ENGINE_TEMPLATE", "GIS_ENGINE_PROVIDER", "GIS_ENGINE_PROMPT"];
+  const ENV_KEYS = ["GIS_ENGINE_TEMPLATE", "GIS_ENGINE_PROVIDER", "GIS_ENGINE_PROMPT", "GIS_ENGINE_MODEL", "GIS_ENGINE_BASE_URL"];
   const savedEnv: Record<string, string | undefined> = {};
 
   beforeEach(() => {
@@ -54,9 +39,12 @@ describe("cli-config-parseArgs", () => {
     expect(config.provider).toBe("mock");
     expect(config.dryRun).toBe(false);
     expect(config.generate).toBe(false);
+    expect(config.yes).toBe(false);
     expect(config.help).toBe(false);
     expect(config.version).toBe(false);
     expect(config.prompt).toBeUndefined();
+    expect(config.model).toBeUndefined();
+    expect(config.baseUrl).toBeUndefined();
   });
 
   it("sets template via --template flag", () => {
@@ -159,6 +147,80 @@ describe("cli-config-parseArgs", () => {
       warnSpy.mockRestore();
     }
   });
+
+  it("sets yes via --yes flag", () => {
+    const config = parseArgs(["--yes"]);
+    expect(config.yes).toBe(true);
+  });
+
+  it("sets yes via --force flag (alias)", () => {
+    const config = parseArgs(["--force"]);
+    expect(config.yes).toBe(true);
+  });
+
+  it("sets yes via -y short flag", () => {
+    const config = parseArgs(["-y"]);
+    expect(config.yes).toBe(true);
+  });
+
+  it("sets model via --model flag", () => {
+    const config = parseArgs(["--model", "deepseek-chat"]);
+    expect(config.model).toBe("deepseek-chat");
+  });
+
+  it("sets model via --model=value equals form", () => {
+    const config = parseArgs(["--model=gpt-4o"]);
+    expect(config.model).toBe("gpt-4o");
+  });
+
+  it("sets baseUrl via --base-url flag", () => {
+    const config = parseArgs(["--base-url", "https://api.deepseek.com/v1"]);
+    expect(config.baseUrl).toBe("https://api.deepseek.com/v1");
+  });
+
+  it("sets baseUrl via --base-url=value equals form", () => {
+    const config = parseArgs(["--base-url=https://api.openai.com/v1"]);
+    expect(config.baseUrl).toBe("https://api.openai.com/v1");
+  });
+
+  it("reads model from GIS_ENGINE_MODEL env var", () => {
+    process.env.GIS_ENGINE_MODEL = "env-model";
+    const config = parseArgs([]);
+    expect(config.model).toBe("env-model");
+  });
+
+  it("reads baseUrl from GIS_ENGINE_BASE_URL env var", () => {
+    process.env.GIS_ENGINE_BASE_URL = "https://env.example.com";
+    const config = parseArgs([]);
+    expect(config.baseUrl).toBe("https://env.example.com");
+  });
+
+  it("flag overrides env var for model", () => {
+    process.env.GIS_ENGINE_MODEL = "env-model";
+    const config = parseArgs(["--model", "flag-model"]);
+    expect(config.model).toBe("flag-model");
+  });
+
+  it("parses a full generate set with model and base-url", () => {
+    const config = parseArgs([
+      "my-map",
+      "--generate",
+      "-p", "deepseek",
+      "--model", "deepseek-chat",
+      "--base-url", "https://api.deepseek.com/v1",
+      "--prompt", "test",
+      "--yes",
+      "--dry-run",
+    ]);
+    expect(config.projectName).toBe("my-map");
+    expect(config.generate).toBe(true);
+    expect(config.provider).toBe("deepseek");
+    expect(config.model).toBe("deepseek-chat");
+    expect(config.baseUrl).toBe("https://api.deepseek.com/v1");
+    expect(config.prompt).toBe("test");
+    expect(config.yes).toBe(true);
+    expect(config.dryRun).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -180,6 +242,10 @@ describe("cli-provider-diagnostics", () => {
     expect(diag.status).toBe("unconfigured");
     expect(diag.mode).toBe("openai-compatible");
     expect(diag.diagnostics).toContain("PROVIDER.CONFIG_REQUIRED");
+    expect(diag.model).toBe("deepseek-chat");
+    expect(diag.baseUrl).toBe("https://api.deepseek.com/v1");
+    expect(diag.diagnostics).toContain("PROVIDER.USING_DEFAULT_MODEL");
+    expect(diag.diagnostics).toContain("PROVIDER.USING_DEFAULT_BASE_URL");
   });
 
   it("returns unconfigured for openai provider", () => {
@@ -187,6 +253,28 @@ describe("cli-provider-diagnostics", () => {
     expect(diag.providerId).toBe("openai");
     expect(diag.status).toBe("unconfigured");
     expect(diag.mode).toBe("openai-compatible");
+    expect(diag.model).toBe("gpt-4o-mini");
+    expect(diag.baseUrl).toBe("https://api.openai.com/v1");
+  });
+
+  it("accepts custom model and baseUrl for known providers", () => {
+    const diag = createProviderDiagnostics("deepseek", {
+      model: "deepseek-coder",
+      baseUrl: "https://custom.api.com/v1",
+    });
+    expect(diag.providerId).toBe("deepseek");
+    expect(diag.model).toBe("deepseek-coder");
+    expect(diag.baseUrl).toBe("https://custom.api.com/v1");
+    expect(diag.diagnostics).not.toContain("PROVIDER.USING_DEFAULT_MODEL");
+    expect(diag.diagnostics).not.toContain("PROVIDER.USING_DEFAULT_BASE_URL");
+  });
+
+  it("accepts partial options — model only", () => {
+    const diag = createProviderDiagnostics("openai", { model: "gpt-4o" });
+    expect(diag.model).toBe("gpt-4o");
+    expect(diag.baseUrl).toBe("https://api.openai.com/v1");
+    expect(diag.diagnostics).not.toContain("PROVIDER.USING_DEFAULT_MODEL");
+    expect(diag.diagnostics).toContain("PROVIDER.USING_DEFAULT_BASE_URL");
   });
 
   it("returns unknown-id diagnostic for unknown provider", () => {

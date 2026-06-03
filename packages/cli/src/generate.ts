@@ -26,6 +26,8 @@ import { createProviderDiagnostics } from "./provider.js";
 export interface GenerateOptions {
   projectName: string;
   provider: string;
+  model?: string;
+  baseUrl?: string;
   prompt?: string;
   intentFile?: string;
   dryRun: boolean;
@@ -61,11 +63,16 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
   console.log(`   Project:    ${opts.projectName}`);
   console.log(`   Prompt hash: ${promptHash}`);
   console.log(`   Provider:    ${opts.provider}`);
+  if (opts.model) console.log(`   Model:       ${opts.model}`);
+  if (opts.baseUrl) console.log(`   Base URL:    ${opts.baseUrl}`);
   console.log(`   Trace:       ${traceId}`);
 
   // Step 1: Provider plan normalization
   console.log(`\n  [1/5] Provider plan normalization...`);
-  const providerDiag = createProviderDiagnostics(opts.provider);
+  const providerDiag = createProviderDiagnostics(opts.provider, {
+    model: opts.model,
+    baseUrl: opts.baseUrl,
+  });
 
   const providerInput: Record<string, unknown> = {
     providerId: opts.provider,

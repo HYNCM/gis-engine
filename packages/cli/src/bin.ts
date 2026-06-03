@@ -13,8 +13,11 @@
  * Options:
  *   --template, -t   Template to use: static-html | vite-ts | mapspec (default: static-html)
  *   --provider, -p   AI provider profile id (default: mock)
+ *   --model          Model name for OpenAI-compatible provider
+ *   --base-url       API base URL for OpenAI-compatible provider
  *   --generate, -g   Run the full AI generate pipeline instead of scaffolding
  *   --prompt         Prompt text for the generate pipeline (no raw prompt retained)
+ *   --yes, -y        Skip directory-exists confirmation (overwrite)
  *   --dry-run        Preview files without writing
  *   --help, -h       Show this help message
  *   --version, -v    Print CLI version
@@ -51,6 +54,8 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
     const result = await generate({
       projectName: config.projectName,
       provider: config.provider,
+      model: config.model,
+      baseUrl: config.baseUrl,
       prompt: config.prompt,
       dryRun: config.dryRun,
     });
@@ -70,12 +75,15 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
   }
 
   const outDir = resolve(process.cwd(), config.projectName);
-  if (existsSync(outDir)) {
-    console.error(`Error: directory "${config.projectName}" already exists.`);
+  if (existsSync(outDir) && !config.yes) {
+    console.error(`Error: directory "${config.projectName}" already exists. Use --yes to overwrite.`);
     process.exit(1);
   }
 
-  const providerDiag = createProviderDiagnostics(config.provider);
+  const providerDiag = createProviderDiagnostics(config.provider, {
+    model: config.model,
+    baseUrl: config.baseUrl,
+  });
 
   console.log(`\n📦 create-gis-map`);
   console.log(`   Project:  ${config.projectName}`);
@@ -138,17 +146,22 @@ Templates (scaffold mode):
 Options:
   -t, --template   Template name (default: static-html)
   -p, --provider   AI provider profile id (default: mock)
+      --model      Model name for OpenAI-compatible provider
+      --base-url   API base URL for OpenAI-compatible provider
   -g, --generate   Run AI generate pipeline instead of scaffolding
       --prompt     Prompt text for generate mode
+  -y, --yes        Skip directory-exists check (overwrite)
       --dry-run    Preview files without writing
   -h, --help       Show help
   -v, --version    Print version
 
 Examples:
-  create-gis-map my-map                           Scaffold with static-html
-  create-gis-map my-map -t vite-ts                Scaffold with Vite + TS
-  create-gis-map my-map --generate                AI generate with mock provider
-  create-gis-map my-map --generate -p deepseek    AI generate with deepseek
+  create-gis-map my-map                              Scaffold with static-html
+  create-gis-map my-map -t vite-ts                   Scaffold with Vite + TS
+  create-gis-map my-map -y                           Scaffold, overwrite if exists
+  create-gis-map my-map --generate                   AI generate with mock provider
+  create-gis-map my-map --generate -p deepseek       AI generate with deepseek
+  create-gis-map my-map --generate -p deepseek --model deepseek-chat --base-url https://api.deepseek.com
   create-gis-map my-map --generate --prompt "A map of NYC parks"
 `);
 }

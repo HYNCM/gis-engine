@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Added `--yes` / `--force` / `-y` flag to `create-gis-map` to skip directory-exists check and allow overwrite in CI and scripted usage.
+- Added `--model` and `--base-url` flags to `create-gis-map` for configuring OpenAI-compatible provider endpoints, with `GIS_ENGINE_MODEL` and `GIS_ENGINE_BASE_URL` env var support and sensible defaults per provider (`deepseek-chat` / `gpt-4o-mini`).
+- Updated `createProviderDiagnostics()` to accept an optional `options` parameter for `model` and `baseUrl`, reporting default-vs-custom usage in diagnostics.
+- Cleaned dead `unhandledRejection` workaround from CLI tests — `bin.ts` `isDirectExecution` guard prevents side-effect on barrel import.
+- CLI test suite expanded from 39 to 52 tests covering `--yes`, `--model`, `--base-url`, env var priority, and provider model/baseUrl diagnostics.
+
 ## [0.2.0] - 2026-06-03
 
 - Bumped all publishable packages (`engine`, `ai`, `cli`, `scene3d`) to v0.2.0.
