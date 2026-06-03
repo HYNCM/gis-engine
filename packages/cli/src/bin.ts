@@ -154,11 +154,19 @@ Examples:
 }
 
 function getVersion(): string {
-  return "0.1.0";
+  return "0.2.0";
 }
 
-// CLI entry
-main().catch((err) => {
-  console.error("Fatal error:", err);
-  process.exit(1);
-});
+// CLI entry — only run main() when executed directly (not when imported).
+// Detect direct execution via import.meta.url matching process.argv[1].
+const isDirectExecution =
+  typeof process !== "undefined" &&
+  process.argv[1] &&
+  import.meta.url.endsWith(process.argv[1].replace(/\\/g, "/"));
+
+if (isDirectExecution) {
+  main().catch((err) => {
+    console.error("Fatal error:", err);
+    process.exit(1);
+  });
+}

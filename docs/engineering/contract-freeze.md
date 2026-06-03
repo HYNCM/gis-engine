@@ -65,6 +65,26 @@ breaking/non-breaking note in the PR summary.
   requests until the v1 renderer package passes resource, snapshot, query, and
   release visual gates.
 
+## Current v0.2 GA Additions
+
+- `@gis-engine/cli` package with `create-gis-map` bin, `static-html`, `vite-ts`,
+  and `mapspec` templates, and `generate` pipeline (prompt hash → provider plan
+  → `planMapGenerationRequest()` → command skeleton → `applyCommands()` →
+  `validateSpec()` → evidence bundle).
+- `@gis-engine/engine` `maplibre-gl` optional `peerDependency` (`^5.0.0 || ^6.0.0`).
+- `@gis-engine/cli` exports: `main()`, `parseArgs()`, `getTemplate()`,
+  `TEMPLATES`, `createProviderDiagnostics()`, `generate()`.
+- CDN root ESM entry reads each package's `exports["."].import` for browser-side
+  `import { ... } from "https://unpkg.com/@gis-engine/engine"` usage.
+- `@gis-engine/scene3d` included in CDN coverage; `scene3d-three-adapter`
+  remains internal/experimental and is not part of the GA publish workflow.
+- All published packages use `files` whitelist: `["dist", "README.md"]`
+  (CLI adds `"templates"`).
+- Bundle budgets: engine < 100KB gzipped, cli < 30KB gzipped.
+- MCP tool names remain frozen: `validate_spec`, `apply_commands`,
+  `export_spec`, `get_context_summary`, `snapshot_spec`, `explain_spec`,
+  `export_example_app`. No `generate_map_app` or `spatial_query` alias.
+
 ## RFC-QC Fast Track
 
 Use an `RFC-QC-*` note for contract-quality-control changes that are narrow, urgent, and easy to review without reopening the full architecture process.

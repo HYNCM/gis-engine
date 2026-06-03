@@ -1,6 +1,6 @@
 {
   "name": "@gis-engine/cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "CLI for scaffolding GIS Engine map projects from templates.",
   "license": "Apache-2.0",
   "type": "module",
