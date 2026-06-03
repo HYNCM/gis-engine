@@ -1,7 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import type {
+  AuditRecord,
   ChatMessage,
   ProviderProfile,
+  ReviewDecision,
+  SavedMapReviewLedgerAuditStatus,
+  SavedMapReviewLedgerQuery,
+  SavedMapReviewLedgerReviewOutcome,
   SavedMapReviewExport,
   SavedMapReviewExportEvent,
   SavedMapReviewExportKind,
@@ -26,7 +31,7 @@ interface Props {
   selectedLedger: SavedMapReviewLedger | null;
   selectedExport: SavedMapReviewExport | null;
   onInspectMap: (id: string) => void;
-  onInspectLedger: (id: string) => void;
+  onInspectLedger: (id: string, query?: SavedMapReviewLedgerQuery) => void;
   onInspectExport: (id: string, query?: SavedMapReviewExportQuery) => void;
   onLoadMap: (id: string) => void;
   onDeleteMap: (id: string) => void;
@@ -63,6 +68,28 @@ const EXPORT_STATUS_OPTIONS: Array<{
 ];
 
 const EXPORT_LIMIT_OPTIONS = [5, 10, 15, 25] as const;
+const LEDGER_LIMIT_OPTIONS = [5, 10, 25, 50] as const;
+
+const LEDGER_AUDIT_STATUS_OPTIONS: Array<{
+  label: string;
+  value: SavedMapReviewLedgerAuditStatus;
+}> = [
+  { label: "All audit", value: "all" },
+  { label: "Applied", value: "applied" },
+  { label: "Blocked", value: "blocked" },
+  { label: "Ready", value: "ready" },
+  { label: "Reviewed", value: "reviewed" },
+];
+
+const LEDGER_REVIEW_OUTCOME_OPTIONS: Array<{
+  label: string;
+  value: SavedMapReviewLedgerReviewOutcome;
+}> = [
+  { label: "All review", value: "all" },
+  { label: "Accepted", value: "accepted" },
+  { label: "Blocked", value: "blocked" },
+  { label: "Follow-up", value: "follow-up-required" },
+];
 
 function eventKindLabel(kind: SavedMapReviewExportKind | "audit" | "review") {
   if (kind === "audit") return "Audit";
@@ -91,6 +118,18 @@ function exportEventSummary(event: SavedMapReviewExportEvent) {
   }
   return `delivery ${event.deliveryStatus ?? "unknown"} · ${
     event.commandEvidence?.commandCount ?? 0
+  } command(s)`;
+}
+
+function auditRecordSummary(record: AuditRecord) {
+  return `revision ${record.fromRevision} -> ${record.toRevision} · ${
+    record.commandCount
+  } command(s)`;
+}
+
+function reviewDecisionSummary(decision: ReviewDecision) {
+  return `delivery ${decision.deliveryStatus ?? "unknown"} · ${
+    decision.commandEvidence?.commandCount ?? 0
   } command(s)`;
 }
 
@@ -295,7 +334,9 @@ export default function ChatPanel({
             <p className="mt-1 text-[11px] text-gray-500">
               v{selectedLedger.workspace.revision} ·{" "}
               {selectedLedger.workspace.basemapId} · audit{" "}
+              {selectedLedger.summary.matchingAuditRecordCount}/
               {selectedLedger.audit.recordCount} · review{" "}
+              {selectedLedger.summary.matchingReviewDecisionCount}/
               {selectedLedger.review.decisionCount}
             </p>
             <p className="mt-1 text-[11px] text-gray-600">
@@ -304,11 +345,177 @@ export default function ChatPanel({
               follow-up {selectedLedger.summary.reviewOutcomeCounts.followUpRequired}
             </p>
             <p className="mt-1 text-[11px] text-gray-600">
+              audit status {selectedLedger.filters.auditStatus} · review outcome{" "}
+              {selectedLedger.filters.reviewOutcome} · limit{" "}
+              {selectedLedger.filters.limit}
+            </p>
+            <p className="mt-1 text-[11px] text-gray-600">
               {selectedLedger.reviewLedgerVersion}
             </p>
-            <pre className="mt-2 max-h-48 overflow-auto rounded bg-gray-950 p-2 text-[10px] leading-4 text-gray-400">
-              {JSON.stringify(selectedLedger, null, 2)}
-            </pre>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <label className="flex items-center gap-1 text-[11px] text-gray-500">
+                Audit
+                <select
+                  value={selectedLedger.filters.auditStatus}
+                  onChange={(event) =>
+                    onInspectLedger(selectedLedger.workspace.mapId, {
+                      auditStatus: event.target
+                        .value as SavedMapReviewLedgerAuditStatus,
+                      reviewOutcome: selectedLedger.filters.reviewOutcome,
+                      limit: selectedLedger.filters.limit,
+                    })
+                  }
+                  disabled={status === "thinking"}
+                  className="rounded border border-gray-800 bg-gray-950 px-2 py-1 text-[11px] text-gray-300 focus:outline-none focus:border-blue-500 disabled:opacity-40"
+                >
+                  {LEDGER_AUDIT_STATUS_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex items-center gap-1 text-[11px] text-gray-500">
+                Review
+                <select
+                  value={selectedLedger.filters.reviewOutcome}
+                  onChange={(event) =>
+                    onInspectLedger(selectedLedger.workspace.mapId, {
+                      auditStatus: selectedLedger.filters.auditStatus,
+                      reviewOutcome: event.target
+                        .value as SavedMapReviewLedgerReviewOutcome,
+                      limit: selectedLedger.filters.limit,
+                    })
+                  }
+                  disabled={status === "thinking"}
+                  className="rounded border border-gray-800 bg-gray-950 px-2 py-1 text-[11px] text-gray-300 focus:outline-none focus:border-blue-500 disabled:opacity-40"
+                >
+                  {LEDGER_REVIEW_OUTCOME_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex items-center gap-1 text-[11px] text-gray-500">
+                Limit
+                <select
+                  value={selectedLedger.filters.limit}
+                  onChange={(event) =>
+                    onInspectLedger(selectedLedger.workspace.mapId, {
+                      auditStatus: selectedLedger.filters.auditStatus,
+                      reviewOutcome: selectedLedger.filters.reviewOutcome,
+                      limit: Number.parseInt(event.target.value, 10),
+                    })
+                  }
+                  disabled={status === "thinking"}
+                  className="rounded border border-gray-800 bg-gray-950 px-2 py-1 text-[11px] text-gray-300 focus:outline-none focus:border-blue-500 disabled:opacity-40"
+                >
+                  {LEDGER_LIMIT_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="mt-3 grid gap-2">
+              <div>
+                <div className="mb-1 flex items-center justify-between">
+                  <label className="text-xs text-gray-500">Audit Records</label>
+                  <span className="text-[11px] text-gray-600">
+                    {selectedLedger.audit.returnedRecordCount}/
+                    {selectedLedger.audit.matchingRecordCount}
+                  </span>
+                </div>
+                <div className="max-h-36 space-y-1 overflow-y-auto pr-1">
+                  {selectedLedger.audit.records.length === 0 ? (
+                    <p className="rounded border border-dashed border-gray-800 bg-gray-950/60 px-2 py-2 text-[11px] text-gray-500">
+                      No audit records match.
+                    </p>
+                  ) : (
+                    selectedLedger.audit.records.map((record) => (
+                      <div
+                        key={record.id}
+                        className="rounded border border-gray-800 bg-gray-950/70 p-2"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-[11px] font-medium text-gray-200">
+                            {record.status}
+                          </p>
+                          <span className="text-[10px] text-gray-600">
+                            {record.toRevision}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-[11px] text-gray-400">
+                          provider {record.providerId} · {auditRecordSummary(record)}
+                        </p>
+                        <p className="mt-1 text-[10px] text-gray-500">
+                          diagnostics e{record.diagnosticCounts.error} / w
+                          {record.diagnosticCounts.warning} / i
+                          {record.diagnosticCounts.info}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+              <div>
+                <div className="mb-1 flex items-center justify-between">
+                  <label className="text-xs text-gray-500">Review Decisions</label>
+                  <span className="text-[11px] text-gray-600">
+                    {selectedLedger.review.returnedDecisionCount}/
+                    {selectedLedger.review.matchingDecisionCount}
+                  </span>
+                </div>
+                <div className="max-h-36 space-y-1 overflow-y-auto pr-1">
+                  {selectedLedger.review.decisions.length === 0 ? (
+                    <p className="rounded border border-dashed border-gray-800 bg-gray-950/60 px-2 py-2 text-[11px] text-gray-500">
+                      No review decisions match.
+                    </p>
+                  ) : (
+                    selectedLedger.review.decisions.map((decision) => (
+                      <div
+                        key={decision.decisionId}
+                        className="rounded border border-gray-800 bg-gray-950/70 p-2"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-[11px] font-medium text-gray-200">
+                            {decision.outcome}
+                          </p>
+                          <span className="text-[10px] text-gray-600">
+                            {decision.decisionId}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-[11px] text-gray-400">
+                          provider {decision.providerId} ·{" "}
+                          {reviewDecisionSummary(decision)}
+                        </p>
+                        {decision.reasonCodes.length > 0 && (
+                          <p className="mt-1 text-[10px] text-gray-500">
+                            reasons {decision.reasonCodes.join(", ")}
+                          </p>
+                        )}
+                        {decision.followUpTaskIds &&
+                          decision.followUpTaskIds.length > 0 && (
+                            <p className="mt-1 text-[10px] text-gray-500">
+                              follow-up {decision.followUpTaskIds.join(", ")}
+                            </p>
+                          )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+            <details className="mt-2 rounded border border-gray-800 bg-gray-950/60 p-2">
+              <summary className="cursor-pointer text-[11px] text-gray-400">
+                Raw Ledger
+              </summary>
+              <pre className="mt-2 max-h-48 overflow-auto text-[10px] leading-4 text-gray-400">
+                {JSON.stringify(selectedLedger, null, 2)}
+              </pre>
+            </details>
           </div>
         </div>
       )}

@@ -389,12 +389,129 @@ describe("AI Map Studio server state", () => {
         },
         latestAuditRecordId: "studio.test.2",
         latestReviewDecisionId: "review-2",
+        matchingAuditRecordCount: 2,
+        matchingReviewDecisionCount: 2,
+        returnedAuditRecordCount: 2,
+        returnedReviewDecisionCount: 2,
       },
       audit: {
         recordCount: 2,
+        matchingRecordCount: 2,
+        returnedRecordCount: 2,
       },
       review: {
         decisionCount: 2,
+        matchingDecisionCount: 2,
+        returnedDecisionCount: 2,
+      },
+    });
+  });
+
+  it("filters Studio local review ledger records by audit status and review outcome", () => {
+    const ledger = buildSavedMapReviewLedger(
+      {
+        id: "map-1",
+        name: "Studio Ledger",
+        revision: "4",
+        basemapId: "osm",
+        createdAt: "2026-06-03T00:00:00Z",
+        updatedAt: "2026-06-03T00:05:00Z",
+        auditRecords: [
+          {
+            id: "studio.test.1",
+            sessionId: "studio.test",
+            status: "applied",
+            providerId: "mock-ai",
+            commandCount: 2,
+            diagnosticCounts: { error: 0, warning: 1, info: 0 },
+            fromRevision: "3",
+            toRevision: "4",
+          },
+          {
+            id: "studio.test.2",
+            sessionId: "studio.test",
+            status: "blocked",
+            providerId: "mock-ai",
+            commandCount: 0,
+            diagnosticCounts: { error: 1, warning: 0, info: 0 },
+            fromRevision: "4",
+            toRevision: "4",
+          },
+        ],
+        reviewDecisions: [
+          {
+            decisionId: "review-1",
+            outcome: "accepted",
+            deliveryStatus: "applied",
+            providerId: "mock-ai",
+            commandEvidence: {
+              commandCount: 1,
+              committed: true,
+              rolledBack: false,
+              failed: false,
+              changedPathCount: 1,
+            },
+            diagnosticCounts: { error: 0, warning: 0, info: 0 },
+            reasonCodes: ["review-accepted"],
+          },
+          {
+            decisionId: "review-2",
+            outcome: "follow-up-required",
+            deliveryStatus: "blocked",
+            providerId: "mock-ai",
+            commandEvidence: {
+              commandCount: 0,
+              committed: false,
+              rolledBack: false,
+              failed: false,
+              changedPathCount: 0,
+            },
+            diagnosticCounts: { error: 1, warning: 0, info: 0 },
+            reasonCodes: ["delivery-needs-confirmation"],
+            followUpTaskIds: ["TASK-2026W23-SLL-001"],
+          },
+        ],
+      },
+      {
+        auditStatus: "blocked",
+        reviewOutcome: "follow-up-required",
+        limit: "1",
+      },
+    );
+
+    expect(ledger).toMatchObject({
+      filters: {
+        auditStatus: "blocked",
+        reviewOutcome: "follow-up-required",
+        limit: 1,
+      },
+      summary: {
+        matchingAuditRecordCount: 1,
+        matchingReviewDecisionCount: 1,
+        returnedAuditRecordCount: 1,
+        returnedReviewDecisionCount: 1,
+      },
+      audit: {
+        recordCount: 2,
+        matchingRecordCount: 1,
+        returnedRecordCount: 1,
+        records: [
+          expect.objectContaining({
+            id: "studio.test.2",
+            status: "blocked",
+          }),
+        ],
+      },
+      review: {
+        decisionCount: 2,
+        matchingDecisionCount: 1,
+        returnedDecisionCount: 1,
+        decisions: [
+          expect.objectContaining({
+            decisionId: "review-2",
+            outcome: "follow-up-required",
+          }),
+        ],
       },
     });
   });
