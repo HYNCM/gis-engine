@@ -1,7 +1,7 @@
 {
-  "name": "@gis-engine/scene3d",
+  "name": "@gis-engine/cli",
   "version": "0.1.0",
-  "description": "SceneView3D package boundary for future AI-native 3D GIS rendering.",
+  "description": "CLI for scaffolding GIS Engine map projects from templates.",
   "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -10,16 +10,14 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/HYNCM/gis-engine.git",
-    "directory": "packages/scene3d"
+    "directory": "packages/cli"
   },
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
+  "bin": {
+    "create-gis-map": "./dist/bin.js"
   },
   "files": [
     "dist",
+    "templates",
     "README.md"
   ],
   "publishConfig": {
@@ -29,7 +27,8 @@
     "build": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@gis-engine/engine": "workspace:*"
+    "@gis-engine/engine": "workspace:*",
+    "@gis-engine/ai": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.7.0"
@@ -37,9 +36,9 @@
   "keywords": [
     "gis",
     "maps",
-    "scene3d",
-    "3d",
-    "schema-first",
-    "experimental"
+    "cli",
+    "scaffold",
+    "map-spec",
+    "create-project"
   ]
 }

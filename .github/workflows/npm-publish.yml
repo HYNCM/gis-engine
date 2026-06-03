@@ -3,6 +3,11 @@
 # 触发：
 #   - 手动触发（workflow_dispatch，选择版本 bump 类型）
 #   - Release tag push (v*)
+#
+# 发布策略：
+#   - engine、ai、cli、scene3d 同步 v0.2
+#   - scene3d 标注 experimental
+#   - scene3d-three-adapter 不进 GA publish workflow
 
 name: NPM Publish
 
@@ -76,8 +81,12 @@ jobs:
           cd packages/engine && npm version "$BUMP" --preid="$PREID" --no-git-tag-version
           cd ../ai && npm version "$BUMP" --preid="$PREID" --no-git-tag-version
           cd ../scene3d && npm version "$BUMP" --preid="$PREID" --no-git-tag-version
+          cd ../cli && npm version "$BUMP" --preid="$PREID" --no-git-tag-version
 
           echo "📦 版本升级完成"
+
+      # 发布顺序: engine -> scene3d -> ai -> cli
+      # scene3d 在 ai 之前因为 ai 依赖 scene3d
 
       - name: 发布 @gis-engine/engine
         run: cd packages/engine && pnpm publish --no-git-checks
@@ -91,6 +100,11 @@ jobs:
 
       - name: 发布 @gis-engine/ai
         run: cd packages/ai && pnpm publish --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: 发布 @gis-engine/cli
+        run: cd packages/cli && pnpm publish --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 

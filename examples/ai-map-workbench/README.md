@@ -1,5 +1,9 @@
 # AI Map Workbench
 
+> **Example / reference app.** This is a local visual example for reviewing
+> GIS Engine's command-only mutation, diagnostics, and evidence surfaces. It is
+> not a hosted product, SaaS, or GA application.
+
 `examples/ai-map-workbench` is a local visual example for GIS Engine. It pairs a
 mock AI chat sidebar with a real MapLibre map display and keeps all map
 mutation behind GIS Engine commands. Mock mode remains the default, but the

@@ -7,15 +7,14 @@
  *
  * 选项：
  *   --dry-run    仅检查不写入
- *   --minify     使用 terser 压缩输出
  *
  * 功能：
- *   - 将 @gis-engine/engine 和 @gis-engine/ai 打包为独立 ESM bundle
+ *   - 将 @gis-engine/engine、@gis-engine/ai、@gis-engine/scene3d 打包为独立 ESM bundle
+ *   - 按每个 package 的 exports["."].import 生成 root ESM entry
  *   - 输出到 dist/cdn/ 目录
  *   - 支持 unpkg / jsDelivr / esm.sh 部署
  */
 
-import { execSync } from "node:child_process";
 import {
   mkdirSync,
   writeFileSync,
@@ -23,23 +22,58 @@ import {
   cpSync,
   existsSync,
 } from "node:fs";
-import { join, dirname, basename } from "node:path";
+import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
 const CDN_OUT = join(ROOT, "dist/cdn");
 
+/**
+ * Read the package's exports["."].import to find the actual ESM entry path.
+ */
+function getExportEntry(pkgName) {
+  const pkgPath = join(ROOT, "packages", pkgName, "package.json");
+  if (!existsSync(pkgPath)) return null;
+  const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
+  const exports = pkg.exports;
+  if (exports && exports["."] && exports["."].import) {
+    return exports["."].import;
+  }
+  if (exports && exports["."]) {
+    return exports["."];
+  }
+  return pkg.main || null;
+}
+
+/**
+ * Resolve the dist source path from the package's export entry.
+ */
+function resolveDistSrc(pkgName) {
+  const entry = getExportEntry(pkgName);
+  if (!entry) return null;
+  // Entry is relative to the package root, e.g. "./dist/src/index.js"
+  return join("packages", pkgName, entry.replace(/^\.\//, ""));
+}
+
 const packages = [
   {
     name: "engine",
-    src: "packages/engine/dist/src/index.js",
+    src: resolveDistSrc("engine") || "packages/engine/dist/src/index.js",
     global: "GisEngine",
+    defaultExport: "createMap",
   },
   {
     name: "ai",
-    src: "packages/ai/dist/index.js",
+    src: resolveDistSrc("ai") || "packages/ai/dist/index.js",
     global: "GisEngineAi",
+    defaultExport: null, // AI tools have no single default export
+  },
+  {
+    name: "scene3d",
+    src: resolveDistSrc("scene3d") || "packages/scene3d/dist/index.js",
+    global: "GisEngineScene3D",
+    defaultExport: null,
   },
 ];
 
@@ -55,6 +89,17 @@ function getVersion(pkgName) {
     return pkg.version;
   } catch {
     return "0.1.0";
+  }
+}
+
+function getDescription(pkgName) {
+  try {
+    const pkg = JSON.parse(
+      readFileSync(join(ROOT, "packages", pkgName, "package.json"), "utf-8"),
+    );
+    return pkg.description || `@gis-engine/${pkgName}`;
+  } catch {
+    return `@gis-engine/${pkgName}`;
   }
 }
 
@@ -80,19 +125,23 @@ function bundleEsm(pkg, version) {
   const content = readFileSync(srcPath, "utf-8");
   const header = buildHeader(pkg.name, version);
 
-  // 生成 ESM wrapper: re-export all
-  const esmWrapper = [
+  // Generate ESM wrapper: re-export all from index.js
+  const lines = [
     header,
     `// ESM entry — import from CDN:`,
     `//   import { ... } from "https://unpkg.com/@gis-engine/${pkg.name}";`,
     `//   import { ... } from "https://cdn.jsdelivr.net/npm/@gis-engine/${pkg.name}";`,
     "",
     `export * from "./index.js";`,
-    `export { createMap as default } from "./index.js";`,
-    "",
-  ].join("\n");
+  ];
 
-  return { esm: esmWrapper, raw: content };
+  // Only add default export if the package has a known default
+  if (pkg.defaultExport) {
+    lines.push(`export { ${pkg.defaultExport} as default } from "./index.js";`);
+  }
+  lines.push("");
+
+  return { esm: lines.join("\n"), raw: content };
 }
 
 function generatePackageJson(pkgName, version) {
@@ -100,10 +149,7 @@ function generatePackageJson(pkgName, version) {
     {
       name: `@gis-engine/${pkgName}`,
       version,
-      description:
-        pkgName === "engine"
-          ? "AI-native MapSpec runtime, command system, diagnostics, and renderer adapters."
-          : "AI + MCP tools for GIS Engine MapSpec documents.",
+      description: getDescription(pkgName),
       license: "Apache-2.0",
       type: "module",
       main: `./index.js`,
@@ -136,7 +182,7 @@ function buildReadme(pkgName) {
     "",
     "```html",
     `<script type="module">`,
-    `import { createMap } from "https://unpkg.com/@gis-engine/${pkgName}";`,
+    `import { ... } from "https://unpkg.com/@gis-engine/${pkgName}";`,
     `</script>`,
     "```",
     "",
@@ -146,11 +192,9 @@ function buildReadme(pkgName) {
 function main() {
   const args = process.argv.slice(2);
   const dryRun = args.includes("--dry-run");
-  const minify = args.includes("--minify");
 
   console.log(`📦 CDN Bundle Builder`);
   console.log(`   输出: ${CDN_OUT}`);
-  console.log(`   压缩: ${minify}`);
   console.log("");
 
   if (!dryRun) {

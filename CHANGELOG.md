@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- Added CLI `generate` subcommand (`--generate` / `-g`) that runs the full AI pipeline: prompt hash, provider plan normalization, `planMapGenerationRequest`, command skeleton, `applyCommands`, `validateSpec`, and evidence bundle — outputting `map.json`, `delivery-summary.json`, `evidence.json`, and `diagnostics.json` with no raw prompt retention.
+- Added CLI `--prompt` flag and `GIS_ENGINE_PROMPT` env var for passing prompt text to the generate pipeline.
+- Added 39 CLI tests covering config parsing, provider diagnostics, template generation, hashPrompt determinism, and no-raw-prompt-retention verification.
+- Added comprehensive CLI documentation: quickstart, provider config guide, template guide, generate pipeline reference, and SDK minimal use section.
+- Registered `test:cli` script in root package.json and added it to the `pnpm test` chain.
+- Added `@gis-engine/cli` alias to vitest.config.ts for cross-package test imports.
+- Added `@gis-engine/cli` package with `create-gis-map` bin, supporting `static-html`, `vite-ts`, and `mapspec` templates for scaffolding GIS Engine map projects.
+- Added `maplibre-gl` as optional `peerDependency` (`^5.0.0 || ^6.0.0`) to `@gis-engine/engine`, making the renderer boundary explicit for SDK consumers without bundling MapLibre.
+- Added MapLibre v6 prerelease compatibility audit: `6.0.0-11` passes peerDependency range check; GA stays on `^5.24.0` until stable v6 with strict visual evidence.
+- Fixed CDN build script to read each package's `exports["."].import` for root ESM entry, added `@gis-engine/scene3d` to CDN coverage, and removed hardcoded `createMap` default for non-engine packages.
+- Added hard bundle budgets to CI: engine < 50KB gzipped, cli < 20KB gzipped.
+- Standardized `files` whitelist across all published packages (`dist`, `README.md`).
+- Extended npm publish workflow to include `@gis-engine/cli` in version bump and publish steps.
+- Downgraded Studio/Workbench references in public docs to "reference app", "local review surface", "example" — not hosted product or GA application.
 - Added the SceneView3D v1 preparation surface: `SceneView3DExtensionSchema`, generated JSON schema, schema/type sync assertions, valid/invalid fixtures, scene source URL policy diagnostics, and scene layer-source reference validation.
 - Added deterministic SceneView3D preparation commands for camera, scene sources, scene layers, scene layer visibility, dry-run, replay, rollback, and missing-target diagnostics. These commands mutate only `extensions.scene3d`; they do not make `view.mode: "scene3d"` stable.
 - Added the `@gis-engine/scene3d` package boundary scaffold with capability reporting, unsupported scaffold diagnostics, README guidance, and dependency guard tests that keep Cesium, Three.js, glTF loaders, 3D Tiles parsers, and WebGPU-only runtime code out of `@gis-engine/engine`.

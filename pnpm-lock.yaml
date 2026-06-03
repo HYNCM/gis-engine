@@ -98,6 +98,19 @@ importers:
         specifier: ^5.7.0
         version: 5.9.3
 
+  packages/cli:
+    dependencies:
+      '@gis-engine/ai':
+        specifier: workspace:*
+        version: link:../ai
+      '@gis-engine/engine':
+        specifier: workspace:*
+        version: link:../engine
+    devDependencies:
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+
   packages/engine:
     dependencies:
       '@sinclair/typebox':
@@ -106,6 +119,9 @@ importers:
       ajv:
         specifier: ^8.17.0
         version: 8.20.0
+      maplibre-gl:
+        specifier: ^5.0.0 || ^6.0.0
+        version: 5.24.0
     devDependencies:
       tsx:
         specifier: ^4.19.0

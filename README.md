@@ -9,6 +9,8 @@
 
 ```bash
 npm install @gis-engine/engine @gis-engine/ai
+# Or scaffold a new project:
+npx create-gis-map my-map --template vite-ts
 ```
 
 ```html
@@ -20,7 +22,7 @@ import { createMap, applyCommands } from "https://unpkg.com/@gis-engine/engine";
 
 **[Quick Start](https://github.com/HYNCM/gis-engine#quick-start) ·
 [MCP Tools](https://github.com/HYNCM/gis-engine#mcp-tools-for-ai) ·
-[AI Map Workbench Demo](examples/ai-map-workbench) ·
+[CLI](packages/cli/README.md) ·
 [Documentation](https://github.com/HYNCM/gis-engine/tree/main/docs)**
 
 ---
@@ -59,7 +61,7 @@ Traditional map SDKs are powerful, but AI agents need a stricter contract:
 
 | Area | Status | Notes |
 | --- | --- | --- |
-| Workspace scaffold | Functional | Root workspace, `@gis-engine/engine`, `@gis-engine/ai`, `@gis-engine/scene3d`, and `@gis-engine/scene3d-three-adapter` build through `pnpm -r build`. |
+| Workspace scaffold | Functional | Root workspace, `@gis-engine/engine`, `@gis-engine/ai`, `@gis-engine/scene3d`, `@gis-engine/scene3d-three-adapter`, and `@gis-engine/cli` build through `pnpm -r build`. |
 | `MapSpec` schema | Functional | TypeBox schemas cover GeoJSON, raster, PMTiles, generic vector tiles, `SceneView3DExtensionSchema`, command contracts, diagnostics, and strict capability reports. |
 | Runtime validation | Functional | `validateSpec` runs schema, semantic, expression, resource policy, experimental 2.5D, `extensions.scene3d` schema/source URL/layer-reference checks, loader-level scene resource load plan checks, mock 3D snapshot/query contracts, release visual gate rules, and reserved `scene3d` runtime boundary checks. |
 | Command system | Functional | `applyCommands` returns transaction metadata, trace ids, optional audit traces via `collectTrace`, command sequence ids, JSON Patch output, inverse patch, dry-run shape, deterministic layer order behavior, SceneView3D preparation command patches, and `baseRevision` conflict rejection. |
@@ -68,7 +70,7 @@ Traditional map SDKs are powerful, but AI agents need a stricter contract:
 | Renderer adapter | Functional MVP | `MockAdapter` and `MapLibreAdapter` implement the renderer contract; MapLibre transformation covers GeoJSON, raster, PMTiles, and generic vector sources. |
 | Snapshot harness | Functional | Node smoke snapshots are deterministic; Playwright visual snapshots cover a GeoJSON scene and a generated local MVT vector tile scene. |
 | AI tools | Functional | MCP exposes `validate_spec`, `apply_commands`, `export_spec`, `get_context_summary`, `snapshot_spec`, `explain_spec`, and `export_example_app` with input and output schemas. `get_context_summary` and `explain_spec` include `capabilitySummary` for feature display, spatial analysis, and scene browsing, plus gated extension-only SceneView3D context when `extensions.scene3d` exists. `planMapGenerationRequest()` accepts prompt hashes plus structured intent and rejects raw prompt retention by default; `createGenerationEvidenceBundle()` composes existing tools and now includes planner, delivery, source-readiness, and extension-only scene browsing evidence without adding a `generate_map_app` alias. |
-| Examples/fixtures | Functional | Basic GeoJSON, AI map edit, raster-basemap, pmtiles-local, vector-tile-url, fill-extrusion-lite, and scene3d-extension examples plus schema/command/snapshot fixtures exist. |
+| Examples/fixtures | Functional | Basic GeoJSON, AI map edit, raster-basemap, pmtiles-local, vector-tile-url, fill-extrusion-lite, and scene3d-extension examples plus schema/command/snapshot fixtures exist. `apps/studio` and `examples/ai-map-workbench` are reference apps and local review surfaces, not hosted products or GA applications. |
 | CI/test gates | Functional | `pnpm build:schema` and `pnpm check` are required finish gates; strict visual snapshots require a browser/WebGL-capable runner. |
 | SceneView3D promotion | Handoff-ready / stable no-go | W23 promotion-readiness evidence is accepted and SRC-006 records a stable-runtime No-go. Generated-app scene browsing delivery consumes `extensions.scene3d` and blocker summaries only; it is not stable renderer evidence. |
 

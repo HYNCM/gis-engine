@@ -1,5 +1,9 @@
 # AI Map Studio
 
+> **Reference app / local review surface.** Studio is a local development and
+> review tool for GIS Engine. It is not a hosted product, SaaS, or GA
+> application. See `@gis-engine/cli` for project scaffolding.
+
 Natural language map editing powered by GIS Engine.
 
 ## Quick Start

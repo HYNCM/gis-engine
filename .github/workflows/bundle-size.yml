@@ -1,6 +1,7 @@
 # Bundle Size Check — SDK 体积监控
 #
 # 每次 PR 和 push main 时检查各包体积
+# 硬预算: engine < 50KB gzipped, cli < 20KB gzipped
 # 体积增大超过 5% 时告警
 
 name: Bundle Size
@@ -45,20 +46,55 @@ jobs:
         run: |
           echo "## 📦 SDK Bundle Sizes" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Package | Raw (KB) | Gzip (KB) |" >> $GITHUB_STEP_SUMMARY
-          echo "| --- | ---: | ---: |" >> $GITHUB_STEP_SUMMARY
+          echo "| Package | Raw (KB) | Gzip (KB) | Budget |" >> $GITHUB_STEP_SUMMARY
+          echo "| --- | ---: | ---: | --- |" >> $GITHUB_STEP_SUMMARY
 
-          for pkg in engine ai scene3d scene3d-three-adapter; do
+          BUDGET_FAILED=0
+
+          for pkg in engine ai cli scene3d scene3d-three-adapter; do
             DIST_DIR="packages/${pkg}/dist"
             if [ -d "$DIST_DIR" ]; then
               RAW=$(du -sk "$DIST_DIR" | cut -f1)
               GZIP=$(tar -czf - -C "$DIST_DIR" . 2>/dev/null | wc -c | awk '{printf "%.1f", $1/1024}')
-              echo "| @gis-engine/${pkg} | ${RAW} | ${GZIP} |" >> $GITHUB_STEP_SUMMARY
+
+              # 硬预算检查
+              BUDGET=""
+              case "$pkg" in
+                engine)
+                  BUDGET_LIMIT=50
+                  BUDGET="≤ ${BUDGET_LIMIT}KB gz"
+                  GZIP_INT=$(echo "$GZIP" | awk '{printf "%d", $1}')
+                  if [ "$GZIP_INT" -gt "$BUDGET_LIMIT" ]; then
+                    echo "::error::@gis-engine/${pkg} gzip ${GZIP}KB 超过预算 ${BUDGET_LIMIT}KB"
+                    BUDGET_FAILED=1
+                  fi
+                  ;;
+                cli)
+                  BUDGET_LIMIT=20
+                  BUDGET="≤ ${BUDGET_LIMIT}KB gz"
+                  GZIP_INT=$(echo "$GZIP" | awk '{printf "%d", $1}')
+                  if [ "$GZIP_INT" -gt "$BUDGET_LIMIT" ]; then
+                    echo "::error::@gis-engine/${pkg} gzip ${GZIP}KB 超过预算 ${BUDGET_LIMIT}KB"
+                    BUDGET_FAILED=1
+                  fi
+                  ;;
+                *)
+                  BUDGET="—"
+                  ;;
+              esac
+
+              echo "| @gis-engine/${pkg} | ${RAW} | ${GZIP} | ${BUDGET} |" >> $GITHUB_STEP_SUMMARY
             fi
           done
 
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "📊 总体积 (engine + ai core): $(du -sk packages/engine/dist packages/ai/dist | awk '{s+=$1}END{print s}') KB raw" >> $GITHUB_STEP_SUMMARY
+          echo "📊 核心包总体积 (engine + ai + cli): $(du -sk packages/engine/dist packages/ai/dist packages/cli/dist 2>/dev/null | awk '{s+=$1}END{print s}') KB raw" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$BUDGET_FAILED" -eq 1 ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "❌ **硬预算超标**：请减小包体积或更新预算阈值。" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
 
       - name: 体积回归检查
         if: github.event_name == 'pull_request'
@@ -66,7 +102,7 @@ jobs:
           echo "🔍 对比 base 分支体积..."
 
           # 保存当前体积
-          for pkg in engine ai; do
+          for pkg in engine ai cli; do
             DIST_DIR="packages/${pkg}/dist"
             if [ -d "$DIST_DIR" ]; then
               du -sk "$DIST_DIR" | cut -f1 > "/tmp/${pkg}-size-pr.txt"
@@ -75,9 +111,9 @@ jobs:
 
           # Checkout base 并测量
           git fetch origin ${{ github.base_ref }}
-          git checkout origin/${{ github.base_ref }} -- packages/engine/dist packages/ai/dist 2>/dev/null || true
+          git checkout origin/${{ github.base_ref }} -- packages/engine/dist packages/ai/dist packages/cli/dist 2>/dev/null || true
 
-          for pkg in engine ai; do
+          for pkg in engine ai cli; do
             DIST_DIR="packages/${pkg}/dist"
             if [ -d "$DIST_DIR" ]; then
               du -sk "$DIST_DIR" | cut -f1 > "/tmp/${pkg}-size-base.txt"
@@ -85,7 +121,7 @@ jobs:
           done
 
           # 对比
-          for pkg in engine ai; do
+          for pkg in engine ai cli; do
             PR_SIZE=$(cat "/tmp/${pkg}-size-pr.txt" 2>/dev/null || echo "0")
             BASE_SIZE=$(cat "/tmp/${pkg}-size-base.txt" 2>/dev/null || echo "0")
             if [ "$PR_SIZE" != "0" ] && [ "$BASE_SIZE" != "0" ]; then
