@@ -111,7 +111,7 @@ Observed package versions from `npm view` on 2026-06-01:
 
 ## Recommended Follow-Up Tasks
 
-### [P0] Freeze AI Map Workbench Product-App Boundary
+### [P0] ~~Freeze AI Map Workbench Product-App Boundary~~ — Done (AMW-006)
 
 - Evidence: AMW-004 promotion gate and AMW-005 provider-profile review both
   hold product promotion pending app ownership and safety design.
@@ -120,7 +120,7 @@ Observed package versions from `npm view` on 2026-06-01:
   publish a product-boundary spec and sprint DAG before more implementation.
 - Confidence: high.
 
-### [P0] Design Provider Credential And Resource Administration
+### [P0] ~~Design Provider Credential And Resource Administration~~ — Done (AMW-007)
 
 - Evidence: Provider profiles keep keys server-only today, but product usage
   needs explicit admin UX, credential lookup rules, and resource/abuse review.
@@ -130,7 +130,7 @@ Observed package versions from `npm view` on 2026-06-01:
   metadata before hosted or product app movement.
 - Confidence: high.
 
-### [P1] Design Durable Audit And Review Actions
+### [P1] ~~Design Durable Audit And Review Actions~~ — Done (AMW-008)
 
 - Evidence: Current AMW audit is bounded in memory and payload-free; the UI
   displays evidence but does not yet create accept, block, or follow-up
@@ -140,7 +140,7 @@ Observed package versions from `npm view` on 2026-06-01:
   design retention, export, privacy, and command-safe review-action semantics.
 - Confidence: high.
 
-### [P1] Require Visual Evidence Before Product Promotion
+### [P1] ~~Require Visual Evidence Before Product Promotion~~ — Done (AMW-009)
 
 - Evidence: Browser smoke exists for the example, but AMW-004 records no
   release visual fixture for a product app boundary.
@@ -166,3 +166,6 @@ product hardening, but they do not justify MapLibre package movement, MCP tool
 aliases, hosted deployment, or product promotion. The next bounded workstream is
 `AWP-001` through `AWP-007`, starting with provider resource enforcement under
 `TASK-2026W23-AWP-002`.
+
+> **Update (2026-06-03):** `AWP-001` through `AWP-007` are now completed. The
+> current frontier is the SDK+CLI productization sprint.

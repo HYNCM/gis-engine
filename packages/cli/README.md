@@ -90,8 +90,11 @@ create-gis-map <project-name> [options]
 |---|---|---|---|
 | `--template <name>` | `-t` | Template: `static-html`, `vite-ts`, `mapspec` | `static-html` |
 | `--provider <id>` | `-p` | Provider profile: `mock`, `deepseek`, `openai` | `mock` |
+| `--model <name>` | | Model name for OpenAI-compatible provider | per-provider default |
+| `--base-url <url>` | | API base URL for OpenAI-compatible provider | per-provider default |
 | `--generate` | `-g` | Run the AI generate pipeline instead of scaffolding | `false` |
 | `--prompt <text>` | | Prompt text for generate mode | (built-in default) |
+| `--yes` | `-y` | Skip directory-exists check (overwrite). Also accepts `--force`. | `false` |
 | `--dry-run` | | Preview files without writing | `false` |
 | `--help` | `-h` | Show help message | |
 | `--version` | `-v` | Print CLI version | |
@@ -108,11 +111,17 @@ npx create-gis-map my-map -t vite-ts
 # Scaffold with minimal MapSpec JSON only
 npx create-gis-map my-map -t mapspec
 
+# Scaffold with overwrite if directory exists
+npx create-gis-map my-map -y
+
 # AI generate with mock provider (default)
 npx create-gis-map my-map --generate
 
 # AI generate with deepseek provider
 npx create-gis-map my-map --generate -p deepseek
+
+# AI generate with custom model and base URL
+npx create-gis-map my-map --generate -p deepseek --model deepseek-chat --base-url https://api.deepseek.com/v1
 
 # AI generate with custom prompt
 npx create-gis-map my-map --generate --prompt "A map of NYC parks"
@@ -131,11 +140,18 @@ The CLI supports three built-in provider profiles. The provider controls how the
 
 | Provider | Mode | Status | Description |
 |---|---|---|---|
-| `mock` | mock | ready | Deterministic output, no external calls. Default for development and testing. |
+| `mock` | mock | mock | Deterministic output, no external calls. Default for development and testing. |
 | `deepseek` | openai-compatible | unconfigured | DeepSeek API. Requires base URL and API key. |
 | `openai` | openai-compatible | unconfigured | OpenAI API. Requires base URL and API key. |
 
-The `mock` provider requires no configuration and produces deterministic output suitable for local development and CI. The `deepseek` and `openai` providers are OpenAI-compatible and require server-side configuration.
+The `mock` provider requires no configuration and produces deterministic output suitable for local development and CI. The `deepseek` and `openai` providers are OpenAI-compatible and require server-side configuration. Default model and base URL values are:
+
+| Provider | Default Model | Default Base URL |
+|---|---|---|
+| `deepseek` | `deepseek-chat` | `https://api.deepseek.com/v1` |
+| `openai` | `gpt-4o-mini` | `https://api.openai.com/v1` |
+
+Override with `--model` and `--base-url` flags or `GIS_ENGINE_MODEL` / `GIS_ENGINE_BASE_URL` environment variables.
 
 ### Configuration Priority
 
@@ -152,6 +168,8 @@ CLI flags > environment variables > ~/.gis-engine/config.json > defaults
 | `GIS_ENGINE_PROVIDER` | `--provider` |
 | `GIS_ENGINE_TEMPLATE` | `--template` |
 | `GIS_ENGINE_PROMPT` | `--prompt` |
+| `GIS_ENGINE_MODEL` | `--model` |
+| `GIS_ENGINE_BASE_URL` | `--base-url` |
 
 Example:
 
@@ -167,7 +185,9 @@ Create `~/.gis-engine/config.json` to set defaults that persist across invocatio
 ```json
 {
   "provider": "deepseek",
-  "template": "vite-ts"
+  "template": "vite-ts",
+  "model": "deepseek-chat",
+  "baseUrl": "https://api.deepseek.com/v1"
 }
 ```
 

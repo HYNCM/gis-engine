@@ -37,6 +37,8 @@ readiness/evidence-only, `SourceLoader` remains contract-only, and package
 movement is no-go until a future task refreshes official package/changelog
 evidence and accepts strict visual evidence in the same dependency state.
 
+> **Post-audit note (2026-06-03):** Phase 1a of the SDK+CLI productization plan added `maplibre-gl` as an optional `peerDependency` (`^5.0.0 || ^6.0.0`) to `@gis-engine/engine`. This is a peer-dependency broadening with no runtime impact; the full drift audit checklist is deferred until MapLibre v6 reaches stable release.
+
 Owner names below follow the current 5-agent model. Runtime or schema-level
 waiver terminology may still use legacy `coordinator` wording until the
 contract itself is migrated.

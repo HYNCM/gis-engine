@@ -630,6 +630,23 @@ the local payload-free boundary.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | TASK-2026W23-SLX-003 | Add Studio local review export timeline UX | P1 | `@builder`, `@docs` | done | `docs/planning/feature-specs/studio-local-review-export-timeline-ux.md`; `docs/reviews/slx-003-studio-local-review-export-timeline-ux-2026-06-03.md` | Studio review export surfaces returned events directly with filter-aware dual pagination and page-size control, without `MapSpec`, raw payload leakage, or file-output behavior | `pnpm test:studio`; `pnpm studio:build`; `pnpm test:docs`; `pnpm check`; `git diff --check` |
 
+## 2026-W23 SDK + CLI First Release Productization
+
+| Task | Status | Evidence |
+|------|--------|----------|
+| SDK-001 MapLibre v6 peerDependency gate | done | docs/reviews/maplibre-v6-upgrade-gate-2026-06-03.md |
+| SDK-002 v0.2 public surface freeze | done | CHANGELOG, README |
+| SDK-003 npm publish workflow (CLI) | done | .github/workflows/npm-publish.yml |
+| SDK-004 CDN root entry fix | done | scripts/build-cdn.mjs |
+| SDK-005 Bundle budgets | done | .github/workflows/bundle-size.yml |
+| SDK-006 Studio/Workbench banners | done | apps/studio/README.md, examples/ai-map-workbench/README.md |
+| SDK-007 npm package content audit | done | all package.json files fields |
+| SDK-008 CLI package scaffold | done | packages/cli/ |
+| SDK-009 CLI generate pipeline | done | packages/cli/src/generate.ts |
+| SDK-010 CLI P0 hardening (--yes, --model, --base-url) | done | packages/cli/src/config.ts, provider.ts |
+| SDK-011 CLI tests (52) | done | tests/cli/cli.test.ts |
+| SDK-012 CLI documentation | done | packages/cli/README.md |
+
 ---
 
 ## Evolution Tracking

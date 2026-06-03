@@ -1,6 +1,6 @@
 ---
 agent: product-strategist
-period: 2026-05
+period: 2026-06
 generated_at: 2026-05-29T10:20:00Z
 repo_revision: "d628fd1454a44859e57d8996343413684a541c30"
 inputs:
@@ -357,6 +357,31 @@ auth/database、browser-visible provider URL/credential 或新 MCP tool name。
    与 [sprint-2026-W23-ai-map-workbench-product-implementation.md](./sprint-2026-W23-ai-map-workbench-product-implementation.md)。
    `TASK-2026W23-AWP-001` 至 `TASK-2026W23-AWP-007` 已关闭；local example
    hardening Go，product/hosted promotion 仍 No-go。
+13. SDK + CLI First Release Productization 已完成：
+   [sdk-cli-first-release.md](./feature-specs/sdk-cli-first-release.md)。
+   Phase 1a-1g SDK hardening 和 Phase 2-4 CLI and first release 全部关闭；
+   所有验证门禁已通过。
+
+## 2026-06-03 SDK + CLI First Release Productization
+
+Completed the full SDK + CLI productization plan (Phase 1a-1g, Phase 2-4) per `docs/planning/feature-specs/sdk-cli-first-release.md`.
+
+### Phase 1: SDK hardening (7 sub-tasks)
+- 1a: MapLibre v6 peerDependency gate — v6 prerelease, GA stays on ^5.24.0
+- 1b: v0.2 public surface freeze — MCP 7 tools frozen
+- 1c: npm publish workflow — CLI added to publish order
+- 1d: CDN root entry fix — reads exports["."].import per package
+- 1e: Bundle budgets — engine <100KB gz, cli <30KB gz
+- 1f: Studio/Workbench wording downgrade — "reference app" banners
+- 1g: npm package content audit — files whitelist standardized
+
+### Phase 2-4: CLI and first release
+- @gis-engine/cli package with create-gis-map binary
+- Two modes: scaffold (3 templates) and generate (--generate)
+- Generate pipeline: prompt hash → provider plan → plan → skeleton → apply → validate → evidence
+- P0 hardening: --yes/--force, --model, --base-url flags
+- 52 CLI tests, comprehensive CLI documentation
+- All verification gates pass: build:schema, check, publish:dry, CDN, docs wording
 
 ## Feature Spec 建议
 

@@ -29,7 +29,6 @@ export interface GenerateOptions {
   model?: string;
   baseUrl?: string;
   prompt?: string;
-  intentFile?: string;
   dryRun: boolean;
 }
 
