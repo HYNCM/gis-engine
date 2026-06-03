@@ -33,15 +33,26 @@ describe("AI Map Studio bundle", () => {
   it("keeps audit and review controls in the Studio evidence rail", () => {
     const evidenceSource = readRepoFile("apps/studio/src/components/EvidencePanel.tsx");
     const appSource = readRepoFile("apps/studio/src/App.tsx");
+    const chatSource = readRepoFile("apps/studio/src/components/ChatPanel.tsx");
 
     expect(evidenceSource).toContain("Session Audit");
     expect(evidenceSource).toContain("Review Decision");
     expect(evidenceSource).toContain("Review History");
+    expect(chatSource).toContain("Saved Maps");
+    expect(chatSource).toContain("Workspace Handoff");
+    expect(chatSource).toContain("onInspectMap(map.id)");
+    expect(chatSource).toContain("onLoadMap(map.id)");
+    expect(chatSource).toContain("onDeleteMap(map.id)");
     expect(evidenceSource).toContain('onReviewDecision("accepted")');
     expect(evidenceSource).toContain('onReviewDecision("blocked")');
     expect(evidenceSource).toContain('onReviewDecision("follow-up-required")');
     expect(appSource).toContain('fetch("/api/audit")');
     expect(appSource).toContain('fetch("/api/review-decisions")');
     expect(appSource).toContain('fetch("/api/review-decision"');
+    expect(appSource).toContain('fetch("/api/maps")');
+    expect(appSource).toContain("buildLoadedWorkspaceEvidence(");
+    expect(appSource).toContain("loadedEvidence");
+    expect(appSource).toContain('/api/maps/${mapId}/handoff');
+    expect(appSource).toContain('/api/maps/${mapId}/load');
   });
 });

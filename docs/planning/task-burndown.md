@@ -517,7 +517,45 @@ intent.
 
 | id | title | priority | owner | status | evidence target | acceptance | finish gates |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| TASK-2026W23-MLC-001 | Close the Studio MapLibre capability command loop | P1 | `@engine-agent`, `@ai-agent`, `@docs-agent` | done | `docs/planning/feature-specs/maplibre-capability-commands.md`; `docs/reviews/mlc-001-maplibre-capability-commands-2026-06-03.md` | Studio exposes filter, zoom range, ordering, visibility, and fit-bounds through schema-shaped provider actions, `MapCommand`, structured diagnostics, and bounds-aware camera sync | `pnpm build:schema`; `pnpm test:commands`; `pnpm test:adapter`; `pnpm test:studio`; `pnpm test:snapshot:visual`; `pnpm check`; `git diff --check` |
+| TASK-2026W23-MLC-001 | Close the Studio MapLibre capability command loop | P1 | `@builder`, `@docs` | done | `docs/planning/feature-specs/maplibre-capability-commands.md`; `docs/reviews/mlc-001-maplibre-capability-commands-2026-06-03.md` | Studio exposes filter, zoom range, ordering, visibility, and fit-bounds through schema-shaped provider actions, `MapCommand`, structured diagnostics, and bounds-aware camera sync | `pnpm build:schema`; `pnpm test:commands`; `pnpm test:adapter`; `pnpm test:studio`; `pnpm test:snapshot:visual`; `pnpm check`; `git diff --check` |
+
+## 2026-W23 Studio Local Workspace Continuity
+
+2026-06-03 planning update: after `MLC-001`, Studio still had a local product
+gap: save was real persistence, but the UI did not expose a saved-workspace
+loop and load did not restore basemap or compact evidence continuity. The next
+bounded slice stays inside local Studio product UX and closes that gap without
+reopening hosted deployment, auth, export, MCP aliases, or product durable
+audit claims.
+
+2026-06-03 execution update: `SLW-001` is accepted through
+`docs/planning/feature-specs/studio-local-workspace-continuity.md` and
+`docs/reviews/slw-001-studio-local-workspace-continuity-2026-06-03.md`.
+Studio now persists basemap plus compact audit/review evidence with saved maps,
+restores them on load, rehydrates the evidence rail immediately, and exposes
+saved-workspace load/delete actions in the left product rail.
+
+| id | title | priority | owner | status | evidence target | acceptance | finish gates |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| TASK-2026W23-SLW-001 | Close the Studio local workspace continuity loop | P1 | `@builder`, `@docs` | done | `docs/planning/feature-specs/studio-local-workspace-continuity.md`; `docs/reviews/slw-001-studio-local-workspace-continuity-2026-06-03.md` | Studio saved maps are visible, loadable, deletable, and reload the basemap plus compact audit/review evidence without raw payload persistence or browser-side hidden mutation | `pnpm test:studio`; `pnpm studio:build`; `pnpm test:docs`; `pnpm check`; `git diff --check` |
+
+## 2026-W23 Studio Local Handoff Envelope
+
+2026-06-03 planning update: after `SLW-001`, Studio still lacked one product
+layer between local persistence and real handoff. The next bounded slice stays
+inside local UX and adds an inspectable saved-workspace handoff envelope
+without reopening file-output policy, hosted sync, or durable export claims.
+
+2026-06-03 execution update: `SLH-001` is accepted through
+`docs/planning/feature-specs/studio-local-handoff-envelope.md` and
+`docs/reviews/slh-001-studio-local-handoff-envelope-2026-06-03.md`. Studio now
+exposes a side-effect-free `/api/maps/:id/handoff` envelope and an in-app
+inspection surface in the left rail, while `Load` returns the right rail to the
+saved review context instead of leaving the last transient command visible.
+
+| id | title | priority | owner | status | evidence target | acceptance | finish gates |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| TASK-2026W23-SLH-001 | Add Studio local handoff envelope | P1 | `@builder`, `@docs` | done | `docs/planning/feature-specs/studio-local-handoff-envelope.md`; `docs/reviews/slh-001-studio-local-handoff-envelope-2026-06-03.md` | Studio exposes an inspectable side-effect-free handoff envelope for saved maps without file write/download behavior or raw payload leakage | `pnpm test:studio`; `pnpm studio:build`; `pnpm test:docs`; `pnpm check`; `git diff --check` |
 
 ---
 

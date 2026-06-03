@@ -1,6 +1,7 @@
 import { auditPayloadSafe } from "./audit.mjs";
 
 export const STUDIO_REVIEW_DECISION_VERSION = "studio.review.v1";
+export const STUDIO_REVIEW_DECISION_CAP = 50;
 export const STUDIO_REVIEW_REASON_CAP = 8;
 export const STUDIO_REVIEW_DIAGNOSTIC_CAP = 20;
 export const STUDIO_REVIEW_FOLLOW_UP_CAP = 10;

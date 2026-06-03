@@ -19,8 +19,11 @@ import { createRequire } from "node:module";
 import { dirname, extname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createHash, randomUUID } from "node:crypto";
-import { appendAuditRecord } from "./audit.mjs";
-import { createReviewDecision } from "./review-decisions.mjs";
+import { appendAuditRecord, STUDIO_AUDIT_RECORD_CAP } from "./audit.mjs";
+import {
+  createReviewDecision,
+  STUDIO_REVIEW_DECISION_CAP,
+} from "./review-decisions.mjs";
 
 const provider = await import("./provider.mjs");
 const maplibreCapabilities = await import("./maplibre-capabilities.mjs");
@@ -161,6 +164,22 @@ export function publicBasemapOptions() {
       tileProvider: basemap.tileProvider,
     };
   });
+}
+
+export function detectBasemapFromSpec(spec) {
+  const basemapTiles = spec?.sources?.[BASEMAP_SOURCE_ID]?.tiles;
+  const firstTile =
+    Array.isArray(basemapTiles) && typeof basemapTiles[0] === "string"
+      ? basemapTiles[0]
+      : "";
+  if (firstTile.includes("/api/tiles/osm/")) return "osm";
+  if (firstTile.includes("/api/tiles/arcgis-imagery/")) return "arcgis-imagery";
+  if (firstTile.includes("/api/tiles/bing-aerial/")) return "bing-aerial";
+  const backgroundLayer = Array.isArray(spec?.layers)
+    ? spec.layers.find((layer) => layer?.id === BASEMAP_BACKGROUND_LAYER_ID)
+    : null;
+  if (backgroundLayer?.type === "background") return "none";
+  return DEFAULT_BASEMAP;
 }
 
 function normalizeBasemapId(value) {
@@ -890,10 +909,26 @@ const projectId = normalizeProjectId(process.env.STUDIO_PROJECT_ID);
 const reviewPrincipal = { role: "reviewer", projectIds: [projectId] };
 const auditRecords = [];
 const reviewDecisions = [];
+export const STUDIO_LOCAL_HANDOFF_VERSION = "studio.local-handoff.v1";
 
 function replaceActiveSpec(next) {
   activeSpec = next;
   activeEpoch++;
+}
+
+function replaceBoundedRecords(target, nextRecords, cap) {
+  target.splice(0, target.length);
+  const normalized = Array.isArray(nextRecords) ? nextRecords.slice(-cap) : [];
+  target.push(...normalized);
+}
+
+function replaceSessionEvidence(nextAuditRecords, nextReviewDecisions) {
+  replaceBoundedRecords(auditRecords, nextAuditRecords, STUDIO_AUDIT_RECORD_CAP);
+  replaceBoundedRecords(
+    reviewDecisions,
+    nextReviewDecisions,
+    STUDIO_REVIEW_DECISION_CAP,
+  );
 }
 
 export function statePayload(engine, status, spec) {
@@ -920,10 +955,78 @@ export function statePayload(engine, status, spec) {
   };
 }
 
+export function parseMapRoute(pathname) {
+  const loadMatch = pathname.match(/^\/api\/maps\/([a-zA-Z0-9-]+)\/load$/);
+  if (loadMatch) {
+    return { action: "load", mapId: loadMatch[1] };
+  }
+
+  const handoffMatch = pathname.match(/^\/api\/maps\/([a-zA-Z0-9-]+)\/handoff$/);
+  if (handoffMatch) {
+    return { action: "handoff", mapId: handoffMatch[1] };
+  }
+
+  const mapMatch = pathname.match(/^\/api\/maps\/([a-zA-Z0-9-]+)$/);
+  if (mapMatch) {
+    return { action: "item", mapId: mapMatch[1] };
+  }
+
+  return null;
+}
+
 function withCommandDiagnostics(payload, diagnostics = []) {
   return {
     ...payload,
     diagnostics: [...(payload.diagnostics || []), ...diagnostics],
+  };
+}
+
+export function savedWorkspaceHandoffStatus(reviewHistory = []) {
+  const latestDecision = Array.isArray(reviewHistory)
+    ? reviewHistory[reviewHistory.length - 1]
+    : null;
+  if (!latestDecision?.outcome) return "needs-review";
+  return latestDecision.outcome;
+}
+
+export function buildSavedMapHandoff(map) {
+  const sourceCount = Object.keys(map?.spec?.sources || {}).length;
+  const layerCount = Array.isArray(map?.spec?.layers) ? map.spec.layers.length : 0;
+  const latestReviewDecision =
+    Array.isArray(map?.reviewDecisions) && map.reviewDecisions.length > 0
+      ? map.reviewDecisions[map.reviewDecisions.length - 1]
+      : null;
+  return {
+    handoffVersion: STUDIO_LOCAL_HANDOFF_VERSION,
+    exportedAt: new Date().toISOString(),
+    workspace: {
+      mapId: map.id,
+      name: map.name,
+      revision: map.revision,
+      basemapId: map.basemapId || detectBasemapFromSpec(map.spec),
+      sourceCount,
+      layerCount,
+      createdAt: map.createdAt,
+      updatedAt: map.updatedAt,
+    },
+    handoff: {
+      status: savedWorkspaceHandoffStatus(map.reviewDecisions),
+      latestReviewDecisionId: latestReviewDecision?.decisionId || null,
+      latestReviewOutcome: latestReviewDecision?.outcome || null,
+      followUpTaskIds: latestReviewDecision?.followUpTaskIds || [],
+      reasonCodes: latestReviewDecision?.reasonCodes || [],
+    },
+    spec: map.spec,
+    evidence: {
+      auditRecordCount: Array.isArray(map.auditRecords) ? map.auditRecords.length : 0,
+      reviewDecisionCount: Array.isArray(map.reviewDecisions)
+        ? map.reviewDecisions.length
+        : 0,
+      auditRecords: Array.isArray(map.auditRecords) ? map.auditRecords : [],
+      reviewDecisions: Array.isArray(map.reviewDecisions)
+        ? map.reviewDecisions
+        : [],
+    },
   };
 }
 
@@ -1166,8 +1269,11 @@ async function main() {
         }
 
         reviewDecisions.push(reviewResult.decision);
-        if (reviewDecisions.length > 50) {
-          reviewDecisions.splice(0, reviewDecisions.length - 50);
+        if (reviewDecisions.length > STUDIO_REVIEW_DECISION_CAP) {
+          reviewDecisions.splice(
+            0,
+            reviewDecisions.length - STUDIO_REVIEW_DECISION_CAP,
+          );
         }
         return sendJson(res, {
           status: "reviewed",
@@ -1370,12 +1476,15 @@ async function main() {
         const body = await readJsonBody(req);
         const id = body.id || randomUUID();
         const name = body.name || "Untitled Map";
-        const result = await store.saveMap(
+        const result = await store.saveMap({
           id,
           name,
-          activeSpec,
-          activeSpec.revision || "0",
-        );
+          spec: activeSpec,
+          revision: activeSpec.revision || "0",
+          basemapId: activeBasemap,
+          auditRecords,
+          reviewDecisions,
+        });
         return sendJson(res, { ok: true, ...result });
       }
 
@@ -1383,26 +1492,39 @@ async function main() {
         return sendJson(res, { maps: await store.listMaps() });
       }
 
-      const mapMatch = url.pathname.match(/^\/api\/maps\/([a-zA-Z0-9-]+)$/);
-      if (req.method === "GET" && mapMatch) {
-        const map = await store.loadMap(mapMatch[1]);
+      const mapRoute = parseMapRoute(url.pathname);
+      if (req.method === "POST" && mapRoute?.action === "load") {
+        const map = await store.loadMap(mapRoute.mapId);
+        if (!map) return sendJson(res, { error: "Not found" }, 404);
+        replaceActiveSpec(map.spec);
+        activeBasemap = normalizeBasemapId(
+          map.basemapId || detectBasemapFromSpec(map.spec),
+        );
+        replaceSessionEvidence(map.auditRecords, map.reviewDecisions);
+        return sendJson(res, {
+          ...statePayload(engine, "ready", activeSpec),
+          loaded: map.name,
+          basemapId: activeBasemap,
+          auditRecords,
+          reviewDecisions,
+        });
+      }
+
+      if (req.method === "GET" && mapRoute?.action === "handoff") {
+        const map = await store.loadMap(mapRoute.mapId);
+        if (!map) return sendJson(res, { error: "Not found" }, 404);
+        return sendJson(res, buildSavedMapHandoff(map));
+      }
+
+      if (req.method === "GET" && mapRoute?.action === "item") {
+        const map = await store.loadMap(mapRoute.mapId);
         if (!map) return sendJson(res, { error: "Not found" }, 404);
         return sendJson(res, map);
       }
 
-      if (req.method === "DELETE" && mapMatch) {
-        await store.deleteMap(mapMatch[1]);
+      if (req.method === "DELETE" && mapRoute?.action === "item") {
+        await store.deleteMap(mapRoute.mapId);
         return sendJson(res, { ok: true });
-      }
-
-      if (req.method === "POST" && mapMatch && url.pathname.endsWith("/load")) {
-        const map = await store.loadMap(mapMatch[1]);
-        if (!map) return sendJson(res, { error: "Not found" }, 404);
-        replaceActiveSpec(map.spec);
-        return sendJson(res, {
-          ...statePayload(engine, "ready", activeSpec),
-          loaded: map.name,
-        });
       }
 
       if (req.method === "GET" && url.pathname === "/api/audit") {
@@ -1446,7 +1568,7 @@ async function main() {
   server.listen(PORT, HOST, () => {
     console.log("\n🚀 AI Map Studio Server");
     console.log(`   http://${HOST}:${PORT}`);
-    console.log(`   DB: ${process.env.STUDIO_DB_PATH || "in-memory"}`);
+    console.log(`   DB: ${store.resolveStorePath()}`);
     console.log(`   API: http://${HOST}:${PORT}/api/state`);
     console.log(`   Maps: http://${HOST}:${PORT}/api/maps\n`);
   });

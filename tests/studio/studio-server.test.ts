@@ -3,11 +3,15 @@ import * as engine from "@gis-engine/engine";
 import {
   applyProviderCommands,
   applyLegacyIntent,
+  buildSavedMapHandoff,
   buildBasemapCommands,
   buildProviders,
   createInitialSpec,
+  detectBasemapFromSpec,
+  parseMapRoute,
   publicProviderProfiles,
   publicBasemapOptions,
+  savedWorkspaceHandoffStatus,
   statePayload
 } from "../../apps/studio/server/index.mjs";
 import { appendAuditRecord } from "../../apps/studio/server/audit.mjs";
@@ -206,6 +210,96 @@ describe("AI Map Studio server state", () => {
       beforeLayerId: "points-layer"
     });
     expect(addLayer).not.toHaveProperty("beforeId");
+  });
+
+  it("parses saved map item and load routes without overlap", () => {
+    expect(parseMapRoute("/api/maps/demo-map")).toEqual({
+      action: "item",
+      mapId: "demo-map",
+    });
+    expect(parseMapRoute("/api/maps/demo-map/handoff")).toEqual({
+      action: "handoff",
+      mapId: "demo-map",
+    });
+    expect(parseMapRoute("/api/maps/demo-map/load")).toEqual({
+      action: "load",
+      mapId: "demo-map",
+    });
+  });
+
+  it("detects the active basemap from saved Studio specs", () => {
+    expect(detectBasemapFromSpec(createInitialSpec("none"))).toBe("none");
+    expect(detectBasemapFromSpec(createInitialSpec("osm"))).toBe("osm");
+    expect(detectBasemapFromSpec(createInitialSpec("arcgis-imagery"))).toBe(
+      "arcgis-imagery",
+    );
+  });
+
+  it("derives handoff status from the latest review decision", () => {
+    expect(savedWorkspaceHandoffStatus([])).toBe("needs-review");
+    expect(
+      savedWorkspaceHandoffStatus([{ outcome: "accepted" }]),
+    ).toBe("accepted");
+    expect(
+      savedWorkspaceHandoffStatus([
+        { outcome: "accepted" },
+        { outcome: "follow-up-required" },
+      ]),
+    ).toBe("follow-up-required");
+  });
+
+  it("builds a compact Studio local handoff envelope", () => {
+    const spec = createInitialSpec("osm");
+    const handoff = buildSavedMapHandoff({
+      id: "map-1",
+      name: "Studio Handoff",
+      revision: "4",
+      basemapId: "osm",
+      createdAt: "2026-06-03T00:00:00Z",
+      updatedAt: "2026-06-03T00:05:00Z",
+      spec,
+      auditRecords: [
+        {
+          id: "studio.test.1",
+          sessionId: "studio.test",
+          status: "applied",
+          providerId: "mock-ai",
+          commandCount: 2,
+          diagnosticCounts: { error: 0, warning: 0, info: 0 },
+          fromRevision: "3",
+          toRevision: "4",
+        },
+      ],
+      reviewDecisions: [
+        {
+          decisionId: "review-1",
+          outcome: "accepted",
+          reasonCodes: ["review-accepted"],
+        },
+      ],
+    });
+
+    expect(handoff).toMatchObject({
+      handoffVersion: "studio.local-handoff.v1",
+      workspace: {
+        mapId: "map-1",
+        name: "Studio Handoff",
+        revision: "4",
+        basemapId: "osm",
+        sourceCount: 2,
+        layerCount: 2,
+      },
+      handoff: {
+        status: "accepted",
+        latestReviewDecisionId: "review-1",
+        latestReviewOutcome: "accepted",
+        reasonCodes: ["review-accepted"],
+      },
+      evidence: {
+        auditRecordCount: 1,
+        reviewDecisionCount: 1,
+      },
+    });
   });
 
   it("applies OSM and ArcGIS basemaps without resource-policy rollback", () => {

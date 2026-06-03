@@ -1,5 +1,10 @@
 import { useState, useRef, useEffect } from "react";
-import type { ChatMessage, ProviderProfile } from "../App";
+import type {
+  ChatMessage,
+  ProviderProfile,
+  SavedMapHandoff,
+  SavedMapSummary,
+} from "../App";
 
 interface Props {
   messages: ChatMessage[];
@@ -9,6 +14,12 @@ interface Props {
   providerId: string;
   providers: ProviderProfile[];
   onProviderChange: (id: string) => void;
+  savedMaps: SavedMapSummary[];
+  currentMapId: string | null;
+  selectedHandoff: SavedMapHandoff | null;
+  onInspectMap: (id: string) => void;
+  onLoadMap: (id: string) => void;
+  onDeleteMap: (id: string) => void;
 }
 
 const PROMPTS = [
@@ -30,6 +41,12 @@ export default function ChatPanel({
   providerId,
   providers,
   onProviderChange,
+  savedMaps,
+  currentMapId,
+  selectedHandoff,
+  onInspectMap,
+  onLoadMap,
+  onDeleteMap,
 }: Props) {
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -86,6 +103,103 @@ export default function ChatPanel({
             ))}
         </select>
       </div>
+
+      <div className="px-4 py-3 border-b border-gray-800 shrink-0">
+        <div className="mb-2 flex items-center justify-between">
+          <label className="text-xs text-gray-500">Saved Maps</label>
+          <span className="text-[11px] text-gray-600">{savedMaps.length}</span>
+        </div>
+        {savedMaps.length === 0 ? (
+          <p className="text-xs text-gray-600">No saved maps yet.</p>
+        ) : (
+          <div className="max-h-40 space-y-1 overflow-y-auto pr-1">
+            {savedMaps.map((map) => {
+              const isCurrent = currentMapId === map.id;
+              return (
+                <div
+                  key={map.id}
+                  className={`rounded border px-2 py-2 ${isCurrent ? "border-blue-700 bg-blue-950/30" : "border-gray-800 bg-gray-900/70"}`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-medium text-gray-200">
+                        {map.name}
+                      </p>
+                      <p className="text-[11px] text-gray-500">
+                        v{map.revision} · {map.basemapId}
+                      </p>
+                    </div>
+                    {isCurrent && (
+                      <span className="rounded bg-blue-900/50 px-1.5 py-0.5 text-[10px] text-blue-200">
+                        Current
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-1 text-[11px] text-gray-600">
+                    audit {map.auditRecordCount} · review {map.reviewDecisionCount}
+                  </p>
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <span className="text-[10px] text-gray-600">
+                      {new Date(map.updatedAt).toLocaleString()}
+                    </span>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => onInspectMap(map.id)}
+                        disabled={status === "thinking"}
+                        className="rounded bg-gray-800 px-2 py-1 text-[11px] text-gray-300 transition hover:bg-gray-700 disabled:opacity-40"
+                      >
+                        Inspect
+                      </button>
+                      <button
+                        onClick={() => onLoadMap(map.id)}
+                        disabled={status === "thinking"}
+                        className="rounded bg-gray-800 px-2 py-1 text-[11px] text-gray-300 transition hover:bg-gray-700 disabled:opacity-40"
+                      >
+                        Load
+                      </button>
+                      <button
+                        onClick={() => onDeleteMap(map.id)}
+                        disabled={status === "thinking"}
+                        className="rounded bg-gray-800 px-2 py-1 text-[11px] text-red-200 transition hover:bg-red-950/50 disabled:opacity-40"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {selectedHandoff && (
+        <div className="px-4 py-3 border-b border-gray-800 shrink-0">
+          <div className="mb-2 flex items-center justify-between">
+            <label className="text-xs text-gray-500">Workspace Handoff</label>
+            <span className="text-[11px] text-gray-600">
+              {selectedHandoff.handoff.status}
+            </span>
+          </div>
+          <div className="rounded border border-gray-800 bg-gray-900/70 p-2">
+            <p className="text-xs font-medium text-gray-200">
+              {selectedHandoff.workspace.name}
+            </p>
+            <p className="mt-1 text-[11px] text-gray-500">
+              v{selectedHandoff.workspace.revision} ·{" "}
+              {selectedHandoff.workspace.basemapId} · audit{" "}
+              {selectedHandoff.evidence.auditRecordCount} · review{" "}
+              {selectedHandoff.evidence.reviewDecisionCount}
+            </p>
+            <p className="mt-1 text-[11px] text-gray-600">
+              {selectedHandoff.handoffVersion}
+            </p>
+            <pre className="mt-2 max-h-48 overflow-auto rounded bg-gray-950 p-2 text-[10px] leading-4 text-gray-400">
+              {JSON.stringify(selectedHandoff, null, 2)}
+            </pre>
+          </div>
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
         {messages.map((msg, i) => (
