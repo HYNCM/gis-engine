@@ -396,6 +396,94 @@ flowchart LR
 | --- | --- | --- | --- | --- |
 | TASK-2026W23-MLC-001 | fresh planning state after 2026-06-03 gate review | capability-command spec and implementation review | `pnpm build:schema`; `pnpm test:commands`; `pnpm test:adapter`; `pnpm test:studio`; `pnpm test:snapshot:visual`; `pnpm check`; `git diff --check` | done |
 
+2026-06-03 planning update: after `MLC-001` closed the command loop, the next
+bounded Studio slice stayed inside local product UX and targeted saved
+workspace continuity. `SLW-001` is tracked as a second Studio mini-slice
+instead of reopening AWP durable audit, hosted promotion, or MapLibre package
+movement.
+
+```mermaid
+flowchart LR
+  A["TASK-2026W23-MLC-001 Studio capability command closure"] --> B["TASK-2026W23-SLW-001 Studio local workspace continuity"]
+```
+
+| Task | Depends On | Evidence Target | Required Finish Gate | Status Rule |
+| --- | --- | --- | --- | --- |
+| TASK-2026W23-SLW-001 | TASK-2026W23-MLC-001 | saved-workspace spec and implementation review | `pnpm test:studio`; `pnpm studio:build`; `pnpm test:docs`; `pnpm check`; `git diff --check` | done |
+
+2026-06-03 planning update: after `SLW-001`, the next bounded Studio slice
+stayed local and added an inspectable handoff envelope instead of a download or
+file-output path. `SLH-001` reuses the saved-workspace state, keeps the product
+surface side-effect-free, and leaves saved handoff evidence stable even when
+the current workspace is reset before a later reload.
+
+```mermaid
+flowchart LR
+  A["TASK-2026W23-MLC-001 Studio capability command closure"] --> B["TASK-2026W23-SLW-001 Studio local workspace continuity"] --> C["TASK-2026W23-SLH-001 Studio local handoff envelope"]
+```
+
+| Task | Depends On | Evidence Target | Required Finish Gate | Status Rule |
+| --- | --- | --- | --- | --- |
+| TASK-2026W23-SLH-001 | TASK-2026W23-SLW-001 | local handoff spec and implementation review | `pnpm test:studio`; `pnpm studio:build`; `pnpm test:docs`; `pnpm check`; `git diff --check` | done |
+
+2026-06-03 planning update: after `SLH-001`, the next bounded Studio slice
+stayed local and split compact review evidence into its own read surface.
+`SLR-001` keeps handoff and ledger semantics distinct: handoff still carries
+saved workspace state, while the review ledger focuses on compact audit/review
+history only.
+
+```mermaid
+flowchart LR
+  A["TASK-2026W23-MLC-001 Studio capability command closure"] --> B["TASK-2026W23-SLW-001 Studio local workspace continuity"] --> C["TASK-2026W23-SLH-001 Studio local handoff envelope"] --> D["TASK-2026W23-SLR-001 Studio local review ledger"]
+```
+
+| Task | Depends On | Evidence Target | Required Finish Gate | Status Rule |
+| --- | --- | --- | --- | --- |
+| TASK-2026W23-SLR-001 | TASK-2026W23-SLH-001 | local review-ledger spec and implementation review | `pnpm test:studio`; `pnpm studio:build`; `pnpm test:docs`; `pnpm check`; `git diff --check` | done |
+
+2026-06-03 planning update: after `SLR-001`, the next bounded Studio slice
+stayed local and turned the saved review ledger into a paginated export
+envelope. `SLX-001` keeps the export path side-effect-free and evidence-only
+while moving the saved review trail closer to a durable handoff shape.
+
+```mermaid
+flowchart LR
+  A["TASK-2026W23-MLC-001 Studio capability command closure"] --> B["TASK-2026W23-SLW-001 Studio local workspace continuity"] --> C["TASK-2026W23-SLH-001 Studio local handoff envelope"] --> D["TASK-2026W23-SLR-001 Studio local review ledger"] --> E["TASK-2026W23-SLX-001 Studio local review export"]
+```
+
+| Task | Depends On | Evidence Target | Required Finish Gate | Status Rule |
+| --- | --- | --- | --- | --- |
+| TASK-2026W23-SLX-001 | TASK-2026W23-SLR-001 | local review-export spec and implementation review | `pnpm test:studio`; `pnpm studio:build`; `pnpm test:docs`; `pnpm check`; `git diff --check` | done |
+
+2026-06-03 planning update: after `SLX-001`, the next bounded Studio slice
+stayed local and added stable filter semantics to the review export envelope.
+`SLX-002` keeps pagination and export inspection side-effect-free while making
+saved audit/review timelines queryable by kind and status inside the same local
+surface.
+
+```mermaid
+flowchart LR
+  A["TASK-2026W23-MLC-001 Studio capability command closure"] --> B["TASK-2026W23-SLW-001 Studio local workspace continuity"] --> C["TASK-2026W23-SLH-001 Studio local handoff envelope"] --> D["TASK-2026W23-SLR-001 Studio local review ledger"] --> E["TASK-2026W23-SLX-001 Studio local review export"] --> F["TASK-2026W23-SLX-002 Studio local review export filters"]
+```
+
+| Task | Depends On | Evidence Target | Required Finish Gate | Status Rule |
+| --- | --- | --- | --- | --- |
+| TASK-2026W23-SLX-002 | TASK-2026W23-SLX-001 | local filtered review-export spec and implementation review | `pnpm test:studio`; `pnpm studio:build`; `pnpm test:docs`; `pnpm check`; `git diff --check` | done |
+
+2026-06-03 planning update: after `SLX-002`, the next bounded Studio slice
+stayed local and turned review export inspection into a more readable timeline
+surface. `SLX-003` keeps the export envelope side-effect-free while moving the
+left rail from JSON-first inspection to event-first product UX.
+
+```mermaid
+flowchart LR
+  A["TASK-2026W23-MLC-001 Studio capability command closure"] --> B["TASK-2026W23-SLW-001 Studio local workspace continuity"] --> C["TASK-2026W23-SLH-001 Studio local handoff envelope"] --> D["TASK-2026W23-SLR-001 Studio local review ledger"] --> E["TASK-2026W23-SLX-001 Studio local review export"] --> F["TASK-2026W23-SLX-002 Studio local review export filters"] --> G["TASK-2026W23-SLX-003 Studio local review export timeline UX"]
+```
+
+| Task | Depends On | Evidence Target | Required Finish Gate | Status Rule |
+| --- | --- | --- | --- | --- |
+| TASK-2026W23-SLX-003 | TASK-2026W23-SLX-002 | local review-export timeline UX spec and implementation review | `pnpm test:studio`; `pnpm studio:build`; `pnpm test:docs`; `pnpm check`; `git diff --check` | done |
+
 ## 阻断规则
 
 - public AI tool 或 public command surface 变更仍必须先通过 schema-sync、MCP contract tests 和 command replay tests。

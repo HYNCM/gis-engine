@@ -517,7 +517,118 @@ intent.
 
 | id | title | priority | owner | status | evidence target | acceptance | finish gates |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| TASK-2026W23-MLC-001 | Close the Studio MapLibre capability command loop | P1 | `@engine-agent`, `@ai-agent`, `@docs-agent` | done | `docs/planning/feature-specs/maplibre-capability-commands.md`; `docs/reviews/mlc-001-maplibre-capability-commands-2026-06-03.md` | Studio exposes filter, zoom range, ordering, visibility, and fit-bounds through schema-shaped provider actions, `MapCommand`, structured diagnostics, and bounds-aware camera sync | `pnpm build:schema`; `pnpm test:commands`; `pnpm test:adapter`; `pnpm test:studio`; `pnpm test:snapshot:visual`; `pnpm check`; `git diff --check` |
+| TASK-2026W23-MLC-001 | Close the Studio MapLibre capability command loop | P1 | `@builder`, `@docs` | done | `docs/planning/feature-specs/maplibre-capability-commands.md`; `docs/reviews/mlc-001-maplibre-capability-commands-2026-06-03.md` | Studio exposes filter, zoom range, ordering, visibility, and fit-bounds through schema-shaped provider actions, `MapCommand`, structured diagnostics, and bounds-aware camera sync | `pnpm build:schema`; `pnpm test:commands`; `pnpm test:adapter`; `pnpm test:studio`; `pnpm test:snapshot:visual`; `pnpm check`; `git diff --check` |
+
+## 2026-W23 Studio Local Workspace Continuity
+
+2026-06-03 planning update: after `MLC-001`, Studio still had a local product
+gap: save was real persistence, but the UI did not expose a saved-workspace
+loop and load did not restore basemap or compact evidence continuity. The next
+bounded slice stays inside local Studio product UX and closes that gap without
+reopening hosted deployment, auth, export, MCP aliases, or product durable
+audit claims.
+
+2026-06-03 execution update: `SLW-001` is accepted through
+`docs/planning/feature-specs/studio-local-workspace-continuity.md` and
+`docs/reviews/slw-001-studio-local-workspace-continuity-2026-06-03.md`.
+Studio now persists basemap plus compact audit/review evidence with saved maps,
+restores them on load, rehydrates the evidence rail immediately, and exposes
+saved-workspace load/delete actions in the left product rail.
+
+| id | title | priority | owner | status | evidence target | acceptance | finish gates |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| TASK-2026W23-SLW-001 | Close the Studio local workspace continuity loop | P1 | `@builder`, `@docs` | done | `docs/planning/feature-specs/studio-local-workspace-continuity.md`; `docs/reviews/slw-001-studio-local-workspace-continuity-2026-06-03.md` | Studio saved maps are visible, loadable, deletable, and reload the basemap plus compact audit/review evidence without raw payload persistence or browser-side hidden mutation | `pnpm test:studio`; `pnpm studio:build`; `pnpm test:docs`; `pnpm check`; `git diff --check` |
+
+## 2026-W23 Studio Local Handoff Envelope
+
+2026-06-03 planning update: after `SLW-001`, Studio still lacked one product
+layer between local persistence and real handoff. The next bounded slice stays
+inside local UX and adds an inspectable saved-workspace handoff envelope
+without reopening file-output policy, hosted sync, or durable export claims.
+
+2026-06-03 execution update: `SLH-001` is accepted through
+`docs/planning/feature-specs/studio-local-handoff-envelope.md` and
+`docs/reviews/slh-001-studio-local-handoff-envelope-2026-06-03.md`. Studio now
+exposes a side-effect-free `/api/maps/:id/handoff` envelope and an in-app
+inspection surface in the left rail, while `Load` returns the right rail to the
+saved review context instead of leaving the last transient command visible.
+
+| id | title | priority | owner | status | evidence target | acceptance | finish gates |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| TASK-2026W23-SLH-001 | Add Studio local handoff envelope | P1 | `@builder`, `@docs` | done | `docs/planning/feature-specs/studio-local-handoff-envelope.md`; `docs/reviews/slh-001-studio-local-handoff-envelope-2026-06-03.md` | Studio exposes an inspectable side-effect-free handoff envelope for saved maps without file write/download behavior or raw payload leakage | `pnpm test:studio`; `pnpm studio:build`; `pnpm test:docs`; `pnpm check`; `git diff --check` |
+
+## 2026-W23 Studio Local Review Ledger
+
+2026-06-03 planning update: after `SLH-001`, Studio had a saved-workspace
+handoff surface, but compact review evidence still rode inside the larger
+handoff JSON. The next bounded slice stays local and adds an evidence-only
+review ledger so reviewers can inspect compact audit/review trails without
+defaulting to full saved workspace state.
+
+2026-06-03 execution update: `SLR-001` is accepted through
+`docs/planning/feature-specs/studio-local-review-ledger.md` and
+`docs/reviews/slr-001-studio-local-review-ledger-2026-06-03.md`. Studio now
+exposes a side-effect-free `/api/maps/:id/review-ledger` envelope and a left
+rail inspection surface for compact saved-workspace evidence.
+
+| id | title | priority | owner | status | evidence target | acceptance | finish gates |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| TASK-2026W23-SLR-001 | Add Studio local review ledger | P1 | `@builder`, `@docs` | done | `docs/planning/feature-specs/studio-local-review-ledger.md`; `docs/reviews/slr-001-studio-local-review-ledger-2026-06-03.md` | Studio exposes an inspectable side-effect-free review ledger for saved maps without `MapSpec` or raw payload leakage | `pnpm test:studio`; `pnpm studio:build`; `pnpm test:docs`; `pnpm check`; `git diff --check` |
+
+## 2026-W23 Studio Local Review Export
+
+2026-06-03 planning update: after `SLR-001`, Studio had a compact saved review
+ledger, but evidence still arrived as one unpaged JSON block. The next bounded
+slice stays local and adds a paginated review export envelope so reviewers can
+consume saved audit/review chronology as a bounded timeline without downloading
+files.
+
+2026-06-03 execution update: `SLX-001` is accepted through
+`docs/planning/feature-specs/studio-local-review-export.md` and
+`docs/reviews/slx-001-studio-local-review-export-2026-06-03.md`. Studio now
+exposes a side-effect-free `/api/maps/:id/review-export` envelope and a left
+rail inspection surface for paginated saved review evidence.
+
+| id | title | priority | owner | status | evidence target | acceptance | finish gates |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| TASK-2026W23-SLX-001 | Add Studio local review export | P1 | `@builder`, `@docs` | done | `docs/planning/feature-specs/studio-local-review-export.md`; `docs/reviews/slx-001-studio-local-review-export-2026-06-03.md` | Studio exposes an inspectable side-effect-free paginated review export envelope for saved maps without `MapSpec` or raw payload leakage | `pnpm test:studio`; `pnpm studio:build`; `pnpm test:docs`; `pnpm check`; `git diff --check` |
+
+## 2026-W23 Studio Local Review Export Filters
+
+2026-06-03 planning update: after `SLX-001`, Studio had a compact paginated
+saved review export surface, but timeline inspection still required manual
+reading across full pages. The next bounded slice stays local and adds
+server-side kind/status filters plus page window summary so reviewers can narrow
+saved audit/review evidence without leaving the export envelope.
+
+2026-06-03 execution update: `SLX-002` is accepted through
+`docs/planning/feature-specs/studio-local-review-export-filters.md` and
+`docs/reviews/slx-002-studio-local-review-export-filters-2026-06-03.md`.
+Studio now exposes additive `kind/status` review-export filters and filter-aware
+left-rail inspection while preserving the local payload-free boundary.
+
+| id | title | priority | owner | status | evidence target | acceptance | finish gates |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| TASK-2026W23-SLX-002 | Add Studio local review export filters | P1 | `@builder`, `@docs` | done | `docs/planning/feature-specs/studio-local-review-export-filters.md`; `docs/reviews/slx-002-studio-local-review-export-filters-2026-06-03.md` | Studio review export supports filter-aware local timeline inspection without `MapSpec`, raw payload leakage, or file-output behavior | `pnpm test:studio`; `pnpm studio:build`; `pnpm test:docs`; `pnpm check`; `git diff --check` |
+
+## 2026-W23 Studio Local Review Export Timeline UX
+
+2026-06-03 planning update: after `SLX-002`, Studio could filter saved review
+export envelopes, but the left rail still defaulted to raw JSON. The next
+bounded slice stays local and upgrades export inspection into a directly
+readable time-sliced review surface with event cards, page-size control, and
+dual pagination.
+
+2026-06-03 execution update: `SLX-003` is accepted through
+`docs/planning/feature-specs/studio-local-review-export-timeline-ux.md` and
+`docs/reviews/slx-003-studio-local-review-export-timeline-ux-2026-06-03.md`.
+Studio now exposes event-card review export inspection with `Newer` / `Older`
+navigation, adjustable page size, and a folded raw envelope while preserving
+the local payload-free boundary.
+
+| id | title | priority | owner | status | evidence target | acceptance | finish gates |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| TASK-2026W23-SLX-003 | Add Studio local review export timeline UX | P1 | `@builder`, `@docs` | done | `docs/planning/feature-specs/studio-local-review-export-timeline-ux.md`; `docs/reviews/slx-003-studio-local-review-export-timeline-ux-2026-06-03.md` | Studio review export surfaces returned events directly with filter-aware dual pagination and page-size control, without `MapSpec`, raw payload leakage, or file-output behavior | `pnpm test:studio`; `pnpm studio:build`; `pnpm test:docs`; `pnpm check`; `git diff --check` |
 
 ---
 

@@ -3,11 +3,17 @@ import * as engine from "@gis-engine/engine";
 import {
   applyProviderCommands,
   applyLegacyIntent,
+  buildSavedMapHandoff,
+  buildSavedMapReviewExport,
+  buildSavedMapReviewLedger,
   buildBasemapCommands,
   buildProviders,
   createInitialSpec,
+  detectBasemapFromSpec,
+  parseMapRoute,
   publicProviderProfiles,
   publicBasemapOptions,
+  savedWorkspaceHandoffStatus,
   statePayload
 } from "../../apps/studio/server/index.mjs";
 import { appendAuditRecord } from "../../apps/studio/server/audit.mjs";
@@ -206,6 +212,486 @@ describe("AI Map Studio server state", () => {
       beforeLayerId: "points-layer"
     });
     expect(addLayer).not.toHaveProperty("beforeId");
+  });
+
+  it("parses saved map item and load routes without overlap", () => {
+    expect(parseMapRoute("/api/maps/demo-map")).toEqual({
+      action: "item",
+      mapId: "demo-map",
+    });
+    expect(parseMapRoute("/api/maps/demo-map/handoff")).toEqual({
+      action: "handoff",
+      mapId: "demo-map",
+    });
+    expect(parseMapRoute("/api/maps/demo-map/review-ledger")).toEqual({
+      action: "review-ledger",
+      mapId: "demo-map",
+    });
+    expect(parseMapRoute("/api/maps/demo-map/review-export")).toEqual({
+      action: "review-export",
+      mapId: "demo-map",
+    });
+    expect(parseMapRoute("/api/maps/demo-map/load")).toEqual({
+      action: "load",
+      mapId: "demo-map",
+    });
+  });
+
+  it("detects the active basemap from saved Studio specs", () => {
+    expect(detectBasemapFromSpec(createInitialSpec("none"))).toBe("none");
+    expect(detectBasemapFromSpec(createInitialSpec("osm"))).toBe("osm");
+    expect(detectBasemapFromSpec(createInitialSpec("arcgis-imagery"))).toBe(
+      "arcgis-imagery",
+    );
+  });
+
+  it("derives handoff status from the latest review decision", () => {
+    expect(savedWorkspaceHandoffStatus([])).toBe("needs-review");
+    expect(
+      savedWorkspaceHandoffStatus([{ outcome: "accepted" }]),
+    ).toBe("accepted");
+    expect(
+      savedWorkspaceHandoffStatus([
+        { outcome: "accepted" },
+        { outcome: "follow-up-required" },
+      ]),
+    ).toBe("follow-up-required");
+  });
+
+  it("builds a compact Studio local handoff envelope", () => {
+    const spec = createInitialSpec("osm");
+    const handoff = buildSavedMapHandoff({
+      id: "map-1",
+      name: "Studio Handoff",
+      revision: "4",
+      basemapId: "osm",
+      createdAt: "2026-06-03T00:00:00Z",
+      updatedAt: "2026-06-03T00:05:00Z",
+      spec,
+      auditRecords: [
+        {
+          id: "studio.test.1",
+          sessionId: "studio.test",
+          status: "applied",
+          providerId: "mock-ai",
+          commandCount: 2,
+          diagnosticCounts: { error: 0, warning: 0, info: 0 },
+          fromRevision: "3",
+          toRevision: "4",
+        },
+      ],
+      reviewDecisions: [
+        {
+          decisionId: "review-1",
+          outcome: "accepted",
+          reasonCodes: ["review-accepted"],
+        },
+      ],
+    });
+
+    expect(handoff).toMatchObject({
+      handoffVersion: "studio.local-handoff.v1",
+      workspace: {
+        mapId: "map-1",
+        name: "Studio Handoff",
+        revision: "4",
+        basemapId: "osm",
+        sourceCount: 2,
+        layerCount: 2,
+      },
+      handoff: {
+        status: "accepted",
+        latestReviewDecisionId: "review-1",
+        latestReviewOutcome: "accepted",
+        reasonCodes: ["review-accepted"],
+      },
+      evidence: {
+        auditRecordCount: 1,
+        reviewDecisionCount: 1,
+      },
+    });
+  });
+
+  it("builds a compact Studio local review ledger", () => {
+    const ledger = buildSavedMapReviewLedger({
+      id: "map-1",
+      name: "Studio Ledger",
+      revision: "4",
+      basemapId: "osm",
+      createdAt: "2026-06-03T00:00:00Z",
+      updatedAt: "2026-06-03T00:05:00Z",
+      auditRecords: [
+        {
+          id: "studio.test.1",
+          sessionId: "studio.test",
+          status: "applied",
+          providerId: "mock-ai",
+          commandCount: 2,
+          diagnosticCounts: { error: 0, warning: 1, info: 0 },
+          fromRevision: "3",
+          toRevision: "4",
+        },
+        {
+          id: "studio.test.2",
+          sessionId: "studio.test",
+          status: "blocked",
+          providerId: "mock-ai",
+          commandCount: 0,
+          diagnosticCounts: { error: 1, warning: 0, info: 0 },
+          fromRevision: "4",
+          toRevision: "4",
+        },
+      ],
+      reviewDecisions: [
+        {
+          decisionId: "review-1",
+          outcome: "accepted",
+          reasonCodes: ["review-accepted"],
+        },
+        {
+          decisionId: "review-2",
+          outcome: "follow-up-required",
+          reasonCodes: ["delivery-needs-confirmation"],
+          followUpTaskIds: ["TASK-2026W23-SLR-001"],
+        },
+      ],
+    });
+
+    expect(ledger).toMatchObject({
+      reviewLedgerVersion: "studio.review-ledger.v1",
+      workspace: {
+        mapId: "map-1",
+        name: "Studio Ledger",
+        revision: "4",
+        basemapId: "osm",
+      },
+      handoff: {
+        status: "follow-up-required",
+        latestReviewDecisionId: "review-2",
+        followUpTaskIds: ["TASK-2026W23-SLR-001"],
+      },
+      summary: {
+        auditStatusCounts: {
+          applied: 1,
+          blocked: 1,
+          ready: 0,
+          reviewed: 0,
+        },
+        reviewOutcomeCounts: {
+          accepted: 1,
+          blocked: 0,
+          followUpRequired: 1,
+        },
+        diagnosticTotals: {
+          error: 1,
+          warning: 1,
+          info: 0,
+        },
+        latestAuditRecordId: "studio.test.2",
+        latestReviewDecisionId: "review-2",
+      },
+      audit: {
+        recordCount: 2,
+      },
+      review: {
+        decisionCount: 2,
+      },
+    });
+  });
+
+  it("builds a paginated Studio local review export envelope", () => {
+    const exportEnvelope = buildSavedMapReviewExport(
+      {
+        id: "map-1",
+        name: "Studio Export",
+        revision: "4",
+        basemapId: "osm",
+        createdAt: "2026-06-03T00:00:00Z",
+        updatedAt: "2026-06-03T00:05:00Z",
+        auditRecords: [
+          {
+            id: "studio.test.1",
+            sessionId: "studio.test",
+            timestamp: "2026-06-03T00:01:00Z",
+            status: "applied",
+            providerId: "mock-ai",
+            commandCount: 2,
+            diagnosticCounts: { error: 0, warning: 0, info: 0 },
+            fromRevision: "2",
+            toRevision: "3",
+          },
+          {
+            id: "studio.test.2",
+            sessionId: "studio.test",
+            timestamp: "2026-06-03T00:02:00Z",
+            status: "blocked",
+            providerId: "mock-ai",
+            commandCount: 0,
+            diagnosticCounts: { error: 1, warning: 0, info: 0 },
+            fromRevision: "3",
+            toRevision: "3",
+          },
+        ],
+        reviewDecisions: [
+          {
+            decisionId: "review-1",
+            createdAt: "2026-06-03T00:03:00Z",
+            outcome: "accepted",
+            providerId: "mock-ai",
+            deliveryStatus: "applied",
+            commandEvidence: {
+              commandCount: 1,
+              committed: true,
+              rolledBack: false,
+              failed: false,
+              changedPathCount: 1,
+            },
+            diagnosticCounts: { error: 0, warning: 0, info: 0 },
+            reasonCodes: ["review-accepted"],
+          },
+        ],
+      },
+      { cursor: "0", limit: "2" },
+    );
+
+    expect(exportEnvelope).toMatchObject({
+      reviewExportVersion: "studio.review-export.v1",
+      workspace: {
+        mapId: "map-1",
+        name: "Studio Export",
+        revision: "4",
+        basemapId: "osm",
+      },
+      filters: {
+        cursor: 0,
+        limit: 2,
+        kind: "all",
+        status: "all",
+      },
+      summary: {
+        totalEventCount: 3,
+        matchingEventCount: 3,
+        auditEventCount: 2,
+        reviewEventCount: 1,
+        matchingAuditEventCount: 2,
+        matchingReviewEventCount: 1,
+        returnedEventCount: 2,
+        pageNewestEventAt: "2026-06-03T00:03:00Z",
+        pageOldestEventAt: "2026-06-03T00:02:00Z",
+      },
+      nextCursor: 2,
+      events: [
+        expect.objectContaining({
+          kind: "review",
+          eventId: "review-1",
+          status: "accepted",
+        }),
+        expect.objectContaining({
+          kind: "audit",
+          eventId: "studio.test.2",
+          status: "blocked",
+        }),
+      ],
+    });
+  });
+
+  it("filters Studio local review export timelines by kind and status", () => {
+    const exportEnvelope = buildSavedMapReviewExport(
+      {
+        id: "map-1",
+        name: "Studio Export",
+        revision: "4",
+        basemapId: "osm",
+        createdAt: "2026-06-03T00:00:00Z",
+        updatedAt: "2026-06-03T00:05:00Z",
+        auditRecords: [
+          {
+            id: "studio.test.1",
+            sessionId: "studio.test",
+            timestamp: "2026-06-03T00:01:00Z",
+            status: "applied",
+            providerId: "mock-ai",
+            commandCount: 2,
+            diagnosticCounts: { error: 0, warning: 0, info: 0 },
+            fromRevision: "2",
+            toRevision: "3",
+          },
+          {
+            id: "studio.test.2",
+            sessionId: "studio.test",
+            timestamp: "2026-06-03T00:02:00Z",
+            status: "blocked",
+            providerId: "mock-ai",
+            commandCount: 0,
+            diagnosticCounts: { error: 1, warning: 0, info: 0 },
+            fromRevision: "3",
+            toRevision: "3",
+          },
+        ],
+        reviewDecisions: [
+          {
+            decisionId: "review-1",
+            createdAt: "2026-06-03T00:03:00Z",
+            outcome: "accepted",
+            providerId: "mock-ai",
+            deliveryStatus: "applied",
+            commandEvidence: {
+              commandCount: 1,
+              committed: true,
+              rolledBack: false,
+              failed: false,
+              changedPathCount: 1,
+            },
+            diagnosticCounts: { error: 0, warning: 0, info: 0 },
+            reasonCodes: ["review-accepted"],
+          },
+          {
+            decisionId: "review-2",
+            createdAt: "2026-06-03T00:04:00Z",
+            outcome: "follow-up-required",
+            providerId: "mock-ai",
+            deliveryStatus: "reviewed",
+            commandEvidence: {
+              commandCount: 0,
+              committed: false,
+              rolledBack: false,
+              failed: false,
+              changedPathCount: 0,
+            },
+            diagnosticCounts: { error: 0, warning: 1, info: 0 },
+            reasonCodes: ["delivery-needs-confirmation"],
+            followUpTaskIds: ["TASK-2026W23-SLX-002"],
+          },
+        ],
+      },
+      { cursor: "0", limit: "5", kind: "review", status: "follow-up-required" },
+    );
+
+    expect(exportEnvelope).toMatchObject({
+      filters: {
+        cursor: 0,
+        limit: 5,
+        kind: "review",
+        status: "follow-up-required",
+      },
+      summary: {
+        totalEventCount: 4,
+        matchingEventCount: 1,
+        auditEventCount: 2,
+        reviewEventCount: 2,
+        matchingAuditEventCount: 0,
+        matchingReviewEventCount: 1,
+        returnedEventCount: 1,
+        pageNewestEventAt: "2026-06-03T00:04:00Z",
+        pageOldestEventAt: "2026-06-03T00:04:00Z",
+      },
+      nextCursor: null,
+      events: [
+        expect.objectContaining({
+          kind: "review",
+          eventId: "review-2",
+          status: "follow-up-required",
+          followUpTaskIds: ["TASK-2026W23-SLX-002"],
+        }),
+      ],
+    });
+  });
+
+  it("supports custom review export page sizes for filtered timelines", () => {
+    const exportEnvelope = buildSavedMapReviewExport(
+      {
+        id: "map-1",
+        name: "Studio Export",
+        revision: "4",
+        basemapId: "osm",
+        createdAt: "2026-06-03T00:00:00Z",
+        updatedAt: "2026-06-03T00:05:00Z",
+        auditRecords: [
+          {
+            id: "studio.test.1",
+            sessionId: "studio.test",
+            timestamp: "2026-06-03T00:01:00Z",
+            status: "applied",
+            providerId: "mock-ai",
+            commandCount: 2,
+            diagnosticCounts: { error: 0, warning: 0, info: 0 },
+            fromRevision: "2",
+            toRevision: "3",
+          },
+          {
+            id: "studio.test.2",
+            sessionId: "studio.test",
+            timestamp: "2026-06-03T00:02:00Z",
+            status: "blocked",
+            providerId: "mock-ai",
+            commandCount: 0,
+            diagnosticCounts: { error: 1, warning: 0, info: 0 },
+            fromRevision: "3",
+            toRevision: "3",
+          },
+        ],
+        reviewDecisions: [
+          {
+            decisionId: "review-1",
+            createdAt: "2026-06-03T00:03:00Z",
+            outcome: "accepted",
+            providerId: "mock-ai",
+            deliveryStatus: "applied",
+            commandEvidence: {
+              commandCount: 1,
+              committed: true,
+              rolledBack: false,
+              failed: false,
+              changedPathCount: 1,
+            },
+            diagnosticCounts: { error: 0, warning: 0, info: 0 },
+            reasonCodes: ["review-accepted"],
+          },
+          {
+            decisionId: "review-2",
+            createdAt: "2026-06-03T00:04:00Z",
+            outcome: "follow-up-required",
+            providerId: "mock-ai",
+            deliveryStatus: "reviewed",
+            commandEvidence: {
+              commandCount: 0,
+              committed: false,
+              rolledBack: false,
+              failed: false,
+              changedPathCount: 0,
+            },
+            diagnosticCounts: { error: 0, warning: 1, info: 0 },
+            reasonCodes: ["delivery-needs-confirmation"],
+            followUpTaskIds: ["TASK-2026W23-SLX-003"],
+          },
+        ],
+      },
+      { cursor: "0", limit: "1", kind: "review", status: "all" },
+    );
+
+    expect(exportEnvelope).toMatchObject({
+      filters: {
+        cursor: 0,
+        limit: 1,
+        kind: "review",
+        status: "all",
+      },
+      summary: {
+        matchingEventCount: 2,
+        matchingReviewEventCount: 2,
+        returnedEventCount: 1,
+        pageNewestEventAt: "2026-06-03T00:04:00Z",
+        pageOldestEventAt: "2026-06-03T00:04:00Z",
+      },
+      nextCursor: 1,
+      events: [
+        expect.objectContaining({
+          kind: "review",
+          eventId: "review-2",
+          status: "follow-up-required",
+        }),
+      ],
+    });
   });
 
   it("applies OSM and ArcGIS basemaps without resource-policy rollback", () => {
