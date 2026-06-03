@@ -4,7 +4,7 @@
 
 本文件用于沉淀 AI 原生地图引擎的外部框架研究。目标不是复制任何一个成熟引擎的完整能力，而是识别它们最稳定的架构边界、最值得复用的设计理念，以及不适合在 v0 阶段承担的复杂度。
 
-更完整的软件工程竞品矩阵、2D/3D 支持策略和 AI 原生标准见 [competitive-analysis-ai-native-2d-3d.md](./competitive-analysis-ai-native-2d-3d.md)。
+更完整的软件工程竞品矩阵、2D/3D 支持策略和 AI 原生标准见 [competitive-analysis-ai-native-2d-3d.md](../../../research/competitive-analysis-ai-native-2d-3d.md)。
 
 本项目的首版定位是：
 

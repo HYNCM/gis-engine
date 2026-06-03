@@ -344,7 +344,7 @@ auth/database、browser-visible provider URL/credential 或新 MCP tool name。
    planning state 刷新竞品、产品设计和任务 DAG。
 10. MapLibre Source Drift Audit 已打开：
    [maplibre-source-drift-audit.md](./feature-specs/maplibre-source-drift-audit.md)
-   与 [sprint-2026-W22-maplibre-source-drift-audit.md](./sprint-2026-W22-maplibre-source-drift-audit.md)。
+   与 [sprint-2026-W22-maplibre-source-drift-audit.md](../archive/2026-06-02/planning/sprint-2026-W22-maplibre-source-drift-audit.md)。
    `TASK-2026W22-MLD-002` through `TASK-2026W22-MLD-004` 已关闭；package
    movement 当前为 No-go，下一步应回到 planning state。
 11. W23 planning refresh 已打开 AI Map Workbench Product Boundary：

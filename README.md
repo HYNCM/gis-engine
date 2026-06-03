@@ -98,41 +98,19 @@ const exported = map.exportSpec();
 
 ## Documentation
 
-- [Documentation map and lifecycle](./docs/README.md)
-- [Mainstream map engine research](./docs/archive/2026-05-30/research/mainstream-map-engines.md)
-- [Competitive analysis and AI-native 2D/3D standards](./docs/research/competitive-analysis-ai-native-2d-3d.md)
+- [Documentation map](./docs/README.md)
+- [Operating model](./AGENTS.md)
 - [Core framework](./docs/architecture/core-framework.md)
-- [Core capabilities](./docs/architecture/core-capabilities.md)
 - [Contracts and interfaces](./docs/spec/contracts-and-interfaces.md)
-- [v0.1 MVP acceptance criteria](./docs/archive/2026-05-30/engineering/v0.1-mvp-acceptance.md)
-- [v0.1 release checklist](./docs/archive/2026-05-30/engineering/v0.1-release-checklist.md)
+- [Supported feature matrix](./docs/engineering/supported-feature-matrix.md)
 - [CI and test strategy](./docs/engineering/ci-test-strategy.md)
 - [Release wording guardrails](./docs/engineering/release-wording-guardrails.md)
-- [Contract freeze checklist](./docs/engineering/contract-freeze.md)
-- [v0.1 implementation playbook](./docs/archive/2026-05-30/engineering/implementation-playbook.md)
-- [Supported Feature Matrix](./docs/engineering/supported-feature-matrix.md)
-- [SceneView3D package boundary](./packages/scene3d/README.md)
-- [SceneView3D Three adapter spike](./packages/scene3d-three-adapter/README.md)
-- [SceneView3D release visual gate](./docs/archive/2026-05-30/planning/release-runner-scene3d-gate-2026-05-18.md)
-- [SceneView3D alpha gate audit](./docs/archive/2026-05-30/planning/sceneview3d-alpha-gate-audit-2026-05-18.md)
-- [SceneView3D renderer evidence sprint](./docs/archive/2026-05-30/planning/sprint-2026-W22-scene3d-renderer-evidence.md)
-- [SceneView3D promotion gate](./docs/archive/2026-05-30/reviews/sceneview3d-promotion-gate-2026-05-24.md)
-- [SceneView3D stable renderer contract plan](./docs/planning/feature-specs/sceneview3d-stable-renderer-contract.md)
-- [Natural-language map app generation spec](./docs/planning/feature-specs/natural-language-map-app-generation.md)
-- [Generated-app delivery UX](./docs/planning/feature-specs/generated-app-delivery-ux.md)
-- [Cloud-native source promotion candidates](./docs/planning/feature-specs/cloud-native-source-promotion-candidates.md)
-- [Spatial-analysis promotion criteria](./docs/planning/feature-specs/spatial-analysis-promotion-criteria.md)
-- [Scene browsing delivery copy evidence](./docs/reviews/ain-005-scene-browsing-delivery-copy-2026-05-30.md)
-- [AI map app generation sprint](./docs/planning/sprint-2026-W23-ai-map-app-generation.md)
-- [Generation quality hardening sprint](./docs/planning/sprint-2026-W23-generation-quality-hardening.md)
-- [Prompt evidence scenario report](./docs/reviews/nla-006-prompt-evidence-scenarios-2026-05-29.md)
-- [Task burndown](./docs/planning/task-burndown.md)
-- [Dependency graph](./docs/planning/dependency-graph.md)
-- [Automation hardening gate](./docs/archive/2026-05-30/reviews/automation-hardening-gate-2026-05-24.md)
-- [v0.2 checkpoint audit](./docs/archive/2026-05-30/reviews/v0.2-checkpoint-audit-2026-05-17.md)
-- [v0.2 release note draft](./docs/archive/2026-05-30/planning/v0.2-release-note-draft.md)
-- [v0.2 gate checklist](./docs/archive/2026-05-30/planning/v0.2-gate-checklist.md)
-- [SceneView3D v1 sprint plan](./docs/planning/sprint-2026-W25-sceneview3d-v1.md)
+- [SceneView3D stable renderer contract](./docs/planning/feature-specs/sceneview3d-stable-renderer-contract.md)
+- [Current review streams](./docs/reviews/REPORT_INDEX.md)
+
+Historical planning, research, and gate evidence remains under `docs/archive/`,
+`docs/planning/`, `docs/research/`, and `docs/reviews/`. Start from
+`docs/README.md` before drilling into dated snapshots.
 
 ## Known Limitations
 

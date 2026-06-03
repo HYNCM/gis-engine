@@ -1,7 +1,7 @@
 ---
-agent: docs-agent
-period: 2026-W22
-generated_at: 2026-05-25T04:49:56Z
+agent: docs
+period: 2026-W23
+generated_at: 2026-06-03T03:24:45Z
 repo_revision: "c993ae105ed2022557491b8c19c342180d4f7e2b"
 inputs:
   - package.json
@@ -16,7 +16,7 @@ inputs:
   - tests/snapshot/visual/maplibre-visual.spec.ts
   - docs/engineering/ci-test-strategy.md
   - docs/engineering/supported-feature-matrix.md
-owner: "@docs-agent"
+owner: "@docs"
 decision_level: advisory
 ---
 
@@ -36,6 +36,10 @@ audit without package movement. PMTiles/vector delivery boundaries remain
 readiness/evidence-only, `SourceLoader` remains contract-only, and package
 movement is no-go until a future task refreshes official package/changelog
 evidence and accepts strict visual evidence in the same dependency state.
+
+Owner names below follow the current 5-agent model. Runtime or schema-level
+waiver terminology may still use legacy `coordinator` wording until the
+contract itself is migrated.
 
 ## Upgrade Intake
 
@@ -57,8 +61,8 @@ Recommendation:
   source URL with checked date.
 - Impact: dependency drift can silently change style parsing, source loading,
   worker behavior, or browser rendering evidence.
-- Action: `@engine-agent` records the candidate version and source evidence;
-  `@quality-guardian` decides whether the audit is PR-only or release-level.
+- Action: `@builder` (engine focus) records the candidate version and source
+  evidence; `@quality` decides whether the audit is PR-only or release-level.
 - Confidence: high when official release/npm evidence and package diff are
   attached; low without dated upstream evidence.
 
@@ -84,9 +88,9 @@ Recommendation:
   `pnpm test:adapter -- tests/adapter/maplibre-transformer.test.ts`.
 - Impact: transformer drift can make AI-generated `MapSpec` documents validate
   but render differently or fail only in browser snapshots.
-- Action: `@engine-agent` keeps the MapSpec-to-style boundary narrow and updates
-  schema, diagnostics, or feature-matrix docs only for intentional support
-  changes.
+- Action: `@builder` (engine focus) keeps the MapSpec-to-style boundary narrow
+  and updates schema, diagnostics, or feature-matrix docs only for intentional
+  support changes.
 - Confidence: high if transformer tests and supported matrix agree; medium if
   only visual evidence exists.
 
@@ -111,8 +115,9 @@ Recommendation:
   `pnpm test:schema -- tests/schema/resource-policy.test.ts` when policy changes.
 - Impact: URL drift is a security and reproducibility risk because visual or
   example tests may begin depending on external services.
-- Action: `@engine-agent` updates policy tests for any new source/asset behavior;
-  `@docs-agent` keeps human-facing policy text aligned when docs change.
+- Action: `@builder` (engine focus) updates policy tests for any new
+  source/asset behavior; `@docs` keeps human-facing policy text aligned when
+  docs change.
 - Confidence: high when local fixtures and policy tests cover every changed URL
   path; low if the evidence depends on live public tiles.
 
@@ -133,8 +138,8 @@ Recommendation:
   `pnpm build:schema` and `pnpm test:schema`.
 - Impact: schema drift can let AI tools emit specs that the adapter cannot
   transform deterministically.
-- Action: `@engine-agent` owns schema and diagnostic updates; `@ai-agent` checks
-  MCP tool schemas if public behavior changes.
+- Action: `@builder` (engine focus) owns schema and diagnostic updates;
+  `@builder` (ai focus) checks MCP tool schemas if public behavior changes.
 - Confidence: high when schema sync and invalid-fixture diagnostics pass.
 
 ## Smoke Snapshot
@@ -154,8 +159,8 @@ Recommendation:
   command output from `pnpm test:snapshot:smoke`.
 - Impact: smoke drift breaks deterministic AI validation even when browser
   rendering appears healthy.
-- Action: `@engine-agent` fixes contract or diagnostics regressions before
-  `@qa-agent` updates browser visual evidence.
+- Action: `@builder` (engine focus) fixes contract or diagnostics regressions
+  before `@builder` (qa focus) updates browser visual evidence.
 - Confidence: high when smoke snapshots and adapter contract tests both pass.
 
 ## Visual Snapshot
@@ -178,8 +183,8 @@ Recommendation:
   `pnpm test:snapshot:visual` or the strict visual command.
 - Impact: MapLibre renderer drift can change pixels, layer ordering, expression
   output, or WebGL behavior without changing TypeScript contracts.
-- Action: `@qa-agent` records visual metrics and artifacts; `@quality-guardian`
-  decides whether baseline changes are acceptable.
+- Action: `@builder` (qa focus) records visual metrics and artifacts;
+  `@quality` decides whether baseline changes are acceptable.
 - Confidence: high in a release-capable runner with strict visual snapshots;
   medium if the local environment can only produce a skipped report.
 
@@ -200,8 +205,8 @@ Recommendation:
   `pnpm test:release:strict`.
 - Impact: package upgrades can pass focused tests but still break schema sync,
   examples, AI tools, resources, or snapshot gates.
-- Action: `@quality-guardian` records pass/block/waiver status before merge or
-  release claims.
+- Action: `@quality` records pass/block/waiver status before merge or release
+  claims.
 - Confidence: high when deterministic and release-level gates pass in the same
   dependency state.
 
@@ -225,9 +230,9 @@ Recommendation:
   `docs/engineering/supported-feature-matrix.md`.
 - Impact: boundary drift can make AI/core packages depend on renderer behavior
   and weaken deterministic validation.
-- Action: `@engine-agent` keeps renderer-specific behavior behind
-  `RendererAdapter`; `@docs-agent` updates feature-boundary docs for approved
-  scope changes only.
+- Action: `@builder` (engine focus) keeps renderer-specific behavior behind
+  `RendererAdapter`; `@docs` updates feature-boundary docs for approved scope
+  changes only.
 - Confidence: high when the package diff is dependency-only or adapter-local and
   public schemas remain unchanged.
 
@@ -249,8 +254,7 @@ Recommendation:
   reviewer decision.
 - Impact: an implicit upgrade decision can leave the repo in a partially audited
   dependency state.
-- Action: `@quality-guardian` owns the merge decision; `@coordinator` or
-  `@task-distributor` records follow-up planning state only after evidence
-  exists.
+- Action: `@quality` owns the merge decision; `@orchestrator` records
+  follow-up planning state only after evidence exists.
 - Confidence: high when the decision references all required evidence; low when
   visual or release-runner evidence is missing for a rendering-affecting change.

@@ -23,6 +23,9 @@
   writes, unsupported source runtime behavior, or advanced geoprocessing
   support.
 - Archived the superseded W21 sprint plan and refreshed active documentation to point at completed SceneView3D alpha-gate, adapter-feasibility, release-gate, and Three adapter spike evidence; the remaining follow-up is real renderer visual evidence inside the adapter package.
+- Simplified the documentation entry points, replaced the stale review report
+  index with a current guide, aligned evolution/process docs with the 5-agent
+  model, and documented how to read legacy agent labels in dated evidence.
 
 ## 0.2.0-checkpoint - 2026-05-17
 
