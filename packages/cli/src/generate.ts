@@ -36,6 +36,7 @@ import {
   getTemplate,
   type AppTemplateContext,
   type AppConfig,
+  normalizeAppConfig,
 } from "./templates/index.js";
 
 export interface GenerateOptions {
@@ -202,19 +203,19 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
     const appType = (intentAppType === "dashboard" || intentAppType === "locator")
       ? intentAppType
       : "explorer";
-    const defaultComponents: Record<string, string[]> = {
-      explorer: ["LayerPanel", "Legend", "FeaturePopup", "SearchBox", "BasemapSwitcher"],
-      dashboard: ["LayerPanel", "Legend", "FeaturePopup"],
-      locator: ["SearchBox", "BasemapSwitcher", "FeaturePopup"],
-    };
-    appConfig = {
+    appConfig = normalizeAppConfig({
       appType,
-      title: String(intentAppConfig?.title ?? opts.projectName),
-      description: String(intentAppConfig?.description ?? `Interactive ${appType} map application`),
+      title: typeof intentAppConfig?.title === "string" ? intentAppConfig.title : opts.projectName,
+      description: typeof intentAppConfig?.description === "string"
+        ? intentAppConfig.description
+        : `Interactive ${appType} map application`,
       components: Array.isArray(intentAppConfig?.components)
-        ? (intentAppConfig!.components as string[])
-        : defaultComponents[appType],
-    };
+        ? intentAppConfig.components.filter((component): component is string => typeof component === "string")
+        : undefined,
+    }, {
+      projectName: opts.projectName,
+      description: `Interactive ${appType} map application`,
+    });
   }
 
   const deliverySummary = {
@@ -269,7 +270,7 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
     }
 
     // App template: render full interactive application
-    const templateName = opts.template ?? (appConfig ? "app" : undefined);
+    const templateName = opts.template === "static-html" && appConfig ? "app" : opts.template;
     if (templateName && templateName !== "mapspec") {
       const template = getTemplate(templateName);
       if (template) {

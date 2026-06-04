@@ -89,7 +89,7 @@ create-gis-map <project-name> [options]
 
 | Flag | Alias | Description | Default |
 |---|---|---|---|
-| `--template <name>` | `-t` | Template: `static-html`, `vite-ts`, `mapspec` | `static-html` |
+| `--template <name>` | `-t` | Template: `static-html`, `vite-ts`, `mapspec`, `app` | `static-html` |
 | `--provider <id>` | `-p` | Provider profile: `mock`, `deepseek`, `openai` | `mock` |
 | `--model <name>` | | Model name for OpenAI-compatible provider | per-provider default |
 | `--base-url <url>` | | API base URL for OpenAI-compatible provider | per-provider default |
@@ -131,6 +131,9 @@ npx create-gis-map my-map --generate -p deepseek --model deepseek-chat --base-ur
 
 # AI generate with custom prompt
 npx create-gis-map my-map --generate --prompt "A map of NYC parks"
+
+# AI generate with the interactive app scaffold
+npx create-gis-map my-map --generate -t app -p deepseek --prompt "Build an earthquake explorer"
 
 # AI generate with explicit API key and timeout
 npx create-gis-map my-map --generate -p openai --api-key sk-xxx --timeout 60000
@@ -269,11 +272,32 @@ Generated files:
 | `map.json` | A valid MapSpec v0.2 document with an empty GeoJSON source and a circle layer. Load it with any GIS Engine runtime. |
 | `README.md` | Project readme with usage instructions. |
 
+### app
+
+Full interactive map application (Vite + React + Tailwind). Use this with `--generate -t app` to pair the generated MapSpec with a starter app shell.
+
+Generated files:
+
+| File | Description |
+|---|---|
+| `package.json` | Project manifest with `@gis-engine/engine`, `maplibre-gl`, React, Tailwind, and Vite dependencies. |
+| `vite.config.ts` | Vite config with the React plugin. |
+| `tsconfig.json` | TypeScript configuration targeting ES2022 with JSX and bundler resolution. |
+| `tailwind.config.js` | Tailwind config for the app shell. |
+| `postcss.config.js` | PostCSS config with Tailwind and autoprefixer. |
+| `index.html` | Root HTML file mounting the React app. |
+| `src/index.css` | Tailwind entry plus MapLibre GL CSS import. |
+| `src/main.tsx` | React root that renders the generated app. |
+| `src/App.tsx` | Map container that mounts the generated spec and UI components. |
+| `src/components/*.tsx` | LayerPanel, FeaturePopup, Legend, SearchBox, and BasemapSwitcher, emitted according to the app config. |
+| `map.json` | Starter MapSpec placeholder when scaffolding outside the AI pipeline. |
+| `README.md` | Project readme with app type, component list, and usage instructions. |
+
 ---
 
 ## Generate Pipeline
 
-The `--generate` flag activates the full AI generate pipeline. Instead of scaffolding template files, the pipeline transforms a prompt into a validated MapSpec with a complete evidence trail.
+The `--generate` flag activates the full AI generate pipeline. It transforms a prompt into a validated MapSpec with a complete evidence trail. When the provider infers an app type from the prompt, the pipeline emits the interactive Vite + React + Tailwind scaffold around the generated MapSpec; `--template app` forces the same scaffold explicitly.
 
 ### Pipeline Steps
 
@@ -305,14 +329,15 @@ After a successful generate run, the following files are written to the project 
 | `delivery-summary.json` | Yes | Pipeline metadata: prompt hash, trace ID, provider, plan status, command count, validation results. Does not contain the raw prompt. |
 | `evidence.json` | Yes (when bundle succeeds) | Full evidence bundle with all pipeline artifacts for auditing and replay. |
 | `diagnostics.json` | Only when diagnostics exist | Aggregated diagnostics from the plan, skeleton, and validation steps. |
+| App scaffold files | Conditional | When the app scaffold is emitted, the Vite + React + Tailwind files listed in the `app` template section are written alongside `map.json`. |
 
 ### No Raw Prompt Retention
 
-The generate pipeline is designed so that the raw prompt text is never stored in any output file. Only the SHA-256 prompt hash (truncated to 16 hex characters) is retained. This is reflected in `delivery-summary.json`:
+The generate pipeline is designed so that the raw prompt text is never stored in any output file. Only the SHA-256 prompt hash (`sha256:<32-hex>`) is retained. This is reflected in `delivery-summary.json`:
 
 ```json
 {
-  "promptHash": "a1b2c3d4e5f67890",
+  "promptHash": "sha256:0123456789abcdef0123456789abcdef",
   "retainedRawPrompt": false
 }
 ```
@@ -323,7 +348,7 @@ The prompt hash allows you to correlate runs without exposing the original promp
 
 ```json
 {
-  "promptHash": "string (16-char hex SHA-256 prefix)",
+  "promptHash": "string (sha256:<32-hex>)",
   "traceId": "string (cli-<timestamp36>)",
   "provider": "string (provider profile id)",
   "providerDiagnostics": ["string"],

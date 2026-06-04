@@ -8,6 +8,7 @@ import {
   getTemplate,
   TEMPLATES,
   hashPrompt,
+  normalizeAppConfig,
 } from "@gis-engine/cli";
 
 // ---------------------------------------------------------------------------
@@ -474,6 +475,23 @@ describe("cli-templates", () => {
     expect(paths).toContain("src/components/BasemapSwitcher.tsx");
   });
 
+  it("app template imports maplibre-gl in each generated component", () => {
+    const tpl = getTemplate("app")!;
+    const ctx = { projectName: "import-test", provider: "mock", cliVersion: "0.4.0" };
+    const files = tpl.generate(ctx);
+    for (const path of [
+      "src/components/LayerPanel.tsx",
+      "src/components/FeaturePopup.tsx",
+      "src/components/Legend.tsx",
+      "src/components/SearchBox.tsx",
+      "src/components/BasemapSwitcher.tsx",
+    ]) {
+      const file = files.find((entry) => entry.path === path);
+      expect(file).toBeDefined();
+      expect(file!.content).toContain('import maplibregl from "maplibre-gl";');
+    }
+  });
+
   it("app template respects custom appConfig with fewer components", () => {
     const tpl = getTemplate("app")!;
     const ctx = {
@@ -496,6 +514,35 @@ describe("cli-templates", () => {
     expect(paths).not.toContain("src/components/FeaturePopup.tsx");
   });
 
+  it("normalizeAppConfig filters unknown components and falls back cleanly", () => {
+    const normalized = normalizeAppConfig(
+      {
+        appType: "locator",
+        title: "Lookup",
+        description: "Search nearby places",
+        components: ["SearchBox", "Bogus", "BasemapSwitcher", "SearchBox"],
+      },
+      { projectName: "lookup-app", description: "fallback description" },
+    );
+
+    expect(normalized.appType).toBe("locator");
+    expect(normalized.components).toEqual(["SearchBox", "BasemapSwitcher"]);
+
+    const fallback = normalizeAppConfig(
+      {
+        appType: "dashboard",
+        title: "",
+        description: "",
+        components: ["Bogus", "StillBogus"],
+      },
+      { projectName: "dashboard-app", description: "fallback description" },
+    );
+
+    expect(fallback.appType).toBe("dashboard");
+    expect(fallback.title).toBe("dashboard-app");
+    expect(fallback.components).toEqual(["LayerPanel", "Legend", "FeaturePopup"]);
+  });
+
   it("app template App.tsx imports all configured components", () => {
     const tpl = getTemplate("app")!;
     const ctx = { projectName: "test-app", provider: "mock", cliVersion: "0.4.0" };
@@ -506,6 +553,10 @@ describe("cli-templates", () => {
     expect(appFile.content).toContain('import FeaturePopup from "./components/FeaturePopup"');
     expect(appFile.content).toContain('import SearchBox from "./components/SearchBox"');
     expect(appFile.content).toContain('import BasemapSwitcher from "./components/BasemapSwitcher"');
+    expect(appFile.content).toContain('const syncSpecToMap =');
+    expect(appFile.content).toContain('m.on("style.load"');
+    expect(appFile.content).toContain('targetMap.addSource');
+    expect(appFile.content).toContain('targetMap.addLayer');
   });
 });
 
