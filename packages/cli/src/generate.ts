@@ -203,15 +203,16 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
     const appType = (intentAppType === "dashboard" || intentAppType === "locator")
       ? intentAppType
       : "explorer";
+    const intentComponents = Array.isArray(intentAppConfig?.components)
+      ? intentAppConfig.components.filter((component): component is string => typeof component === "string")
+      : undefined;
     appConfig = normalizeAppConfig({
       appType,
       title: typeof intentAppConfig?.title === "string" ? intentAppConfig.title : opts.projectName,
       description: typeof intentAppConfig?.description === "string"
         ? intentAppConfig.description
         : `Interactive ${appType} map application`,
-      components: Array.isArray(intentAppConfig?.components)
-        ? intentAppConfig.components.filter((component): component is string => typeof component === "string")
-        : undefined,
+      components: intentComponents,
     }, {
       projectName: opts.projectName,
       description: `Interactive ${appType} map application`,

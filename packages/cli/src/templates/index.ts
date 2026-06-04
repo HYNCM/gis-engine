@@ -32,6 +32,13 @@ export interface AppTemplateContext extends TemplateContext {
   appConfig?: AppConfig;
 }
 
+export interface AppConfigInput {
+  appType?: AppType;
+  title?: string;
+  description?: string;
+  components?: string[];
+}
+
 export const APP_COMPONENTS = [
   "LayerPanel",
   "FeaturePopup",
@@ -51,7 +58,7 @@ const DEFAULT_APP_COMPONENTS: Record<AppType, AppComponentName[]> = {
 const APP_COMPONENT_SET = new Set<string>(APP_COMPONENTS);
 
 export function normalizeAppConfig(
-  appConfig: AppConfig | undefined,
+  appConfig: AppConfigInput | undefined,
   defaults: { projectName: string; description: string },
 ): AppConfig {
   const appType = appConfig?.appType === "dashboard" || appConfig?.appType === "locator"
