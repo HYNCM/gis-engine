@@ -346,10 +346,11 @@ describe("cli-provider-diagnostics", () => {
 // ---------------------------------------------------------------------------
 
 describe("cli-templates", () => {
-  it("TEMPLATES contains the three known template names", () => {
+  it("TEMPLATES contains all known template names", () => {
     expect(TEMPLATES).toContain("static-html");
     expect(TEMPLATES).toContain("vite-ts");
     expect(TEMPLATES).toContain("mapspec");
+    expect(TEMPLATES).toContain("app");
   });
 
   it("getTemplate returns a Template for static-html", () => {
@@ -423,6 +424,89 @@ describe("cli-templates", () => {
     const pkg = JSON.parse(pkgFile.content);
     expect(pkg.name).toBe("json-test");
   });
+
+  it("getTemplate returns a Template for app", () => {
+    const tpl = getTemplate("app");
+    expect(tpl).toBeDefined();
+    expect(tpl!.name).toBe("app");
+  });
+
+  it("app template generates full interactive application files", () => {
+    const tpl = getTemplate("app")!;
+    const ctx = { projectName: "quake-app", provider: "deepseek", cliVersion: "0.4.0" };
+    const files = tpl.generate(ctx);
+    const paths = files.map((f) => f.path);
+    expect(paths).toContain("package.json");
+    expect(paths).toContain("vite.config.ts");
+    expect(paths).toContain("tsconfig.json");
+    expect(paths).toContain("tailwind.config.js");
+    expect(paths).toContain("postcss.config.js");
+    expect(paths).toContain("index.html");
+    expect(paths).toContain("src/main.tsx");
+    expect(paths).toContain("src/App.tsx");
+    expect(paths).toContain("src/index.css");
+    expect(paths).toContain("map.json");
+    expect(paths).toContain("README.md");
+  });
+
+  it("app template includes React and Tailwind dependencies", () => {
+    const tpl = getTemplate("app")!;
+    const ctx = { projectName: "test-app", provider: "mock", cliVersion: "0.4.0" };
+    const files = tpl.generate(ctx);
+    const pkgFile = files.find((f) => f.path === "package.json")!;
+    const pkg = JSON.parse(pkgFile.content);
+    expect(pkg.dependencies.react).toBeDefined();
+    expect(pkg.dependencies["react-dom"]).toBeDefined();
+    expect(pkg.dependencies["maplibre-gl"]).toBeDefined();
+    expect(pkg.devDependencies.tailwindcss).toBeDefined();
+    expect(pkg.devDependencies["@vitejs/plugin-react"]).toBeDefined();
+  });
+
+  it("app template generates all 5 UI components by default", () => {
+    const tpl = getTemplate("app")!;
+    const ctx = { projectName: "full-app", provider: "mock", cliVersion: "0.4.0" };
+    const files = tpl.generate(ctx);
+    const paths = files.map((f) => f.path);
+    expect(paths).toContain("src/components/LayerPanel.tsx");
+    expect(paths).toContain("src/components/FeaturePopup.tsx");
+    expect(paths).toContain("src/components/Legend.tsx");
+    expect(paths).toContain("src/components/SearchBox.tsx");
+    expect(paths).toContain("src/components/BasemapSwitcher.tsx");
+  });
+
+  it("app template respects custom appConfig with fewer components", () => {
+    const tpl = getTemplate("app")!;
+    const ctx = {
+      projectName: "locator-app",
+      provider: "mock",
+      cliVersion: "0.4.0",
+      appConfig: {
+        appType: "locator" as const,
+        title: "My Locator",
+        description: "Find places",
+        components: ["SearchBox", "BasemapSwitcher"],
+      },
+    };
+    const files = tpl.generate(ctx);
+    const paths = files.map((f) => f.path);
+    expect(paths).toContain("src/components/SearchBox.tsx");
+    expect(paths).toContain("src/components/BasemapSwitcher.tsx");
+    expect(paths).not.toContain("src/components/LayerPanel.tsx");
+    expect(paths).not.toContain("src/components/Legend.tsx");
+    expect(paths).not.toContain("src/components/FeaturePopup.tsx");
+  });
+
+  it("app template App.tsx imports all configured components", () => {
+    const tpl = getTemplate("app")!;
+    const ctx = { projectName: "test-app", provider: "mock", cliVersion: "0.4.0" };
+    const files = tpl.generate(ctx);
+    const appFile = files.find((f) => f.path === "src/App.tsx")!;
+    expect(appFile.content).toContain('import LayerPanel from "./components/LayerPanel"');
+    expect(appFile.content).toContain('import Legend from "./components/Legend"');
+    expect(appFile.content).toContain('import FeaturePopup from "./components/FeaturePopup"');
+    expect(appFile.content).toContain('import SearchBox from "./components/SearchBox"');
+    expect(appFile.content).toContain('import BasemapSwitcher from "./components/BasemapSwitcher"');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -452,6 +536,63 @@ describe("cli-generate-hashPrompt", () => {
     const hash = hashPrompt("test prompt");
     // normalizeWorkbenchProviderPlan validates: /^sha256:[A-Za-z0-9._:-]{1,96}$/
     expect(hash).toMatch(/^sha256:[A-Za-z0-9._:-]{1,96}$/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// app template — earthquake explorer demo
+// ---------------------------------------------------------------------------
+
+describe("cli-app-template-earthquake-demo", () => {
+  it("earthquake fixture is valid JSON with required MapSpec fields", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { resolve } = await import("node:path");
+    const fixturePath = resolve(__dirname, "../fixtures/specs/valid/earthquake-explorer.json");
+    const raw = readFileSync(fixturePath, "utf-8");
+    const spec = JSON.parse(raw);
+    expect(spec.version).toBe("0.2");
+    expect(spec.sources).toBeDefined();
+    expect(spec.sources.earthquakes).toBeDefined();
+    expect(spec.sources.earthquakes.type).toBe("geojson");
+    expect(spec.layers).toBeDefined();
+    expect(spec.layers.length).toBeGreaterThan(0);
+    expect(spec.view).toBeDefined();
+  });
+
+  it("earthquake fixture has GeoJSON features with magnitude data", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { resolve } = await import("node:path");
+    const fixturePath = resolve(__dirname, "../fixtures/specs/valid/earthquake-explorer.json");
+    const raw = readFileSync(fixturePath, "utf-8");
+    const spec = JSON.parse(raw);
+    const features = spec.sources.earthquakes.data.features;
+    expect(features.length).toBeGreaterThan(5);
+    for (const feature of features) {
+      expect(feature.geometry.type).toBe("Point");
+      expect(feature.properties.mag).toBeGreaterThanOrEqual(5);
+      expect(feature.properties.place).toBeDefined();
+    }
+  });
+
+  it("app template can generate earthquake explorer project", () => {
+    const tpl = getTemplate("app")!;
+    const ctx = {
+      projectName: "earthquake-explorer",
+      provider: "deepseek",
+      cliVersion: "0.4.0",
+      appConfig: {
+        appType: "explorer" as const,
+        title: "2024 Global Earthquakes (M5+)",
+        description: "Interactive map of significant earthquakes in 2024, colored by magnitude",
+        components: ["LayerPanel", "Legend", "FeaturePopup", "SearchBox", "BasemapSwitcher"],
+      },
+    };
+    const files = tpl.generate(ctx);
+    const indexHtml = files.find((f) => f.path === "index.html")!;
+    expect(indexHtml.content).toContain("2024 Global Earthquakes (M5+)");
+    const readme = files.find((f) => f.path === "README.md")!;
+    expect(readme.content).toContain("explorer");
+    expect(readme.content).toContain("deepseek");
   });
 });
 

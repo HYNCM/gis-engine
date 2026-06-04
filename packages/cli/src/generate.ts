@@ -32,6 +32,11 @@ import {
   callProvider,
   type ProviderConfidence,
 } from "./provider-http.js";
+import {
+  getTemplate,
+  type AppTemplateContext,
+  type AppConfig,
+} from "./templates/index.js";
 
 export interface GenerateOptions {
   projectName: string;
@@ -41,6 +46,7 @@ export interface GenerateOptions {
   prompt?: string;
   apiKey?: string;
   timeout?: number;
+  template?: string;
   dryRun: boolean;
 }
 
@@ -187,6 +193,30 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
   // Write output files
   const files: string[] = [];
 
+  // Extract app config from provider intent (if available)
+  let appConfig: AppConfig | undefined;
+  const intentAppType = intent.appType as string | undefined;
+  const intentAppConfig = intent.appConfig as Record<string, unknown> | undefined;
+
+  if (intentAppType || opts.template === "app") {
+    const appType = (intentAppType === "dashboard" || intentAppType === "locator")
+      ? intentAppType
+      : "explorer";
+    const defaultComponents: Record<string, string[]> = {
+      explorer: ["LayerPanel", "Legend", "FeaturePopup", "SearchBox", "BasemapSwitcher"],
+      dashboard: ["LayerPanel", "Legend", "FeaturePopup"],
+      locator: ["SearchBox", "BasemapSwitcher", "FeaturePopup"],
+    };
+    appConfig = {
+      appType,
+      title: String(intentAppConfig?.title ?? opts.projectName),
+      description: String(intentAppConfig?.description ?? `Interactive ${appType} map application`),
+      components: Array.isArray(intentAppConfig?.components)
+        ? (intentAppConfig!.components as string[])
+        : defaultComponents[appType],
+    };
+  }
+
   const deliverySummary = {
     promptHash,
     traceId,
@@ -201,6 +231,7 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
     },
     evidenceStatus: evidenceResult.ok ? "ok" : "diagnostics",
     ...(providerConfidence ? { confidence: providerConfidence } : {}),
+    ...(appConfig ? { appConfig } : {}),
     retainedRawPrompt: false,
     generatedAt: new Date().toISOString(),
   };
@@ -235,6 +266,30 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
       const diagPath = join(outDir, "diagnostics.json");
       writeFileSync(diagPath, JSON.stringify(allDiagnostics, null, 2) + "\n", "utf-8");
       files.push("diagnostics.json");
+    }
+
+    // App template: render full interactive application
+    const templateName = opts.template ?? (appConfig ? "app" : undefined);
+    if (templateName && templateName !== "mapspec") {
+      const template = getTemplate(templateName);
+      if (template) {
+        const templateCtx: AppTemplateContext = {
+          projectName: opts.projectName,
+          provider: opts.provider,
+          cliVersion: "0.4.0",
+          ...(appConfig ? { appConfig } : {}),
+        };
+        const templateFiles = template.generate(templateCtx);
+        for (const file of templateFiles) {
+          // map.json is already written with the AI-generated spec; skip template placeholder
+          if (file.path === "map.json") continue;
+          const filePath = join(outDir, file.path);
+          mkdirSync(resolve(filePath, ".."), { recursive: true });
+          writeFileSync(filePath, file.content, "utf-8");
+          files.push(file.path);
+        }
+        console.log(`  ✓ App template: ${templateName} (${templateFiles.length} files)`);
+      }
     }
 
     console.log(`\n📁 Output files written to ${outDir}:`);

@@ -62,6 +62,7 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
       prompt: config.prompt,
       apiKey: config.apiKey,
       timeout: config.timeout,
+      template: config.template,
       dryRun: config.dryRun,
     });
 
@@ -122,7 +123,7 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
     console.log(`\n✅ Project created at ${outDir}`);
     console.log(`\nNext steps:`);
     console.log(`  cd ${config.projectName}`);
-    if (config.template === "vite-ts") {
+    if (config.template === "app" || config.template === "vite-ts") {
       console.log(`  npm install`);
       console.log(`  npm run dev`);
     } else if (config.template === "static-html") {
@@ -147,6 +148,7 @@ Templates (scaffold mode):
   static-html   Standalone HTML file with inline GIS Engine (default)
   vite-ts       Vite + TypeScript project with GIS Engine
   mapspec       Minimal MapSpec JSON file only
+  app           Full interactive map application (Vite + React + Tailwind)
 
 Options:
   -t, --template   Template name (default: static-html)
@@ -165,16 +167,17 @@ Options:
 Examples:
   create-gis-map my-map                              Scaffold with static-html
   create-gis-map my-map -t vite-ts                   Scaffold with Vite + TS
+  create-gis-map my-map -t app                       Scaffold interactive map app
   create-gis-map my-map -y                           Scaffold, overwrite if exists
   create-gis-map my-map --generate                   AI generate with mock provider
   create-gis-map my-map --generate -p deepseek       AI generate with deepseek
-  create-gis-map my-map --generate -p deepseek --model deepseek-chat --base-url https://api.deepseek.com
+  create-gis-map my-map --generate -t app -p deepseek  AI generate interactive app
   create-gis-map my-map --generate --prompt "A map of NYC parks"
 `);
 }
 
 function getVersion(): string {
-  return "0.3.0";
+  return "0.4.0";
 }
 
 // CLI entry — only run main() when executed directly (not when imported).
