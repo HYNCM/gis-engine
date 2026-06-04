@@ -1,0 +1,94 @@
+{
+  "version": "0.2",
+  "sources": {
+    "earthquakes": {
+      "type": "geojson",
+      "data": {
+        "type": "FeatureCollection",
+        "features": [
+          {
+            "type": "Feature",
+            "geometry": { "type": "Point", "coordinates": [37.0, 37.17] },
+            "properties": { "mag": 7.1, "place": "Turkey-Syria border", "time": "2024-02-06", "depth": 10, "tsunami": false }
+          },
+          {
+            "type": "Feature",
+            "geometry": { "type": "Point", "coordinates": [141.0, 38.5] },
+            "properties": { "mag": 5.8, "place": "Off coast of Miyagi, Japan", "time": "2024-03-12", "depth": 45, "tsunami": false }
+          },
+          {
+            "type": "Feature",
+            "geometry": { "type": "Point", "coordinates": [-72.3, -18.5] },
+            "properties": { "mag": 5.4, "place": "Haiti", "time": "2024-04-24", "depth": 12, "tsunami": false }
+          },
+          {
+            "type": "Feature",
+            "geometry": { "type": "Point", "coordinates": [-155.2, 19.4] },
+            "properties": { "mag": 6.9, "place": "Hawaii, USA", "time": "2024-05-09", "depth": 8, "tsunami": true }
+          },
+          {
+            "type": "Feature",
+            "geometry": { "type": "Point", "coordinates": [103.8, 32.9] },
+            "properties": { "mag": 6.1, "place": "Sichuan, China", "time": "2024-06-18", "depth": 15, "tsunami": false }
+          },
+          {
+            "type": "Feature",
+            "geometry": { "type": "Point", "coordinates": [-71.2, -33.9] },
+            "properties": { "mag": 5.9, "place": "Central Chile", "time": "2024-07-15", "depth": 55, "tsunami": false }
+          },
+          {
+            "type": "Feature",
+            "geometry": { "type": "Point", "coordinates": [128.6, 35.4] },
+            "properties": { "mag": 5.2, "place": "South Korea", "time": "2024-08-22", "depth": 18, "tsunami": false }
+          },
+          {
+            "type": "Feature",
+            "geometry": { "type": "Point", "coordinates": [73.4, 36.1] },
+            "properties": { "mag": 6.3, "place": "Northern Pakistan", "time": "2024-09-03", "depth": 200, "tsunami": false }
+          },
+          {
+            "type": "Feature",
+            "geometry": { "type": "Point", "coordinates": [178.3, -17.8] },
+            "properties": { "mag": 7.3, "place": "Fiji Islands region", "time": "2024-10-11", "depth": 580, "tsunami": true }
+          },
+          {
+            "type": "Feature",
+            "geometry": { "type": "Point", "coordinates": [-149.9, 61.3] },
+            "properties": { "mag": 5.6, "place": "Southern Alaska, USA", "time": "2024-11-28", "depth": 40, "tsunami": false }
+          }
+        ]
+      }
+    }
+  },
+  "layers": [
+    {
+      "id": "earthquakes-circle",
+      "type": "circle",
+      "source": "earthquakes",
+      "paint": {
+        "circle-radius": [
+          "interpolate", ["linear"], ["get", "mag"],
+          5, 6,
+          6, 10,
+          7, 16,
+          8, 24
+        ],
+        "circle-color": [
+          "interpolate", ["linear"], ["get", "mag"],
+          5, "#fbbf24",
+          6, "#f97316",
+          7, "#ef4444",
+          8, "#991b1b"
+        ],
+        "circle-opacity": 0.8,
+        "circle-stroke-width": 1,
+        "circle-stroke-color": "#ffffff"
+      },
+      "layout": { "visibility": "visible" }
+    }
+  ],
+  "view": {
+    "center": [20, 20],
+    "zoom": 2
+  }
+}

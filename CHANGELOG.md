@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+## [0.4.0] - 2026-06-04
+
+### Added
+- **`--template app`**: Full interactive map application template (Vite + React + Tailwind)
+- 5 UI components: LayerPanel, FeaturePopup, Legend, SearchBox, BasemapSwitcher
+- Provider system prompt extended with appType inference (`explorer` / `dashboard` / `locator`)
+- Generate pipeline renders app template alongside MapSpec evidence output
+- Earthquake explorer demo fixture (`tests/fixtures/specs/valid/earthquake-explorer.json`)
+- 9 new CLI tests (6 app template + 3 earthquake demo)
+
+### Changed
+- CLI version bumped to 0.4.0
+- `TEMPLATES` now includes `"app"` as the fourth template option
+- Generate pipeline accepts `--template` flag to render app scaffolding with AI-generated MapSpec
+
 ## [0.3.0] - 2026-06-04
 
 ### Added
