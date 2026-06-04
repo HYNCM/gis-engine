@@ -47,15 +47,15 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.agent == 'all' || github.event.inputs.agent == 'code-reviewer' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0 # 获取完整历史以计算 diff
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 9.15.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "22"
           cache: "pnpm"
@@ -102,7 +102,7 @@ jobs:
 
       - name: 上传每日审计报告 artifact
         if: ${{ github.event_name != 'push' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: daily-code-review
           path: daily-artifacts/
@@ -114,13 +114,13 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.agent == 'all' || github.event.inputs.agent == 'quality-guardian' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 9.15.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "22"
           cache: "pnpm"
@@ -170,7 +170,7 @@ jobs:
 
       - name: 上传质量门禁报告 artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: daily-quality-gate
           path: daily-artifacts/
@@ -182,7 +182,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.agent == 'all' || github.event.inputs.agent == 'docs-agent' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: 检查文档交叉引用完整性
         run: |
@@ -242,7 +242,7 @@ jobs:
 
       - name: 上传文档审计报告 artifact
         if: ${{ github.event_name != 'push' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: daily-docs-agent
           path: daily-artifacts/
@@ -258,16 +258,16 @@ jobs:
       - quality-gate
       - docs-audit
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: 下载 daily artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: .
           merge-multiple: true
 
       - name: 提交 daily artifacts
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "docs: daily agent artifacts"
           file_pattern: "docs/reviews/daily-audit-*.md docs/reviews/quality-gate-*.md docs/reviews/documentation-audit-*.md"

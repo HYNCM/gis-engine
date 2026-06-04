@@ -40,13 +40,13 @@ jobs:
       test_issue: ${{ steps.check.outputs.test_issue }}
       docs_issue: ${{ steps.check.outputs.docs_issue }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 9.15.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "22"
           cache: "pnpm"
@@ -94,13 +94,13 @@ jobs:
     needs: [diagnose]
     if: ${{ needs.diagnose.outputs.schema_issue == 'true' || needs.diagnose.outputs.test_issue == 'true' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 9.15.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "22"
           cache: "pnpm"
@@ -111,7 +111,7 @@ jobs:
         run: pnpm build:schema
 
       - name: 提交修复
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "fix: auto-regenerate schema after sync check failure"
           file_pattern: "packages/**/*.schema.json"
@@ -125,7 +125,7 @@ jobs:
     needs: [diagnose]
     if: ${{ needs.diagnose.outputs.docs_issue == 'true' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: 检查并报告损坏链接
         run: |

@@ -37,13 +37,13 @@ jobs:
     outputs:
       report_path: ${{ steps.report.outputs.path }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 9.15.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "22"
           cache: "pnpm"
@@ -96,7 +96,7 @@ jobs:
           cp "${REPORT_PATH}" "weekly-artifacts/${REPORT_PATH}"
 
       - name: 上传竞品报告 artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: weekly-competitive-intel
           path: weekly-artifacts/
@@ -108,13 +108,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: [competitive-intel]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 9.15.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "22"
           cache: "pnpm"
@@ -154,7 +154,7 @@ jobs:
           cp docs/planning/technical-debt-report.md weekly-artifacts/docs/planning/technical-debt-report.md
 
       - name: 上传技术债务报告 artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: weekly-product-strategist
           path: weekly-artifacts/
@@ -166,7 +166,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [competitive-intel, product-strategist]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: 生成周报模板
         env:
@@ -198,7 +198,7 @@ jobs:
           cp docs/planning/weekly-digest.md weekly-artifacts/docs/planning/weekly-digest.md
 
       - name: 上传周报 artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: weekly-coordinator
           path: weekly-artifacts/
@@ -210,7 +210,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [coordinator]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: 生成依赖图快照
         run: |
@@ -223,7 +223,7 @@ jobs:
           cp docs/planning/task-burndown.md weekly-artifacts/docs/planning/task-burndown.md
 
       - name: 上传任务规划 artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: weekly-task-distributor
           path: weekly-artifacts/
@@ -235,13 +235,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: [task-distributor]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 9.15.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "22"
           cache: "pnpm"
@@ -291,7 +291,7 @@ jobs:
           fi
 
       - name: 上传进化度量 artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: weekly-evolution-collector
           path: weekly-artifacts/
@@ -303,9 +303,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [evolution-collector]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "22"
 
@@ -321,7 +321,7 @@ jobs:
           cp docs/planning/evolution-pitfalls.md weekly-artifacts/docs/planning/evolution-pitfalls.md
 
       - name: 上传模式库 artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: weekly-evolution-patterns
           path: weekly-artifacts/
@@ -333,9 +333,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [evolution-patterns]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "22"
 
@@ -350,7 +350,7 @@ jobs:
           cp docs/planning/AGENT_HEALTH_DASHBOARD.md weekly-artifacts/docs/planning/AGENT_HEALTH_DASHBOARD.md
 
       - name: 上传 Dashboard artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: weekly-health-dashboard
           path: weekly-artifacts/
@@ -369,16 +369,16 @@ jobs:
       - evolution-patterns
       - health-dashboard
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: 下载 weekly artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: .
           merge-multiple: true
 
       - name: 提交 weekly artifacts
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "docs: weekly agent artifacts for ${{ github.event.inputs.week || 'current week' }}"
           file_pattern: "docs/research/competitor-updates-*.md docs/planning/technical-debt-report.md docs/planning/weekly-digest.md docs/planning/task-burndown.md docs/planning/dependency-graph.md docs/planning/evolution-ledger.md docs/planning/evolution-snapshot-*.md docs/planning/evolution-patterns.md docs/planning/evolution-pitfalls.md docs/planning/AGENT_HEALTH_DASHBOARD.md"
