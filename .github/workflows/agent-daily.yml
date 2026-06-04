@@ -1,33 +1,23 @@
-# Agent Daily Cadence — 每日智能体自动巡检
-#
-# 触发条件：
-#   1. 定时：每天 00:00 UTC 自动运行
-#   2. 手动：通过 workflow_dispatch 手动触发
-#   3. Push：向 main 分支推送时运行（快速反馈）
-#
-# 执行的智能体任务：
-#   - quality：审查最近 24 小时代码变更
-#   - quality：检查待 merge PR 的质量门禁
-#   - docs：自动更新文档一致性
+# Agent Daily Cadence — daily quality/docs evidence
 
 name: Agent Daily Cadence
 
 on:
   schedule:
-    - cron: "0 0 * * *" # 每天 00:00 UTC
+    - cron: "0 0 * * *"
   workflow_dispatch:
     inputs:
       agent:
-        description: "指定运行的智能体（留空则运行全部）"
+        description: "Agent to run"
         required: false
         type: choice
+        default: all
         options:
           - all
-          - code-reviewer
-          - quality-guardian
-          - docs-agent
+          - quality
+          - docs
       date_override:
-        description: "覆盖日期（YYYY-MM-DD，留空使用当天）"
+        description: "Date override (YYYY-MM-DD)"
         required: false
         type: string
   push:
@@ -41,15 +31,14 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # ── Job 1: 代码审查智能体 ──
-  code-review:
-    name: "code-reviewer: 每日代码审计"
+  quality:
+    name: "quality: daily gate evidence"
     runs-on: ubuntu-latest
-    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.agent == 'all' || github.event.inputs.agent == 'code-reviewer' }}
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.agent == 'all' || github.event.inputs.agent == 'quality' }}
     steps:
       - uses: actions/checkout@v6
         with:
-          fetch-depth: 0 # 获取完整历史以计算 diff
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v6
         with:
@@ -62,59 +51,32 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: 安装 Playwright Chromium
+      - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: 运行构建和类型检查
-        run: pnpm build:schema && pnpm check
-
-      - name: 生成每日审计报告
-        if: ${{ github.event_name != 'push' }}
+      - name: Run quality agent
+        env:
+          DATE_OVERRIDE: ${{ github.event.inputs.date_override }}
         run: |
-          DATE=$(date -u +%Y-%m-%d)
-          REPORT="docs/reviews/daily-audit-${DATE}.md"
-          mkdir -p docs/reviews
-          echo "---" > "${REPORT}"
-          echo "agent: quality" >> "${REPORT}"
-          echo "period: ${DATE}" >> "${REPORT}"
-          echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "${REPORT}"
-          echo "repo_revision: \"${{ github.sha }}\"" >> "${REPORT}"
-          echo "inputs:" >> "${REPORT}"
-          echo "  - AGENTS.md" >> "${REPORT}"
-          echo "  - package.json" >> "${REPORT}"
-          echo "owner: \"@code-reviewer\"" >> "${REPORT}"
-          echo "decision_level: info" >> "${REPORT}"
-          echo "---" >> "${REPORT}"
-          echo "" >> "${REPORT}"
-          echo "# code-reviewer 每日审计报告" >> "${REPORT}"
-          echo "" >> "${REPORT}"
-          echo "> ⚠️ 本报告为 automation-generated machine evidence/template，不是已完成的 quality 审查；补充实质 diff 审计前不得作为 advisory/blocking 决策依据。" >> "${REPORT}"
-          echo "" >> "${REPORT}"
-          echo "**触发**: ${{ github.event_name }}" >> "${REPORT}"
-          echo "" >> "${REPORT}"
-          echo "## 构建状态" >> "${REPORT}"
-          echo "" >> "${REPORT}"
-          echo "- [x] pnpm build:schema" >> "${REPORT}"
-          echo "- [x] pnpm check" >> "${REPORT}"
+          DATE="${DATE_OVERRIDE:-$(date -u +%Y-%m-%d)}"
+          node scripts/agent-runner.mjs quality --period "${DATE}"
 
-          mkdir -p daily-artifacts/docs/reviews
-          cp "${REPORT}" "daily-artifacts/${REPORT}"
-
-      - name: 上传每日审计报告 artifact
-        if: ${{ github.event_name != 'push' }}
+      - name: Upload quality artifact
+        if: ${{ always() && github.event_name != 'push' }}
         uses: actions/upload-artifact@v7
         with:
-          name: daily-code-review
-          path: daily-artifacts/
-          if-no-files-found: error
+          name: daily-quality
+          path: docs/reviews/quality-gate-*.md
+          if-no-files-found: warn
 
-  # ── Job 2: 质量门禁智能体 ──
-  quality-gate:
-    name: "quality-guardian: PR 质量门禁"
+  docs:
+    name: "docs: daily documentation evidence"
     runs-on: ubuntu-latest
-    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.agent == 'all' || github.event.inputs.agent == 'quality-guardian' }}
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.agent == 'all' || github.event.inputs.agent == 'docs' }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v6
         with:
@@ -127,149 +89,54 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: 安装 Playwright Chromium
-        run: pnpm exec playwright install --with-deps chromium
-
-      - name: 运行完整质量门禁
+      - name: Run docs agent
+        env:
+          DATE_OVERRIDE: ${{ github.event.inputs.date_override }}
         run: |
-          pnpm build:schema
-          pnpm check
-          pnpm test:snapshot:smoke
+          DATE="${DATE_OVERRIDE:-$(date -u +%Y-%m-%d)}"
+          node scripts/agent-runner.mjs docs --period "${DATE}"
 
-      - name: 运行 SceneView3D release 门禁
-        run: pnpm test:release:scene3d
-
-      - name: 检查资源策略
-        run: pnpm test:resources
-
-      - name: 生成质量门禁报告
-        if: always()
-        run: |
-          mkdir -p docs/reviews
-          DATE=$(date -u +%Y-%m-%d)
-          echo "---" > docs/reviews/quality-gate-${DATE}.md
-          echo "agent: quality" >> docs/reviews/quality-gate-${DATE}.md
-          echo "period: ${DATE}" >> docs/reviews/quality-gate-${DATE}.md
-          echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> docs/reviews/quality-gate-${DATE}.md
-          echo "repo_revision: \"${{ github.sha }}\"" >> docs/reviews/quality-gate-${DATE}.md
-          echo "decision_level: info" >> docs/reviews/quality-gate-${DATE}.md
-          echo "---" >> docs/reviews/quality-gate-${DATE}.md
-          echo "" >> docs/reviews/quality-gate-${DATE}.md
-          echo "# Quality Gate: ${DATE}" >> docs/reviews/quality-gate-${DATE}.md
-          echo "" >> docs/reviews/quality-gate-${DATE}.md
-          echo "> ⚠️ 本报告为 automation-generated machine evidence/template，不是已完成的 quality gate；补充完整门禁判定前不得作为 blocking merge/release 决策依据。" >> docs/reviews/quality-gate-${DATE}.md
-          echo "" >> docs/reviews/quality-gate-${DATE}.md
-          echo "## Gate Results" >> docs/reviews/quality-gate-${DATE}.md
-          echo "" >> docs/reviews/quality-gate-${DATE}.md
-          echo "| Gate | Status |" >> docs/reviews/quality-gate-${DATE}.md
-          echo "| --- | --- |" >> docs/reviews/quality-gate-${DATE}.md
-          echo "| schema build | ${{ job.status == 'success' && 'passed' || 'failed' }} |" >> docs/reviews/quality-gate-${DATE}.md
-
-          mkdir -p daily-artifacts/docs/reviews
-          cp docs/reviews/quality-gate-${DATE}.md daily-artifacts/docs/reviews/quality-gate-${DATE}.md
-
-      - name: 上传质量门禁报告 artifact
-        if: always()
+      - name: Upload docs artifact
+        if: ${{ always() && github.event_name != 'push' }}
         uses: actions/upload-artifact@v7
         with:
-          name: daily-quality-gate
-          path: daily-artifacts/
-          if-no-files-found: error
+          name: daily-docs
+          path: docs/reviews/documentation-audit-*.md
+          if-no-files-found: warn
 
-  # ── Job 3: 文档一致性智能体 ──
-  docs-audit:
-    name: "docs-agent: 文档一致性检查"
-    runs-on: ubuntu-latest
-    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.agent == 'all' || github.event.inputs.agent == 'docs-agent' }}
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: 检查文档交叉引用完整性
-        run: |
-          echo "=== 文档审计: $(date -u +%Y-%m-%d) ==="
-          echo ""
-          echo "检查 README.md 引用的文档是否存在..."
-          for doc in $(grep -oP '\[.*?\]\(\./docs/[^)]+\)' README.md | grep -oP '(?<=\(\./).*(?=\))'); do
-            if [ -f "$doc" ]; then
-              echo "  ✅ $doc"
-            else
-              echo "  ❌ $doc 不存在"
-            fi
-          done
-
-      - name: 检查 CHANGELOG.md 版本一致性
-        run: |
-          echo "=== 版本一致性检查 ==="
-          PKG_VERSION=$(node -p "require('./package.json').version")
-          echo "package.json version: $PKG_VERSION"
-
-      - name: 检查 AGENTS.md 引用的文档路径
-        run: |
-          echo "=== AGENTS.md 引用完整性 ==="
-          for doc in $(grep -oP '`[^`]+\.md`' AGENTS.md | tr -d '`'); do
-            FOUND=$(find docs -name "$doc" 2>/dev/null | head -1)
-            if [ -n "$FOUND" ]; then
-              echo "  ✅ $doc -> $FOUND"
-            else
-              echo "  ⚠️  $doc 未找到"
-            fi
-          done
-
-      - name: 生成文档审计报告
-        if: ${{ github.event_name != 'push' }}
-        run: |
-          DATE=$(date -u +%Y-%m-%d)
-          mkdir -p docs/reviews
-          REPORT="docs/reviews/documentation-audit-${DATE}.md"
-          echo "---" > "${REPORT}"
-          echo "agent: docs" >> "${REPORT}"
-          echo "period: ${DATE}" >> "${REPORT}"
-          echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "${REPORT}"
-          echo "repo_revision: \"${{ github.sha }}\"" >> "${REPORT}"
-          echo "inputs:" >> "${REPORT}"
-          echo "  - AGENTS.md" >> "${REPORT}"
-          echo "  - README.md" >> "${REPORT}"
-          echo "owner: \"@docs-agent\"" >> "${REPORT}"
-          echo "decision_level: info" >> "${REPORT}"
-          echo "---" >> "${REPORT}"
-          echo "" >> "${REPORT}"
-          echo "# Documentation Audit: ${DATE}" >> "${REPORT}"
-          echo "" >> "${REPORT}"
-          echo "> ⚠️ 本报告为 automation-generated machine evidence/template，不是已完成的 docs 审查；补充实质文档审计前不得作为 advisory/blocking 决策依据。" >> "${REPORT}"
-
-          mkdir -p daily-artifacts/docs/reviews
-          cp "${REPORT}" "daily-artifacts/${REPORT}"
-
-      - name: 上传文档审计报告 artifact
-        if: ${{ github.event_name != 'push' }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: daily-docs-agent
-          path: daily-artifacts/
-          if-no-files-found: error
-
-  # ── Job 4: 单写入者序列化提交 ──
-  coordinator-commit:
-    name: "coordinator: 序列化提交 daily artifacts"
+  orchestrator-commit:
+    name: "orchestrator: serialize daily artifacts"
     runs-on: ubuntu-latest
     if: ${{ always() && github.event_name != 'push' }}
     needs:
-      - code-review
-      - quality-gate
-      - docs-audit
+      - quality
+      - docs
     steps:
       - uses: actions/checkout@v6
 
-      - name: 下载 daily artifacts
+      - name: Download daily artifacts
         uses: actions/download-artifact@v8
         with:
           path: .
           merge-multiple: true
+        continue-on-error: true
 
-      - name: 提交 daily artifacts
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Refresh health dashboard and retention window
+        env:
+          DATE_OVERRIDE: ${{ github.event.inputs.date_override }}
+        run: |
+          DATE="${DATE_OVERRIDE:-$(date -u +%Y-%m-%d)}"
+          node scripts/dashboard-generator.mjs --period "${DATE}"
+          node scripts/report-retention.mjs --apply
+
+      - name: Commit daily artifacts
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "docs: daily agent artifacts"
-          file_pattern: "docs/reviews/daily-audit-*.md docs/reviews/quality-gate-*.md docs/reviews/documentation-audit-*.md"
-          commit_user_name: "coordinator[bot]"
-          commit_user_email: "coordinator[bot]@gis-engine.dev"
+          file_pattern: "docs/reviews/daily-audit-*.md docs/reviews/quality-gate-*.md docs/reviews/documentation-audit-*.md docs/planning/AGENT_HEALTH_DASHBOARD.md docs/planning/handoff-ledger.json"
+          commit_user_name: "orchestrator[bot]"
+          commit_user_email: "orchestrator[bot]@gis-engine.dev"

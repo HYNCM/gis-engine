@@ -3,9 +3,9 @@
 # 触发条件：手动触发，当检测到 P0 阻断问题时
 #
 # 流程：
-#   1. coordinator 写入 docs/alerts/critical-gaps.md
-#   2. task-distributor 创建 P0/P1 修复任务
-#   3. quality-guardian 执行紧急门禁
+#   1. orchestrator 写入 docs/alerts/critical-gaps.md
+#   2. orchestrator 创建 P0/P1 修复任务
+#   3. quality 执行紧急门禁
 #   4. 修复完成后关闭紧急模式
 
 name: Emergency Response
@@ -97,11 +97,11 @@ ALERTEOF
 
 ## 后续任务
 
-<!-- task-distributor 在此追加 P0/P1 follow-up tasks -->
+<!-- orchestrator 在此追加 P0/P1 follow-up tasks -->
 
 ## 关闭条件
 
-<!-- 修复完成后由 coordinator 填写 -->
+<!-- 修复完成后由 orchestrator 填写 -->
 ALERTEOF
           } > docs/alerts/critical-gaps.md
 
@@ -189,8 +189,8 @@ ALERTEOF
           if-no-files-found: error
 
   # ── 单写入者序列化提交 ──
-  coordinator-commit:
-    name: "coordinator: 序列化提交 emergency artifacts"
+  orchestrator-commit:
+    name: "orchestrator: 序列化提交 emergency artifacts"
     runs-on: ubuntu-latest
     if: ${{ always() }}
     needs:
@@ -218,5 +218,5 @@ ALERTEOF
         with:
           commit_message: "docs: emergency response artifacts"
           file_pattern: "docs/alerts/critical-gaps.md"
-          commit_user_name: "coordinator[bot]"
-          commit_user_email: "coordinator[bot]@gis-engine.dev"
+          commit_user_name: "orchestrator[bot]"
+          commit_user_email: "orchestrator[bot]@gis-engine.dev"

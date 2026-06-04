@@ -1,0 +1,63 @@
+{
+  "generated_at": "2026-06-04T04:07:16.533Z",
+  "repo_revision": "1494e3a",
+  "source": "scripts/handoff-ledger.mjs",
+  "flows": [
+    {
+      "id": "HOC-N1",
+      "from": "product",
+      "to": "orchestrator",
+      "description": "competitor signals and priority recommendations",
+      "required": true,
+      "status": "pending",
+      "severity": "error",
+      "note": "orchestrator report is older than product report",
+      "upstream": {
+        "path": "docs/research/competitor-updates-2026-W23.md",
+        "generated_at": "2026-06-01T14:16:38.000Z",
+        "sha256": "8090575c18900a97534d8b52d6ccb580bda98a29f6c22c121759913ae62a07e9"
+      },
+      "downstream": {
+        "path": "docs/planning/weekly-digest.md",
+        "generated_at": "2026-05-29T10:20:00.000Z",
+        "sha256": "39016e91b6ddb082f137c8084703f563faff7179f6a6454453c19cf4b7af7534"
+      }
+    },
+    {
+      "id": "HOC-N2",
+      "from": "builder",
+      "to": "quality",
+      "description": "implementation evidence and test results",
+      "required": false,
+      "status": "idle",
+      "severity": "info",
+      "note": "builder is ad-hoc and has no active handoff",
+      "upstream": null,
+      "downstream": {
+        "path": "docs/reviews/quality-gate-2026-06-04.md",
+        "generated_at": "2026-06-04T02:15:13.000Z",
+        "sha256": "4af5bc25f79d3c6768e0c1baa6c87afa2839ca37d9b7a9cc61f5aff484b8c57b"
+      }
+    },
+    {
+      "id": "HOC-N3",
+      "from": "quality",
+      "to": "orchestrator",
+      "description": "gate pass/block and release readiness",
+      "required": true,
+      "status": "pending",
+      "severity": "error",
+      "note": "orchestrator report is older than quality report",
+      "upstream": {
+        "path": "docs/reviews/quality-gate-2026-06-04.md",
+        "generated_at": "2026-06-04T02:15:13.000Z",
+        "sha256": "4af5bc25f79d3c6768e0c1baa6c87afa2839ca37d9b7a9cc61f5aff484b8c57b"
+      },
+      "downstream": {
+        "path": "docs/planning/weekly-digest.md",
+        "generated_at": "2026-05-29T10:20:00.000Z",
+        "sha256": "39016e91b6ddb082f137c8084703f563faff7179f6a6454453c19cf4b7af7534"
+      }
+    }
+  ]
+}

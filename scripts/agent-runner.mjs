@@ -29,104 +29,15 @@ import {
 } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  AGENT_REGISTRY,
+  getAgentOutput,
+  listAgentNames,
+  resolveAgentName,
+} from "./agent-registry.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
-
-// ── 智能体注册表 (v2.0: 11→5 agents, 2026-06-03) ──
-const AGENT_REGISTRY = {
-  orchestrator: {
-    role: "chief planning, orchestration, and task decomposition agent",
-    period: "weekly",
-    modelPolicy: {
-      tier: "frontier-planning",
-      reasoningEffort: "high",
-      routingNote:
-        "Use for cross-agent conflict resolution, roadmap tradeoffs, Go/No-go planning state, and GitHub Issue creation.",
-    },
-    outputDir: "docs/planning",
-    outputFile: "weekly-digest.md",
-    gates: [],
-    gateDecisionLevel: "advisory",
-  },
-  product: {
-    role: "evidence-first competitor analyst, roadmap owner, and feature-priority driver",
-    period: "weekly",
-    modelPolicy: {
-      tier: "frontier-research",
-      reasoningEffort: "high",
-      routingNote:
-        "Use when dated external releases, standards, or dependency changes can alter roadmap priority.",
-    },
-    outputDir: "docs/research",
-    outputFile: (period) => `competitor-updates-${period}.md`,
-    gates: [],
-    gateDecisionLevel: "advisory",
-  },
-  quality: {
-    role: "unified design reviewer and deterministic gate keeper",
-    period: "daily",
-    modelPolicy: {
-      tier: "frontier-quality",
-      reasoningEffort: "high",
-      routingNote:
-        "Use for blocking merge/release gate decisions, architecture review, and waiver review.",
-    },
-    outputDir: "docs/reviews",
-    outputFile: (period) => `quality-gate-${period}.md`,
-    gates: [
-      "pnpm build:schema",
-      "pnpm check",
-      "pnpm test:snapshot:smoke",
-      "pnpm test:release:scene3d",
-    ],
-    gateDecisionLevel: "blocking",
-  },
-  builder: {
-    role: "implementation agent with focus areas: engine, ai, adapter, qa",
-    period: "ad-hoc",
-    modelPolicy: {
-      tier: "coding-implementation",
-      reasoningEffort: "medium",
-      routingNote:
-        "Use for bounded implementation slices with schema, MCP, adapter, or diagnostic implications.",
-    },
-    outputDir: "docs/reviews",
-    outputFile: (period) => `builder-evidence-${period}.md`,
-    gates: ["pnpm build:schema", "pnpm check", "pnpm test"],
-    gateDecisionLevel: "advisory",
-  },
-  docs: {
-    role: "documentation ledger, release notes, public status alignment",
-    period: "weekly",
-    modelPolicy: {
-      tier: "efficient-docs",
-      reasoningEffort: "low",
-      routingNote:
-        "Use for documentation consistency, link audits, release-note alignment after evidence exists.",
-    },
-    outputDir: "docs/reviews",
-    outputFile: (period) => `documentation-audit-${period}.md`,
-    gates: [],
-    gateDecisionLevel: "advisory",
-  },
-  "evolution-guardian": {
-    role: "self-evolving ecosystem metrics collector (orchestrator subset)",
-    period: "weekly",
-    reportAgent: "orchestrator",
-    owner: "@orchestrator (evolution-guardian)",
-    modelPolicy: {
-      tier: "frontier-planning",
-      reasoningEffort: "medium",
-      routingNote:
-        "Use for monthly evolution reviews: analyzing 4-week metric trends, auto-suggesting rule adjustments, calibrating estimation baselines and decision weights.",
-    },
-    outputDir: "docs/planning",
-    outputFile: (period) => `evolution-review-${period}.md`,
-    gates: [],
-    gateDecisionLevel: "advisory",
-  },
-};
 
 // ── 辅助函数 ──
 
@@ -385,7 +296,7 @@ class HealthCheck {
    */
   validateInputs(agentName) {
     const missing = [];
-    const agentDef = AGENT_REGISTRY[agentName];
+    const agentDef = AGENT_REGISTRY[resolveAgentName(agentName)];
     if (!agentDef) return { ok: true, missing: [] };
 
     const requiredInputs = {
@@ -460,21 +371,21 @@ class HealthCheck {
     const todayStr = now.toISOString().slice(0, 10);
 
     for (const [name, def] of Object.entries(AGENT_REGISTRY)) {
+      if (def.healthRequired === false) continue;
       let expectedFile;
-      if (typeof def.outputFile === "function") {
-        // 日/周 agent 按当前周期检查
-        if (def.period === "daily") {
-          expectedFile = def.outputFile(todayStr);
-        } else if (def.period === "weekly") {
-          expectedFile = def.outputFile(getWeekStr());
-        } else {
-          continue; // ad-hoc agent 不强制
-        }
+      if (def.period === "daily") {
+        expectedFile = getAgentOutput(def, todayStr).outputFile;
+      } else if (def.period === "weekly") {
+        expectedFile = getAgentOutput(def, getWeekStr()).outputFile;
       } else {
-        expectedFile = def.outputFile;
+        continue; // ad-hoc agent 不强制
       }
 
-      const reportPath = join(this.root, def.outputDir, expectedFile);
+      const { outputDir } = getAgentOutput(
+        def,
+        def.period === "daily" ? todayStr : getWeekStr(),
+      );
+      const reportPath = join(this.root, outputDir, expectedFile);
       try {
         const stats = statSync(reportPath);
         const ageDays = (now - stats.mtime) / 86400000;
@@ -645,16 +556,22 @@ function generateReport(agentName, agentDef, period, gateResults) {
 
 async function main() {
   const args = process.argv.slice(2);
-  const agentName = args[0];
+  const rawAgentName = args[0];
+  const agentName = resolveAgentName(rawAgentName);
 
-  if (!agentName || agentName === "--help" || agentName === "-h") {
+  if (!rawAgentName || rawAgentName === "--help" || rawAgentName === "-h") {
     console.log(`
 Agent Runner — GIS Engine 多智能体调用脚本
 
 用法: node scripts/agent-runner.mjs <agent-name> [options]
 
 可用智能体:
-  ${Object.keys(AGENT_REGISTRY).join("\n  ")}
+  ${listAgentNames().join("\n  ")}
+
+旧别名:
+  coordinator, task-distributor, competitive-intel, product-strategist,
+  code-reviewer, quality-guardian, engine-agent, ai-agent, adapter-agent,
+  qa-agent, docs-agent
 
 选项:
   --period <str>   指定周期 (如 2026-05-24, 2026-W22, 2026-05)
@@ -669,6 +586,12 @@ Agent Runner — GIS Engine 多智能体调用脚本
   node scripts/agent-runner.mjs all --daily
 `);
     process.exit(0);
+  }
+
+  if (rawAgentName !== agentName && rawAgentName !== "all") {
+    console.warn(
+      `⚠️ 旧智能体入口 ${rawAgentName} 已映射到 ${agentName}，请迁移到新 5-agent 命名。`,
+    );
   }
 
   // 解析选项
@@ -701,8 +624,8 @@ Agent Runner — GIS Engine 多智能体调用脚本
   } else {
     const def = AGENT_REGISTRY[agentName];
     if (!def) {
-      console.error(`❌ 未知智能体: ${agentName}`);
-      console.error(`   可用: ${Object.keys(AGENT_REGISTRY).join(", ")}`);
+      console.error(`❌ 未知智能体: ${rawAgentName}`);
+      console.error(`   可用: ${listAgentNames().join(", ")}`);
       process.exit(1);
     }
     agentsToRun = [[agentName, def]];
@@ -788,11 +711,8 @@ Agent Runner — GIS Engine 多智能体调用脚本
       }
 
       // 写入输出文件
-      const outputFile =
-        typeof def.outputFile === "function"
-          ? def.outputFile(period)
-          : def.outputFile;
-      const outputPath = join(ROOT, def.outputDir, outputFile);
+      const { outputDir, outputFile } = getAgentOutput(def, period);
+      const outputPath = join(ROOT, outputDir, outputFile);
       if (options.dryRun) {
         console.log(`   📄 (dry-run) 将生成报告: ${outputPath}`);
       } else {

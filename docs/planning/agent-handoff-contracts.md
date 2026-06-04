@@ -18,6 +18,11 @@ This document defines the explicit, machine-verifiable "handoff contracts" betwe
 Every agent-to-agent data flow must be covered by a contract. Violations of contract requirements are blocking issues and must be escalated to `@orchestrator`.
 
 > **v2.0 (2026-06-03)**: Simplified from 6 contracts to 3 after agent consolidation (11→5 agents).
+> **Automation note (2026-06-04)**: `scripts/handoff-ledger.mjs` generates
+> `docs/planning/handoff-ledger.json` with upstream/downstream artifact hashes
+> and `idle | pending | consumed | missing-upstream` status. The ledger is
+> machine evidence for handoff consumption; a specialist or orchestrator still
+> owns advisory/blocking decisions.
 
 ---
 
@@ -184,6 +189,9 @@ All applicable gates from the required gates table in AGENTS.md.
 | HOC-N1 | @product | @orchestrator | Weekly competitor update | Sourced claims, fresh scorecard |
 | HOC-N2 | @builder | @quality | Implementation complete | `pnpm build:schema && pnpm check && pnpm test` |
 | HOC-N3 | @quality | @orchestrator | Gate evaluation complete | All required gates |
+
+The generated handoff ledger records these same flows and should be refreshed
+whenever daily, weekly, monthly, or PR-quality automation produces new evidence.
 
 ---
 

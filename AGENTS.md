@@ -584,8 +584,14 @@ agent owns its follow-up maintenance.
 | Daily workflow | `.github/workflows/agent-daily.yml` | Triggers @quality and @docs daily |
 | Weekly workflow | `.github/workflows/agent-weekly.yml` | Triggers @product and @orchestrator weekly |
 | Monthly workflow | `.github/workflows/agent-monthly.yml` | Triggers @product roadmap refresh and @quality release readiness |
+| PR quality workflow | `.github/workflows/pr-quality.yml` | Runs path-aware @quality gates on pull requests and publishes HOC-N3 machine evidence |
 | Auto-fix pipeline | `.github/workflows/auto-fix.yml` | Diagnoses and auto-fixes schema sync, test, and doc link issues on PR |
+| Agent registry | `scripts/agent-registry.mjs` | Single source for 5-agent names, legacy aliases, cadence, SLA, outputs, and HOC flows |
 | Agent runner | `scripts/agent-runner.mjs` | CLI tool to invoke any agent locally or in CI |
+| Handoff ledger | `scripts/handoff-ledger.mjs`, `docs/planning/handoff-ledger.json` | Records HOC-N1/N2/N3 upstream/downstream artifact consumption state |
+| Path-aware gate plan | `scripts/gate-plan.mjs` | Maps changed files to the required deterministic gates for PR and local validation |
+| GitHub Issues snapshot | `scripts/issues-snapshot.mjs`, `docs/planning/issues-snapshot.md` | Generates markdown planning snapshots from GitHub Issues when the API is available |
+| Report retention | `scripts/report-retention.mjs` | Keeps rolling daily audit, quality gate, and documentation audit reports within the active retention window |
 | Doc generator | `scripts/doc-generator.mjs` | Auto-generates changelog entries, feature matrix, API skeleton, and link audits |
 | Evolution collector | `scripts/evolution-collector.mjs` | Collects D1-D6 metrics from sprint artifacts, generates evolution ledger entries, and detects anomalies |
 | Report templates | `.github/agent-templates/README.md` | Standardized report structure for each agent type |
@@ -600,8 +606,9 @@ flowchart TD
   end
 
   subgraph Weekly["Weekly (Monday 00:00 UTC)"]
-    P["@product: 竞品报告 + scorecard + 技术债务"]
-    O["@orchestrator: 周报摘要 + 优先级 + Issue 分发"]
+    P["@product: 竞品报告 + scorecard"]
+    O["@orchestrator: 周报摘要 + Issue 快照"]
+    E["@orchestrator/evolution: D1-D6 度量"]
   end
 
   subgraph Monthly["Monthly (1st 00:00 UTC)"]
@@ -611,12 +618,14 @@ flowchart TD
 
   subgraph OnPR["On PR"]
     AF["auto-fix: 诊断 + 自动修复"]
-    PRQ["@quality: 即时审查 + 门禁"]
+    PRQ["@quality: path-aware gate plan + HOC-N3 evidence"]
   end
 
   P --> O
   Q --> O
+  O --> E
   MR --> RR
+  PRQ --> O
 ```
 
 ### Agent Runner CLI
@@ -636,6 +645,20 @@ node scripts/agent-runner.mjs quality --dry-run
 
 # Run with explicit period override
 node scripts/agent-runner.mjs orchestrator --period 2026-W23
+
+# Generate handoff ledger and health dashboard
+node scripts/handoff-ledger.mjs
+node scripts/dashboard-generator.mjs --period 2026-06-04
+
+# Plan or run path-aware gates for the current diff
+node scripts/gate-plan.mjs
+node scripts/gate-plan.mjs --run
+
+# Generate GitHub Issues planning snapshot when gh is available
+node scripts/issues-snapshot.mjs
+
+# Preview rolling-report retention cleanup
+node scripts/report-retention.mjs
 ```
 
 Agent runner exit codes:
@@ -749,7 +772,7 @@ The agent framework integrates with the existing test infrastructure:
                       │
                       ▼
 ┌──────────────────────────────────────────────────┐
-│  docs-agent reviews generated artifacts:          │
+│  @docs reviews generated artifacts:               │
 │  - Validates accuracy                            │
 │  - Adds missing context                          │
 │  - Updates docs/README.md index                  │
@@ -764,8 +787,14 @@ To activate the automation infrastructure for the first time:
 - [x] `.github/workflows/agent-daily.yml` — Daily agent cadence workflow
 - [x] `.github/workflows/agent-weekly.yml` — Weekly agent cadence workflow
 - [x] `.github/workflows/agent-monthly.yml` — Monthly agent cadence workflow
+- [x] `.github/workflows/pr-quality.yml` — PR quality gate workflow
 - [x] `.github/workflows/auto-fix.yml` — CI auto-fix pipeline
+- [x] `scripts/agent-registry.mjs` — Shared 5-agent registry and legacy alias map
 - [x] `scripts/agent-runner.mjs` — Agent invocation CLI
+- [x] `scripts/handoff-ledger.mjs` — HOC-N1/N2/N3 ledger generator
+- [x] `scripts/gate-plan.mjs` — Path-aware gate planner
+- [x] `scripts/issues-snapshot.mjs` — GitHub Issues planning snapshot generator
+- [x] `scripts/report-retention.mjs` — Rolling report retention manager
 - [x] `scripts/doc-generator.mjs` — Documentation auto-generator
 - [x] `scripts/evolution-collector.mjs` — Evolution metrics collector (D1-D6 + anomaly detection)
 - [x] `.github/agent-templates/README.md` — Report templates

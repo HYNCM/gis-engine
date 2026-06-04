@@ -1,0 +1,72 @@
+# PR Quality Check — event-driven HOC-N3 machine evidence
+
+name: PR Quality Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: pr-quality-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: "quality: PR gate plan"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Generate and run path-aware gate plan
+        run: |
+          node scripts/gate-plan.mjs \
+            --base "${{ github.event.pull_request.base.sha }}" \
+            --head "${{ github.sha }}" \
+            --summary .agent-quality-summary.md \
+            --run
+
+      - name: Publish PR quality summary
+        if: always()
+        run: |
+          {
+            echo "## HOC-N3 PR Quality Evidence"
+            echo ""
+            cat .agent-quality-summary.md
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload PR quality artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: pr-quality-gate-plan
+          path: .agent-quality-summary.md
+          if-no-files-found: warn
+
+      - name: Comment PR with quality summary
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment "${{ github.event.pull_request.number }}" \
+            --body-file .agent-quality-summary.md
+        continue-on-error: true

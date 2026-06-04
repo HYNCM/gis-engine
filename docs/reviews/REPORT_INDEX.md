@@ -26,7 +26,8 @@ templates, and where to look for the real evidence.
 
 | Stream | Purpose | Typical files |
 | --- | --- | --- |
-| Rolling audits | Daily quality/docs cadence and release gate freshness | `daily-audit-*`, `quality-gate-*`, `documentation-audit-*`, `release-readiness-*` |
+| Rolling audits | Daily quality/docs cadence and release gate freshness | `daily-audit-*`, `quality-gate-*`, `quality-gate-release-*`, `documentation-audit-*`, `release-readiness-*` |
+| PR quality evidence | Pull-request path-aware gate summaries from `pr-quality.yml` | GitHub Actions summary/artifact, not committed by default |
 | Spatial query hardening | Query readiness, diagnostics, and closure evidence | `sqh-*` |
 | MapLibre drift audit | Dependency drift, resource, and go/no-go evidence | `mld-*`, `mlc-*` |
 | AI generation / NL planning | Generation contracts, planner provenance, delivery wording | `nla-*`, `nlq-*`, `ain-*`, `gir-*` |
@@ -41,7 +42,11 @@ templates, and where to look for the real evidence.
 | `daily-audit-*` | Latest 7 days | Freshness signal only; older files can be deleted. |
 | `quality-gate-*` | Latest 7 days | Use named stream reports for substantive acceptance details. |
 | `documentation-audit-*` | Latest 7 days | Keep the newest real audit with concrete findings. |
-| `release-readiness-*` | Latest relevant cut | Keep while the release window is active. |
+| `quality-gate-release-*` / `release-readiness-*` | Latest relevant cut | Keep while the release window is active. |
+
+Use `node scripts/report-retention.mjs` to preview stale rolling reports and
+`node scripts/report-retention.mjs --apply` from automation or an explicit
+maintenance task to enforce the retention window.
 
 ## Legacy Naming Note
 

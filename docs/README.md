@@ -23,7 +23,7 @@ Use the docs in this order:
 | Area | Documents | Notes |
 | --- | --- | --- |
 | Repo status | [../README.md](../README.md), [../CHANGELOG.md](../CHANGELOG.md) | Current package/runtime status and release notes. |
-| Operating model | [../AGENTS.md](../AGENTS.md), [planning/agent-handoff-contracts.md](./planning/agent-handoff-contracts.md), [planning/evolution-framework.md](./planning/evolution-framework.md) | Current multi-agent rules, handoff contracts, and evolution governance. |
+| Operating model | [../AGENTS.md](../AGENTS.md), [planning/agent-handoff-contracts.md](./planning/agent-handoff-contracts.md), [planning/evolution-framework.md](./planning/evolution-framework.md), [planning/handoff-ledger.json](./planning/handoff-ledger.json) | Current multi-agent rules, handoff contracts, handoff consumption state, and evolution governance. |
 | Architecture | [architecture/core-framework.md](./architecture/core-framework.md), [architecture/core-capabilities.md](./architecture/core-capabilities.md) | Runtime boundaries, capability staging, package layout. |
 | Public contracts | [spec/contracts-and-interfaces.md](./spec/contracts-and-interfaces.md), [engineering/supported-feature-matrix.md](./engineering/supported-feature-matrix.md), [engineering/contract-freeze.md](./engineering/contract-freeze.md) | Schemas, commands, diagnostics, adapters, MCP surface. |
 | Release and test policy | [engineering/ci-test-strategy.md](./engineering/ci-test-strategy.md), [engineering/release-wording-guardrails.md](./engineering/release-wording-guardrails.md), [engineering/maplibre-version-drift-audit.md](./engineering/maplibre-version-drift-audit.md), [planning/v0.2-release.md](./planning/v0.2-release.md) | Deterministic gates, wording guardrails, dependency-drift checklist, release checklist. |
@@ -38,10 +38,10 @@ of rewriting them to sound timeless.
 | Area | Entry point | Notes |
 | --- | --- | --- |
 | Reviews and gates | [reviews/REPORT_INDEX.md](./reviews/REPORT_INDEX.md) | Review streams, rolling audits, retention rules. |
-| Planning snapshots | [planning/monthly-roadmap.md](./planning/monthly-roadmap.md), [planning/weekly-digest.md](./planning/weekly-digest.md), [planning/task-burndown.md](./planning/task-burndown.md), [planning/dependency-graph.md](./planning/dependency-graph.md) | Approved state at a given planning run; not timeless process docs. |
+| Planning snapshots | [planning/monthly-roadmap.md](./planning/monthly-roadmap.md), [planning/weekly-digest.md](./planning/weekly-digest.md), [planning/issues-snapshot.md](./planning/issues-snapshot.md), [planning/task-burndown.md](./planning/task-burndown.md), [planning/dependency-graph.md](./planning/dependency-graph.md) | GitHub Issues become the canonical task state when available; markdown files are generated or approved snapshots. |
 | Sprint plans | [planning/](./planning/) | `sprint-*` and many `feature-specs/*` files are bounded planning artifacts. |
 | Research | [research/capability-scorecard.md](./research/capability-scorecard.md), [research/competitor-updates-2026-W23.md](./research/competitor-updates-2026-W23.md) | Dated external evidence; do not treat as current unless refreshed in-run. |
-| Automation health | [planning/AGENT_HEALTH_DASHBOARD.md](./planning/AGENT_HEALTH_DASHBOARD.md) | Generated dashboard for current report freshness and handoff anomalies. |
+| Automation health | [planning/AGENT_HEALTH_DASHBOARD.md](./planning/AGENT_HEALTH_DASHBOARD.md), [planning/handoff-ledger.json](./planning/handoff-ledger.json) | Generated dashboard for current report freshness and HOC-N1/N2/N3 consumption state. |
 
 ## Legacy Naming Note
 
@@ -89,6 +89,7 @@ covered by the retention window.
 - Keep root and `docs/` index pages short and authoritative.
 - Prefer one entry-point page per area over long raw file dumps.
 - Keep rolling `daily-audit-*`, `quality-gate-*`, and
-  `documentation-audit-*` files to the latest 7 active days.
+  `documentation-audit-*` files to the latest 7 active days with
+  `node scripts/report-retention.mjs --apply`.
 - Run `pnpm test:docs`, `node scripts/doc-generator.mjs links`, and the
   relevant deterministic gates after doc restructuring.

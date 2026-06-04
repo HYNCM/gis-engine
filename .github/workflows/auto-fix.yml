@@ -132,4 +132,4 @@ jobs:
           echo "=== 损坏的文档引用 ==="
           echo "以下引用目标不存在："
           echo ""
-          echo "请手动修复或运行: @docs-agent 修复文档引用"
+          echo "请手动修复或运行: @docs 修复文档引用"

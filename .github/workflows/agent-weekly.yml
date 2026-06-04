@@ -1,43 +1,33 @@
-# Agent Weekly Cadence — 每周智能体规划周期
-#
-# 触发条件：
-#   1. 定时：每周一 00:00 UTC
-#   2. 手动触发
-#
-# 执行的智能体任务：
-#   - product：分析竞品动向，更新 capability-scorecard
-#   - product：更新技术债务报告
-#   - orchestrator：生成本周摘要和优先级
-#   - orchestrator：更新任务燃尽图和依赖图
+# Agent Weekly Cadence — product/orchestrator/evolution cycle
 
 name: Agent Weekly Cadence
 
 on:
   schedule:
-    - cron: "0 0 * * 1" # 每周一 00:00 UTC
+    - cron: "0 0 * * 1"
   workflow_dispatch:
     inputs:
       week:
-        description: "指定周数（YYYY-Www，如 2026-W22）"
+        description: "Week override (YYYY-Www, for example 2026-W23)"
         required: false
         type: string
 
 permissions:
   contents: write
+  issues: read
 
 concurrency:
   group: agent-weekly-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  # ── Job 1: 竞品情报 ──
-  competitive-intel:
-    name: "competitive-intel: 竞品分析"
+  product:
+    name: "product: weekly evidence"
     runs-on: ubuntu-latest
-    outputs:
-      report_path: ${{ steps.report.outputs.path }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v6
         with:
@@ -50,337 +40,125 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: 生成竞品分析报告
-        id: report
+      - name: Run product agent template
         env:
           WEEK_OVERRIDE: ${{ github.event.inputs.week }}
         run: |
-          WEEK=$(date -u +%G-W%V)
-          if [ -n "${WEEK_OVERRIDE}" ]; then
-            WEEK="${WEEK_OVERRIDE}"
-          fi
-          REPORT_PATH="docs/research/competitor-updates-${WEEK}.md"
-          echo "path=${REPORT_PATH}" >> $GITHUB_OUTPUT
+          WEEK="${WEEK_OVERRIDE:-$(date -u +%G-W%V)}"
+          node scripts/agent-runner.mjs product --period "${WEEK}"
 
-          echo "---" > "${REPORT_PATH}"
-          echo "agent: product" >> "${REPORT_PATH}"
-          echo "period: ${WEEK}" >> "${REPORT_PATH}"
-          echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "${REPORT_PATH}"
-          echo "repo_revision: \"${{ github.sha }}\"" >> "${REPORT_PATH}"
-          echo "inputs:" >> "${REPORT_PATH}"
-          echo "  - AGENTS.md" >> "${REPORT_PATH}"
-          echo "  - docs/research/capability-scorecard.md" >> "${REPORT_PATH}"
-          echo "owner: \"@competitive-intel\"" >> "${REPORT_PATH}"
-          echo "decision_level: info" >> "${REPORT_PATH}"
-          echo "---" >> "${REPORT_PATH}"
-          echo "" >> "${REPORT_PATH}"
-          echo "# Competitor Updates: ${WEEK}" >> "${REPORT_PATH}"
-          echo "" >> "${REPORT_PATH}"
-          echo "## Executive Summary" >> "${REPORT_PATH}"
-          echo "" >> "${REPORT_PATH}"
-          echo "> ⚠️ 本报告为 automation-generated evidence/template，不是已完成的 product 审查；补充 dated evidence、影响、行动和置信度前不得作为 advisory/blocking 决策依据。" >> "${REPORT_PATH}"
-          echo "" >> "${REPORT_PATH}"
-          echo "## New Releases" >> "${REPORT_PATH}"
-          echo "" >> "${REPORT_PATH}"
-          echo "<!-- 待填充 -->" >> "${REPORT_PATH}"
-          echo "" >> "${REPORT_PATH}"
-          echo "## API / Spec Changes" >> "${REPORT_PATH}"
-          echo "" >> "${REPORT_PATH}"
-          echo "<!-- 待填充 -->" >> "${REPORT_PATH}"
-          echo "" >> "${REPORT_PATH}"
-          echo "## Recommended Follow-up Tasks" >> "${REPORT_PATH}"
-          echo "" >> "${REPORT_PATH}"
-          echo "<!-- 待填充 -->" >> "${REPORT_PATH}"
-
-          mkdir -p "weekly-artifacts/$(dirname "${REPORT_PATH}")"
-          cp "${REPORT_PATH}" "weekly-artifacts/${REPORT_PATH}"
-
-      - name: 上传竞品报告 artifact
-        uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v7
         with:
-          name: weekly-competitive-intel
-          path: weekly-artifacts/
-          if-no-files-found: error
-
-  # ── Job 2: 产品策略 ──
-  product-strategist:
-    name: "product-strategist: 技术债务更新"
-    runs-on: ubuntu-latest
-    needs: [competitive-intel]
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: pnpm/action-setup@v6
-        with:
-          version: 9.15.0
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: "22"
-          cache: "pnpm"
-
-      - run: pnpm install --frozen-lockfile
-
-      - name: 安装 Playwright Chromium
-        run: pnpm exec playwright install --with-deps chromium
-
-      - name: 运行测试获取技术债务信号
-        run: |
-          pnpm check 2>&1 | tee /tmp/check-output.txt || true
-          echo "=== Test Summary ===" > /tmp/debt-signals.txt
-          echo "Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> /tmp/debt-signals.txt
-          echo "CI Status: ${{ needs.competitive-intel.result }}" >> /tmp/debt-signals.txt
-
-      - name: 生成技术债务报告模板
-        run: |
-          DATE=$(date -u +%Y-%m)
-          echo "---" > docs/planning/technical-debt-report.md
-          echo "agent: product" >> docs/planning/technical-debt-report.md
-          echo "period: ${DATE}" >> docs/planning/technical-debt-report.md
-          echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> docs/planning/technical-debt-report.md
-          echo "repo_revision: \"${{ github.sha }}\"" >> docs/planning/technical-debt-report.md
-          echo "inputs:" >> docs/planning/technical-debt-report.md
-          echo "  - AGENTS.md" >> docs/planning/technical-debt-report.md
-          echo "  - /tmp/debt-signals.txt" >> docs/planning/technical-debt-report.md
-          echo "owner: \"@product-strategist\"" >> docs/planning/technical-debt-report.md
-          echo "decision_level: info" >> docs/planning/technical-debt-report.md
-          echo "---" >> docs/planning/technical-debt-report.md
-          echo "" >> docs/planning/technical-debt-report.md
-          echo "# Technical Debt Report: ${DATE}" >> docs/planning/technical-debt-report.md
-          echo "" >> docs/planning/technical-debt-report.md
-          echo "> ⚠️ 本报告为 automation-generated evidence/template，不是已完成的 product 审查；补充证据、影响、行动和置信度前不得作为 advisory/blocking 决策依据。" >> docs/planning/technical-debt-report.md
-
-          mkdir -p weekly-artifacts/docs/planning
-          cp docs/planning/technical-debt-report.md weekly-artifacts/docs/planning/technical-debt-report.md
-
-      - name: 上传技术债务报告 artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: weekly-product-strategist
-          path: weekly-artifacts/
-          if-no-files-found: error
-
-  # ── Job 3: 协调者 ──
-  coordinator:
-    name: "coordinator: 周报摘要"
-    runs-on: ubuntu-latest
-    needs: [competitive-intel, product-strategist]
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: 生成周报模板
-        env:
-          WEEK_OVERRIDE: ${{ github.event.inputs.week }}
-        run: |
-          WEEK=$(date -u +%G-W%V)
-          if [ -n "${WEEK_OVERRIDE}" ]; then
-            WEEK="${WEEK_OVERRIDE}"
-          fi
-
-          echo "---" > docs/planning/weekly-digest.md
-          echo "agent: orchestrator" >> docs/planning/weekly-digest.md
-          echo "period: ${WEEK}" >> docs/planning/weekly-digest.md
-          echo "generated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> docs/planning/weekly-digest.md
-          echo "repo_revision: \"${{ github.sha }}\"" >> docs/planning/weekly-digest.md
-          echo "inputs:" >> docs/planning/weekly-digest.md
-          echo "  - AGENTS.md" >> docs/planning/weekly-digest.md
-          echo "  - docs/research/competitor-updates-${WEEK}.md" >> docs/planning/weekly-digest.md
-          echo "  - docs/planning/technical-debt-report.md" >> docs/planning/weekly-digest.md
-          echo "owner: \"@coordinator\"" >> docs/planning/weekly-digest.md
-          echo "decision_level: info" >> docs/planning/weekly-digest.md
-          echo "---" >> docs/planning/weekly-digest.md
-          echo "" >> docs/planning/weekly-digest.md
-          echo "# Weekly Digest: ${WEEK}" >> docs/planning/weekly-digest.md
-          echo "" >> docs/planning/weekly-digest.md
-          echo "> ⚠️ 本报告为 automation-generated evidence/template，不是已完成的 coordinator 周报；汇总各 agent 的实质报告前不得作为 advisory/blocking 决策依据。" >> docs/planning/weekly-digest.md
-
-          mkdir -p weekly-artifacts/docs/planning
-          cp docs/planning/weekly-digest.md weekly-artifacts/docs/planning/weekly-digest.md
-
-      - name: 上传周报 artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: weekly-coordinator
-          path: weekly-artifacts/
-          if-no-files-found: error
-
-  # ── Job 4: 任务分配 ──
-  task-distributor:
-    name: "task-distributor: 燃尽图更新"
-    runs-on: ubuntu-latest
-    needs: [coordinator]
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: 生成依赖图快照
-        run: |
-          echo "> ⚠️ 请由 task-distributor 智能体更新依赖图和燃尽表。" > docs/planning/dependency-graph.md.new
-          cat docs/planning/dependency-graph.md >> docs/planning/dependency-graph.md.new
-          mv docs/planning/dependency-graph.md.new docs/planning/dependency-graph.md
-
-          mkdir -p weekly-artifacts/docs/planning
-          cp docs/planning/dependency-graph.md weekly-artifacts/docs/planning/dependency-graph.md
-          cp docs/planning/task-burndown.md weekly-artifacts/docs/planning/task-burndown.md
-
-      - name: 上传任务规划 artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: weekly-task-distributor
-          path: weekly-artifacts/
-          if-no-files-found: error
-
-  # ── Job 4.5: 进化度量收集 ──
-  evolution-collector:
-    name: "evolution-guardian: D1-D6 度量收集"
-    runs-on: ubuntu-latest
-    needs: [task-distributor]
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: pnpm/action-setup@v6
-        with:
-          version: 9.15.0
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: "22"
-          cache: "pnpm"
-
-      - run: pnpm install --frozen-lockfile
-
-      - name: 运行进化度量收集并更新账本
-        env:
-          WEEK_OVERRIDE: ${{ github.event.inputs.week }}
-        run: |
-          retry() {
-            local attempts=0
-            local max=2
-            local delay=15
-            until "$@"; do
-              attempts=$((attempts + 1))
-              if [ "$attempts" -ge "$max" ]; then
-                return 1
-              fi
-              echo "⚠️ Command failed, retrying in ${delay}s... (attempt ${attempts}/${max})"
-              sleep "$delay"
-            done
-          }
-
-          WEEK=$(date -u +%G-W%V)
-          if [ -n "${WEEK_OVERRIDE}" ]; then
-            WEEK="${WEEK_OVERRIDE}"
-          fi
-
-          set -o pipefail
-          retry bash -lc 'node scripts/evolution-collector.mjs --week "${WEEK}" 2>&1 | tee /tmp/evolution-output.txt'
-          STATUS=$?
-          if [ "${STATUS}" -eq 1 ]; then
-            echo "::warning::evolution-collector detected metric anomalies; see weekly-evolution-collector artifact"
-          elif [ "${STATUS}" -ne 0 ]; then
-            exit "${STATUS}"
-          fi
-
-      - name: 收集进化账本 artifact
-        run: |
-          mkdir -p weekly-artifacts/docs/planning
-          mkdir -p weekly-artifacts/evidence
-          cp docs/planning/evolution-ledger.md weekly-artifacts/docs/planning/evolution-ledger.md
-          cp /tmp/evolution-output.txt weekly-artifacts/evidence/evolution-output.txt
-          if [ -f "docs/planning/evolution-snapshot-${WEEK}.md" ]; then
-            cp "docs/planning/evolution-snapshot-${WEEK}.md" weekly-artifacts/docs/planning/evolution-snapshot-${WEEK}.md
-          fi
-
-      - name: 上传进化度量 artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: weekly-evolution-collector
-          path: weekly-artifacts/
-          if-no-files-found: error
-
-  # ── Job 4.6: 进化模式和陷阱提取 ──
-  evolution-patterns:
-    name: "evolution-guardian: Pattern/Pitfall 库提取"
-    runs-on: ubuntu-latest
-    needs: [evolution-collector]
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: "22"
-
-      - name: 提取进化模式和陷阱
-        run: |
-          MONTH=$(date -u +%Y-%m)
-          node scripts/evolution-pattern-extractor.mjs --month "${MONTH}"
-
-      - name: 收集模式库 artifact
-        run: |
-          mkdir -p weekly-artifacts/docs/planning
-          cp docs/planning/evolution-patterns.md weekly-artifacts/docs/planning/evolution-patterns.md
-          cp docs/planning/evolution-pitfalls.md weekly-artifacts/docs/planning/evolution-pitfalls.md
-
-      - name: 上传模式库 artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: weekly-evolution-patterns
-          path: weekly-artifacts/
+          name: weekly-product
+          path: docs/research/competitor-updates-*.md
           if-no-files-found: warn
 
-  # ── Job 4.7: Agent Health Dashboard ──
-  health-dashboard:
-    name: "coordinator: Agent Health Dashboard"
+  orchestrator:
+    name: "orchestrator: weekly planning snapshot"
     runs-on: ubuntu-latest
-    needs: [evolution-patterns]
+    needs: [product]
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download product artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: weekly-product
+          path: .
+        continue-on-error: true
 
       - uses: actions/setup-node@v6
         with:
           node-version: "22"
 
-      - name: 生成 Agent Health Dashboard
+      - name: Run orchestrator agent template
+        env:
+          WEEK_OVERRIDE: ${{ github.event.inputs.week }}
         run: |
-          PERIOD=$(date -u +%Y-%m-%d)
-          node scripts/dashboard-generator.mjs --period "${PERIOD}"
+          WEEK="${WEEK_OVERRIDE:-$(date -u +%G-W%V)}"
+          node scripts/agent-runner.mjs orchestrator --period "${WEEK}"
+          node scripts/issues-snapshot.mjs
 
-      - name: 收集 Dashboard artifact
-        run: |
-          mkdir -p weekly-artifacts/docs/planning
-          cp docs/planning/AGENT_HEALTH_DASHBOARD.md weekly-artifacts/docs/planning/AGENT_HEALTH_DASHBOARD.md
-
-      - name: 上传 Dashboard artifact
-        uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v7
         with:
-          name: weekly-health-dashboard
-          path: weekly-artifacts/
+          name: weekly-orchestrator
+          path: |
+            docs/planning/weekly-digest.md
+            docs/planning/issues-snapshot.md
           if-no-files-found: warn
 
-  # ── Job 5: 单写入者序列化提交 ──
-  coordinator-commit:
-    name: "coordinator: 序列化提交 weekly artifacts"
+  evolution:
+    name: "orchestrator: evolution metrics"
     runs-on: ubuntu-latest
+    needs: [orchestrator]
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Run evolution collectors
+        env:
+          WEEK_OVERRIDE: ${{ github.event.inputs.week }}
+        run: |
+          WEEK="${WEEK_OVERRIDE:-$(date -u +%G-W%V)}"
+          node scripts/evolution-collector.mjs --week "${WEEK}" || STATUS=$?
+          node scripts/evolution-pattern-extractor.mjs --month "$(date -u +%Y-%m)"
+          exit "${STATUS:-0}"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: weekly-evolution
+          path: |
+            docs/planning/evolution-ledger.md
+            docs/planning/evolution-snapshot-*.md
+            docs/planning/evolution-patterns.md
+            docs/planning/evolution-pitfalls.md
+          if-no-files-found: warn
+
+  orchestrator-commit:
+    name: "orchestrator: serialize weekly artifacts"
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
     needs:
-      - competitive-intel
-      - product-strategist
-      - coordinator
-      - task-distributor
-      - evolution-collector
-      - evolution-patterns
-      - health-dashboard
+      - product
+      - orchestrator
+      - evolution
     steps:
       - uses: actions/checkout@v6
 
-      - name: 下载 weekly artifacts
+      - name: Download weekly artifacts
         uses: actions/download-artifact@v8
         with:
           path: .
           merge-multiple: true
+        continue-on-error: true
 
-      - name: 提交 weekly artifacts
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Refresh handoff ledger and dashboard
+        run: |
+          PERIOD="$(date -u +%Y-%m-%d)"
+          node scripts/dashboard-generator.mjs --period "${PERIOD}"
+
+      - name: Commit weekly artifacts
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "docs: weekly agent artifacts for ${{ github.event.inputs.week || 'current week' }}"
-          file_pattern: "docs/research/competitor-updates-*.md docs/planning/technical-debt-report.md docs/planning/weekly-digest.md docs/planning/task-burndown.md docs/planning/dependency-graph.md docs/planning/evolution-ledger.md docs/planning/evolution-snapshot-*.md docs/planning/evolution-patterns.md docs/planning/evolution-pitfalls.md docs/planning/AGENT_HEALTH_DASHBOARD.md"
-          commit_user_name: "coordinator[bot]"
-          commit_user_email: "coordinator[bot]@gis-engine.dev"
+          file_pattern: "docs/research/competitor-updates-*.md docs/planning/weekly-digest.md docs/planning/issues-snapshot.md docs/planning/evolution-ledger.md docs/planning/evolution-snapshot-*.md docs/planning/evolution-patterns.md docs/planning/evolution-pitfalls.md docs/planning/AGENT_HEALTH_DASHBOARD.md docs/planning/handoff-ledger.json"
+          commit_user_name: "orchestrator[bot]"
+          commit_user_email: "orchestrator[bot]@gis-engine.dev"
