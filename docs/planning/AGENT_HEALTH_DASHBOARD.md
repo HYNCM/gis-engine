@@ -1,6 +1,6 @@
 ---
-generated_at: 2026-06-04T04:07:16.542Z
-repo_revision: "1494e3a"
+generated_at: 2026-06-04T06:57:09.156Z
+repo_revision: "ab5e2ab"
 period: 2026-06-04
 agent: orchestrator
 decision_level: info
@@ -15,7 +15,7 @@ decision_level: info
 
 | Agent | Cadence | Last Report | Last Run | Status | Age |
 | --- | --- | --- | --- | --- | --- |
-| @orchestrator | weekly | docs/planning/weekly-digest.md | 2026-05-29 | 🟢 ok | 6d |
+| @orchestrator | weekly | docs/planning/weekly-digest.md | 2026-06-04 | 🟢 fresh | 0d |
 | @product | weekly | docs/research/competitor-updates-2026-W23.md | 2026-06-01 | 🟢 ok | 3d |
 | @quality | daily | docs/reviews/quality-gate-2026-06-04.md | 2026-06-04 | 🟢 fresh | 0d |
 | @builder | ad-hoc | — | — | 🟢 ok | — |
@@ -23,16 +23,13 @@ decision_level: info
 
 ## Data Flow Health
 
-| Flow | Issue | Severity |
-| --- | --- | --- |
-| product → orchestrator<br/>*competitor signals and priority recommendations (HOC-N1)* | orchestrator report is older than product report | 🔴 error |
-| quality → orchestrator<br/>*gate pass/block and release readiness (HOC-N3)* | orchestrator report is older than quality report | 🔴 error |
+✅ 所有 agent-to-agent 数据流时序正常。
 
 ## SLA Compliance
 
 | Agent | SLA | Max Latency | Current | Status |
 | --- | --- | --- | --- | --- |
-| @orchestrator | 周一 00:00 UTC | 2d | 6d | ❌ breach |
+| @orchestrator | 周一 00:00 UTC | 2d | 0d | ✅ compliant |
 | @product | 周一 00:00 UTC | 2d | 3d | ❌ breach |
 | @quality | 每日 00:00 UTC | 1d | 0d | ✅ compliant |
 | @docs | 每日 00:00 UTC | 2d | 0d | ✅ compliant |
@@ -41,12 +38,11 @@ decision_level: info
 
 ## Action Items
 
-- [ ] **product → orchestrator**: orchestrator report is older than product report → 检查 handoff 时序
-- [ ] **quality → orchestrator**: orchestrator report is older than quality report → 检查 handoff 时序
+✅ 当前无待处理操作项。
 
 ## Summary
 
 - **健康 agent**: 5/5
 - **问题 agent**: 0/5
-- **数据流异常**: 2
-- **生成时间**: 2026-06-04T04:07:16.548Z
+- **数据流异常**: 0
+- **生成时间**: 2026-06-04T06:57:09.185Z

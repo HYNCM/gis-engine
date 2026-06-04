@@ -59,7 +59,7 @@
     "docs:preview": "cd docs/website && pnpm docs:preview",
     "size:check": "du -sk packages/*/dist | sort -rn",
     "build:cdn": "node scripts/build-cdn.mjs",
-    "publish:dry": "pnpm build && pnpm -r publish --dry-run --no-git-checks"
+    "publish:dry": "pnpm build && pnpm --filter @gis-engine/engine publish --dry-run --no-git-checks && pnpm --filter @gis-engine/scene3d publish --dry-run --no-git-checks && pnpm --filter @gis-engine/ai publish --dry-run --no-git-checks && pnpm --filter @gis-engine/cli publish --dry-run --no-git-checks"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

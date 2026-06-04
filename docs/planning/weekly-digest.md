@@ -1,43 +1,66 @@
 ---
-agent: coordinator
-period: 2026-W22
-generated_at: 2026-05-29T10:20:00Z
-repo_revision: "d628fd1454a44859e57d8996343413684a541c30"
+agent: orchestrator
+period: 2026-W23
+generated_at: 2026-06-04T06:56:34Z
+repo_revision: "ab5e2ab"
 inputs:
   - AGENTS.md
-  - docs/research/competitor-updates-2026-W22.md
-  - docs/research/capability-scorecard.md
-  - docs/planning/monthly-roadmap.md
-  - docs/planning/feature-specs/natural-language-map-app-generation.md
-  - docs/planning/feature-specs/spatial-analysis-readiness.md
-  - docs/planning/sprint-2026-W23-ai-map-app-generation.md
-  - docs/planning/sprint-2026-W23-generation-quality-hardening.md
-  - docs/reviews/nla-008-serialized-planning-handoff-2026-05-29.md
-  - docs/reviews/nlq-001-prompt-planner-boundary-2026-05-29.md
-  - docs/reviews/nlq-002-planner-provenance-evidence-2026-05-29.md
-  - docs/reviews/nlq-003-spatial-query-evidence-2026-05-29.md
-  - docs/reviews/nlq-004-export-manifest-evidence-2026-05-29.md
-  - docs/planning/feature-specs/cloud-native-source-readiness.md
-  - docs/reviews/nlq-006-scene-browsing-blocker-visibility-2026-05-29.md
-  - docs/reviews/nlq-007-serialized-quality-hardening-planning-2026-05-29.md
-  - docs/planning/feature-specs/generated-app-delivery-ux.md
-  - docs/archive/2026-05-30/planning/sprint-2026-W22-ai-native-next-loop.md
-  - docs/archive/2026-05-30/planning/sprint-2026-W22-competitive-signal-response.md
-  - docs/planning/feature-specs/sceneview3d-stable-renderer-contract.md
-  - docs/engineering/maplibre-version-drift-audit.md
-  - docs/archive/2026-05-30/reviews/sceneview3d-stable-renderer-gate-2026-05-25.md
-  - docs/archive/2026-05-30/reviews/sceneview3d-lifecycle-diagnostics-2026-05-25.md
-  - docs/reviews/sceneview3d-src-evidence-decision-2026-05-25.md
-  - docs/reviews/sceneview3d-src-006-stable-runtime-gate-2026-05-29.md
-  - docs/planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md
-  - packages/scene3d-three-adapter/src/index.ts
-  - tests/adapter/scene3d-three-adapter.test.ts
-  - tests/snapshot/smoke/scene3d-stable-renderer-contract.test.ts
-owner: "@coordinator"
+  - docs/research/competitor-updates-2026-W23.md
+  - docs/reviews/quality-gate-2026-06-03.md
+  - docs/reviews/quality-gate-2026-06-04.md
+  - docs/reviews/documentation-audit-2026-06-04.md
+  - docs/planning/feature-specs/sdk-cli-first-release.md
+  - docs/design/phase-c-developer-experience.md
+  - docs/planning/task-burndown.md
+  - docs/planning/handoff-ledger.json
+  - docs/planning/AGENT_HEALTH_DASHBOARD.md
+  - command: pnpm docs:build
+  - command: pnpm build:schema
+  - command: pnpm check
+  - command: pnpm test:docs
+  - command: pnpm publish:dry
+  - command: getting-started prepublish build + Playwright smoke
+  - command: VitePress dev homepage + quick-start smoke
+owner: "@orchestrator"
 decision_level: advisory
 ---
 
-# Weekly Digest: 2026-W22
+# Weekly Digest: 2026-W23
+
+## 2026-06-04 Orchestrator Refresh
+
+This refresh consumes the newer product and quality evidence that the handoff
+ledger flagged as pending. The planning defect was not a runtime failure: the
+latest product, quality, and docs reports had moved past the 2026-05-29 digest,
+so HOC-N1 and HOC-N3 appeared stale even though the execution batches were
+closed.
+
+Current defect review:
+
+| Finding | Evidence | Impact | Action | Confidence |
+| --- | --- | --- | --- | --- |
+| Orchestrator digest lagged product and quality reports | `docs/planning/handoff-ledger.json` flagged product -> orchestrator and quality -> orchestrator as pending because this digest was older than 2026-06-01/06-04 reports | Planning health dashboard showed two data-flow anomalies | Refresh this digest, regenerate handoff ledger and dashboard | high |
+| Phase C DX design was stale | `docs/design/phase-c-developer-experience.md` still described 11 VitePress 404s and missing migration/example docs, while `pnpm docs:build`, package READMEs, example READMEs, and migration docs are now present | Next work could reopen completed docs tasks | Recalibrate Phase C to release DX verification and publish-readiness checks | high |
+| Engine package README had broken relative next-step links | `packages/engine/README.md` pointed to `../packages/cli/README.md` and `../examples/` from inside `packages/engine` | npm/GitHub readers could land on invalid local paths | Fix links to `../cli/README.md` and `../../examples/` | high |
+| Environment-limited gates were re-run in a listener/browser-capable run | `pnpm check` passed; `pnpm test:docs` passed; `pnpm publish:dry` passed for the four GA packages; getting-started prepublish build and Playwright smoke passed; VitePress dev homepage and quick-start smoke passed | DX and release-readiness evidence no longer depends on stale sandbox-waiver wording | Keep these gates in the release checklist and rerun before merge/release | high |
+
+Accepted state:
+
+- AI Map Workbench AWP is closed as local example hardening Go and
+  product/hosted promotion No-go.
+- SDK + CLI First Release Productization is closed through
+  `docs/planning/feature-specs/sdk-cli-first-release.md`.
+- MapLibre v6 remains a prerelease compatibility gate, not a GA package move.
+- SceneView3D stable `view.mode: "scene3d"` remains blocked.
+
+Next work plan:
+
+| id | Priority | Owner | Status | Target artifact | Exit condition |
+| --- | --- | --- | --- | --- | --- |
+| DX-VERIFY-003 | P1 | `@builder` + `@docs` | done | `examples/getting-started` and docs dev smoke evidence | getting-started validates/renders/applies `recolor-cities`; docs homepage and quick-start load without page errors |
+| DX-VERIFY-004 | P1 | `@quality` | done | package tarball/publish-dry evidence | `pnpm publish:dry` passes for the four GA publish packages and excludes `@gis-engine/scene3d-three-adapter` |
+| DX-VERIFY-005 | P0 | `@orchestrator` | done | this digest, handoff ledger, health dashboard | HOC-N1 and HOC-N3 freshness anomalies cleared after regeneration |
+| DX-VERIFY-006 | P2 | `@docs` | queued | docs/DX release checklist | docs build, link audit, docs tests, CLI tests, and package README links remain green |
 
 ## Cycle Conclusion
 

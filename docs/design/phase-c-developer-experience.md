@@ -4,22 +4,34 @@
 
 让一个新用户在 5 分钟内完成 "发现 → 安装 → 看到第一张地图 → 理解下一步" 的完整旅程。
 
-Phase A（SDK 硬化）和 Phase B（Provider HTTP 层）已让 `npx create-gis-map` 端到端可用。但当前开发者体验存在显著缺口：文档站 50% 侧边栏链接 404、根 README 像内部状态报告、5/7 示例是无文档的 fixture、没有版本迁移指南、没有可交互的 playground。Phase C 的目标是把这些缺口全部关闭到 "GOOD" 级别。
+Phase A（SDK 硬化）和 Phase B（Provider HTTP 层）已让 `npx create-gis-map` 端到端可用。
+
+2026-06-04 状态校准：Phase C 的原始缺口大多已经关闭。根 README 已改成 Quick Start 入口，VitePress sidebar 页面已补齐，Playground 链接已替换为 Examples，getting-started 示例、fixture README、v0.2→v0.3 迁移指南和性能页面均已存在。当前 Phase C 不再按“11 个 404 + README 重写”的旧状态执行，下一步收敛到发布前 DX 验证和小缺陷修复。
 
 ### 2. 当前状态评估
 
-| 领域 | 评级 | 核心问题 |
+| 领域 | 评级 | 当前状态 / 剩余问题 |
 |------|------|---------|
-| 根 README | NEEDS_WORK | 像内部状态报告，无连贯 onboarding 流程，broken self-anchor |
-| engine README | NEEDS_WORK | 只有 install + minimal usage，无 API ref 链接，无 peerDependency 说明 |
-| ai README | NEEDS_WORK | 过于密集的内部设计文档，无 IDE 配置示例，无 API ref 链接 |
+| 根 README | GOOD | 已提供 Quick Start、SDK/CLI/CDN 入口、package overview 和 Project Status 分离 |
+| engine README | GOOD | 已补 peerDependency、CDN、API reference 和 Next Steps；2026-06-04 修正 package 内相对链接 |
+| ai README | GOOD | 已补 MCP 配置、programmatic usage、tool list、generation evidence 和 API reference |
 | cli README | GOOD | 完整端到端 walkthrough，全参数表，provider 配置 |
-| examples/ | NEEDS_WORK | 5/7 示例无文档 fixture，无 getting-started 示例 |
-| VitePress 文档站 | NEEDS_WORK | 11/22 侧边栏链接 404，playground 链接指向空 URL |
-| 版本迁移指南 | MISSING | 无 v0.2→v0.3 迁移指南（hashPrompt 是 public breaking change） |
-| 性能基准 | NEEDS_WORK | 有预算但无实测数据发布 |
-| 在线 Playground | MISSING | 导航链接存在但无实际部署 |
-| npm 包发现 | NEEDS_WORK | CLI README 自足，engine/ai README 过于单薄 |
+| examples/ | GOOD | `examples/getting-started` 和主要 fixture README 已存在；2026-06-04 预发布 tarball build + browser smoke 已通过 |
+| VitePress 文档站 | GOOD | `pnpm docs:build` 通过，sidebar/MCP 页面存在，nav 使用 Examples 链接 |
+| 版本迁移指南 | GOOD | `docs/migration/v0.2-to-v0.3.md` 已覆盖 prompt hash 和 provider HTTP 变化 |
+| 性能基准 | GOOD | `docs/website/guide/performance.md` 已记录 smoke/nightly 预算和 2026-06-04 实测摘要 |
+| 在线 Playground | PARKED | 未部署；导航不再承诺 playground，后续 v0.4 再作为独立产品任务 |
+| npm 包发现 | GOOD | engine/ai/cli README 均有 install、最小示例和 API/next-step 入口 |
+
+### 2026-06-04 下一步执行计划
+
+| id | title | priority | status | finish gates |
+| --- | --- | --- | --- | --- |
+| DX-VERIFY-001 | 修正 package README 相对链接并跑文档链接审计 | P0 | done | `node scripts/doc-generator.mjs links`; `pnpm test:docs` |
+| DX-VERIFY-002 | 复核 VitePress 站点构建和 sidebar/nav 页面覆盖 | P0 | done | `pnpm docs:build` |
+| DX-VERIFY-003 | 在可监听环境运行 getting-started / docs dev smoke | P1 | done | getting-started prepublish build and Playwright smoke pass; VitePress dev homepage and quick-start page load with no page errors |
+| DX-VERIFY-004 | 发布前 package tarball 文档可发现性抽检 | P1 | done | `pnpm publish:dry` passes for the four GA publish packages and excludes `@gis-engine/scene3d-three-adapter` |
+| DX-VERIFY-005 | 将当前 DX 状态同步到 orchestrator weekly digest 和 handoff ledger | P0 | done | handoff ledger clears product/quality → orchestrator freshness anomalies |
 
 ### 3. Scope
 

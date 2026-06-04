@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-06-04T04:07:16.533Z",
-  "repo_revision": "1494e3a",
+  "generated_at": "2026-06-04T06:57:09.113Z",
+  "repo_revision": "ab5e2ab",
   "source": "scripts/handoff-ledger.mjs",
   "flows": [
     {
@@ -9,9 +9,9 @@
       "to": "orchestrator",
       "description": "competitor signals and priority recommendations",
       "required": true,
-      "status": "pending",
-      "severity": "error",
-      "note": "orchestrator report is older than product report",
+      "status": "consumed",
+      "severity": "info",
+      "note": "orchestrator report is newer than or equal to product report",
       "upstream": {
         "path": "docs/research/competitor-updates-2026-W23.md",
         "generated_at": "2026-06-01T14:16:38.000Z",
@@ -19,8 +19,8 @@
       },
       "downstream": {
         "path": "docs/planning/weekly-digest.md",
-        "generated_at": "2026-05-29T10:20:00.000Z",
-        "sha256": "39016e91b6ddb082f137c8084703f563faff7179f6a6454453c19cf4b7af7534"
+        "generated_at": "2026-06-04T06:56:34.000Z",
+        "sha256": "a45a913ea6774a4ade610e1122f8f81e417396f94fa4c6df7565cbdc7d9e93a5"
       }
     },
     {
@@ -45,9 +45,9 @@
       "to": "orchestrator",
       "description": "gate pass/block and release readiness",
       "required": true,
-      "status": "pending",
-      "severity": "error",
-      "note": "orchestrator report is older than quality report",
+      "status": "consumed",
+      "severity": "info",
+      "note": "orchestrator report is newer than or equal to quality report",
       "upstream": {
         "path": "docs/reviews/quality-gate-2026-06-04.md",
         "generated_at": "2026-06-04T02:15:13.000Z",
@@ -55,8 +55,8 @@
       },
       "downstream": {
         "path": "docs/planning/weekly-digest.md",
-        "generated_at": "2026-05-29T10:20:00.000Z",
-        "sha256": "39016e91b6ddb082f137c8084703f563faff7179f6a6454453c19cf4b7af7534"
+        "generated_at": "2026-06-04T06:56:34.000Z",
+        "sha256": "a45a913ea6774a4ade610e1122f8f81e417396f94fa4c6df7565cbdc7d9e93a5"
       }
     }
   ]

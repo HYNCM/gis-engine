@@ -72,6 +72,6 @@ const snapshot = await map.snapshot();
 
 ## Next Steps
 
-- [CLI Quick Start](../packages/cli/README.md) — scaffold or AI-generate a map project
-- [Examples](../examples/) — runnable examples and fixture data
+- [CLI Quick Start](../cli/README.md) — scaffold or AI-generate a map project
+- [Examples](../../examples/) — runnable examples and fixture data
 - [API Reference](https://gis-engine.dev/api/engine) — full API documentation

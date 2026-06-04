@@ -14,8 +14,20 @@ import { createMap, validateSpec } from "@gis-engine/engine";
 import type { MapSpec, MapCommand } from "@gis-engine/engine";
 
 // Import the GeoJSON data for world cities.
-// Vite resolves JSON imports at build time, so the data is bundled directly.
-import citiesData from "../data/cities.geojson";
+// Vite treats the .geojson file as a raw asset; parse it into inline GeoJSON
+// so GIS Engine can validate and query it deterministically.
+import citiesGeoJsonRaw from "../data/cities.geojson?raw";
+
+declare global {
+  interface Window {
+    __GIS_ENGINE_GETTING_STARTED_SMOKE__?: {
+      valid: boolean;
+      rendered: boolean;
+      commandStatus?: string;
+      layerCount?: number;
+    };
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Step 1: Define the MapSpec
@@ -29,6 +41,13 @@ import citiesData from "../data/cities.geojson";
 //
 // The spec is a plain JSON-serializable object. No hidden state, no side effects.
 // ---------------------------------------------------------------------------
+
+const citiesData = JSON.parse(citiesGeoJsonRaw) as MapSpec["sources"][string] extends {
+  type: "geojson";
+  data?: infer Data;
+}
+  ? Data
+  : never;
 
 const spec: MapSpec = {
   version: "0.1",
@@ -89,81 +108,103 @@ const spec: MapSpec = {
 // This is useful during development and in CI pipelines to catch problems early.
 // ---------------------------------------------------------------------------
 
-const report = validateSpec(spec);
+async function main(): Promise<void> {
+  const report = validateSpec(spec);
 
-console.log("--- Validation Report ---");
-console.log(`Valid: ${report.valid}`);
-console.log(`Sources: ${report.stats.sourceCount}`);
-console.log(`Layers: ${report.stats.layerCount}`);
-console.log(`Visible layers: ${report.stats.visibleLayerCount}`);
+  console.log("--- Validation Report ---");
+  console.log(`Valid: ${report.valid}`);
+  console.log(`Sources: ${report.stats.sourceCount}`);
+  console.log(`Layers: ${report.stats.layerCount}`);
+  console.log(`Visible layers: ${report.stats.visibleLayerCount}`);
 
-if (!report.valid) {
-  console.error("Spec validation failed:");
-  for (const diagnostic of report.diagnostics) {
-    console.error(`  [${diagnostic.severity}] ${diagnostic.code}: ${diagnostic.message}`);
+  window.__GIS_ENGINE_GETTING_STARTED_SMOKE__ = {
+    valid: report.valid,
+    rendered: false,
+  };
+
+  if (!report.valid) {
+    console.error("Spec validation failed:");
+    for (const diagnostic of report.diagnostics) {
+      console.error(`  [${diagnostic.severity}] ${diagnostic.code}: ${diagnostic.message}`);
+    }
+    throw new Error("Cannot proceed with an invalid spec.");
   }
-  throw new Error("Cannot proceed with an invalid spec.");
-}
 
-// ---------------------------------------------------------------------------
-// Step 3: Render the map
-// ---------------------------------------------------------------------------
-//
-// createMap() takes a container element, the validated spec, and renderer
-// options. It returns a MapRuntime instance that you can use to apply
-// commands, take snapshots, query features, and export the current spec.
-//
-// The "maplibre" renderer uses MapLibre GL JS under the hood.
-// ---------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // Step 3: Render the map
+  // ---------------------------------------------------------------------------
+  //
+  // createMap() takes a container element, the validated spec, and renderer
+  // options. It returns a MapRuntime instance that you can use to apply
+  // commands, take snapshots, query features, and export the current spec.
+  //
+  // The "maplibre" renderer uses MapLibre GL JS under the hood.
+  // ---------------------------------------------------------------------------
 
-const container = document.getElementById("map")!;
+  const container = document.getElementById("map")!;
 
-const runtime = await createMap(container, spec, {
-  renderer: "maplibre",
-});
+  const runtime = await createMap(container, spec, {
+    renderer: "maplibre",
+  });
 
-console.log("Map rendered successfully.");
+  console.log("Map rendered successfully.");
+  window.__GIS_ENGINE_GETTING_STARTED_SMOKE__.rendered = true;
 
-// ---------------------------------------------------------------------------
-// Step 4: Apply a command to mutate the map
-// ---------------------------------------------------------------------------
-//
-// GIS Engine uses a command system to mutate the map spec. Instead of calling
-// imperative methods on the map, you declare commands that describe the change.
-// Each command is validated, applied atomically, and produces a JSON Patch
-// that can be inspected, inverted, or replayed.
-//
-// Here we add a second layer that renders city labels as text symbols.
-// ---------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // Step 4: Apply a command to mutate the map
+  // ---------------------------------------------------------------------------
+  //
+  // GIS Engine uses a command system to mutate the map spec. Instead of calling
+  // imperative methods on the map, you declare commands that describe the change.
+  // Each command is validated, applied atomically, and produces a JSON Patch
+  // that can be inspected, inverted, or replayed.
+  //
+  // Here we update the existing circle layer color.
+  // ---------------------------------------------------------------------------
 
-const addLabelCommand: MapCommand = {
-  id: "add-city-labels",
-  version: "0.1",
-  type: "addLayer",
-  layer: {
-    id: "city-labels",
-    type: "symbol-lite",
-    source: "cities",
-    layout: {
-      "text-field": ["get", "name"],
-      "text-size": 12,
-      "text-offset": [0, 1.5],
-    },
+  const recolorCommand: MapCommand = {
+    id: "recolor-cities",
+    version: "0.1",
+    type: "setPaint",
+    layerId: "city-circles",
     paint: {
-      "text-color": "#1e293b",
+      "circle-radius": [
+        "step",
+        ["get", "population"],
+        6,
+        20000000,
+        8,
+        30000000,
+        12,
+      ],
+      "circle-color": "#ef4444",
+      "circle-stroke-width": 1.5,
+      "circle-stroke-color": "#7f1d1d",
     },
-  },
-};
+  };
 
-const results = await runtime.apply(addLabelCommand);
+  const results = await runtime.apply(recolorCommand);
+  const commandStatus = results[0]?.status;
 
-console.log("--- Command Results ---");
-for (const result of results) {
-  console.log(`  ${result.commandId}: ${result.status}`);
-  console.log(`    Changed paths: ${result.changedPaths.join(", ")}`);
+  console.log("--- Command Results ---");
+  for (const result of results) {
+    console.log(`  ${result.commandId}: ${result.status}`);
+    console.log(`    Changed paths: ${result.changedPaths.join(", ")}`);
+  }
+
+  // You can also export the current spec at any time to see the full state
+  // after all commands have been applied.
+  const currentSpec = runtime.exportSpec();
+  console.log(`Current spec still has ${currentSpec.layers.length} layer.`);
+  window.__GIS_ENGINE_GETTING_STARTED_SMOKE__ = {
+    ...window.__GIS_ENGINE_GETTING_STARTED_SMOKE__,
+    valid: report.valid,
+    rendered: true,
+    commandStatus,
+    layerCount: currentSpec.layers.length,
+  };
 }
 
-// You can also export the current spec at any time to see the full state
-// after all commands have been applied.
-const currentSpec = runtime.exportSpec();
-console.log(`Current spec now has ${currentSpec.layers.length} layers.`);
+void main().catch((error) => {
+  console.error("Getting started example failed:", error);
+});
