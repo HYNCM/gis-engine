@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-06-05T01:59:51.759Z",
-  "repo_revision": "0e928cf",
+  "generated_at": "2026-06-05T12:02:18.646Z",
+  "repo_revision": "270a8d3",
   "source": "scripts/handoff-ledger.mjs",
   "flows": [
     {
@@ -19,8 +19,8 @@
       },
       "downstream": {
         "path": "docs/planning/weekly-digest.md",
-        "generated_at": "2026-06-04T06:56:34.000Z",
-        "sha256": "a45a913ea6774a4ade610e1122f8f81e417396f94fa4c6df7565cbdc7d9e93a5"
+        "generated_at": "2026-06-05T11:57:46.000Z",
+        "sha256": "16d62be43775ee1ae7526215e6745c1c5ebd88a442216767285ccdddc4c9f0a5"
       }
     },
     {
@@ -55,8 +55,8 @@
       },
       "downstream": {
         "path": "docs/planning/weekly-digest.md",
-        "generated_at": "2026-06-04T06:56:34.000Z",
-        "sha256": "a45a913ea6774a4ade610e1122f8f81e417396f94fa4c6df7565cbdc7d9e93a5"
+        "generated_at": "2026-06-05T11:57:46.000Z",
+        "sha256": "16d62be43775ee1ae7526215e6745c1c5ebd88a442216767285ccdddc4c9f0a5"
       }
     }
   ]

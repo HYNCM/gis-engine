@@ -3,9 +3,8 @@
 This page separates current operating docs from dated evidence so the active
 tree stays readable.
 
-> **Last cleanup**: 2026-06-03 — simplified root/doc indexes, replaced the
-> stale report index, aligned evolution/process docs with the 5-agent model,
-> and regenerated the health dashboard.
+> **Last cleanup**: 2026-06-05 — added the next-stage planning snapshot and
+> aligned planning indexes with the W24 review-console/productization queue.
 
 ## Read This First
 
@@ -38,7 +37,7 @@ of rewriting them to sound timeless.
 | Area | Entry point | Notes |
 | --- | --- | --- |
 | Reviews and gates | [reviews/REPORT_INDEX.md](./reviews/REPORT_INDEX.md) | Review streams, rolling audits, retention rules. |
-| Planning snapshots | [planning/monthly-roadmap.md](./planning/monthly-roadmap.md), [planning/weekly-digest.md](./planning/weekly-digest.md), [planning/issues-snapshot.md](./planning/issues-snapshot.md), [planning/task-burndown.md](./planning/task-burndown.md), [planning/dependency-graph.md](./planning/dependency-graph.md) | GitHub Issues become the canonical task state when available; markdown files are generated or approved snapshots. |
+| Planning snapshots | [planning/next-stage-goals-2026-06-05.md](./planning/next-stage-goals-2026-06-05.md), [planning/monthly-roadmap.md](./planning/monthly-roadmap.md), [planning/weekly-digest.md](./planning/weekly-digest.md), [planning/issues-snapshot.md](./planning/issues-snapshot.md), [planning/task-burndown.md](./planning/task-burndown.md), [planning/dependency-graph.md](./planning/dependency-graph.md) | GitHub Issues become the canonical task state when available; markdown files are generated or approved snapshots. |
 | Sprint plans | [planning/](./planning/) | `sprint-*` and many `feature-specs/*` files are bounded planning artifacts. |
 | Research | [research/capability-scorecard.md](./research/capability-scorecard.md), [research/competitor-updates-2026-W23.md](./research/competitor-updates-2026-W23.md) | Dated external evidence; do not treat as current unless refreshed in-run. |
 | Automation health | [planning/AGENT_HEALTH_DASHBOARD.md](./planning/AGENT_HEALTH_DASHBOARD.md), [planning/handoff-ledger.json](./planning/handoff-ledger.json) | Generated dashboard for current report freshness and HOC-N1/N2/N3 consumption state. |

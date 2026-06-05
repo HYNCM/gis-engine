@@ -1,10 +1,11 @@
 ---
 agent: orchestrator
 period: 2026-W23
-generated_at: 2026-06-04T06:56:34Z
-repo_revision: "ab5e2ab"
+generated_at: 2026-06-05T11:57:46Z
+repo_revision: "270a8d3c502816fc2c79177ffb3a1d9fbabc97ae"
 inputs:
   - AGENTS.md
+  - docs/planning/next-stage-goals-2026-06-05.md
   - docs/research/competitor-updates-2026-W23.md
   - docs/reviews/quality-gate-2026-06-03.md
   - docs/reviews/quality-gate-2026-06-04.md
@@ -26,6 +27,39 @@ decision_level: advisory
 ---
 
 # Weekly Digest: 2026-W23
+
+## 2026-06-05 Next-Stage Goal Calibration
+
+The SDK + CLI first-release productization loop is closed, and the current
+planning state now moves from evidence scaffolding to productized review
+experience. The authoritative next-stage snapshot is
+`docs/planning/next-stage-goals-2026-06-05.md`.
+
+Accepted planning state:
+
+- The old `GIR-001` through `GIR-006` batch remains complete as delivery
+  contract, fixture, readiness-card, QA, and wording evidence.
+- The next review-console work is a fresh W24 UI/productization queue, not a
+  reopening of the closed GIR contract batch.
+- AI Map Workbench remains a local/example surface; product and hosted
+  promotion stay No-go.
+- PMTiles archive metadata and GeoParquet schema work may start only as
+  schema/resource-policy/diagnostic contracts before parser/runtime claims.
+- `@product` has an SLA breach in the generated dashboard, so W24 competitor
+  evidence and the scorecard must be refreshed by 2026-06-08 before being used
+  as current roadmap evidence.
+
+Next W24 queue:
+
+| id | Priority | Owner | Status | Target artifact | Exit condition |
+| --- | --- | --- | --- | --- | --- |
+| TASK-2026W24-RCU-001 | P0 | `@builder` + `@quality` + `@docs` | queued | review-console UI over the five-section delivery schema | Browser-rendered review sections without new MCP tools or direct `MapSpec` mutation |
+| TASK-2026W24-RCU-002 | P0 | `@builder` + `@quality` | queued | prompt-to-delivery QA matrix UI | Clickable deterministic cards for ready, blocked, needs-confirmation, and follow-up-required scenarios |
+| TASK-2026W24-RCU-003 | P0 | `@builder` + `@quality` + `@docs` | queued | AI Map Workbench local-hardening delta | review actions, durable audit contract, and credential safety remain local/example-scoped |
+| TASK-2026W24-CNS-001 through CNS-003 | P1 | `@builder` + `@quality` + `@docs` | queued | PMTiles, GeoParquet, and resource-policy source contracts | TypeBox, resource-policy, diagnostics, and smoke evidence land before runtime/parser claims |
+| TASK-2026W24-VPE-001 through VPE-003 | P1 | `@builder` + `@quality` | queued | strict visual, nightly perf, and app-template visual evidence | release-capable scenes and trend evidence are maintained or explicitly waived |
+| TASK-2026W24-EVO-001 through EVO-003 | P2 | `@orchestrator` + `@quality` + `@docs` | queued | D1/D3/D4 evolution metrics | W24 estimates, gate trends, patterns, and pitfalls are recorded |
+| TASK-2026W24-PRD-001 through PRD-002 | P1 | `@product` + `@orchestrator` | queued | W24 competitor update and scorecard | official/npm/source checks and five-dimension scorecard refreshed with checked dates |
 
 ## 2026-06-04 Orchestrator Refresh
 

@@ -1,9 +1,12 @@
 ---
-agent: coordinator
-period: 2026-W22
-generated_at: 2026-05-29T10:20:00Z
-repo_revision: "d628fd1454a44859e57d8996343413684a541c30"
+agent: orchestrator
+period: 2026-W24
+generated_at: 2026-06-05T11:57:46Z
+repo_revision: "270a8d3c502816fc2c79177ffb3a1d9fbabc97ae"
 inputs:
+  - docs/planning/next-stage-goals-2026-06-05.md
+  - docs/planning/weekly-digest.md
+  - docs/planning/monthly-roadmap.md
   - docs/archive/2026-05-30/planning/sprint-2026-W22-competitive-signal-response.md
   - docs/research/competitor-updates-2026-W22.md
   - docs/research/capability-scorecard.md
@@ -41,7 +44,7 @@ inputs:
   - docs/reviews/nlq-007-serialized-quality-hardening-planning-2026-05-29.md
   - docs/planning/feature-specs/generated-app-delivery-ux.md
   - docs/archive/2026-05-30/planning/sprint-2026-W22-ai-native-next-loop.md
-owner: "@coordinator"
+owner: "@orchestrator"
 decision_level: advisory
 ---
 
@@ -54,6 +57,31 @@ decision_level: advisory
 v1 RFC 已拆成 W25/W28 专项 sprint，且 W25 的 schema、fixtures、scene
 commands、resource load plan gate、package boundary、mock snapshot/query 和 MCP 3D context 已提前完成。下面的 W21/W23 理想燃尽表仅保留
 为计划基线；真实状态以“2026-05-17 执行快照”和“2026-05-18 follow-up”为准。
+
+## 2026-06-05 W24 next-stage queue
+
+The current execution queue starts from
+[next-stage-goals-2026-06-05.md](./next-stage-goals-2026-06-05.md). These
+tasks are planned, not complete. The old `GIR-*` and `AWP-*` batches stay
+closed as contract/local-example evidence; the new `RCU-*` work is the
+productized review UI layer.
+
+| id | title | priority | owner | status | evidence target | acceptance | finish gates |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| TASK-2026W24-RCU-001 | Implement generated-app review-console UI | P0 | `@builder`, `@quality`, `@docs` | queued | review UI over five-section `generationEvidence.delivery` schema | delivery summary, files/export, map edits, data/sources, spatial analysis, and scene browsing sections render from structured evidence only | focused UI tests; browser smoke; `pnpm check`; docs link audit |
+| TASK-2026W24-RCU-002 | Add Prompt-to-Delivery QA Matrix UI | P0 | `@builder`, `@quality` | queued | clickable QA cards for generated-app delivery states | ready, blocked, needs-confirmation, and follow-up-required cards link to deterministic fixture evidence | example/app tests; browser smoke; `pnpm check` |
+| TASK-2026W24-RCU-003 | Harden local workbench review actions and audit safety | P0 | `@builder`, `@quality`, `@docs` | queued | local/example evidence delta for review decisions, durable audit, and credential safety | local surface remains under examples or explicit review-console boundary; no hosted/product promotion | focused workbench/review tests; browser smoke; leak regression; `pnpm check` |
+| TASK-2026W24-CNS-001 | Define PMTiles archive parsing contract | P1 | `@builder`, `@quality`, `@docs` | queued | TypeBox/resource-policy/smoke contract | archive metadata/range behavior is explicit; feature query remains blocked unless separately promoted | `pnpm build:schema`; resource-policy tests; smoke tests; docs update |
+| TASK-2026W24-CNS-002 | Define GeoParquet source schema contract | P1 | `@builder`, `@quality`, `@docs` | queued | TypeBox schema and blocked-runtime diagnostics | bbox, CRS, WKB/GeoArrow encoding, and no-runtime-claim diagnostics are schema-tested | `pnpm build:schema`; schema/resource tests; docs update |
+| TASK-2026W24-CNS-003 | Extend resource policy for range/bbox/index rules | P1 | `@builder`, `@quality`, `@docs` | queued | PMTiles range, GeoParquet bbox/range, FlatGeobuf index policy | every external path returns allow/deny diagnostics before IO | `pnpm test:resources`; resource-policy schema tests; `pnpm check` |
+| TASK-2026W24-VPE-001 | Maintain 3-scene strict visual evidence | P1 | `@builder`, `@quality` | queued | strict visual runner evidence | GeoJSON, MVT, and `fill-extrusion-lite` scenes stay release-capable | `pnpm test:release:strict`; visual snapshot gate or waiver |
+| TASK-2026W24-VPE-002 | Accumulate nightly perf trends | P1 | `@builder`, `@quality` | queued | two-week perf trend ledger | 1k/10k/100k lifecycle runs record trend and regression notes | `pnpm test:perf:nightly` trend artifacts; quality review |
+| TASK-2026W24-VPE-003 | Add app-template visual scene | P1 | `@builder`, `@quality`, `@docs` | queued | earthquake app-template visual fixture | generated app template has deterministic visual snapshot or explicit release waiver | visual smoke/snapshot; docs update; `pnpm check` |
+| TASK-2026W24-EVO-001 | Start D1 estimation accuracy tracking | P2 | `@orchestrator`, `@quality` | queued | evolution ledger estimate/actual entries | W24 estimates exist before execution and actuals are recorded at closure | `node scripts/evolution-collector.mjs` or ledger update |
+| TASK-2026W24-EVO-002 | Start D3 quality trend tracking | P2 | `@orchestrator`, `@quality` | queued | first-pass gate and rework entries | W24 gate pass rate and rework count are recorded | quality gate evidence; evolution ledger update |
+| TASK-2026W24-EVO-003 | Start D4 pattern/pitfall extraction | P2 | `@orchestrator`, `@docs` | queued | evolution pattern/pitfall entries | at least two patterns and one pitfall are extracted for the sprint | pattern/pitfall generator or manual ledger review |
+| TASK-2026W24-PRD-001 | Publish W24 competitor update | P1 | `@product` | queued | `docs/research/competitor-updates-2026-W24.md` | official/npm/source checks are refreshed by 2026-06-08 with checked dates | current source URLs recorded; no stale-current claims |
+| TASK-2026W24-PRD-002 | Refresh capability scorecard | P1 | `@product`, `@orchestrator` | queued | `docs/research/capability-scorecard.md` | five-dimension scores reflect W24 evidence and preserve blocked SceneView3D/source claims | scorecard diff review; planning digest update |
 
 ## 2026-05-25 W22 competitive signal response
 

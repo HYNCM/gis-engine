@@ -1,11 +1,13 @@
-> ⚠️ 请由 task-distributor 智能体更新依赖图和燃尽表。
-> ⚠️ 请由 task-distributor 智能体更新依赖图和燃尽表。
 ---
-agent: coordinator
-period: 2026-W23
-generated_at: 2026-05-29T10:20:00Z
-repo_revision: "d628fd1454a44859e57d8996343413684a541c30"
+agent: orchestrator
+period: 2026-W24
+generated_at: 2026-06-05T11:57:46Z
+repo_revision: "270a8d3c502816fc2c79177ffb3a1d9fbabc97ae"
 inputs:
+  - docs/planning/next-stage-goals-2026-06-05.md
+  - docs/planning/weekly-digest.md
+  - docs/planning/monthly-roadmap.md
+  - docs/planning/task-burndown.md
   - docs/archive/2026-05-18/planning/sprint-2026-W21.md
   - docs/planning/sprint-2026-W25-sceneview3d-v1.md
   - docs/archive/2026-05-30/reviews/quality-gate-2026-05-24.md
@@ -37,7 +39,7 @@ inputs:
   - docs/reviews/nlq-007-serialized-quality-hardening-planning-2026-05-29.md
   - docs/planning/feature-specs/generated-app-delivery-ux.md
   - docs/archive/2026-05-30/planning/sprint-2026-W22-ai-native-next-loop.md
-owner: "@coordinator"
+owner: "@orchestrator"
 decision_level: advisory
 ---
 
@@ -131,12 +133,59 @@ W21 sprint 计划已归档，当前活跃关键路径从 W23 promotion readiness
 | NLQ-006 scene browsing blocker visibility | done | `docs/reviews/nlq-006-scene-browsing-blocker-visibility-2026-05-29.md`; generated-app manifests expose extension-only scene browsing metadata and stable-runtime blocker codes without enabling `snapshot.renderer: "scene3d"` |
 | NLQ-007 serialized quality-hardening planning | done | `docs/reviews/nlq-007-serialized-quality-hardening-planning-2026-05-29.md`; sprint, burndown, dependency graph, roadmap, digest, and debt ledger now agree that the W23 generation quality hardening batch is closed |
 
+## 2026-W24 Next-Stage DAG
+
+The W24 queue starts from
+[next-stage-goals-2026-06-05.md](./next-stage-goals-2026-06-05.md). It does
+not reopen completed `GIR-*` or `AWP-*` tasks. The new critical path turns
+accepted delivery evidence into a productized review surface, then promotes
+cloud-native source contracts one gate at a time.
+
+```mermaid
+flowchart LR
+  A["GIR-001 through GIR-006 contract evidence"] --> B["TASK-2026W24-RCU-001 review-console UI"]
+  A --> C["TASK-2026W24-RCU-002 Prompt-to-Delivery QA Matrix UI"]
+  D["AWP-001 through AWP-007 local example evidence"] --> E["TASK-2026W24-RCU-003 local review/audit hardening"]
+  B --> F["TASK-2026W24-VPE-003 app-template visual scene"]
+  C --> F
+  G["cloud-native source readiness matrix"] --> H["TASK-2026W24-CNS-001 PMTiles archive contract"]
+  G --> I["TASK-2026W24-CNS-002 GeoParquet schema contract"]
+  H --> J["TASK-2026W24-CNS-003 range/bbox/index resource policy"]
+  I --> J
+  K["strict visual + perf harnesses"] --> L["TASK-2026W24-VPE-001 strict visual maintenance"]
+  K --> M["TASK-2026W24-VPE-002 nightly perf trend"]
+  N["evolution framework"] --> O["TASK-2026W24-EVO-001 D1 estimates"]
+  N --> P["TASK-2026W24-EVO-002 D3 quality trend"]
+  N --> Q["TASK-2026W24-EVO-003 D4 pattern/pitfall"]
+  R["product SLA breach"] --> S["TASK-2026W24-PRD-001 W24 competitor update"]
+  S --> T["TASK-2026W24-PRD-002 capability scorecard refresh"]
+  T --> U["future orchestrator digest"]
+```
+
+| Task | Depends On | Evidence Target | Required Finish Gate | Status Rule |
+| --- | --- | --- | --- | --- |
+| TASK-2026W24-RCU-001 | GIR-006 | review-console UI over five delivery sections | focused UI tests; browser smoke; `pnpm check`; docs link audit | queued |
+| TASK-2026W24-RCU-002 | GIR-002, GIR-005 | clickable prompt-to-delivery QA cards | example/app tests; browser smoke; `pnpm check` | queued |
+| TASK-2026W24-RCU-003 | AWP-007 | local review-action/audit/credential hardening | focused workbench tests; leak regression; browser smoke; `pnpm check` | queued |
+| TASK-2026W24-CNS-001 | cloud-native source promotion candidates | PMTiles archive metadata/range contract | `pnpm build:schema`; resource-policy tests; smoke tests; docs update | queued |
+| TASK-2026W24-CNS-002 | cloud-native source promotion candidates | GeoParquet schema and blocked-runtime diagnostics | `pnpm build:schema`; schema/resource tests; docs update | queued |
+| TASK-2026W24-CNS-003 | CNS-001, CNS-002 | PMTiles range, GeoParquet bbox/range, FlatGeobuf index policy | `pnpm test:resources`; resource-policy schema tests; `pnpm check` | queued |
+| TASK-2026W24-VPE-001 | release strict visual runner | strict GeoJSON/MVT/fill-extrusion-lite maintenance | `pnpm test:release:strict`; visual snapshot gate or waiver | queued |
+| TASK-2026W24-VPE-002 | perf nightly harness | two-week perf trend ledger | `pnpm test:perf:nightly` trend artifacts; quality review | queued |
+| TASK-2026W24-VPE-003 | RCU-001, RCU-002 | app-template visual evidence | visual smoke/snapshot; docs update; `pnpm check` | queued |
+| TASK-2026W24-EVO-001 | evolution framework | D1 estimate/actual entries | evolution collector or ledger update | queued |
+| TASK-2026W24-EVO-002 | quality gate reports | D3 first-pass/rework entries | quality evidence; evolution ledger update | queued |
+| TASK-2026W24-EVO-003 | sprint closure evidence | D4 pattern/pitfall entries | pattern/pitfall generator or manual ledger review | queued |
+| TASK-2026W24-PRD-001 | product SLA breach | W24 competitor update | current source URLs and checked dates recorded | queued |
+| TASK-2026W24-PRD-002 | PRD-001 | refreshed capability scorecard | scorecard diff review; planning digest update | queued |
+
 ## 关键路径
 
-1. Natural-language app generation -> AI capability summary -> `MapGenerationCommandSkeleton` -> command-only edits -> snapshot/export evidence. This is the completed W23 product spine for feature display, spatial analysis readiness, and scene browsing boundaries.
-2. Generation quality hardening -> typed prompt planner boundary -> planner provenance evidence -> spatial query evidence -> export manifest -> cloud-native readiness -> SceneView3D blocker transparency -> serialized closure -> generated-app delivery UX -> acceptance and confirmation states -> source promotion split -> spatial-analysis promotion criteria -> scene browsing extension-only delivery copy. NLQ-001 through NLQ-007 and AIN-001 through AIN-005 are done; future work should start from a fresh competitive/product/task-planning loop.
-3. v1 SceneView3D RFC -> W25/W28 sprint DAG -> TypeBox schema -> fixtures + URL resource policy + loader resource gate + package boundary + scene commands -> mock snapshot/query contracts -> MCP context -> release visual gate -> alpha audit + adapter feasibility -> Three.js adapter spike -> renderer evidence handoff -> adapter runtime shim -> browser visual runner -> beta readiness gate -> promotion readiness -> stable renderer contract handoff -> stable runtime decision; W23 promotion-readiness package is Go, SRC-001 through SRC-005 prerequisite evidence is done, and SRC-006 records a No-go decision that keeps stable runtime blocked.
-4. 2026-05-24 automation hardening blocks scheduled agent evidence from being used as advisory/blocking input: generated report semantics -> serialized scheduled commits -> local/CI daily cadence + emergency interpolation -> automation hardening gate -> scheduled evidence may feed future coordinator/quality-guardian decisions.
+1. W24 review-console productization -> five-section delivery UI -> prompt-to-delivery QA cards -> app-template visual evidence. This is the next active product path; it consumes completed GIR evidence without reopening the closed contract batch.
+2. Natural-language app generation -> AI capability summary -> `MapGenerationCommandSkeleton` -> command-only edits -> snapshot/export evidence. This is the completed W23 product spine for feature display, spatial analysis readiness, and scene browsing boundaries.
+3. Generation quality hardening -> typed prompt planner boundary -> planner provenance evidence -> spatial query evidence -> export manifest -> cloud-native readiness -> SceneView3D blocker transparency -> serialized closure -> generated-app delivery UX -> acceptance and confirmation states -> source promotion split -> spatial-analysis promotion criteria -> scene browsing extension-only delivery copy. NLQ-001 through NLQ-007 and AIN-001 through AIN-005 are done; future work should start from a fresh competitive/product/task-planning loop.
+4. v1 SceneView3D RFC -> W25/W28 sprint DAG -> TypeBox schema -> fixtures + URL resource policy + loader resource gate + package boundary + scene commands -> mock snapshot/query contracts -> MCP context -> release visual gate -> alpha audit + adapter feasibility -> Three.js adapter spike -> renderer evidence handoff -> adapter runtime shim -> browser visual runner -> beta readiness gate -> promotion readiness -> stable renderer contract handoff -> stable runtime decision; W23 promotion-readiness package is Go, SRC-001 through SRC-005 prerequisite evidence is done, and SRC-006 records a No-go decision that keeps stable runtime blocked.
+5. 2026-05-24 automation hardening blocks scheduled agent evidence from being used as advisory/blocking input: generated report semantics -> serialized scheduled commits -> local/CI daily cadence + emergency interpolation -> automation hardening gate -> scheduled evidence may feed future coordinator/quality-guardian decisions.
 
 ```mermaid
 flowchart LR
