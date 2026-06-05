@@ -1,10 +1,10 @@
 ---
 agent: orchestrator
 period: 2026-06
-generated_at: 2026-06-05T13:05:41Z
-repo_revision: "4012f51"
+generated_at: 2026-06-05T16:36:16Z
+repo_revision: "8a59577"
 inputs:
-  - docs/planning/next-stage-goals-2026-06-05.md
+  - docs/planning/next-stage-goals-2026-06-06.md
   - docs/planning/weekly-digest.md
   - docs/planning/AGENT_HEALTH_DASHBOARD.md
   - docs/research/competitor-updates-2026-W24.md
@@ -25,6 +25,7 @@ inputs:
   - docs/reviews/nlq-006-scene-browsing-blocker-visibility-2026-05-29.md
   - docs/reviews/nlq-007-serialized-quality-hardening-planning-2026-05-29.md
   - docs/planning/feature-specs/generated-app-delivery-ux.md
+  - docs/planning/feature-specs/ai-map-workbench-promotion-scope.md
   - docs/archive/2026-05-30/planning/sprint-2026-W22-ai-native-next-loop.md
   - docs/archive/2026-05-30/research/competitor-updates-2026-W20.md
   - docs/archive/2026-05-30/reviews/daily-audit-2026-05-17.md
@@ -38,22 +39,18 @@ decision_level: advisory
 
 # Monthly Roadmap: 2026-06
 
-## 2026-06-05 Next-Stage Priorities
+## 2026-06-06 Next-Stage Priorities
 
-The June roadmap consumes the completed SDK + CLI first-release loop and opens
-the W24 queue recorded in
-`docs/planning/next-stage-goals-2026-06-05.md`. Reconciliation at `4012f51`
-moves the implemented slices into pending quality acceptance rather than
-leaving them as queued. The priority order is:
+The June roadmap now consumes the accepted W24 evidence and the frozen AI Map
+Workbench promotion scope recorded in
+`docs/planning/feature-specs/ai-map-workbench-promotion-scope.md`. The active
+priority order is:
 
 | Rank | Priority | Track | Evidence | Impact | Action | Confidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | P0 | Generated-app review-console UI | `examples/ai-map-workbench/review-console.mjs`; review-console and QA matrix tests | Converts schema/test evidence into an inspectable product handoff | Accept `RCU-001` and `RCU-002` only after focused tests, browser smoke, and current quality gates pass | high |
-| 2 | P0 | AI Map Workbench local hardening | closed `AWP-001` through `AWP-007`; workbench-hardening tests; product/hosted No-go | Keeps the reference surface useful without expanding deployment scope | Accept `RCU-003` only inside local/example scope; product/hosted promotion remains blocked | high |
-| 3 | P1 | Cloud-native data contracts | PMTiles, GeoParquet, FlatGeobuf contracts and policy tests | Moves PMTiles/GeoParquet pressure into verifiable schemas and policy checks | Accept `CNS-*` as contracts only; runtime parser/range IO remains backlog | high |
-| 4 | P1 | Visual and performance evidence | strict visual maintenance, app-template visual, and perf-trend harness tests | Release-quality claims need repeated visual/perf evidence | Accept `VPE-001`/`VPE-003` after visual gates or waiver; keep `VPE-002` open for trend accumulation | medium |
-| 5 | P1 | Product evidence refresh | `competitor-updates-2026-W24.md`; refreshed scorecard | Roadmap inputs become stale if W23 external evidence is reused as current | Treat `PRD-*` as done after orchestrator/handoff consumption; keep weekly refresh cadence | high |
-| 6 | P2 | Evolution metrics | `evolution-framework.md`; `evolution-ledger.md` | D1/D3/D4 are populated but must stay tied to current gate evidence | Audit W24 actuals and quality trend entries at sprint closure | medium |
+| 1 | P1 | Cloud-native source promotion | PMTiles, GeoParquet, and FlatGeobuf contract and policy tests; promotion candidates | Promotes one format at a time without runtime parser overclaim | Start with the first candidate and keep schema/policy evidence first | high |
+| 2 | P1 | Visual and performance evidence | strict visual maintenance, app-template visual, and perf-trend harness tests | Release-quality claims need repeated trend data | Accumulate two-week trend artifacts and keep release-capable scenes green | medium |
+| 3 | P2 | Package and docs guardrails | `bundle-size.yml`, performance benchmarks, release wording, and routing notes | Avoid stale package or runtime claims | Keep docs synchronized with current budgets and no-go decisions | high |
 
 The roadmap explicitly excludes stable SceneView3D runtime promotion, new MCP
 tool names, AI Map Workbench hosted/product deployment, MapLibre v6 package
@@ -63,10 +60,10 @@ Current status classification:
 
 | Class | Tasks |
 | --- | --- |
-| Implemented / pending quality acceptance | `RCU-001`, `RCU-002`, `RCU-003`, `CNS-001`, `CNS-002`, `CNS-003`, `VPE-001`, `VPE-003` |
+| Accepted / closed | W24 review-console, cloud-native contracts, strict visual evidence, product refresh, and promotion-scope freeze |
 | Harness implemented / backlog for repeated evidence | `VPE-002` |
-| Done / consumed by orchestrator refresh | `PRD-001`, `PRD-002` |
-| Ledger populated / pending evidence audit | `EVO-001`, `EVO-002`, `EVO-003` |
+| No-go / blocked | Hosted AI Map Workbench, stable `view.mode: "scene3d"`, MapLibre package movement |
+| Fresh planning required | Cloud-native source promotion, perf trend maturation |
 
 ## 结论
 
@@ -397,12 +394,11 @@ auth/database、browser-visible provider URL/credential 或新 MCP tool name。
    [sdk-cli-first-release.md](./feature-specs/sdk-cli-first-release.md)。
    Phase 1a-1g SDK hardening 和 Phase 2-4 CLI and first release 全部关闭；
    所有验证门禁已通过。
-14. 2026-06-05 下阶段目标已记录在
-   [next-stage-goals-2026-06-05.md](./next-stage-goals-2026-06-05.md)。
-   W24 队列从 review-console UI 产品化开始；当前 `4012f51` reconciliation
-   已将 `RCU-*`、`CNS-*`、`VPE-001`、`VPE-003` 归类为 implemented /
-   pending quality acceptance，将 `VPE-002` 保留为 trend backlog，并将
-   `PRD-*` 归类为 product refresh done / consumed。
+14. 2026-06-06 下阶段目标已记录在
+   [next-stage-goals-2026-06-06.md](./next-stage-goals-2026-06-06.md)。
+   W24 队列已完成 acceptance；AI Map Workbench promotion scope 也已冻结，
+   现在的活跃入口聚焦云原生候选逐项推进、趋势证据成熟和
+   docs/package guardrails。
 
 ## 2026-06-03 SDK + CLI First Release Productization
 

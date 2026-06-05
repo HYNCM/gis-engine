@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { chromium, type Page } from "@playwright/test";
 import { planMockAiEdit } from "../../examples/ai-map-workbench/mock-ai.mjs";
 import { createWorkbenchServer } from "../../examples/ai-map-workbench/server.mjs";
+import { WorkbenchNodeHarness } from "./ai-map-workbench-node-harness.ts";
 
 let closeServer: (() => Promise<void>) | undefined;
 
@@ -1047,298 +1047,147 @@ describe("ai-map-workbench provider selector UI contract", () => {
   });
 
   it("executes provider selection without leaking credentials or rewriting completed evidence", async () => {
-    const chatRequests: unknown[] = [];
-    const reviewRequests: unknown[] = [];
-    let providerFetchCount = 0;
-    const server = await createWorkbenchServer({
-      port: 0,
-      env: {
-        DEEPSEEK_API_KEY: "server-secret-key",
-        GIS_WORKBENCH_CUSTOM_PROVIDER_ID: "disabled-provider",
-        GIS_WORKBENCH_CUSTOM_PROVIDER_LABEL: "Disabled Provider",
-        GIS_WORKBENCH_CUSTOM_PROVIDER_BASE_URL: "https://disabled-provider.example/v1",
-        GIS_WORKBENCH_CUSTOM_PROVIDER_MODEL: "disabled-model",
-        GIS_WORKBENCH_CUSTOM_PROVIDER_API_KEY_ENV: "DISABLED_PROVIDER_API_KEY"
-      },
-      fetchImpl: async (url: string, init: RequestInit) => {
-        providerFetchCount += 1;
-        expect(String(url)).toBe("https://api.deepseek.com/chat/completions");
-        expect(init.headers).toMatchObject({
-          authorization: "Bearer server-secret-key",
-          "content-type": "application/json"
-        });
-        return new Response(
-          JSON.stringify({
-            choices: [
-              {
-                message: {
-                  content: JSON.stringify({
-                    intent: {
-                      mapId: "ai-map-workbench",
-                      targetDomains: ["feature-display"],
-                      styleEdits: [{ layerId: "poi-circles", paint: { "circle-color": "#ef4444" } }]
-                    },
-                    confidence: { level: "medium", reasons: ["DeepSeek selected a structured point style edit."] }
-                  })
-                }
-              }
-            ]
-          }),
-          { status: 200, headers: { "content-type": "application/json" } }
-        );
-      }
+    const harness = new WorkbenchNodeHarness({ includeDisabledProvider: true });
+    await harness.boot();
+
+    expect(harness.getSelectValue("#provider-select")).toBe("mock-ai");
+    expect(harness.getProviderStatus()).toBe("Next request: Mock AI");
+    expect(harness.getOptionStates("#provider-select option")).toEqual(
+      expect.arrayContaining([expect.objectContaining({ value: "disabled-provider", disabled: true })])
+    );
+
+    await harness.selectProvider("disabled-provider");
+    expect(harness.getSelectValue("#provider-select")).toBe("mock-ai");
+    expect(harness.getProviderStatus()).toBe("Next request: Mock AI");
+
+    await harness.submitChat("make points blue");
+    expect(harness.getProviderEvidenceRows()).toMatchObject({
+      Provider: "mock"
     });
-    closeServer = server.close;
-    const browser = await chromium.launch();
-    try {
-      const page = await browser.newPage();
-      page.on("request", (request) => {
-        if (request.url() === `${server.url}/api/chat`) {
-          chatRequests.push(JSON.parse(request.postData() ?? "{}"));
-        }
-        if (request.url() === `${server.url}/api/review-decision`) {
-          reviewRequests.push(JSON.parse(request.postData() ?? "{}"));
-        }
-      });
-      await page.route("**/vendor/maplibre-gl.js", async (route) => {
-        await route.fulfill({
-          contentType: "text/javascript",
-          body: `
-            window.maplibregl = {
-              Map: class {
-                addControl() {}
-                getZoom() { return 11; }
-                jumpTo() {}
-                on() {}
-                resize() {}
-                setStyle() {}
-              },
-              NavigationControl: class {}
-            };
-          `
-        });
-      });
 
-      await page.goto(server.url);
-      await page.waitForSelector("#provider-select option", { state: "attached" });
+    await harness.selectProvider("deepseek");
+    expect(harness.getSelectValue("#provider-select")).toBe("deepseek");
+    expect(harness.getProviderStatus()).toBe("Next request: DeepSeek");
+    expect(harness.getProviderEvidenceRows()).toMatchObject({
+      Provider: "mock"
+    });
 
-      const selectedProvider = page.locator("#provider-select");
-      expect(await selectedProvider.inputValue()).toBe("mock-ai");
-      expect(await page.locator("#provider-status").textContent()).toBe("Next request: Mock AI");
-      expect(await page.locator('#provider-select option[value="disabled-provider"]').isDisabled()).toBe(true);
+    await harness.submitChat("make points red");
+    expect(harness.getProviderFetchCount()).toBe(1);
+    expect(harness.chatRequests.at(-1)).toEqual({ message: "make points red", providerId: "deepseek" });
+    expect(JSON.stringify(harness.chatRequests.at(-1))).not.toMatch(/server-secret-key|apiKey|baseUrl|https:\/\//i);
+    expect(harness.getProviderEvidenceRows()).toMatchObject({
+      Provider: "deepseek"
+    });
 
-      await selectedProvider.evaluate((select) => {
-        const element = select as HTMLSelectElement;
-        element.value = "disabled-provider";
-        element.dispatchEvent(new Event("change", { bubbles: true }));
-      });
-      expect(await selectedProvider.inputValue()).toBe("mock-ai");
-      expect(await page.locator("#provider-status").textContent()).toBe("Next request: Mock AI");
+    await harness.submitReviewDecision("accepted");
+    expect(harness.reviewRequests.at(-1)).toEqual({ outcome: "accepted", reasonCodes: ["review-accepted"] });
+    expect(JSON.stringify(harness.reviewRequests.at(-1))).not.toMatch(/server-secret-key|apiKey|baseUrl|https:\/\/|raw|MapSpec/i);
+    const reviewText = harness.getText("#review-list");
+    expect(reviewText).toContain("accepted");
+    expect(reviewText).toContain("review-accepted");
 
-      await page.fill("#chat-input", "make points blue");
-      await Promise.all([
-        page.waitForResponse((response) => response.url() === `${server.url}/api/chat`),
-        page.click('#chat-form button[type="submit"]')
-      ]);
-      expect(await providerEvidenceRows(page)).toMatchObject({
-        Provider: "mock"
-      });
-
-      await selectedProvider.selectOption("deepseek");
-      expect(await selectedProvider.inputValue()).toBe("deepseek");
-      expect(await page.locator("#provider-status").textContent()).toBe("Next request: DeepSeek");
-      expect(await providerEvidenceRows(page)).toMatchObject({
-        Provider: "mock"
-      });
-
-      await page.fill("#chat-input", "make points red");
-      await Promise.all([
-        page.waitForResponse((response) => response.url() === `${server.url}/api/chat`),
-        page.click('#chat-form button[type="submit"]')
-      ]);
-      expect(providerFetchCount).toBe(1);
-      expect(chatRequests.at(-1)).toEqual({ message: "make points red", providerId: "deepseek" });
-      expect(JSON.stringify(chatRequests.at(-1))).not.toMatch(/server-secret-key|apiKey|baseUrl|https:\/\//i);
-      expect(await providerEvidenceRows(page)).toMatchObject({
-        Provider: "deepseek"
-      });
-
-      await Promise.all([
-        page.waitForResponse((response) => response.url() === `${server.url}/api/review-decision`),
-        page.click('[data-review-outcome="accepted"]')
-      ]);
-      expect(reviewRequests.at(-1)).toEqual({ outcome: "accepted", reasonCodes: ["review-accepted"] });
-      expect(JSON.stringify(reviewRequests.at(-1))).not.toMatch(/server-secret-key|apiKey|baseUrl|https:\/\/|raw|MapSpec/i);
-      const reviewText = await page.locator("#review-list").textContent();
-      expect(reviewText).toContain("accepted");
-      expect(reviewText).toContain("review-accepted");
-
-      await selectedProvider.selectOption("mock-ai");
-      expect(await selectedProvider.inputValue()).toBe("mock-ai");
-      expect(await page.locator("#provider-status").textContent()).toBe("Next request: Mock AI");
-      expect(await providerEvidenceRows(page)).toMatchObject({
-        Provider: "deepseek"
-      });
-    } finally {
-      await browser.close();
-    }
+    await harness.selectProvider("mock-ai");
+    expect(harness.getSelectValue("#provider-select")).toBe("mock-ai");
+    expect(harness.getProviderStatus()).toBe("Next request: Mock AI");
+    expect(harness.getProviderEvidenceRows()).toMatchObject({
+      Provider: "deepseek"
+    });
   }, 30_000);
 });
 
 describe("ai-map-workbench repeatable UI evidence", () => {
   it("captures provider, evidence rail, audit, and review decision states", async () => {
-    const consoleErrors: string[] = [];
-    const pageErrors: string[] = [];
-    const server = await createWorkbenchServer({ port: 0 });
-    closeServer = server.close;
-    const browser = await chromium.launch();
-    try {
-      const page = await browser.newPage();
-      page.on("console", (message) => {
-        if (message.type() === "error") consoleErrors.push(message.text());
-      });
-      page.on("pageerror", (error) => {
-        pageErrors.push(error.message);
-      });
-      await page.route("**/vendor/maplibre-gl.js", async (route) => {
-        await route.fulfill({
-          contentType: "text/javascript",
-          body: `
-            window.maplibregl = {
-              Map: class {
-                constructor(options) {
-                  const container = document.getElementById(options.container);
-                  const canvas = document.createElement("canvas");
-                  canvas.width = 800;
-                  canvas.height = 600;
-                  canvas.style.width = "100%";
-                  canvas.style.height = "100%";
-                  canvas.dataset.testid = "stub-map-canvas";
-                  container.append(canvas);
-                }
-                addControl() {}
-                getZoom() { return 11; }
-                jumpTo() {}
-                on() {}
-                resize() {}
-                setStyle() {}
-              },
-              NavigationControl: class {}
-            };
-          `
-        });
-      });
+    const harness = new WorkbenchNodeHarness();
+    await harness.boot();
 
-      await page.goto(server.url);
-      await page.waitForSelector("#provider-select option", { state: "attached" });
-      const initialEvidence = await workbenchUiEvidence(page);
-      expect(initialEvidence.status).toBe("Ready");
-      expect(initialEvidence.canvasCount).toBe(1);
-      expect(initialEvidence.map.width).toBeGreaterThan(300);
-      expect(initialEvidence.map.height).toBeGreaterThan(300);
-      expect(initialEvidence.sections).toEqual([
-        "Summary",
-        "Provider",
-        "Diagnostics",
-        "Feature query",
-        "Session audit",
-        "Review decisions",
-        "Last command"
-      ]);
-      expect(initialEvidence.providerOptions).toContainEqual(
-        expect.objectContaining({ value: "mock-ai", disabled: false })
-      );
-      expect(initialEvidence.diagnosticsText).toBe("No diagnostics.");
-      expect(initialEvidence.auditText).toBe("No session records.");
-      expect(initialEvidence.reviewText).toBe("No review decisions.");
+    const initialEvidence = harness.getEvidence();
+    expect(initialEvidence.status).toBe("Ready");
+    expect(initialEvidence.canvasCount).toBe(1);
+    expect(initialEvidence.map.width).toBeGreaterThan(300);
+    expect(initialEvidence.map.height).toBeGreaterThan(300);
+    expect(initialEvidence.sections).toEqual([
+      "Summary",
+      "Provider",
+      "Diagnostics",
+      "Source promotion",
+      "Feature query",
+      "Session audit",
+      "Review decisions",
+      "Last command"
+    ]);
+    expect(initialEvidence.providerOptions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ value: "mock-ai", disabled: false }),
+        expect.objectContaining({ value: "deepseek", disabled: false })
+      ])
+    );
+    expect(initialEvidence.diagnosticsText).toBe("No diagnostics.");
+    expect(initialEvidence.sourcePromotionText).toBe("No source promotion candidates.");
+    expect(initialEvidence.auditText).toBe("No session records.");
+    expect(initialEvidence.reviewText).toBe("No review decisions.");
 
-      await page.click('[data-prompt="make points red"]');
-      await page.waitForFunction(() => document.querySelector("#status-pill")?.textContent?.trim() === "Applied");
-      await page.click('[data-review-outcome="accepted"]');
-      await page.waitForFunction(() => document.querySelector("#status-pill")?.textContent?.trim() === "Reviewed");
-      await page.click('[data-review-outcome="blocked"]');
-      await page.click('[data-review-outcome="follow-up-required"]');
-      await page.waitForFunction(() => document.querySelector("#review-list")?.textContent?.includes("follow-up-required"));
+    await harness.selectProvider("deepseek");
+    expect(harness.getProviderStatus()).toContain("DeepSeek");
+    await harness.submitChat("show source promotion candidates");
 
-      const finalEvidence = await workbenchUiEvidence(page);
-      expect(finalEvidence.status).toBe("Reviewed");
-      expect(finalEvidence.summaryRows).toMatchObject({
-        Revision: "2",
-        Commands: "1"
-      });
-      expect(finalEvidence.providerRows).toMatchObject({
-        Provider: "mock",
-        "Raw prompt": "not provided"
-      });
-      expect(finalEvidence.auditText).toContain("applied / 1 command(s)");
-      expect(finalEvidence.auditText).toContain("1 -> 2 / mock-ai");
-      expect(finalEvidence.reviewText).toContain("accepted / review-accepted");
-      expect(finalEvidence.reviewText).toContain("blocked / manual-review-blocked");
-      expect(finalEvidence.reviewText).toContain("follow-up-required / visual-evidence-required");
-      expect(finalEvidence.diagnosticsText).toBe("No diagnostics.");
-      expect(finalEvidence.commandJson).toMatchObject({
-        commandEvidence: expect.objectContaining({ commandCount: 1, committed: true }),
-        results: [expect.objectContaining({ commandId: "cmd-mock-red-points", status: "applied" })]
-      });
-      const serializedEvidence = JSON.stringify(finalEvidence);
-      expect(serializedEvidence).not.toMatch(/apiKey|baseUrl|server-secret|provider raw body/i);
-      expect(consoleErrors).toEqual([]);
-      expect(pageErrors).toEqual([]);
-    } finally {
-      await browser.close();
-    }
+    expect(harness.chatRequests.at(-1)).toEqual({
+      message: "show source promotion candidates",
+      providerId: "deepseek"
+    });
+
+    const promotedEvidence = harness.getEvidence();
+    expect(promotedEvidence.status).toBe("Applied");
+    expect(promotedEvidence.providerRows).toMatchObject({
+      Provider: "deepseek",
+      Model: "deepseek-v4-flash",
+      "Raw prompt": "not retained"
+    });
+    expect(promotedEvidence.summaryRows).toMatchObject({
+      Revision: "3",
+      Commands: "2"
+    });
+    expect(promotedEvidence.auditText).toContain("applied / 2 command(s)");
+    expect(promotedEvidence.auditText).toContain("1 -> 3 / deepseek");
+    expect(promotedEvidence.sourcePromotionCards).toEqual([expect.stringContaining("pmtiles / readiness-only")]);
+    expect(promotedEvidence.sourcePromotionCards[0]).toContain("source-promotion.pmtiles.localPmtiles");
+    expect(promotedEvidence.sourcePromotionCards[0]).toContain("PMTiles archive metadata promotion gate");
+    expect(promotedEvidence.sourcePromotionCards[0]).toContain("archive parsing and feature query remain blocked");
+
+    await harness.submitReviewDecision("accepted");
+    await harness.submitReviewDecision("blocked");
+    await harness.submitReviewDecision("follow-up-required");
+
+    const finalEvidence = harness.getEvidence();
+    expect(finalEvidence.status).toBe("Reviewed");
+    expect(finalEvidence.summaryRows).toMatchObject({
+      Revision: "3",
+      Commands: "2"
+    });
+    expect(finalEvidence.providerRows).toMatchObject({
+      Provider: "deepseek",
+      Model: "deepseek-v4-flash",
+      "Raw prompt": "not retained"
+    });
+    expect(finalEvidence.auditText).toContain("applied / 2 command(s)");
+    expect(finalEvidence.auditText).toContain("1 -> 3 / deepseek");
+    expect(finalEvidence.reviewText).toContain("accepted / review-accepted");
+    expect(finalEvidence.reviewText).toContain("blocked / manual-review-blocked");
+    expect(finalEvidence.reviewText).toContain("follow-up-required / visual-evidence-required");
+    expect(finalEvidence.diagnosticsText).toBe("No diagnostics.");
+    expect(finalEvidence.commandJson).toMatchObject({
+      commandEvidence: expect.objectContaining({ commandCount: 2, committed: true }),
+      results: expect.arrayContaining([
+        expect.objectContaining({ commandId: "gen-add-source-localPmtiles", status: "applied" }),
+        expect.objectContaining({ commandId: "gen-add-layer-local-pmtiles-fill", status: "applied" })
+      ])
+    });
+    const serializedEvidence = JSON.stringify(finalEvidence);
+    expect(serializedEvidence).not.toMatch(/apiKey|baseUrl|server-secret|provider raw body/i);
+    expect(harness.consoleErrors).toEqual([]);
+    expect(harness.pageErrors).toEqual([]);
   }, 30_000);
 });
-
-async function providerEvidenceRows(page: Page) {
-  return page.locator("#provider-list").evaluate((list) => {
-    const rows: Record<string, string> = {};
-    for (const term of list.querySelectorAll("dt")) {
-      const label = term.textContent?.trim();
-      const value = term.nextElementSibling?.textContent?.trim();
-      if (label) rows[label] = value ?? "";
-    }
-    return rows;
-  });
-}
-
-async function workbenchUiEvidence(page: Page) {
-  return page.evaluate(() => {
-    const rectOf = (selector: string) => {
-      const element = document.querySelector(selector);
-      if (!element) return { width: 0, height: 0 };
-      const rect = element.getBoundingClientRect();
-      return { width: Math.round(rect.width), height: Math.round(rect.height) };
-    };
-    const rowsFromDefinitionList = (selector: string) => {
-      const rows: Record<string, string> = {};
-      for (const term of document.querySelectorAll(`${selector} dt`)) {
-        const label = term.textContent?.trim();
-        const value = term.nextElementSibling?.textContent?.trim();
-        if (label) rows[label] = value ?? "";
-      }
-      return rows;
-    };
-    return {
-      status: document.querySelector("#status-pill")?.textContent?.trim() ?? "",
-      map: rectOf("#map"),
-      canvasCount: document.querySelectorAll("canvas").length,
-      canvas: rectOf("canvas"),
-      sections: [...document.querySelectorAll(".evidence-section h3")].map((heading) => heading.textContent?.trim() ?? ""),
-      providerOptions: [...document.querySelectorAll("#provider-select option")].map((option) => ({
-        value: (option as HTMLOptionElement).value,
-        text: option.textContent?.trim() ?? "",
-        disabled: (option as HTMLOptionElement).disabled
-      })),
-      summaryRows: rowsFromDefinitionList("#summary-list"),
-      providerRows: rowsFromDefinitionList("#provider-list"),
-      diagnosticsText: document.querySelector("#diagnostics-list")?.textContent?.trim() ?? "",
-      auditText: document.querySelector("#audit-list")?.textContent?.trim() ?? "",
-      reviewText: document.querySelector("#review-list")?.textContent?.trim() ?? "",
-      commandJson: JSON.parse(document.querySelector("#command-json")?.textContent ?? "{}")
-    };
-  });
-}
 
 describe("ai-map-workbench provider profiles", () => {
   it("returns mock plus safe DeepSeek metadata without leaking credentials", async () => {

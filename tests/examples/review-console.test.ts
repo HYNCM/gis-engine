@@ -37,9 +37,24 @@ describe("review-console contract", () => {
     expect(result.acceptance).toBe("follow-up-required");
     expect(result.followUps).toHaveLength(1);
     expect(result.followUps[0].id).toBe("TASK-2026W24-CNS-001");
+    expect(result.sourcePromotionCandidates).toContainEqual(
+      expect.objectContaining({
+        candidateId: "source-promotion.pmtiles.local-pmtiles",
+        format: "pmtiles",
+        state: "readiness-only",
+        target: "PMTiles archive metadata promotion gate"
+      })
+    );
     const dataSection = result.sections.find(s => s.id === "data-and-sources");
     expect(dataSection?.state).toBe("follow-up-required");
     expect(dataSection?.sources?.[0].state).toBe("readiness-only");
+    expect(dataSection?.promotionCandidates).toContainEqual(
+      expect.objectContaining({
+        id: "source-promotion.pmtiles.local-pmtiles",
+        format: "pmtiles",
+        state: "readiness-only"
+      })
+    );
   });
 
   it("handles invalid evidence gracefully", () => {

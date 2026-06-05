@@ -61,10 +61,20 @@ describe("QA Matrix: Prompt-to-Delivery scenarios", () => {
       expect(result.acceptance).toBe("follow-up-required");
       expect(result.followUps.length).toBeGreaterThan(0);
       expect(result.followUps[0].id).toMatch(/^TASK-/);
+      expect(result.sourcePromotionCandidates).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            candidateId: "source-promotion.pmtiles.local-pmtiles",
+            format: "pmtiles",
+            state: "readiness-only"
+          })
+        ])
+      );
 
       const dataSection = result.sections.find((s: { id: string }) => s.id === "data-and-sources");
       expect(dataSection?.state).toBe("follow-up-required");
       expect(dataSection?.sources?.some((s: { state: string }) => s.state === "readiness-only")).toBe(true);
+      expect(dataSection?.promotionCandidates?.some((candidate: { format: string }) => candidate.format === "pmtiles")).toBe(true);
 
       const scene = result.sections.find((s: { id: string }) => s.id === "scene-browsing");
       expect(scene?.evidence.stableRuntimeBlocked).toBe(true);

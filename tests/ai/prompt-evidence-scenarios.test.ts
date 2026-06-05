@@ -390,6 +390,14 @@ describe("prompt-level generation evidence scenarios", () => {
             confirmationReasons: ["external-resource", "archive-parsing"]
           })
         );
+        expect(evidence.exampleEvidence.generationEvidence?.delivery?.sourcePromotionCandidates).toContainEqual(
+          expect.objectContaining({
+            candidateId: "source-promotion.pmtiles.parcels",
+            format: "pmtiles",
+            state: "readiness-only",
+            target: "PMTiles archive metadata promotion gate"
+          })
+        );
         expect(findDomain(evidence, "feature-display")).toMatchObject({
           status: "supported"
         });

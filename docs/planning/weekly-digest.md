@@ -1,11 +1,12 @@
 ---
 agent: orchestrator
 period: 2026-W24
-generated_at: 2026-06-05T13:05:41Z
-repo_revision: "4012f51"
+generated_at: 2026-06-05T16:36:16Z
+repo_revision: "8a59577"
 inputs:
   - AGENTS.md
-  - docs/planning/next-stage-goals-2026-06-05.md
+  - docs/planning/next-stage-goals-2026-06-06.md
+  - docs/planning/feature-specs/ai-map-workbench-promotion-scope.md
   - docs/research/competitor-updates-2026-W24.md
   - docs/research/capability-scorecard-w24-refresh.md
   - docs/research/competitor-updates-2026-W23.md
@@ -38,29 +39,33 @@ The W24 placeholder queue has been reconciled against current repo revision
 
 Accepted reconciliation state:
 
-- `TASK-2026W24-RCU-001` through `RCU-003` are implemented and pending quality
-  acceptance. Evidence lives in `examples/ai-map-workbench/review-console.mjs`,
-  `examples/ai-map-workbench/server.mjs`, review-console fixtures, QA matrix
-  tests, and workbench-hardening tests.
-- `TASK-2026W24-CNS-001` through `CNS-003` are implemented and pending quality
-  acceptance as metadata/resource-policy contracts. They do not add runtime
-  parsers, hidden fetches, workers, or cloud-native feature queries.
-- `TASK-2026W24-VPE-001` and `VPE-003` are implemented and pending quality
-  acceptance through strict-scene and app-template visual tests.
-- `TASK-2026W24-VPE-002` has a perf trend harness, but the two-week trend
-  evidence remains backlog/ongoing evidence.
-- `TASK-2026W24-PRD-001` and `PRD-002` are complete at the product-document
-  level through the W24 competitor update and scorecard refresh.
-- `TASK-2026W24-EVO-001` through `EVO-003` have ledger entries, but those
-  entries remain pending evidence audit until current gate results are recorded.
+`TASK-2026W24-RCU-001` through `RCU-003` are accepted. Evidence lives in
+`examples/ai-map-workbench/review-console.mjs`,
+`examples/ai-map-workbench/server.mjs`, review-console fixtures, QA matrix
+tests, and workbench-hardening tests.
+`TASK-2026W24-CNS-001` through `CNS-003` are accepted as metadata and
+resource-policy contracts only. They do not add runtime parsers, hidden
+fetches, workers, or cloud-native feature queries.
+The AI Map Workbench promotion scope is frozen in
+`docs/planning/feature-specs/ai-map-workbench-promotion-scope.md`; product and
+hosted movement remain blocked.
+`TASK-2026W24-VPE-001` and `VPE-003` are accepted through strict-scene and
+app-template visual tests.
+`TASK-2026W24-VPE-002` has a perf trend harness, but the two-week trend
+evidence remains backlog/ongoing evidence.
+`TASK-2026W24-PRD-001` and `PRD-002` are complete at the product-document
+level through the W24 competitor update and scorecard refresh.
+`TASK-2026W24-EVO-001` through `EVO-003` have ledger entries, but those
+entries remain pending evidence audit until current gate results are recorded.
 
-Next quality action:
+Post-acceptance state:
 
 | Scope | Status | Required acceptance evidence |
 | --- | --- | --- |
-| RCU | implemented / pending quality acceptance | focused example tests, browser smoke, `pnpm check`, docs link audit |
-| CNS | implemented / pending quality acceptance | `pnpm build:schema`, resource/schema tests, `pnpm check` |
-| VPE-001/VPE-003 | implemented / pending quality acceptance | strict/app-template visual tests plus required visual gate or waiver |
+| RCU | accepted | focused example tests, browser smoke, `pnpm check`, docs link audit |
+| CNS | accepted as contract-only | `pnpm build:schema`, resource/schema tests, `pnpm check` |
+| PROMOTION-SCOPE | done | `docs/planning/feature-specs/ai-map-workbench-promotion-scope.md`; fresh product-promotion task uses the frozen scope |
+| VPE-001/VPE-003 | accepted | strict/app-template visual tests plus required visual gate or waiver |
 | VPE-002 | harness implemented / trend backlog | repeated nightly/release trend artifacts |
 | PRD | done / consumed by orchestrator | W24 source URLs, npm command evidence, scorecard refresh |
 
@@ -75,39 +80,38 @@ Validation evidence captured during reconciliation:
 | `pnpm build:schema` | pass | engine/scene3d/ai schema/build gate passed |
 | `pnpm check` | pass after non-sandbox rerun | sandbox run was blocked by `listen EPERM 127.0.0.1`; the same command passed with listener-capable permissions |
 
-## 2026-06-05 Next-Stage Goal Calibration
+## 2026-06-06 Next-Stage Goal Calibration
 
-The SDK + CLI first-release productization loop is closed, and the current
-planning state now moves from evidence scaffolding to productized review
-experience. The authoritative next-stage snapshot is
-`docs/planning/next-stage-goals-2026-06-05.md`.
+W24 acceptance closes the review-console / cloud-native / visual-evidence queue.
+The authoritative next-stage snapshot is
+`docs/planning/next-stage-goals-2026-06-06.md`.
 
 Accepted planning state:
 
-- The old `GIR-001` through `GIR-006` batch remains complete as delivery
-  contract, fixture, readiness-card, QA, and wording evidence.
-- The next review-console work is a fresh W24 UI/productization queue, not a
-  reopening of the closed GIR contract batch.
-- AI Map Workbench remains a local/example surface; product and hosted
-  promotion stay No-go.
-- PMTiles archive metadata and GeoParquet schema work may start only as
-  schema/resource-policy/diagnostic contracts before parser/runtime claims.
-- The prior `@product` SLA breach is repaired at document level by the W24
-  competitor update and scorecard refresh; current roadmap evidence should use
-  W24, not W23, source dates.
+- W24 local review-console, cloud-native contracts, strict visual evidence, and
+  W24 product refresh are accepted.
+- The AI Map Workbench promotion scope is frozen in
+  `docs/planning/feature-specs/ai-map-workbench-promotion-scope.md`.
+- AI Map Workbench remains local/example-scoped; product and hosted promotion
+  stay No-go.
+- Cloud-native source work stays contract-first; runtime parser claims remain
+  blocked.
+- `VPE-002` still needs repeated trend evidence before it can close.
+- Stable `view.mode: "scene3d"` and MapLibre package movement remain blocked.
 
-Reconciled W24 queue:
+Reconciled next-stage queue:
 
 | id | Priority | Owner | Status | Target artifact | Exit condition |
 | --- | --- | --- | --- | --- | --- |
-| TASK-2026W24-RCU-001 | P0 | `@builder` + `@quality` + `@docs` | implemented / pending quality acceptance | review-console UI over six delivery sections | Browser-rendered review sections without new MCP tools or direct `MapSpec` mutation |
-| TASK-2026W24-RCU-002 | P0 | `@builder` + `@quality` | implemented / pending quality acceptance | prompt-to-delivery QA matrix UI | Deterministic cards for ready, blocked, needs-confirmation, and follow-up-required scenarios |
-| TASK-2026W24-RCU-003 | P0 | `@builder` + `@quality` + `@docs` | implemented / pending quality acceptance | AI Map Workbench local-hardening delta | review actions, durable audit contract, and credential safety remain local/example-scoped |
-| TASK-2026W24-CNS-001 through CNS-003 | P1 | `@builder` + `@quality` + `@docs` | implemented / pending quality acceptance | PMTiles, GeoParquet, FlatGeobuf, and resource-policy source contracts | TypeBox, resource-policy, diagnostics, and smoke evidence land before runtime/parser claims |
-| TASK-2026W24-VPE-001 and VPE-003 | P1 | `@builder` + `@quality` | implemented / pending quality acceptance | strict visual and app-template visual evidence | release-capable scenes are maintained or explicitly waived |
-| TASK-2026W24-VPE-002 | P1 | `@builder` + `@quality` | harness implemented / trend backlog | nightly perf trend ledger | repeated trend evidence is accumulated before Done |
-| TASK-2026W24-EVO-001 through EVO-003 | P2 | `@orchestrator` + `@quality` + `@docs` | ledger populated / pending evidence audit | D1/D3/D4 evolution metrics | W24 estimates, gate trends, patterns, and pitfalls are tied to gate evidence |
-| TASK-2026W24-PRD-001 through PRD-002 | P1 | `@product` + `@orchestrator` | done / consumed | W24 competitor update and scorecard | official/npm/source checks and five-dimension scorecard refreshed with checked dates |
+| PROMOTION-SCOPE | P0 | `@product` + `@orchestrator` | done | `docs/planning/feature-specs/ai-map-workbench-promotion-scope.md` | runtime/service ownership, durable storage/auth/export scope, and release-grade visual evidence are defined before any product or hosted movement |
+| SOURCE-PROMOTION | P1 | `@builder` + `@quality` + `@docs` | queued | cloud-native source promotion candidates | one format is promoted from schema/policy evidence without runtime parser overclaim |
+| VPE-002 | P1 | `@builder` + `@quality` | in progress | nightly perf trend ledger | two-week trend evidence is accumulated before Done |
+| GUARDRAILS | P2 | `@orchestrator` + `@docs` | ongoing | docs/package guardrails | current budgets and no-go decisions stay synchronized in planning and release docs |
+
+The next-stage plan is intentionally narrower than W24: it is about defining
+promotion scopes and evidence maturity, not reopening closed contract batches.
+The promotion-scope freeze is complete; the remaining queue starts at
+cloud-native source promotion.
 
 ## 2026-06-04 Orchestrator Refresh
 

@@ -1208,6 +1208,14 @@ describe("generation evidence bundle", () => {
         })
       ]
     });
+    expect(response.result.delivery.sourcePromotionCandidates).toContainEqual(
+      expect.objectContaining({
+        candidateId: "source-promotion.pmtiles.parcels",
+        format: "pmtiles",
+        state: "readiness-only",
+        target: "PMTiles archive metadata promotion gate"
+      })
+    );
     expect(response.result.delivery.confirmations).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -1237,7 +1245,14 @@ describe("generation evidence bundle", () => {
         }
       }
     });
-  });
+    expect(response.result.exampleEvidence.generationEvidence?.delivery?.sourcePromotionCandidates).toContainEqual(
+      expect.objectContaining({
+        candidateId: "source-promotion.pmtiles.parcels",
+        format: "pmtiles",
+        state: "readiness-only"
+      })
+    );
+    });
 
   it("marks extension-only scene browsing as follow-up-required without stable runtime promotion", async () => {
     const skeleton = createMapGenerationCommandSkeleton({

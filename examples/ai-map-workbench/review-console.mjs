@@ -41,6 +41,7 @@ export function computeReviewConsoleState(evidence) {
     deliveryStatus: delivery.status ?? "blocked",
     sections,
     sourceReadiness: delivery.sourceReadiness ?? [],
+    sourcePromotionCandidates: computeSourcePromotionCandidates(delivery),
     confirmations: delivery.confirmations ?? [],
     followUps: delivery.followUps ?? [],
     diagnosticCounts: evidence.diagnostics ? {
@@ -120,7 +121,8 @@ function computeSectionState(sectionId, evidence) {
 
 function computeDataSourceSection(evidence) {
   const delivery = evidence.delivery ?? {};
-  const sourceReadiness = delivery.sourceReadiness ?? [];
+  const sourceReadiness = normalizeSourceReadinessEntries(delivery.sourceReadiness ?? []);
+  const sourcePromotionCandidates = computeSourcePromotionCandidates(delivery);
 
   const hasBlocked = sourceReadiness.some(s => s.state === "blocked");
   const hasReadinessOnly = sourceReadiness.some(s => s.state === "readiness-only");
@@ -136,11 +138,19 @@ function computeDataSourceSection(evidence) {
     id: "data-and-sources",
     state,
     sources: sourceReadiness.map(s => ({
-      id: s.id,
-      format: s.format ?? "unknown",
+      id: s.sourceId,
+      format: s.format,
       state: s.state,
       queryReady: s.queryReady ?? false,
       resourcePolicy: s.resourcePolicy ?? "not-checked"
+    })),
+    promotionCandidates: sourcePromotionCandidates.map(candidate => ({
+      id: candidate.candidateId,
+      format: candidate.format,
+      state: candidate.state,
+      target: candidate.target,
+      exitCondition: candidate.exitCondition,
+      sourceIds: candidate.sourceIds
     })),
     summary: {
       total: sourceReadiness.length,
@@ -150,6 +160,69 @@ function computeDataSourceSection(evidence) {
     }
   };
 }
+
+function normalizeSourceReadinessEntries(sourceReadiness) {
+  return sourceReadiness.map((source, index) => ({
+    sourceId: source.sourceId ?? source.id ?? `source-${index + 1}`,
+    format: source.format ?? source.type ?? "unknown",
+    state: source.state ?? "blocked",
+    queryReady: source.queryReady ?? false,
+    resourcePolicy: source.resourcePolicy ?? "not-checked",
+    notes: Array.isArray(source.notes) ? source.notes : []
+  }));
+}
+
+function computeSourcePromotionCandidates(delivery) {
+  const explicitCandidates = delivery.sourcePromotionCandidates;
+  if (Array.isArray(explicitCandidates) && explicitCandidates.length > 0) {
+    return explicitCandidates;
+  }
+
+  return normalizeSourceReadinessEntries(delivery.sourceReadiness ?? [])
+    .flatMap((source) => {
+      if (source.state === "supported") return [];
+      const definition = SOURCE_PROMOTION_CANDIDATE_DEFINITIONS[source.format];
+      if (!definition) return [];
+
+      return [{
+        candidateId: `source-promotion.${source.format}.${source.sourceId}`,
+        format: source.format,
+        state: source.state,
+        target: definition.target,
+        exitCondition: definition.exitCondition,
+        sourceIds: [source.sourceId],
+        notes: [...source.notes, definition.note]
+      }];
+    });
+}
+
+const SOURCE_PROMOTION_CANDIDATE_DEFINITIONS = {
+  pmtiles: {
+    target: "PMTiles archive metadata promotion gate",
+    exitCondition: "Schema, resource-policy, and manifest evidence must prove archive metadata is explicit while archive parsing and feature query remain blocked.",
+    note: "Promote only one format at a time; archive parsing stays blocked until the gate passes."
+  },
+  geoparquet: {
+    target: "GeoParquet source schema gate",
+    exitCondition: "TypeBox schema, CRS and encoding diagnostics, range policy, and no-runtime-claim manifest tests must pass before runtime loading is promoted.",
+    note: "Runtime loading stays blocked until schema and diagnostics land."
+  },
+  flatgeobuf: {
+    target: "FlatGeobuf source schema gate",
+    exitCondition: "Stream and index schema, resource policy, and deterministic negative fixtures must pass before runtime loading is promoted.",
+    note: "Only file-list evidence is allowed before the schema gate."
+  },
+  geotiff: {
+    target: "GeoTIFF raster source gate",
+    exitCondition: "Raster schema, band/CRS/no-data diagnostics, resource policy, and snapshot strategy must land before display/export is promoted.",
+    note: "Raster sampling stays blocked until display evidence exists."
+  },
+  geozarr: {
+    target: "GeoZarr array source gate",
+    exitCondition: "Array-store schema, chunk policy, worker budget, and blocked query/sampling diagnostics must land before runtime support is promoted.",
+    note: "Chunked array support stays blocked until deterministic fixtures exist."
+  }
+};
 
 function computeSpatialState(evidence) {
   const spatial = evidence.spatialQueryEvidence;

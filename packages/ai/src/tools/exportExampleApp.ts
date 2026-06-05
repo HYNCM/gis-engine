@@ -34,6 +34,11 @@ const SourceReadinessStateSchema = {
   enum: ["supported", "readiness-only", "blocked"]
 } as const;
 
+const SourcePromotionCandidateFormatSchema = {
+  type: "string",
+  enum: ["pmtiles", "geoparquet", "flatgeobuf", "geotiff", "geozarr"]
+} as const;
+
 const SpatialQueryReadinessStateSchema = {
   type: "string",
   enum: ["not-requested", "ready", "blocked", "follow-up-required"]
@@ -136,6 +141,23 @@ export const ExampleAppDeliverySummarySchema = {
           notes: { type: "array", items: { type: "string" } }
         },
         required: ["sourceId", "type", "state", "queryReady", "confirmationReasons", "notes"],
+        additionalProperties: false
+      }
+    },
+    sourcePromotionCandidates: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          candidateId: { type: "string" },
+          format: SourcePromotionCandidateFormatSchema,
+          state: SourceReadinessStateSchema,
+          target: { type: "string" },
+          exitCondition: { type: "string" },
+          sourceIds: { type: "array", items: { type: "string" } },
+          notes: { type: "array", items: { type: "string" } }
+        },
+        required: ["candidateId", "format", "state", "target", "exitCondition", "sourceIds", "notes"],
         additionalProperties: false
       }
     },
@@ -467,6 +489,15 @@ export interface ExampleAppDeliverySummary {
     state: "supported" | "readiness-only" | "blocked";
     queryReady: boolean;
     confirmationReasons: Array<"external-resource" | "network-fetch" | "archive-parsing" | "worker-use" | "file-write" | "stable-scene3d-runtime">;
+    notes: string[];
+  }>;
+  sourcePromotionCandidates?: Array<{
+    candidateId: string;
+    format: "pmtiles" | "geoparquet" | "flatgeobuf" | "geotiff" | "geozarr";
+    state: "supported" | "readiness-only" | "blocked";
+    target: string;
+    exitCondition: string;
+    sourceIds: string[];
     notes: string[];
   }>;
   spatialQueryReadiness: {

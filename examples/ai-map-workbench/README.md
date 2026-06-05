@@ -157,6 +157,9 @@ The chat API returns compact review evidence:
 - `provider`: provider id, raw-prompt retention state, and optional confidence.
 - `generationEvidence`: prompt hash, planner provenance, delivery status, and
   command evidence from `createGenerationEvidenceBundle`.
+- `generationEvidence.delivery.sourcePromotionCandidates`: cloud-native source
+  promotion candidates shown in the evidence rail, including PMTiles archive
+  metadata and future GeoParquet / FlatGeobuf / GeoTIFF / GeoZarr gates.
 - `commandEvidence`: committed/rolled-back state and changed-path counts from
   the server-side command transaction.
 - `/api/audit`: the latest 50 payload-free session records with provider id,

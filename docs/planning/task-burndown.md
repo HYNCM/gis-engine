@@ -1,10 +1,11 @@
 ---
 agent: orchestrator
 period: 2026-W24
-generated_at: 2026-06-05T13:05:41Z
-repo_revision: "4012f51"
+generated_at: 2026-06-05T16:36:16Z
+repo_revision: "8a59577"
 inputs:
-  - docs/planning/next-stage-goals-2026-06-05.md
+  - docs/planning/next-stage-goals-2026-06-06.md
+  - docs/planning/feature-specs/ai-map-workbench-promotion-scope.md
   - docs/planning/weekly-digest.md
   - docs/planning/monthly-roadmap.md
   - docs/research/competitor-updates-2026-W24.md
@@ -63,7 +64,7 @@ commands、resource load plan gate、package boundary、mock snapshot/query 和 
 ## 2026-06-05 W24 next-stage queue
 
 The current execution queue starts from
-[next-stage-goals-2026-06-05.md](./next-stage-goals-2026-06-05.md). These
+[next-stage-goals-2026-06-06.md](./next-stage-goals-2026-06-06.md). These
 tasks were opened as planned work at `270a8d3`. Reconciliation at `4012f51`
 records the current implementation state. @quality formal acceptance at
 `docs/reviews/w24-quality-acceptance-2026-06-05.md` (HOC-N3) records PASS
@@ -72,6 +73,11 @@ and `VPE-003`. `VPE-002` has a harness but still needs repeated trend
 evidence. The old `GIR-*` and `AWP-*` batches stay closed as
 contract/local-example evidence; the new `RCU-*` work is the productized review
 UI layer.
+
+The AI Map Workbench promotion-scope freeze is complete in
+`docs/planning/feature-specs/ai-map-workbench-promotion-scope.md`; the
+remaining active queue starts at cloud-native source promotion and perf trend
+maturation.
 
 | id | title | priority | owner | status | evidence target | acceptance | finish gates |
 | --- | --- | --- | --- | --- | --- | --- | --- |

@@ -1,13 +1,14 @@
 ---
 agent: orchestrator
 period: 2026-W24
-generated_at: 2026-06-05T13:05:41Z
-repo_revision: "4012f51"
+generated_at: 2026-06-05T16:36:16Z
+repo_revision: "8a59577"
 inputs:
-  - docs/planning/next-stage-goals-2026-06-05.md
+  - docs/planning/next-stage-goals-2026-06-06.md
   - docs/planning/weekly-digest.md
   - docs/planning/monthly-roadmap.md
   - docs/planning/task-burndown.md
+  - docs/planning/feature-specs/ai-map-workbench-promotion-scope.md
   - docs/research/competitor-updates-2026-W24.md
   - docs/research/capability-scorecard-w24-refresh.md
   - docs/archive/2026-05-18/planning/sprint-2026-W21.md
@@ -138,10 +139,15 @@ W21 sprint 计划已归档，当前活跃关键路径从 W23 promotion readiness
 ## 2026-W24 Next-Stage DAG
 
 The W24 queue starts from
-[next-stage-goals-2026-06-05.md](./next-stage-goals-2026-06-05.md). It does
+[next-stage-goals-2026-06-06.md](./next-stage-goals-2026-06-06.md). It does
 not reopen completed `GIR-*` or `AWP-*` tasks. The new critical path turns
 accepted delivery evidence into a productized review surface, then promotes
 cloud-native source contracts one gate at a time.
+
+The AI Map Workbench promotion-scope freeze is captured in
+[ai-map-workbench-promotion-scope.md](./feature-specs/ai-map-workbench-promotion-scope.md);
+the active follow-on edge is cloud-native source promotion, not product or
+hosted movement.
 
 2026-06-05 reconciliation at `4012f51`: implementation artifacts now exist for
 `RCU-*`, `CNS-*`, `VPE-001`, and `VPE-003`. These tasks move from `queued` to

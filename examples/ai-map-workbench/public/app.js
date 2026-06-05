@@ -7,6 +7,7 @@ const statusPill = document.querySelector("#status-pill");
 const summaryList = document.querySelector("#summary-list");
 const providerList = document.querySelector("#provider-list");
 const diagnosticsList = document.querySelector("#diagnostics-list");
+const sourcePromotionList = document.querySelector("#source-promotion-list");
 const featureQuery = document.querySelector("#feature-query");
 const auditList = document.querySelector("#audit-list");
 const reviewList = document.querySelector("#review-list");
@@ -308,6 +309,7 @@ function renderProviderEvidence(payload) {
   ];
 
   providerList.replaceChildren(...definitionRows(rows));
+  renderSourcePromotionCandidates(delivery?.sourcePromotionCandidates ?? []);
 }
 
 function renderDiagnostics(diagnostics) {
@@ -329,6 +331,32 @@ function renderDiagnostics(diagnostics) {
       message.textContent = diagnostic.message;
       item.append(code, message);
       return item;
+    })
+  );
+}
+
+function renderSourcePromotionCandidates(candidates) {
+  if (candidates.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "empty-state";
+    empty.textContent = "No source promotion candidates.";
+    sourcePromotionList.replaceChildren(empty);
+    return;
+  }
+
+  sourcePromotionList.replaceChildren(
+    ...candidates.slice(0, 4).map((candidate) => {
+      const article = document.createElement("article");
+      article.className = "audit-card";
+      const title = document.createElement("strong");
+      title.textContent = `${candidate.format} / ${candidate.state}`;
+      const meta = document.createElement("p");
+      const sourceIds = Array.isArray(candidate.sourceIds) && candidate.sourceIds.length > 0 ? candidate.sourceIds.join(", ") : "no sources";
+      meta.textContent = `${candidate.candidateId} / ${sourceIds}`;
+      const details = document.createElement("p");
+      details.textContent = `${candidate.target} — ${candidate.exitCondition}`;
+      article.append(title, meta, details);
+      return article;
     })
   );
 }
