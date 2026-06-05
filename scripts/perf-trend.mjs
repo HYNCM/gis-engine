@@ -1,13 +1,15 @@
 #!/usr/bin/env node
 
 import { execFileSync } from "node:child_process";
-import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { basename, dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createMap } from "../packages/engine/src/index.ts";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(SCRIPT_DIR, "..");
+const REVIEW_DIR = resolve(ROOT, "docs/reviews");
+const PERF_TREND_FILE_PATTERN = /^perf-trend-\d{4}-W\d{2}\.md$/;
 
 export const PERF_TREND_SCALES = [
   { name: "1k", featureCount: 1_000, createBudgetMs: 5_000, queryBudgetMs: 2_000, destroyBudgetMs: 1_000 },
@@ -56,7 +58,8 @@ export function formatPerfTrendReport({
   period,
   generatedAt,
   repoRevision,
-  measurements
+  measurements,
+  previousReport
 }) {
   const lines = [
     "---",
@@ -91,6 +94,23 @@ export function formatPerfTrendReport({
     `Collected at: ${generatedAt}`
   );
 
+  if (previousReport) {
+    const comparisonRows = comparePerfTrendMeasurements(measurements, previousReport.measurements);
+    lines.push(
+      "",
+      "## Trend Comparison",
+      `Compared with ${previousReport.file} (${previousReport.period})`,
+      "",
+      "| Scale | Create Delta (ms) | Query Delta (ms) | Destroy Delta (ms) |",
+      "| --- | ---: | ---: | ---: |"
+    );
+    for (const row of comparisonRows) {
+      lines.push(
+        `| ${row.name} | ${formatDelta(row.createDeltaMs)} | ${formatDelta(row.queryDeltaMs)} | ${formatDelta(row.destroyDeltaMs)} |`
+      );
+    }
+  }
+
   return `${lines.join("\n")}\n`;
 }
 
@@ -99,7 +119,9 @@ export async function writePerfTrendReport(options = {}) {
   const generatedAt = options.generatedAt ?? new Date().toISOString();
   const repoRevision = options.repoRevision ?? gitRevision();
   const measurements = options.measurements ?? (await collectPerfTrendMeasurements());
-  const markdown = formatPerfTrendReport({ period, generatedAt, repoRevision, measurements });
+  const previousReport =
+    options.previousReport ?? readLatestPerfTrendReport(options.outputPath ? resolve(ROOT, options.outputPath) : undefined);
+  const markdown = formatPerfTrendReport({ period, generatedAt, repoRevision, measurements, previousReport });
 
   if (options.outputPath) {
     const outputPath = resolve(ROOT, options.outputPath);
@@ -108,6 +130,50 @@ export async function writePerfTrendReport(options = {}) {
   }
 
   return { period, generatedAt, repoRevision, measurements, markdown };
+}
+
+export function comparePerfTrendMeasurements(currentMeasurements, previousMeasurements) {
+  const previousByName = new Map(previousMeasurements.map((measurement) => [measurement.name, measurement]));
+
+  return currentMeasurements.map((measurement) => {
+    const previous = previousByName.get(measurement.name);
+    return {
+      name: measurement.name,
+      createDeltaMs: previous ? measurement.createMs - previous.createMs : null,
+      queryDeltaMs: previous ? measurement.queryMs - previous.queryMs : null,
+      destroyDeltaMs: previous ? measurement.destroyMs - previous.destroyMs : null
+    };
+  });
+}
+
+export function readPerfTrendReport(reportPath) {
+  const content = readFileSync(reportPath, "utf8");
+  const frontMatter = parsePerfTrendFrontMatter(content);
+  return {
+    file: basename(reportPath),
+    period: frontMatter.period,
+    generatedAt: frontMatter.generatedAt,
+    repoRevision: frontMatter.repoRevision,
+    measurements: parsePerfTrendMeasurements(content)
+  };
+}
+
+export function readLatestPerfTrendReport(excludePath) {
+  const reports = readdirSync(REVIEW_DIR)
+    .filter((file) => PERF_TREND_FILE_PATTERN.test(file))
+    .map((file) => {
+      const path = resolve(REVIEW_DIR, file);
+      return {
+        file,
+        path,
+        generatedAt: parsePerfTrendFrontMatter(readFileSync(path, "utf8")).generatedAt
+      };
+    })
+    .filter((report) => report.path !== excludePath)
+    .sort((left, right) => right.generatedAt.getTime() - left.generatedAt.getTime());
+
+  if (reports.length === 0) return undefined;
+  return readPerfTrendReport(reports[0].path);
 }
 
 function createInlineGeoJsonSpec(scale) {
@@ -141,6 +207,52 @@ function createInlineGeoJsonSpec(scale) {
       }
     ]
   };
+}
+
+function parsePerfTrendFrontMatter(content) {
+  const period = content.match(/^period:\s*(.+)$/m)?.[1]?.trim() ?? "unknown";
+  const generatedAtRaw = content.match(/^generated_at:\s*(.+)$/m)?.[1]?.trim() ?? "";
+  const repoRevision = content.match(/^repo_revision:\s*"?(.*?)"?$/m)?.[1]?.trim() ?? "unknown";
+  const generatedAt = new Date(generatedAtRaw.replace(/^"|"$/g, ""));
+
+  return {
+    file: undefined,
+    period,
+    generatedAt: Number.isNaN(generatedAt.getTime()) ? new Date(0) : generatedAt,
+    repoRevision
+  };
+}
+
+function parsePerfTrendMeasurements(content) {
+  const lines = content.split("\n");
+  const rowPattern = /^\| ([^|]+) \| (\d+) \| ([\d.]+) \| ([\d.]+) \| ([\d.]+) \| ([^|]+) \| (yes|no) \|$/;
+  const measurements = [];
+
+  for (const line of lines) {
+    const match = line.match(rowPattern);
+    if (!match) continue;
+    const [, name, featureCount, createMs, queryMs, destroyMs, budgets, passed] = match;
+    const [createBudgetMs, queryBudgetMs, destroyBudgetMs] = budgets.split(" / ").map((value) => Number.parseFloat(value.trim()));
+    measurements.push({
+      name,
+      featureCount: Number.parseInt(featureCount, 10),
+      createMs: Number.parseFloat(createMs),
+      queryMs: Number.parseFloat(queryMs),
+      destroyMs: Number.parseFloat(destroyMs),
+      createBudgetMs,
+      queryBudgetMs,
+      destroyBudgetMs,
+      passed: passed === "yes"
+    });
+  }
+
+  return measurements;
+}
+
+function formatDelta(value) {
+  if (value === null) return "n/a";
+  const prefix = value > 0 ? "+" : "";
+  return `${prefix}${value.toFixed(1)}`;
 }
 
 function utcWeekStamp(date = new Date()) {
