@@ -206,6 +206,31 @@ const SourceContractSchema = {
   additionalProperties: false
 } as const;
 
+const SourceArchiveContractSchema = {
+  type: "object",
+  properties: {
+    state: { type: "string", enum: ["explicit", "not-applicable", "not-checked"] },
+    metadataFields: { type: "array", items: { type: "string" } },
+    policyFields: { type: "array", items: { type: "string" } }
+  },
+  required: ["state", "metadataFields", "policyFields"],
+  additionalProperties: false
+} as const;
+
+const SourceReadinessSchema = {
+  type: "object",
+  properties: {
+    sourceId: { type: "string" },
+    type: { type: "string" },
+    state: { type: "string", enum: ["supported", "readiness-only", "blocked"] },
+    queryReady: { type: "boolean" },
+    resourcePolicy: { type: "string", enum: ["passed", "blocked", "not-applicable", "not-checked"] },
+    archiveContract: SourceArchiveContractSchema
+  },
+  required: ["sourceId", "type", "state", "queryReady", "resourcePolicy"],
+  additionalProperties: false
+} as const;
+
 const Scene3DContextSummarySchema = {
   type: "object",
   properties: {
@@ -315,6 +340,10 @@ export const ContextSummaryToolResultSchema = {
         additionalProperties: false
       }
     },
+    sourceReadiness: {
+      type: "array",
+      items: SourceReadinessSchema
+    },
     layers: {
       type: "array",
       items: {
@@ -342,7 +371,7 @@ export const ContextSummaryToolResultSchema = {
     capabilities: CapabilityReportContractSchema,
     scene3d: Scene3DContextSummarySchema
   },
-  required: ["view", "sources", "layers", "validation", "capabilitySummary"],
+  required: ["view", "sources", "sourceReadiness", "layers", "validation", "capabilitySummary"],
   additionalProperties: false
 } as const;
 

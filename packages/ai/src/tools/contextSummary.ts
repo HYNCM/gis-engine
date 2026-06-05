@@ -9,6 +9,36 @@ type SourceContractSummary = {
   policyFields: string[];
 };
 
+type SourceArchiveContractSummary = {
+  state: "explicit" | "not-applicable" | "not-checked";
+  metadataFields: string[];
+  policyFields: string[];
+};
+
+type SourceReadinessState = "supported" | "readiness-only" | "blocked";
+type SourceResourcePolicyState = "passed" | "blocked" | "not-applicable" | "not-checked";
+
+const PMTILES_ARCHIVE_METADATA_FIELDS = [
+  "specVersion",
+  "archiveBytes",
+  "rootDirectoryOffset",
+  "rootDirectoryLength",
+  "hasVectorTiles",
+  "hasRasterTiles",
+  "tileType",
+  "minZoom",
+  "maxZoom",
+  "bounds"
+] as const;
+
+const PMTILES_ARCHIVE_POLICY_FIELDS = ["maxArchiveBytes", "maxRootDirectoryBytes", "allowRangeRequests", "maxRangeSegments", "timeoutMs"] as const;
+
+const PMTILES_ARCHIVE_CONTRACT_SUMMARY: SourceArchiveContractSummary = {
+  state: "explicit",
+  metadataFields: [...PMTILES_ARCHIVE_METADATA_FIELDS],
+  policyFields: [...PMTILES_ARCHIVE_POLICY_FIELDS]
+};
+
 export interface ContextSummaryInput {
   spec: MapSpec;
   capabilities?: CapabilityReport;
@@ -22,6 +52,14 @@ export interface ContextSummary {
     id: string;
     type: string;
     sourceContract?: SourceContractSummary;
+  }>;
+  sourceReadiness: Array<{
+    sourceId: string;
+    type: string;
+    state: SourceReadinessState;
+    queryReady: boolean;
+    resourcePolicy: SourceResourcePolicyState;
+    archiveContract?: SourceArchiveContractSummary;
   }>;
   layers: Array<{
     id: string;
@@ -116,6 +154,7 @@ export function getContextSummary(input: ContextSummaryInput): ContextSummary {
         ...(sourceContract ? { sourceContract } : {})
       };
     }),
+    sourceReadiness: summarizeSourceReadiness(input.spec),
     layers: input.spec.layers.map((layer) => ({
       id: layer.id,
       type: layer.type,
@@ -214,7 +253,7 @@ function buildCapabilitySummary(
         tools: ["validate_spec", "apply_commands", "export_spec", "snapshot_spec", "export_example_app"],
         evidence: [
           "validation.valid and validation.diagnosticCounts",
-          "source contract and layer summaries in get_context_summary",
+          "source readiness, source contract, and layer summaries in get_context_summary",
           "snapshot_spec.passed for render smoke evidence"
         ]
       },
@@ -303,19 +342,51 @@ function summarizeSourceContract(source: MapSpec["sources"][string]): SourceCont
 
   return {
     kind: "archive",
-    state: "explicit",
-    metadataFields: [
-      "specVersion",
-      "archiveBytes",
-      "rootDirectoryOffset",
-      "rootDirectoryLength",
-      "hasVectorTiles",
-      "hasRasterTiles",
-      "tileType",
-      "minZoom",
-      "maxZoom",
-      "bounds"
-    ],
-    policyFields: ["maxArchiveBytes", "maxRootDirectoryBytes", "allowRangeRequests", "maxRangeSegments", "timeoutMs"]
+    ...PMTILES_ARCHIVE_CONTRACT_SUMMARY
   };
+}
+
+function summarizeSourceReadiness(spec: MapSpec): ContextSummary["sourceReadiness"] {
+  return Object.entries(spec.sources).map(([sourceId, source]) => {
+    if (source.type === "geojson") {
+      const inline = typeof source.data !== "string";
+      return {
+        sourceId,
+        type: source.type,
+        state: inline ? "supported" : "readiness-only",
+        queryReady: inline,
+        resourcePolicy: "passed"
+      };
+    }
+
+    if (source.type === "pmtiles") {
+      return {
+        sourceId,
+        type: source.type,
+        state: "readiness-only",
+        queryReady: false,
+        resourcePolicy: "passed",
+        archiveContract: PMTILES_ARCHIVE_CONTRACT_SUMMARY
+      };
+    }
+
+    if (source.type === "raster" || source.type === "vector") {
+      return {
+        sourceId,
+        type: source.type,
+        state: "supported",
+        queryReady: false,
+        resourcePolicy: "passed"
+      };
+    }
+
+    const unexpectedSource = source as { type: string };
+    return {
+      sourceId,
+      type: unexpectedSource.type,
+      state: "blocked",
+      queryReady: false,
+      resourcePolicy: "not-applicable"
+    };
+  });
 }

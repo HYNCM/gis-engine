@@ -219,6 +219,13 @@ describe("MCP Server Integration", () => {
       id?: string;
       revision?: string;
       sources: Array<{ id: string; type: string }>;
+      sourceReadiness: Array<{
+        sourceId: string;
+        type: string;
+        state: string;
+        queryReady: boolean;
+        resourcePolicy: string;
+      }>;
       layers: Array<{ id: string; visibility: string }>;
       validation: { valid: boolean; diagnosticCounts: { error: number } };
       capabilitySummary: { domains: Array<{ id: string; status: string; tools: string[]; blocked: string[] }> };
@@ -227,6 +234,15 @@ describe("MCP Server Integration", () => {
     expect(summary.revision).toBe("1");
     expect(summary.sources).toEqual([{ id: "districts", type: "geojson" }]);
     expect(summary.layers[0]).toMatchObject({ id: "district-fill", visibility: "visible" });
+    expect(summary.sourceReadiness).toContainEqual(
+      expect.objectContaining({
+        sourceId: "districts",
+        type: "geojson",
+        state: "readiness-only",
+        queryReady: false,
+        resourcePolicy: "passed"
+      })
+    );
     expect(summary.validation).toMatchObject({ valid: true, diagnosticCounts: { error: 0 } });
     expect(summary.capabilitySummary.domains.map((domain) => domain.id)).toEqual(["feature-display", "spatial-analysis", "scene-browsing"]);
     expect(summary.capabilitySummary.domains.find((domain) => domain.id === "feature-display")).toMatchObject({
@@ -256,6 +272,18 @@ describe("MCP Server Integration", () => {
           policyFields: string[];
         };
       }>;
+      sourceReadiness: Array<{
+        sourceId: string;
+        type: string;
+        state: string;
+        queryReady: boolean;
+        resourcePolicy: string;
+        archiveContract?: {
+          state: string;
+          metadataFields: string[];
+          policyFields: string[];
+        };
+      }>;
     };
     expect(result.isError).toBeUndefined();
     expect(summary.validation.valid).toBe(true);
@@ -265,6 +293,20 @@ describe("MCP Server Integration", () => {
         type: "pmtiles",
         sourceContract: expect.objectContaining({
           kind: "archive",
+          state: "explicit",
+          metadataFields: expect.arrayContaining(["specVersion", "archiveBytes", "rootDirectoryLength"]),
+          policyFields: expect.arrayContaining(["maxArchiveBytes", "allowRangeRequests", "timeoutMs"])
+        })
+      })
+    );
+    expect(summary.sourceReadiness).toContainEqual(
+      expect.objectContaining({
+        sourceId: "local-parcels",
+        type: "pmtiles",
+        state: "readiness-only",
+        queryReady: false,
+        resourcePolicy: "passed",
+        archiveContract: expect.objectContaining({
           state: "explicit",
           metadataFields: expect.arrayContaining(["specVersion", "archiveBytes", "rootDirectoryLength"]),
           policyFields: expect.arrayContaining(["maxArchiveBytes", "allowRangeRequests", "timeoutMs"])

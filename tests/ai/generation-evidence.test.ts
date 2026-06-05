@@ -78,6 +78,15 @@ describe("generation evidence bundle", () => {
         })
       ]
     });
+    expect(response.result.summary.sourceReadiness).toContainEqual(
+      expect.objectContaining({
+        sourceId: "services",
+        type: "geojson",
+        state: "supported",
+        queryReady: true,
+        resourcePolicy: "passed"
+      })
+    );
     expect(response.result.toolSequence).toEqual([
       "get_context_summary",
       "validate_spec",
@@ -1220,6 +1229,18 @@ describe("generation evidence bundle", () => {
         type: "pmtiles",
         sourceContract: expect.objectContaining({
           kind: "archive",
+          state: "explicit"
+        })
+      })
+    );
+    expect(response.result.summary.sourceReadiness).toContainEqual(
+      expect.objectContaining({
+        sourceId: "parcels",
+        type: "pmtiles",
+        state: "readiness-only",
+        queryReady: false,
+        resourcePolicy: "passed",
+        archiveContract: expect.objectContaining({
           state: "explicit"
         })
       })
