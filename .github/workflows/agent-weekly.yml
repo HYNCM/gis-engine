@@ -128,6 +128,39 @@ jobs:
             docs/planning/evolution-pitfalls.md
           if-no-files-found: warn
 
+  perf-trend:
+    name: "builder: perf trend evidence"
+    runs-on: ubuntu-latest
+    needs: [evolution]
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Run perf trend reporter
+        env:
+          WEEK_OVERRIDE: ${{ github.event.inputs.week }}
+        run: |
+          WEEK="${WEEK_OVERRIDE:-$(date -u +%G-W%V)}"
+          pnpm --dir packages/engine exec tsx ../../scripts/perf-trend.mjs --period "${WEEK}" --output "docs/reviews/perf-trend-${WEEK}.md"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: weekly-perf-trend
+          path: docs/reviews/perf-trend-*.md
+          if-no-files-found: warn
+
   orchestrator-commit:
     name: "orchestrator: serialize weekly artifacts"
     runs-on: ubuntu-latest
@@ -136,6 +169,7 @@ jobs:
       - product
       - orchestrator
       - evolution
+      - perf-trend
     steps:
       - uses: actions/checkout@v6
 
@@ -159,6 +193,6 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "docs: weekly agent artifacts for ${{ github.event.inputs.week || 'current week' }}"
-          file_pattern: "docs/research/competitor-updates-*.md docs/planning/weekly-digest.md docs/planning/issues-snapshot.md docs/planning/evolution-ledger.md docs/planning/evolution-snapshot-*.md docs/planning/evolution-patterns.md docs/planning/evolution-pitfalls.md docs/planning/AGENT_HEALTH_DASHBOARD.md docs/planning/handoff-ledger.json"
+          file_pattern: "docs/research/competitor-updates-*.md docs/planning/weekly-digest.md docs/planning/issues-snapshot.md docs/planning/evolution-ledger.md docs/planning/evolution-snapshot-*.md docs/planning/evolution-patterns.md docs/planning/evolution-pitfalls.md docs/planning/AGENT_HEALTH_DASHBOARD.md docs/planning/handoff-ledger.json docs/reviews/perf-trend-*.md"
           commit_user_name: "orchestrator[bot]"
           commit_user_email: "orchestrator[bot]@gis-engine.dev"

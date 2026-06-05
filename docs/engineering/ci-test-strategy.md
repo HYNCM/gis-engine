@@ -67,6 +67,7 @@ CI 分为 PR、main-nightly、release 三档。PR 目标是稳定阻断确定性
 | AI tool contract | 必跑且阻断 | 必跑且阻断 | 必跑且阻断 |
 | resource release | 必跑且阻断 | 必跑且阻断 | 必跑且阻断 |
 | perf smoke | 否 | `pnpm test:perf:nightly` 条件运行；失败告警 | `pnpm test:perf:nightly` 必跑且阻断 |
+| perf trend | 否 | `pnpm test:perf:trend` 周度运行并归档趋势报告 | `scripts/perf-trend.mjs` 生成的 `docs/reviews/perf-trend-*.md` 周度证据 |
 | migration tests | 变更 schema 时必跑且阻断 | 变更 schema 时必跑且阻断 | 必跑且阻断 |
 
 `GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1` 会把 `snapshot:visual` 从可降级 gate 提升为强制 gate。该环境变量适用于 release、手动验收、baseline 更新和任何需要确认真实 MapLibre GL 渲染的 CI job。
@@ -270,7 +271,7 @@ v0.1 release 前至少运行：
 | snapshot 1024x768 | 不超过 2s |
 | destroy | 无残留 raf、listener、worker |
 
-这些不是长期性能承诺，只是防止当前可发布线出现明显不可用状态。当前 PR 级 perf smoke 仍是小样本确定性 guard；更大的 1k/10k/100k 场景保留给 nightly/release runner，避免把不稳定的大数据压测放进默认 `pnpm check`。
+这些不是长期性能承诺，只是防止当前可发布线出现明显不可用状态。当前 PR 级 perf smoke 仍是小样本确定性 guard；更大的 1k/10k/100k 场景保留给 nightly/release runner，perf trend 则在周度 workflow 中归档为审查证据，避免把不稳定的大数据压测放进默认 `pnpm check`。
 
 ## Current Gate Evidence
 

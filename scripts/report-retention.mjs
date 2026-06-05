@@ -18,6 +18,10 @@ const REPORT_CLASSES = [
     name: "documentation audits",
     pattern: /^documentation-audit-\d{4}-\d{2}-\d{2}\.md$/,
   },
+  {
+    name: "perf trend evidence",
+    pattern: /^perf-trend-\d{4}-W\d{2}\.md$/,
+  },
 ];
 
 function generatedAt(path) {

@@ -27,6 +27,7 @@ templates, and where to look for the real evidence.
 | Stream | Purpose | Typical files |
 | --- | --- | --- |
 | Rolling audits | Daily quality/docs cadence and release gate freshness | `daily-audit-*`, `quality-gate-*`, `quality-gate-release-*`, `documentation-audit-*`, `release-readiness-*` |
+| Perf trend evidence | Weekly lifecycle timings and trend artifacts for VPE-002 | `perf-trend-*` |
 | PR quality evidence | Pull-request path-aware gate summaries from `pr-quality.yml` | GitHub Actions summary/artifact, not committed by default |
 | Spatial query hardening | Query readiness, diagnostics, and closure evidence | `sqh-*` |
 | MapLibre drift audit | Dependency drift, resource, and go/no-go evidence | `mld-*`, `mlc-*` |
@@ -43,6 +44,7 @@ templates, and where to look for the real evidence.
 | `quality-gate-*` | Latest 7 days | Use named stream reports for substantive acceptance details. |
 | `documentation-audit-*` | Latest 7 days | Keep the newest real audit with concrete findings. |
 | `quality-gate-release-*` / `release-readiness-*` | Latest relevant cut | Keep while the release window is active. |
+| `perf-trend-*` | Latest weekly trend cut | Keep while VPE-002 trend accumulation is active. |
 
 Use `node scripts/report-retention.mjs` to preview stale rolling reports and
 `node scripts/report-retention.mjs --apply` from automation or an explicit
