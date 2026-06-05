@@ -1,0 +1,27 @@
+{
+  "status": "follow-up-required",
+  "delivery": {
+    "status": "follow-up-required",
+    "acceptance": { "state": "follow-up-required", "ready": false, "blocked": false, "needsConfirmation": false, "followUpRequired": true },
+    "sections": [
+      { "id": "readiness", "state": "ready" },
+      { "id": "files", "state": "ready" },
+      { "id": "map-edits", "state": "ready" },
+      { "id": "data-and-analysis", "state": "follow-up-required" },
+      { "id": "scene-browsing", "state": "extension-only" }
+    ],
+    "confirmations": [],
+    "followUps": [
+      { "id": "TASK-2026W24-CNS-001", "owner": "@builder", "targetArtifact": "PMTiles archive parsing contract", "reason": "pmtiles-archive-readiness" }
+    ],
+    "sourceReadiness": [
+      { "id": "local-pmtiles", "format": "pmtiles", "state": "readiness-only", "queryReady": false, "resourcePolicy": "passed" }
+    ],
+    "spatialQueryReadiness": { "state": "follow-up-required" }
+  },
+  "validation": { "valid": true, "diagnostics": [] },
+  "commandEvidence": { "count": 1, "committed": 1, "rolledBack": 0, "traceId": "trace-followup-001" },
+  "exportEvidence": { "ready": true, "sourceCount": 1, "layerCount": 1 },
+  "diagnostics": [],
+  "spatialQueryEvidence": { "requested": true, "ready": false, "cases": [{ "operation": "point-query", "state": "ready" }], "capabilityGate": "follow-up-required" }
+}

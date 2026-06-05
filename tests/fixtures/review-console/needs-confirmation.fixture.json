@@ -1,0 +1,27 @@
+{
+  "status": "needs-confirmation",
+  "delivery": {
+    "status": "needs-confirmation",
+    "acceptance": { "state": "needs-confirmation", "ready": false, "blocked": false, "needsConfirmation": true, "followUpRequired": false },
+    "sections": [
+      { "id": "readiness", "state": "ready" },
+      { "id": "files", "state": "needs-confirmation" },
+      { "id": "map-edits", "state": "ready" },
+      { "id": "data-and-analysis", "state": "ready" },
+      { "id": "scene-browsing", "state": "not-requested" }
+    ],
+    "confirmations": [
+      { "reason": "network-fetch", "sourceId": "remote-geojson", "detail": "External GeoJSON URL requires fetch confirmation" }
+    ],
+    "followUps": [],
+    "sourceReadiness": [
+      { "id": "remote-geojson", "format": "geojson", "state": "supported", "queryReady": false, "resourcePolicy": "passed" }
+    ],
+    "spatialQueryReadiness": { "state": "not-requested" }
+  },
+  "validation": { "valid": true, "diagnostics": [] },
+  "commandEvidence": { "count": 2, "committed": 2, "rolledBack": 0, "traceId": "trace-confirm-001" },
+  "exportEvidence": { "ready": true, "sourceCount": 1, "layerCount": 1 },
+  "diagnostics": [],
+  "spatialQueryEvidence": { "requested": false, "ready": false, "cases": [], "capabilityGate": "not-requested" }
+}

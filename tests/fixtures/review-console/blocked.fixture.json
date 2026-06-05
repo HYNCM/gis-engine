@@ -1,0 +1,25 @@
+{
+  "status": "blocked",
+  "delivery": {
+    "status": "blocked",
+    "acceptance": { "state": "blocked", "ready": false, "blocked": true, "needsConfirmation": false, "followUpRequired": false },
+    "sections": [
+      { "id": "readiness", "state": "blocked" },
+      { "id": "files", "state": "blocked" },
+      { "id": "map-edits", "state": "blocked" },
+      { "id": "data-and-analysis", "state": "blocked" },
+      { "id": "scene-browsing", "state": "blocked" }
+    ],
+    "confirmations": [],
+    "followUps": [],
+    "sourceReadiness": [
+      { "id": "parquet-data", "format": "geoparquet", "state": "blocked", "queryReady": false, "resourcePolicy": "not-applicable" }
+    ],
+    "spatialQueryReadiness": { "state": "blocked", "cases": [{ "operation": "buffer", "state": "blocked" }] }
+  },
+  "validation": { "valid": false, "diagnostics": [{ "severity": "error", "code": "SCHEMA.INVALID", "message": "Unsupported source type" }] },
+  "commandEvidence": { "count": 0, "committed": 0, "rolledBack": 0 },
+  "exportEvidence": { "ready": false, "sourceCount": 0, "layerCount": 0 },
+  "diagnostics": [{ "severity": "error", "code": "SCHEMA.INVALID", "message": "Unsupported source type", "path": "/sources/parquet-data" }],
+  "spatialQueryEvidence": { "requested": true, "ready": false, "cases": [{ "operation": "buffer", "state": "blocked" }], "capabilityGate": "blocked" }
+}

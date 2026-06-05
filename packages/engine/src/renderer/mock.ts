@@ -89,10 +89,23 @@ export class MockAdapter implements RendererAdapter {
   resize(_size: { width: number; height: number }): void {}
 
   async destroy(): Promise<ResourceReport> {
+    const listenersRemoved = this.countListeners();
+    this.#listeners.clear();
+    this.#spec = null;
     return {
       destroyed: true,
-      diagnostics: []
+      diagnostics: [],
+      resources: {
+        listenersRemoved,
+        verifiable: true
+      }
     };
+  }
+
+  private countListeners(): number {
+    let count = 0;
+    for (const set of this.#listeners.values()) count += set.size;
+    return count;
   }
 
   on(event: string, listener: AdapterEventListener): Unsubscribe {

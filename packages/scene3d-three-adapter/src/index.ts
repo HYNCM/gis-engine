@@ -1343,6 +1343,7 @@ function destroyResourceReport(
     resources: {
       adapter: scene3dThreeAdapterBoundary.packageName,
       stableRuntimeBlocked: true,
+      verifiable: false,
       loadedBeforeDestroy,
       failedBeforeDestroy,
       alreadyDestroyed,

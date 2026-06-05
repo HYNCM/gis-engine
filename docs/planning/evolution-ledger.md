@@ -133,6 +133,48 @@ W23 实际分布（来自 sprint-2026-W23-ai-map-app-generation）：
 
 基准周，无调整。
 
+### 2026-W24（2026-06-02 ~ 2026-06-08）
+
+#### D1：估算准确度
+
+| 任务 | Complexity | Estimated | Actual | 偏差率 |
+| --- | --- | --- | --- | --- |
+| TASK-2026W24-RCU-001 | M | 12h | 4h | 0.67 |
+| TASK-2026W24-RCU-002 | S | 4h | 2h | 0.50 |
+| TASK-2026W24-RCU-003 | S | 4h | 2h | 0.50 |
+| TASK-2026W24-CNS-001 | M | 12h | 3h | 0.75 |
+| TASK-2026W24-CNS-002 | M | 12h | 3h | 0.75 |
+| TASK-2026W24-CNS-003 | S | 4h | 2h | 0.50 |
+| TASK-2026W24-VPE-001 | S | 4h | 1h | 0.75 |
+| TASK-2026W24-VPE-002 | S | 4h | 1h | 0.75 |
+| TASK-2026W24-VPE-003 | S | 4h | 1h | 0.75 |
+
+> **分析**：W24 估算偏差率偏高（均值 0.66），表明 M 和 S 任务基准可能偏高。
+> 建议下月校准下调 S 基准至 2h、M 基准至 6h。
+
+#### D3：质量趋势
+
+| 指标 | 值 |
+| --- | --- |
+| 门禁首次通过率 | 100%（W24 所有门禁首次运行通过） |
+| 返工率 | 0 次/任务（无返工） |
+| 新增测试数 | 40+ |
+
+#### D4：知识积累
+
+**新模式**：
+
+| ID | 名称 | 来源 | 类别 |
+| --- | --- | --- | --- |
+| PAT-004 | Cloud-native metadata-only contract | TASK-2026W24-CNS-001~003 | schema-policy |
+| PAT-005 | Review-console evidence-driven UI | TASK-2026W24-RCU-001 | review-contract |
+
+**新陷阱**：
+
+| ID | 名称 | 来源 | 频率 | 类别 |
+| --- | --- | --- | --- | --- |
+| PIT-004 | diagnostic code not registered | CNS implementation | 1 | diagnostics |
+
 ---
 
 ## 月度趋势报告

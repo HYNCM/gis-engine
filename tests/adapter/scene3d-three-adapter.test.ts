@@ -404,6 +404,7 @@ describe("SceneView3D Three.js adapter spike", () => {
         resources: expect.objectContaining({
           adapter: "@gis-engine/scene3d-three-adapter",
           stableRuntimeBlocked: true,
+          verifiable: false,
           loadedBeforeDestroy: true,
           failedBeforeDestroy: false,
           plannedResourceCount: 4,

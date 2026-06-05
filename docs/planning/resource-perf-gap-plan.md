@@ -26,8 +26,8 @@ lifecycle and performance depth.
 | --- | --- | --- |
 | RESOURCE-001 | destroy after `snapshot()` | done: `tests/resources/resource-release.test.ts` covers snapshot before destroy and stable post-destroy failure |
 | RESOURCE-002 | destroy after `queryFeatures()` | done: `tests/resources/resource-release.test.ts` covers query before destroy and stable post-destroy failure |
-| RESOURCE-003 | adapter listener cleanup | listeners are removed or reported in `ResourceReport` |
-| RESOURCE-004 | unsupported resource verification | unverifiable WebGL/browser resources report `verifiable: false` when modeled |
+| RESOURCE-003 | adapter listener cleanup | done: `destroy()` clears `#listeners` and reports `listenersRemoved` count in `ResourceReport.resources` for MockAdapter, MapLibreAdapter |
+| RESOURCE-004 | unsupported resource verification | done: adapters report `verifiable` in `ResourceReport.resources` — `true` for Node-verifiable adapters (Mock, MapLibre), `false` for WebGL/browser-only resources (Scene3DThreeAdapter) |
 
 ## Performance Smoke Follow-Ups
 

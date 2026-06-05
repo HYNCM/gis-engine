@@ -29,7 +29,8 @@ export const DiagnosticCodes = {
   SecurityResourceTooLarge: "SECURITY.RESOURCE_TOO_LARGE",
   SecurityUnsupportedAssetType: "SECURITY.UNSUPPORTED_ASSET_TYPE",
   GeoInvalidCoordinates: "GEO.INVALID_COORDINATES",
-  GeoEmptyBbox: "GEO.EMPTY_BBOX"
+  GeoEmptyBbox: "GEO.EMPTY_BBOX",
+  SchemaInvalid: "SCHEMA.INVALID"
 } as const;
 
 export const Scene3DStableRuntimeBlockerCodes = {

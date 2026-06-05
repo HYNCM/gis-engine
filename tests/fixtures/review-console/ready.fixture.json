@@ -1,0 +1,25 @@
+{
+  "status": "ready",
+  "delivery": {
+    "status": "ready",
+    "acceptance": { "state": "ready", "ready": true, "blocked": false, "needsConfirmation": false, "followUpRequired": false },
+    "sections": [
+      { "id": "readiness", "state": "ready" },
+      { "id": "files", "state": "ready" },
+      { "id": "map-edits", "state": "ready" },
+      { "id": "data-and-analysis", "state": "ready" },
+      { "id": "scene-browsing", "state": "not-requested" }
+    ],
+    "confirmations": [],
+    "followUps": [],
+    "sourceReadiness": [
+      { "id": "poi-data", "format": "geojson", "state": "supported", "queryReady": true, "resourcePolicy": "passed" }
+    ],
+    "spatialQueryReadiness": { "state": "ready", "cases": [{ "operation": "point-query", "state": "ready" }] }
+  },
+  "validation": { "valid": true, "diagnostics": [] },
+  "commandEvidence": { "count": 3, "committed": 3, "rolledBack": 0, "traceId": "trace-ready-001" },
+  "exportEvidence": { "ready": true, "sourceCount": 1, "layerCount": 2 },
+  "diagnostics": [],
+  "spatialQueryEvidence": { "requested": true, "ready": true, "cases": [{ "operation": "point-query", "state": "ready" }], "capabilityGate": "ready" }
+}

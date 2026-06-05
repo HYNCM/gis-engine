@@ -18,6 +18,7 @@ import {
   resolveProviderProfile
 } from "./provider-profiles.mjs";
 import { createReviewDecision } from "./review-decisions.mjs";
+import { computeReviewConsoleState } from "./review-console.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicRoot = resolve(__dirname, "public");
@@ -55,6 +56,7 @@ export async function createWorkbenchServer(options = {}) {
   const reviewDecisions = [];
   let activeSpec = createInitialSpec();
   let activeEpoch = 0;
+  let lastCompactEvidence = null;
 
   function replaceActiveSpec(nextSpec) {
     activeSpec = nextSpec;
@@ -82,6 +84,11 @@ export async function createWorkbenchServer(options = {}) {
           projectId,
           decisions: reviewDecisions
         });
+      }
+
+      if (request.method === "GET" && url.pathname === "/api/review-console") {
+        const reviewState = computeReviewConsoleState(lastCompactEvidence);
+        return sendJson(response, reviewState);
       }
 
       if (request.method === "POST" && url.pathname === "/api/review-decision") {
@@ -153,6 +160,9 @@ export async function createWorkbenchServer(options = {}) {
           if (providerResult.activeSpec && providerResult.activeSpec !== activeSpec) {
             replaceActiveSpec(providerResult.activeSpec);
           }
+          if (providerResult.payload.generationEvidence) {
+            lastCompactEvidence = providerResult.payload.generationEvidence;
+          }
           return sendJson(response, providerResult.payload);
         }
 
@@ -223,6 +233,9 @@ export async function createWorkbenchServer(options = {}) {
           });
           if (providerResult.activeSpec && providerResult.activeSpec !== activeSpec) {
             replaceActiveSpec(providerResult.activeSpec);
+          }
+          if (providerResult.payload.generationEvidence) {
+            lastCompactEvidence = providerResult.payload.generationEvidence;
           }
           return sendJson(response, providerResult.payload);
         }
@@ -553,6 +566,7 @@ async function applyProviderOutput({
 
   const failed = applied.results.some((result) => result.status === "failed");
   const status = failed ? "blocked" : "applied";
+  const compactEvidence = compactGenerationEvidence(generationEvidence.result);
   appendAuditRecord(auditRecords, {
     sessionId,
     providerId: providerPlan.result.provider.providerId,
@@ -570,7 +584,7 @@ async function applyProviderOutput({
       ...statePayload(engine, status, nextSpec),
       provider: providerPlan.result.provider,
       plan,
-      generationEvidence: compactGenerationEvidence(generationEvidence.result),
+      generationEvidence: compactEvidence,
       results: applied.results,
       traces: applied.traces ?? [],
       commandEvidence: commandEvidence(applied.results, applied.committed, applied.rolledBack)

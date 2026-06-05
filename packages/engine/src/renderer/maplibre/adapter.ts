@@ -117,10 +117,24 @@ export class MapLibreAdapter implements RendererAdapter {
   resize(_size: { width: number; height: number }): void {}
 
   async destroy(): Promise<ResourceReport> {
+    const listenersRemoved = this.countListeners();
     this.#spec = null;
     this.#style = null;
     this.#listeners.clear();
-    return { destroyed: true, diagnostics: [] };
+    return {
+      destroyed: true,
+      diagnostics: [],
+      resources: {
+        listenersRemoved,
+        verifiable: true
+      }
+    };
+  }
+
+  private countListeners(): number {
+    let count = 0;
+    for (const set of this.#listeners.values()) count += set.size;
+    return count;
   }
 
   on(event: "error" | "warning" | "stats", listener: AdapterEventListener): Unsubscribe {

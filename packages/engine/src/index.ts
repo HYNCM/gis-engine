@@ -26,4 +26,7 @@ export { MockAdapter } from "./renderer/mock.js";
 export { MapLibreAdapter } from "./renderer/maplibre/adapter.js";
 export { transformMapSpecToMapLibreStyle, type MapLibreLayer, type MapLibreSource, type MapLibreStyle, type TransformResult } from "./renderer/maplibre/transformer.js";
 export type * from "./renderer/adapter.js";
+export { validatePMTilesArchivePolicy, validateGeoParquetPolicy, validateFlatGeobufPolicy } from "./spec/cloud-native/validate.js";
+export { defaultPMTilesArchivePolicy, defaultGeoParquetPolicy, defaultFlatGeobufPolicy } from "./spec/cloud-native/index.js";
+export type { PMTilesArchiveMetadata, PMTilesArchivePolicy, GeoParquetSourceSpec, GeoParquetPolicy, FlatGeobufSourceSpec, FlatGeobufPolicy } from "./spec/cloud-native/index.js";
 export type * from "./types.js";
