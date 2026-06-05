@@ -170,7 +170,8 @@ Deletion is a server-side operation, not a browser file write:
 - No raw prompt, raw provider body, credential, feature payload, screenshot, or
   full `MapSpec` persistence.
 - No new MCP tool names.
-- No runtime review action implementation; `AMW-009` is a design-only handoff.
+- No durable review-decision database; the local example review-action runtime
+  exists in `AWP-005`, but `AMW-008` still does not add durable storage.
 - No product app or hosted deployment promotion.
 
 ## 2026-06-02 AMW-009 Addendum

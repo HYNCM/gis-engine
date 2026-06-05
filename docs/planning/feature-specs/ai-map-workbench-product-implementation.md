@@ -33,7 +33,8 @@ new MCP tool names.
 - Provider output still normalizes into planner intent before mutation.
 - Runtime mutation still goes through `applyCommands`.
 - Current audit records remain latest-50, in-memory, bounded, and payload-free.
-- Review actions are design-only; there is no review decision UI or endpoint.
+- Review actions are implemented in the local example as append-only UI/API
+  controls; product app movement and hosted promotion remain No-go.
 - Browser smoke exists for the local example, but not release-grade product
   workflow visual evidence.
 

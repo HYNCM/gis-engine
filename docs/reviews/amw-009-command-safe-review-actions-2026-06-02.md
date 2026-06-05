@@ -74,3 +74,12 @@ Required for this design handoff:
 - `git diff --check`
 
 The next queued task is `TASK-2026W23-AMW-010`.
+
+## 2026-06-06 Implementation Note
+
+`AWP-005` later implemented this contract in the local example boundary.
+Runtime review decisions now live in `examples/ai-map-workbench/review-decisions.mjs`
+and `examples/ai-map-workbench/server.mjs`, with regression coverage in
+`tests/examples/ai-map-workbench.test.ts` and
+`tests/examples/workbench-hardening.test.ts`. This report remains the original
+design handoff and does not imply product or hosted promotion.
