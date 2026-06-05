@@ -1204,6 +1204,7 @@ describe("generation evidence bundle", () => {
           type: "pmtiles",
           state: "readiness-only",
           queryReady: false,
+          resourcePolicy: "passed",
           confirmationReasons: ["external-resource", "archive-parsing"]
         })
       ]
@@ -1213,6 +1214,7 @@ describe("generation evidence bundle", () => {
         candidateId: "source-promotion.pmtiles.parcels",
         format: "pmtiles",
         state: "readiness-only",
+        resourcePolicy: "passed",
         target: "PMTiles archive metadata promotion gate"
       })
     );
@@ -1249,7 +1251,8 @@ describe("generation evidence bundle", () => {
       expect.objectContaining({
         candidateId: "source-promotion.pmtiles.parcels",
         format: "pmtiles",
-        state: "readiness-only"
+        state: "readiness-only",
+        resourcePolicy: "passed"
       })
     );
     });

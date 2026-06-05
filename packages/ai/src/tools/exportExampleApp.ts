@@ -134,6 +134,10 @@ export const ExampleAppDeliverySummarySchema = {
           type: { type: "string" },
           state: SourceReadinessStateSchema,
           queryReady: { type: "boolean" },
+          resourcePolicy: {
+            type: "string",
+            enum: ["passed", "blocked", "not-applicable", "not-checked"]
+          },
           confirmationReasons: {
             type: "array",
             items: DeliveryConfirmationReasonSchema
@@ -152,6 +156,10 @@ export const ExampleAppDeliverySummarySchema = {
           candidateId: { type: "string" },
           format: SourcePromotionCandidateFormatSchema,
           state: SourceReadinessStateSchema,
+          resourcePolicy: {
+            type: "string",
+            enum: ["passed", "blocked", "not-applicable", "not-checked"]
+          },
           target: { type: "string" },
           exitCondition: { type: "string" },
           sourceIds: { type: "array", items: { type: "string" } },
@@ -488,6 +496,7 @@ export interface ExampleAppDeliverySummary {
     type: string;
     state: "supported" | "readiness-only" | "blocked";
     queryReady: boolean;
+    resourcePolicy?: "passed" | "blocked" | "not-applicable" | "not-checked";
     confirmationReasons: Array<"external-resource" | "network-fetch" | "archive-parsing" | "worker-use" | "file-write" | "stable-scene3d-runtime">;
     notes: string[];
   }>;
@@ -495,6 +504,7 @@ export interface ExampleAppDeliverySummary {
     candidateId: string;
     format: "pmtiles" | "geoparquet" | "flatgeobuf" | "geotiff" | "geozarr";
     state: "supported" | "readiness-only" | "blocked";
+    resourcePolicy?: "passed" | "blocked" | "not-applicable" | "not-checked";
     target: string;
     exitCondition: string;
     sourceIds: string[];

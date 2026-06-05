@@ -353,9 +353,11 @@ function renderSourcePromotionCandidates(candidates) {
       const meta = document.createElement("p");
       const sourceIds = Array.isArray(candidate.sourceIds) && candidate.sourceIds.length > 0 ? candidate.sourceIds.join(", ") : "no sources";
       meta.textContent = `${candidate.candidateId} / ${sourceIds}`;
+      const resourcePolicy = document.createElement("p");
+      resourcePolicy.textContent = `Resource policy: ${candidate.resourcePolicy ?? "not-checked"}`;
       const details = document.createElement("p");
       details.textContent = `${candidate.target} — ${candidate.exitCondition}`;
-      article.append(title, meta, details);
+      article.append(title, meta, resourcePolicy, details);
       return article;
     })
   );

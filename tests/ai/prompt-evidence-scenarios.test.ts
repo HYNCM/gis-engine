@@ -387,6 +387,7 @@ describe("prompt-level generation evidence scenarios", () => {
             sourceId: "parcels",
             type: "pmtiles",
             state: "readiness-only",
+            resourcePolicy: "passed",
             confirmationReasons: ["external-resource", "archive-parsing"]
           })
         );
@@ -395,6 +396,7 @@ describe("prompt-level generation evidence scenarios", () => {
             candidateId: "source-promotion.pmtiles.parcels",
             format: "pmtiles",
             state: "readiness-only",
+            resourcePolicy: "passed",
             target: "PMTiles archive metadata promotion gate"
           })
         );

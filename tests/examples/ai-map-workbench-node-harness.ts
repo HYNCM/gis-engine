@@ -400,6 +400,7 @@ export class WorkbenchNodeHarness {
                 candidateId: "source-promotion.pmtiles.localPmtiles",
                 format: "pmtiles",
                 state: "readiness-only",
+                resourcePolicy: "passed",
                 target: "PMTiles archive metadata promotion gate",
                 exitCondition:
                   "Schema, resource-policy, and manifest evidence must prove archive metadata is explicit while archive parsing and feature query remain blocked.",

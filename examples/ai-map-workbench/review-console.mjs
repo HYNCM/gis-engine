@@ -122,7 +122,7 @@ function computeSectionState(sectionId, evidence) {
 function computeDataSourceSection(evidence) {
   const delivery = evidence.delivery ?? {};
   const sourceReadiness = normalizeSourceReadinessEntries(delivery.sourceReadiness ?? []);
-  const sourcePromotionCandidates = computeSourcePromotionCandidates(delivery);
+  const sourcePromotionCandidates = computeSourcePromotionCandidates(delivery, sourceReadiness);
 
   const hasBlocked = sourceReadiness.some(s => s.state === "blocked");
   const hasReadinessOnly = sourceReadiness.some(s => s.state === "readiness-only");
@@ -148,6 +148,7 @@ function computeDataSourceSection(evidence) {
       id: candidate.candidateId,
       format: candidate.format,
       state: candidate.state,
+      resourcePolicy: candidate.resourcePolicy ?? "not-checked",
       target: candidate.target,
       exitCondition: candidate.exitCondition,
       sourceIds: candidate.sourceIds
@@ -172,28 +173,31 @@ function normalizeSourceReadinessEntries(sourceReadiness) {
   }));
 }
 
-function computeSourcePromotionCandidates(delivery) {
+function computeSourcePromotionCandidates(delivery, sourceReadiness = normalizeSourceReadinessEntries(delivery.sourceReadiness ?? [])) {
   const explicitCandidates = delivery.sourcePromotionCandidates;
   if (Array.isArray(explicitCandidates) && explicitCandidates.length > 0) {
-    return explicitCandidates;
+    return explicitCandidates.map(candidate => ({
+      ...candidate,
+      resourcePolicy: candidate.resourcePolicy ?? sourceReadiness.find((source) => source.sourceId === candidate.sourceIds?.[0])?.resourcePolicy ?? "not-checked"
+    }));
   }
 
-  return normalizeSourceReadinessEntries(delivery.sourceReadiness ?? [])
-    .flatMap((source) => {
-      if (source.state === "supported") return [];
-      const definition = SOURCE_PROMOTION_CANDIDATE_DEFINITIONS[source.format];
-      if (!definition) return [];
+  return sourceReadiness.flatMap((source) => {
+    if (source.state === "supported") return [];
+    const definition = SOURCE_PROMOTION_CANDIDATE_DEFINITIONS[source.format];
+    if (!definition) return [];
 
-      return [{
-        candidateId: `source-promotion.${source.format}.${source.sourceId}`,
-        format: source.format,
-        state: source.state,
-        target: definition.target,
-        exitCondition: definition.exitCondition,
-        sourceIds: [source.sourceId],
-        notes: [...source.notes, definition.note]
-      }];
-    });
+    return [{
+      candidateId: `source-promotion.${source.format}.${source.sourceId}`,
+      format: source.format,
+      state: source.state,
+      resourcePolicy: source.resourcePolicy ?? "not-checked",
+      target: definition.target,
+      exitCondition: definition.exitCondition,
+      sourceIds: [source.sourceId],
+      notes: [...source.notes, definition.note]
+    }];
+  });
 }
 
 const SOURCE_PROMOTION_CANDIDATE_DEFINITIONS = {

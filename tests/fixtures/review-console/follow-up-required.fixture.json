@@ -12,7 +12,7 @@
     ],
     "confirmations": [],
     "followUps": [
-      { "id": "TASK-2026W24-CNS-001", "owner": "@builder", "targetArtifact": "PMTiles archive parsing contract", "reason": "pmtiles-archive-readiness" }
+      { "id": "TASK-2026W24-CNS-001", "owner": "@builder", "targetArtifact": "PMTiles archive metadata promotion gate", "reason": "pmtiles-archive-readiness" }
     ],
     "sourceReadiness": [
       { "id": "local-pmtiles", "format": "pmtiles", "state": "readiness-only", "queryReady": false, "resourcePolicy": "passed" }

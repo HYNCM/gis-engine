@@ -1575,12 +1575,14 @@ function deliveryStatus(
 function buildSourceReadiness(spec: MapSpec): ExampleAppDeliverySummary["sourceReadiness"] {
   return Object.entries(spec.sources).map(([sourceId, source]) => {
     const confirmationReasons = sourceConfirmationReasons(source);
+    const resourcePolicy = sourceResourcePolicy(source);
     if (source.type === "geojson" && typeof source.data !== "string") {
       return {
         sourceId,
         type: source.type,
         state: "supported",
         queryReady: true,
+        resourcePolicy,
         confirmationReasons,
         notes: ["Inline GeoJSON is schema-valid, display-ready, and eligible for deterministic point/bbox query evidence."]
       };
@@ -1592,6 +1594,7 @@ function buildSourceReadiness(spec: MapSpec): ExampleAppDeliverySummary["sourceR
         type: source.type,
         state: "readiness-only",
         queryReady: false,
+        resourcePolicy,
         confirmationReasons,
         notes: ["URL GeoJSON is display/export ready, but headless query evidence must not fetch it without a future loader contract."]
       };
@@ -1603,6 +1606,7 @@ function buildSourceReadiness(spec: MapSpec): ExampleAppDeliverySummary["sourceR
         type: source.type,
         state: "readiness-only",
         queryReady: false,
+        resourcePolicy,
         confirmationReasons,
         notes: ["PMTiles is URL-compatible for display/export evidence, while archive parsing and feature query support remain future contracts."]
       };
@@ -1614,6 +1618,7 @@ function buildSourceReadiness(spec: MapSpec): ExampleAppDeliverySummary["sourceR
         type: source.type,
         state: "supported",
         queryReady: false,
+        resourcePolicy,
         confirmationReasons,
         notes: ["Raster tiles are display/export ready; feature query and raster sampling remain blocked future work."]
       };
@@ -1625,6 +1630,7 @@ function buildSourceReadiness(spec: MapSpec): ExampleAppDeliverySummary["sourceR
         type: source.type,
         state: "supported",
         queryReady: false,
+        resourcePolicy,
         confirmationReasons,
         notes: ["Vector tile URLs are display/export ready; headless feature query support requires a future tile decode contract."]
       };
@@ -1635,6 +1641,7 @@ function buildSourceReadiness(spec: MapSpec): ExampleAppDeliverySummary["sourceR
       type: (source as { type: string }).type,
       state: "blocked",
       queryReady: false,
+      resourcePolicy,
       confirmationReasons,
       notes: ["This source type is outside the current public MapSpec source readiness matrix."]
     };
@@ -1654,6 +1661,7 @@ function buildSourcePromotionCandidates(
         candidateId: `source-promotion.${source.type}.${source.sourceId}`,
         format: definition.format,
         state: source.state,
+        resourcePolicy: source.resourcePolicy ?? "not-checked",
         target: definition.target,
         exitCondition: definition.exitCondition,
         sourceIds: [source.sourceId],
@@ -1700,6 +1708,12 @@ const sourcePromotionCandidateDefinitions = {
     note: "Chunked array support stays blocked until deterministic fixtures exist."
   }
 } as const;
+
+function sourceResourcePolicy(source: MapSpec["sources"][string]): NonNullable<ExampleAppDeliverySummary["sourceReadiness"][number]["resourcePolicy"]> {
+  return source.type === "geojson" || source.type === "pmtiles" || source.type === "raster" || source.type === "vector"
+    ? "passed"
+    : "not-applicable";
+}
 
 function sourceConfirmationReasons(source: MapSpec["sources"][string]): ExampleAppDeliverySummary["sourceReadiness"][number]["confirmationReasons"] {
   const urls = sourceUrls(source);
