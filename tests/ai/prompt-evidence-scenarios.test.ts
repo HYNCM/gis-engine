@@ -388,6 +388,11 @@ describe("prompt-level generation evidence scenarios", () => {
             type: "pmtiles",
             state: "readiness-only",
             resourcePolicy: "passed",
+            archiveContract: expect.objectContaining({
+              state: "explicit",
+              metadataFields: expect.arrayContaining(["specVersion", "archiveBytes"]),
+              policyFields: expect.arrayContaining(["maxArchiveBytes", "timeoutMs"])
+            }),
             confirmationReasons: ["external-resource", "archive-parsing"]
           })
         );
@@ -397,6 +402,7 @@ describe("prompt-level generation evidence scenarios", () => {
             format: "pmtiles",
             state: "readiness-only",
             resourcePolicy: "passed",
+            archiveContract: expect.objectContaining({ state: "explicit" }),
             target: "PMTiles archive metadata promotion gate"
           })
         );

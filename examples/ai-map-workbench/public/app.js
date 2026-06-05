@@ -355,9 +355,14 @@ function renderSourcePromotionCandidates(candidates) {
       meta.textContent = `${candidate.candidateId} / ${sourceIds}`;
       const resourcePolicy = document.createElement("p");
       resourcePolicy.textContent = `Resource policy: ${candidate.resourcePolicy ?? "not-checked"}`;
+      const archiveContract = document.createElement("p");
+      const archiveSummary = candidate.archiveContract
+        ? `${candidate.archiveContract.state} / ${candidate.archiveContract.metadataFields?.length ?? 0} metadata fields / ${candidate.archiveContract.policyFields?.length ?? 0} policy fields`
+        : "not-checked";
+      archiveContract.textContent = `Archive contract: ${archiveSummary}`;
       const details = document.createElement("p");
       details.textContent = `${candidate.target} — ${candidate.exitCondition}`;
-      article.append(title, meta, resourcePolicy, details);
+      article.append(title, meta, resourcePolicy, archiveContract, details);
       return article;
     })
   );

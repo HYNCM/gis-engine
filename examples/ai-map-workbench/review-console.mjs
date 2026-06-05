@@ -17,6 +17,23 @@ export const REVIEW_SECTION_IDS = [
 // Acceptance states
 export const ACCEPTANCE_STATES = ["ready", "blocked", "needs-confirmation", "follow-up-required"];
 
+const PMTILES_ARCHIVE_CONTRACT = {
+  state: "explicit",
+  metadataFields: [
+    "specVersion",
+    "archiveBytes",
+    "rootDirectoryOffset",
+    "rootDirectoryLength",
+    "hasVectorTiles",
+    "hasRasterTiles",
+    "tileType",
+    "minZoom",
+    "maxZoom",
+    "bounds"
+  ],
+  policyFields: ["maxArchiveBytes", "maxRootDirectoryBytes", "allowRangeRequests", "maxRangeSegments", "timeoutMs"]
+};
+
 /**
  * Compute review console state from a compact generation evidence payload.
  * @param {object} evidence - compact generation evidence (as returned by /api/chat)
@@ -142,13 +159,15 @@ function computeDataSourceSection(evidence) {
       format: s.format,
       state: s.state,
       queryReady: s.queryReady ?? false,
-      resourcePolicy: s.resourcePolicy ?? "not-checked"
+      resourcePolicy: s.resourcePolicy ?? "not-checked",
+      ...(s.archiveContract ? { archiveContract: s.archiveContract } : {})
     })),
     promotionCandidates: sourcePromotionCandidates.map(candidate => ({
       id: candidate.candidateId,
       format: candidate.format,
       state: candidate.state,
       resourcePolicy: candidate.resourcePolicy ?? "not-checked",
+      ...(candidate.archiveContract ? { archiveContract: candidate.archiveContract } : {}),
       target: candidate.target,
       exitCondition: candidate.exitCondition,
       sourceIds: candidate.sourceIds
@@ -169,6 +188,10 @@ function normalizeSourceReadinessEntries(sourceReadiness) {
     state: source.state ?? "blocked",
     queryReady: source.queryReady ?? false,
     resourcePolicy: source.resourcePolicy ?? "not-checked",
+    ...(() => {
+      const archiveContract = source.archiveContract ?? ((source.format ?? source.type) === "pmtiles" ? PMTILES_ARCHIVE_CONTRACT : undefined);
+      return archiveContract ? { archiveContract } : {};
+    })(),
     notes: Array.isArray(source.notes) ? source.notes : []
   }));
 }
@@ -178,7 +201,11 @@ function computeSourcePromotionCandidates(delivery, sourceReadiness = normalizeS
   if (Array.isArray(explicitCandidates) && explicitCandidates.length > 0) {
     return explicitCandidates.map(candidate => ({
       ...candidate,
-      resourcePolicy: candidate.resourcePolicy ?? sourceReadiness.find((source) => source.sourceId === candidate.sourceIds?.[0])?.resourcePolicy ?? "not-checked"
+      resourcePolicy: candidate.resourcePolicy ?? sourceReadiness.find((source) => source.sourceId === candidate.sourceIds?.[0])?.resourcePolicy ?? "not-checked",
+      ...(() => {
+        const archiveContract = candidate.archiveContract ?? sourceReadiness.find((source) => source.sourceId === candidate.sourceIds?.[0])?.archiveContract;
+        return archiveContract ? { archiveContract } : {};
+      })()
     }));
   }
 
@@ -192,6 +219,7 @@ function computeSourcePromotionCandidates(delivery, sourceReadiness = normalizeS
       format: source.format,
       state: source.state,
       resourcePolicy: source.resourcePolicy ?? "not-checked",
+      ...(source.archiveContract ? { archiveContract: source.archiveContract } : {}),
       target: definition.target,
       exitCondition: definition.exitCondition,
       sourceIds: [source.sourceId],

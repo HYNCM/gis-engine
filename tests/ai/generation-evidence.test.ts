@@ -1205,6 +1205,11 @@ describe("generation evidence bundle", () => {
           state: "readiness-only",
           queryReady: false,
           resourcePolicy: "passed",
+          archiveContract: expect.objectContaining({
+            state: "explicit",
+            metadataFields: expect.arrayContaining(["specVersion", "archiveBytes", "rootDirectoryLength"]),
+            policyFields: expect.arrayContaining(["maxArchiveBytes", "timeoutMs"])
+          }),
           confirmationReasons: ["external-resource", "archive-parsing"]
         })
       ]
@@ -1215,6 +1220,11 @@ describe("generation evidence bundle", () => {
         format: "pmtiles",
         state: "readiness-only",
         resourcePolicy: "passed",
+        archiveContract: expect.objectContaining({
+          state: "explicit",
+          metadataFields: expect.arrayContaining(["specVersion", "archiveBytes"]),
+          policyFields: expect.arrayContaining(["maxArchiveBytes", "timeoutMs"])
+        }),
         target: "PMTiles archive metadata promotion gate"
       })
     );
@@ -1252,7 +1262,10 @@ describe("generation evidence bundle", () => {
         candidateId: "source-promotion.pmtiles.parcels",
         format: "pmtiles",
         state: "readiness-only",
-        resourcePolicy: "passed"
+        resourcePolicy: "passed",
+        archiveContract: expect.objectContaining({
+          state: "explicit"
+        })
       })
     );
     });

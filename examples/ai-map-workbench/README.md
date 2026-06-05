@@ -159,8 +159,8 @@ The chat API returns compact review evidence:
   command evidence from `createGenerationEvidenceBundle`.
 - `generationEvidence.delivery.sourcePromotionCandidates`: cloud-native source
   promotion candidates shown in the evidence rail, including PMTiles archive
-  metadata, resource-policy evidence, and future GeoParquet / FlatGeobuf /
-  GeoTIFF / GeoZarr gates.
+  metadata contract summaries, resource-policy evidence, and future GeoParquet
+  / FlatGeobuf / GeoTIFF / GeoZarr gates.
 - `commandEvidence`: committed/rolled-back state and changed-path counts from
   the server-side command transaction.
 - `/api/audit`: the latest 50 payload-free session records with provider id,

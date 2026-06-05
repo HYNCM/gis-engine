@@ -67,7 +67,10 @@ describe("QA Matrix: Prompt-to-Delivery scenarios", () => {
             candidateId: "source-promotion.pmtiles.local-pmtiles",
             format: "pmtiles",
             state: "readiness-only",
-            resourcePolicy: "passed"
+            resourcePolicy: "passed",
+            archiveContract: expect.objectContaining({
+              state: "explicit"
+            })
           })
         ])
       );
@@ -75,7 +78,7 @@ describe("QA Matrix: Prompt-to-Delivery scenarios", () => {
       const dataSection = result.sections.find((s: { id: string }) => s.id === "data-and-sources");
       expect(dataSection?.state).toBe("follow-up-required");
       expect(dataSection?.sources?.some((s: { state: string }) => s.state === "readiness-only")).toBe(true);
-      expect(dataSection?.promotionCandidates?.some((candidate: { format: string; resourcePolicy?: string }) => candidate.format === "pmtiles" && candidate.resourcePolicy === "passed")).toBe(true);
+      expect(dataSection?.promotionCandidates?.some((candidate: { format: string; resourcePolicy?: string; archiveContract?: { state: string } }) => candidate.format === "pmtiles" && candidate.resourcePolicy === "passed" && candidate.archiveContract?.state === "explicit")).toBe(true);
 
       const scene = result.sections.find((s: { id: string }) => s.id === "scene-browsing");
       expect(scene?.evidence.stableRuntimeBlocked).toBe(true);

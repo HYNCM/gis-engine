@@ -1576,6 +1576,7 @@ function buildSourceReadiness(spec: MapSpec): ExampleAppDeliverySummary["sourceR
   return Object.entries(spec.sources).map(([sourceId, source]) => {
     const confirmationReasons = sourceConfirmationReasons(source);
     const resourcePolicy = sourceResourcePolicy(source);
+    const archiveContract = sourceArchiveContract(source);
     if (source.type === "geojson" && typeof source.data !== "string") {
       return {
         sourceId,
@@ -1608,6 +1609,7 @@ function buildSourceReadiness(spec: MapSpec): ExampleAppDeliverySummary["sourceR
         queryReady: false,
         resourcePolicy,
         confirmationReasons,
+        ...(archiveContract ? { archiveContract } : {}),
         notes: ["PMTiles is URL-compatible for display/export evidence, while archive parsing and feature query support remain future contracts."]
       };
     }
@@ -1655,6 +1657,7 @@ function buildSourcePromotionCandidates(
     if (source.state === "supported") return [];
     const definition = sourcePromotionCandidateDefinitions[source.type as keyof typeof sourcePromotionCandidateDefinitions];
     if (!definition) return [];
+    const archiveContract = source.archiveContract ?? (source.type === "pmtiles" ? createPmtilesArchiveContract() : undefined);
 
     return [
       {
@@ -1662,6 +1665,7 @@ function buildSourcePromotionCandidates(
         format: definition.format,
         state: source.state,
         resourcePolicy: source.resourcePolicy ?? "not-checked",
+        ...(archiveContract ? { archiveContract } : {}),
         target: definition.target,
         exitCondition: definition.exitCondition,
         sourceIds: [source.sourceId],
@@ -1713,6 +1717,30 @@ function sourceResourcePolicy(source: MapSpec["sources"][string]): NonNullable<E
   return source.type === "geojson" || source.type === "pmtiles" || source.type === "raster" || source.type === "vector"
     ? "passed"
     : "not-applicable";
+}
+
+function sourceArchiveContract(source: MapSpec["sources"][string]): ExampleAppDeliverySummary["sourceReadiness"][number]["archiveContract"] | undefined {
+  if (source.type !== "pmtiles") return undefined;
+  return createPmtilesArchiveContract();
+}
+
+function createPmtilesArchiveContract(): NonNullable<ExampleAppDeliverySummary["sourceReadiness"][number]["archiveContract"]> {
+  return {
+    state: "explicit",
+    metadataFields: [
+      "specVersion",
+      "archiveBytes",
+      "rootDirectoryOffset",
+      "rootDirectoryLength",
+      "hasVectorTiles",
+      "hasRasterTiles",
+      "tileType",
+      "minZoom",
+      "maxZoom",
+      "bounds"
+    ],
+    policyFields: ["maxArchiveBytes", "maxRootDirectoryBytes", "allowRangeRequests", "maxRangeSegments", "timeoutMs"]
+  };
 }
 
 function sourceConfirmationReasons(source: MapSpec["sources"][string]): ExampleAppDeliverySummary["sourceReadiness"][number]["confirmationReasons"] {

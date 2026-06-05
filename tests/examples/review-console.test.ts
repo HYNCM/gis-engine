@@ -44,6 +44,11 @@ describe("review-console contract", () => {
         format: "pmtiles",
         state: "readiness-only",
         resourcePolicy: "passed",
+        archiveContract: expect.objectContaining({
+          state: "explicit",
+          metadataFields: expect.arrayContaining(["specVersion", "archiveBytes"]),
+          policyFields: expect.arrayContaining(["maxArchiveBytes", "timeoutMs"])
+        }),
         target: "PMTiles archive metadata promotion gate"
       })
     );
@@ -51,12 +56,18 @@ describe("review-console contract", () => {
     expect(dataSection?.state).toBe("follow-up-required");
     expect(dataSection?.sources?.[0].state).toBe("readiness-only");
     expect(dataSection?.sources?.[0].resourcePolicy).toBe("passed");
+    expect(dataSection?.sources?.[0].archiveContract).toMatchObject({
+      state: "explicit"
+    });
     expect(dataSection?.promotionCandidates).toContainEqual(
       expect.objectContaining({
         id: "source-promotion.pmtiles.local-pmtiles",
         format: "pmtiles",
         state: "readiness-only",
-        resourcePolicy: "passed"
+        resourcePolicy: "passed",
+        archiveContract: expect.objectContaining({
+          state: "explicit"
+        })
       })
     );
   });

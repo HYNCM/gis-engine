@@ -1152,6 +1152,7 @@ describe("ai-map-workbench repeatable UI evidence", () => {
     expect(promotedEvidence.sourcePromotionCards).toEqual([expect.stringContaining("pmtiles / readiness-only")]);
     expect(promotedEvidence.sourcePromotionCards[0]).toContain("source-promotion.pmtiles.localPmtiles");
     expect(promotedEvidence.sourcePromotionCards[0]).toContain("Resource policy: passed");
+    expect(promotedEvidence.sourcePromotionCards[0]).toContain("Archive contract: explicit");
     expect(promotedEvidence.sourcePromotionCards[0]).toContain("PMTiles archive metadata promotion gate");
     expect(promotedEvidence.sourcePromotionCards[0]).toContain("archive parsing and feature query remain blocked");
 

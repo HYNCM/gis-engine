@@ -401,6 +401,22 @@ export class WorkbenchNodeHarness {
                 format: "pmtiles",
                 state: "readiness-only",
                 resourcePolicy: "passed",
+                archiveContract: {
+                  state: "explicit",
+                  metadataFields: [
+                    "specVersion",
+                    "archiveBytes",
+                    "rootDirectoryOffset",
+                    "rootDirectoryLength",
+                    "hasVectorTiles",
+                    "hasRasterTiles",
+                    "tileType",
+                    "minZoom",
+                    "maxZoom",
+                    "bounds"
+                  ],
+                  policyFields: ["maxArchiveBytes", "maxRootDirectoryBytes", "allowRangeRequests", "maxRangeSegments", "timeoutMs"]
+                },
                 target: "PMTiles archive metadata promotion gate",
                 exitCondition:
                   "Schema, resource-policy, and manifest evidence must prove archive metadata is explicit while archive parsing and feature query remain blocked.",
