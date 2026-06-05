@@ -86,6 +86,7 @@ export class WorkbenchNodeHarness {
   private readonly providers: ProviderProfile[];
   private readonly auditRecords: AuditRecord[] = [];
   private readonly reviewDecisions: ReviewDecision[] = [];
+  private lastGenerationEvidence: any = null;
   private readonly context: Record<string, unknown>;
   private revision = 1;
   private providerFetchCount = 0;
@@ -200,14 +201,19 @@ export class WorkbenchNodeHarness {
     const button = this.mustGetElement(`[data-review-outcome="${outcome}"]`);
     const requestCount = this.reviewRequests.length;
     const beforeReviewText = this.getText("#review-list");
+    const beforeDiagnosticsText = this.getText("#diagnostics-list");
     button.dispatchEvent(new FakeEvent("click", { bubbles: true }));
     await this.waitFor(() => {
       const status = this.getStatusText();
-      return (
-        this.reviewRequests.length > requestCount &&
-        (status === "Reviewed" || status === "Blocked") &&
-        this.getText("#review-list") !== beforeReviewText
-      );
+      const reviewChanged = this.getText("#review-list") !== beforeReviewText;
+      const diagnosticsChanged = this.getText("#diagnostics-list") !== beforeDiagnosticsText;
+      const requestComplete = this.reviewRequests.length > requestCount;
+
+      if (outcome === "accepted") {
+        return requestComplete && ((status === "Reviewed" && reviewChanged) || (status === "Blocked" && diagnosticsChanged));
+      }
+
+      return requestComplete && (status === "Reviewed" || reviewChanged);
     });
     await this.flushMicrotasks();
   }
@@ -313,6 +319,7 @@ export class WorkbenchNodeHarness {
       this.revision = 1;
       this.auditRecords.splice(0, this.auditRecords.length);
       this.reviewDecisions.splice(0, this.reviewDecisions.length);
+      this.lastGenerationEvidence = null;
       return jsonResponse(this.buildStatePayload({
         status: "reset",
         revision: "1"
@@ -327,6 +334,7 @@ export class WorkbenchNodeHarness {
       const fromRevision = String(this.revision);
 
       const response = this.buildChatResponse(message, providerId, fromRevision);
+      this.lastGenerationEvidence = response.generationEvidence ?? null;
       this.auditRecords.push({
         id: `session_browser.${this.auditRecords.length + 1}`,
         sessionId: "session_browser",
@@ -346,6 +354,20 @@ export class WorkbenchNodeHarness {
       this.reviewRequests.push(body as Record<string, unknown>);
       const auditRecordId = this.auditRecords.at(-1)?.id ?? "no-audit";
       const providerId = this.auditRecords.at(-1)?.providerId ?? "provider";
+      const reviewDiagnostics = this.validateReviewDecision(body.outcome ?? "accepted", body.reasonCodes ?? []);
+      if (reviewDiagnostics.length > 0) {
+        return jsonResponse(
+          this.buildStatePayload({
+            status: "blocked",
+            revision: String(this.revision),
+            decision: null,
+            decisions: this.reviewDecisions,
+            diagnostics: reviewDiagnostics,
+            commandEvidence: { commandCount: 0, committed: false, rolledBack: false }
+          })
+        );
+      }
+
       const decision = {
         outcome: body.outcome ?? "accepted",
         reasonCodes: body.reasonCodes ?? [],
@@ -490,6 +512,16 @@ export class WorkbenchNodeHarness {
           status: "ready",
           delivery: {
             status: "ready",
+            sourceReadiness: [
+              {
+                sourceId: "pois",
+                type: "geojson",
+                state: "supported",
+                queryReady: true,
+                resourcePolicy: "passed",
+                notes: ["Inline GeoJSON is schema-valid, display-ready, and eligible for deterministic point/bbox query evidence."]
+              }
+            ],
             sourcePromotionCandidates: []
           }
         },
@@ -513,7 +545,24 @@ export class WorkbenchNodeHarness {
         zoom: 11
       },
       style: { version: 8, sources: {}, layers: [] },
-      generationEvidence: null,
+      generationEvidence: {
+        promptHash: "sha256:mock-ai-edit",
+        status: "ready",
+        delivery: {
+          status: "ready",
+          sourceReadiness: [
+            {
+              sourceId: "pois",
+              type: "geojson",
+              state: "supported",
+              queryReady: true,
+              resourcePolicy: "passed",
+              notes: ["Inline GeoJSON is schema-valid, display-ready, and eligible for deterministic point/bbox query evidence."]
+            }
+          ],
+          sourcePromotionCandidates: []
+        }
+      },
       diagnostics: [],
       commandEvidence: { commandCount: 1, committed: true, rolledBack: false },
       results: [{ commandId: "cmd-mock-blue-points", status: "applied" }]
@@ -554,6 +603,40 @@ export class WorkbenchNodeHarness {
       ...(input.decision ? { decision: input.decision } : {}),
       ...(input.decisions ? { decisions: input.decisions } : {})
     };
+  }
+
+  private validateReviewDecision(outcome: string, reasonCodes: string[]) {
+    if (outcome === "accepted") {
+      const delivery = this.lastGenerationEvidence?.delivery;
+      const sourceReadiness = Array.isArray(delivery?.sourceReadiness) ? delivery.sourceReadiness : [];
+      const deliveryStatus = delivery?.status ?? "ready";
+      const hasUnreadySource = sourceReadiness.some((entry: { state?: string }) => entry.state !== "supported");
+      const hasEvidenceError = deliveryStatus !== "ready" || hasUnreadySource;
+      if (hasEvidenceError) {
+        return [
+          {
+            severity: "error",
+            code: "REVIEW.CONTRACT_VIOLATION",
+            message: "Accepted decisions require ready delivery and supported source readiness.",
+            path: "/reviewAction/evidence"
+          }
+        ];
+      }
+      return [];
+    }
+
+    if (outcome === "follow-up-required" && reasonCodes.length === 0) {
+      return [
+        {
+          severity: "error",
+          code: "REVIEW.CONTRACT_VIOLATION",
+          message: "Follow-up decisions require a reason code.",
+          path: "/reviewAction/followUp"
+        }
+      ];
+    }
+
+    return [];
   }
 }
 

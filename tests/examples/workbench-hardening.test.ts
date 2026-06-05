@@ -26,7 +26,19 @@ function makeEvidence(status = "applied", commandCount = 2) {
     status,
     commandCount,
     diagnosticCounts: { error: 0, warning: 0, info: 0 },
-    diagnosticCodes: []
+    diagnosticCodes: [],
+    delivery: {
+      status: "ready",
+      sourceReadiness: [
+        {
+          sourceId: "pois",
+          type: "geojson",
+          state: "supported",
+          queryReady: true,
+          resourcePolicy: "passed"
+        }
+      ]
+    }
   };
 }
 

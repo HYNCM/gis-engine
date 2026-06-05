@@ -95,7 +95,7 @@ export async function createWorkbenchServer(options = {}) {
         const body = await readJsonBody(request);
         const reviewResult = createReviewDecision({
           request: body,
-          evidence: auditRecords.at(-1),
+          evidence: compactReviewEvidence(auditRecords.at(-1), lastCompactEvidence),
           principal: reviewPrincipal,
           projectId,
           decisionId: `review-${reviewDecisions.length + 1}`,
@@ -244,6 +244,7 @@ export async function createWorkbenchServer(options = {}) {
 
         if (plan.status === "reset") {
           replaceActiveSpec(createInitialSpec());
+          lastCompactEvidence = null;
           appendAuditRecord(auditRecords, {
             sessionId,
             providerId: "mock-ai",
@@ -291,6 +292,7 @@ export async function createWorkbenchServer(options = {}) {
 
         const failed = applied.results.some((result) => result.status === "failed");
         const status = failed ? "blocked" : "applied";
+        lastCompactEvidence = failed ? null : { delivery: { status: "ready", sourceReadiness: mockSourceReadiness(activeSpec) } };
         appendAuditRecord(auditRecords, {
           sessionId,
           providerId: "mock-ai",
@@ -305,6 +307,7 @@ export async function createWorkbenchServer(options = {}) {
         return sendJson(response, {
           ...statePayload(engine, status, activeSpec),
           plan,
+          ...(lastCompactEvidence ? { generationEvidence: lastCompactEvidence } : {}),
           results: applied.results,
           traces: applied.traces ?? [],
           commandEvidence: commandEvidence(applied.results, applied.committed, applied.rolledBack)
@@ -327,6 +330,7 @@ export async function createWorkbenchServer(options = {}) {
 
       if (request.method === "POST" && url.pathname === "/api/reset") {
         replaceActiveSpec(createInitialSpec());
+        lastCompactEvidence = null;
         return sendJson(response, statePayload(engine, "reset", activeSpec));
       }
 
@@ -716,6 +720,24 @@ function compactGenerationEvidence(evidence) {
   };
 }
 
+function compactReviewEvidence(auditRecord, generationEvidence) {
+  if (!auditRecord) return undefined;
+
+  return {
+    ...auditRecord,
+    ...(generationEvidence?.delivery
+      ? {
+          deliveryStatus: generationEvidence.delivery.status,
+          sourceReadiness: generationEvidence.delivery.sourceReadiness,
+          delivery: {
+            status: generationEvidence.delivery.status,
+            sourceReadiness: generationEvidence.delivery.sourceReadiness
+          }
+        }
+      : {})
+  };
+}
+
 function appendAuditRecord(records, input) {
   const diagnosticCodes = compactDiagnosticCodes(input.diagnostics ?? []);
   records.push({
@@ -752,6 +774,43 @@ function countDiagnostics(diagnostics) {
     },
     { error: 0, warning: 0, info: 0 }
   );
+}
+
+function mockSourceReadiness(spec) {
+  return Object.entries(spec.sources).map(([sourceId, source]) => ({
+    sourceId,
+    type: source.type,
+    state:
+      source.type === "geojson" && typeof source.data !== "string"
+        ? "supported"
+        : source.type === "geojson" || source.type === "pmtiles"
+          ? "readiness-only"
+          : source.type === "raster" || source.type === "vector"
+            ? "supported"
+            : "blocked",
+    queryReady: source.type === "geojson" && typeof source.data !== "string",
+    resourcePolicy: source.type === "geojson" || source.type === "pmtiles" || source.type === "raster" || source.type === "vector" ? "passed" : "not-applicable",
+    ...(source.type === "pmtiles"
+      ? {
+          archiveContract: {
+            state: "explicit",
+            metadataFields: [
+              "specVersion",
+              "archiveBytes",
+              "rootDirectoryOffset",
+              "rootDirectoryLength",
+              "hasVectorTiles",
+              "hasRasterTiles",
+              "tileType",
+              "minZoom",
+              "maxZoom",
+              "bounds"
+            ],
+            policyFields: ["maxArchiveBytes", "maxRootDirectoryBytes", "allowRangeRequests", "maxRangeSegments", "timeoutMs"]
+          }
+        }
+      : {})
+  }));
 }
 
 function firstPromptHash(commands) {

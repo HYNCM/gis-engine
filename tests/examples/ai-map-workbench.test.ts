@@ -882,6 +882,59 @@ describe("ai-map-workbench review decision API", () => {
     expect(serialized).not.toMatch(/make points red|West Lake|MapSpec|commandBody|patch/i);
   });
 
+  it("blocks accepted review decisions when delivery still requires source follow-up", async () => {
+    const server = await createWorkbenchServer({
+      port: 0,
+      plannerProvider: async () => ({
+        providerId: "fixture-provider",
+        promptHash: "sha256:follow-up-review",
+        traceId: "trace-follow-up-review",
+        intent: {
+          mapId: "follow-up-review",
+          targetDomains: ["feature-display"],
+          sources: {
+            localPmtiles: {
+              type: "pmtiles",
+              url: "./data/parcels.pmtiles"
+            }
+          },
+          layers: [
+            {
+              id: "parcel-fill",
+              type: "fill",
+              source: "localPmtiles"
+            }
+          ]
+        }
+      })
+    });
+    closeServer = server.close;
+
+    await fetch(`${server.url}/api/chat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message: "show source promotion candidates" })
+    });
+    const response = await fetch(`${server.url}/api/review-decision`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ outcome: "accepted", reasonCodes: ["review-accepted"] })
+    });
+    const result = await response.json();
+    const decisions = await (await fetch(`${server.url}/api/review-decisions`)).json();
+
+    expect(response.ok).toBe(true);
+    expect(result.status).toBe("blocked");
+    expect(result.decision).toBeNull();
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: "REVIEW.CONTRACT_VIOLATION",
+        path: "/reviewAction/evidence"
+      })
+    );
+    expect(decisions.decisions).toHaveLength(0);
+  });
+
   it("blocks review decisions that attempt direct map mutation or raw payload retention", async () => {
     const server = await createWorkbenchServer({ port: 0 });
     closeServer = server.close;
@@ -1164,8 +1217,10 @@ describe("ai-map-workbench repeatable UI evidence", () => {
     expect(promotedEvidence.sourcePromotionCards[0]).toContain("archive parsing and feature query remain blocked");
 
     await harness.submitReviewDecision("accepted");
+    expect(harness.getStatusText()).toBe("Blocked");
+    expect(harness.getText("#review-list")).toBe("No review decisions.");
+    expect(harness.getText("#diagnostics-list")).toContain("REVIEW.CONTRACT_VIOLATION");
     await harness.submitReviewDecision("blocked");
-    await harness.submitReviewDecision("follow-up-required");
 
     const finalEvidence = harness.getEvidence();
     expect(finalEvidence.status).toBe("Reviewed");
@@ -1180,9 +1235,8 @@ describe("ai-map-workbench repeatable UI evidence", () => {
     });
     expect(finalEvidence.auditText).toContain("applied / 2 command(s)");
     expect(finalEvidence.auditText).toContain("1 -> 3 / deepseek");
-    expect(finalEvidence.reviewText).toContain("accepted / review-accepted");
     expect(finalEvidence.reviewText).toContain("blocked / manual-review-blocked");
-    expect(finalEvidence.reviewText).toContain("follow-up-required / visual-evidence-required");
+    expect(finalEvidence.reviewText).not.toContain("accepted / review-accepted");
     expect(finalEvidence.diagnosticsText).toBe("No diagnostics.");
     expect(finalEvidence.commandJson).toMatchObject({
       commandEvidence: expect.objectContaining({ commandCount: 2, committed: true }),

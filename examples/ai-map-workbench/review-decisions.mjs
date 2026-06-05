@@ -104,8 +104,18 @@ export function createReviewDecision(input) {
 
 function validateOutcomeAgainstEvidence(outcome, evidence, reasonCodes, followUpTaskIds) {
   const errorCount = evidence.diagnosticCounts?.error ?? 0;
-  if (outcome === "accepted" && (errorCount > 0 || evidence.status === "blocked" || evidence.status === "unsupported")) {
-    return reviewError("/reviewAction/evidence", "Accepted decisions require non-blocked evidence.");
+  const deliveryStatus = evidence.deliveryStatus ?? evidence.delivery?.status ?? evidence.status;
+  const sourceReadiness = Array.isArray(evidence.sourceReadiness)
+    ? evidence.sourceReadiness
+    : Array.isArray(evidence.delivery?.sourceReadiness)
+      ? evidence.delivery.sourceReadiness
+      : [];
+  const hasUnsupportedSourceReadiness = sourceReadiness.some((entry) => entry.state !== "supported");
+  if (
+    outcome === "accepted" &&
+    (errorCount > 0 || evidence.status === "blocked" || evidence.status === "unsupported" || deliveryStatus !== "ready" || hasUnsupportedSourceReadiness)
+  ) {
+    return reviewError("/reviewAction/evidence", "Accepted decisions require ready delivery and supported source readiness.");
   }
   if (outcome === "blocked" && reasonCodes.length === 0) {
     return reviewError("/reviewAction/outcome", "Blocked decisions require a reason code.");
