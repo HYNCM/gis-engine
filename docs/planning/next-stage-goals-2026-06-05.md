@@ -49,10 +49,13 @@ GeoParquet schemas, or review-console UI implementation are complete.
 
 The original snapshot was generated at `270a8d3`. Current repo revision
 `4012f51` contains implementation/test artifacts for `RCU-*`, `CNS-*`,
-`VPE-001`, and `VPE-003`, plus a W24 product refresh. Planning ledgers should
-therefore treat those tasks as **implemented / pending quality acceptance**,
-not `queued`. `VPE-002` has a perf-trend harness but still requires repeated
-nightly/release trend data before it can be closed. No W24 reconciliation item
+`VPE-001`, and `VPE-003`, plus a W24 product refresh. @quality acceptance
+report at `docs/reviews/w24-quality-acceptance-2026-06-05.md` (HOC-N3)
+records formal PASS for `RCU-001~003`, `CNS-001~003` (schema/policy
+contracts only, NOT runtime parsers), `VPE-001`, and `VPE-003`. All 525
+tests pass (`pnpm check` green), schema build passes, docs tests pass.
+`VPE-002` has a perf-trend harness but still requires repeated
+nightly/release trend data before it can be closed. No W24 acceptance item
 promotes stable SceneView3D runtime, hosted AI Map Workbench, hidden source IO,
 or cloud-native parser runtime.
 
@@ -71,18 +74,18 @@ or cloud-native parser runtime.
 
 | id | Priority | Phase | Owner | Status | Target artifact | Exit condition |
 | --- | --- | --- | --- | --- | --- | --- |
-| TASK-2026W24-RCU-001 | P0 | productized review | `@builder`, `@quality`, `@docs` | implemented / pending quality acceptance | `examples/ai-map-workbench/review-console.mjs`; review-console tests | Browser-rendered delivery summary, files/export, map edits, data/sources, spatial analysis, and scene browsing sections; no new MCP tool and no direct `MapSpec` mutation |
-| TASK-2026W24-RCU-002 | P0 | productized review | `@builder`, `@quality` | implemented / pending quality acceptance | Prompt-to-Delivery QA Matrix fixtures/tests | Deterministic clickable test cards for ready, blocked, needs-confirmation, and follow-up-required scenarios |
-| TASK-2026W24-RCU-003 | P0 | productized review | `@builder`, `@quality`, `@docs` | implemented / pending quality acceptance | workbench server/review hardening tests | Review actions, durable audit contract, and credential safety are visible in local/example evidence without product/hosted promotion |
-| TASK-2026W24-CNS-001 | P1 | cloud-native data | `@builder`, `@quality`, `@docs` | implemented / pending quality acceptance | PMTiles archive metadata/range contract | TypeBox/resource-policy/smoke tests define archive metadata/range behavior while feature query remains blocked unless separately promoted |
-| TASK-2026W24-CNS-002 | P1 | cloud-native data | `@builder`, `@quality`, `@docs` | implemented / pending quality acceptance | GeoParquet source schema contract | TypeBox schema covers bbox, CRS, WKB/GeoArrow encoding, and blocked/runtime-no-claim diagnostics |
-| TASK-2026W24-CNS-003 | P1 | cloud-native data | `@builder`, `@quality`, `@docs` | implemented / pending quality acceptance | resource-policy range/bbox/index rules | PMTiles range, GeoParquet bbox/range, and FlatGeobuf index paths produce stable allow/deny diagnostics before IO |
-| TASK-2026W24-VPE-001 | P1 | visual/perf evidence | `@builder`, `@quality` | implemented / pending quality acceptance | 3-scene strict visual maintenance test | GeoJSON, MVT, and `fill-extrusion-lite` strict visual scenes remain release-capable |
+| TASK-2026W24-RCU-001 | P0 | productized review | `@builder`, `@quality`, `@docs` | done | `examples/ai-map-workbench/review-console.mjs`; review-console tests | Browser-rendered delivery summary, files/export, map edits, data/sources, spatial analysis, and scene browsing sections; no new MCP tool and no direct `MapSpec` mutation |
+| TASK-2026W24-RCU-002 | P0 | productized review | `@builder`, `@quality` | done | Prompt-to-Delivery QA Matrix fixtures/tests | Deterministic clickable test cards for ready, blocked, needs-confirmation, and follow-up-required scenarios |
+| TASK-2026W24-RCU-003 | P0 | productized review | `@builder`, `@quality`, `@docs` | done | workbench server/review hardening tests | Review actions, durable audit contract, and credential safety are visible in local/example evidence without product/hosted promotion |
+| TASK-2026W24-CNS-001 | P1 | cloud-native data | `@builder`, `@quality`, `@docs` | done (schema/policy contract only) | PMTiles archive metadata/range contract | TypeBox/resource-policy/smoke tests define archive metadata/range behavior while feature query remains blocked unless separately promoted |
+| TASK-2026W24-CNS-002 | P1 | cloud-native data | `@builder`, `@quality`, `@docs` | done (schema/policy contract only) | GeoParquet source schema contract | TypeBox schema covers bbox, CRS, WKB/GeoArrow encoding, and blocked/runtime-no-claim diagnostics |
+| TASK-2026W24-CNS-003 | P1 | cloud-native data | `@builder`, `@quality`, `@docs` | done (schema/policy contract only) | resource-policy range/bbox/index rules | PMTiles range, GeoParquet bbox/range, and FlatGeobuf index paths produce stable allow/deny diagnostics before IO |
+| TASK-2026W24-VPE-001 | P1 | visual/perf evidence | `@builder`, `@quality` | done | 3-scene strict visual maintenance test | GeoJSON, MVT, and `fill-extrusion-lite` strict visual scenes remain release-capable |
 | TASK-2026W24-VPE-002 | P1 | visual/perf evidence | `@builder`, `@quality` | harness implemented / trend backlog | nightly perf trend ledger harness | 1k/10k/100k lifecycle runs need repeated nightly/release trend evidence before Done |
-| TASK-2026W24-VPE-003 | P1 | visual/perf evidence | `@builder`, `@quality`, `@docs` | implemented / pending quality acceptance | app-template visual scene test | Earthquake template app gets a deterministic visual snapshot or an explicit release waiver |
-| TASK-2026W24-EVO-001 | P2 | evolution metrics | `@orchestrator`, `@quality` | ledger populated / pending evidence audit | D1 estimation accuracy entries | W24 estimates and actuals are recorded in the evolution ledger |
-| TASK-2026W24-EVO-002 | P2 | evolution metrics | `@orchestrator`, `@quality` | ledger populated / pending evidence audit | D3 quality trend entries | First-pass gate rate and rework count are recorded for W24 |
-| TASK-2026W24-EVO-003 | P2 | evolution metrics | `@orchestrator`, `@docs` | ledger populated / pending evidence audit | D4 pattern/pitfall entries | At least two patterns and one pitfall are extracted for the sprint |
+| TASK-2026W24-VPE-003 | P1 | visual/perf evidence | `@builder`, `@quality`, `@docs` | done | app-template visual scene test | Earthquake template app gets a deterministic visual snapshot or an explicit release waiver |
+| TASK-2026W24-EVO-001 | P2 | evolution metrics | `@orchestrator`, `@quality` | done | D1 estimation accuracy entries | W24 estimates and actuals are recorded in the evolution ledger |
+| TASK-2026W24-EVO-002 | P2 | evolution metrics | `@orchestrator`, `@quality` | done | D3 quality trend entries | First-pass gate rate and rework count are recorded for W24 |
+| TASK-2026W24-EVO-003 | P2 | evolution metrics | `@orchestrator`, `@docs` | done | D4 pattern/pitfall entries | At least two patterns and one pitfall are extracted for the sprint |
 | TASK-2026W24-PRD-001 | P1 | product refresh | `@product` | done / consumed | `docs/research/competitor-updates-2026-W24.md` | Official/npm/source checks are refreshed and source dates are recorded |
 | TASK-2026W24-PRD-002 | P1 | product refresh | `@product`, `@orchestrator` | done / consumed | `docs/research/capability-scorecard.md` | Five-dimension scorecard is refreshed after W24 competitor evidence; SceneView3D stable and unsupported source claims remain blocked |
 

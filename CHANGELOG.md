@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Added
+- **Review-console contract** (`examples/ai-map-workbench/review-console.mjs`): pure computation module that derives 6 review sections (delivery-summary, files-and-export, map-edits, data-and-sources, spatial-analysis, scene-browsing) from `GenerationEvidenceBundle` without MCP tool names or `MapSpec` mutation.
+- **Review-console tests and fixtures**: 10 tests + 4 delivery-state fixtures (ready, blocked, needs-confirmation, follow-up-required) plus 24 cross-state QA matrix invariants and 11 workbench hardening tests (review actions, durable audit, credential safety).
+- **Cloud-native schema/resource-policy contracts**: TypeBox schemas and validation functions for PMTiles archive metadata (`PMTilesArchiveMetadataSchema`, 500 MB limit), GeoParquet source spec (`GeoParquetSourceSchema`, 1 GB / 10 M rows), and FlatGeobuf source spec (`FlatGeobufSourceSchema`, 500 MB / 5 M features). All validation is IO-free and returns structured diagnostics. Accepted as schema/policy contracts only — no runtime parser support.
+- **Strict visual maintenance tests**: 4 tests covering GeoJSON, MVT, and fill-extrusion-lite scenes as non-blocking evidence-gathering (`tests/snapshot/strict-visual-maintenance.test.ts`).
+- **App-template visual test**: 2 tests for the earthquake template exercising snapshot, query, validate, and destroy APIs (`tests/snapshot/app-template-visual.test.ts`).
+- **Perf trend ledger harness**: 1k/10k/100k lifecycle timing tests (`tests/perf/perf-trend-ledger.test.ts`); two-week trend data still to be accumulated.
+- **`SchemaInvalid` diagnostic code** (`SCHEMA.INVALID`) for cloud-native schema validation failures.
+
+### Changed
+- `@gis-engine/engine` now exports cloud-native validation functions (`validatePMTilesArchivePolicy`, `validateGeoParquetPolicy`, `validateFlatGeobufPolicy`), default policies, and types from the public barrel.
+- Workbench server gains `/api/review-console` endpoint returning computed review-console state from the last compact evidence.
+
 ## [0.4.0] - 2026-06-04
 
 ### Added

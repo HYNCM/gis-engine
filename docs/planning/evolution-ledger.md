@@ -162,9 +162,10 @@ W23 实际分布（来自 sprint-2026-W23-ai-map-app-generation）：
 
 | 指标 | 值 |
 | --- | --- |
-| 门禁首次通过率 | local reconciliation gates passed: docs link audit, docs tests, focused W24 suites, `pnpm build:schema`, and `pnpm check` |
-| 返工率 | 0 known during reconciliation; formal quality report still pending |
-| 新增测试数 | implementation reports 40+; focused W24 suites covered 77 tests before full `pnpm check` |
+| 门禁首次通过率 | 100% — `pnpm build:schema`, `pnpm check` (525 tests), `pnpm test:docs` all passed on first run at quality acceptance |
+| 返工率 | 0 rework cycles during W24 acceptance (formal @quality PASS on first review) |
+| 新增测试数 | 77+ W24-focused tests; 525 total across all suites |
+| HOC-N3 验收 | `docs/reviews/w24-quality-acceptance-2026-06-05.md` — RCU-001~003, CNS-001~003, VPE-001/003 all PASS |
 
 #### D4：知识积累
 
@@ -403,3 +404,4 @@ priority = competitor_threat * w1 + ai_operability_gain * w2 + user_value * w3 +
 | --- | --- | --- |
 | v1.0 | 2026-05-30 | 初始账本：W22 基准、初始模式库（3 patterns）、初始陷阱库（3 pitfalls） |
 | v1.1 | 2026-05-30 | 追加方法论参考（D1-D6 自校准规则），合并自 evolution-framework.md |
+| v1.2 | 2026-06-05 | W24 quality acceptance: D3 updated with formal gate results (100% first-pass, 0 rework); HOC-N3 report at `docs/reviews/w24-quality-acceptance-2026-06-05.md` |

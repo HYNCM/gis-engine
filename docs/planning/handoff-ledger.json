@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-06-05T13:14:09.282Z",
-  "repo_revision": "4012f51",
+  "generated_at": "2026-06-05T13:32:24.748Z",
+  "repo_revision": "06d6cd9",
   "source": "scripts/handoff-ledger.mjs",
   "flows": [
     {
@@ -15,12 +15,12 @@
       "upstream": {
         "path": "docs/research/competitor-updates-2026-W24.md",
         "generated_at": "2026-06-05T13:05:41.000Z",
-        "sha256": "b2e155f0add994c1b18533146207740e42bf7124be11a461989072440a34b2df"
+        "sha256": "192cf5abef3c06b504d4f9ccc516610d3dfa6e7b5acaa719f48b36eae3e2f781"
       },
       "downstream": {
         "path": "docs/planning/weekly-digest.md",
         "generated_at": "2026-06-05T13:05:41.000Z",
-        "sha256": "38d81b1ac217881da8a15b94e1d9964934bbe0c1665e3332dcd3c5b5ae26b6d8"
+        "sha256": "4eaf5f723e4fa55dce6fdacbf1c40cf1e7c0a50aef7180730ff707b5d9044a2c"
       }
     },
     {
@@ -56,7 +56,7 @@
       "downstream": {
         "path": "docs/planning/weekly-digest.md",
         "generated_at": "2026-06-05T13:05:41.000Z",
-        "sha256": "38d81b1ac217881da8a15b94e1d9964934bbe0c1665e3332dcd3c5b5ae26b6d8"
+        "sha256": "4eaf5f723e4fa55dce6fdacbf1c40cf1e7c0a50aef7180730ff707b5d9044a2c"
       }
     }
   ]
