@@ -1110,6 +1110,7 @@ describe("ai-map-workbench repeatable UI evidence", () => {
       "Summary",
       "Provider",
       "Diagnostics",
+      "Source readiness",
       "Source promotion",
       "Feature query",
       "Session audit",
@@ -1123,6 +1124,7 @@ describe("ai-map-workbench repeatable UI evidence", () => {
       ])
     );
     expect(initialEvidence.diagnosticsText).toBe("No diagnostics.");
+    expect(initialEvidence.sourceReadinessText).toBe("No source readiness entries.");
     expect(initialEvidence.sourcePromotionText).toBe("No source promotion candidates.");
     expect(initialEvidence.auditText).toBe("No session records.");
     expect(initialEvidence.reviewText).toBe("No review decisions.");
@@ -1149,6 +1151,11 @@ describe("ai-map-workbench repeatable UI evidence", () => {
     });
     expect(promotedEvidence.auditText).toContain("applied / 2 command(s)");
     expect(promotedEvidence.auditText).toContain("1 -> 3 / deepseek");
+    expect(promotedEvidence.sourceReadinessCards).toEqual([expect.stringContaining("localPmtiles / pmtiles / readiness-only")]);
+    expect(promotedEvidence.sourceReadinessCards[0]).toContain("Query ready: no / Resource policy: passed");
+    expect(promotedEvidence.sourceReadinessCards[0]).toContain("Archive contract: explicit");
+    expect(promotedEvidence.sourceReadinessCards[0]).toContain("Confirmation reasons: external-resource, archive-parsing");
+    expect(promotedEvidence.sourceReadinessCards[0]).toContain("Promote only one format at a time");
     expect(promotedEvidence.sourcePromotionCards).toEqual([expect.stringContaining("pmtiles / readiness-only")]);
     expect(promotedEvidence.sourcePromotionCards[0]).toContain("source-promotion.pmtiles.localPmtiles");
     expect(promotedEvidence.sourcePromotionCards[0]).toContain("Resource policy: passed");

@@ -7,6 +7,7 @@ const statusPill = document.querySelector("#status-pill");
 const summaryList = document.querySelector("#summary-list");
 const providerList = document.querySelector("#provider-list");
 const diagnosticsList = document.querySelector("#diagnostics-list");
+const sourceReadinessList = document.querySelector("#source-readiness-list");
 const sourcePromotionList = document.querySelector("#source-promotion-list");
 const featureQuery = document.querySelector("#feature-query");
 const auditList = document.querySelector("#audit-list");
@@ -309,6 +310,7 @@ function renderProviderEvidence(payload) {
   ];
 
   providerList.replaceChildren(...definitionRows(rows));
+  renderSourceReadiness(delivery?.sourceReadiness ?? []);
   renderSourcePromotionCandidates(delivery?.sourcePromotionCandidates ?? []);
 }
 
@@ -331,6 +333,50 @@ function renderDiagnostics(diagnostics) {
       message.textContent = diagnostic.message;
       item.append(code, message);
       return item;
+    })
+  );
+}
+
+function renderSourceReadiness(entries) {
+  if (entries.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "empty-state";
+    empty.textContent = "No source readiness entries.";
+    sourceReadinessList.replaceChildren(empty);
+    return;
+  }
+
+  sourceReadinessList.replaceChildren(
+    ...entries.slice(0, 4).map((entry) => {
+      const article = document.createElement("article");
+      article.className = "audit-card";
+      const title = document.createElement("strong");
+      title.textContent = `${entry.sourceId} / ${entry.type} / ${entry.state}`;
+      const meta = document.createElement("p");
+      meta.textContent = `Query ready: ${entry.queryReady ? "yes" : "no"} / Resource policy: ${entry.resourcePolicy ?? "not-checked"}`;
+      const contractDetails = [];
+      if (entry.sourceContract) {
+        const sourceContract = document.createElement("p");
+        sourceContract.textContent = `Source contract: ${describeContract(entry.sourceContract)}`;
+        contractDetails.push(sourceContract);
+      }
+      if (entry.archiveContract) {
+        const archiveContract = document.createElement("p");
+        archiveContract.textContent = `Archive contract: ${describeArchiveContract(entry.archiveContract)}`;
+        contractDetails.push(archiveContract);
+      }
+      if (Array.isArray(entry.confirmationReasons) && entry.confirmationReasons.length > 0) {
+        const confirmationReasons = document.createElement("p");
+        confirmationReasons.textContent = `Confirmation reasons: ${entry.confirmationReasons.join(", ")}`;
+        contractDetails.push(confirmationReasons);
+      }
+      if (Array.isArray(entry.notes) && entry.notes.length > 0) {
+        const notes = document.createElement("p");
+        notes.textContent = entry.notes.join(" ");
+        contractDetails.push(notes);
+      }
+      article.append(title, meta, ...contractDetails);
+      return article;
     })
   );
 }
@@ -360,20 +406,26 @@ function renderSourcePromotionCandidates(candidates) {
       const contractDetails = [];
       if (candidate.sourceContract) {
         const sourceContract = document.createElement("p");
-        const sourceContractSummary = `${candidate.sourceContract.kind} / ${candidate.sourceContract.state} / ${candidate.sourceContract.metadataFields?.length ?? 0} metadata fields / ${candidate.sourceContract.policyFields?.length ?? 0} policy fields`;
-        sourceContract.textContent = `Source contract: ${sourceContractSummary}`;
+        sourceContract.textContent = `Source contract: ${describeContract(candidate.sourceContract)}`;
         contractDetails.push(sourceContract);
       }
       if (candidate.archiveContract) {
         const archiveContract = document.createElement("p");
-        const archiveSummary = `${candidate.archiveContract.state} / ${candidate.archiveContract.metadataFields?.length ?? 0} metadata fields / ${candidate.archiveContract.policyFields?.length ?? 0} policy fields`;
-        archiveContract.textContent = `Archive contract: ${archiveSummary}`;
+        archiveContract.textContent = `Archive contract: ${describeArchiveContract(candidate.archiveContract)}`;
         contractDetails.push(archiveContract);
       }
       article.append(title, meta, resourcePolicy, ...contractDetails, details);
       return article;
     })
   );
+}
+
+function describeContract(contract) {
+  return `${contract.kind} / ${contract.state} / ${contract.metadataFields?.length ?? 0} metadata fields / ${contract.policyFields?.length ?? 0} policy fields`;
+}
+
+function describeArchiveContract(contract) {
+  return `${contract.state} / ${contract.metadataFields?.length ?? 0} metadata fields / ${contract.policyFields?.length ?? 0} policy fields`;
 }
 
 function definitionRows(rows) {

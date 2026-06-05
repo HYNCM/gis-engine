@@ -395,6 +395,36 @@ export class WorkbenchNodeHarness {
           status: "ready",
           delivery: {
             status: "follow-up-required",
+            sourceReadiness: [
+              {
+                sourceId: "localPmtiles",
+                type: "pmtiles",
+                state: "readiness-only",
+                queryReady: false,
+                resourcePolicy: "passed",
+                archiveContract: {
+                  state: "explicit",
+                  metadataFields: [
+                    "specVersion",
+                    "archiveBytes",
+                    "rootDirectoryOffset",
+                    "rootDirectoryLength",
+                    "hasVectorTiles",
+                    "hasRasterTiles",
+                    "tileType",
+                    "minZoom",
+                    "maxZoom",
+                    "bounds"
+                  ],
+                  policyFields: ["maxArchiveBytes", "maxRootDirectoryBytes", "allowRangeRequests", "maxRangeSegments", "timeoutMs"]
+                },
+                confirmationReasons: ["external-resource", "archive-parsing"],
+                notes: [
+                  "PMTiles is URL-compatible for display/export evidence, while archive parsing and feature query support remain future contracts.",
+                  "Promote only one format at a time; archive parsing stays blocked until the gate passes."
+                ]
+              }
+            ],
             sourcePromotionCandidates: [
               {
                 candidateId: "source-promotion.pmtiles.localPmtiles",
@@ -557,6 +587,8 @@ export function collectWorkbenchUiEvidence(document: FakeDocument) {
     summaryRows: rowsFromDefinitionList("#summary-list"),
     providerRows: rowsFromDefinitionList("#provider-list"),
     diagnosticsText: document.querySelector("#diagnostics-list")?.textContent.trim() ?? "",
+    sourceReadinessCards: document.querySelectorAll("#source-readiness-list article").map((article) => article.textContent.trim()),
+    sourceReadinessText: document.querySelector("#source-readiness-list")?.textContent.trim() ?? "",
     sourcePromotionCards: document.querySelectorAll("#source-promotion-list article").map((article) => article.textContent.trim()),
     sourcePromotionText: document.querySelector("#source-promotion-list")?.textContent.trim() ?? "",
     auditText: document.querySelector("#audit-list")?.textContent.trim() ?? "",
@@ -615,6 +647,7 @@ function buildWorkbenchDom(document: FakeDocument) {
     ["Summary", "summary-list", "summary-list"],
     ["Provider", "provider-list", "summary-list evidence-list"],
     ["Diagnostics", "diagnostics-list", "diagnostics-list"],
+    ["Source readiness", "source-readiness-list", "audit-list"],
     ["Source promotion", "source-promotion-list", "audit-list"],
     ["Feature query", "feature-query", "feature-query"],
     ["Session audit", "audit-list", "audit-list"]
