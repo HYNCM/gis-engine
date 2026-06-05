@@ -151,7 +151,7 @@ hosted movement.
 
 2026-06-05 reconciliation at `4012f51`: implementation artifacts now exist for
 `RCU-*`, `CNS-*`, `VPE-001`, and `VPE-003`. These tasks move from `queued` to
-`implemented / pending quality acceptance`. `VPE-002` has a perf trend harness
+`done / quality accepted`. `VPE-002` has a perf trend harness
 but remains backlog for repeated trend accumulation.
 
 ```mermaid
@@ -177,15 +177,15 @@ flowchart LR
 
 | Task | Depends On | Evidence Target | Required Finish Gate | Status Rule |
 | --- | --- | --- | --- | --- |
-| TASK-2026W24-RCU-001 | GIR-006 | `examples/ai-map-workbench/review-console.mjs`; review-console tests | focused UI tests; browser smoke; `pnpm check`; docs link audit | implemented / pending quality acceptance |
-| TASK-2026W24-RCU-002 | GIR-002, GIR-005 | `tests/examples/qa-matrix.test.ts`; review-console fixtures | example/app tests; browser smoke; `pnpm check` | implemented / pending quality acceptance |
-| TASK-2026W24-RCU-003 | AWP-007 | `examples/ai-map-workbench/server.mjs`; workbench-hardening tests | focused workbench tests; leak regression; browser smoke; `pnpm check` | implemented / pending quality acceptance |
-| TASK-2026W24-CNS-001 | cloud-native source promotion candidates | PMTiles archive metadata/range contract | `pnpm build:schema`; resource-policy tests; smoke tests; docs update | implemented / pending quality acceptance |
-| TASK-2026W24-CNS-002 | cloud-native source promotion candidates | GeoParquet schema and blocked-runtime diagnostics | `pnpm build:schema`; schema/resource tests; docs update | implemented / pending quality acceptance |
-| TASK-2026W24-CNS-003 | CNS-001, CNS-002 | PMTiles range, GeoParquet bbox/range, FlatGeobuf index policy | `pnpm test:resources`; resource-policy schema tests; `pnpm check` | implemented / pending quality acceptance |
-| TASK-2026W24-VPE-001 | release strict visual runner | `tests/snapshot/strict-visual-maintenance.test.ts` | `pnpm test:release:strict`; visual snapshot gate or waiver | implemented / pending quality acceptance |
+| TASK-2026W24-RCU-001 | GIR-006 | `examples/ai-map-workbench/review-console.mjs`; review-console tests | focused UI tests; browser smoke; `pnpm check`; docs link audit | done / quality accepted |
+| TASK-2026W24-RCU-002 | GIR-002, GIR-005 | `tests/examples/qa-matrix.test.ts`; review-console fixtures | example/app tests; browser smoke; `pnpm check` | done / quality accepted |
+| TASK-2026W24-RCU-003 | AWP-007 | `examples/ai-map-workbench/server.mjs`; workbench-hardening tests | focused workbench tests; leak regression; browser smoke; `pnpm check` | done / quality accepted |
+| TASK-2026W24-CNS-001 | cloud-native source promotion candidates | PMTiles archive metadata/range contract | `pnpm build:schema`; resource-policy tests; smoke tests; docs update | done / quality accepted |
+| TASK-2026W24-CNS-002 | cloud-native source promotion candidates | GeoParquet schema and blocked-runtime diagnostics | `pnpm build:schema`; schema/resource tests; docs update | done / quality accepted |
+| TASK-2026W24-CNS-003 | CNS-001, CNS-002 | PMTiles range, GeoParquet bbox/range, FlatGeobuf index policy | `pnpm test:resources`; resource-policy schema tests; `pnpm check` | done / quality accepted |
+| TASK-2026W24-VPE-001 | release strict visual runner | `tests/snapshot/strict-visual-maintenance.test.ts` | `pnpm test:release:strict`; visual snapshot gate or waiver | done / quality accepted |
 | TASK-2026W24-VPE-002 | perf nightly harness | `tests/perf/perf-trend-ledger.test.ts`; two-week trend evidence pending | repeated nightly trend artifacts; quality review | harness implemented / trend backlog |
-| TASK-2026W24-VPE-003 | RCU-001, RCU-002 | `tests/snapshot/app-template-visual.test.ts` | visual smoke/snapshot; docs update; `pnpm check` | implemented / pending quality acceptance |
+| TASK-2026W24-VPE-003 | RCU-001, RCU-002 | `tests/snapshot/app-template-visual.test.ts` | visual smoke/snapshot; docs update; `pnpm check` | done / quality accepted |
 | TASK-2026W24-EVO-001 | evolution framework | D1 estimate/actual entries in `evolution-ledger.md` | evolution collector or ledger update | ledger populated / pending evidence audit |
 | TASK-2026W24-EVO-002 | quality gate reports | D3 first-pass/rework entries in `evolution-ledger.md` | quality evidence; evolution ledger update | ledger populated / pending evidence audit |
 | TASK-2026W24-EVO-003 | sprint closure evidence | D4 pattern/pitfall entries in `evolution-ledger.md` | pattern/pitfall generator or manual ledger review | ledger populated / pending evidence audit |
@@ -194,7 +194,7 @@ flowchart LR
 
 ## 关键路径
 
-1. W24 review-console productization -> six-section delivery UI -> prompt-to-delivery QA cards -> app-template visual evidence. This is now implemented and pending quality acceptance; it consumes completed GIR evidence without reopening the closed contract batch.
+1. W24 review-console productization -> six-section delivery UI -> prompt-to-delivery QA cards -> app-template visual evidence. This is now done and quality accepted; it consumes completed GIR evidence without reopening the closed contract batch.
 2. Natural-language app generation -> AI capability summary -> `MapGenerationCommandSkeleton` -> command-only edits -> snapshot/export evidence. This is the completed W23 product spine for feature display, spatial analysis readiness, and scene browsing boundaries.
 3. Generation quality hardening -> typed prompt planner boundary -> planner provenance evidence -> spatial query evidence -> export manifest -> cloud-native readiness -> SceneView3D blocker transparency -> serialized closure -> generated-app delivery UX -> acceptance and confirmation states -> source promotion split -> spatial-analysis promotion criteria -> scene browsing extension-only delivery copy. NLQ-001 through NLQ-007 and AIN-001 through AIN-005 are done; future work should start from a fresh competitive/product/task-planning loop.
 4. v1 SceneView3D RFC -> W25/W28 sprint DAG -> TypeBox schema -> fixtures + URL resource policy + loader resource gate + package boundary + scene commands -> mock snapshot/query contracts -> MCP context -> release visual gate -> alpha audit + adapter feasibility -> Three.js adapter spike -> renderer evidence handoff -> adapter runtime shim -> browser visual runner -> beta readiness gate -> promotion readiness -> stable renderer contract handoff -> stable runtime decision; W23 promotion-readiness package is Go, SRC-001 through SRC-005 prerequisite evidence is done, and SRC-006 records a No-go decision that keeps stable runtime blocked.

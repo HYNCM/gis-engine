@@ -92,12 +92,12 @@ or cloud-native parser runtime.
 ## Phase Order
 
 1. Productized review experience first: `RCU-001` through `RCU-003`; current
-   state is implemented / pending quality acceptance.
+   state is done and quality accepted.
 2. Cloud-native data contracts second: `CNS-001` through `CNS-003`; current
-   state is implemented / pending quality acceptance without runtime parsers.
+   state is done and quality accepted without runtime parsers.
 3. Visual/performance evidence hardening in parallel; `VPE-001` and `VPE-003`
-   are implemented / pending quality acceptance, while `VPE-002` remains
-   backlog for repeated trend data.
+   are done and quality accepted, while `VPE-002` remains backlog for repeated
+   trend data.
 4. Evolution metrics start with W24 estimates before implementation begins and
    must stay tied to actual gate evidence at closure.
 5. Product SLA repair is complete at the document level through the W24
