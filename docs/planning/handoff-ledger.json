@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-06-04T06:57:09.113Z",
-  "repo_revision": "ab5e2ab",
+  "generated_at": "2026-06-05T01:59:51.759Z",
+  "repo_revision": "0e928cf",
   "source": "scripts/handoff-ledger.mjs",
   "flows": [
     {
