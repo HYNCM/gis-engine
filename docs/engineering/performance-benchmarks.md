@@ -39,7 +39,7 @@ pnpm test:perf:nightly
 | Package | Budget (gzipped) |
 |---|---|
 | `@gis-engine/engine` | < 130KB |
-| `@gis-engine/cli` | < 30KB |
+| `@gis-engine/cli` | < 35KB |
 
 MapLibre GL JS is an optional peerDependency and is not included in the engine
 bundle.

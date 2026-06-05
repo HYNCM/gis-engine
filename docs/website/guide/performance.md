@@ -50,8 +50,8 @@ MapLibre WebGL dependencies in CI.
 
 | Package | Budget (gzipped) |
 |---|---|
-| `@gis-engine/engine` | < 100 KB |
-| `@gis-engine/cli` | < 30 KB |
+| `@gis-engine/engine` | < 130 KB |
+| `@gis-engine/cli` | < 35 KB |
 
 MapLibre GL JS is an optional `peerDependency` and is **not** included in the
 engine bundle size budget.

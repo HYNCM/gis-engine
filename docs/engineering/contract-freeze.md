@@ -80,7 +80,7 @@ breaking/non-breaking note in the PR summary.
   remains internal/experimental and is not part of the GA publish workflow.
 - All published packages use `files` whitelist: `["dist", "README.md"]`
   (CLI adds `"templates"`).
-- Bundle budgets: engine < 130KB gzipped, cli < 30KB gzipped.
+- Bundle budgets: engine < 130KB gzipped, cli < 35KB gzipped.
 - MCP tool names remain frozen: `validate_spec`, `apply_commands`,
   `export_spec`, `get_context_summary`, `snapshot_spec`, `explain_spec`,
   `export_example_app`. No `generate_map_app` or `spatial_query` alias.

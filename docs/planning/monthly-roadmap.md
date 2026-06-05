@@ -413,7 +413,7 @@ Completed the full SDK + CLI productization plan (Phase 1a-1g, Phase 2-4) per `d
 - 1b: v0.2 public surface freeze — MCP 7 tools frozen
 - 1c: npm publish workflow — CLI added to publish order
 - 1d: CDN root entry fix — reads exports["."].import per package
-- 1e: Bundle budgets — engine <130KB gz, cli <30KB gz
+- 1e: Bundle budgets — engine <130KB gz, cli <35KB gz
 - 1f: Studio/Workbench wording downgrade — "reference app" banners
 - 1g: npm package content audit — files whitelist standardized
 
