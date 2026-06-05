@@ -74,7 +74,7 @@ provider error bodies.
 
 | Outcome | Meaning | Required Evidence | Must Not Do |
 | --- | --- | --- | --- |
-| `accepted` | Reviewer accepts the current evidence for handoff. | Referenced audit or response evidence has no blocking diagnostics, command evidence shows the mutation path used `applyCommands`, and delivery state is not blocked. | Treat acceptance as a new map mutation, file export, hosted deployment, or product promotion. |
+| `accepted` | Reviewer accepts the current evidence for handoff. | Referenced audit or response evidence has no blocking diagnostics, command evidence shows the mutation path used `applyCommands`, delivery state is `ready`, and source readiness entries are supported. | Treat acceptance as a new map mutation, file export, hosted deployment, or product promotion. |
 | `blocked` | Reviewer rejects the handoff. | At least one stable diagnostic path, blocker category, or policy reason is recorded. | Store provider raw bodies, raw prompts, screenshots, or free-form failure dumps. |
 | `follow-up-required` | Reviewer keeps the evidence visible but requires bounded follow-up before handoff. | One or more follow-up task ids or owner targets are recorded with reason codes. | Mark the app ready, create hidden task state, write files, or bypass product-promotion gates. |
 

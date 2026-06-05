@@ -149,6 +149,9 @@ command, and diagnostic evidence only. They must not directly mutate `MapSpec`,
 write browser files, retain raw provider payloads, store command bodies or
 patches, create hidden task state, or add new MCP tool names. This local review
 decision path is not durable storage and does not approve product or hosted use.
+Accepted decisions also require ready delivery and supported source readiness;
+`blocked` and `follow-up-required` evidence can stay visible, but it cannot be
+promoted as accepted while source readiness is still partial.
 
 ## Evidence
 
