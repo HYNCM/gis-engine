@@ -6,6 +6,9 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createMap } from "../packages/engine/src/index.ts";
 
+const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
+const ROOT = resolve(SCRIPT_DIR, "..");
+
 export const PERF_TREND_SCALES = [
   { name: "1k", featureCount: 1_000, createBudgetMs: 5_000, queryBudgetMs: 2_000, destroyBudgetMs: 1_000 },
   { name: "10k", featureCount: 10_000, createBudgetMs: 15_000, queryBudgetMs: 5_000, destroyBudgetMs: 2_000 },
@@ -99,7 +102,7 @@ export async function writePerfTrendReport(options = {}) {
   const markdown = formatPerfTrendReport({ period, generatedAt, repoRevision, measurements });
 
   if (options.outputPath) {
-    const outputPath = resolve(options.outputPath);
+    const outputPath = resolve(ROOT, options.outputPath);
     mkdirSync(dirname(outputPath), { recursive: true });
     writeFileSync(outputPath, markdown, "utf8");
   }
@@ -151,7 +154,7 @@ function utcWeekStamp(date = new Date()) {
 function gitRevision() {
   try {
     return execFileSync("git", ["rev-parse", "--short", "HEAD"], {
-      cwd: dirname(fileURLToPath(import.meta.url)),
+      cwd: ROOT,
       encoding: "utf8"
     }).trim();
   } catch {
@@ -192,6 +195,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   if (!args.outputPath) {
     process.stdout.write(result.markdown);
   } else {
-    process.stdout.write(`Perf trend report written: ${resolve(args.outputPath)}\n`);
+    process.stdout.write(`Perf trend report written: ${resolve(ROOT, args.outputPath)}\n`);
   }
 }
