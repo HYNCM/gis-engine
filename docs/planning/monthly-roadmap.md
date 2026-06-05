@@ -49,7 +49,7 @@ priority order is:
 | Rank | Priority | Track | Evidence | Impact | Action | Confidence |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | P1 | Cloud-native source promotion | PMTiles, GeoParquet, and FlatGeobuf contract and policy tests; promotion candidates | Promotes one format at a time without runtime parser overclaim | Start with the first candidate and keep schema/policy evidence first | high |
-| 2 | P1 | Visual and performance evidence | strict visual maintenance, app-template visual, and perf-trend harness tests | Release-quality claims need repeated trend data | Accumulate two-week trend artifacts and keep release-capable scenes green | medium |
+| 2 | P1 | Visual and performance evidence | strict visual maintenance, app-template visual, and perf-trend comparison tests | Release-quality claims now have repeated trend data | Keep weekly trend cuts current and release-capable scenes green | medium |
 | 3 | P2 | Package and docs guardrails | `bundle-size.yml`, performance benchmarks, release wording, and routing notes | Avoid stale package or runtime claims | Keep docs synchronized with current budgets and no-go decisions | high |
 
 The roadmap explicitly excludes stable SceneView3D runtime promotion, new MCP
@@ -60,10 +60,10 @@ Current status classification:
 
 | Class | Tasks |
 | --- | --- |
-| Accepted / closed | W24 review-console, cloud-native contracts, strict visual evidence, product refresh, and promotion-scope freeze |
-| Harness implemented / backlog for repeated evidence | `VPE-002` |
+| Accepted / closed | W24 review-console, cloud-native contracts, strict visual evidence, perf trend acceptance, product refresh, and promotion-scope freeze |
+| Accepted / closed | `VPE-002` |
 | No-go / blocked | Hosted AI Map Workbench, stable `view.mode: "scene3d"`, MapLibre package movement |
-| Fresh planning required | Cloud-native source promotion, perf trend maturation |
+| Fresh planning required | Cloud-native source promotion, docs/package guardrails |
 
 ## 结论
 

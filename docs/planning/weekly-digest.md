@@ -51,8 +51,8 @@ The AI Map Workbench promotion scope is frozen in
 hosted movement remain blocked.
 `TASK-2026W24-VPE-001` and `VPE-003` are accepted through strict-scene and
 app-template visual tests.
-`TASK-2026W24-VPE-002` has a perf trend harness, but the two-week trend
-evidence remains backlog/ongoing evidence.
+`TASK-2026W24-VPE-002` now has two weekly trend cuts plus a comparative report,
+so the perf trend evidence is accepted.
 `TASK-2026W24-PRD-001` and `PRD-002` are complete at the product-document
 level through the W24 competitor update and scorecard refresh.
 `TASK-2026W24-EVO-001` through `EVO-003` have ledger entries, but those
@@ -66,7 +66,7 @@ Post-acceptance state:
 | CNS | accepted as contract-only | `pnpm build:schema`, resource/schema tests, `pnpm check` |
 | PROMOTION-SCOPE | done | `docs/planning/feature-specs/ai-map-workbench-promotion-scope.md`; fresh product-promotion task uses the frozen scope |
 | VPE-001/VPE-003 | accepted | strict/app-template visual tests plus required visual gate or waiver |
-| VPE-002 | harness implemented / trend backlog | repeated nightly/release trend artifacts |
+| VPE-002 | accepted | weekly trend cuts, comparative report, `pnpm test:perf:trend` |
 | PRD | done / consumed by orchestrator | W24 source URLs, npm command evidence, scorecard refresh |
 
 Validation evidence captured during reconciliation:
@@ -96,7 +96,8 @@ Accepted planning state:
   stay No-go.
 - Cloud-native source work stays contract-first; runtime parser claims remain
   blocked.
-- `VPE-002` still needs repeated trend evidence before it can close.
+- `VPE-002` is accepted through two weekly trend cuts plus a comparative
+  report.
 - Stable `view.mode: "scene3d"` and MapLibre package movement remain blocked.
 
 Reconciled next-stage queue:
@@ -105,7 +106,7 @@ Reconciled next-stage queue:
 | --- | --- | --- | --- | --- | --- |
 | PROMOTION-SCOPE | P0 | `@product` + `@orchestrator` | done | `docs/planning/feature-specs/ai-map-workbench-promotion-scope.md` | runtime/service ownership, durable storage/auth/export scope, and release-grade visual evidence are defined before any product or hosted movement |
 | SOURCE-PROMOTION | P1 | `@builder` + `@quality` + `@docs` | queued | cloud-native source promotion candidates | one format is promoted from schema/policy evidence without runtime parser overclaim |
-| VPE-002 | P1 | `@builder` + `@quality` | in progress | nightly perf trend ledger | two-week trend evidence is accumulated before Done |
+| VPE-002 | P1 | `@builder` + `@quality` | done / accepted | weekly perf trend ledger | repeated trend artifacts and comparative report retained |
 | GUARDRAILS | P2 | `@orchestrator` + `@docs` | ongoing | docs/package guardrails | current budgets and no-go decisions stay synchronized in planning and release docs |
 
 The next-stage plan is intentionally narrower than W24: it is about defining

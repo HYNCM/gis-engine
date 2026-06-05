@@ -37,8 +37,8 @@ The active directions are:
   release-grade visual evidence.
 - Cloud-native source work stays contract-first; promote one format at a time
   from schema/policy evidence into bounded runtime claims.
-- Performance and visual evidence must graduate from harnesses to repeated
-  trend data.
+- Performance and visual evidence are accepted; keep the weekly trend cuts
+  current.
 - Stable `view.mode: "scene3d"` remains blocked. MapLibre package movement
   stays gated by fresh official evidence and strict visual checks.
 - No new MCP tool names, command-only mutation, schema-first inputs, and
@@ -54,7 +54,7 @@ entry point.
 | W24 review-console, cloud-native contracts, and strict visual evidence | accepted | W24 quality acceptance report; build, docs, resources, and strict visual tests | W24 can close cleanly without reopening earlier batches | Keep the accepted W24 evidence as the baseline for future planning | high |
 | AI Map Workbench real-system promotion | scope frozen; product/hosted movement still blocked | `AWP-007`, `ai-map-workbench-promotion-scope.md`, `ai-map-workbench-product-boundary.md`, `technical-debt-report.md` | Product or hosted movement still lacks runtime/service ownership and storage/auth/export scope | Keep the frozen scope as the required input for any future product-promotion task | high |
 | Cloud-native source promotion | contract-ready, runtime blocked | `cloud-native-source-promotion-candidates.md`, `cloud-native-source-readiness.md`, W24 schema/resource-policy tests | PMTiles, GeoParquet, and FlatGeobuf pressure exists, but runtime parser claims remain blocked | Promote one format at a time and keep schema/policy evidence first | high |
-| Performance and visual evidence | harnessed, trend backlog | `VPE-002` harness, strict visual maintenance tests, app-template visual tests | Release-quality claims still need repeated trend data | Accumulate two-week nightly/release trend artifacts | medium |
+| Performance and visual evidence | accepted | `VPE-002` weekly trend cuts, strict visual maintenance tests, app-template visual tests | Release-quality claims now have repeated trend data | Keep weekly trend cuts current and release-capable scenes green | medium |
 | MapLibre and SceneView3D guardrails | blocked / no-go | `MLD-004`, `SRC-006`, bundle-size and performance docs | Prevents package movement or stable 3D overclaim | Keep blocked until new official evidence and approvals exist | high |
 
 ## Next-Stage Queue
@@ -63,7 +63,7 @@ entry point.
 | --- | --- | --- | --- | --- | --- |
 | 1 | P0 | Define and freeze a fresh AI Map Workbench product-promotion scope | `AWP-007` gap list; `ai-map-workbench-promotion-scope.md`; product architecture docs | Route/module boundary, runtime/service ownership, durable storage/auth/export scope, and release-grade visual evidence are approved before any product or hosted movement | high |
 | 2 | P1 | Promote the first cloud-native source candidate one format at a time | `cloud-native-source-promotion-candidates.md` | First candidate gets schema/policy/diagnostic coverage and delivery wording without runtime parser claims | high |
-| 3 | P1 | Turn perf and visual harnesses into trend evidence | `VPE-002`, strict visual and release gates | Two-week trend evidence exists and release-capable scenes stay green | medium |
+| 3 | P1 | Maintain perf and visual evidence | `VPE-002`, strict visual and release gates | Weekly trend cuts stay current and release-capable scenes stay green | medium |
 | 4 | P2 | Keep docs and package guardrails aligned with current budgets and no-go decisions | `bundle-size.yml`, performance benchmarks, roadmap, release wording | Docs stay synchronized; no stale stable-3D or package-movement claims remain | high |
 
 The promotion-scope freeze is complete in

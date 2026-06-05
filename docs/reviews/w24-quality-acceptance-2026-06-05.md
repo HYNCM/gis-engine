@@ -174,6 +174,17 @@ Advisory: `maxRangeSegments` and `maxFeatureCount` policy fields exist but are n
 | F-002 | @builder (qa) | Add authorization-failure test case | Medium |
 | F-003 | @builder (qa) | Add byte-cap/record-cap enforcement tests | Low |
 
+## 2026-06-06 VPE-002 Trend Follow-Up
+
+| Area | Status |
+| --- | --- |
+| Trend cuts | PASS -- `docs/reviews/perf-trend-2026-W24.md` and `docs/reviews/perf-trend-2026-W23.md` are both present |
+| Comparative report | PASS -- `scripts/perf-trend.mjs` compares the latest cut with the prior weekly report |
+| Tests | PASS -- `tests/perf/perf-trend-ledger.test.ts` and `tests/perf/perf-trend-report.test.ts` |
+| Deterministic checks | PASS -- `pnpm check` |
+
+Decision: `TASK-2026W24-VPE-002` is now quality accepted as trend evidence.
+
 ## Stability Assertions
 
 - Stable `view.mode: "scene3d"` remains **blocked** per SRC-006. No task in this report changes that.

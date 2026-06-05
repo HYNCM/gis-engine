@@ -151,8 +151,8 @@ hosted movement.
 
 2026-06-05 reconciliation at `4012f51`: implementation artifacts now exist for
 `RCU-*`, `CNS-*`, `VPE-001`, and `VPE-003`. These tasks move from `queued` to
-`done / quality accepted`. `VPE-002` has a perf trend harness
-but remains backlog for repeated trend accumulation.
+`done / quality accepted`. `VPE-002` has perf trend cuts and a comparative
+report, so trend evidence is now quality accepted.
 
 ```mermaid
 flowchart LR
@@ -184,7 +184,7 @@ flowchart LR
 | TASK-2026W24-CNS-002 | cloud-native source promotion candidates | GeoParquet schema and blocked-runtime diagnostics | `pnpm build:schema`; schema/resource tests; docs update | done / quality accepted |
 | TASK-2026W24-CNS-003 | CNS-001, CNS-002 | PMTiles range, GeoParquet bbox/range, FlatGeobuf index policy | `pnpm test:resources`; resource-policy schema tests; `pnpm check` | done / quality accepted |
 | TASK-2026W24-VPE-001 | release strict visual runner | `tests/snapshot/strict-visual-maintenance.test.ts` | `pnpm test:release:strict`; visual snapshot gate or waiver | done / quality accepted |
-| TASK-2026W24-VPE-002 | perf nightly harness | `tests/perf/perf-trend-ledger.test.ts`; two-week trend evidence pending | repeated nightly trend artifacts; quality review | harness implemented / trend backlog |
+| TASK-2026W24-VPE-002 | perf nightly harness | `docs/reviews/perf-trend-2026-W24.md`; `docs/reviews/perf-trend-2026-W23.md`; `tests/perf/perf-trend-report.test.ts` | repeated nightly trend artifacts; quality review | done / quality accepted |
 | TASK-2026W24-VPE-003 | RCU-001, RCU-002 | `tests/snapshot/app-template-visual.test.ts` | visual smoke/snapshot; docs update; `pnpm check` | done / quality accepted |
 | TASK-2026W24-EVO-001 | evolution framework | D1 estimate/actual entries in `evolution-ledger.md` | evolution collector or ledger update | ledger populated / pending evidence audit |
 | TASK-2026W24-EVO-002 | quality gate reports | D3 first-pass/rework entries in `evolution-ledger.md` | quality evidence; evolution ledger update | ledger populated / pending evidence audit |

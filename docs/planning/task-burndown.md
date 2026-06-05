@@ -69,15 +69,16 @@ tasks were opened as planned work at `270a8d3`. Reconciliation at `4012f51`
 records the current implementation state. @quality formal acceptance at
 `docs/reviews/w24-quality-acceptance-2026-06-05.md` (HOC-N3) records PASS
 for `RCU-001~003`, `CNS-001~003` (schema/policy contracts only), `VPE-001`,
-and `VPE-003`. `VPE-002` has a harness but still needs repeated trend
-evidence. The old `GIR-*` and `AWP-*` batches stay closed as
+and `VPE-003`. `VPE-002` now has two weekly trend cuts plus a comparative
+report, so trend evidence is quality accepted. The old `GIR-*` and `AWP-*`
+batches stay closed as
 contract/local-example evidence; the new `RCU-*` work is the productized review
 UI layer.
 
 The AI Map Workbench promotion-scope freeze is complete in
 `docs/planning/feature-specs/ai-map-workbench-promotion-scope.md`; the
-remaining active queue starts at cloud-native source promotion and perf trend
-maturation.
+remaining active queue starts at cloud-native source promotion and docs/package
+guardrails.
 
 | id | title | priority | owner | status | evidence target | acceptance | finish gates |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -88,7 +89,7 @@ maturation.
 | TASK-2026W24-CNS-002 | Define GeoParquet source schema contract | P1 | `@builder`, `@quality`, `@docs` | done (schema/policy contract only) | `packages/engine/src/spec/cloud-native/geoparquet-source.ts`; `tests/schema/cloud-native-policy.test.ts` | bbox, CRS, WKB/GeoArrow encoding, and no-runtime-claim diagnostics are schema-tested | `pnpm build:schema`; schema/resource tests; docs update |
 | TASK-2026W24-CNS-003 | Extend resource policy for range/bbox/index rules | P1 | `@builder`, `@quality`, `@docs` | done (schema/policy contract only) | `packages/engine/src/spec/cloud-native/validate.ts`; `tests/resources/resource-release.test.ts` | PMTiles range, GeoParquet bbox/range, and FlatGeobuf index paths produce stable diagnostics before IO; no hidden fetch/runtime parser | `pnpm test:resources`; resource-policy schema tests; `pnpm check` |
 | TASK-2026W24-VPE-001 | Maintain 3-scene strict visual evidence | P1 | `@builder`, `@quality` | done | `tests/snapshot/strict-visual-maintenance.test.ts` | GeoJSON, MVT-equivalent, and `fill-extrusion-lite` strict scenes stay release-capable | `pnpm test:release:strict`; visual snapshot gate or waiver |
-| TASK-2026W24-VPE-002 | Accumulate nightly perf trends | P1 | `@builder`, `@quality` | harness implemented / trend backlog | `tests/perf/perf-trend-ledger.test.ts`; `pnpm test:perf:trend` | 1k/10k/100k lifecycle harness exists; two-week trend evidence still must be accumulated before Done | repeated nightly/release trend artifacts; quality review |
+| TASK-2026W24-VPE-002 | Accumulate nightly perf trends | P1 | `@builder`, `@quality` | done / quality accepted | `docs/reviews/perf-trend-2026-W24.md`; `docs/reviews/perf-trend-2026-W23.md`; `tests/perf/perf-trend-ledger.test.ts`; `tests/perf/perf-trend-report.test.ts` | 1k/10k/100k lifecycle harness and comparative trend report exist; weekly trend cuts are now retained as accepted evidence | `pnpm test:perf:trend`; `pnpm vitest run tests/perf/perf-trend-ledger.test.ts tests/perf/perf-trend-report.test.ts`; `pnpm check`; `git diff --check` |
 | TASK-2026W24-VPE-003 | Add app-template visual scene | P1 | `@builder`, `@quality`, `@docs` | done | `tests/snapshot/app-template-visual.test.ts` | generated app template has deterministic visual smoke/snapshot evidence or explicit release waiver | visual smoke/snapshot; docs update; `pnpm check` |
 | TASK-2026W24-EVO-001 | Start D1 estimation accuracy tracking | P2 | `@orchestrator`, `@quality` | done | `docs/planning/evolution-ledger.md` | W24 estimates and actuals are recorded, with audit evidence attached at sprint closure | `node scripts/evolution-collector.mjs` or ledger update |
 | TASK-2026W24-EVO-002 | Start D3 quality trend tracking | P2 | `@orchestrator`, `@quality` | done | `docs/planning/evolution-ledger.md` | W24 gate pass rate and rework count are recorded after current gates | quality gate evidence; evolution ledger update |
