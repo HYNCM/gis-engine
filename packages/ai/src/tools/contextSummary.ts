@@ -2,6 +2,13 @@ import { validateSpec, type CapabilityReport, type Diagnostic, type MapSpec, typ
 import { getScene3DV1Capabilities, queryScene3DMock, snapshotScene3DMock } from "@gis-engine/scene3d";
 import { countDiagnostics } from "./shared.js";
 
+type SourceContractSummary = {
+  kind: "archive" | "schema";
+  state: "explicit" | "not-applicable" | "not-checked";
+  metadataFields: string[];
+  policyFields: string[];
+};
+
 export interface ContextSummaryInput {
   spec: MapSpec;
   capabilities?: CapabilityReport;
@@ -14,6 +21,7 @@ export interface ContextSummary {
   sources: Array<{
     id: string;
     type: string;
+    sourceContract?: SourceContractSummary;
   }>;
   layers: Array<{
     id: string;
@@ -100,10 +108,14 @@ export function getContextSummary(input: ContextSummaryInput): ContextSummary {
     ...(input.spec.id ? { id: input.spec.id } : {}),
     ...(input.spec.revision ? { revision: input.spec.revision } : {}),
     view: input.spec.view,
-    sources: Object.entries(input.spec.sources).map(([id, source]) => ({
-      id,
-      type: source.type
-    })),
+    sources: Object.entries(input.spec.sources).map(([id, source]) => {
+      const sourceContract = summarizeSourceContract(source);
+      return {
+        id,
+        type: source.type,
+        ...(sourceContract ? { sourceContract } : {})
+      };
+    }),
     layers: input.spec.layers.map((layer) => ({
       id: layer.id,
       type: layer.type,
@@ -202,7 +214,7 @@ function buildCapabilitySummary(
         tools: ["validate_spec", "apply_commands", "export_spec", "snapshot_spec", "export_example_app"],
         evidence: [
           "validation.valid and validation.diagnosticCounts",
-          "sources and layers summaries in get_context_summary",
+          "source contract and layer summaries in get_context_summary",
           "snapshot_spec.passed for render smoke evidence"
         ]
       },
@@ -284,4 +296,26 @@ function summarizeSceneResourcePolicy(policy?: SceneResourcePolicy): Scene3DCont
 function isPickableSceneLayer(layer: SceneLayer): boolean {
   if (layer.type === "terrain") return false;
   return layer.pickable !== false;
+}
+
+function summarizeSourceContract(source: MapSpec["sources"][string]): SourceContractSummary | undefined {
+  if (source.type !== "pmtiles") return undefined;
+
+  return {
+    kind: "archive",
+    state: "explicit",
+    metadataFields: [
+      "specVersion",
+      "archiveBytes",
+      "rootDirectoryOffset",
+      "rootDirectoryLength",
+      "hasVectorTiles",
+      "hasRasterTiles",
+      "tileType",
+      "minZoom",
+      "maxZoom",
+      "bounds"
+    ],
+    policyFields: ["maxArchiveBytes", "maxRootDirectoryBytes", "allowRangeRequests", "maxRangeSegments", "timeoutMs"]
+  };
 }

@@ -3,6 +3,7 @@ import before from "../fixtures/commands/replay/style-update/before.map.json";
 import commands from "../fixtures/commands/replay/style-update/commands.json";
 import scene3dExtensionSpec from "../fixtures/specs/valid/scene3d-extension.map.json";
 import vectorTileUrl from "../fixtures/specs/valid/vector-tile-url.map.json";
+import pmtilesLocalSpec from "../../examples/pmtiles-local/map.json";
 import type { MapSpec } from "@gis-engine/engine";
 import { callGisEngineTool, createGisEngineMcpServer, listGisEngineTools } from "@gis-engine/ai";
 
@@ -233,6 +234,43 @@ describe("MCP Server Integration", () => {
     });
     expect(summary.capabilitySummary.domains.find((domain) => domain.id === "feature-display")?.tools.join(" ")).toContain("apply_commands");
     expect(summary.capabilitySummary.domains.find((domain) => domain.id === "spatial-analysis")?.blocked.join(" ")).toContain("buffer");
+  });
+
+  it("surfaces PMTiles archive contract status in context summaries", async () => {
+    const result = await callGisEngineTool({
+      params: {
+        name: "get_context_summary",
+        arguments: { spec: pmtilesLocalSpec }
+      }
+    });
+
+    const summary = JSON.parse(result.content[0]!.text) as {
+      validation: { valid: boolean };
+      sources: Array<{
+        id: string;
+        type: string;
+        sourceContract?: {
+          kind: string;
+          state: string;
+          metadataFields: string[];
+          policyFields: string[];
+        };
+      }>;
+    };
+    expect(result.isError).toBeUndefined();
+    expect(summary.validation.valid).toBe(true);
+    expect(summary.sources).toContainEqual(
+      expect.objectContaining({
+        id: "local-parcels",
+        type: "pmtiles",
+        sourceContract: expect.objectContaining({
+          kind: "archive",
+          state: "explicit",
+          metadataFields: expect.arrayContaining(["specVersion", "archiveBytes", "rootDirectoryLength"]),
+          policyFields: expect.arrayContaining(["maxArchiveBytes", "allowRangeRequests", "timeoutMs"])
+        })
+      })
+    );
   });
 
   it("exposes gated SceneView3D context without enabling stable 3D runtime", async () => {

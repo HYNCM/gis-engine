@@ -194,6 +194,18 @@ const CapabilitySummarySchema = {
   additionalProperties: false
 } as const;
 
+const SourceContractSchema = {
+  type: "object",
+  properties: {
+    kind: { type: "string", enum: ["archive", "schema"] },
+    state: { type: "string", enum: ["explicit", "not-applicable", "not-checked"] },
+    metadataFields: { type: "array", items: { type: "string" } },
+    policyFields: { type: "array", items: { type: "string" } }
+  },
+  required: ["kind", "state", "metadataFields", "policyFields"],
+  additionalProperties: false
+} as const;
+
 const Scene3DContextSummarySchema = {
   type: "object",
   properties: {
@@ -210,7 +222,8 @@ const Scene3DContextSummarySchema = {
         type: "object",
         properties: {
           id: { type: "string" },
-          type: { type: "string" }
+          type: { type: "string" },
+          sourceContract: SourceContractSchema
         },
         required: ["id", "type"],
         additionalProperties: false

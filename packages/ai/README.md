@@ -126,6 +126,11 @@ with three AI-facing domains:
   explicitly accepted; the summary exposes mock snapshot/query evidence without
   promoting stable runtime support.
 
+When a spec includes a PMTiles source, `get_context_summary` also includes a
+compact `sourceContract` snapshot for the archive-backed source so generation
+can see the explicit archive metadata and policy contract before review-console
+evidence is built.
+
 ## MCP Server
 
 ```bash

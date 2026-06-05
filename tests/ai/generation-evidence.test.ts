@@ -1214,6 +1214,16 @@ describe("generation evidence bundle", () => {
         })
       ]
     });
+    expect(response.result.summary.sources).toContainEqual(
+      expect.objectContaining({
+        id: "parcels",
+        type: "pmtiles",
+        sourceContract: expect.objectContaining({
+          kind: "archive",
+          state: "explicit"
+        })
+      })
+    );
     expect(response.result.delivery.sourcePromotionCandidates).toContainEqual(
       expect.objectContaining({
         candidateId: "source-promotion.pmtiles.parcels",
