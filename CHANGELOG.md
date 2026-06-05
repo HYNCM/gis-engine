@@ -66,7 +66,7 @@
 - Added `maplibre-gl` as optional `peerDependency` (`^5.0.0 || ^6.0.0`) to `@gis-engine/engine`, making the renderer boundary explicit for SDK consumers without bundling MapLibre.
 - Added MapLibre v6 prerelease compatibility audit: `6.0.0-11` passes peerDependency range check; GA stays on `^5.24.0` until stable v6 with strict visual evidence.
 - Fixed CDN build script to read each package's `exports["."].import` for root ESM entry, added `@gis-engine/scene3d` to CDN coverage, and removed hardcoded `createMap` default for non-engine packages.
-- Added hard bundle budgets to CI: engine < 100KB gzipped, cli < 30KB gzipped.
+- Added hard bundle budgets to CI: engine < 130KB gzipped, cli < 30KB gzipped.
 - Standardized `files` whitelist across all published packages (`dist`, `README.md`).
 - Extended npm publish workflow to include `@gis-engine/cli` in version bump and publish steps.
 - Downgraded Studio/Workbench references in public docs to "reference app", "local review surface", "example" — not hosted product or GA application.

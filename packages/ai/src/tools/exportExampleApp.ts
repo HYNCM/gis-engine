@@ -1,23 +1,13 @@
 import { Ajv } from "ajv/dist/ajv.js";
 import { Scene3DStableRuntimeBlockerCodes, type Diagnostic } from "@gis-engine/engine";
 import { toolInputErrorsToDiagnostics } from "./schemaDiagnostics.js";
+import { DiagnosticCountsSchema } from "./shared.js";
 
 const exampleIds = ["basic-geojson", "ai-map-edit", "raster-basemap", "pmtiles-local", "vector-tile-url", "fill-extrusion-lite"] as const;
 
 export type ExampleId = (typeof exampleIds)[number];
 type Scene3DStableRuntimeBlockerCode =
   (typeof Scene3DStableRuntimeBlockerCodes)[keyof typeof Scene3DStableRuntimeBlockerCodes];
-
-const DiagnosticCountsSchema = {
-  type: "object",
-  properties: {
-    error: { type: "number" },
-    warning: { type: "number" },
-    info: { type: "number" }
-  },
-  required: ["error", "warning", "info"],
-  additionalProperties: false
-} as const;
 
 const Scene3DStableRuntimeBlockerCodeSchema = {
   type: "string",

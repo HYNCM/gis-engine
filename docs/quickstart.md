@@ -35,7 +35,7 @@ Also available via jsDelivr and esm.sh. See [CDN distribution](./engineering/cdn
   <script type="module">
     import { createMap } from "https://unpkg.com/@gis-engine/engine";
     const map = await createMap(document.getElementById("map"), {
-      version: "0.2",
+      version: "0.1",
       sources: { districts: { type: "geojson",
         data: { type: "FeatureCollection", features: [
           { type: "Feature", geometry: { type: "Polygon",

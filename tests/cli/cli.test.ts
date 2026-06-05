@@ -594,10 +594,10 @@ describe("cli-templates", () => {
 // ---------------------------------------------------------------------------
 
 describe("cli-generate-hashPrompt", () => {
-  it("returns sha256:<32-hex> format", () => {
+  it("returns sha256:<64-hex> format", () => {
     const hash = hashPrompt("Create a map with GeoJSON points");
-    expect(hash).toMatch(/^sha256:[0-9a-f]{32}$/);
-    expect(hash).toHaveLength(39); // "sha256:" (7) + 32 hex chars
+    expect(hash).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(hash).toHaveLength(71); // "sha256:" (7) + 64 hex chars
   });
 
   it("is deterministic — same input yields same hash", () => {
@@ -693,12 +693,12 @@ describe("cli-no-raw-prompt-retention", () => {
     const prompt = "Show me population density across major cities in the world";
     const hash = hashPrompt(prompt);
 
-    // The hash value after "sha256:" is 32 hex chars — far smaller than long prompts
+    // The hash value after "sha256:" is 64 hex chars — far smaller than long prompts
     const hexPart = hash.slice(7); // strip "sha256:"
-    expect(hexPart).toHaveLength(32);
+    expect(hexPart).toHaveLength(64);
 
     // Verify it is purely hex after the prefix
-    expect(hexPart).toMatch(/^[0-9a-f]{32}$/);
+    expect(hexPart).toMatch(/^[0-9a-f]{64}$/);
 
     // Attempt base64 decode — should not yield the original prompt
     const decoded = Buffer.from(hexPart, "base64").toString("utf-8");

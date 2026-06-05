@@ -1,5 +1,6 @@
 import { validateSpec, type CapabilityReport, type Diagnostic, type MapSpec, type SceneLayer, type SceneResourcePolicy, type SceneView3DExtension } from "@gis-engine/engine";
 import { getScene3DV1Capabilities, queryScene3DMock, snapshotScene3DMock } from "@gis-engine/scene3d";
+import { countDiagnostics } from "./shared.js";
 
 export interface ContextSummaryInput {
   spec: MapSpec;
@@ -117,16 +118,6 @@ export function getContextSummary(input: ContextSummaryInput): ContextSummary {
     ...scene3d,
     ...(input.capabilities ? { capabilities: input.capabilities } : {})
   };
-}
-
-function countDiagnostics(diagnostics: Diagnostic[]): Record<Diagnostic["severity"], number> {
-  return diagnostics.reduce<Record<Diagnostic["severity"], number>>(
-    (counts, diagnostic) => {
-      counts[diagnostic.severity] += 1;
-      return counts;
-    },
-    { error: 0, warning: 0, info: 0 }
-  );
 }
 
 function scene3dContext(spec: MapSpec): { scene3d?: Scene3DContextSummary } {

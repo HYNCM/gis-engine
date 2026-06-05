@@ -331,7 +331,7 @@ function parseJsonObject(content: string): { ok: true; value: unknown } | { ok: 
 function stripJsonFence(content: string): string {
   const trimmed = content.trim();
   const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
-  return fenced ? fenced[1] : trimmed;
+  return fenced?.[1] ?? trimmed;
 }
 
 // ── Hash ───────────────────────────────────────────────────────────────

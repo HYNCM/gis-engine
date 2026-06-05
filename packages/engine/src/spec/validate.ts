@@ -1,3 +1,4 @@
+import { escapePathSegment } from "./patch/path.js";
 import { Ajv, type ErrorObject } from "ajv/dist/ajv.js";
 import {
   DiagnosticCodes,
@@ -13,7 +14,7 @@ const ajv = new Ajv({ allErrors: true, strict: false });
 const validateMapSpecSchema = ajv.compile(MapSpecSchema);
 const validateSceneView3DExtensionSchema = ajv.compile(SceneView3DExtensionSchema);
 
-export function validateSpec(spec: unknown): ValidationReport {
+export function validateSpec(spec: unknown, options?: { resourcePolicy?: ResourcePolicy }): ValidationReport {
   const diagnostics: Diagnostic[] = [];
 
   if (!validateMapSpecSchema(spec)) {
@@ -22,7 +23,7 @@ export function validateSpec(spec: unknown): ValidationReport {
 
   if (isMapSpecLike(spec)) {
     diagnostics.push(...validateSemanticRules(spec));
-    diagnostics.push(...validateResourcePolicy(spec));
+    diagnostics.push(...validateResourcePolicy(spec, options?.resourcePolicy));
     diagnostics.push(...validateSceneView3DExtension(spec));
   }
 
@@ -161,6 +162,36 @@ function validateSemanticRules(spec: MapSpec): Diagnostic[] {
         code: DiagnosticCodes.GeoInvalidCoordinates,
         message: `Center coordinates [${lng}, ${lat}] are out of range. Longitude must be [-180, 180] and latitude must be [-90, 90].`,
         path: "/view/center"
+      });
+    }
+  }
+
+  if (spec.view.bounds) {
+    const [west, south, east, north] = spec.view.bounds;
+    if (west > east) {
+      diagnostics.push({
+        severity: "error",
+        code: DiagnosticCodes.GeoInvalidCoordinates,
+        message: `View bounds west (${west}) must be less than or equal to east (${east}).`,
+        path: "/view/bounds",
+        fix: {
+          kind: "manual",
+          confidence: "high",
+          message: "Ensure bounds are ordered as [west, south, east, north] with west <= east and south <= north."
+        }
+      });
+    }
+    if (south > north) {
+      diagnostics.push({
+        severity: "error",
+        code: DiagnosticCodes.GeoInvalidCoordinates,
+        message: `View bounds south (${south}) must be less than or equal to north (${north}).`,
+        path: "/view/bounds",
+        fix: {
+          kind: "manual",
+          confidence: "high",
+          message: "Ensure bounds are ordered as [west, south, east, north] with west <= east and south <= north."
+        }
       });
     }
   }
@@ -331,8 +362,4 @@ function isMapSpecLike(value: unknown): value is MapSpec {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<MapSpec>;
   return candidate.version === "0.1" && Boolean(candidate.view) && Boolean(candidate.sources) && Array.isArray(candidate.layers);
-}
-
-function escapePathSegment(segment: string): string {
-  return segment.replaceAll("~", "~0").replaceAll("/", "~1");
 }

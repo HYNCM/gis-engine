@@ -108,6 +108,101 @@ describe("ResourcePolicy validation", () => {
       })
     );
   });
+  it("blocks relative URLs containing path traversal segments (..)", () => {
+    const parentDir = validateSpec(withGeojsonData("../data/points.geojson"));
+    const midTraversal = validateSpec(withGeojsonData("data/../../etc/passwd"));
+    const trailingDot = validateSpec(withGeojsonData("data/.."));
+
+    for (const report of [parentDir, midTraversal, trailingDot]) {
+      expect(report.diagnostics).toContainEqual(
+        expect.objectContaining({
+          code: DiagnosticCodes.SecurityUrlBlocked,
+          path: "/sources/points/data",
+          message: expect.stringContaining("path traversal")
+        })
+      );
+    }
+  });
+
+  it("allows relative URLs without path traversal", () => {
+    const simple = validateSpec(withGeojsonData("./data/points.geojson"));
+    const nested = validateSpec(withGeojsonData("data/points.geojson"));
+
+    expect(simple.valid).toBe(true);
+    expect(nested.valid).toBe(true);
+  });
+
+  it("accepts custom resourcePolicy via validateSpec options", () => {
+    const customPolicy = {
+      ...defaultResourcePolicy,
+      allowedHosts: [...defaultResourcePolicy.allowedHosts, "tiles.example.com"]
+    };
+
+    const withDefault = validateSpec(withGeojsonData("https://tiles.example.com/data.geojson"));
+    const withCustom = validateSpec(withGeojsonData("https://tiles.example.com/data.geojson"), {
+      resourcePolicy: customPolicy
+    });
+
+    expect(withDefault.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: DiagnosticCodes.SecurityUrlBlocked,
+        path: "/sources/points/data"
+      })
+    );
+    expect(withCustom.valid).toBe(true);
+  });
+
+  it("rejects relative URLs with path traversal via validateResourceUrl", () => {
+    const diagnostics = validateResourceUrl("../data/points.geojson", "/sources/points/data", defaultResourcePolicy);
+    expect(diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: DiagnosticCodes.SecurityUrlBlocked,
+        message: expect.stringContaining("path traversal")
+      })
+    );
+  });
+});
+
+describe("view.bounds semantic validation", () => {
+  it("accepts valid bounds where west <= east and south <= north", () => {
+    const report = validateSpec(withBounds([100, 20, 120, 40]));
+    expect(report.diagnostics.filter((d) => d.path === "/view/bounds")).toEqual([]);
+  });
+
+  it("accepts equal bounds (single point extent)", () => {
+    const report = validateSpec(withBounds([120, 30, 120, 30]));
+    expect(report.diagnostics.filter((d) => d.path === "/view/bounds")).toEqual([]);
+  });
+
+  it("rejects inverted west-east bounds", () => {
+    const report = validateSpec(withBounds([120, 20, 100, 40]));
+    expect(report.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.GeoInvalidCoordinates,
+        path: "/view/bounds",
+        message: expect.stringContaining("west")
+      })
+    );
+  });
+
+  it("rejects inverted south-north bounds", () => {
+    const report = validateSpec(withBounds([100, 40, 120, 20]));
+    expect(report.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.GeoInvalidCoordinates,
+        path: "/view/bounds",
+        message: expect.stringContaining("south")
+      })
+    );
+  });
+
+  it("reports both errors when bounds are fully inverted", () => {
+    const report = validateSpec(withBounds([180, 90, -180, -90]));
+    const boundsErrors = report.diagnostics.filter((d) => d.path === "/view/bounds");
+    expect(boundsErrors).toHaveLength(2);
+  });
 });
 
 function withGeojsonData(data: string): MapSpec {
@@ -203,4 +298,14 @@ function withSceneSourceUrl(sourceId: string, url: string) {
   const scene = spec.extensions?.scene3d as { sources: Record<string, { url: string }> };
   scene.sources[sourceId]!.url = url;
   return validateSpec(spec);
+}
+
+function withBounds(bounds: [number, number, number, number]): MapSpec {
+  return {
+    version: "0.1",
+    id: "bounds-validation",
+    view: { center: [120, 30], zoom: 10, bounds },
+    sources: {},
+    layers: []
+  };
 }

@@ -10,7 +10,7 @@
   "sources": {
     "pois": {
       "type": "geojson",
-      "data": "../basic-geojson/data/points.geojson"
+      "data": "./data/points.geojson"
     }
   },
   "layers": [

@@ -63,11 +63,11 @@ export interface GenerateResult {
 
 /**
  * Hash a prompt string with SHA-256.
- * Produces "sha256:<32-hex>" format compatible with normalizeWorkbenchProviderPlan.
+ * Produces "sha256:<full-hex>" format matching provider-http hashPromptFull.
  * The raw prompt is never retained.
  */
 export function hashPrompt(prompt: string): string {
-  return `sha256:${createHash("sha256").update(prompt).digest("hex").slice(0, 32)}`;
+  return `sha256:${createHash("sha256").update(prompt).digest("hex")}`;
 }
 
 /**
@@ -101,29 +101,25 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
   } else {
     // Real provider: HTTP call
     const profile = resolveProviderProfile(opts.provider, {
-      model: opts.model,
-      baseUrl: opts.baseUrl,
+      ...(opts.model !== undefined ? { model: opts.model } : {}),
+      ...(opts.baseUrl !== undefined ? { baseUrl: opts.baseUrl } : {}),
     });
     const apiKey = opts.apiKey ?? readProviderApiKey(opts.provider);
     if (!apiKey) {
       const envKey = CLI_API_KEY_ENVS[opts.provider.toLowerCase()] ?? `${opts.provider.toUpperCase()}_API_KEY`;
-      console.error(`  ❌ No API key found. Set ${envKey} environment variable or pass --api-key.`);
-      process.exit(1);
+      throw new Error(`No API key found. Set ${envKey} environment variable or pass --api-key.`);
     }
 
     const providerResult = await callProvider({
       profile,
       apiKey,
       message: promptText,
-      timeoutMs: opts.timeout,
+      ...(opts.timeout !== undefined ? { timeoutMs: opts.timeout } : {}),
     });
 
     if (!providerResult.ok) {
-      console.error(`  ❌ Provider call failed:`);
-      for (const d of providerResult.diagnostics) {
-        console.error(`    [${d.code}] ${d.message}`);
-      }
-      process.exit(1);
+      const messages = providerResult.diagnostics.map((d) => `[${d.code}] ${d.message}`).join("; ");
+      throw new Error(`Provider call failed: ${messages}`);
     }
 
     intent = providerResult.providerOutput.intent;
@@ -137,8 +133,8 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
   // Step 2: Provider plan normalization
   console.log(`  [2/5] Provider plan normalization...`);
   const providerDiag = createProviderDiagnostics(opts.provider, {
-    model: opts.model,
-    baseUrl: opts.baseUrl,
+    ...(opts.model !== undefined ? { model: opts.model } : {}),
+    ...(opts.baseUrl !== undefined ? { baseUrl: opts.baseUrl } : {}),
   });
 
   const providerInput: Record<string, unknown> = {
@@ -151,8 +147,8 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
 
   const providerResult = normalizeWorkbenchProviderPlan(providerInput);
   if (!providerResult.ok) {
-    console.error(`  ❌ Provider plan failed:`, providerResult.diagnostics);
-    process.exit(1);
+    const messages = providerResult.diagnostics.map((d) => `[${d.code}] ${d.message}`).join("; ");
+    throw new Error(`Provider plan normalization failed: ${messages}`);
   }
 
   const plan = providerResult.result.plan;
@@ -212,7 +208,7 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
       description: typeof intentAppConfig?.description === "string"
         ? intentAppConfig.description
         : `Interactive ${appType} map application`,
-      components: intentComponents,
+      ...(intentComponents !== undefined ? { components: intentComponents } : {}),
     }, {
       projectName: opts.projectName,
       description: `Interactive ${appType} map application`,

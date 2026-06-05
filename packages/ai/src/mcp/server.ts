@@ -27,6 +27,7 @@ import {
 } from "../tools/exportExampleApp.js";
 import { toolInputErrorsToDiagnostics } from "../tools/schemaDiagnostics.js";
 import { snapshotSpecTool, SnapshotSpecToolInputSchema } from "../tools/snapshotSpec.js";
+import { DiagnosticCountsSchema, stripNestedIds } from "../tools/shared.js";
 
 const DiagnosticContractSchema = stripNestedIds(DiagnosticSchema);
 const CapabilityReportContractSchema = stripNestedIds(CapabilityReportSchema);
@@ -162,17 +163,6 @@ export const ApplyCommandsToolResultSchema = {
 
 export const ValidateSpecToolResultSchema = ValidationReportSchema;
 export const ExportSpecToolResultSchema = MapSpecSchema;
-
-const DiagnosticCountsSchema = {
-  type: "object",
-  properties: {
-    error: { type: "number" },
-    warning: { type: "number" },
-    info: { type: "number" }
-  },
-  required: ["error", "warning", "info"],
-  additionalProperties: false
-} as const;
 
 const CapabilityDomainSummarySchema = {
   type: "object",
@@ -416,12 +406,6 @@ interface ContextSummaryToolInput {
 type ToolInputResult<T> = { ok: true; input: T } | { ok: false; diagnostics: Diagnostic[] };
 
 const ajv = new Ajv({ allErrors: true, strict: false });
-
-function stripNestedIds(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(stripNestedIds);
-  if (!value || typeof value !== "object") return value;
-  return Object.fromEntries(Object.entries(value).filter(([key]) => key !== "$id").map(([key, entry]) => [key, stripNestedIds(entry)]));
-}
 
 const validateValidateSpecInput = ajv.compile(ValidateSpecToolInputSchema);
 const validateExportSpecInput = ajv.compile(ExportSpecToolInputSchema);

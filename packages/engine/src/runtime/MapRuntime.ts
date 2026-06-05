@@ -63,9 +63,7 @@ export class MapRuntime {
     const run = this.#applyQueue.then(() => this.#applyImmediately(queuedCommands, queuedOptions));
     this.#applyQueue = run.then(
       () => undefined,
-      (error) => {
-        console.error("[MapRuntime] apply queue error:", error);
-      }
+      () => undefined,
     );
 
     return run;

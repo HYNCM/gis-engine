@@ -71,9 +71,20 @@ export function parseArgs(argv: string[]): CliConfig {
   let help = DEFAULTS.help;
   let version = DEFAULTS.version;
 
+  function nextValue(flag: string): string {
+    const value = argv[++i];
+    if (value === undefined || value.startsWith("-")) {
+      console.error(`Error: ${flag} requires a value.\n`);
+      help = true;
+      return "";
+    }
+    return value;
+  }
+
   let i = 0;
   while (i < argv.length) {
     const arg = argv[i];
+    if (!arg) break;
 
     if (arg === "--help" || arg === "-h") {
       help = true;
@@ -91,43 +102,48 @@ export function parseArgs(argv: string[]): CliConfig {
       generate = true;
       i++;
     } else if (arg === "--prompt") {
-      prompt = argv[++i] ?? prompt;
+      prompt = nextValue("--prompt") || prompt;
       i++;
     } else if (arg.startsWith("--prompt=")) {
       prompt = arg.slice("--prompt=".length);
       i++;
     } else if (arg === "--model") {
-      model = argv[++i] ?? model;
+      model = nextValue("--model") || model;
       i++;
     } else if (arg.startsWith("--model=")) {
       model = arg.slice("--model=".length);
       i++;
     } else if (arg === "--base-url") {
-      baseUrl = argv[++i] ?? baseUrl;
+      baseUrl = nextValue("--base-url") || baseUrl;
       i++;
     } else if (arg.startsWith("--base-url=")) {
       baseUrl = arg.slice("--base-url=".length);
       i++;
     } else if (arg === "--api-key") {
-      apiKey = argv[++i] ?? apiKey;
+      apiKey = nextValue("--api-key") || apiKey;
       i++;
     } else if (arg.startsWith("--api-key=")) {
       apiKey = arg.slice("--api-key=".length);
       i++;
     } else if (arg === "--timeout") {
       const raw = argv[++i];
-      const parsed = raw ? Number(raw) : NaN;
-      if (Number.isFinite(parsed) && parsed > 0) timeout = parsed;
+      if (raw === undefined || raw.startsWith("-")) {
+        console.error(`Error: --timeout requires a value.\n`);
+        help = true;
+      } else {
+        const parsed = Number(raw);
+        if (Number.isFinite(parsed) && parsed > 0) timeout = parsed;
+      }
       i++;
     } else if (arg.startsWith("--timeout=")) {
       const parsed = Number(arg.slice("--timeout=".length));
       if (Number.isFinite(parsed) && parsed > 0) timeout = parsed;
       i++;
     } else if (arg === "--template" || arg === "-t") {
-      template = argv[++i] ?? template;
+      template = nextValue("--template") || template;
       i++;
     } else if (arg === "--provider" || arg === "-p") {
-      provider = argv[++i] ?? provider;
+      provider = nextValue("--provider") || provider;
       i++;
     } else if (arg.startsWith("--template=")) {
       template = arg.slice("--template=".length);
@@ -168,5 +184,19 @@ export function parseArgs(argv: string[]): CliConfig {
     if (Number.isFinite(parsed) && parsed > 0) timeout = parsed;
   }
 
-  return { projectName, template, provider, model, baseUrl, apiKey, timeout, generate, prompt, yes, dryRun, help, version };
+  return {
+    projectName,
+    template,
+    provider,
+    ...(model !== undefined ? { model } : {}),
+    ...(baseUrl !== undefined ? { baseUrl } : {}),
+    ...(apiKey !== undefined ? { apiKey } : {}),
+    ...(timeout !== undefined ? { timeout } : {}),
+    generate,
+    ...(prompt !== undefined ? { prompt } : {}),
+    yes,
+    dryRun,
+    help,
+    version,
+  };
 }

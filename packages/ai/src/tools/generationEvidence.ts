@@ -40,6 +40,7 @@ import {
   type ExampleId
 } from "./exportExampleApp.js";
 import { toolInputErrorsToDiagnostics } from "./schemaDiagnostics.js";
+import { DiagnosticCountsSchema, countDiagnostics, zeroDiagnosticCounts, stripNestedIds, createHeadlessContainer } from "./shared.js";
 import { snapshotSpecTool, SnapshotSpecToolInputSchema } from "./snapshotSpec.js";
 import {
   ContextSummaryToolResultSchema,
@@ -57,17 +58,6 @@ type Scene3DStableRuntimeBlockerCode =
 const GisEngineToolNameSchema = {
   type: "string",
   enum: ["validate_spec", "apply_commands", "export_spec", "get_context_summary", "snapshot_spec", "explain_spec", "export_example_app"]
-} as const;
-
-const DiagnosticCountsSchema = {
-  type: "object",
-  properties: {
-    error: { type: "number" },
-    warning: { type: "number" },
-    info: { type: "number" }
-  },
-  required: ["error", "warning", "info"],
-  additionalProperties: false
 } as const;
 
 const DEFAULT_SPATIAL_QUERY_RESULT_LIMIT = 100;
@@ -1283,10 +1273,6 @@ function createHeadlessAdapter(renderer: "maplibre" | "mock"): RendererAdapter {
   return renderer === "mock" ? new MockAdapter() : new MapLibreAdapter();
 }
 
-function createHeadlessContainer(): HTMLElement {
-  return {} as HTMLElement;
-}
-
 async function buildSnapshotEvidence(input: GenerationEvidenceBundleInput): Promise<GenerationSnapshotEvidence & { diagnostics: Diagnostic[] }> {
   const renderer = input.snapshot?.renderer ?? "maplibre";
   if (input.skeleton.status === "blocked") {
@@ -1876,20 +1862,6 @@ function stripExampleDiagnostics(exampleEvidence: GenerationExampleEvidence & { 
   return publicEvidence;
 }
 
-function countDiagnostics(diagnostics: Diagnostic[]): Record<Diagnostic["severity"], number> {
-  return diagnostics.reduce<Record<Diagnostic["severity"], number>>(
-    (counts, diagnostic) => {
-      counts[diagnostic.severity] += 1;
-      return counts;
-    },
-    zeroDiagnosticCounts()
-  );
-}
-
-function zeroDiagnosticCounts(): Record<Diagnostic["severity"], number> {
-  return { error: 0, warning: 0, info: 0 };
-}
-
 function unique(values: string[]): string[] {
   return Array.from(new Set(values)).sort();
 }
@@ -1904,10 +1876,4 @@ function isScene3DStableRuntimeBlockerCode(value: unknown): value is Scene3DStab
 
 function uniqueScene3DStableRuntimeBlockerCodes(values: Scene3DStableRuntimeBlockerCode[]): Scene3DStableRuntimeBlockerCode[] {
   return unique(values) as Scene3DStableRuntimeBlockerCode[];
-}
-
-function stripNestedIds<T>(value: T): T {
-  if (Array.isArray(value)) return value.map(stripNestedIds) as T;
-  if (!value || typeof value !== "object") return value;
-  return Object.fromEntries(Object.entries(value).filter(([key]) => key !== "$id").map(([key, entry]) => [key, stripNestedIds(entry)])) as T;
 }

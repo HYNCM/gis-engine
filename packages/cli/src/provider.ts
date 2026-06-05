@@ -61,8 +61,8 @@ export function createProviderDiagnostics(
       providerId: id,
       status: "unconfigured",
       mode: "openai-compatible",
-      model: resolvedModel,
-      baseUrl: resolvedBaseUrl,
+      ...(resolvedModel !== undefined ? { model: resolvedModel } : {}),
+      ...(resolvedBaseUrl !== undefined ? { baseUrl: resolvedBaseUrl } : {}),
       diagnostics: [
         ...diagnostics,
         "PROVIDER.CONFIG_REQUIRED",
@@ -75,8 +75,8 @@ export function createProviderDiagnostics(
     providerId: id,
     status: "unconfigured",
     mode: "openai-compatible",
-    model,
-    baseUrl,
+    ...(model !== undefined ? { model } : {}),
+    ...(baseUrl !== undefined ? { baseUrl } : {}),
     diagnostics: [
       `PROVIDER.UNKNOWN_ID`,
       `PROVIDER.CONFIG_REQUIRED`,

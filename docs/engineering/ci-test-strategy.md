@@ -19,7 +19,7 @@ fixtures -> schema validation -> command replay -> renderer adapter -> snapshot 
   "scripts": {
     "build": "pnpm -r build",
     "build:schema": "pnpm --filter @gis-engine/engine build:schema && pnpm --filter @gis-engine/scene3d build && pnpm --filter @gis-engine/ai build:schema",
-    "test": "pnpm test:schema && pnpm test:schema-sync && pnpm test:commands && pnpm test:patch && pnpm test:runtime && pnpm test:adapter && pnpm test:ai && pnpm test:examples && pnpm test:resources && pnpm test:perf:smoke && pnpm test:snapshot:smoke",
+    "test": "pnpm test:schema && pnpm test:schema-sync && pnpm test:commands && pnpm test:patch && pnpm test:runtime && pnpm test:adapter && pnpm test:ai && pnpm test:cli && pnpm test:examples && pnpm test:docs && pnpm test:resources && pnpm test:perf:smoke && pnpm test:snapshot:smoke",
     "test:schema": "vitest run tests/schema/schema-fixtures.test.ts tests/schema/expression-validator.test.ts tests/schema/resource-policy.test.ts",
     "test:schema-sync": "vitest run tests/schema-sync",
     "test:commands": "vitest run tests/commands",
@@ -32,13 +32,18 @@ fixtures -> schema validation -> command replay -> renderer adapter -> snapshot 
     "test:snapshot:visual": "playwright test tests/snapshot/visual",
     "test:snapshot:update": "GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 SNAPSHOT_UPDATE=1 pnpm test:snapshot:visual",
     "test:ai": "vitest run tests/ai",
+    "test:cli": "vitest run tests/cli",
+    "test:qa-matrix": "vitest run tests/examples/qa-matrix.test.ts",
     "test:perf:smoke": "vitest run tests/perf",
+    "test:perf:trend": "vitest run tests/perf/perf-trend-ledger.test.ts",
     "test:perf:nightly": "vitest run tests/nightly-perf",
     "test:resources": "vitest run tests/resources",
+    "test:docs": "vitest run tests/docs",
+    "test:studio": "vitest run tests/studio",
     "test:release:scene3d": "vitest run tests/snapshot/smoke/scene3d-release-visual-gate.test.ts",
     "test:release:rc": "pnpm build:schema && pnpm check && pnpm test:snapshot:visual",
     "test:release:strict": "pnpm build:schema && pnpm check && GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual",
-    "check": "pnpm build && pnpm test"
+    "check": "pnpm build && pnpm test && pnpm test:studio"
   }
 }
 ```

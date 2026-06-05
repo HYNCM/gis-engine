@@ -271,7 +271,7 @@ describe("MapRuntime", () => {
     expect(adapter.loadedSpec).toEqual(before);
   });
 
-  it("logs and recovers when a queued reload fails after an adapter error", async () => {
+  it("rejects and recovers when a queued reload fails after an adapter error", async () => {
     const adapter = new RuntimeMockAdapter();
     adapter.failLoadAfterFirstCall = true;
     adapter.loadError = new Error("reload failed");
@@ -286,34 +286,24 @@ describe("MapRuntime", () => {
       adapter,
       container: {} as HTMLElement
     });
-    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
-    try {
-      await expect(runtime.apply(commands as MapCommand[])).rejects.toThrow("reload failed");
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "[MapRuntime] apply queue error:",
-        expect.objectContaining({
-          message: "reload failed"
-        })
-      );
 
-      adapter.failLoadAfterFirstCall = false;
-      adapter.applyDiagnostics = [];
-      const viewCommand: MapCommand = {
-        id: "cmd-recover-view",
-        version: "0.1",
-        type: "setView",
-        baseRevision: "1",
-        view: { zoom: 8 }
-      };
+    await expect(runtime.apply(commands as MapCommand[])).rejects.toThrow("reload failed");
 
-      const recoveryResults = await runtime.apply(viewCommand);
+    adapter.failLoadAfterFirstCall = false;
+    adapter.applyDiagnostics = [];
+    const viewCommand: MapCommand = {
+      id: "cmd-recover-view",
+      version: "0.1",
+      type: "setView",
+      baseRevision: "1",
+      view: { zoom: 8 }
+    };
 
-      expect(recoveryResults[0]?.status).toBe("applied");
-      expect(runtime.exportSpec().view.zoom).toBe(8);
-      expect(adapter.loadCalls).toBe(2);
-    } finally {
-      consoleErrorSpy.mockRestore();
-    }
+    const recoveryResults = await runtime.apply(viewCommand);
+
+    expect(recoveryResults[0]?.status).toBe("applied");
+    expect(runtime.exportSpec().view.zoom).toBe(8);
+    expect(adapter.loadCalls).toBe(2);
   });
 
   it("forwards queryFeatures to the committed adapter state", async () => {

@@ -28,6 +28,8 @@
 
 import { resolve, join } from "node:path";
 import { mkdirSync, writeFileSync, existsSync } from "node:fs";
+import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 import { parseArgs } from "./config.js";
 import { getTemplate, TEMPLATES } from "./templates/index.js";
 import { createProviderDiagnostics } from "./provider.js";
@@ -54,20 +56,25 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
 
   // ── Generate pipeline mode ─────────────────────────────────────────
   if (config.generate) {
-    const result = await generate({
-      projectName: config.projectName,
-      provider: config.provider,
-      model: config.model,
-      baseUrl: config.baseUrl,
-      prompt: config.prompt,
-      apiKey: config.apiKey,
-      timeout: config.timeout,
-      template: config.template,
-      dryRun: config.dryRun,
-    });
+    try {
+      const result = await generate({
+        projectName: config.projectName,
+        provider: config.provider,
+        ...(config.model !== undefined ? { model: config.model } : {}),
+        ...(config.baseUrl !== undefined ? { baseUrl: config.baseUrl } : {}),
+        ...(config.prompt !== undefined ? { prompt: config.prompt } : {}),
+        ...(config.apiKey !== undefined ? { apiKey: config.apiKey } : {}),
+        ...(config.timeout !== undefined ? { timeout: config.timeout } : {}),
+        template: config.template,
+        dryRun: config.dryRun,
+      });
 
-    if (!result.validationValid) {
-      console.warn("\n⚠ Generated spec has validation warnings. Check diagnostics.json for details.");
+      if (!result.validationValid) {
+        console.warn("\n⚠ Generated spec has validation warnings. Check diagnostics.json for details.");
+      }
+    } catch (error) {
+      console.error(`\n❌ Generate pipeline failed: ${error instanceof Error ? error.message : String(error)}`);
+      process.exit(1);
     }
     return;
   }
@@ -87,8 +94,8 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
   }
 
   const providerDiag = createProviderDiagnostics(config.provider, {
-    model: config.model,
-    baseUrl: config.baseUrl,
+    ...(config.model !== undefined ? { model: config.model } : {}),
+    ...(config.baseUrl !== undefined ? { baseUrl: config.baseUrl } : {}),
   });
 
   console.log(`\n📦 create-gis-map`);
@@ -177,7 +184,8 @@ Examples:
 }
 
 function getVersion(): string {
-  return "0.4.0";
+  const require = createRequire(fileURLToPath(import.meta.url));
+  return (require("../package.json") as { version: string }).version;
 }
 
 // CLI entry — only run main() when executed directly (not when imported).

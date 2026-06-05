@@ -1,3 +1,4 @@
+import { escapePathSegment } from "./patch/path.js";
 import { DiagnosticCodes } from "../diagnostics/codes.js";
 import type { Diagnostic, MapSpec } from "../types.js";
 
@@ -67,6 +68,9 @@ export function validateResourceUrl(urlString: string, path: string, policy: Res
     if (policy.allowRelativeUrls === false) {
       return [blocked(urlString, path, "Relative resource URLs are blocked by policy.")];
     }
+    if (hasPathTraversal(trimmedUrl)) {
+      return [blocked(urlString, path, "Relative resource URLs must not contain path traversal sequences (..).")];
+    }
     return validatePathPrefix(effectiveUrl, urlString, path, policy);
   }
 
@@ -120,6 +124,6 @@ function isRelativeResourceUrl(urlString: string): boolean {
   return !/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(urlString);
 }
 
-function escapePathSegment(segment: string): string {
-  return segment.replaceAll("~", "~0").replaceAll("/", "~1");
+function hasPathTraversal(urlString: string): boolean {
+  return urlString.split("/").some((segment) => segment === "..");
 }

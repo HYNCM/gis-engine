@@ -1,4 +1,5 @@
 import { Ajv } from "ajv/dist/ajv.js";
+import { createHeadlessContainer } from "./shared.js";
 import {
   DiagnosticCodes,
   MapLibreAdapter,
@@ -120,10 +121,6 @@ export async function snapshotSpecTool(input: unknown): Promise<SnapshotSpecTool
 
 function createHeadlessAdapter(renderer: "maplibre" | "mock"): RendererAdapter {
   return renderer === "mock" ? new MockAdapter() : new MapLibreAdapter();
-}
-
-function createHeadlessContainer(): HTMLElement {
-  return {} as HTMLElement;
 }
 
 function renderErrorDiagnostic(error: unknown): Diagnostic {

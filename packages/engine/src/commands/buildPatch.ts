@@ -1,6 +1,6 @@
 import { DiagnosticCodes } from "../diagnostics/codes.js";
 import type { Diagnostic, JsonPatchOperation, MapCommand, MapCommandBase, MapSpec, SceneView3DExtension, SuggestedFix } from "../types.js";
-import { joinPath } from "../spec/patch/index.js";
+import { joinPath, escapePathSegment } from "../spec/patch/index.js";
 
 export interface BuildPatchResult {
   patch: JsonPatchOperation[];
@@ -334,10 +334,6 @@ function patchRecordMerge(path: string, current: Record<string, unknown> | undef
     path: `${path}/${escapePathSegment(key)}`,
     value
   }));
-}
-
-function escapePathSegment(segment: string): string {
-  return segment.replaceAll("~", "~0").replaceAll("/", "~1");
 }
 
 function omitUndefined<T extends Record<string, unknown>>(value: T): Record<string, unknown> {
