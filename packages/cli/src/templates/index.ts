@@ -2,7 +2,7 @@
  * CLI template registry.
  *
  * Each template generates a set of files for the target project.
- * Templates: static-html, vite-ts, mapspec
+ * Templates: static-html, vite-ts, mapspec, app
  */
 
 export const TEMPLATES = ["static-html", "vite-ts", "mapspec", "app"] as const;
@@ -249,6 +249,12 @@ npm install
 npm run dev
 \`\`\`
 
+## Controls
+
+- Reload map.json to re-run the current spec without a browser refresh.
+- Load map.json to import a local file and re-render the map.
+- The status banner reports loading, ready, empty, and error states.
+
 ## Provider
 
 Current provider: \`${ctx.provider}\`
@@ -310,7 +316,7 @@ Current provider: \`${ctx.provider}\`
 
 const appTemplate: Template = {
   name: "app",
-  description: "Full interactive map application (Vite + React + Tailwind)",
+  description: "Full interactive map application (Vite + React + Tailwind) with responsive status and local map.json controls",
   generate(ctx) {
     const appCtx = ctx as AppTemplateContext;
     const cfg: AppConfig = normalizeAppConfig(appCtx.appConfig, {
@@ -333,7 +339,7 @@ const appTemplate: Template = {
     if (hasComponent("LayerPanel")) {
       componentFiles.push({
         path: "src/components/LayerPanel.tsx",
-        content: `import { useState } from "react";
+        content: `import { useEffect, useMemo, useState } from "react";
 import maplibregl from "maplibre-gl";
 
 interface LayerInfo { id: string; type: string; visible: boolean; }
@@ -344,15 +350,19 @@ interface Props {
 }
 
 export default function LayerPanel({ map, spec }: Props) {
-  const layers: LayerInfo[] = ((spec.layers as Array<Record<string, unknown>>) ?? []).map((l) => ({
-    id: String(l.id ?? "unknown"),
-    type: String(l.type ?? "fill"),
-    visible: (l.layout as Record<string, unknown>)?.visibility !== "none",
-  }));
-
-  const [visibility, setVisibility] = useState<Record<string, boolean>>(
-    Object.fromEntries(layers.map((l) => [l.id, l.visible]))
+  const layers: LayerInfo[] = useMemo(
+    () => ((spec.layers as Array<Record<string, unknown>>) ?? []).map((l) => ({
+      id: String(l.id ?? "unknown"),
+      type: String(l.type ?? "fill"),
+      visible: (l.layout as Record<string, unknown>)?.visibility !== "none",
+    })),
+    [spec],
   );
+  const [visibility, setVisibility] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    setVisibility(Object.fromEntries(layers.map((l) => [l.id, l.visible])));
+  }, [layers]);
 
   const toggle = (layerId: string) => {
     const next = !visibility[layerId];
@@ -363,23 +373,33 @@ export default function LayerPanel({ map, spec }: Props) {
   };
 
   return (
-    <div className="absolute top-4 left-4 z-10 w-56 rounded-lg bg-white/95 shadow-lg backdrop-blur-sm">
+    <div className="absolute top-28 left-4 z-10 w-56 max-w-[calc(100vw-2rem)] rounded-lg bg-white/95 shadow-lg backdrop-blur-sm max-md:left-3 max-md:top-32 max-md:w-[calc(100vw-1.5rem)]">
       <div className="border-b border-gray-200 px-3 py-2">
-        <h3 className="text-sm font-semibold text-gray-700">Layers</h3>
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold text-gray-700">Layers</h3>
+          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500">
+            {layers.length}
+          </span>
+        </div>
       </div>
       <ul className="max-h-60 overflow-y-auto p-2">
-        {layers.map((layer) => (
-          <li key={layer.id} className="flex items-center gap-2 rounded px-2 py-1.5 hover:bg-gray-50">
-            <input
-              type="checkbox"
-              checked={visibility[layer.id] ?? true}
-              onChange={() => toggle(layer.id)}
-              className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            <span className="flex-1 truncate text-xs text-gray-700">{layer.id}</span>
-            <span className="text-[10px] text-gray-400">{layer.type}</span>
-          </li>
-        ))}
+        {layers.length === 0 ? (
+          <li className="px-2 py-2 text-xs text-gray-500">No layers in this spec yet.</li>
+        ) : (
+          layers.map((layer) => (
+            <li key={layer.id} className="flex items-center gap-2 rounded px-2 py-1.5 hover:bg-gray-50">
+              <input
+                aria-label={"Toggle " + layer.id + " visibility"}
+                type="checkbox"
+                checked={visibility[layer.id] ?? true}
+                onChange={() => toggle(layer.id)}
+                className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="flex-1 truncate text-xs text-gray-700">{layer.id}</span>
+              <span className="text-[10px] text-gray-400">{layer.type}</span>
+            </li>
+          ))
+        )}
       </ul>
     </div>
   );
@@ -408,10 +428,15 @@ export default function FeaturePopup({ map, spec }: Props) {
       .filter((l) => ["circle", "fill", "line", "symbol"].includes(String(l.type)))
       .map((l) => String(l.id));
 
-    const handlers: Array<{ layerId: string; handler: (e: maplibregl.MapMouseEvent) => void }> = [];
+    const handlers: Array<{
+      layerId: string;
+      clickHandler: (e: maplibregl.MapMouseEvent) => void;
+      enterHandler: () => void;
+      leaveHandler: () => void;
+    }> = [];
 
     for (const layerId of clickableLayers) {
-      const handler = (e: maplibregl.MapMouseEvent) => {
+      const clickHandler = (e: maplibregl.MapMouseEvent) => {
         const features = map.queryRenderedFeatures(e.point, { layers: [layerId] });
         if (!features.length) return;
         const props = features[0].properties ?? {};
@@ -423,15 +448,23 @@ export default function FeaturePopup({ map, spec }: Props) {
           .setHTML(\`<div class="space-y-1 text-xs p-1">\${html || "<em>No properties</em>"}</div>\`)
           .addTo(map);
       };
-      map.on("click", layerId, handler);
-      handlers.push({ layerId, handler });
-      map.on("mouseenter", layerId, () => { map.getCanvas().style.cursor = "pointer"; });
-      map.on("mouseleave", layerId, () => { map.getCanvas().style.cursor = ""; });
+      const enterHandler = () => {
+        map.getCanvas().style.cursor = "pointer";
+      };
+      const leaveHandler = () => {
+        map.getCanvas().style.cursor = "";
+      };
+      map.on("click", layerId, clickHandler);
+      map.on("mouseenter", layerId, enterHandler);
+      map.on("mouseleave", layerId, leaveHandler);
+      handlers.push({ layerId, clickHandler, enterHandler, leaveHandler });
     }
 
     return () => {
-      for (const { layerId, handler } of handlers) {
-        map.off("click", layerId, handler);
+      for (const { layerId, clickHandler, enterHandler, leaveHandler } of handlers) {
+        map.off("click", layerId, clickHandler);
+        map.off("mouseenter", layerId, enterHandler);
+        map.off("mouseleave", layerId, leaveHandler);
       }
     };
   }, [map, spec]);
@@ -473,17 +506,21 @@ export default function Legend({ spec }: Props) {
   }));
 
   return (
-    <div className="absolute bottom-8 right-4 z-10 rounded-lg bg-white/95 shadow-lg backdrop-blur-sm">
+    <div className="absolute bottom-8 right-4 z-10 w-56 max-w-[calc(100vw-2rem)] rounded-lg bg-white/95 shadow-lg backdrop-blur-sm max-md:bottom-4 max-md:left-3 max-md:right-3 max-md:w-[calc(100vw-1.5rem)]">
       <div className="border-b border-gray-200 px-3 py-2">
         <h3 className="text-sm font-semibold text-gray-700">Legend</h3>
       </div>
       <ul className="space-y-1 p-2">
-        {entries.map((entry) => (
-          <li key={entry.id} className="flex items-center gap-2 px-1">
-            <span className="h-3 w-3 rounded-sm flex-shrink-0" style={{ backgroundColor: entry.color }} />
-            <span className="truncate text-xs text-gray-600">{entry.id}</span>
-          </li>
-        ))}
+        {entries.length === 0 ? (
+          <li className="px-1 py-1 text-xs text-gray-500">No visible layers yet.</li>
+        ) : (
+          entries.map((entry) => (
+            <li key={entry.id} className="flex items-center gap-2 px-1">
+              <span className="h-3 w-3 flex-shrink-0 rounded-sm" style={{ backgroundColor: entry.color }} />
+              <span className="truncate text-xs text-gray-600">{entry.id}</span>
+            </li>
+          ))
+        )}
       </ul>
     </div>
   );
@@ -495,7 +532,7 @@ export default function Legend({ spec }: Props) {
     if (hasComponent("SearchBox")) {
       componentFiles.push({
         path: "src/components/SearchBox.tsx",
-        content: `import { useState, useCallback } from "react";
+        content: `import { useCallback, useEffect, useState } from "react";
 import maplibregl from "maplibre-gl";
 
 interface Props {
@@ -507,6 +544,12 @@ export default function SearchBox({ map, spec }: Props) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Array<{ id: string; label: string; lng: number; lat: number }>>([]);
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    setQuery("");
+    setResults([]);
+    setOpen(false);
+  }, [spec]);
 
   const search = useCallback(() => {
     if (!map || !query.trim()) { setResults([]); return; }
@@ -544,24 +587,25 @@ export default function SearchBox({ map, spec }: Props) {
   };
 
   return (
-    <div className="absolute top-4 left-1/2 z-10 w-80 -translate-x-1/2">
+    <div className="absolute top-4 left-1/2 z-10 w-80 -translate-x-1/2 max-md:left-3 max-md:right-3 max-md:w-auto max-md:translate-x-0">
       <div className="flex overflow-hidden rounded-lg bg-white shadow-lg">
         <input
+          aria-label="Search features"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && search()}
           placeholder="Search features..."
           className="flex-1 px-3 py-2 text-sm text-gray-700 outline-none placeholder:text-gray-400"
         />
-        <button onClick={search} className="bg-blue-600 px-3 text-white hover:bg-blue-500">
+        <button type="button" onClick={search} aria-label="Run search" className="bg-blue-600 px-3 text-white hover:bg-blue-500">
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
         </button>
       </div>
       {open && (
-        <ul className="mt-1 max-h-48 overflow-y-auto rounded-lg bg-white shadow-lg">
+        <ul role="listbox" aria-live="polite" className="mt-1 max-h-48 overflow-y-auto rounded-lg bg-white shadow-lg">
           {results.map((r) => (
             <li key={r.id}>
-              <button onClick={() => flyTo(r.lng, r.lat)} className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50">
+              <button type="button" onClick={() => flyTo(r.lng, r.lat)} className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50">
                 {r.label} <span className="text-gray-400">({r.lng.toFixed(2)}, {r.lat.toFixed(2)})</span>
               </button>
             </li>
@@ -615,11 +659,14 @@ export default function BasemapSwitcher({ map }: Props) {
   };
 
   return (
-    <div className="absolute top-4 right-4 z-10 flex gap-1 rounded-lg bg-white/95 p-1 shadow-lg backdrop-blur-sm">
+    <div className="absolute top-4 right-4 z-10 flex flex-wrap gap-1 rounded-lg bg-white/95 p-1 shadow-lg backdrop-blur-sm max-md:top-16 max-md:left-3 max-md:right-3 max-md:justify-between">
       {BASEMAPS.map((b) => (
         <button
           key={b.id}
+          type="button"
           onClick={() => switchBasemap(b.id)}
+          aria-pressed={active === b.id}
+          title={"Switch to " + b.label}
           className={\`rounded px-2.5 py-1 text-xs transition \${
             active === b.id ? "bg-blue-600 text-white" : "text-gray-600 hover:bg-gray-100"
           }\`}
@@ -683,6 +730,7 @@ export default defineConfig({
             lib: ["ES2022", "DOM", "DOM.Iterable"],
             module: "ESNext",
             moduleResolution: "bundler",
+            resolveJsonModule: true,
             jsx: "react-jsx",
             strict: true,
             esModuleInterop: true,
@@ -745,6 +793,11 @@ html, body, #root {
 `,
       },
       {
+        path: "src/vite-env.d.ts",
+        content: `/// <reference types="vite/client" />
+`,
+      },
+      {
         path: "src/main.tsx",
         content: `import React from "react";
 import ReactDOM from "react-dom/client";
@@ -760,28 +813,53 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       },
       {
         path: "src/App.tsx",
-        content: `import { useEffect, useRef, useState } from "react";
+        content: `import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import maplibregl from "maplibre-gl";
 ${componentImports}
 import mapSpec from "../map.json";
 
+type MapSpecShape = {
+  view?: { center?: [number, number]; zoom?: number };
+  sources?: Record<string, Record<string, unknown>>;
+  layers?: Array<Record<string, unknown>>;
+};
+
+type MapLoadStatus = "loading" | "ready" | "empty" | "error";
+
+function isMapSpecShape(value: unknown): value is MapSpecShape {
+  return typeof value === "object" && value !== null;
+}
+
 export default function App() {
   const mapContainer = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [map, setMap] = useState<maplibregl.Map | null>(null);
-  const spec = mapSpec as Record<string, unknown>;
+  const [spec, setSpec] = useState<MapSpecShape>(() => mapSpec as MapSpecShape);
+  const [status, setStatus] = useState<MapLoadStatus>("loading");
+  const [statusMessage, setStatusMessage] = useState("Loading map.json...");
+  const [statusDetail, setStatusDetail] = useState<string | null>(null);
+
+  const sourceCount = Object.keys(spec.sources ?? {}).length;
+  const layerCount = (spec.layers ?? []).length;
+  const hasContent = sourceCount > 0 && layerCount > 0;
 
   useEffect(() => {
-    if (!mapContainer.current || map) return;
+    if (!mapContainer.current) return;
+
+    setMap(null);
+    setStatus("loading");
+    setStatusMessage("Rendering map...");
+    setStatusDetail(null);
 
     const view = spec.view as { center?: [number, number]; zoom?: number } | undefined;
-    const m = new maplibregl.Map({
+    const nextMap = new maplibregl.Map({
       container: mapContainer.current,
       style: "https://demotiles.maplibre.org/style.json",
       center: view?.center ?? [0, 20],
       zoom: view?.zoom ?? 2,
     });
 
-    m.addControl(new maplibregl.NavigationControl(), "bottom-right");
+    nextMap.addControl(new maplibregl.NavigationControl(), "bottom-right");
 
     const syncSpecToMap = (targetMap: maplibregl.Map) => {
       const sources = (spec.sources ?? {}) as Record<string, Record<string, unknown>>;
@@ -798,20 +876,132 @@ export default function App() {
       }
     };
 
-    m.on("load", () => {
-      syncSpecToMap(m);
-      setMap(m);
+    nextMap.on("load", () => {
+      try {
+        setMap(nextMap);
+        syncSpecToMap(nextMap);
+        if (!hasContent) {
+          setStatus("empty");
+          setStatusMessage("Map loaded, but this spec does not define any sources or layers yet.");
+          setStatusDetail("Load a local map.json file or add sources and layers to the spec.");
+        } else {
+          setStatus("ready");
+          setStatusMessage("Map ready: " + sourceCount + " source(s) and " + layerCount + " layer(s).");
+          setStatusDetail(null);
+        }
+      } catch (error) {
+        setStatus("error");
+        setStatusMessage("Map rendering failed.");
+        setStatusDetail(error instanceof Error ? error.message : "The map could not finish rendering.");
+      }
     });
-    m.on("style.load", () => {
-      syncSpecToMap(m);
+    nextMap.on("error", (event) => {
+      const detail = event.error instanceof Error ? event.error.message : "The map reported a rendering error.";
+      setStatus("error");
+      setStatusMessage("Map rendering failed.");
+      setStatusDetail(detail);
     });
 
-    return () => { m.remove(); };
-  }, []);
+    return () => {
+      nextMap.remove();
+    };
+  }, [hasContent, layerCount, sourceCount, spec]);
+
+  const reloadCurrentSpec = () => {
+    setSpec((current) => structuredClone(current));
+  };
+
+  const openSpecFile = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleSpecFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) return;
+
+    setStatus("loading");
+    setStatusMessage("Loading " + file.name + "...");
+    setStatusDetail(null);
+
+    try {
+      const raw = await file.text();
+      const parsed = JSON.parse(raw) as unknown;
+      if (!isMapSpecShape(parsed)) {
+        throw new Error("The file must contain a JSON object.");
+      }
+      setSpec(parsed);
+    } catch (error) {
+      setStatus("error");
+      setStatusMessage("Could not load the selected map.json file.");
+      setStatusDetail(error instanceof Error ? error.message : "The file is not valid JSON.");
+    }
+  };
+
+  const statusLabel = status === "error" ? "Error" : status === "empty" ? "Empty" : status === "ready" ? "Ready" : "Loading";
+  const bannerTone = status === "error"
+    ? "border-red-200 bg-red-50/95"
+    : status === "empty"
+      ? "border-amber-200 bg-amber-50/95"
+      : status === "ready"
+        ? "border-emerald-200 bg-emerald-50/95"
+        : "border-slate-200 bg-white/95";
+  const badgeTone = status === "error"
+    ? "bg-red-600 text-white"
+    : status === "empty"
+      ? "bg-amber-500 text-white"
+      : status === "ready"
+        ? "bg-emerald-600 text-white"
+        : "bg-slate-900 text-white";
 
   return (
-    <div className="relative h-screen w-screen">
+    <div className="relative h-screen w-screen overflow-hidden bg-slate-950">
       <div ref={mapContainer} className="h-full w-full" />
+      <div
+        className={"absolute left-4 top-4 z-20 w-[calc(100vw-2rem)] max-w-md rounded-lg border p-3 shadow-lg backdrop-blur-sm max-md:left-3 max-md:top-auto max-md:bottom-4 max-md:w-[calc(100vw-1.5rem)] " + bannerTone}
+        role={status === "error" ? "alert" : "status"}
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-400">Generated map app</p>
+            <h1 className="truncate text-sm font-semibold text-gray-900">MapSpec workspace</h1>
+          </div>
+          <span className={"shrink-0 rounded-full px-2 py-1 text-[10px] font-medium " + badgeTone}>
+            {statusLabel}
+          </span>
+        </div>
+        <p className="mt-2 text-xs text-gray-700">{statusMessage}</p>
+        {statusDetail ? <p className="mt-1 text-xs text-gray-500">{statusDetail}</p> : null}
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={reloadCurrentSpec}
+            className="rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Reload map.json
+          </button>
+          <button
+            type="button"
+            onClick={openSpecFile}
+            className="rounded-full border border-blue-600 bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-500"
+          >
+            Load map.json
+          </button>
+        </div>
+        <p className="mt-2 text-[11px] text-gray-500">
+          Load a local map.json file or reload the current spec without refreshing the browser.
+        </p>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json,application/json"
+          className="hidden"
+          onChange={handleSpecFileChange}
+        />
+      </div>
       {map && (
         <>
 ${componentRender}

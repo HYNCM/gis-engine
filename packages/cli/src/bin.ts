@@ -9,7 +9,7 @@
  *   npx create-gis-map <project-name> [options]
  *   npx create-gis-map <project-name> --template vite-ts
  *   npx create-gis-map <project-name> --generate [--provider mock] [--prompt "..."]
- *   npx create-gis-map <project-name> --generate -p deepseek --api-key sk-xxx --timeout 30000
+ *   npx create-gis-map <project-name> --generate -p deepseek --api-key sk-xxx --timeout 20000
  *
  * Options:
  *   --template, -t   Template to use: static-html | vite-ts | mapspec (default: static-html)

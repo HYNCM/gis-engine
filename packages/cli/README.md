@@ -5,7 +5,7 @@
 CLI for scaffolding and generating GIS Engine map projects. Provides two modes: **scaffold** (default) for creating projects from templates, and **generate** (`--generate` flag) for running the full AI pipeline from a natural-language prompt to a validated MapSpec bundle.
 
 - **Package**: `@gis-engine/cli`
-- **Version**: 0.3.0
+- **Version**: 0.4.0
 - **Binary**: `create-gis-map`
 - **Repository**: [github.com/HYNCM/gis-engine](https://github.com/HYNCM/gis-engine)
 
@@ -96,7 +96,7 @@ create-gis-map <project-name> [options]
 | `--generate` | `-g` | Run the AI generate pipeline instead of scaffolding | `false` |
 | `--prompt <text>` | | Prompt text for generate mode | (built-in default) |
 | `--api-key <key>` | | API key for OpenAI-compatible providers. Overrides provider-specific env vars (`DEEPSEEK_API_KEY`, `OPENAI_API_KEY`). | (from env) |
-| `--timeout <ms>` | | HTTP request timeout in milliseconds for provider API calls | `30000` |
+| `--timeout <ms>` | | HTTP request timeout in milliseconds for provider API calls | `20000` |
 | `--yes` | `-y` | Skip directory-exists check (overwrite). Also accepts `--force`. | `false` |
 | `--dry-run` | | Preview files without writing | `false` |
 | `--help` | `-h` | Show help message | |
@@ -224,7 +224,7 @@ Create `~/.gis-engine/config.json` to set defaults that persist across invocatio
   "model": "deepseek-chat",
   "baseUrl": "https://api.deepseek.com/v1",
   "apiKey": "sk-xxx",
-  "timeout": 30000
+  "timeout": 20000
 }
 ```
 
@@ -274,7 +274,7 @@ Generated files:
 
 ### app
 
-Full interactive map application (Vite + React + Tailwind). Use this with `--generate -t app` to pair the generated MapSpec with a starter app shell.
+Full interactive map application (Vite + React + Tailwind). Use this with `--generate -t app` to pair the generated MapSpec with a starter app shell that includes responsive controls, loading/empty/error states, and local `map.json` reload/upload buttons.
 
 Generated files:
 
@@ -287,8 +287,9 @@ Generated files:
 | `postcss.config.js` | PostCSS config with Tailwind and autoprefixer. |
 | `index.html` | Root HTML file mounting the React app. |
 | `src/index.css` | Tailwind entry plus MapLibre GL CSS import. |
+| `src/vite-env.d.ts` | Vite client typings for JSON, CSS, and asset imports. |
 | `src/main.tsx` | React root that renders the generated app. |
-| `src/App.tsx` | Map container that mounts the generated spec and UI components. |
+| `src/App.tsx` | Map container, status banner, and local `map.json` reload/upload flow that mounts the generated spec and UI components. |
 | `src/components/*.tsx` | LayerPanel, FeaturePopup, Legend, SearchBox, and BasemapSwitcher, emitted according to the app config. |
 | `map.json` | Starter MapSpec placeholder when scaffolding outside the AI pipeline. |
 | `README.md` | Project readme with app type, component list, and usage instructions. |
@@ -297,7 +298,7 @@ Generated files:
 
 ## Generate Pipeline
 
-The `--generate` flag activates the full AI generate pipeline. It transforms a prompt into a validated MapSpec with a complete evidence trail. When the provider infers an app type from the prompt, the pipeline emits the interactive Vite + React + Tailwind scaffold around the generated MapSpec; `--template app` forces the same scaffold explicitly.
+The `--generate` flag activates the full AI generate pipeline. It transforms a prompt into a validated MapSpec with a complete evidence trail. When the provider infers an app type from the prompt, the pipeline emits the interactive Vite + React + Tailwind scaffold around the generated MapSpec; `--template app` forces the same scaffold explicitly and includes the responsive status/load surface for empty, error, reload, and local file-import flows.
 
 ### Pipeline Steps
 

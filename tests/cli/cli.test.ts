@@ -446,6 +446,7 @@ describe("cli-templates", () => {
     expect(paths).toContain("src/main.tsx");
     expect(paths).toContain("src/App.tsx");
     expect(paths).toContain("src/index.css");
+    expect(paths).toContain("src/vite-env.d.ts");
     expect(paths).toContain("map.json");
     expect(paths).toContain("README.md");
   });
@@ -554,9 +555,37 @@ describe("cli-templates", () => {
     expect(appFile.content).toContain('import SearchBox from "./components/SearchBox"');
     expect(appFile.content).toContain('import BasemapSwitcher from "./components/BasemapSwitcher"');
     expect(appFile.content).toContain('const syncSpecToMap =');
-    expect(appFile.content).toContain('m.on("style.load"');
+    expect(appFile.content).toContain('nextMap.on("load"');
+    expect(appFile.content).toContain('nextMap.on("error"');
+    expect(appFile.content).toContain('setStatus("loading")');
     expect(appFile.content).toContain('targetMap.addSource');
     expect(appFile.content).toContain('targetMap.addLayer');
+  });
+
+  it("app template exposes loading, reload, and responsive control states", () => {
+    const tpl = getTemplate("app")!;
+    const ctx = { projectName: "test-app", provider: "mock", cliVersion: "0.4.0" };
+    const files = tpl.generate(ctx);
+    const appFile = files.find((f) => f.path === "src/App.tsx")!;
+    const layerPanel = files.find((f) => f.path === "src/components/LayerPanel.tsx")!;
+    const legend = files.find((f) => f.path === "src/components/Legend.tsx")!;
+    const searchBox = files.find((f) => f.path === "src/components/SearchBox.tsx")!;
+    const basemapSwitcher = files.find((f) => f.path === "src/components/BasemapSwitcher.tsx")!;
+
+    expect(appFile.content).toContain('type MapLoadStatus = "loading" | "ready" | "empty" | "error";');
+    expect(appFile.content).toContain('Reload map.json');
+    expect(appFile.content).toContain('Load map.json');
+    expect(appFile.content).toContain('Could not load the selected map.json file.');
+    expect(appFile.content).toContain('aria-live="polite"');
+    expect(appFile.content).toContain('accept=".json,application/json"');
+
+    expect(layerPanel.content).toContain("No layers in this spec yet.");
+    expect(layerPanel.content).toContain("max-md:top-32");
+    expect(legend.content).toContain("No visible layers yet.");
+    expect(searchBox.content).toContain('aria-label="Search features"');
+    expect(searchBox.content).toContain('type="button"');
+    expect(basemapSwitcher.content).toContain('aria-pressed={active === b.id}');
+    expect(basemapSwitcher.content).toContain("max-md:top-16");
   });
 });
 
