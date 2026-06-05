@@ -355,14 +355,22 @@ function renderSourcePromotionCandidates(candidates) {
       meta.textContent = `${candidate.candidateId} / ${sourceIds}`;
       const resourcePolicy = document.createElement("p");
       resourcePolicy.textContent = `Resource policy: ${candidate.resourcePolicy ?? "not-checked"}`;
-      const archiveContract = document.createElement("p");
-      const archiveSummary = candidate.archiveContract
-        ? `${candidate.archiveContract.state} / ${candidate.archiveContract.metadataFields?.length ?? 0} metadata fields / ${candidate.archiveContract.policyFields?.length ?? 0} policy fields`
-        : "not-checked";
-      archiveContract.textContent = `Archive contract: ${archiveSummary}`;
       const details = document.createElement("p");
       details.textContent = `${candidate.target} — ${candidate.exitCondition}`;
-      article.append(title, meta, resourcePolicy, archiveContract, details);
+      const contractDetails = [];
+      if (candidate.sourceContract) {
+        const sourceContract = document.createElement("p");
+        const sourceContractSummary = `${candidate.sourceContract.kind} / ${candidate.sourceContract.state} / ${candidate.sourceContract.metadataFields?.length ?? 0} metadata fields / ${candidate.sourceContract.policyFields?.length ?? 0} policy fields`;
+        sourceContract.textContent = `Source contract: ${sourceContractSummary}`;
+        contractDetails.push(sourceContract);
+      }
+      if (candidate.archiveContract) {
+        const archiveContract = document.createElement("p");
+        const archiveSummary = `${candidate.archiveContract.state} / ${candidate.archiveContract.metadataFields?.length ?? 0} metadata fields / ${candidate.archiveContract.policyFields?.length ?? 0} policy fields`;
+        archiveContract.textContent = `Archive contract: ${archiveSummary}`;
+        contractDetails.push(archiveContract);
+      }
+      article.append(title, meta, resourcePolicy, ...contractDetails, details);
       return article;
     })
   );

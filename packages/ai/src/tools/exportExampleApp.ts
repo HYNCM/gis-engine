@@ -50,6 +50,23 @@ const SourceArchiveContractSchema = {
   additionalProperties: false
 } as const;
 
+const SourceContractKindSchema = {
+  type: "string",
+  enum: ["archive", "schema"]
+} as const;
+
+const SourceContractSchema = {
+  type: "object",
+  properties: {
+    kind: SourceContractKindSchema,
+    state: SourceArchiveContractStateSchema,
+    metadataFields: { type: "array", items: { type: "string" } },
+    policyFields: { type: "array", items: { type: "string" } }
+  },
+  required: ["kind", "state", "metadataFields", "policyFields"],
+  additionalProperties: false
+} as const;
+
 const SourcePromotionCandidateFormatSchema = {
   type: "string",
   enum: ["pmtiles", "geoparquet", "flatgeobuf", "geotiff", "geozarr"]
@@ -155,6 +172,7 @@ export const ExampleAppDeliverySummarySchema = {
             enum: ["passed", "blocked", "not-applicable", "not-checked"]
           },
           archiveContract: SourceArchiveContractSchema,
+          sourceContract: SourceContractSchema,
           confirmationReasons: {
             type: "array",
             items: DeliveryConfirmationReasonSchema
@@ -178,6 +196,7 @@ export const ExampleAppDeliverySummarySchema = {
             enum: ["passed", "blocked", "not-applicable", "not-checked"]
           },
           archiveContract: SourceArchiveContractSchema,
+          sourceContract: SourceContractSchema,
           target: { type: "string" },
           exitCondition: { type: "string" },
           sourceIds: { type: "array", items: { type: "string" } },
@@ -520,6 +539,12 @@ export interface ExampleAppDeliverySummary {
       metadataFields: string[];
       policyFields: string[];
     };
+    sourceContract?: {
+      kind: "archive" | "schema";
+      state: "explicit" | "not-applicable" | "not-checked";
+      metadataFields: string[];
+      policyFields: string[];
+    };
     confirmationReasons: Array<"external-resource" | "network-fetch" | "archive-parsing" | "worker-use" | "file-write" | "stable-scene3d-runtime">;
     notes: string[];
   }>;
@@ -529,6 +554,12 @@ export interface ExampleAppDeliverySummary {
     state: "supported" | "readiness-only" | "blocked";
     resourcePolicy?: "passed" | "blocked" | "not-applicable" | "not-checked";
     archiveContract?: {
+      state: "explicit" | "not-applicable" | "not-checked";
+      metadataFields: string[];
+      policyFields: string[];
+    };
+    sourceContract?: {
+      kind: "archive" | "schema";
       state: "explicit" | "not-applicable" | "not-checked";
       metadataFields: string[];
       policyFields: string[];

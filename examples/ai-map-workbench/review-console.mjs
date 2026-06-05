@@ -34,6 +34,21 @@ const PMTILES_ARCHIVE_CONTRACT = {
   policyFields: ["maxArchiveBytes", "maxRootDirectoryBytes", "allowRangeRequests", "maxRangeSegments", "timeoutMs"]
 };
 
+const SOURCE_CONTRACT_DEFINITIONS = {
+  geoparquet: {
+    kind: "schema",
+    state: "explicit",
+    metadataFields: ["type", "url", "crs", "encoding", "bbox", "rowCount", "fileBytes", "parquetVersion"],
+    policyFields: ["maxFileBytes", "maxRowCount", "allowRemoteUrls", "timeoutMs", "workerBudget"]
+  },
+  flatgeobuf: {
+    kind: "schema",
+    state: "explicit",
+    metadataFields: ["type", "url", "hasIndex", "featureCount", "bbox", "geometryType", "fileBytes"],
+    policyFields: ["maxFileBytes", "maxFeatureCount", "allowRangeRequests", "indexRequired", "timeoutMs"]
+  }
+};
+
 /**
  * Compute review console state from a compact generation evidence payload.
  * @param {object} evidence - compact generation evidence (as returned by /api/chat)
@@ -50,6 +65,8 @@ export function computeReviewConsoleState(evidence) {
   }
 
   const sections = REVIEW_SECTION_IDS.map(id => computeSectionState(id, evidence));
+  const sourceReadiness = normalizeSourceReadinessEntries(delivery.sourceReadiness ?? []);
+  const sourcePromotionCandidates = computeSourcePromotionCandidates(delivery, sourceReadiness);
   const acceptance = computeOverallAcceptance(sections, delivery);
 
   return {
@@ -57,8 +74,8 @@ export function computeReviewConsoleState(evidence) {
     acceptance,
     deliveryStatus: delivery.status ?? "blocked",
     sections,
-    sourceReadiness: delivery.sourceReadiness ?? [],
-    sourcePromotionCandidates: computeSourcePromotionCandidates(delivery),
+    sourceReadiness,
+    sourcePromotionCandidates,
     confirmations: delivery.confirmations ?? [],
     followUps: delivery.followUps ?? [],
     diagnosticCounts: evidence.diagnostics ? {
@@ -160,6 +177,7 @@ function computeDataSourceSection(evidence) {
       state: s.state,
       queryReady: s.queryReady ?? false,
       resourcePolicy: s.resourcePolicy ?? "not-checked",
+      ...(s.sourceContract ? { sourceContract: s.sourceContract } : {}),
       ...(s.archiveContract ? { archiveContract: s.archiveContract } : {})
     })),
     promotionCandidates: sourcePromotionCandidates.map(candidate => ({
@@ -167,6 +185,7 @@ function computeDataSourceSection(evidence) {
       format: candidate.format,
       state: candidate.state,
       resourcePolicy: candidate.resourcePolicy ?? "not-checked",
+      ...(candidate.sourceContract ? { sourceContract: candidate.sourceContract } : {}),
       ...(candidate.archiveContract ? { archiveContract: candidate.archiveContract } : {}),
       target: candidate.target,
       exitCondition: candidate.exitCondition,
@@ -188,10 +207,7 @@ function normalizeSourceReadinessEntries(sourceReadiness) {
     state: source.state ?? "blocked",
     queryReady: source.queryReady ?? false,
     resourcePolicy: source.resourcePolicy ?? "not-checked",
-    ...(() => {
-      const archiveContract = source.archiveContract ?? ((source.format ?? source.type) === "pmtiles" ? PMTILES_ARCHIVE_CONTRACT : undefined);
-      return archiveContract ? { archiveContract } : {};
-    })(),
+    ...buildContractFields(source.format ?? source.type, source.archiveContract, source.sourceContract),
     notes: Array.isArray(source.notes) ? source.notes : []
   }));
 }
@@ -202,10 +218,11 @@ function computeSourcePromotionCandidates(delivery, sourceReadiness = normalizeS
     return explicitCandidates.map(candidate => ({
       ...candidate,
       resourcePolicy: candidate.resourcePolicy ?? sourceReadiness.find((source) => source.sourceId === candidate.sourceIds?.[0])?.resourcePolicy ?? "not-checked",
-      ...(() => {
-        const archiveContract = candidate.archiveContract ?? sourceReadiness.find((source) => source.sourceId === candidate.sourceIds?.[0])?.archiveContract;
-        return archiveContract ? { archiveContract } : {};
-      })()
+      ...buildContractFields(
+        candidate.format,
+        candidate.archiveContract ?? sourceReadiness.find((source) => source.sourceId === candidate.sourceIds?.[0])?.archiveContract,
+        candidate.sourceContract ?? sourceReadiness.find((source) => source.sourceId === candidate.sourceIds?.[0])?.sourceContract
+      )
     }));
   }
 
@@ -219,13 +236,26 @@ function computeSourcePromotionCandidates(delivery, sourceReadiness = normalizeS
       format: source.format,
       state: source.state,
       resourcePolicy: source.resourcePolicy ?? "not-checked",
-      ...(source.archiveContract ? { archiveContract: source.archiveContract } : {}),
+      ...buildContractFields(source.format, source.archiveContract, source.sourceContract),
       target: definition.target,
       exitCondition: definition.exitCondition,
       sourceIds: [source.sourceId],
       notes: [...source.notes, definition.note]
     }];
   });
+}
+
+function buildContractFields(format, archiveContract, sourceContract) {
+  const resolvedArchiveContract = archiveContract ?? (format === "pmtiles" ? PMTILES_ARCHIVE_CONTRACT : undefined);
+  const resolvedSourceContract = sourceContract ?? inferSourceContract(format);
+  return {
+    ...(resolvedSourceContract ? { sourceContract: resolvedSourceContract } : {}),
+    ...(resolvedArchiveContract ? { archiveContract: resolvedArchiveContract } : {})
+  };
+}
+
+function inferSourceContract(format) {
+  return SOURCE_CONTRACT_DEFINITIONS[format] ?? undefined;
 }
 
 const SOURCE_PROMOTION_CANDIDATE_DEFINITIONS = {

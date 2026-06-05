@@ -33,10 +33,14 @@ describe("QA Matrix: Prompt-to-Delivery scenarios", () => {
 
       expect(result.acceptance).toBe("blocked");
       expect(result.deliveryStatus).toBe("blocked");
+      expect(result.sourceReadiness[0].sourceContract?.kind).toBe("schema");
+      expect(result.sourcePromotionCandidates.some((candidate: { format: string; sourceContract?: { kind: string } }) => candidate.format === "geoparquet" && candidate.sourceContract?.kind === "schema")).toBe(true);
 
       const dataSection = result.sections.find((s: { id: string }) => s.id === "data-and-sources");
       expect(dataSection?.state).toBe("blocked");
       expect(dataSection?.sources?.some((s: { state: string }) => s.state === "blocked")).toBe(true);
+      expect(dataSection?.sources?.some((s: { format: string; sourceContract?: { kind: string } }) => s.format === "geoparquet" && s.sourceContract?.kind === "schema")).toBe(true);
+      expect(dataSection?.promotionCandidates?.some((candidate: { format: string; sourceContract?: { kind: string } }) => candidate.format === "geoparquet" && candidate.sourceContract?.kind === "schema")).toBe(true);
       expect(result.diagnosticCounts.errors).toBeGreaterThan(0);
     });
   });

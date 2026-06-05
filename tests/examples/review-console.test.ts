@@ -20,9 +20,40 @@ describe("review-console contract", () => {
     const result = computeReviewConsoleState(blockedFixture);
     expect(result.acceptance).toBe("blocked");
     expect(result.deliveryStatus).toBe("blocked");
+    expect(result.sourceReadiness[0].sourceContract).toMatchObject({
+      kind: "schema",
+      state: "explicit"
+    });
+    expect(result.sourcePromotionCandidates).toContainEqual(
+      expect.objectContaining({
+        candidateId: "source-promotion.geoparquet.parquet-data",
+        format: "geoparquet",
+        sourceContract: expect.objectContaining({
+          kind: "schema",
+          state: "explicit"
+        })
+      })
+    );
     const dataSection = result.sections.find(s => s.id === "data-and-sources");
     expect(dataSection?.state).toBe("blocked");
     expect(dataSection?.sources?.[0].format).toBe("geoparquet");
+    expect(dataSection?.sources?.[0].sourceContract).toMatchObject({
+      kind: "schema",
+      state: "explicit",
+      metadataFields: expect.arrayContaining(["type", "url", "crs", "encoding"]),
+      policyFields: expect.arrayContaining(["maxFileBytes", "timeoutMs"])
+    });
+    expect(dataSection?.promotionCandidates).toContainEqual(
+      expect.objectContaining({
+        id: "source-promotion.geoparquet.parquet-data",
+        format: "geoparquet",
+        state: "blocked",
+        sourceContract: expect.objectContaining({
+          kind: "schema",
+          state: "explicit"
+        })
+      })
+    );
   });
 
   it("computes needs-confirmation when confirmations exist", () => {
