@@ -1,9 +1,11 @@
 ---
-agent: competitive-intel
-period: 2026-W22
-generated_at: 2026-05-30T19:16:41Z
-repo_revision: "8609e5f"
+agent: product
+period: 2026-W24
+generated_at: 2026-06-05T13:05:41Z
+repo_revision: "4012f51"
 inputs:
+  - docs/research/competitor-updates-2026-W24.md
+  - docs/research/capability-scorecard-w24-refresh.md
   - docs/research/competitor-updates-2026-W22.md
   - docs/planning/sprint-2026-W23-ai-map-app-generation.md
   - docs/reviews/nla-002-generation-command-contract-2026-05-29.md
@@ -12,23 +14,23 @@ inputs:
   - docs/reviews/nla-008-serialized-planning-handoff-2026-05-29.md
   - docs/reviews/nlq-007-serialized-quality-hardening-planning-2026-05-29.md
   - docs/planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md
-owner: "@competitive-intel"
+owner: "@product"
 decision_level: advisory
 ---
 
 # Capability Scorecard
 
-Scores are advisory product signals, not release approvals. Every external
-benchmark below was refreshed on 2026-05-31 from official sources recorded in
-`competitor-updates-2026-W22.md`.
+Scores are advisory product signals, not release approvals. The current
+external benchmark was refreshed on 2026-06-05 from npm metadata and official
+sources recorded in `competitor-updates-2026-W24.md`.
 
 | Dimension | GIS Engine Score | Current External Benchmark | Evidence Note | Confidence |
 | --- | ---: | --- | --- | --- |
-| AI operability | 9.5/10 | ArcGIS AI components; MCP tools and structured-output schema contracts | GIS Engine now has prompt planning schemas, planner provenance, explicit point/bbox query capability gates, invalid/source diagnostics, result caps, generated-app manifest evidence, `delivery.spatialQueryReadiness`, scene-browsing blocker visibility, release wording guardrails, `capabilitySummary`, command-only generation, MCP output schemas, diagnostics, and prompt QA scenarios. The open gap is future source/geoprocessing promotion, not the evidence spine. | high |
-| 2D performance | 6.5/10 | MapLibre v5/v6 drift; Mapbox style spec and PMTiles examples | Generic vector sources, PMTiles-compatible URL policy, MapLibre transformation, and visual/smoke evidence exist. The next score bump requires a version-drift audit and generated-style compatibility checks before dependency movement. | high |
-| 3D readiness | 5.4/10 | CesiumJS, Three.js, 3DTilesRendererJS, deck.gl WebGPU/3D Tiles movement | SceneView3D has adapter contract, dependency boundary, lifecycle, snapshot/query, browser evidence, release-gate rules, and SRC-006 No-go. This remains evidence readiness, not stable runtime support. | high |
-| Developer experience | 8.0/10 | ArcGIS natural-language map UX; Mapbox/MapLibre examples; ECharts option-first visualization | Generated-app evidence now carries compact manifest summaries, delivery status, spatial-query readiness, source-readiness boundaries, confirmation boundaries, follow-up tasks, scene-browsing blockers, and docs wording guardrails. The next gap is renderer/source drift audit before any dependency or cloud-native promotion. | medium |
-| Ecosystem and data readiness | 7.0/10 | PMTiles v3, GeoParquet 1.1, FlatGeobuf range access, OpenLayers GeoZarr/GeoTIFF | GIS Engine has resource policy, portable vector-source foundations, and a cloud-native readiness matrix. GeoParquet/FlatGeobuf/GeoZarr remain blocked until schema/resource-policy/runtime contracts exist. | high |
+| AI operability | 9.6/10 | ArcGIS AI components; MCP tools and structured-output schema contracts | GIS Engine now has prompt planning schemas, planner provenance, explicit point/bbox query capability gates, invalid/source diagnostics, result caps, generated-app manifest evidence, `delivery.spatialQueryReadiness`, scene-browsing blocker visibility, release wording guardrails, `capabilitySummary`, command-only generation, MCP output schemas, diagnostics, prompt QA scenarios, and a structured review-console state contract. The open gap is future source/geoprocessing promotion, not the evidence spine. | high |
+| 2D performance | 6.6/10 | MapLibre v5/v6 drift; Mapbox style spec and PMTiles examples | Generic vector sources, PMTiles-compatible URL policy, MapLibre transformation, visual/smoke evidence, strict 3-scene maintenance, and a perf trend harness exist. The next score bump requires repeated trend data and a separate package-movement gate. | medium |
+| 3D readiness | 5.4/10 | CesiumJS, Three.js, 3DTilesRendererJS, deck.gl WebGPU/3D Tiles movement | SceneView3D has adapter contract, dependency boundary, lifecycle, snapshot/query, browser evidence, release-gate rules, and SRC-006 No-go. Cesium package movement is an ecosystem signal only; this remains evidence readiness, not stable runtime support. | high |
+| Developer experience | 8.2/10 | ArcGIS natural-language map UX; Mapbox/MapLibre examples; ECharts option-first visualization | Generated-app evidence now carries compact manifest summaries, delivery status, spatial-query readiness, source-readiness boundaries, confirmation boundaries, follow-up tasks, scene-browsing blockers, docs wording guardrails, review-console sections, and prompt-to-delivery QA fixtures. The next gap is release-grade browser acceptance and sustained perf/visual evidence. | high |
+| Ecosystem and data readiness | 7.2/10 | PMTiles v3, GeoParquet 1.1, FlatGeobuf range access, OpenLayers GeoZarr/GeoTIFF | GIS Engine has resource policy, portable vector-source foundations, a cloud-native readiness matrix, and W24 PMTiles/GeoParquet/FlatGeobuf metadata-policy contracts. Runtime parsers, workers, hidden IO, and cloud-native feature queries remain blocked. | high |
 
 ## W22 Delta
 
@@ -240,3 +242,23 @@ benchmark below was refreshed on 2026-05-31 from official sources recorded in
 - Future score movement requires a new product-app promotion task with runtime
   ownership, durable storage/auth/export scope, and release-grade visual
   evidence.
+
+## 2026-06-05 W24 Refresh Addendum
+
+- AI operability rises from 9.5 to 9.6 because the W24 review-console contract
+  and QA matrix fixtures make generated-app acceptance states inspectable from
+  structured evidence. This does not add MCP tool names or new mutation paths.
+- 2D performance rises from 6.5 to 6.6 because W24 adds strict visual
+  maintenance and a perf trend harness, but it does not include MapLibre
+  package movement or sustained two-week trend evidence.
+- 3D readiness stays at 5.4. `cesium` moved to `1.142.0`, but SceneView3D
+  stable runtime remains blocked after SRC-006 and W24 adds no accepted stable
+  renderer promotion evidence.
+- Developer experience rises from 8.0 to 8.2 because the local review-console
+  state contract and prompt-to-delivery QA cards reduce the previous
+  document/test-centric review gap without promoting AI Map Workbench to a
+  hosted product.
+- Ecosystem/data readiness rises from 7.0 to 7.2 because PMTiles archive
+  metadata, GeoParquet schema, and FlatGeobuf policy validation are now
+  explicit contracts with tests. Runtime parsers, range IO, workers, hidden
+  fetches, and cloud-native feature queries remain blocked.

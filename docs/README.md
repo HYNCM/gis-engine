@@ -3,8 +3,8 @@
 This page separates current operating docs from dated evidence so the active
 tree stays readable.
 
-> **Last cleanup**: 2026-06-05 — added the next-stage planning snapshot and
-> aligned planning indexes with the W24 review-console/productization queue.
+> **Last cleanup**: 2026-06-05 — reconciled W24 planning ledgers with current
+> implementation state and refreshed product research evidence.
 
 ## Read This First
 
@@ -39,7 +39,7 @@ of rewriting them to sound timeless.
 | Reviews and gates | [reviews/REPORT_INDEX.md](./reviews/REPORT_INDEX.md) | Review streams, rolling audits, retention rules. |
 | Planning snapshots | [planning/next-stage-goals-2026-06-05.md](./planning/next-stage-goals-2026-06-05.md), [planning/monthly-roadmap.md](./planning/monthly-roadmap.md), [planning/weekly-digest.md](./planning/weekly-digest.md), [planning/issues-snapshot.md](./planning/issues-snapshot.md), [planning/task-burndown.md](./planning/task-burndown.md), [planning/dependency-graph.md](./planning/dependency-graph.md) | GitHub Issues become the canonical task state when available; markdown files are generated or approved snapshots. |
 | Sprint plans | [planning/](./planning/) | `sprint-*` and many `feature-specs/*` files are bounded planning artifacts. |
-| Research | [research/capability-scorecard.md](./research/capability-scorecard.md), [research/competitor-updates-2026-W23.md](./research/competitor-updates-2026-W23.md) | Dated external evidence; do not treat as current unless refreshed in-run. |
+| Research | [research/capability-scorecard.md](./research/capability-scorecard.md), [research/capability-scorecard-w24-refresh.md](./research/capability-scorecard-w24-refresh.md), [research/competitor-updates-2026-W24.md](./research/competitor-updates-2026-W24.md), [research/competitor-updates-2026-W23.md](./research/competitor-updates-2026-W23.md) | W24 is the current refreshed product evidence; older research remains dated history. |
 | Automation health | [planning/AGENT_HEALTH_DASHBOARD.md](./planning/AGENT_HEALTH_DASHBOARD.md), [planning/handoff-ledger.json](./planning/handoff-ledger.json) | Generated dashboard for current report freshness and HOC-N1/N2/N3 consumption state. |
 
 ## Legacy Naming Note

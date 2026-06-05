@@ -1,11 +1,13 @@
 ---
 agent: orchestrator
-period: 2026-W23
-generated_at: 2026-06-05T11:57:46Z
-repo_revision: "270a8d3c502816fc2c79177ffb3a1d9fbabc97ae"
+period: 2026-W24
+generated_at: 2026-06-05T13:05:41Z
+repo_revision: "4012f51"
 inputs:
   - AGENTS.md
   - docs/planning/next-stage-goals-2026-06-05.md
+  - docs/research/competitor-updates-2026-W24.md
+  - docs/research/capability-scorecard-w24-refresh.md
   - docs/research/competitor-updates-2026-W23.md
   - docs/reviews/quality-gate-2026-06-03.md
   - docs/reviews/quality-gate-2026-06-04.md
@@ -26,7 +28,52 @@ owner: "@orchestrator"
 decision_level: advisory
 ---
 
-# Weekly Digest: 2026-W23
+# Weekly Digest: 2026-W24
+
+## 2026-06-05 W24 Planning Ledger Reconciliation
+
+The W24 placeholder queue has been reconciled against current repo revision
+`4012f51` and refreshed product evidence from
+`docs/research/competitor-updates-2026-W24.md`.
+
+Accepted reconciliation state:
+
+- `TASK-2026W24-RCU-001` through `RCU-003` are implemented and pending quality
+  acceptance. Evidence lives in `examples/ai-map-workbench/review-console.mjs`,
+  `examples/ai-map-workbench/server.mjs`, review-console fixtures, QA matrix
+  tests, and workbench-hardening tests.
+- `TASK-2026W24-CNS-001` through `CNS-003` are implemented and pending quality
+  acceptance as metadata/resource-policy contracts. They do not add runtime
+  parsers, hidden fetches, workers, or cloud-native feature queries.
+- `TASK-2026W24-VPE-001` and `VPE-003` are implemented and pending quality
+  acceptance through strict-scene and app-template visual tests.
+- `TASK-2026W24-VPE-002` has a perf trend harness, but the two-week trend
+  evidence remains backlog/ongoing evidence.
+- `TASK-2026W24-PRD-001` and `PRD-002` are complete at the product-document
+  level through the W24 competitor update and scorecard refresh.
+- `TASK-2026W24-EVO-001` through `EVO-003` have ledger entries, but those
+  entries remain pending evidence audit until current gate results are recorded.
+
+Next quality action:
+
+| Scope | Status | Required acceptance evidence |
+| --- | --- | --- |
+| RCU | implemented / pending quality acceptance | focused example tests, browser smoke, `pnpm check`, docs link audit |
+| CNS | implemented / pending quality acceptance | `pnpm build:schema`, resource/schema tests, `pnpm check` |
+| VPE-001/VPE-003 | implemented / pending quality acceptance | strict/app-template visual tests plus required visual gate or waiver |
+| VPE-002 | harness implemented / trend backlog | repeated nightly/release trend artifacts |
+| PRD | done / consumed by orchestrator | W24 source URLs, npm command evidence, scorecard refresh |
+
+Validation evidence captured during reconciliation:
+
+| Command | Result | Notes |
+| --- | --- | --- |
+| `node scripts/doc-generator.mjs links` | pass | regenerated `docs/reviews/doc-link-audit.md` |
+| `pnpm test:docs` | pass | docs guardrail tests passed |
+| `pnpm test:qa-matrix` | pass | prompt-to-delivery QA matrix passed |
+| focused W24 vitest suites | pass | review-console, workbench-hardening, cloud-native policy, resource release, strict visual maintenance, app-template visual, and perf trend suites passed |
+| `pnpm build:schema` | pass | engine/scene3d/ai schema/build gate passed |
+| `pnpm check` | pass after non-sandbox rerun | sandbox run was blocked by `listen EPERM 127.0.0.1`; the same command passed with listener-capable permissions |
 
 ## 2026-06-05 Next-Stage Goal Calibration
 
@@ -45,21 +92,22 @@ Accepted planning state:
   promotion stay No-go.
 - PMTiles archive metadata and GeoParquet schema work may start only as
   schema/resource-policy/diagnostic contracts before parser/runtime claims.
-- `@product` has an SLA breach in the generated dashboard, so W24 competitor
-  evidence and the scorecard must be refreshed by 2026-06-08 before being used
-  as current roadmap evidence.
+- The prior `@product` SLA breach is repaired at document level by the W24
+  competitor update and scorecard refresh; current roadmap evidence should use
+  W24, not W23, source dates.
 
-Next W24 queue:
+Reconciled W24 queue:
 
 | id | Priority | Owner | Status | Target artifact | Exit condition |
 | --- | --- | --- | --- | --- | --- |
-| TASK-2026W24-RCU-001 | P0 | `@builder` + `@quality` + `@docs` | queued | review-console UI over the five-section delivery schema | Browser-rendered review sections without new MCP tools or direct `MapSpec` mutation |
-| TASK-2026W24-RCU-002 | P0 | `@builder` + `@quality` | queued | prompt-to-delivery QA matrix UI | Clickable deterministic cards for ready, blocked, needs-confirmation, and follow-up-required scenarios |
-| TASK-2026W24-RCU-003 | P0 | `@builder` + `@quality` + `@docs` | queued | AI Map Workbench local-hardening delta | review actions, durable audit contract, and credential safety remain local/example-scoped |
-| TASK-2026W24-CNS-001 through CNS-003 | P1 | `@builder` + `@quality` + `@docs` | queued | PMTiles, GeoParquet, and resource-policy source contracts | TypeBox, resource-policy, diagnostics, and smoke evidence land before runtime/parser claims |
-| TASK-2026W24-VPE-001 through VPE-003 | P1 | `@builder` + `@quality` | queued | strict visual, nightly perf, and app-template visual evidence | release-capable scenes and trend evidence are maintained or explicitly waived |
-| TASK-2026W24-EVO-001 through EVO-003 | P2 | `@orchestrator` + `@quality` + `@docs` | queued | D1/D3/D4 evolution metrics | W24 estimates, gate trends, patterns, and pitfalls are recorded |
-| TASK-2026W24-PRD-001 through PRD-002 | P1 | `@product` + `@orchestrator` | queued | W24 competitor update and scorecard | official/npm/source checks and five-dimension scorecard refreshed with checked dates |
+| TASK-2026W24-RCU-001 | P0 | `@builder` + `@quality` + `@docs` | implemented / pending quality acceptance | review-console UI over six delivery sections | Browser-rendered review sections without new MCP tools or direct `MapSpec` mutation |
+| TASK-2026W24-RCU-002 | P0 | `@builder` + `@quality` | implemented / pending quality acceptance | prompt-to-delivery QA matrix UI | Deterministic cards for ready, blocked, needs-confirmation, and follow-up-required scenarios |
+| TASK-2026W24-RCU-003 | P0 | `@builder` + `@quality` + `@docs` | implemented / pending quality acceptance | AI Map Workbench local-hardening delta | review actions, durable audit contract, and credential safety remain local/example-scoped |
+| TASK-2026W24-CNS-001 through CNS-003 | P1 | `@builder` + `@quality` + `@docs` | implemented / pending quality acceptance | PMTiles, GeoParquet, FlatGeobuf, and resource-policy source contracts | TypeBox, resource-policy, diagnostics, and smoke evidence land before runtime/parser claims |
+| TASK-2026W24-VPE-001 and VPE-003 | P1 | `@builder` + `@quality` | implemented / pending quality acceptance | strict visual and app-template visual evidence | release-capable scenes are maintained or explicitly waived |
+| TASK-2026W24-VPE-002 | P1 | `@builder` + `@quality` | harness implemented / trend backlog | nightly perf trend ledger | repeated trend evidence is accumulated before Done |
+| TASK-2026W24-EVO-001 through EVO-003 | P2 | `@orchestrator` + `@quality` + `@docs` | ledger populated / pending evidence audit | D1/D3/D4 evolution metrics | W24 estimates, gate trends, patterns, and pitfalls are tied to gate evidence |
+| TASK-2026W24-PRD-001 through PRD-002 | P1 | `@product` + `@orchestrator` | done / consumed | W24 competitor update and scorecard | official/npm/source checks and five-dimension scorecard refreshed with checked dates |
 
 ## 2026-06-04 Orchestrator Refresh
 

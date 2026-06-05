@@ -1,12 +1,14 @@
 ---
-agent: coordinator
-period: 2026-W22
-generated_at: 2026-05-30T00:00:00Z
-repo_revision: "unknown"
+agent: orchestrator
+period: 2026-W24
+generated_at: 2026-06-05T13:05:41Z
+repo_revision: "4012f51"
 inputs:
   - AGENTS.md
   - docs/planning/evolution-framework.md
-owner: "@coordinator (evolution-guardian)"
+  - docs/planning/task-burndown.md
+  - docs/planning/weekly-digest.md
+owner: "@orchestrator (evolution-guardian)"
 decision_level: advisory
 ---
 
@@ -135,6 +137,10 @@ W23 实际分布（来自 sprint-2026-W23-ai-map-app-generation）：
 
 ### 2026-W24（2026-06-02 ~ 2026-06-08）
 
+> 2026-06-05 reconciliation: the entries below are implementation-time
+> ledger values from `4012f51`. They must remain tied to current gate evidence
+> before sprint closure. Do not use this section alone as a quality pass.
+
 #### D1：估算准确度
 
 | 任务 | Complexity | Estimated | Actual | 偏差率 |
@@ -149,16 +155,16 @@ W23 实际分布（来自 sprint-2026-W23-ai-map-app-generation）：
 | TASK-2026W24-VPE-002 | S | 4h | 1h | 0.75 |
 | TASK-2026W24-VPE-003 | S | 4h | 1h | 0.75 |
 
-> **分析**：W24 估算偏差率偏高（均值 0.66），表明 M 和 S 任务基准可能偏高。
-> 建议下月校准下调 S 基准至 2h、M 基准至 6h。
+> **分析**：W24 初步估算偏差率偏高（均值 0.66），表明 M 和 S 任务基准可能偏高。
+> 是否下调 S/M 基准需要等当前质量门禁和返工数据落账后再决定。
 
 #### D3：质量趋势
 
 | 指标 | 值 |
 | --- | --- |
-| 门禁首次通过率 | 100%（W24 所有门禁首次运行通过） |
-| 返工率 | 0 次/任务（无返工） |
-| 新增测试数 | 40+ |
+| 门禁首次通过率 | local reconciliation gates passed: docs link audit, docs tests, focused W24 suites, `pnpm build:schema`, and `pnpm check` |
+| 返工率 | 0 known during reconciliation; formal quality report still pending |
+| 新增测试数 | implementation reports 40+; focused W24 suites covered 77 tests before full `pnpm check` |
 
 #### D4：知识积累
 
