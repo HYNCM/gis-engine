@@ -1,5 +1,5 @@
 import type { JsonPatchOperation } from "../../types.js";
-import { normalizePatchPath } from "./path.js";
+import { normalizePatchPath, unescapePathSegment } from "./path.js";
 
 export function applyJsonPatch<T>(document: T, patch: JsonPatchOperation[]): T {
   const clone = structuredClone(document) as T;
@@ -65,26 +65,25 @@ function applyArrayOperation(container: unknown[], key: string, operation: JsonP
   if (Number.isNaN(index)) throw new Error(`Invalid array patch index: ${key}`);
 
   if (operation.op === "remove") {
-    if (index < 0 || index >= container.length) throw new Error(`Patch remove array index out of bounds: ${operation.path}`);
+    if (index < 0 || index >= container.length)
+      throw new Error(`Patch remove array index out of bounds: ${operation.path}`);
     container.splice(index, 1);
     return;
   }
 
   if (operation.op === "add") {
-    if (index < 0 || index > container.length) throw new Error(`Patch add array index out of bounds: ${operation.path}`);
+    if (index < 0 || index > container.length)
+      throw new Error(`Patch add array index out of bounds: ${operation.path}`);
     container.splice(index, 0, operation.value);
     return;
   }
 
   if (operation.op === "replace") {
-    if (index < 0 || index >= container.length) throw new Error(`Patch replace array index out of bounds: ${operation.path}`);
+    if (index < 0 || index >= container.length)
+      throw new Error(`Patch replace array index out of bounds: ${operation.path}`);
     container[index] = operation.value;
     return;
   }
 
   throw new Error(`Unsupported array patch operation: ${operation.op}`);
-}
-
-function unescapePathSegment(segment: string): string {
-  return segment.replaceAll("~1", "/").replaceAll("~0", "~");
 }

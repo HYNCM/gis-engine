@@ -1,4 +1,4 @@
-import { Type, type Static } from "@sinclair/typebox";
+import { type Static, Type } from "@sinclair/typebox";
 import type { Expression } from "../../types.js";
 
 const JsonValueSchema = Type.Unknown();
@@ -12,9 +12,9 @@ export const CapabilityRequestSchema = Type.Object(
   {
     dimensions: Type.Optional(Type.Array(DimensionSchema)),
     renderer: Type.Optional(RendererSchema),
-    experimental: Type.Optional(Type.Array(Type.String()))
+    experimental: Type.Optional(Type.Array(Type.String())),
   },
-  { additionalProperties: false }
+  { additionalProperties: false },
 );
 
 export const CapabilityReportSchema = Type.Object(
@@ -28,16 +28,16 @@ export const CapabilityReportSchema = Type.Object(
     snapshot: Type.Object(
       {
         supported: Type.Boolean(),
-        formats: Type.Array(SnapshotFormatSchema)
+        formats: Type.Array(SnapshotFormatSchema),
       },
-      { additionalProperties: false }
+      { additionalProperties: false },
     ),
-    experimental: Type.Array(Type.String())
+    experimental: Type.Array(Type.String()),
   },
   {
     $id: "https://gis-engine.dev/schemas/capabilities.v0.1.schema.json",
-    additionalProperties: false
-  }
+    additionalProperties: false,
+  },
 );
 
 export const ViewSpecSchema = Type.Object(
@@ -47,17 +47,17 @@ export const ViewSpecSchema = Type.Object(
     zoom: Type.Optional(Type.Number()),
     bearing: Type.Optional(Type.Number()),
     pitch: Type.Optional(Type.Number()),
-    bounds: Type.Optional(Type.Tuple([Type.Number(), Type.Number(), Type.Number(), Type.Number()]))
+    bounds: Type.Optional(Type.Tuple([Type.Number(), Type.Number(), Type.Number(), Type.Number()])),
   },
-  { additionalProperties: false }
+  { additionalProperties: false },
 );
 
 const GeoJsonSourceSchema = Type.Object(
   {
     type: Type.Literal("geojson"),
-    data: Type.Union([JsonValueSchema, Type.String()])
+    data: Type.Union([JsonValueSchema, Type.String()]),
   },
-  { additionalProperties: false }
+  { additionalProperties: false },
 );
 
 const RasterSourceSchema = Type.Object(
@@ -67,9 +67,9 @@ const RasterSourceSchema = Type.Object(
     tileSize: Type.Optional(Type.Number()),
     minzoom: Type.Optional(Type.Number()),
     maxzoom: Type.Optional(Type.Number()),
-    attribution: Type.Optional(Type.String())
+    attribution: Type.Optional(Type.String()),
   },
-  { additionalProperties: false }
+  { additionalProperties: false },
 );
 
 const PmtilesSourceSchema = Type.Object(
@@ -78,9 +78,9 @@ const PmtilesSourceSchema = Type.Object(
     url: Type.String(),
     minzoom: Type.Optional(Type.Number()),
     maxzoom: Type.Optional(Type.Number()),
-    attribution: Type.Optional(Type.String())
+    attribution: Type.Optional(Type.String()),
   },
-  { additionalProperties: false }
+  { additionalProperties: false },
 );
 
 const VectorTileSourceSchema = Type.Object(
@@ -89,9 +89,9 @@ const VectorTileSourceSchema = Type.Object(
     tiles: Type.Array(Type.String()),
     minzoom: Type.Optional(Type.Number()),
     maxzoom: Type.Optional(Type.Number()),
-    attribution: Type.Optional(Type.String())
+    attribution: Type.Optional(Type.String()),
   },
-  { additionalProperties: false }
+  { additionalProperties: false },
 );
 
 const VectorUrlSourceSchema = Type.Object(
@@ -100,12 +100,18 @@ const VectorUrlSourceSchema = Type.Object(
     url: Type.String(),
     minzoom: Type.Optional(Type.Number()),
     maxzoom: Type.Optional(Type.Number()),
-    attribution: Type.Optional(Type.String())
+    attribution: Type.Optional(Type.String()),
   },
-  { additionalProperties: false }
+  { additionalProperties: false },
 );
 
-export const SourceSpecSchema = Type.Union([GeoJsonSourceSchema, RasterSourceSchema, PmtilesSourceSchema, VectorTileSourceSchema, VectorUrlSourceSchema]);
+export const SourceSpecSchema = Type.Union([
+  GeoJsonSourceSchema,
+  RasterSourceSchema,
+  PmtilesSourceSchema,
+  VectorTileSourceSchema,
+  VectorUrlSourceSchema,
+]);
 
 export const LayerSpecSchema = Type.Object(
   {
@@ -117,7 +123,7 @@ export const LayerSpecSchema = Type.Object(
       Type.Literal("line"),
       Type.Literal("circle"),
       Type.Literal("symbol-lite"),
-      Type.Literal("fill-extrusion-lite")
+      Type.Literal("fill-extrusion-lite"),
     ]),
     source: Type.Optional(Type.String()),
     filter: Type.Optional(LayerFilterSchema),
@@ -125,9 +131,9 @@ export const LayerSpecSchema = Type.Object(
     maxzoom: Type.Optional(Type.Number({ minimum: 0, maximum: 24 })),
     layout: Type.Optional(Type.Record(Type.String(), JsonValueSchema)),
     paint: Type.Optional(Type.Record(Type.String(), JsonValueSchema)),
-    metadata: Type.Optional(Type.Record(Type.String(), JsonValueSchema))
+    metadata: Type.Optional(Type.Record(Type.String(), JsonValueSchema)),
   },
-  { additionalProperties: false }
+  { additionalProperties: false },
 );
 
 export const InteractionSpecSchema = Type.Object(
@@ -137,9 +143,9 @@ export const InteractionSpecSchema = Type.Object(
     hover: Type.Optional(Type.Boolean()),
     click: Type.Optional(Type.Boolean()),
     select: Type.Optional(Type.Boolean()),
-    popup: Type.Optional(Type.Boolean())
+    popup: Type.Optional(Type.Boolean()),
   },
-  { additionalProperties: false }
+  { additionalProperties: false },
 );
 
 export const MapSpecSchema = Type.Object(
@@ -153,12 +159,12 @@ export const MapSpecSchema = Type.Object(
     layers: Type.Array(LayerSpecSchema),
     interactions: Type.Optional(InteractionSpecSchema),
     metadata: Type.Optional(Type.Record(Type.String(), Type.Unknown())),
-    extensions: Type.Optional(Type.Record(Type.String(), Type.Unknown()))
+    extensions: Type.Optional(Type.Record(Type.String(), Type.Unknown())),
   },
   {
     $id: "https://gis-engine.dev/schemas/mapspec.v0.1.schema.json",
-    additionalProperties: false
-  }
+    additionalProperties: false,
+  },
 );
 
 export type MapSpecFromSchema = Static<typeof MapSpecSchema>;

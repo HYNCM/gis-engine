@@ -10,8 +10,8 @@ export function buildProviderProfiles(env = process.env, options = {}) {
       protocol: "mock",
       model: "deterministic-mock",
       enabled: true,
-      missingCredential: false
-    }
+      missingCredential: false,
+    },
   ];
 
   const deepSeekApiKey = readNonEmpty(env.DEEPSEEK_API_KEY);
@@ -27,7 +27,7 @@ export function buildProviderProfiles(env = process.env, options = {}) {
     enabled: Boolean(deepSeekApiKey) && deepSeekResource.ok,
     missingCredential: !deepSeekApiKey,
     resourceStatus: deepSeekResource.ok ? "ready" : "blocked-resource",
-    disabledDiagnostic: deepSeekResource.ok ? undefined : deepSeekResource.diagnostic
+    disabledDiagnostic: deepSeekResource.ok ? undefined : deepSeekResource.diagnostic,
   });
 
   const customId = readNonEmpty(env.GIS_WORKBENCH_CUSTOM_PROVIDER_ID);
@@ -47,7 +47,7 @@ export function buildProviderProfiles(env = process.env, options = {}) {
       enabled: Boolean(baseUrl) && Boolean(model) && Boolean(apiKey) && resource.ok,
       missingCredential: !apiKey,
       resourceStatus: resource.ok ? "ready" : "blocked-resource",
-      disabledDiagnostic: resource.ok ? undefined : resource.diagnostic
+      disabledDiagnostic: resource.ok ? undefined : resource.diagnostic,
     });
   }
 
@@ -61,7 +61,7 @@ export function publicProviderProfiles(profiles) {
     protocol: profile.protocol,
     model: profile.model,
     enabled: profile.enabled,
-    missingCredential: profile.missingCredential
+    missingCredential: profile.missingCredential,
   }));
 }
 
@@ -80,25 +80,25 @@ export function providerDisabledDiagnostic(profile) {
   if (profile?.protocol && profile.protocol !== "mock" && profile.protocol !== "openai-chat-completions") {
     return {
       path: "/providerProfile",
-      message: "Selected provider protocol is not supported."
+      message: "Selected provider protocol is not supported.",
     };
   }
   if (profile?.resourceStatus === "blocked-resource") {
     return {
       path: "/providerProfile/baseUrl",
-      message: "Selected provider base URL is blocked by policy."
+      message: "Selected provider base URL is blocked by policy.",
     };
   }
   if (!profile?.model) {
     return {
       path: "/providerProfile",
-      message: "Selected provider model is not configured."
+      message: "Selected provider model is not configured.",
     };
   }
   if (profile?.missingCredential) {
     return {
       path: "/providerProfile",
-      message: "Provider credential is not configured."
+      message: "Provider credential is not configured.",
     };
   }
   return undefined;

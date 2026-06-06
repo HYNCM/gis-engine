@@ -1,11 +1,11 @@
-import type { Diagnostic } from "../../types.js";
 import { DiagnosticCodes } from "../../diagnostics/codes.js";
+import type { Diagnostic } from "../../types.js";
+import type { FlatGeobufPolicy, FlatGeobufSourceSpec } from "./flatgeobuf-source.js";
+import { defaultFlatGeobufPolicy } from "./flatgeobuf-source.js";
+import type { GeoParquetPolicy, GeoParquetSourceSpec } from "./geoparquet-source.js";
+import { defaultGeoParquetPolicy } from "./geoparquet-source.js";
 import type { PMTilesArchiveMetadata, PMTilesArchivePolicy } from "./pmtiles-archive.js";
 import { defaultPMTilesArchivePolicy } from "./pmtiles-archive.js";
-import type { GeoParquetSourceSpec, GeoParquetPolicy } from "./geoparquet-source.js";
-import { defaultGeoParquetPolicy } from "./geoparquet-source.js";
-import type { FlatGeobufSourceSpec, FlatGeobufPolicy } from "./flatgeobuf-source.js";
-import { defaultFlatGeobufPolicy } from "./flatgeobuf-source.js";
 
 /**
  * Validate PMTiles archive metadata against policy.
@@ -13,7 +13,7 @@ import { defaultFlatGeobufPolicy } from "./flatgeobuf-source.js";
  */
 export function validatePMTilesArchivePolicy(
   metadata: PMTilesArchiveMetadata,
-  policy: PMTilesArchivePolicy = defaultPMTilesArchivePolicy
+  policy: PMTilesArchivePolicy = defaultPMTilesArchivePolicy,
 ): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
 
@@ -22,7 +22,7 @@ export function validatePMTilesArchivePolicy(
       severity: "error",
       code: DiagnosticCodes.SchemaInvalid,
       message: `PMTiles spec version ${metadata.specVersion} is not supported. Only version 3 is accepted.`,
-      path: "/pmtiles/specVersion"
+      path: "/pmtiles/specVersion",
     });
   }
 
@@ -32,7 +32,7 @@ export function validatePMTilesArchivePolicy(
       severity: "error",
       code: DiagnosticCodes.SecurityUrlBlocked,
       message: `PMTiles archive size ${metadata.archiveBytes} exceeds policy limit ${maxBytes}.`,
-      path: "/pmtiles/archiveBytes"
+      path: "/pmtiles/archiveBytes",
     });
   }
 
@@ -42,7 +42,7 @@ export function validatePMTilesArchivePolicy(
       severity: "error",
       code: DiagnosticCodes.SecurityUrlBlocked,
       message: `PMTiles root directory size ${metadata.rootDirectoryLength} exceeds policy limit ${maxRootDir}.`,
-      path: "/pmtiles/rootDirectoryLength"
+      path: "/pmtiles/rootDirectoryLength",
     });
   }
 
@@ -53,7 +53,7 @@ export function validatePMTilesArchivePolicy(
         severity: "error",
         code: DiagnosticCodes.SchemaInvalid,
         message: "PMTiles bounds must be within [-180, -90, 180, 90].",
-        path: "/pmtiles/bounds"
+        path: "/pmtiles/bounds",
       });
     }
   }
@@ -68,7 +68,7 @@ export function validatePMTilesArchivePolicy(
  */
 export function validateGeoParquetPolicy(
   source: GeoParquetSourceSpec,
-  policy: GeoParquetPolicy = defaultGeoParquetPolicy
+  policy: GeoParquetPolicy = defaultGeoParquetPolicy,
 ): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
 
@@ -77,7 +77,7 @@ export function validateGeoParquetPolicy(
     severity: "warning",
     code: DiagnosticCodes.CapabilityUnsupported,
     message: "GeoParquet runtime loading and query are not implemented. This is a metadata-only contract.",
-    path: "/sources/geoparquet/runtime"
+    path: "/sources/geoparquet/runtime",
   });
 
   if (!source.url || source.url.trim().length === 0) {
@@ -85,7 +85,7 @@ export function validateGeoParquetPolicy(
       severity: "error",
       code: DiagnosticCodes.SchemaInvalid,
       message: "GeoParquet source URL must not be empty.",
-      path: "/sources/geoparquet/url"
+      path: "/sources/geoparquet/url",
     });
   }
 
@@ -96,7 +96,7 @@ export function validateGeoParquetPolicy(
         severity: "error",
         code: DiagnosticCodes.SchemaInvalid,
         message: "GeoParquet bbox must be within [-180, -90, 180, 90].",
-        path: "/sources/geoparquet/bbox"
+        path: "/sources/geoparquet/bbox",
       });
     }
     if (w > e) {
@@ -104,7 +104,7 @@ export function validateGeoParquetPolicy(
         severity: "error",
         code: DiagnosticCodes.SchemaInvalid,
         message: "GeoParquet bbox west must be <= east.",
-        path: "/sources/geoparquet/bbox"
+        path: "/sources/geoparquet/bbox",
       });
     }
     if (s > n) {
@@ -112,7 +112,7 @@ export function validateGeoParquetPolicy(
         severity: "error",
         code: DiagnosticCodes.SchemaInvalid,
         message: "GeoParquet bbox south must be <= north.",
-        path: "/sources/geoparquet/bbox"
+        path: "/sources/geoparquet/bbox",
       });
     }
   }
@@ -124,7 +124,7 @@ export function validateGeoParquetPolicy(
         severity: "error",
         code: DiagnosticCodes.SecurityUrlBlocked,
         message: `GeoParquet file size ${source.fileBytes} exceeds policy limit ${maxBytes}.`,
-        path: "/sources/geoparquet/fileBytes"
+        path: "/sources/geoparquet/fileBytes",
       });
     }
   }
@@ -136,7 +136,7 @@ export function validateGeoParquetPolicy(
         severity: "error",
         code: DiagnosticCodes.SecurityUrlBlocked,
         message: `GeoParquet row count ${source.rowCount} exceeds policy limit ${maxRows}.`,
-        path: "/sources/geoparquet/rowCount"
+        path: "/sources/geoparquet/rowCount",
       });
     }
   }
@@ -148,7 +148,7 @@ export function validateGeoParquetPolicy(
         severity: "warning",
         code: DiagnosticCodes.CapabilityUnsupported,
         message: `GeoParquet CRS authority "${source.crs.authority}" may not be supported. EPSG is recommended.`,
-        path: "/sources/geoparquet/crs/authority"
+        path: "/sources/geoparquet/crs/authority",
       });
     }
   }
@@ -162,7 +162,7 @@ export function validateGeoParquetPolicy(
  */
 export function validateFlatGeobufPolicy(
   source: FlatGeobufSourceSpec,
-  policy: FlatGeobufPolicy = defaultFlatGeobufPolicy
+  policy: FlatGeobufPolicy = defaultFlatGeobufPolicy,
 ): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
 
@@ -171,7 +171,7 @@ export function validateFlatGeobufPolicy(
     severity: "warning",
     code: DiagnosticCodes.CapabilityUnsupported,
     message: "FlatGeobuf runtime loading and query are not implemented. This is a metadata-only contract.",
-    path: "/sources/flatgeobuf/runtime"
+    path: "/sources/flatgeobuf/runtime",
   });
 
   if (!source.url || source.url.trim().length === 0) {
@@ -179,7 +179,7 @@ export function validateFlatGeobufPolicy(
       severity: "error",
       code: DiagnosticCodes.SchemaInvalid,
       message: "FlatGeobuf source URL must not be empty.",
-      path: "/sources/flatgeobuf/url"
+      path: "/sources/flatgeobuf/url",
     });
   }
 
@@ -190,7 +190,7 @@ export function validateFlatGeobufPolicy(
         severity: "error",
         code: DiagnosticCodes.SecurityUrlBlocked,
         message: `FlatGeobuf file size ${source.fileBytes} exceeds policy limit ${maxBytes}.`,
-        path: "/sources/flatgeobuf/fileBytes"
+        path: "/sources/flatgeobuf/fileBytes",
       });
     }
   }
@@ -200,7 +200,7 @@ export function validateFlatGeobufPolicy(
       severity: "error",
       code: DiagnosticCodes.CapabilityUnsupported,
       message: "FlatGeobuf spatial index is required by policy but not present.",
-      path: "/sources/flatgeobuf/hasIndex"
+      path: "/sources/flatgeobuf/hasIndex",
     });
   }
 
@@ -211,7 +211,7 @@ export function validateFlatGeobufPolicy(
         severity: "error",
         code: DiagnosticCodes.SchemaInvalid,
         message: "FlatGeobuf bbox must be within [-180, -90, 180, 90].",
-        path: "/sources/flatgeobuf/bbox"
+        path: "/sources/flatgeobuf/bbox",
       });
     }
   }

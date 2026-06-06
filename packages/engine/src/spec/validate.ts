@@ -1,14 +1,19 @@
-import { escapePathSegment } from "./patch/path.js";
 import { Ajv, type ErrorObject } from "ajv/dist/ajv.js";
 import {
   DiagnosticCodes,
+  type Scene3DStableRuntimeBlockerCode,
   Scene3DStableRuntimeBlockerCodes,
-  type Scene3DStableRuntimeBlockerCode
 } from "../diagnostics/codes.js";
 import type { Diagnostic, MapSpec, SceneResourcePolicy, SceneView3DExtension, ValidationReport } from "../types.js";
-import { MapSpecSchema, SceneView3DExtensionSchema } from "./schemas/index.js";
 import { validateExpression, validateFilterExpression } from "./expression-validator.js";
-import { defaultResourcePolicy, validateResourcePolicy, validateResourceUrl, type ResourcePolicy } from "./resource-policy.js";
+import { escapePathSegment } from "./patch/path.js";
+import {
+  defaultResourcePolicy,
+  type ResourcePolicy,
+  validateResourcePolicy,
+  validateResourceUrl,
+} from "./resource-policy.js";
+import { MapSpecSchema, SceneView3DExtensionSchema } from "./schemas/index.js";
 
 const ajv = new Ajv({ allErrors: true, strict: false });
 const validateMapSpecSchema = ajv.compile(MapSpecSchema);
@@ -33,8 +38,10 @@ export function validateSpec(spec: unknown, options?: { resourcePolicy?: Resourc
     stats: {
       sourceCount: isMapSpecLike(spec) ? Object.keys(spec.sources).length : 0,
       layerCount: isMapSpecLike(spec) ? spec.layers.length : 0,
-      visibleLayerCount: isMapSpecLike(spec) ? spec.layers.filter((layer) => layer.layout?.visibility !== "none").length : 0
-    }
+      visibleLayerCount: isMapSpecLike(spec)
+        ? spec.layers.filter((layer) => layer.layout?.visibility !== "none").length
+        : 0,
+    },
   };
 }
 
@@ -51,7 +58,13 @@ function validateSceneView3DExtension(spec: MapSpec): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
 
   for (const [sourceId, source] of Object.entries(sceneExtension.sources ?? {})) {
-    diagnostics.push(...validateResourceUrl(source.url, `/extensions/scene3d/sources/${escapePathSegment(sourceId)}/url`, resourcePolicy));
+    diagnostics.push(
+      ...validateResourceUrl(
+        source.url,
+        `/extensions/scene3d/sources/${escapePathSegment(sourceId)}/url`,
+        resourcePolicy,
+      ),
+    );
   }
 
   diagnostics.push(...validateSceneLayerReferences(sceneExtension));
@@ -72,7 +85,7 @@ function validateSceneLayerReferences(sceneExtension: SceneView3DExtension): Dia
         code: DiagnosticCodes.LayerDuplicateId,
         message: `Scene layer id "${layer.id}" is duplicated.`,
         path: `${layerPath}/id`,
-        relatedResources: [{ kind: "layer", id: layer.id }]
+        relatedResources: [{ kind: "layer", id: layer.id }],
       });
     }
     layerIds.add(layer.id);
@@ -85,13 +98,13 @@ function validateSceneLayerReferences(sceneExtension: SceneView3DExtension): Dia
         path: `${layerPath}/source`,
         relatedResources: [
           { kind: "layer", id: layer.id },
-          { kind: "source", id: layer.source }
+          { kind: "source", id: layer.source },
         ],
         fix: {
           kind: "manual",
           confidence: "medium",
-          message: "Add the missing scene source or update the scene layer source id."
-        }
+          message: "Add the missing scene source or update the scene layer source id.",
+        },
       });
     }
   }
@@ -104,7 +117,7 @@ function scene3dSchemaErrorsToDiagnostics(errors: ErrorObject[]): Diagnostic[] {
     severity: "error",
     code: schemaKeywordToCode(error),
     message: error.message ?? "SceneView3D extension schema validation failed",
-    path: `/extensions/scene3d${error.instancePath || ""}${additionalPropertyPath(error)}`
+    path: `/extensions/scene3d${error.instancePath || ""}${additionalPropertyPath(error)}`,
   }));
 }
 
@@ -117,7 +130,7 @@ function additionalPropertyPath(error: ErrorObject): string {
 function toSceneResourcePolicy(policy?: SceneResourcePolicy): ResourcePolicy {
   const scenePolicy: ResourcePolicy = {
     allowedSchemes: policy?.allowedSchemes ?? ["http:", "https:"],
-    allowedHosts: policy?.allowedHosts ?? defaultResourcePolicy.allowedHosts
+    allowedHosts: policy?.allowedHosts ?? defaultResourcePolicy.allowedHosts,
   };
 
   const allowRelativeUrls = policy?.allowRelativeUrls ?? defaultResourcePolicy.allowRelativeUrls;
@@ -137,7 +150,7 @@ function schemaErrorsToDiagnostics(errors: ErrorObject[]): Diagnostic[] {
     severity: "error",
     code: schemaKeywordToCode(error),
     message: error.message ?? "MapSpec schema validation failed",
-    path: error.instancePath || "/"
+    path: error.instancePath || "/",
   }));
 }
 
@@ -161,7 +174,7 @@ function validateSemanticRules(spec: MapSpec): Diagnostic[] {
         severity: "error",
         code: DiagnosticCodes.GeoInvalidCoordinates,
         message: `Center coordinates [${lng}, ${lat}] are out of range. Longitude must be [-180, 180] and latitude must be [-90, 90].`,
-        path: "/view/center"
+        path: "/view/center",
       });
     }
   }
@@ -177,8 +190,8 @@ function validateSemanticRules(spec: MapSpec): Diagnostic[] {
         fix: {
           kind: "manual",
           confidence: "high",
-          message: "Ensure bounds are ordered as [west, south, east, north] with west <= east and south <= north."
-        }
+          message: "Ensure bounds are ordered as [west, south, east, north] with west <= east and south <= north.",
+        },
       });
     }
     if (south > north) {
@@ -190,8 +203,8 @@ function validateSemanticRules(spec: MapSpec): Diagnostic[] {
         fix: {
           kind: "manual",
           confidence: "high",
-          message: "Ensure bounds are ordered as [west, south, east, north] with west <= east and south <= north."
-        }
+          message: "Ensure bounds are ordered as [west, south, east, north] with west <= east and south <= north.",
+        },
       });
     }
   }
@@ -207,7 +220,7 @@ function validateSemanticRules(spec: MapSpec): Diagnostic[] {
         code: DiagnosticCodes.LayerDuplicateId,
         message: `Layer id "${layer.id}" is duplicated.`,
         path: `${layerPath}/id`,
-        relatedResources: [{ kind: "layer", id: layer.id }]
+        relatedResources: [{ kind: "layer", id: layer.id }],
       });
     }
 
@@ -219,7 +232,7 @@ function validateSemanticRules(spec: MapSpec): Diagnostic[] {
         code: DiagnosticCodes.LayerSourceMissing,
         message: `Layer "${layer.id}" requires a source.`,
         path: `${layerPath}/source`,
-        relatedResources: [{ kind: "layer", id: layer.id }]
+        relatedResources: [{ kind: "layer", id: layer.id }],
       });
     }
 
@@ -231,13 +244,13 @@ function validateSemanticRules(spec: MapSpec): Diagnostic[] {
         path: `${layerPath}/source`,
         relatedResources: [
           { kind: "layer", id: layer.id },
-          { kind: "source", id: layer.source }
+          { kind: "source", id: layer.source },
         ],
         fix: {
           kind: "manual",
           confidence: "medium",
-          message: "Add the missing source or update the layer source id."
-        }
+          message: "Add the missing source or update the layer source id.",
+        },
       });
     }
 
@@ -250,8 +263,8 @@ function validateSemanticRules(spec: MapSpec): Diagnostic[] {
         path: `${layerPath}/source`,
         relatedResources: [
           { kind: "layer", id: layer.id },
-          { kind: "source", id: layer.source }
-        ]
+          { kind: "source", id: layer.source },
+        ],
       });
     }
 
@@ -266,8 +279,9 @@ function validateSemanticRules(spec: MapSpec): Diagnostic[] {
         fix: {
           kind: "manual",
           confidence: "medium",
-          message: 'Set view.mode to "map2_5d" or request capabilities.dimensions ["2_5d"], then add "fill-extrusion-lite" to capabilities.experimental.'
-        }
+          message:
+            'Set view.mode to "map2_5d" or request capabilities.dimensions ["2_5d"], then add "fill-extrusion-lite" to capabilities.experimental.',
+        },
       });
     }
 
@@ -281,8 +295,8 @@ function validateSemanticRules(spec: MapSpec): Diagnostic[] {
         fix: {
           kind: "manual",
           confidence: "high",
-          message: "Choose a minzoom less than or equal to maxzoom, or reset the layer range to 0-24."
-        }
+          message: "Choose a minzoom less than or equal to maxzoom, or reset the layer range to 0-24.",
+        },
       });
     }
 
@@ -333,13 +347,15 @@ function scene3dUnsupported(path: string, blockerCode: Scene3DStableRuntimeBlock
     severity: "error",
     code: DiagnosticCodes.CapabilityUnsupported,
     blockerCode,
-    message: "SceneView3D stable runtime promotion is blocked until the W23 promotion readiness gate issues a go/no-go decision.",
+    message:
+      "SceneView3D stable runtime promotion is blocked until the W23 promotion readiness gate issues a go/no-go decision.",
     path,
     fix: {
       kind: "manual",
       confidence: "medium",
-      message: 'Keep "scene3d" fields under the documented extension boundary until the stable runtime gate explicitly approves promotion.'
-    }
+      message:
+        'Keep "scene3d" fields under the documented extension boundary until the stable runtime gate explicitly approves promotion.',
+    },
   };
 }
 
@@ -352,7 +368,13 @@ function hasFillExtrusionLiteGate(spec: MapSpec): boolean {
 function isLayerSourceCompatible(layerType: string, sourceType: string): boolean {
   if (layerType === "background") return true;
   if (layerType === "raster") return sourceType === "raster" || sourceType === "pmtiles";
-  if (layerType === "fill" || layerType === "line" || layerType === "circle" || layerType === "symbol-lite" || layerType === "fill-extrusion-lite") {
+  if (
+    layerType === "fill" ||
+    layerType === "line" ||
+    layerType === "circle" ||
+    layerType === "symbol-lite" ||
+    layerType === "fill-extrusion-lite"
+  ) {
     return sourceType === "geojson" || sourceType === "pmtiles" || sourceType === "vector";
   }
   return false;
@@ -361,5 +383,10 @@ function isLayerSourceCompatible(layerType: string, sourceType: string): boolean
 function isMapSpecLike(value: unknown): value is MapSpec {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<MapSpec>;
-  return candidate.version === "0.1" && Boolean(candidate.view) && Boolean(candidate.sources) && Array.isArray(candidate.layers);
+  return (
+    candidate.version === "0.1" &&
+    Boolean(candidate.view) &&
+    Boolean(candidate.sources) &&
+    Array.isArray(candidate.layers)
+  );
 }

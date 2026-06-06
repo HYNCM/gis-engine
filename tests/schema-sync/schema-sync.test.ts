@@ -1,5 +1,22 @@
-import { describe, expect, it } from "vitest";
-import Ajv from "ajv";
+import {
+  ApplyCommandsToolResultSchema,
+  ContextSummaryToolInputSchema,
+  ContextSummaryToolResultSchema,
+  ExplainSpecToolInputSchema,
+  ExplainSpecToolResultSchema,
+  ExportExampleAppToolInputSchema,
+  ExportExampleAppToolResultSchema,
+  ExportSpecToolInputSchema,
+  ExportSpecToolResultSchema,
+  exportExampleAppTool,
+  GenerationEvidenceBundleInputSchema,
+  GenerationEvidenceBundleSchema,
+  gisEngineTools,
+  SnapshotSpecToolInputSchema,
+  SnapshotSpecToolResultSchema,
+  ValidateSpecToolInputSchema,
+  ValidateSpecToolResultSchema,
+} from "@gis-engine/ai";
 import {
   ApplyCommandsToolInputSchema,
   CapabilityReportSchema,
@@ -12,27 +29,10 @@ import {
   MapGenerationRequestSchema,
   MapSpecSchema,
   Scene3DStableRuntimeBlockerCodes,
-  SceneView3DExtensionSchema
+  SceneView3DExtensionSchema,
 } from "@gis-engine/engine";
-import {
-  ApplyCommandsToolResultSchema,
-  ContextSummaryToolInputSchema,
-  ContextSummaryToolResultSchema,
-  ExplainSpecToolInputSchema,
-  ExplainSpecToolResultSchema,
-  ExportExampleAppToolInputSchema,
-  ExportExampleAppToolResultSchema,
-  ExportSpecToolInputSchema,
-  ExportSpecToolResultSchema,
-  GenerationEvidenceBundleInputSchema,
-  GenerationEvidenceBundleSchema,
-  SnapshotSpecToolResultSchema,
-  ValidateSpecToolInputSchema,
-  ValidateSpecToolResultSchema,
-  SnapshotSpecToolInputSchema,
-  exportExampleAppTool,
-  gisEngineTools
-} from "@gis-engine/ai";
+import Ajv from "ajv";
+import { describe, expect, it } from "vitest";
 import scene3dExtensionSpec from "../fixtures/specs/valid/scene3d-extension.map.json";
 
 describe("schema sync gate", () => {
@@ -62,7 +62,7 @@ describe("schema sync gate", () => {
       ExportExampleAppToolInputSchema,
       ExportExampleAppToolResultSchema,
       GenerationEvidenceBundleInputSchema,
-      GenerationEvidenceBundleSchema
+      GenerationEvidenceBundleSchema,
     ]) {
       expect(() => new Ajv({ strict: false }).compile(schema)).not.toThrow();
     }
@@ -87,16 +87,16 @@ describe("schema sync gate", () => {
         id: "cmd-capabilities",
         version: "0.1",
         type: "setCapabilities",
-        capabilities: { dimensions: ["2d"], renderer: "maplibre" }
-      })
+        capabilities: { dimensions: ["2d"], renderer: "maplibre" },
+      }),
     ).toBe(true);
     expect(
       validateCommand({
         id: "cmd-interactions",
         version: "0.1",
         type: "setInteractions",
-        interactions: { hover: true, click: true }
-      })
+        interactions: { hover: true, click: true },
+      }),
     ).toBe(true);
     expect(
       validateCommand({
@@ -104,8 +104,8 @@ describe("schema sync gate", () => {
         version: "0.1",
         type: "setFilter",
         layerId: "points",
-        filter: ["==", ["get", "category"], "museum"]
-      })
+        filter: ["==", ["get", "category"], "museum"],
+      }),
     ).toBe(true);
     expect(
       validateCommand({
@@ -114,10 +114,12 @@ describe("schema sync gate", () => {
         type: "setLayerZoomRange",
         layerId: "points",
         minzoom: 9,
-        maxzoom: 18
-      })
+        maxzoom: 18,
+      }),
     ).toBe(true);
-    expect(validateCommand({ id: "cmd-view", version: "0.1", type: "setView", view: { zoom: 8 }, unexpected: true })).toBe(false);
+    expect(
+      validateCommand({ id: "cmd-view", version: "0.1", type: "setView", view: { zoom: 8 }, unexpected: true }),
+    ).toBe(false);
     expect(validateCommand.errors?.some((error) => error.keyword === "additionalProperties")).toBe(true);
   });
 
@@ -132,9 +134,9 @@ describe("schema sync gate", () => {
         type: "setSceneCamera",
         camera: {
           position: [120.15, 30.28, 1200],
-          target: [120.15, 30.28, 0]
-        }
-      })
+          target: [120.15, 30.28, 0],
+        },
+      }),
     ).toBe(true);
     expect(
       validateCommand({
@@ -143,8 +145,8 @@ describe("schema sync gate", () => {
         type: "addSceneSource",
         sourceId: "city",
         source: { type: "3d-tiles", url: "./data/city/tileset.json" },
-        unexpected: true
-      })
+        unexpected: true,
+      }),
     ).toBe(false);
     expect(validateCommand.errors?.some((error) => error.keyword === "additionalProperties")).toBe(true);
   });
@@ -177,7 +179,7 @@ describe("schema sync gate", () => {
       "get_context_summary",
       "snapshot_spec",
       "explain_spec",
-      "export_example_app"
+      "export_example_app",
     ]);
     expect(toolNames.every((name) => /^[a-z]+(?:_[a-z]+)*$/.test(name))).toBe(true);
     expect(toolNames).not.toContain("snapshotSpec");
@@ -236,8 +238,8 @@ describe("schema sync gate", () => {
         expressions: ["case", "match", "zoom"],
         queries: ["point"],
         snapshot: { supported: true, formats: ["data-url"] },
-        experimental: []
-      })
+        experimental: [],
+      }),
     ).toBe(true);
     expect(
       validateCapabilityReport({
@@ -249,14 +251,25 @@ describe("schema sync gate", () => {
         queries: [],
         snapshot: { supported: true, formats: ["gif"] },
         experimental: [],
-        unexpected: true
-      })
+        unexpected: true,
+      }),
     ).toBe(false);
-    expect(validateCapabilityReport.errors?.some((error) => error.keyword === "additionalProperties" || error.keyword === "enum")).toBe(true);
+    expect(
+      validateCapabilityReport.errors?.some(
+        (error) => error.keyword === "additionalProperties" || error.keyword === "enum",
+      ),
+    ).toBe(true);
   });
 
   it("keeps export_example_app side-effect free and scoped to examples", () => {
-    for (const exampleId of ["basic-geojson", "ai-map-edit", "raster-basemap", "pmtiles-local", "vector-tile-url", "fill-extrusion-lite"]) {
+    for (const exampleId of [
+      "basic-geojson",
+      "ai-map-edit",
+      "raster-basemap",
+      "pmtiles-local",
+      "vector-tile-url",
+      "fill-extrusion-lite",
+    ]) {
       const result = exportExampleAppTool({ exampleId });
 
       expect(result.ok).toBe(true);
@@ -274,10 +287,18 @@ describe("schema sync gate", () => {
     expect(MapCommandSchema.$id).toBe("https://gis-engine.dev/schemas/commands.v0.1.schema.json");
     expect(SceneView3DExtensionSchema.$id).toBe("https://gis-engine.dev/schemas/sceneview3d.v1.schema.json");
     expect(DiagnosticSchema.$id).toBe("https://gis-engine.dev/schemas/diagnostics.v0.1.schema.json");
-    expect(MapGenerationRequestSchema.$id).toBe("https://gis-engine.dev/schemas/map-generation-request.v0.1.schema.json");
-    expect(MapGenerationPromptPlannerInputSchema.$id).toBe("https://gis-engine.dev/schemas/map-generation-prompt-planner-input.v0.1.schema.json");
-    expect(MapGenerationPromptPlanSchema.$id).toBe("https://gis-engine.dev/schemas/map-generation-prompt-plan.v0.1.schema.json");
-    expect(MapGenerationCommandSkeletonSchema.$id).toBe("https://gis-engine.dev/schemas/map-generation-command-skeleton.v0.1.schema.json");
+    expect(MapGenerationRequestSchema.$id).toBe(
+      "https://gis-engine.dev/schemas/map-generation-request.v0.1.schema.json",
+    );
+    expect(MapGenerationPromptPlannerInputSchema.$id).toBe(
+      "https://gis-engine.dev/schemas/map-generation-prompt-planner-input.v0.1.schema.json",
+    );
+    expect(MapGenerationPromptPlanSchema.$id).toBe(
+      "https://gis-engine.dev/schemas/map-generation-prompt-plan.v0.1.schema.json",
+    );
+    expect(MapGenerationCommandSkeletonSchema.$id).toBe(
+      "https://gis-engine.dev/schemas/map-generation-command-skeleton.v0.1.schema.json",
+    );
     expect(ApplyCommandsToolInputSchema.$id).toBe("https://gis-engine.dev/schemas/ai-tools.v0.1.schema.json");
   });
 
@@ -289,8 +310,8 @@ describe("schema sync gate", () => {
     expect(
       validateScene({
         ...scene3dExtensionSpec.extensions.scene3d,
-        unexpected: true
-      })
+        unexpected: true,
+      }),
     ).toBe(false);
     expect(validateScene.errors?.some((error) => error.keyword === "additionalProperties")).toBe(true);
   });

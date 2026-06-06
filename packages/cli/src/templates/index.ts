@@ -6,7 +6,7 @@
  */
 
 export const TEMPLATES = ["static-html", "vite-ts", "mapspec", "app"] as const;
-export type TemplateName = typeof TEMPLATES[number];
+export type TemplateName = (typeof TEMPLATES)[number];
 
 export interface GeneratedFile {
   path: string;
@@ -39,15 +39,9 @@ export interface AppConfigInput {
   components?: string[];
 }
 
-export const APP_COMPONENTS = [
-  "LayerPanel",
-  "FeaturePopup",
-  "Legend",
-  "SearchBox",
-  "BasemapSwitcher",
-] as const;
+export const APP_COMPONENTS = ["LayerPanel", "FeaturePopup", "Legend", "SearchBox", "BasemapSwitcher"] as const;
 
-export type AppComponentName = typeof APP_COMPONENTS[number];
+export type AppComponentName = (typeof APP_COMPONENTS)[number];
 
 const DEFAULT_APP_COMPONENTS: Record<AppType, AppComponentName[]> = {
   explorer: ["LayerPanel", "Legend", "FeaturePopup", "SearchBox", "BasemapSwitcher"],
@@ -61,18 +55,17 @@ export function normalizeAppConfig(
   appConfig: AppConfigInput | undefined,
   defaults: { projectName: string; description: string },
 ): AppConfig {
-  const appType = appConfig?.appType === "dashboard" || appConfig?.appType === "locator"
-    ? appConfig.appType
-    : "explorer";
-  const title = typeof appConfig?.title === "string" && appConfig.title.trim().length > 0
-    ? appConfig.title
-    : defaults.projectName;
-  const description = typeof appConfig?.description === "string" && appConfig.description.trim().length > 0
-    ? appConfig.description
-    : defaults.description;
+  const appType =
+    appConfig?.appType === "dashboard" || appConfig?.appType === "locator" ? appConfig.appType : "explorer";
+  const title =
+    typeof appConfig?.title === "string" && appConfig.title.trim().length > 0 ? appConfig.title : defaults.projectName;
+  const description =
+    typeof appConfig?.description === "string" && appConfig.description.trim().length > 0
+      ? appConfig.description
+      : defaults.description;
   const filteredComponents = (Array.isArray(appConfig?.components) ? appConfig.components : [])
-    .filter((component): component is AppComponentName =>
-      typeof component === "string" && APP_COMPONENT_SET.has(component)
+    .filter(
+      (component): component is AppComponentName => typeof component === "string" && APP_COMPONENT_SET.has(component),
     )
     .filter((component, index, items) => items.indexOf(component) === index);
 
@@ -160,39 +153,47 @@ const viteTsTemplate: Template = {
     return [
       {
         path: "package.json",
-        content: JSON.stringify({
-          name: ctx.projectName,
-          version: "0.1.0",
-          private: true,
-          type: "module",
-          scripts: {
-            dev: "vite",
-            build: "tsc && vite build",
-            preview: "vite preview",
+        content: `${JSON.stringify(
+          {
+            name: ctx.projectName,
+            version: "0.1.0",
+            private: true,
+            type: "module",
+            scripts: {
+              dev: "vite",
+              build: "tsc && vite build",
+              preview: "vite preview",
+            },
+            dependencies: {
+              "@gis-engine/engine": "^0.2.0",
+              "@gis-engine/ai": "^0.2.0",
+            },
+            devDependencies: {
+              typescript: "^5.7.0",
+              vite: "^5.4.0",
+            },
           },
-          dependencies: {
-            "@gis-engine/engine": "^0.2.0",
-            "@gis-engine/ai": "^0.2.0",
-          },
-          devDependencies: {
-            typescript: "^5.7.0",
-            vite: "^5.4.0",
-          },
-        }, null, 2) + "\n",
+          null,
+          2,
+        )}\n`,
       },
       {
         path: "tsconfig.json",
-        content: JSON.stringify({
-          compilerOptions: {
-            target: "ES2022",
-            module: "ESNext",
-            moduleResolution: "bundler",
-            strict: true,
-            esModuleInterop: true,
-            outDir: "./dist",
+        content: `${JSON.stringify(
+          {
+            compilerOptions: {
+              target: "ES2022",
+              module: "ESNext",
+              moduleResolution: "bundler",
+              strict: true,
+              esModuleInterop: true,
+              outDir: "./dist",
+            },
+            include: ["src"],
           },
-          include: ["src"],
-        }, null, 2) + "\n",
+          null,
+          2,
+        )}\n`,
       },
       {
         path: "index.html",
@@ -271,23 +272,27 @@ const mapspecTemplate: Template = {
     return [
       {
         path: "map.json",
-        content: JSON.stringify({
-          version: "0.2",
-          sources: {
-            points: {
-              type: "geojson",
-              data: { type: "FeatureCollection", features: [] },
+        content: `${JSON.stringify(
+          {
+            version: "0.2",
+            sources: {
+              points: {
+                type: "geojson",
+                data: { type: "FeatureCollection", features: [] },
+              },
             },
+            layers: [
+              {
+                id: "points-layer",
+                type: "circle",
+                source: "points",
+                paint: { "circle-radius": 6, "circle-color": "#3b82f6" },
+              },
+            ],
           },
-          layers: [
-            {
-              id: "points-layer",
-              type: "circle",
-              source: "points",
-              paint: { "circle-radius": 6, "circle-color": "#3b82f6" },
-            },
-          ],
-        }, null, 2) + "\n",
+          null,
+          2,
+        )}\n`,
       },
       {
         path: "README.md",
@@ -316,7 +321,8 @@ Current provider: \`${ctx.provider}\`
 
 const appTemplate: Template = {
   name: "app",
-  description: "Full interactive map application (Vite + React + Tailwind) with responsive status and local map.json controls",
+  description:
+    "Full interactive map application (Vite + React + Tailwind) with responsive status and local map.json controls",
   generate(ctx) {
     const appCtx = ctx as AppTemplateContext;
     const cfg: AppConfig = normalizeAppConfig(appCtx.appConfig, {
@@ -326,13 +332,9 @@ const appTemplate: Template = {
 
     const hasComponent = (name: string) => cfg.components.includes(name);
 
-    const componentImports = cfg.components
-      .map((c) => `import ${c} from "./components/${c}";`)
-      .join("\n");
+    const componentImports = cfg.components.map((c) => `import ${c} from "./components/${c}";`).join("\n");
 
-    const componentRender = cfg.components
-      .map((c) => `          <${c} map={map} spec={spec} />`)
-      .join("\n");
+    const componentRender = cfg.components.map((c) => `          <${c} map={map} spec={spec} />`).join("\n");
 
     const componentFiles: GeneratedFile[] = [];
 
@@ -684,33 +686,37 @@ export default function BasemapSwitcher({ map }: Props) {
     return [
       {
         path: "package.json",
-        content: JSON.stringify({
-          name: ctx.projectName,
-          version: "0.1.0",
-          private: true,
-          type: "module",
-          scripts: {
-            dev: "vite",
-            build: "tsc -b && vite build",
-            preview: "vite preview",
+        content: `${JSON.stringify(
+          {
+            name: ctx.projectName,
+            version: "0.1.0",
+            private: true,
+            type: "module",
+            scripts: {
+              dev: "vite",
+              build: "tsc -b && vite build",
+              preview: "vite preview",
+            },
+            dependencies: {
+              "@gis-engine/engine": "^0.2.0",
+              "maplibre-gl": "^5.0.0",
+              react: "^18.3.0",
+              "react-dom": "^18.3.0",
+            },
+            devDependencies: {
+              "@types/react": "^18.3.0",
+              "@types/react-dom": "^18.3.0",
+              "@vitejs/plugin-react": "^4.3.0",
+              autoprefixer: "^10.4.0",
+              postcss: "^8.4.0",
+              tailwindcss: "^3.4.0",
+              typescript: "^5.7.0",
+              vite: "^5.4.0",
+            },
           },
-          dependencies: {
-            "@gis-engine/engine": "^0.2.0",
-            "maplibre-gl": "^5.0.0",
-            "react": "^18.3.0",
-            "react-dom": "^18.3.0",
-          },
-          devDependencies: {
-            "@types/react": "^18.3.0",
-            "@types/react-dom": "^18.3.0",
-            "@vitejs/plugin-react": "^4.3.0",
-            "autoprefixer": "^10.4.0",
-            "postcss": "^8.4.0",
-            "tailwindcss": "^3.4.0",
-            "typescript": "^5.7.0",
-            "vite": "^5.4.0",
-          },
-        }, null, 2) + "\n",
+          null,
+          2,
+        )}\n`,
       },
       {
         path: "vite.config.ts",
@@ -724,21 +730,25 @@ export default defineConfig({
       },
       {
         path: "tsconfig.json",
-        content: JSON.stringify({
-          compilerOptions: {
-            target: "ES2022",
-            lib: ["ES2022", "DOM", "DOM.Iterable"],
-            module: "ESNext",
-            moduleResolution: "bundler",
-            resolveJsonModule: true,
-            jsx: "react-jsx",
-            strict: true,
-            esModuleInterop: true,
-            skipLibCheck: true,
-            outDir: "./dist",
+        content: `${JSON.stringify(
+          {
+            compilerOptions: {
+              target: "ES2022",
+              lib: ["ES2022", "DOM", "DOM.Iterable"],
+              module: "ESNext",
+              moduleResolution: "bundler",
+              resolveJsonModule: true,
+              jsx: "react-jsx",
+              strict: true,
+              esModuleInterop: true,
+              skipLibCheck: true,
+              outDir: "./dist",
+            },
+            include: ["src"],
           },
-          include: ["src"],
-        }, null, 2) + "\n",
+          null,
+          2,
+        )}\n`,
       },
       {
         path: "tailwind.config.js",
@@ -1015,23 +1025,27 @@ ${componentRender}
       ...componentFiles,
       {
         path: "map.json",
-        content: JSON.stringify({
-          version: "0.2",
-          sources: {
-            points: {
-              type: "geojson",
-              data: { type: "FeatureCollection", features: [] },
+        content: `${JSON.stringify(
+          {
+            version: "0.2",
+            sources: {
+              points: {
+                type: "geojson",
+                data: { type: "FeatureCollection", features: [] },
+              },
             },
+            layers: [
+              {
+                id: "points-layer",
+                type: "circle",
+                source: "points",
+                paint: { "circle-radius": 6, "circle-color": "#3b82f6" },
+              },
+            ],
           },
-          layers: [
-            {
-              id: "points-layer",
-              type: "circle",
-              source: "points",
-              paint: { "circle-radius": 6, "circle-color": "#3b82f6" },
-            },
-          ],
-        }, null, 2) + "\n",
+          null,
+          2,
+        )}\n`,
       },
       {
         path: "README.md",
@@ -1072,8 +1086,8 @@ npx create-gis-map . --generate --template app --prompt "Your description here" 
 const registry: Record<TemplateName, Template> = {
   "static-html": staticHtmlTemplate,
   "vite-ts": viteTsTemplate,
-  "mapspec": mapspecTemplate,
-  "app": appTemplate,
+  mapspec: mapspecTemplate,
+  app: appTemplate,
 };
 
 export function getTemplate(name: string): Template | undefined {

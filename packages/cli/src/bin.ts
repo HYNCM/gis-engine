@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 /**
  * @gis-engine/cli — create-gis-map
  *
@@ -26,14 +27,14 @@
  *   --version, -v    Print CLI version
  */
 
-import { resolve, join } from "node:path";
-import { mkdirSync, writeFileSync, existsSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
+import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "./config.js";
-import { getTemplate, TEMPLATES } from "./templates/index.js";
-import { createProviderDiagnostics } from "./provider.js";
 import { generate } from "./generate.js";
+import { createProviderDiagnostics } from "./provider.js";
+import { getTemplate, TEMPLATES } from "./templates/index.js";
 
 export async function main(argv: string[] = process.argv.slice(2)): Promise<void> {
   const config = parseArgs(argv);
@@ -191,9 +192,7 @@ function getVersion(): string {
 // CLI entry — only run main() when executed directly (not when imported).
 // Detect direct execution via import.meta.url matching process.argv[1].
 const isDirectExecution =
-  typeof process !== "undefined" &&
-  process.argv[1] &&
-  import.meta.url.endsWith(process.argv[1].replace(/\\/g, "/"));
+  typeof process !== "undefined" && process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, "/"));
 
 if (isDirectExecution) {
   main().catch((err) => {

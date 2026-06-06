@@ -1,36 +1,26 @@
 import { createHash, randomUUID } from "node:crypto";
 
 export async function callOpenAiCompatibleProvider(input) {
-  const {
-    profile,
-    apiKey,
-    message,
-    summary,
-    capabilityPrompt,
-    fetchImpl = fetch,
-  } = input;
+  const { profile, apiKey, message, summary, capabilityPrompt, fetchImpl = fetch } = input;
   if (!apiKey) return providerError(profile, "Provider credential is not configured.");
 
   try {
-    const response = await fetchImpl(
-      `${trimTrailingSlash(profile.baseUrl)}/chat/completions`,
-      {
-        method: "POST",
-        headers: {
-          authorization: `Bearer ${apiKey}`,
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          model: profile.model,
-          temperature: 0,
-          messages: [
-            { role: "system", content: systemPrompt(summary, capabilityPrompt) },
-            { role: "user", content: message },
-          ],
-          response_format: { type: "json_object" },
-        }),
+    const response = await fetchImpl(`${trimTrailingSlash(profile.baseUrl)}/chat/completions`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${apiKey}`,
+        "content-type": "application/json",
       },
-    );
+      body: JSON.stringify({
+        model: profile.model,
+        temperature: 0,
+        messages: [
+          { role: "system", content: systemPrompt(summary, capabilityPrompt) },
+          { role: "user", content: message },
+        ],
+        response_format: { type: "json_object" },
+      }),
+    });
 
     if (!response.ok) {
       return providerError(profile, `Provider returned HTTP ${response.status}.`);
@@ -60,30 +50,14 @@ export async function callOpenAiCompatibleProvider(input) {
         layerId: parsed.value.layerId || null,
         paint: parsed.value.paint || null,
         layout: parsed.value.layout || null,
-        filter: Object.hasOwn(parsed.value, "filter")
-          ? parsed.value.filter
-          : undefined,
+        filter: Object.hasOwn(parsed.value, "filter") ? parsed.value.filter : undefined,
         view: parsed.value.view || null,
-        bounds: isBoundsArray(parsed.value.bounds)
-          ? parsed.value.bounds
-          : undefined,
+        bounds: isBoundsArray(parsed.value.bounds) ? parsed.value.bounds : undefined,
         layer: parsed.value.layer || null,
-        minzoom:
-          typeof parsed.value.minzoom === "number"
-            ? parsed.value.minzoom
-            : undefined,
-        maxzoom:
-          typeof parsed.value.maxzoom === "number"
-            ? parsed.value.maxzoom
-            : undefined,
-        beforeLayerId:
-          typeof parsed.value.beforeLayerId === "string"
-            ? parsed.value.beforeLayerId
-            : undefined,
-        message:
-          typeof parsed.value.message === "string"
-            ? parsed.value.message
-            : null,
+        minzoom: typeof parsed.value.minzoom === "number" ? parsed.value.minzoom : undefined,
+        maxzoom: typeof parsed.value.maxzoom === "number" ? parsed.value.maxzoom : undefined,
+        beforeLayerId: typeof parsed.value.beforeLayerId === "string" ? parsed.value.beforeLayerId : undefined,
+        message: typeof parsed.value.message === "string" ? parsed.value.message : null,
         confidence: sanitizeConfidence(parsed.value.confidence),
       },
     };
@@ -118,8 +92,7 @@ function systemPrompt(summary, capabilityPrompt = "") {
     "- Reset map: restore to default state",
     "",
     "## MapLibre Capability Context",
-    capabilityPrompt ||
-      "No expanded MapLibre capability registry was provided. Use only the listed Available Actions.",
+    capabilityPrompt || "No expanded MapLibre capability registry was provided. Use only the listed Available Actions.",
     "",
     `## Current Map State\n${JSON.stringify(summary, null, 2)}`,
     "",
@@ -165,9 +138,7 @@ function parseJsonObject(content) {
       .replace(/\s*```$/, "")
       .trim();
     const value = JSON.parse(stripped);
-    return value && typeof value === "object" && !Array.isArray(value)
-      ? { ok: true, value }
-      : { ok: false };
+    return value && typeof value === "object" && !Array.isArray(value) ? { ok: true, value } : { ok: false };
   } catch {
     return { ok: false };
   }
@@ -191,10 +162,7 @@ function isBoundsArray(value) {
 
 function sanitizeConfidence(value) {
   if (!value || typeof value !== "object") return undefined;
-  const score =
-    typeof value.score === "number"
-      ? Math.max(0, Math.min(1, value.score))
-      : undefined;
+  const score = typeof value.score === "number" ? Math.max(0, Math.min(1, value.score)) : undefined;
   return score != null
     ? {
         score,

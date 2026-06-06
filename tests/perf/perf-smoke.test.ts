@@ -1,6 +1,6 @@
+import { applyCommands, createMap, type MapCommand, type MapSpec } from "@gis-engine/engine";
 import { describe, expect, it } from "vitest";
 import before from "../fixtures/commands/replay/style-update/before.map.json";
-import { applyCommands, createMap, type MapCommand, type MapSpec } from "@gis-engine/engine";
 
 describe("performance smoke", () => {
   it("replays a small command batch within the v0.1 smoke budget", () => {
@@ -9,8 +9,8 @@ describe("performance smoke", () => {
       version: "0.1",
       type: "setView",
       view: {
-        zoom: 11 + index / 100
-      }
+        zoom: 11 + index / 100,
+      },
     }));
     const startedAt = performance.now();
 
@@ -56,7 +56,7 @@ const perfSpec: MapSpec = {
   view: {
     mode: "map2d",
     center: [10, 10],
-    zoom: 4
+    zoom: 4,
   },
   sources: {
     inline: {
@@ -67,11 +67,11 @@ const perfSpec: MapSpec = {
           {
             type: "Feature",
             properties: { id: "point-a" },
-            geometry: { type: "Point", coordinates: [10, 10] }
-          }
-        ]
-      }
-    }
+            geometry: { type: "Point", coordinates: [10, 10] },
+          },
+        ],
+      },
+    },
   },
-  layers: [{ id: "places-circle", type: "circle", source: "inline" }]
+  layers: [{ id: "places-circle", type: "circle", source: "inline" }],
 };

@@ -2,7 +2,10 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { buildMapLibreCapabilityPrompt, MAPLIBRE_CAPABILITY_REGISTRY } from "../../apps/studio/server/maplibre-capabilities.mjs";
+import {
+  buildMapLibreCapabilityPrompt,
+  MAPLIBRE_CAPABILITY_REGISTRY,
+} from "../../apps/studio/server/maplibre-capabilities.mjs";
 import { callOpenAiCompatibleProvider } from "../../apps/studio/server/provider.mjs";
 
 const rootDir = fileURLToPath(new URL("../..", import.meta.url));
@@ -13,12 +16,20 @@ describe("Studio MapLibre capability registry", () => {
     const registry = MAPLIBRE_CAPABILITY_REGISTRY;
 
     expect(registry.packageVersion).toBe(packageJson.version);
-    expect(registry.styleSpec.rootProperties).toEqual(expect.arrayContaining(["sources", "layers", "terrain", "projection", "sky", "light"]));
-    expect(registry.styleSpec.sourceTypes).toEqual(expect.arrayContaining(["vector", "raster", "raster-dem", "geojson", "video", "image"]));
+    expect(registry.styleSpec.rootProperties).toEqual(
+      expect.arrayContaining(["sources", "layers", "terrain", "projection", "sky", "light"]),
+    );
+    expect(registry.styleSpec.sourceTypes).toEqual(
+      expect.arrayContaining(["vector", "raster", "raster-dem", "geojson", "video", "image"]),
+    );
     expect(registry.styleSpec.runtimeSourceTypes).toContain("canvas");
-    expect(registry.styleSpec.layerTypes).toEqual(expect.arrayContaining(["heatmap", "fill-extrusion", "hillshade", "color-relief"]));
+    expect(registry.styleSpec.layerTypes).toEqual(
+      expect.arrayContaining(["heatmap", "fill-extrusion", "hillshade", "color-relief"]),
+    );
     expect(registry.styleSpec.runtimeLayerTypes).toContain("custom");
-    expect(registry.styleSpec.expressionOperators).toEqual(expect.arrayContaining(["global-state", "feature-state", "elevation", "within", "split", "join"]));
+    expect(registry.styleSpec.expressionOperators).toEqual(
+      expect.arrayContaining(["global-state", "feature-state", "elevation", "within", "split", "join"]),
+    );
     expect(registry.styleSpec.expressionOperators).toHaveLength(87);
   });
 
@@ -61,7 +72,13 @@ describe("Studio MapLibre capability registry", () => {
       return {
         ok: true,
         json: async () => ({
-          choices: [{ message: { content: JSON.stringify({ action: "unsupported", message: "Terrain needs a command contract." }) } }],
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({ action: "unsupported", message: "Terrain needs a command contract." }),
+              },
+            },
+          ],
         }),
       };
     };
@@ -94,18 +111,20 @@ describe("Studio MapLibre capability registry", () => {
       return {
         ok: true,
         json: async () => ({
-          choices: [{
-            message: {
-              content: JSON.stringify({
-                action: "setFilter",
-                layerId: "points-layer",
-                filter: ["==", ["get", "category"], "museum"],
-                minzoom: 8,
-                maxzoom: 16,
-                confidence: { score: 0.9 }
-              })
-            }
-          }],
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  action: "setFilter",
+                  layerId: "points-layer",
+                  filter: ["==", ["get", "category"], "museum"],
+                  minzoom: 8,
+                  maxzoom: 16,
+                  confidence: { score: 0.9 },
+                }),
+              },
+            },
+          ],
         }),
       };
     };
@@ -114,7 +133,13 @@ describe("Studio MapLibre capability registry", () => {
       profile: { id: "fixture-provider", baseUrl: "https://example.invalid", model: "fixture-model" },
       apiKey: "sk-test",
       message: "show only museums between zoom 8 and 16",
-      summary: { sources: ["points"], layers: 1, layerIds: ["points-layer"], sourceProperties: { points: ["category", "name"] }, view: {} },
+      summary: {
+        sources: ["points"],
+        layers: 1,
+        layerIds: ["points-layer"],
+        sourceProperties: { points: ["category", "name"] },
+        view: {},
+      },
       capabilityPrompt: buildMapLibreCapabilityPrompt(),
       fetchImpl,
     });
@@ -127,7 +152,7 @@ describe("Studio MapLibre capability registry", () => {
         filter: ["==", ["get", "category"], "museum"],
         minzoom: 8,
         maxzoom: 16,
-        confidence: { score: 0.9, level: "high" }
+        confidence: { score: 0.9, level: "high" },
       },
     });
   });
@@ -141,17 +166,19 @@ describe("Studio MapLibre capability registry", () => {
       return {
         ok: true,
         json: async () => ({
-          choices: [{
-            message: {
-              content: JSON.stringify({
-                action: "reorderLayer",
-                layerId: "labels-layer",
-                beforeLayerId: "points-layer",
-                layout: { visibility: "none" },
-                confidence: { score: 0.8 }
-              })
-            }
-          }],
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  action: "reorderLayer",
+                  layerId: "labels-layer",
+                  beforeLayerId: "points-layer",
+                  layout: { visibility: "none" },
+                  confidence: { score: 0.8 },
+                }),
+              },
+            },
+          ],
         }),
       };
     };
@@ -166,10 +193,10 @@ describe("Studio MapLibre capability registry", () => {
         layerIds: ["points-layer", "labels-layer"],
         layerDetails: [
           { id: "points-layer", type: "circle", source: "points" },
-          { id: "labels-layer", type: "symbol-lite", source: "points", minzoom: 10 }
+          { id: "labels-layer", type: "symbol-lite", source: "points", minzoom: 10 },
         ],
         sourceProperties: { points: ["category", "name"] },
-        view: {}
+        view: {},
       },
       capabilityPrompt: buildMapLibreCapabilityPrompt(),
       fetchImpl,
@@ -182,7 +209,7 @@ describe("Studio MapLibre capability registry", () => {
         layerId: "labels-layer",
         beforeLayerId: "points-layer",
         layout: { visibility: "none" },
-        confidence: { score: 0.8, level: "high" }
+        confidence: { score: 0.8, level: "high" },
       },
     });
   });
@@ -195,15 +222,17 @@ describe("Studio MapLibre capability registry", () => {
       return {
         ok: true,
         json: async () => ({
-          choices: [{
-            message: {
-              content: JSON.stringify({
-                action: "fitBounds",
-                bounds: [120.145, 30.245, 120.172, 30.274],
-                confidence: { score: 0.88 }
-              })
-            }
-          }],
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  action: "fitBounds",
+                  bounds: [120.145, 30.245, 120.172, 30.274],
+                  confidence: { score: 0.88 },
+                }),
+              },
+            },
+          ],
         }),
       };
     };
@@ -212,7 +241,13 @@ describe("Studio MapLibre capability registry", () => {
       profile: { id: "fixture-provider", baseUrl: "https://example.invalid", model: "fixture-model" },
       apiKey: "sk-test",
       message: "show all points",
-      summary: { sources: ["points"], layers: 1, layerIds: ["points-layer"], sourceProperties: { points: ["category", "name"] }, view: {} },
+      summary: {
+        sources: ["points"],
+        layers: 1,
+        layerIds: ["points-layer"],
+        sourceProperties: { points: ["category", "name"] },
+        view: {},
+      },
       capabilityPrompt: buildMapLibreCapabilityPrompt(),
       fetchImpl,
     });
@@ -222,7 +257,7 @@ describe("Studio MapLibre capability registry", () => {
       providerOutput: {
         action: "fitBounds",
         bounds: [120.145, 30.245, 120.172, 30.274],
-        confidence: { score: 0.88, level: "high" }
+        confidence: { score: 0.88, level: "high" },
       },
     });
   });

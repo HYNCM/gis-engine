@@ -1,15 +1,15 @@
-import { chromium, type Page } from "@playwright/test";
 import { Buffer } from "node:buffer";
 import { createRequire } from "node:module";
-import { type SceneView3DExtension } from "@gis-engine/engine";
+import type { SceneView3DExtension } from "@gis-engine/engine";
+import { chromium, type Page } from "@playwright/test";
+import type { Scene3DMockSnapshotResult, Scene3DQueryResult } from "../../packages/scene3d/src/index.js";
 import {
-  createScene3DThreeAdapterRendererEvidence,
   createScene3DThreeAdapterPromotionEvidenceSummary,
+  createScene3DThreeAdapterRendererEvidence,
   createScene3DThreeAdapterRuntime,
-  type Scene3DThreeAdapterVisualCapture
+  type Scene3DThreeAdapterVisualCapture,
 } from "../../packages/scene3d-three-adapter/src/index.js";
-import { type Scene3DMockSnapshotResult, type Scene3DQueryResult } from "../../packages/scene3d/src/index.js";
-import { type SnapshotReport } from "./report.js";
+import type { SnapshotReport } from "./report.js";
 
 const defaultWidth = 320;
 const defaultHeight = 200;
@@ -36,7 +36,7 @@ export interface Scene3DThreeAdapterBrowserRunnerResult {
 }
 
 export async function runScene3DThreeAdapterBrowserRunner(
-  options: Scene3DThreeAdapterBrowserRunnerOptions = {}
+  options: Scene3DThreeAdapterBrowserRunnerOptions = {},
 ): Promise<Scene3DThreeAdapterBrowserRunnerResult> {
   const width = options.width ?? defaultWidth;
   const height = options.height ?? defaultHeight;
@@ -47,14 +47,14 @@ export async function runScene3DThreeAdapterBrowserRunner(
       modelBytes: { "station-model": 1_048_576 },
       textureCount: { "terrain-dem": 1, "station-model": 4 },
       textureBytes: { "terrain-dem": 262_144, "station-model": 2_097_152 },
-      workerCount: 1
-    }
+      workerCount: 1,
+    },
   });
 
   const runtimeLoadReport = await runtime.load();
   const snapshot = await runtime.snapshot({
     format: "data-url",
-    requireLoadedResources: true
+    requireLoadedResources: true,
   });
   const query = await runtime.query();
 
@@ -62,7 +62,7 @@ export async function runScene3DThreeAdapterBrowserRunner(
   try {
     const page = await browser.newPage({
       viewport: { width, height },
-      deviceScaleFactor: 1
+      deviceScaleFactor: 1,
     });
     const consoleErrors: string[] = [];
     page.on("console", (message) => {
@@ -93,7 +93,7 @@ export async function runScene3DThreeAdapterBrowserRunner(
       height,
       reportPath,
       summary: snapshot.summary,
-      picks: query.picks
+      picks: query.picks,
     });
     const capture: Scene3DThreeAdapterVisualCapture = {
       reportPath,
@@ -102,17 +102,17 @@ export async function runScene3DThreeAdapterBrowserRunner(
       nonTransparentPixels: browserRenderResult.nonTransparentPixels,
       changedPixelsFromBackground: browserRenderResult.changedPixelsFromBackground,
       targetLayerPixels: browserRenderResult.targetLayerPixels,
-      consoleErrors
+      consoleErrors,
     };
     const rendererEvidence = createScene3DThreeAdapterRendererEvidence(runtime.spikeReport, {
       capture,
-      diagnostics: [...runtimeLoadReport.diagnostics, ...snapshot.diagnostics, ...query.diagnostics]
+      diagnostics: [...runtimeLoadReport.diagnostics, ...snapshot.diagnostics, ...query.diagnostics],
     });
     const promotionEvidenceSummary = createScene3DThreeAdapterPromotionEvidenceSummary(runtime.spikeReport, {
       loadReport: runtimeLoadReport,
       snapshot,
       query,
-      rendererVisualEvidence: rendererEvidence
+      rendererVisualEvidence: rendererEvidence,
     });
     const report = createSnapshotReport(
       browserRenderResult,
@@ -122,7 +122,7 @@ export async function runScene3DThreeAdapterBrowserRunner(
       promotionEvidenceSummary,
       snapshot,
       query,
-      rendererEvidence.diagnostics ?? []
+      rendererEvidence.diagnostics ?? [],
     );
 
     return {
@@ -132,7 +132,7 @@ export async function runScene3DThreeAdapterBrowserRunner(
       snapshot,
       query,
       browserRenderResult,
-      capture
+      capture,
     };
   } finally {
     await browser.close();
@@ -165,99 +165,96 @@ async function renderScene3DThreeAdapterFrame(
       position: [number, number, number];
       properties: Record<string, unknown>;
     }>;
-  }
+  },
 ): Promise<Scene3DThreeAdapterBrowserRenderResult> {
-  return await page.evaluate(
-    async ({ width, height, reportPath, summary, picks }) => {
-      const canvas = document.getElementById("scene") as HTMLCanvasElement | null;
-      if (!canvas) {
-        return {
-          ok: false,
-          reason: "Scene canvas was not mounted."
-        };
-      }
-
-      canvas.width = width;
-      canvas.height = height;
-      const context = canvas.getContext("2d");
-      if (!context) {
-        return {
-          ok: false,
-          reason: "2D canvas context is unavailable for SceneView3D browser rendering."
-        };
-      }
-
-      context.imageSmoothingEnabled = false;
-      const background = "#121a25";
-      const terrain = "#3a7a58";
-      const city = "#4b73ba";
-      const station = "#f1ab4d";
-      const skyline = "#e8eef7";
-
-      context.fillStyle = background;
-      context.fillRect(0, 0, width, height);
-      context.fillStyle = "#1b2633";
-      context.fillRect(0, 0, width, 42);
-
-      context.fillStyle = terrain;
-      context.fillRect(0, height - 52, width, 52);
-
-      const cityPicks = picks.filter((pick) => pick.layerId === "city");
-      const stationPicks = picks.filter((pick) => pick.layerId === "station");
-      const buildingCount = Math.max(2, Math.min(4, summary.pickableLayerCount + cityPicks.length));
-      const buildingWidth = 28;
-      const buildingGap = 14;
-      const baseLine = height - 52;
-      for (let index = 0; index < buildingCount; index += 1) {
-        const buildingHeight = 34 + ((summary.layerCount + index) % 3) * 12;
-        const x = 32 + index * (buildingWidth + buildingGap);
-        context.fillStyle = city;
-        context.fillRect(x, baseLine - buildingHeight, buildingWidth, buildingHeight);
-      }
-
-      const stationWidth = 32;
-      const stationHeight = 32;
-      const stationX = width - 72 - Math.min(stationPicks.length * 2, 12);
-      const stationY = baseLine - stationHeight - 8;
-      context.fillStyle = station;
-      context.fillRect(stationX, stationY, stationWidth, stationHeight);
-      context.fillStyle = skyline;
-      context.fillRect(stationX - 16, stationY + 10, 12, 2);
-      context.fillRect(stationX + stationWidth + 4, stationY + 10, 12, 2);
-
-      const pixels = context.getImageData(0, 0, width, height).data;
-      let nonTransparentPixels = 0;
-      let changedPixelsFromBackground = 0;
-      const targetLayerPixels = {
-        terrain: 0,
-        city: 0,
-        station: 0
-      };
-      for (let index = 0; index < pixels.length; index += 4) {
-        const red = pixels[index] ?? 0;
-        const green = pixels[index + 1] ?? 0;
-        const blue = pixels[index + 2] ?? 0;
-        const alpha = pixels[index + 3] ?? 0;
-        if (alpha > 0) nonTransparentPixels += 1;
-        if (red !== 18 || green !== 26 || blue !== 37 || alpha !== 255) changedPixelsFromBackground += 1;
-        if (red === 58 && green === 122 && blue === 88 && alpha === 255) targetLayerPixels.terrain += 1;
-        if (red === 75 && green === 115 && blue === 186 && alpha === 255) targetLayerPixels.city += 1;
-        if (red === 241 && green === 171 && blue === 77 && alpha === 255) targetLayerPixels.station += 1;
-      }
-
+  return await page.evaluate(async ({ width, height, reportPath, summary, picks }) => {
+    const canvas = document.getElementById("scene") as HTMLCanvasElement | null;
+    if (!canvas) {
       return {
-        ok: true,
-        dataUrl: canvas.toDataURL("image/png"),
-        canvasWidth: canvas.width,
-        canvasHeight: canvas.height,
-        nonTransparentPixels,
-        changedPixelsFromBackground,
-        targetLayerPixels,
-        reportPath
+        ok: false,
+        reason: "Scene canvas was not mounted.",
       };
-    },
-    payload
-  );
+    }
+
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (!context) {
+      return {
+        ok: false,
+        reason: "2D canvas context is unavailable for SceneView3D browser rendering.",
+      };
+    }
+
+    context.imageSmoothingEnabled = false;
+    const background = "#121a25";
+    const terrain = "#3a7a58";
+    const city = "#4b73ba";
+    const station = "#f1ab4d";
+    const skyline = "#e8eef7";
+
+    context.fillStyle = background;
+    context.fillRect(0, 0, width, height);
+    context.fillStyle = "#1b2633";
+    context.fillRect(0, 0, width, 42);
+
+    context.fillStyle = terrain;
+    context.fillRect(0, height - 52, width, 52);
+
+    const cityPicks = picks.filter((pick) => pick.layerId === "city");
+    const stationPicks = picks.filter((pick) => pick.layerId === "station");
+    const buildingCount = Math.max(2, Math.min(4, summary.pickableLayerCount + cityPicks.length));
+    const buildingWidth = 28;
+    const buildingGap = 14;
+    const baseLine = height - 52;
+    for (let index = 0; index < buildingCount; index += 1) {
+      const buildingHeight = 34 + ((summary.layerCount + index) % 3) * 12;
+      const x = 32 + index * (buildingWidth + buildingGap);
+      context.fillStyle = city;
+      context.fillRect(x, baseLine - buildingHeight, buildingWidth, buildingHeight);
+    }
+
+    const stationWidth = 32;
+    const stationHeight = 32;
+    const stationX = width - 72 - Math.min(stationPicks.length * 2, 12);
+    const stationY = baseLine - stationHeight - 8;
+    context.fillStyle = station;
+    context.fillRect(stationX, stationY, stationWidth, stationHeight);
+    context.fillStyle = skyline;
+    context.fillRect(stationX - 16, stationY + 10, 12, 2);
+    context.fillRect(stationX + stationWidth + 4, stationY + 10, 12, 2);
+
+    const pixels = context.getImageData(0, 0, width, height).data;
+    let nonTransparentPixels = 0;
+    let changedPixelsFromBackground = 0;
+    const targetLayerPixels = {
+      terrain: 0,
+      city: 0,
+      station: 0,
+    };
+    for (let index = 0; index < pixels.length; index += 4) {
+      const red = pixels[index] ?? 0;
+      const green = pixels[index + 1] ?? 0;
+      const blue = pixels[index + 2] ?? 0;
+      const alpha = pixels[index + 3] ?? 0;
+      if (alpha > 0) nonTransparentPixels += 1;
+      if (red !== 18 || green !== 26 || blue !== 37 || alpha !== 255) changedPixelsFromBackground += 1;
+      if (red === 58 && green === 122 && blue === 88 && alpha === 255) targetLayerPixels.terrain += 1;
+      if (red === 75 && green === 115 && blue === 186 && alpha === 255) targetLayerPixels.city += 1;
+      if (red === 241 && green === 171 && blue === 77 && alpha === 255) targetLayerPixels.station += 1;
+    }
+
+    return {
+      ok: true,
+      dataUrl: canvas.toDataURL("image/png"),
+      canvasWidth: canvas.width,
+      canvasHeight: canvas.height,
+      nonTransparentPixels,
+      changedPixelsFromBackground,
+      targetLayerPixels,
+      reportPath,
+    };
+  }, payload);
 }
 
 function createSnapshotReport(
@@ -268,7 +265,7 @@ function createSnapshotReport(
   promotionEvidenceSummary: Scene3DThreeAdapterPromotionEvidenceSummary,
   snapshot: Scene3DMockSnapshotResult,
   query: Scene3DQueryResult,
-  rendererDiagnostics: SnapshotReport["diagnostics"]
+  rendererDiagnostics: SnapshotReport["diagnostics"],
 ): Scene3DThreeAdapterBrowserRunnerReport {
   const passed =
     browserRenderResult.ok &&
@@ -287,7 +284,7 @@ function createSnapshotReport(
       loaded: true,
       snapshotted: true,
       exported: true,
-      destroyed: true
+      destroyed: true,
     },
     spec,
     diagnostics: visualDiagnostics(browserRenderResult, consoleErrors),
@@ -298,12 +295,12 @@ function createSnapshotReport(
       promotionEvidenceSummary,
       snapshot,
       query,
-      rendererDiagnostics
+      rendererDiagnostics,
     ),
     artifacts: {
       actualImage: "captured:data-url",
-      reportJson: `attached:${reportPath}`
-    }
+      reportJson: `attached:${reportPath}`,
+    },
   };
 
   if (browserRenderResult.ok) {
@@ -313,7 +310,7 @@ function createSnapshotReport(
       width: browserRenderResult.canvasWidth,
       height: browserRenderResult.canvasHeight,
       dataUrlPrefix: browserRenderResult.dataUrl.slice(0, "data:image/png;base64,".length),
-      byteLength: Buffer.byteLength(browserRenderResult.dataUrl, "utf8")
+      byteLength: Buffer.byteLength(browserRenderResult.dataUrl, "utf8"),
     };
   } else {
     report.reason = browserRenderResult.reason;
@@ -328,7 +325,7 @@ function createPromotionMatrixSummary(
   promotionEvidenceSummary: Scene3DThreeAdapterPromotionEvidenceSummary,
   snapshot: Scene3DMockSnapshotResult,
   query: Scene3DQueryResult,
-  rendererDiagnostics: SnapshotReport["diagnostics"]
+  rendererDiagnostics: SnapshotReport["diagnostics"],
 ): Scene3DThreeAdapterPromotionMatrixSummary {
   return {
     kind: "Scene3DThreeAdapterPromotionMatrixSummary",
@@ -340,26 +337,24 @@ function createPromotionMatrixSummary(
       height: browserRenderResult.ok ? browserRenderResult.canvasHeight : 0,
       nonTransparentPixels: browserRenderResult.ok ? browserRenderResult.nonTransparentPixels : 0,
       changedPixelsFromBackground: browserRenderResult.ok ? browserRenderResult.changedPixelsFromBackground : 0,
-      targetLayerPixels: browserRenderResult.ok ? browserRenderResult.targetLayerPixels : {}
+      targetLayerPixels: browserRenderResult.ok ? browserRenderResult.targetLayerPixels : {},
     },
     consoleDiagnostics: {
       errorCount: consoleErrors.length,
       hasErrors: consoleErrors.length > 0,
-      messages: [...consoleErrors]
+      messages: [...consoleErrors],
     },
     rendererDiagnostics: {
       counts: countReportDiagnostics(rendererDiagnostics),
-      entries: [...rendererDiagnostics]
+      entries: [...rendererDiagnostics],
     },
     rendererVisualEvidence: {
       passed: promotionEvidenceSummary.evidence.rendererVisual.passed,
       ready:
-        browserRenderResult.ok &&
-        consoleErrors.length === 0 &&
-        promotionEvidenceSummary.evidence.rendererVisual.passed,
+        browserRenderResult.ok && consoleErrors.length === 0 && promotionEvidenceSummary.evidence.rendererVisual.passed,
       ...(promotionEvidenceSummary.evidence.rendererVisual.reportPath
         ? { reportPath: promotionEvidenceSummary.evidence.rendererVisual.reportPath }
-        : {})
+        : {}),
     },
     snapshotQueryEvidence: {
       fixture: "tests/fixtures/specs/valid/scene3d-extension.map.json",
@@ -369,15 +364,15 @@ function createPromotionMatrixSummary(
         width: snapshot.summary.width,
         height: snapshot.summary.height,
         pendingSourceIds: [...snapshot.pendingSourceIds],
-        diagnosticCounts: promotionEvidenceSummary.evidence.snapshot.diagnostics
+        diagnosticCounts: promotionEvidenceSummary.evidence.snapshot.diagnostics,
       },
       query: {
         pickCount: query.picks.length,
         objectIds: query.picks.map((pick) => pick.objectId),
         layerIds: query.picks.map((pick) => pick.layerId),
         sourceIds: query.picks.map((pick) => pick.sourceId),
-        diagnosticCounts: promotionEvidenceSummary.evidence.query.diagnostics
-      }
+        diagnosticCounts: promotionEvidenceSummary.evidence.query.diagnostics,
+      },
     },
     readiness: {
       load: promotionEvidenceSummary.evidence.load.loaded,
@@ -385,8 +380,8 @@ function createPromotionMatrixSummary(
       query: promotionEvidenceSummary.evidence.query.pickCount > 0,
       rendererVisual: promotionEvidenceSummary.evidence.rendererVisual.passed,
       decisionReady: promotionEvidenceSummary.decisionReady,
-      stablePromotionAllowed: false
-    }
+      stablePromotionAllowed: false,
+    },
   };
 }
 
@@ -400,22 +395,22 @@ function countReportDiagnostics(diagnostics: SnapshotReport["diagnostics"]): Sce
 
 function visualDiagnostics(
   browserRenderResult: Scene3DThreeAdapterBrowserRenderResult,
-  consoleErrors: string[]
+  consoleErrors: string[],
 ): SnapshotReport["diagnostics"] {
   if (!browserRenderResult.ok) {
     return [
       {
         severity: "error",
         code: "SNAPSHOT.BLANK_CANVAS",
-        message: browserRenderResult.reason
-      }
+        message: browserRenderResult.reason,
+      },
     ];
   }
 
   return consoleErrors.map((message) => ({
     severity: "error" as const,
     code: "RENDER.ADAPTER_ERROR",
-    message
+    message,
   }));
 }
 
@@ -433,7 +428,7 @@ export type Scene3DThreeAdapterBrowserRenderResult =
   | {
       ok: false;
       reason: string;
-  };
+    };
 
 export interface Scene3DThreeAdapterPromotionMatrixSummary {
   kind: "Scene3DThreeAdapterPromotionMatrixSummary";

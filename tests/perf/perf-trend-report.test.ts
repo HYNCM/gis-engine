@@ -5,9 +5,9 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   comparePerfTrendMeasurements,
-  readPerfTrendReport,
   readLatestPerfTrendReport,
-  writePerfTrendReport
+  readPerfTrendReport,
+  writePerfTrendReport,
 } from "../../scripts/perf-trend.mjs";
 
 const tempOutputs: string[] = [];
@@ -34,7 +34,7 @@ describe("perf trend report generation", () => {
       createMs: Math.max(0, measurement.createMs - 0.5 - index * 0.1),
       queryMs: Math.max(0, measurement.queryMs - 0.25 - index * 0.05),
       destroyMs: Math.max(0, measurement.destroyMs),
-      passed: true
+      passed: true,
     }));
     const comparison = comparePerfTrendMeasurements(currentMeasurements, previous.measurements);
     const outputPath = join(tmpdir(), `perf-trend-${Date.now()}.md`);
@@ -48,7 +48,7 @@ describe("perf trend report generation", () => {
       period: "2026-W23",
       generatedAt: "2026-06-06T00:00:00Z",
       repoRevision: "test",
-      measurements: currentMeasurements
+      measurements: currentMeasurements,
     });
     const markdown = readFileSync(outputPath, "utf8");
 

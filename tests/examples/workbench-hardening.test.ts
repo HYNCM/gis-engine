@@ -1,18 +1,18 @@
 import { describe, expect, it } from "vitest";
 import {
+  AUDIT_EXPORT_BYTE_CAP,
+  AUDIT_EXPORT_RECORD_CAP,
+  AUDIT_RECORD_VERSION,
+  auditPayloadSafe,
+  createDurableAuditRecord,
+} from "../../examples/ai-map-workbench/audit-contract.mjs";
+import {
   createReviewDecision,
   REVIEW_DECISION_VERSION,
-  REVIEW_REASON_CAP,
   REVIEW_DIAGNOSTIC_CAP,
-  REVIEW_FOLLOW_UP_CAP
+  REVIEW_FOLLOW_UP_CAP,
+  REVIEW_REASON_CAP,
 } from "../../examples/ai-map-workbench/review-decisions.mjs";
-import {
-  createDurableAuditRecord,
-  AUDIT_RECORD_VERSION,
-  AUDIT_EXPORT_RECORD_CAP,
-  AUDIT_EXPORT_BYTE_CAP,
-  auditPayloadSafe
-} from "../../examples/ai-map-workbench/audit-contract.mjs";
 
 const PROJECT_ID = "project_test-001";
 const SESSION_ID = "session-w24-hardening";
@@ -35,10 +35,10 @@ function makeEvidence(status = "applied", commandCount = 2) {
           type: "geojson",
           state: "supported",
           queryReady: true,
-          resourcePolicy: "passed"
-        }
-      ]
-    }
+          resourcePolicy: "passed",
+        },
+      ],
+    },
   };
 }
 
@@ -51,9 +51,9 @@ describe("Workbench hardening: review actions (RCU-003)", () => {
       createdAt: "2026-06-05T12:00:00Z",
       request: {
         outcome: "accepted",
-        reasonCodes: ["review-accepted"]
+        reasonCodes: ["review-accepted"],
       },
-      evidence: makeEvidence()
+      evidence: makeEvidence(),
     });
 
     expect(result.ok).toBe(true);
@@ -71,9 +71,9 @@ describe("Workbench hardening: review actions (RCU-003)", () => {
       createdAt: "2026-06-05T12:00:00Z",
       request: {
         outcome: "blocked",
-        reasonCodes: ["provider-output-blocked"]
+        reasonCodes: ["provider-output-blocked"],
       },
-      evidence: makeEvidence("blocked", 0)
+      evidence: makeEvidence("blocked", 0),
     });
 
     expect(result.ok).toBe(true);
@@ -91,9 +91,9 @@ describe("Workbench hardening: review actions (RCU-003)", () => {
       request: {
         outcome: "follow-up-required",
         reasonCodes: ["spatial-query-follow-up"],
-        followUpTaskIds: ["TASK-2026W24-CNS-001"]
+        followUpTaskIds: ["TASK-2026W24-CNS-001"],
       },
-      evidence: makeEvidence("applied", 1)
+      evidence: makeEvidence("applied", 1),
     });
 
     expect(result.ok).toBe(true);
@@ -110,9 +110,9 @@ describe("Workbench hardening: review actions (RCU-003)", () => {
       createdAt: "2026-06-05T12:00:00Z",
       request: {
         outcome: "invalid-state",
-        reasonCodes: ["review-accepted"]
+        reasonCodes: ["review-accepted"],
       },
-      evidence: makeEvidence()
+      evidence: makeEvidence(),
     });
 
     expect(result.ok).toBe(false);
@@ -127,9 +127,9 @@ describe("Workbench hardening: review actions (RCU-003)", () => {
       request: {
         outcome: "accepted",
         reasonCodes: ["review-accepted"],
-        spec: { version: "0.1", id: "hack" }
+        spec: { version: "0.1", id: "hack" },
       },
-      evidence: makeEvidence()
+      evidence: makeEvidence(),
     });
 
     expect(result.ok).toBe(false);
@@ -155,7 +155,7 @@ describe("Workbench hardening: durable audit contract", () => {
       commandCount: 3,
       diagnosticCounts: { error: 0, warning: 0, info: 1 },
       fromRevision: "1",
-      toRevision: "2"
+      toRevision: "2",
     });
 
     expect(result.ok).toBe(true);
@@ -190,12 +190,12 @@ describe("Workbench hardening: credential safety", () => {
       createdAt: "2026-06-05T12:00:00Z",
       request: {
         outcome: "accepted",
-        reasonCodes: ["review-accepted"]
+        reasonCodes: ["review-accepted"],
       },
       evidence: {
         ...makeEvidence(),
-        promptHash: "sha256:" + "a".repeat(64)
-      }
+        promptHash: `sha256:${"a".repeat(64)}`,
+      },
     });
 
     expect(result.ok).toBe(true);
@@ -220,7 +220,7 @@ describe("Workbench hardening: credential safety", () => {
       diagnosticCounts: { error: 0, warning: 0, info: 0 },
       fromRevision: "1",
       toRevision: "2",
-      promptHash: "sha256:" + "b".repeat(64)
+      promptHash: `sha256:${"b".repeat(64)}`,
     });
 
     expect(result.ok).toBe(true);

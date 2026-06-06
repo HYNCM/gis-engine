@@ -18,14 +18,8 @@
  */
 
 import { execSync } from "node:child_process";
-import {
-  mkdirSync,
-  writeFileSync,
-  readFileSync,
-  readdirSync,
-  statSync,
-} from "node:fs";
-import { join, dirname } from "node:path";
+import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -38,9 +32,7 @@ function getMonthStr() {
 
 function getGitSha() {
   try {
-    return execSync("git rev-parse --short HEAD", { cwd: ROOT })
-      .toString()
-      .trim();
+    return execSync("git rev-parse --short HEAD", { cwd: ROOT }).toString().trim();
   } catch {
     return "unknown";
   }
@@ -101,19 +93,16 @@ function extractPatternsPitfalls(reportPath) {
   try {
     const content = readFileSync(reportPath, "utf-8");
     const fm = parseFrontMatter(content);
-    const agent = fm.agent || "";
+    const _agent = fm.agent || "";
     const decisionLevel = fm.decision_level || "";
     const results = { patterns: [], pitfalls: [] };
-    const shortPath = reportPath.replace(ROOT + "/", "");
+    const shortPath = reportPath.replace(`${ROOT}/`, "");
 
     // ── Pattern 提取 ──
 
     // 1. 从架构评估中提取评分证据作为 pattern
     if (content.includes("架构") || content.includes("Architecture")) {
-      const scoreRows = extractTableRows(
-        content,
-        "(?:架构|Architecture).*(?:评分|Assessment|Score)",
-      );
+      const scoreRows = extractTableRows(content, "(?:架构|Architecture).*(?:评分|Assessment|Score)");
       for (const row of scoreRows) {
         const score = parseFloat(row[1]);
         if (score >= 8.5 && row[0].length > 5) {
@@ -160,17 +149,13 @@ function extractPatternsPitfalls(reportPath) {
     // ── Pitfall 提取 ──
 
     // 1. "Residual Risk" 节
-    const riskSection = content.match(
-      /##\s+Residual Risk[\s\S]*?(?=\n##\s|\n---|\n\*{3}|$)/i,
-    );
+    const riskSection = content.match(/##\s+Residual Risk[\s\S]*?(?=\n##\s|\n---|\n\*{3}|$)/i);
     if (riskSection) {
       const riskText = riskSection[0].slice(0, 400).trim();
       if (riskText.length > 30) {
         results.pitfalls.push({
           title: `Residual Risk: ${shortPath}`,
-          description: riskText
-            .replace(/^##\s+Residual Risk\s*/i, "")
-            .slice(0, 350),
+          description: riskText.replace(/^##\s+Residual Risk\s*/i, "").slice(0, 350),
           source: shortPath,
         });
       }
@@ -178,9 +163,7 @@ function extractPatternsPitfalls(reportPath) {
 
     // 2. 阻塞级发现（decision_level: blocking）
     if (/blocking/i.test(decisionLevel)) {
-      const blockingFindings = content.match(
-        /(?:###\s+\[P\d\].*?(?=\n###|\n---|\n\*{3}|$))/gs,
-      );
+      const blockingFindings = content.match(/(?:###\s+\[P\d\].*?(?=\n###|\n---|\n\*{3}|$))/gs);
       if (blockingFindings) {
         for (const finding of blockingFindings) {
           if (finding.length > 20) {
@@ -245,7 +228,7 @@ function getReportMonth(filePath, content) {
       const weekMatch = fm.period.match(/^(\d{4})-W(\d{2})/);
       if (weekMatch) {
         // 近似：W1-W4 → 01, W5-W8 → 02, ...
-        const week = parseInt(weekMatch[2]);
+        const week = parseInt(weekMatch[2], 10);
         const month = Math.min(12, Math.ceil(week / 4.34));
         return `${year}-${String(month).padStart(2, "0")}`;
       }
@@ -282,11 +265,7 @@ function scanDirectory(dir, monthFilter) {
         allResults.patterns.push(...subResults.patterns);
         allResults.pitfalls.push(...subResults.pitfalls);
       } else if (entry.name.endsWith(".md")) {
-        if (
-          entry.name === "REPORT_INDEX.md" ||
-          entry.name === "README.md" ||
-          entry.name.startsWith("evolution-")
-        ) {
+        if (entry.name === "REPORT_INDEX.md" || entry.name === "README.md" || entry.name.startsWith("evolution-")) {
           continue;
         }
         try {
@@ -340,21 +319,15 @@ function generatePatternsMarkdown(patterns, monthStr) {
     lines.push("*本月尚未提取任何 pattern。*");
     lines.push("");
     lines.push("> 💡 当 review 报告中包含 high-confidence 的 Evidence 条目、");
-    lines.push(
-      "> 架构评估中包含 >= 8.5 分的维度、或存在全部通过的门禁组合时，",
-    );
+    lines.push("> 架构评估中包含 >= 8.5 分的维度、或存在全部通过的门禁组合时，");
     lines.push("> 本提取器将自动收录。");
   } else {
     // 按 score 降序排列（有分的在前）
-    const sorted = [...patterns].sort(
-      (a, b) => (b.score ?? 0) - (a.score ?? 0),
-    );
+    const sorted = [...patterns].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
     let patNum = 1;
     for (const pat of sorted) {
       const scoreTag = pat.score ? ` [评分 ${pat.score}/10]` : "";
-      lines.push(
-        `## PAT-${String(patNum).padStart(3, "0")}: ${pat.title}${scoreTag}`,
-      );
+      lines.push(`## PAT-${String(patNum).padStart(3, "0")}: ${pat.title}${scoreTag}`);
       lines.push("");
       lines.push(`**提取自**: \`${pat.source}\``);
       lines.push("");
@@ -382,9 +355,7 @@ function generatePitfallsMarkdown(pitfalls, monthStr) {
   lines.push("");
   lines.push("# Evolution Pitfall Library");
   lines.push("");
-  lines.push(
-    "此库记录从代码审查、架构评估和 Residual Risk 分析中提取的常见陷阱。",
-  );
+  lines.push("此库记录从代码审查、架构评估和 Residual Risk 分析中提取的常见陷阱。");
   lines.push("每个 pitfall 包含风险描述、来源和避免建议。");
   lines.push("");
 
@@ -433,15 +404,10 @@ async function main() {
   console.log("");
 
   // 扫描多个目录（当月 + 上月）
-  const scanDirs = [
-    "docs/reviews",
-    "docs/planning/feature-specs",
-    "docs/archive",
-  ];
-  const monthFilter = (reportMonth) =>
-    reportMonth === options.month || reportMonth === prevMonth;
+  const scanDirs = ["docs/reviews", "docs/planning/feature-specs", "docs/archive"];
+  const monthFilter = (reportMonth) => reportMonth === options.month || reportMonth === prevMonth;
 
-  let allResults = { patterns: [], pitfalls: [] };
+  const allResults = { patterns: [], pitfalls: [] };
 
   for (const dir of scanDirs) {
     console.log(`📂 扫描 ${dir}...`);
@@ -465,17 +431,11 @@ async function main() {
 
     mkdirSync(dirname(patternsPath), { recursive: true });
 
-    const patternsMarkdown = generatePatternsMarkdown(
-      uniquePatterns,
-      options.month,
-    );
+    const patternsMarkdown = generatePatternsMarkdown(uniquePatterns, options.month);
     writeFileSync(patternsPath, patternsMarkdown, "utf-8");
     console.log(`   📄 已生成 Pattern 库: ${patternsPath}`);
 
-    const pitfallsMarkdown = generatePitfallsMarkdown(
-      uniquePitfalls,
-      options.month,
-    );
+    const pitfallsMarkdown = generatePitfallsMarkdown(uniquePitfalls, options.month);
     writeFileSync(pitfallsPath, pitfallsMarkdown, "utf-8");
     console.log(`   📄 已生成 Pitfall 库: ${pitfallsPath}`);
 

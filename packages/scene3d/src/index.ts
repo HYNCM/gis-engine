@@ -1,21 +1,21 @@
 import {
-  DiagnosticCodes,
   type CapabilityReport,
   type Diagnostic,
+  DiagnosticCodes,
   type SceneLayer,
   type ScenePosition,
   type SceneResourcePolicy,
   type SceneView3DExtension,
   type SnapshotOptions,
   type SnapshotResult,
-  type SuggestedFix
+  type SuggestedFix,
 } from "@gis-engine/engine";
 
 export const scene3dPackageBoundary = {
   packageName: "@gis-engine/scene3d",
   status: "scaffold",
   stableViewMode: false,
-  forbiddenCoreDependencies: ["cesium", "three", "@loaders.gl/3d-tiles", "@loaders.gl/gltf", "three-stdlib"]
+  forbiddenCoreDependencies: ["cesium", "three", "@loaders.gl/3d-tiles", "@loaders.gl/gltf", "three-stdlib"],
 } as const;
 
 export type Scene3DPackageBoundary = typeof scene3dPackageBoundary;
@@ -26,8 +26,13 @@ export const defaultSceneResourceLoadPolicy = {
   maxTextureCount: 64,
   maxTextureBytes: 67_108_864,
   maxWorkers: 2,
-  timeoutMs: 10_000
-} as const satisfies Required<Pick<SceneResourcePolicy, "maxTilesetJsonBytes" | "maxModelBytes" | "maxTextureCount" | "maxTextureBytes" | "maxWorkers" | "timeoutMs">>;
+  timeoutMs: 10_000,
+} as const satisfies Required<
+  Pick<
+    SceneResourcePolicy,
+    "maxTilesetJsonBytes" | "maxModelBytes" | "maxTextureCount" | "maxTextureBytes" | "maxWorkers" | "timeoutMs"
+  >
+>;
 
 export type SceneResourceLoadKind = "tileset-json" | "model" | "texture" | "worker";
 
@@ -58,7 +63,12 @@ export interface SceneResourceLoadTotals {
 
 export interface SceneResourceLoadReport {
   valid: boolean;
-  policy: Required<Pick<SceneResourcePolicy, "maxTilesetJsonBytes" | "maxModelBytes" | "maxTextureCount" | "maxTextureBytes" | "maxWorkers" | "timeoutMs">>;
+  policy: Required<
+    Pick<
+      SceneResourcePolicy,
+      "maxTilesetJsonBytes" | "maxModelBytes" | "maxTextureCount" | "maxTextureBytes" | "maxWorkers" | "timeoutMs"
+    >
+  >;
   totals: SceneResourceLoadTotals;
   diagnostics: Diagnostic[];
 }
@@ -173,9 +183,9 @@ export function getScene3DV1Capabilities(): CapabilityReport {
     queries: ["pick", "bbox3d"],
     snapshot: {
       supported: true,
-      formats: ["png", "data-url"]
+      formats: ["png", "data-url"],
     },
-    experimental: ["sceneview3d-v1"]
+    experimental: ["sceneview3d-v1"],
   };
 }
 
@@ -198,14 +208,18 @@ export function explainScene3DScaffold(extension: SceneView3DExtension): Scene3D
         fix: {
           kind: "manual",
           confidence: "medium",
-          message: "Keep SceneView3D data under extensions.scene3d until the v1 renderer package passes resource, snapshot, and query gates."
-        }
-      }
-    ]
+          message:
+            "Keep SceneView3D data under extensions.scene3d until the v1 renderer package passes resource, snapshot, and query gates.",
+        },
+      },
+    ],
   };
 }
 
-export function validateSceneResourceLoadPlan(extension: SceneView3DExtension, plan: SceneResourceLoadPlan): SceneResourceLoadReport {
+export function validateSceneResourceLoadPlan(
+  extension: SceneView3DExtension,
+  plan: SceneResourceLoadPlan,
+): SceneResourceLoadReport {
   const policy = normalizeSceneResourcePolicy(extension.resourcePolicy);
   const totals: SceneResourceLoadTotals = {
     tilesetJsonBytes: 0,
@@ -213,7 +227,7 @@ export function validateSceneResourceLoadPlan(extension: SceneView3DExtension, p
     textureCount: 0,
     textureBytes: 0,
     workers: plan.workerCount ?? 0,
-    timedOutResources: 0
+    timedOutResources: 0,
   };
   const diagnostics: Diagnostic[] = [];
 
@@ -238,14 +252,26 @@ export function validateSceneResourceLoadPlan(extension: SceneView3DExtension, p
     if (resource.kind === "tileset-json") {
       totals.tilesetJsonBytes += resource.byteLength ?? 0;
       if (isFinitePositive(resource.byteLength) && resource.byteLength > policy.maxTilesetJsonBytes) {
-        diagnostics.push(resourceTooLarge(resource, path, `3D Tiles tileset JSON is ${resource.byteLength} bytes, exceeding maxTilesetJsonBytes=${policy.maxTilesetJsonBytes}.`));
+        diagnostics.push(
+          resourceTooLarge(
+            resource,
+            path,
+            `3D Tiles tileset JSON is ${resource.byteLength} bytes, exceeding maxTilesetJsonBytes=${policy.maxTilesetJsonBytes}.`,
+          ),
+        );
       }
     }
 
     if (resource.kind === "model") {
       totals.modelBytes += resource.byteLength ?? 0;
       if (isFinitePositive(resource.byteLength) && resource.byteLength > policy.maxModelBytes) {
-        diagnostics.push(resourceTooLarge(resource, path, `3D model resource is ${resource.byteLength} bytes, exceeding maxModelBytes=${policy.maxModelBytes}.`));
+        diagnostics.push(
+          resourceTooLarge(
+            resource,
+            path,
+            `3D model resource is ${resource.byteLength} bytes, exceeding maxModelBytes=${policy.maxModelBytes}.`,
+          ),
+        );
       }
     }
 
@@ -260,26 +286,44 @@ export function validateSceneResourceLoadPlan(extension: SceneView3DExtension, p
   }
 
   if (totals.textureCount > policy.maxTextureCount) {
-    diagnostics.push(policyTooLarge("/extensions/scene3d/resourcePolicy/maxTextureCount", `Scene texture count is ${totals.textureCount}, exceeding maxTextureCount=${policy.maxTextureCount}.`));
+    diagnostics.push(
+      policyTooLarge(
+        "/extensions/scene3d/resourcePolicy/maxTextureCount",
+        `Scene texture count is ${totals.textureCount}, exceeding maxTextureCount=${policy.maxTextureCount}.`,
+      ),
+    );
   }
 
   if (totals.textureBytes > policy.maxTextureBytes) {
-    diagnostics.push(policyTooLarge("/extensions/scene3d/resourcePolicy/maxTextureBytes", `Scene texture budget is ${totals.textureBytes} bytes, exceeding maxTextureBytes=${policy.maxTextureBytes}.`));
+    diagnostics.push(
+      policyTooLarge(
+        "/extensions/scene3d/resourcePolicy/maxTextureBytes",
+        `Scene texture budget is ${totals.textureBytes} bytes, exceeding maxTextureBytes=${policy.maxTextureBytes}.`,
+      ),
+    );
   }
 
   if (totals.workers > policy.maxWorkers) {
-    diagnostics.push(policyTooLarge("/extensions/scene3d/resourcePolicy/maxWorkers", `Scene worker count is ${totals.workers}, exceeding maxWorkers=${policy.maxWorkers}.`));
+    diagnostics.push(
+      policyTooLarge(
+        "/extensions/scene3d/resourcePolicy/maxWorkers",
+        `Scene worker count is ${totals.workers}, exceeding maxWorkers=${policy.maxWorkers}.`,
+      ),
+    );
   }
 
   return {
     valid: !diagnostics.some((diagnostic) => diagnostic.severity === "error"),
     policy,
     totals,
-    diagnostics
+    diagnostics,
   };
 }
 
-export function snapshotScene3DMock(extension: SceneView3DExtension, options: Scene3DMockSnapshotOptions = {}): Scene3DMockSnapshotResult {
+export function snapshotScene3DMock(
+  extension: SceneView3DExtension,
+  options: Scene3DMockSnapshotOptions = {},
+): Scene3DMockSnapshotResult {
   const diagnostics: Diagnostic[] = [];
   const layers = extension.layers ?? [];
   const visibleLayers = layers.filter((layer) => layer.visible !== false);
@@ -292,7 +336,7 @@ export function snapshotScene3DMock(extension: SceneView3DExtension, options: Sc
     pickableLayerCount: pickableLayers.length,
     width: options.width ?? extension.snapshot?.width ?? 800,
     height: options.height ?? extension.snapshot?.height ?? 600,
-    format
+    format,
   };
 
   if (visibleLayers.length === 0) {
@@ -301,7 +345,7 @@ export function snapshotScene3DMock(extension: SceneView3DExtension, options: Sc
       code: DiagnosticCodes.SnapshotBlankCanvas,
       message: "SceneView3D mock snapshot has no visible scene layers.",
       path: "/extensions/scene3d/layers",
-      fix: manualFix("Add a visible scene layer before snapshotting the 3D scene.", "medium")
+      fix: manualFix("Add a visible scene layer before snapshotting the 3D scene.", "medium"),
     });
   }
 
@@ -316,7 +360,10 @@ export function snapshotScene3DMock(extension: SceneView3DExtension, options: Sc
       message: `Scene source "${sourceId}" is required for snapshot but is not marked as loaded.`,
       path: `/extensions/scene3d/sources/${escapePathSegment(sourceId)}`,
       relatedResources: [{ kind: "source", id: sourceId }],
-      fix: manualFix("Load the scene source before strict snapshot, or disable requireLoadedResources for non-strict mock checks.", "medium")
+      fix: manualFix(
+        "Load the scene source before strict snapshot, or disable requireLoadedResources for non-strict mock checks.",
+        "medium",
+      ),
     });
   }
 
@@ -325,7 +372,7 @@ export function snapshotScene3DMock(extension: SceneView3DExtension, options: Sc
     passed,
     diagnostics,
     summary,
-    pendingSourceIds
+    pendingSourceIds,
   };
   if (format === "data-url") {
     result.dataUrl = encodeMockDataUrl({ kind: "SceneView3DMockSnapshot", summary, pendingSourceIds });
@@ -333,7 +380,10 @@ export function snapshotScene3DMock(extension: SceneView3DExtension, options: Sc
   return result;
 }
 
-export function queryScene3DMock(extension: SceneView3DExtension, options: Scene3DQueryOptions = {}): Scene3DQueryResult {
+export function queryScene3DMock(
+  extension: SceneView3DExtension,
+  options: Scene3DQueryOptions = {},
+): Scene3DQueryResult {
   const diagnostics: Diagnostic[] = [];
   const layers = selectSceneLayers(extension, options, diagnostics);
   const picks: ScenePickResult[] = [];
@@ -356,8 +406,8 @@ export function queryScene3DMock(extension: SceneView3DExtension, options: Scene
       properties: {
         mock: true,
         layerType: layer.type,
-        sourceType: source.type
-      }
+        sourceType: source.type,
+      },
     });
   }
 
@@ -366,18 +416,22 @@ export function queryScene3DMock(extension: SceneView3DExtension, options: Scene
 
 export function evaluateScene3DReleaseVisualGate(
   extension: SceneView3DExtension,
-  options: Scene3DReleaseVisualGateOptions = {}
+  options: Scene3DReleaseVisualGateOptions = {},
 ): Scene3DReleaseVisualGateReport {
   const ciTier = options.ciTier ?? "local";
   const rendererVisualRequired = options.requireRendererVisual ?? ciTier === "release";
   const snapshotOptions: Scene3DMockSnapshotOptions = {
     format: "data-url",
-    requireLoadedResources: true
+    requireLoadedResources: true,
   };
   if (options.loadedSourceIds) snapshotOptions.loadedSourceIds = options.loadedSourceIds;
   const snapshot = snapshotScene3DMock(extension, snapshotOptions);
   const query = queryScene3DMock(extension);
-  const diagnostics = [...snapshot.diagnostics, ...query.diagnostics, ...(options.rendererVisualEvidence?.diagnostics ?? [])];
+  const diagnostics = [
+    ...snapshot.diagnostics,
+    ...query.diagnostics,
+    ...(options.rendererVisualEvidence?.diagnostics ?? []),
+  ];
 
   if (snapshot.summary.pickableLayerCount > 0 && query.picks.length === 0) {
     diagnostics.push({
@@ -385,7 +439,10 @@ export function evaluateScene3DReleaseVisualGate(
       code: DiagnosticCodes.CapabilityUnsupported,
       message: "SceneView3D release visual gate requires deterministic query evidence for pickable scene layers.",
       path: "/extensions/scene3d/layers",
-      fix: manualFix("Keep at least one visible pickable layer queryable before asking for release visual acceptance.", "medium")
+      fix: manualFix(
+        "Keep at least one visible pickable layer queryable before asking for release visual acceptance.",
+        "medium",
+      ),
     });
   }
 
@@ -414,7 +471,7 @@ export function evaluateScene3DReleaseVisualGate(
     runtime: {
       status: "extension-only",
       stableViewMode: false,
-      rendererVisualRequired
+      rendererVisualRequired,
     },
     evidence: {
       capabilities: getScene3DV1Capabilities(),
@@ -422,14 +479,14 @@ export function evaluateScene3DReleaseVisualGate(
         passed: snapshot.passed,
         pendingSourceIds: snapshot.pendingSourceIds,
         summary: snapshot.summary,
-        diagnosticCounts: countDiagnostics(snapshot.diagnostics)
+        diagnosticCounts: countDiagnostics(snapshot.diagnostics),
       },
       query: {
         pickCount: query.picks.length,
-        diagnosticCounts: countDiagnostics(query.diagnostics)
-      }
+        diagnosticCounts: countDiagnostics(query.diagnostics),
+      },
     },
-    diagnostics
+    diagnostics,
   };
 
   if (options.rendererVisualEvidence) report.evidence.rendererVisual = options.rendererVisualEvidence;
@@ -444,11 +501,14 @@ function normalizeSceneResourcePolicy(policy?: SceneResourcePolicy): SceneResour
     maxTextureCount: policy?.maxTextureCount ?? defaultSceneResourceLoadPolicy.maxTextureCount,
     maxTextureBytes: policy?.maxTextureBytes ?? defaultSceneResourceLoadPolicy.maxTextureBytes,
     maxWorkers: policy?.maxWorkers ?? defaultSceneResourceLoadPolicy.maxWorkers,
-    timeoutMs: policy?.timeoutMs ?? defaultSceneResourceLoadPolicy.timeoutMs
+    timeoutMs: policy?.timeoutMs ?? defaultSceneResourceLoadPolicy.timeoutMs,
   };
 }
 
-function normalizeSnapshotFormat(format: SnapshotOptions["format"] | undefined, diagnostics: Diagnostic[]): "png" | "data-url" {
+function normalizeSnapshotFormat(
+  format: SnapshotOptions["format"] | undefined,
+  diagnostics: Diagnostic[],
+): "png" | "data-url" {
   if (format === undefined || format === "data-url") return "data-url";
   if (format === "png") return "png";
 
@@ -457,12 +517,16 @@ function normalizeSnapshotFormat(format: SnapshotOptions["format"] | undefined, 
     code: DiagnosticCodes.CapabilityUnsupported,
     message: `SceneView3D mock snapshot does not support "${format}" format.`,
     path: "/format",
-    fix: manualFix('Use "data-url" or "png" for mock SceneView3D snapshots.', "high")
+    fix: manualFix('Use "data-url" or "png" for mock SceneView3D snapshots.', "high"),
   });
   return "data-url";
 }
 
-function collectPendingSourceIds(extension: SceneView3DExtension, loadedSourceIds: string[] | undefined, requireLoadedResources: boolean): string[] {
+function collectPendingSourceIds(
+  extension: SceneView3DExtension,
+  loadedSourceIds: string[] | undefined,
+  requireLoadedResources: boolean,
+): string[] {
   if (!requireLoadedResources) return [];
 
   const loaded = new Set(loadedSourceIds ?? []);
@@ -480,15 +544,19 @@ function missingLayerSourceDiagnostics(extension: SceneView3DExtension): Diagnos
       path: `/extensions/scene3d/layers/${index}/source`,
       relatedResources: [
         { kind: "layer", id: layer.id },
-        { kind: "source", id: layer.source }
+        { kind: "source", id: layer.source },
       ],
-      fix: manualFix("Add the missing scene source or update the scene layer source id.", "medium")
+      fix: manualFix("Add the missing scene source or update the scene layer source id.", "medium"),
     });
   }
   return diagnostics;
 }
 
-function selectSceneLayers(extension: SceneView3DExtension, options: Scene3DQueryOptions, diagnostics: Diagnostic[]): SceneLayer[] {
+function selectSceneLayers(
+  extension: SceneView3DExtension,
+  options: Scene3DQueryOptions,
+  diagnostics: Diagnostic[],
+): SceneLayer[] {
   const allLayers = extension.layers ?? [];
   if (!options.layers) return allLayers;
 
@@ -506,7 +574,7 @@ function selectSceneLayers(extension: SceneView3DExtension, options: Scene3DQuer
         message: `Scene layer "${layerId}" does not exist.`,
         path: "/extensions/scene3d/layers",
         relatedResources: [{ kind: "layer", id: layerId }],
-        fix: manualFix("Check the scene layer id or omit layers to query all pickable scene layers.", "high")
+        fix: manualFix("Check the scene layer id or omit layers to query all pickable scene layers.", "high"),
       });
       continue;
     }
@@ -528,9 +596,9 @@ function sourceNotFoundForLayer(layer: SceneLayer): Diagnostic {
     path: "/extensions/scene3d/layers",
     relatedResources: [
       { kind: "layer", id: layer.id },
-      { kind: "source", id: layer.source }
+      { kind: "source", id: layer.source },
     ],
-    fix: manualFix("Add the missing scene source or update the scene layer source id.", "medium")
+    fix: manualFix("Add the missing scene source or update the scene layer source id.", "medium"),
   };
 }
 
@@ -545,7 +613,7 @@ function manualFix(message: string, confidence: SuggestedFix["confidence"]): Sug
   return {
     kind: "manual",
     confidence,
-    message
+    message,
   };
 }
 
@@ -573,8 +641,8 @@ function sourceMissing(resource: SceneResourceLoadEntry, path: string): Diagnost
     fix: {
       kind: "manual",
       confidence: "medium",
-      message: "Add the scene source before loading it, or remove the resource load entry."
-    }
+      message: "Add the scene source before loading it, or remove the resource load entry.",
+    },
   };
 }
 
@@ -587,8 +655,8 @@ function unsupportedAssetType(resource: SceneResourceLoadEntry, path: string): D
     fix: {
       kind: "manual",
       confidence: "medium",
-      message: "Use one of: tileset-json, model, texture, worker."
-    }
+      message: "Use one of: tileset-json, model, texture, worker.",
+    },
   };
   const relatedResources = relatedResource(resource);
   if (relatedResources) diagnostic.relatedResources = relatedResources;
@@ -604,8 +672,8 @@ function resourceTimeout(resource: SceneResourceLoadEntry, path: string, timeout
     fix: {
       kind: "manual",
       confidence: "medium",
-      message: "Reduce resource size, tune the loader, or increase SceneResourcePolicy.timeoutMs deliberately."
-    }
+      message: "Reduce resource size, tune the loader, or increase SceneResourcePolicy.timeoutMs deliberately.",
+    },
   };
   const relatedResources = relatedResource(resource);
   if (relatedResources) diagnostic.relatedResources = relatedResources;
@@ -621,8 +689,8 @@ function resourceTooLarge(resource: SceneResourceLoadEntry, path: string, messag
     fix: {
       kind: "manual",
       confidence: "medium",
-      message: "Reduce the asset size or raise the matching SceneResourcePolicy budget deliberately."
-    }
+      message: "Reduce the asset size or raise the matching SceneResourcePolicy budget deliberately.",
+    },
   };
   const relatedResources = relatedResource(resource);
   if (relatedResources) diagnostic.relatedResources = relatedResources;
@@ -638,8 +706,8 @@ function policyTooLarge(path: string, message: string): Diagnostic {
     fix: {
       kind: "manual",
       confidence: "medium",
-      message: "Reduce the planned 3D resource load or raise the matching SceneResourcePolicy budget deliberately."
-    }
+      message: "Reduce the planned 3D resource load or raise the matching SceneResourcePolicy budget deliberately.",
+    },
   };
 }
 
@@ -650,13 +718,15 @@ function relatedResource(resource: SceneResourceLoadEntry): Diagnostic["relatedR
   return related.length > 0 ? related : undefined;
 }
 
-function isReleaseVisualWaiverComplete(waiver: Scene3DReleaseVisualWaiver | undefined): waiver is Scene3DReleaseVisualWaiver {
+function isReleaseVisualWaiverComplete(
+  waiver: Scene3DReleaseVisualWaiver | undefined,
+): waiver is Scene3DReleaseVisualWaiver {
   return Boolean(
     waiver &&
       waiver.approvedBy === "coordinator" &&
       waiver.id.length > 0 &&
       waiver.reason.length > 0 &&
-      waiver.followUpTaskId.length > 0
+      waiver.followUpTaskId.length > 0,
   );
 }
 
@@ -667,7 +737,10 @@ function missingReleaseVisualEvidenceDiagnostic(): Diagnostic {
     message:
       "SceneView3D release visual evidence is required in release mode. Provide renderer visual evidence or a coordinator-approved waiver with follow-up task id.",
     path: "/extensions/scene3d",
-    fix: manualFix("Run the release-capable 3D visual runner, or record a coordinator waiver that links the follow-up visual evidence task.", "high")
+    fix: manualFix(
+      "Run the release-capable 3D visual runner, or record a coordinator waiver that links the follow-up visual evidence task.",
+      "high",
+    ),
   };
 }
 

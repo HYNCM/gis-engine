@@ -1,52 +1,58 @@
-import { Ajv } from "ajv/dist/ajv.js";
 import { createHash } from "node:crypto";
 import {
+  type CapabilityReport,
   CapabilityReportSchema,
+  type Diagnostic,
   DiagnosticCodes,
   DiagnosticSchema,
+  type FeatureQueryResult,
+  type MapGenerationAnalysisEvidence,
+  type MapGenerationAnalysisOperation,
   MapGenerationAnalysisOperationSchema,
+  type MapGenerationCommandSkeleton,
   MapGenerationCommandSkeletonSchema,
+  type MapGenerationPromptPlanFromSchema,
   MapGenerationPromptPlanSchema,
+  type MapGenerationQueryReadinessOperation,
   MapGenerationQueryReadinessOperationSchema,
+  type MapGenerationTargetDomain,
   MapGenerationTargetDomainSchema,
   MapLibreAdapter,
   MapRuntime,
-  MockAdapter,
-  Scene3DStableRuntimeBlockerCodes,
-  validateSpec,
-  type CapabilityReport,
-  type Diagnostic,
-  type FeatureQueryResult,
-  type MapGenerationAnalysisEvidence,
-  type MapGenerationCommandSkeleton,
-  type MapGenerationAnalysisOperation,
-  type MapGenerationPromptPlanFromSchema,
-  type MapGenerationQueryReadinessOperation,
-  type MapGenerationTargetDomain,
   type MapSpec,
+  MockAdapter,
   type QueryFeaturesOptions,
   type RendererAdapter,
-  type ValidationReport
+  Scene3DStableRuntimeBlockerCodes,
+  type ValidationReport,
+  validateSpec,
 } from "@gis-engine/engine";
-import { applyCommandsTool } from "./applyCommands.js";
-import { getContextSummary, type ContextSummary, type GisEngineToolName } from "./contextSummary.js";
-import {
-  ExampleAppDeliverySummarySchema,
-  ExampleAppGenerationEvidenceSummarySchema,
-  exportExampleAppTool,
-  ExportExampleAppToolInputSchema,
-  type ExampleAppDeliverySummary,
-  type ExampleAppGenerationEvidenceSummary,
-  type ExampleId
-} from "./exportExampleApp.js";
-import { toolInputErrorsToDiagnostics } from "./schemaDiagnostics.js";
-import { DiagnosticCountsSchema, countDiagnostics, zeroDiagnosticCounts, stripNestedIds, createHeadlessContainer } from "./shared.js";
-import { snapshotSpecTool, SnapshotSpecToolInputSchema } from "./snapshotSpec.js";
+import { Ajv } from "ajv/dist/ajv.js";
 import {
   ContextSummaryToolResultSchema,
   SnapshotSpecToolResultSchema,
-  ValidateSpecToolResultSchema
+  ValidateSpecToolResultSchema,
 } from "../mcp/server.js";
+import { applyCommandsTool } from "./applyCommands.js";
+import { type ContextSummary, type GisEngineToolName, getContextSummary } from "./contextSummary.js";
+import {
+  type ExampleAppDeliverySummary,
+  ExampleAppDeliverySummarySchema,
+  type ExampleAppGenerationEvidenceSummary,
+  ExampleAppGenerationEvidenceSummarySchema,
+  type ExampleId,
+  ExportExampleAppToolInputSchema,
+  exportExampleAppTool,
+} from "./exportExampleApp.js";
+import { toolInputErrorsToDiagnostics } from "./schemaDiagnostics.js";
+import {
+  countDiagnostics,
+  createHeadlessContainer,
+  DiagnosticCountsSchema,
+  stripNestedIds,
+  zeroDiagnosticCounts,
+} from "./shared.js";
+import { SnapshotSpecToolInputSchema, snapshotSpecTool } from "./snapshotSpec.js";
 
 const DiagnosticContractSchema = stripNestedIds(DiagnosticSchema);
 const ContextSummaryContractSchema = stripNestedIds(ContextSummaryToolResultSchema);
@@ -57,7 +63,15 @@ type Scene3DStableRuntimeBlockerCode =
 
 const GisEngineToolNameSchema = {
   type: "string",
-  enum: ["validate_spec", "apply_commands", "export_spec", "get_context_summary", "snapshot_spec", "explain_spec", "export_example_app"]
+  enum: [
+    "validate_spec",
+    "apply_commands",
+    "export_spec",
+    "get_context_summary",
+    "snapshot_spec",
+    "explain_spec",
+    "export_example_app",
+  ],
 } as const;
 
 const DEFAULT_SPATIAL_QUERY_RESULT_LIMIT = 100;
@@ -67,10 +81,10 @@ const PlannerConfidenceSchema = {
   properties: {
     level: { type: "string", enum: ["high", "medium", "low", "unknown"] },
     score: { type: "number", minimum: 0, maximum: 1 },
-    reasons: { type: "array", items: { type: "string" } }
+    reasons: { type: "array", items: { type: "string" } },
   },
   required: ["level", "score", "reasons"],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 const PointSpatialQueryCaseSchema = {
@@ -79,10 +93,10 @@ const PointSpatialQueryCaseSchema = {
     id: { type: "string", minLength: 1 },
     operation: { type: "string", const: "point-query" },
     point: { type: "array", items: { type: "number" }, minItems: 2, maxItems: 2 },
-    layers: { type: "array", items: { type: "string" } }
+    layers: { type: "array", items: { type: "string" } },
   },
   required: ["id", "operation", "point"],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 const BboxSpatialQueryCaseSchema = {
@@ -91,14 +105,14 @@ const BboxSpatialQueryCaseSchema = {
     id: { type: "string", minLength: 1 },
     operation: { type: "string", const: "bbox-query" },
     bbox: { type: "array", items: { type: "number" }, minItems: 4, maxItems: 4 },
-    layers: { type: "array", items: { type: "string" } }
+    layers: { type: "array", items: { type: "string" } },
   },
   required: ["id", "operation", "bbox"],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 const SpatialQueryCaseSchema = {
-  anyOf: [PointSpatialQueryCaseSchema, BboxSpatialQueryCaseSchema]
+  anyOf: [PointSpatialQueryCaseSchema, BboxSpatialQueryCaseSchema],
 } as const;
 
 const SpatialQueryCapabilityWaiverSchema = {
@@ -106,10 +120,10 @@ const SpatialQueryCapabilityWaiverSchema = {
   properties: {
     reason: { type: "string", minLength: 1 },
     approvedBy: { type: "string", minLength: 1 },
-    followUpTaskId: { type: "string", minLength: 1 }
+    followUpTaskId: { type: "string", minLength: 1 },
   },
   required: ["reason", "approvedBy", "followUpTaskId"],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 const SpatialQueryCapabilityGateSchema = {
@@ -118,10 +132,10 @@ const SpatialQueryCapabilityGateSchema = {
     status: { type: "string", enum: ["passed", "waived", "blocked"] },
     requiredQueries: { type: "array", items: { type: "string", enum: ["point", "bbox"] } },
     providedQueries: { type: "array", items: { type: "string" } },
-    waiver: SpatialQueryCapabilityWaiverSchema
+    waiver: SpatialQueryCapabilityWaiverSchema,
   },
   required: ["status", "requiredQueries", "providedQueries"],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 const SpatialQueryCaseEvidenceSchema = {
@@ -136,7 +150,7 @@ const SpatialQueryCaseEvidenceSchema = {
     resultTruncated: { type: "boolean" },
     fixtureHash: { type: "string", minLength: 1 },
     passed: { type: "boolean" },
-    diagnosticCounts: DiagnosticCountsSchema
+    diagnosticCounts: DiagnosticCountsSchema,
   },
   required: [
     "id",
@@ -148,9 +162,9 @@ const SpatialQueryCaseEvidenceSchema = {
     "resultTruncated",
     "fixtureHash",
     "passed",
-    "diagnosticCounts"
+    "diagnosticCounts",
   ],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 export const GenerationEvidenceBundleInputSchema = {
@@ -162,34 +176,34 @@ export const GenerationEvidenceBundleInputSchema = {
       type: "object",
       properties: {
         plan: stripNestedIds(MapGenerationPromptPlanSchema),
-        confidence: PlannerConfidenceSchema
+        confidence: PlannerConfidenceSchema,
       },
       required: ["plan"],
-      additionalProperties: false
+      additionalProperties: false,
     },
     capabilities: stripNestedIds(CapabilityReportSchema),
     snapshot: {
       type: "object",
       properties: {
         renderer: SnapshotSpecToolInputSchema.properties.renderer,
-        options: SnapshotSpecToolInputSchema.properties.snapshot
+        options: SnapshotSpecToolInputSchema.properties.snapshot,
       },
-      additionalProperties: false
+      additionalProperties: false,
     },
     spatialQueries: {
       type: "object",
       properties: {
         renderer: SnapshotSpecToolInputSchema.properties.renderer,
         cases: { type: "array", items: SpatialQueryCaseSchema },
-        capabilityWaiver: SpatialQueryCapabilityWaiverSchema
+        capabilityWaiver: SpatialQueryCapabilityWaiverSchema,
       },
       required: ["cases"],
-      additionalProperties: false
+      additionalProperties: false,
     },
-    exampleId: ExportExampleAppToolInputSchema.properties.exampleId
+    exampleId: ExportExampleAppToolInputSchema.properties.exampleId,
   },
   required: ["promptHash", "skeleton"],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 export const GenerationEvidenceBundleSchema = {
@@ -199,11 +213,11 @@ export const GenerationEvidenceBundleSchema = {
     status: { type: "string", enum: ["ready", "blocked"] },
     targetDomains: {
       type: "array",
-      items: stripNestedIds(MapGenerationTargetDomainSchema)
+      items: stripNestedIds(MapGenerationTargetDomainSchema),
     },
     toolSequence: {
       type: "array",
-      items: GisEngineToolNameSchema
+      items: GisEngineToolNameSchema,
     },
     summary: ContextSummaryContractSchema,
     validation: ValidationReportContractSchema,
@@ -217,10 +231,19 @@ export const GenerationEvidenceBundleSchema = {
         committed: { type: "boolean" },
         rolledBack: { type: "boolean" },
         diagnosticCounts: DiagnosticCountsSchema,
-        changedPaths: { type: "array", items: { type: "string" } }
+        changedPaths: { type: "array", items: { type: "string" } },
       },
-      required: ["usedApplyCommands", "traceId", "commandCount", "resultStatuses", "committed", "rolledBack", "diagnosticCounts", "changedPaths"],
-      additionalProperties: false
+      required: [
+        "usedApplyCommands",
+        "traceId",
+        "commandCount",
+        "resultStatuses",
+        "committed",
+        "rolledBack",
+        "diagnosticCounts",
+        "changedPaths",
+      ],
+      additionalProperties: false,
     },
     plannerEvidence: {
       type: "object",
@@ -235,7 +258,7 @@ export const GenerationEvidenceBundleSchema = {
         acceptedIntentFields: { type: "array", items: { type: "string" } },
         unsupportedIntentFields: { type: "array", items: { type: "string" } },
         sourcePromptHashes: { type: "array", items: { type: "string" } },
-        diagnosticCounts: DiagnosticCountsSchema
+        diagnosticCounts: DiagnosticCountsSchema,
       },
       required: [
         "provided",
@@ -248,9 +271,9 @@ export const GenerationEvidenceBundleSchema = {
         "acceptedIntentFields",
         "unsupportedIntentFields",
         "sourcePromptHashes",
-        "diagnosticCounts"
+        "diagnosticCounts",
       ],
-      additionalProperties: false
+      additionalProperties: false,
     },
     spatialQueryEvidence: {
       type: "object",
@@ -271,7 +294,7 @@ export const GenerationEvidenceBundleSchema = {
         unsupportedSourceIds: { type: "array", items: { type: "string" } },
         missingSourceIds: { type: "array", items: { type: "string" } },
         cases: { type: "array", items: SpatialQueryCaseEvidenceSchema },
-        diagnosticCounts: DiagnosticCountsSchema
+        diagnosticCounts: DiagnosticCountsSchema,
       },
       required: [
         "requested",
@@ -290,9 +313,9 @@ export const GenerationEvidenceBundleSchema = {
         "unsupportedSourceIds",
         "missingSourceIds",
         "cases",
-        "diagnosticCounts"
+        "diagnosticCounts",
       ],
-      additionalProperties: false
+      additionalProperties: false,
     },
     snapshotEvidence: {
       type: "object",
@@ -302,10 +325,10 @@ export const GenerationEvidenceBundleSchema = {
         passed: { type: "boolean" },
         dataUrlPresent: { type: "boolean" },
         diagnosticCounts: DiagnosticCountsSchema,
-        result: SnapshotSpecContractSchema
+        result: SnapshotSpecContractSchema,
       },
       required: ["requested", "renderer", "passed", "dataUrlPresent", "diagnosticCounts"],
-      additionalProperties: false
+      additionalProperties: false,
     },
     exportEvidence: {
       type: "object",
@@ -314,10 +337,10 @@ export const GenerationEvidenceBundleSchema = {
         revision: { type: "string" },
         sourceCount: { type: "number" },
         layerCount: { type: "number" },
-        diagnosticCounts: DiagnosticCountsSchema
+        diagnosticCounts: DiagnosticCountsSchema,
       },
       required: ["ready", "sourceCount", "layerCount", "diagnosticCounts"],
-      additionalProperties: false
+      additionalProperties: false,
     },
     delivery: ExampleAppDeliverySummarySchema,
     exampleEvidence: {
@@ -327,15 +350,15 @@ export const GenerationEvidenceBundleSchema = {
         writesFiles: { type: "boolean", const: false },
         fileCount: { type: "number" },
         diagnosticCounts: DiagnosticCountsSchema,
-        generationEvidence: ExampleAppGenerationEvidenceSummarySchema
+        generationEvidence: ExampleAppGenerationEvidenceSummarySchema,
       },
       required: ["exampleId", "writesFiles", "fileCount", "diagnosticCounts"],
-      additionalProperties: false
+      additionalProperties: false,
     },
     diagnostics: {
       type: "array",
-      items: DiagnosticContractSchema
-    }
+      items: DiagnosticContractSchema,
+    },
   },
   required: [
     "promptHash",
@@ -351,9 +374,9 @@ export const GenerationEvidenceBundleSchema = {
     "exportEvidence",
     "delivery",
     "exampleEvidence",
-    "diagnostics"
+    "diagnostics",
   ],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 export interface GenerationEvidenceBundleInput {
@@ -526,7 +549,7 @@ export async function createGenerationEvidenceBundle(input: unknown): Promise<Ge
   if (!validateInput(input)) {
     return {
       ok: false,
-      diagnostics: toolInputErrorsToDiagnostics(validateInput.errors, "Invalid generation evidence bundle input.")
+      diagnostics: toolInputErrorsToDiagnostics(validateInput.errors, "Invalid generation evidence bundle input."),
     };
   }
 
@@ -534,7 +557,7 @@ export async function createGenerationEvidenceBundle(input: unknown): Promise<Ge
   const validation = validateSpec(typedInput.skeleton.spec);
   const summary = getContextSummary({
     spec: typedInput.skeleton.spec,
-    ...(typedInput.capabilities ? { capabilities: typedInput.capabilities } : {})
+    ...(typedInput.capabilities ? { capabilities: typedInput.capabilities } : {}),
   });
   const commandEvidence = buildCommandEvidence(typedInput.skeleton);
   const plannerEvidence = buildPlannerEvidence(typedInput, commandEvidence);
@@ -547,10 +570,10 @@ export async function createGenerationEvidenceBundle(input: unknown): Promise<Ge
     ...validation.diagnostics,
     ...commandEvidenceDiagnostics(typedInput.skeleton, commandEvidence),
     ...spatialQueryEvidence.diagnostics,
-    ...snapshotEvidenceDiagnostics(snapshotEvidence)
+    ...snapshotEvidenceDiagnostics(snapshotEvidence),
   ];
   const visibleDiagnosticsBeforeExample = diagnosticsBeforeExample.filter(
-    (diagnostic) => diagnostic.severity === "error" || diagnostic.severity === "warning"
+    (diagnostic) => diagnostic.severity === "error" || diagnostic.severity === "warning",
   );
   const statusBeforeExample =
     typedInput.skeleton.status === "blocked" ||
@@ -570,21 +593,14 @@ export async function createGenerationEvidenceBundle(input: unknown): Promise<Ge
     snapshotEvidence,
     exportEvidence,
     status: statusBeforeExample,
-    diagnostics: visibleDiagnosticsBeforeExample
+    diagnostics: visibleDiagnosticsBeforeExample,
   });
-  const exampleEvidence = buildExampleEvidence(
-    typedInput.exampleId ?? "ai-map-edit",
-    manifestGenerationEvidence
+  const exampleEvidence = buildExampleEvidence(typedInput.exampleId ?? "ai-map-edit", manifestGenerationEvidence);
+  const diagnostics = [...diagnosticsBeforeExample, ...exampleEvidence.diagnostics];
+  const visibleDiagnostics = diagnostics.filter(
+    (diagnostic) => diagnostic.severity === "error" || diagnostic.severity === "warning",
   );
-  const diagnostics = [
-    ...diagnosticsBeforeExample,
-    ...exampleEvidence.diagnostics
-  ];
-  const visibleDiagnostics = diagnostics.filter((diagnostic) => diagnostic.severity === "error" || diagnostic.severity === "warning");
-  const status =
-    statusBeforeExample === "blocked" || exampleEvidence.diagnosticCounts.error > 0
-      ? "blocked"
-      : "ready";
+  const status = statusBeforeExample === "blocked" || exampleEvidence.diagnosticCounts.error > 0 ? "blocked" : "ready";
 
   return {
     ok: true,
@@ -592,7 +608,14 @@ export async function createGenerationEvidenceBundle(input: unknown): Promise<Ge
       promptHash: typedInput.promptHash,
       status,
       targetDomains: typedInput.skeleton.targetDomains,
-      toolSequence: ["get_context_summary", "validate_spec", "apply_commands", "snapshot_spec", "export_spec", "export_example_app"],
+      toolSequence: [
+        "get_context_summary",
+        "validate_spec",
+        "apply_commands",
+        "snapshot_spec",
+        "export_spec",
+        "export_example_app",
+      ],
       summary,
       validation,
       commandEvidence,
@@ -602,20 +625,20 @@ export async function createGenerationEvidenceBundle(input: unknown): Promise<Ge
       exportEvidence,
       delivery: manifestGenerationEvidence.delivery,
       exampleEvidence: stripExampleDiagnostics(exampleEvidence),
-      diagnostics: visibleDiagnostics
+      diagnostics: visibleDiagnostics,
     },
-    diagnostics: []
+    diagnostics: [],
   };
 }
 
 function buildPlannerEvidence(
   input: GenerationEvidenceBundleInput,
-  commandEvidence: GenerationCommandEvidence
+  commandEvidence: GenerationCommandEvidence,
 ): GenerationPlannerEvidence & { diagnostics: Diagnostic[] } {
   const sourcePromptHashes = unique(
     input.skeleton.commands
       .map((command) => command.sourcePromptHash)
-      .filter((hash): hash is string => typeof hash === "string" && hash.length > 0)
+      .filter((hash): hash is string => typeof hash === "string" && hash.length > 0),
   );
 
   if (!input.planner) {
@@ -629,13 +652,13 @@ function buildPlannerEvidence(
       confidence: {
         level: "unknown",
         score: 0,
-        reasons: ["Planner plan was not provided with this generation evidence bundle."]
+        reasons: ["Planner plan was not provided with this generation evidence bundle."],
       },
       acceptedIntentFields: [],
       unsupportedIntentFields: [],
       sourcePromptHashes,
       diagnosticCounts: zeroDiagnosticCounts(),
-      diagnostics: []
+      diagnostics: [],
     };
   }
 
@@ -643,7 +666,7 @@ function buildPlannerEvidence(
     ...(input.planner.plan.diagnostics as Diagnostic[]),
     ...plannerHashDiagnostics(input.promptHash, input.planner.plan.provenance.promptHash),
     ...plannerTraceDiagnostics(input.skeleton.traceId, input.planner.plan.traceId),
-    ...sourcePromptHashDiagnostics(input.promptHash, sourcePromptHashes)
+    ...sourcePromptHashDiagnostics(input.promptHash, sourcePromptHashes),
   ];
 
   return {
@@ -658,7 +681,7 @@ function buildPlannerEvidence(
     unsupportedIntentFields: input.planner.plan.provenance.unsupportedIntentFields,
     sourcePromptHashes,
     diagnosticCounts: countDiagnostics(diagnostics),
-    diagnostics
+    diagnostics,
   };
 }
 
@@ -672,7 +695,7 @@ function buildCommandEvidence(skeleton: MapGenerationCommandSkeleton): Generatio
       committed: false,
       rolledBack: false,
       diagnosticCounts: zeroDiagnosticCounts(),
-      changedPaths: []
+      changedPaths: [],
     };
   }
 
@@ -680,7 +703,7 @@ function buildCommandEvidence(skeleton: MapGenerationCommandSkeleton): Generatio
     spec: skeleton.baseSpec,
     commands: skeleton.commands,
     collectTrace: true,
-    traceId: skeleton.traceId
+    traceId: skeleton.traceId,
   });
 
   if (!result.ok) {
@@ -692,13 +715,13 @@ function buildCommandEvidence(skeleton: MapGenerationCommandSkeleton): Generatio
       committed: false,
       rolledBack: true,
       diagnosticCounts: countDiagnostics(result.diagnostics),
-      changedPaths: []
+      changedPaths: [],
     };
   }
 
   const diagnostics = [
     ...result.result.results.flatMap((commandResult) => commandResult.diagnostics),
-    ...specMismatchDiagnostics(skeleton, result.result)
+    ...specMismatchDiagnostics(skeleton, result.result),
   ];
 
   return {
@@ -709,7 +732,7 @@ function buildCommandEvidence(skeleton: MapGenerationCommandSkeleton): Generatio
     committed: result.result.committed,
     rolledBack: result.result.rolledBack,
     diagnosticCounts: countDiagnostics(diagnostics),
-    changedPaths: unique(result.result.results.flatMap((commandResult) => commandResult.changedPaths))
+    changedPaths: unique(result.result.results.flatMap((commandResult) => commandResult.changedPaths)),
   };
 }
 
@@ -725,9 +748,9 @@ function plannerHashDiagnostics(inputPromptHash: string, plannerPromptHash: stri
           fix: {
             kind: "manual",
             confidence: "high",
-            message: "Regenerate the evidence bundle with the same promptHash used by the planner."
-          }
-        }
+            message: "Regenerate the evidence bundle with the same promptHash used by the planner.",
+          },
+        },
       ];
 }
 
@@ -743,9 +766,9 @@ function plannerTraceDiagnostics(skeletonTraceId: string, plannerTraceId: string
           fix: {
             kind: "manual",
             confidence: "high",
-            message: "Create the command skeleton from the planner request instead of mixing traces."
-          }
-        }
+            message: "Create the command skeleton from the planner request instead of mixing traces.",
+          },
+        },
       ];
 }
 
@@ -763,9 +786,9 @@ function sourcePromptHashDiagnostics(promptHash: string, sourcePromptHashes: str
           fix: {
             kind: "manual",
             confidence: "high",
-            message: "Regenerate command skeleton commands from the same planner request and prompt hash."
-          }
-        }
+            message: "Regenerate command skeleton commands from the same planner request and prompt hash.",
+          },
+        },
       ];
 }
 
@@ -775,24 +798,30 @@ function plannerConfidenceFromDiagnostics(diagnostics: Diagnostic[]): PlannerCon
     return {
       level: "low",
       score: 0,
-      reasons: ["Planner evidence has blocking diagnostics."]
+      reasons: ["Planner evidence has blocking diagnostics."],
     };
   }
   if (counts.warning > 0) {
     return {
       level: "medium",
       score: 0.7,
-      reasons: ["Planner evidence has warnings but no blocking diagnostics."]
+      reasons: ["Planner evidence has warnings but no blocking diagnostics."],
     };
   }
   return {
     level: "high",
     score: 1,
-    reasons: ["Planner evidence has no diagnostics."]
+    reasons: ["Planner evidence has no diagnostics."],
   };
 }
 
-const unsupportedSpatialOperations: MapGenerationAnalysisOperation[] = ["aggregation", "buffer", "intersection", "overlay", "routing"];
+const unsupportedSpatialOperations: MapGenerationAnalysisOperation[] = [
+  "aggregation",
+  "buffer",
+  "intersection",
+  "overlay",
+  "routing",
+];
 
 interface SpatialSpecReadiness {
   queryableSourceIds: string[];
@@ -803,13 +832,17 @@ interface SpatialSpecReadiness {
 }
 
 async function buildSpatialQueryEvidence(
-  input: GenerationEvidenceBundleInput
+  input: GenerationEvidenceBundleInput,
 ): Promise<GenerationSpatialQueryEvidence & { diagnostics: Diagnostic[] }> {
   const analysisEvidence = input.skeleton.analysisEvidence;
   const renderer = input.spatialQueries?.renderer ?? "mock";
   const capabilityQueries = unique(input.capabilities?.queries ?? []);
   const readiness = summarizeSpatialSpecReadiness(input.skeleton.spec);
-  const capabilityGate = buildSpatialQueryCapabilityGate(analysisEvidence, capabilityQueries, input.spatialQueries?.capabilityWaiver);
+  const capabilityGate = buildSpatialQueryCapabilityGate(
+    analysisEvidence,
+    capabilityQueries,
+    input.spatialQueries?.capabilityWaiver,
+  );
   const resultLimit = DEFAULT_SPATIAL_QUERY_RESULT_LIMIT;
 
   if (!analysisEvidence.requested) {
@@ -827,7 +860,7 @@ async function buildSpatialQueryEvidence(
       ...readiness,
       cases: [],
       diagnosticCounts: zeroDiagnosticCounts(),
-      diagnostics: []
+      diagnostics: [],
     };
   }
 
@@ -861,30 +894,32 @@ async function buildSpatialQueryEvidence(
     ...readiness,
     cases: caseEvidence,
     diagnosticCounts,
-    diagnostics
+    diagnostics,
   };
 }
 
 function buildSpatialQueryCapabilityGate(
   analysisEvidence: MapGenerationAnalysisEvidence,
   providedQueries: string[],
-  waiver: SpatialQueryCapabilityWaiver | undefined
+  waiver: SpatialQueryCapabilityWaiver | undefined,
 ): SpatialQueryCapabilityGate {
   if (!analysisEvidence.requested || analysisEvidence.acceptedQueryOperations.length === 0) {
     return {
       status: "passed",
       requiredQueries: [],
-      providedQueries
+      providedQueries,
     };
   }
 
-  const requiredQueries = uniqueSpatialQueryTypes(analysisEvidence.acceptedQueryOperations.map(queryTypeForAnalysisOperation));
+  const requiredQueries = uniqueSpatialQueryTypes(
+    analysisEvidence.acceptedQueryOperations.map(queryTypeForAnalysisOperation),
+  );
   const missingQueries = requiredQueries.filter((query) => !providedQueries.includes(query));
   if (missingQueries.length === 0) {
     return {
       status: "passed",
       requiredQueries,
-      providedQueries
+      providedQueries,
     };
   }
 
@@ -893,21 +928,21 @@ function buildSpatialQueryCapabilityGate(
       status: "waived",
       requiredQueries,
       providedQueries,
-      waiver
+      waiver,
     };
   }
 
   return {
     status: "blocked",
     requiredQueries,
-    providedQueries
+    providedQueries,
   };
 }
 
 function spatialQuerySetupDiagnostics(
   input: GenerationEvidenceBundleInput,
   readiness: SpatialSpecReadiness,
-  capabilityGate: SpatialQueryCapabilityGate
+  capabilityGate: SpatialQueryCapabilityGate,
 ): Diagnostic[] {
   const analysisEvidence = input.skeleton.analysisEvidence;
   if (!analysisEvidence.requested || analysisEvidence.acceptedQueryOperations.length === 0) return [];
@@ -925,8 +960,9 @@ function spatialQuerySetupDiagnostics(
       fix: {
         kind: "manual",
         confidence: "high",
-        message: "Declare point and bbox query capabilities for the adapter, or provide an explicit spatial query capability waiver with a follow-up task."
-      }
+        message:
+          "Declare point and bbox query capabilities for the adapter, or provide an explicit spatial query capability waiver with a follow-up task.",
+      },
     });
   }
 
@@ -939,8 +975,8 @@ function spatialQuerySetupDiagnostics(
       fix: {
         kind: "manual",
         confidence: "high",
-        message: "Add a visible layer with an inline GeoJSON source before claiming point or bbox query readiness."
-      }
+        message: "Add a visible layer with an inline GeoJSON source before claiming point or bbox query readiness.",
+      },
     });
   }
 
@@ -953,8 +989,8 @@ function spatialQuerySetupDiagnostics(
       fix: {
         kind: "manual",
         confidence: "high",
-        message: "Add deterministic point-query or bbox-query cases to the generation evidence bundle."
-      }
+        message: "Add deterministic point-query or bbox-query cases to the generation evidence bundle.",
+      },
     });
   }
 
@@ -965,7 +1001,7 @@ async function runSpatialQueryCases(
   input: GenerationEvidenceBundleInput,
   readiness: SpatialSpecReadiness,
   renderer: "maplibre" | "mock",
-  resultLimit: number
+  resultLimit: number,
 ): Promise<{ evidence: GenerationSpatialQueryCaseEvidence[]; diagnostics: Diagnostic[] }> {
   const cases = input.spatialQueries?.cases ?? [];
   if (cases.length === 0) return { evidence: [], diagnostics: [] };
@@ -978,7 +1014,13 @@ async function runSpatialQueryCases(
     const operationDiagnostics = spatialQueryCaseOperationDiagnostics(input, queryCase, index);
     if (operationDiagnostics.length > 0) {
       diagnostics.push(...operationDiagnostics);
-      evidenceByIndex[index] = emptySpatialQueryCaseEvidence(input.skeleton.spec, readiness, queryCase, operationDiagnostics, resultLimit);
+      evidenceByIndex[index] = emptySpatialQueryCaseEvidence(
+        input.skeleton.spec,
+        readiness,
+        queryCase,
+        operationDiagnostics,
+        resultLimit,
+      );
     } else {
       pendingCases.push({ queryCase, index });
     }
@@ -994,24 +1036,33 @@ async function runSpatialQueryCases(
   try {
     runtime = await MapRuntime.create(input.skeleton.spec, {
       adapter,
-      container: createHeadlessContainer()
+      container: createHeadlessContainer(),
     });
 
     for (const { queryCase, index } of pendingCases) {
       const result = await runtime.queryFeatures(queryOptionsForSpatialQueryCase(readiness, queryCase));
-      const caseDiagnostics = result.diagnostics.map((diagnostic) => prefixSpatialQueryCaseDiagnostic(diagnostic, index));
+      const caseDiagnostics = result.diagnostics.map((diagnostic) =>
+        prefixSpatialQueryCaseDiagnostic(diagnostic, index),
+      );
       if (result.features.length === 0 && caseDiagnostics.every((diagnostic) => diagnostic.severity !== "error")) {
         caseDiagnostics.push(spatialQueryEmptyResultDiagnostic(input.skeleton.spec, readiness, queryCase, index));
       }
       diagnostics.push(...caseDiagnostics);
-      evidenceByIndex[index] = spatialQueryCaseEvidence(input.skeleton.spec, readiness, queryCase, result, caseDiagnostics, resultLimit);
+      evidenceByIndex[index] = spatialQueryCaseEvidence(
+        input.skeleton.spec,
+        readiness,
+        queryCase,
+        result,
+        caseDiagnostics,
+        resultLimit,
+      );
     }
 
     return { evidence: compactSpatialQueryCaseEvidence(evidenceByIndex), diagnostics };
   } catch (error) {
     return {
       evidence: compactSpatialQueryCaseEvidence(evidenceByIndex),
-      diagnostics: [...diagnostics, spatialQueryRuntimeDiagnostic(error)]
+      diagnostics: [...diagnostics, spatialQueryRuntimeDiagnostic(error)],
     };
   } finally {
     if (runtime) {
@@ -1025,7 +1076,7 @@ async function runSpatialQueryCases(
 function spatialQueryCaseOperationDiagnostics(
   input: GenerationEvidenceBundleInput,
   queryCase: SpatialQueryCaseInput,
-  index: number
+  index: number,
 ): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
   if (!input.skeleton.analysisEvidence.acceptedQueryOperations.includes(queryCase.operation)) {
@@ -1037,8 +1088,8 @@ function spatialQueryCaseOperationDiagnostics(
       fix: {
         kind: "manual",
         confidence: "high",
-        message: "Keep spatial query cases aligned with accepted point-query and bbox-query planner operations."
-      }
+        message: "Keep spatial query cases aligned with accepted point-query and bbox-query planner operations.",
+      },
     });
   }
 
@@ -1054,8 +1105,8 @@ function spatialQueryCaseOperationDiagnostics(
         fix: {
           kind: "manual",
           confidence: "high",
-          message: "Check the query layer id or omit layers to query all queryable layers."
-        }
+          message: "Check the query layer id or omit layers to query all queryable layers.",
+        },
       });
       continue;
     }
@@ -1068,13 +1119,13 @@ function spatialQueryCaseOperationDiagnostics(
         path: `/spatialQueries/cases/${index}/layers/${layerIndex}/source`,
         relatedResources: [
           { kind: "layer", id: layerId },
-          { kind: "source", id: layer.source }
+          { kind: "source", id: layer.source },
         ],
         fix: {
           kind: "manual",
           confidence: "medium",
-          message: "Add the missing source or query a layer with an existing source."
-        }
+          message: "Add the missing source or query a layer with an existing source.",
+        },
       });
       continue;
     }
@@ -1089,8 +1140,8 @@ function spatialQueryCaseOperationDiagnostics(
         fix: {
           kind: "manual",
           confidence: "high",
-          message: "Query a visible layer, or make the layer visible before claiming query readiness evidence."
-        }
+          message: "Query a visible layer, or make the layer visible before claiming query readiness evidence.",
+        },
       });
     }
   }
@@ -1099,7 +1150,7 @@ function spatialQueryCaseOperationDiagnostics(
 }
 
 function compactSpatialQueryCaseEvidence(
-  evidenceByIndex: Array<GenerationSpatialQueryCaseEvidence | undefined>
+  evidenceByIndex: Array<GenerationSpatialQueryCaseEvidence | undefined>,
 ): GenerationSpatialQueryCaseEvidence[] {
   return evidenceByIndex.filter((entry): entry is GenerationSpatialQueryCaseEvidence => entry !== undefined);
 }
@@ -1109,7 +1160,7 @@ function emptySpatialQueryCaseEvidence(
   readiness: SpatialSpecReadiness,
   queryCase: SpatialQueryCaseInput,
   diagnostics: Diagnostic[],
-  resultLimit: number
+  resultLimit: number,
 ): GenerationSpatialQueryCaseEvidence {
   return {
     id: queryCase.id,
@@ -1121,7 +1172,7 @@ function emptySpatialQueryCaseEvidence(
     resultTruncated: false,
     fixtureHash: spatialQueryFixtureHash(spec, readiness, queryCase, resultLimit),
     passed: false,
-    diagnosticCounts: countDiagnostics(diagnostics)
+    diagnosticCounts: countDiagnostics(diagnostics),
   };
 }
 
@@ -1131,7 +1182,7 @@ function spatialQueryCaseEvidence(
   queryCase: SpatialQueryCaseInput,
   result: FeatureQueryResult,
   diagnostics: Diagnostic[],
-  resultLimit: number
+  resultLimit: number,
 ): GenerationSpatialQueryCaseEvidence {
   const counts = countDiagnostics(diagnostics);
   return {
@@ -1144,11 +1195,16 @@ function spatialQueryCaseEvidence(
     resultTruncated: result.features.length > resultLimit,
     fixtureHash: spatialQueryFixtureHash(spec, readiness, queryCase, resultLimit),
     passed: counts.error === 0,
-    diagnosticCounts: counts
+    diagnosticCounts: counts,
   };
 }
 
-function spatialQueryFixtureHash(spec: MapSpec, readiness: SpatialSpecReadiness, queryCase: SpatialQueryCaseInput, resultLimit: number): string {
+function spatialQueryFixtureHash(
+  spec: MapSpec,
+  readiness: SpatialSpecReadiness,
+  queryCase: SpatialQueryCaseInput,
+  resultLimit: number,
+): string {
   const fixture = {
     id: queryCase.id,
     operation: queryCase.operation,
@@ -1156,7 +1212,7 @@ function spatialQueryFixtureHash(spec: MapSpec, readiness: SpatialSpecReadiness,
     requestedLayerIds: queryCase.layers ?? [],
     layerIds: selectedLayerIdsForCase(spec, readiness, queryCase),
     sourceIds: selectedSourceIdsForCase(spec, readiness, queryCase),
-    resultLimit
+    resultLimit,
   };
   return `sha256:${createHash("sha256").update(JSON.stringify(fixture)).digest("hex")}`;
 }
@@ -1165,7 +1221,7 @@ function spatialQueryEmptyResultDiagnostic(
   spec: MapSpec,
   readiness: SpatialSpecReadiness,
   queryCase: SpatialQueryCaseInput,
-  index: number
+  index: number,
 ): Diagnostic {
   return {
     severity: "error",
@@ -1173,27 +1229,37 @@ function spatialQueryEmptyResultDiagnostic(
     message: `Spatial query case "${queryCase.id}" returned no features.`,
     path: `/spatialQueries/cases/${index}/result`,
     relatedResources: [
-      ...selectedLayerIdsForCase(spec, readiness, queryCase).map((layerId) => ({ kind: "layer" as const, id: layerId })),
-      ...selectedSourceIdsForCase(spec, readiness, queryCase).map((sourceId) => ({ kind: "source" as const, id: sourceId }))
+      ...selectedLayerIdsForCase(spec, readiness, queryCase).map((layerId) => ({
+        kind: "layer" as const,
+        id: layerId,
+      })),
+      ...selectedSourceIdsForCase(spec, readiness, queryCase).map((sourceId) => ({
+        kind: "source" as const,
+        id: sourceId,
+      })),
     ],
     fix: {
       kind: "manual",
       confidence: "medium",
-      message: "Use a deterministic query case that returns at least one feature, or keep the case as blocked evidence."
-    }
+      message:
+        "Use a deterministic query case that returns at least one feature, or keep the case as blocked evidence.",
+    },
   };
 }
 
-function queryOptionsForSpatialQueryCase(readiness: SpatialSpecReadiness, queryCase: SpatialQueryCaseInput): QueryFeaturesOptions {
+function queryOptionsForSpatialQueryCase(
+  readiness: SpatialSpecReadiness,
+  queryCase: SpatialQueryCaseInput,
+): QueryFeaturesOptions {
   const layers = queryCase.layers ?? readiness.queryableLayerIds;
   return queryCase.operation === "point-query"
     ? {
         point: queryCase.point,
-        ...(layers.length > 0 ? { layers } : {})
+        ...(layers.length > 0 ? { layers } : {}),
       }
     : {
         bbox: queryCase.bbox,
-        ...(layers.length > 0 ? { layers } : {})
+        ...(layers.length > 0 ? { layers } : {}),
       };
 }
 
@@ -1231,20 +1297,31 @@ function summarizeSpatialSpecReadiness(spec: MapSpec): SpatialSpecReadiness {
     queryableLayerIds: unique(queryableLayerIds),
     hiddenLayerIds: unique(hiddenLayerIds),
     unsupportedSourceIds: unique([...unsupportedSourceIds]),
-    missingSourceIds: unique([...missingSourceIds])
+    missingSourceIds: unique([...missingSourceIds]),
   };
 }
 
-function selectedLayerIdsForCase(spec: MapSpec, readiness: SpatialSpecReadiness, queryCase: SpatialQueryCaseInput): string[] {
-  return unique(queryCase.layers ?? readiness.queryableLayerIds.filter((layerId) => spec.layers.some((layer) => layer.id === layerId)));
+function selectedLayerIdsForCase(
+  spec: MapSpec,
+  readiness: SpatialSpecReadiness,
+  queryCase: SpatialQueryCaseInput,
+): string[] {
+  return unique(
+    queryCase.layers ??
+      readiness.queryableLayerIds.filter((layerId) => spec.layers.some((layer) => layer.id === layerId)),
+  );
 }
 
-function selectedSourceIdsForCase(spec: MapSpec, readiness: SpatialSpecReadiness, queryCase: SpatialQueryCaseInput): string[] {
+function selectedSourceIdsForCase(
+  spec: MapSpec,
+  readiness: SpatialSpecReadiness,
+  queryCase: SpatialQueryCaseInput,
+): string[] {
   if (!queryCase.layers) return readiness.queryableSourceIds;
   return unique(
     queryCase.layers
       .map((layerId) => spec.layers.find((layer) => layer.id === layerId)?.source)
-      .filter((sourceId): sourceId is string => typeof sourceId === "string" && sourceId.length > 0)
+      .filter((sourceId): sourceId is string => typeof sourceId === "string" && sourceId.length > 0),
   );
 }
 
@@ -1256,7 +1333,7 @@ function prefixSpatialQueryCaseDiagnostic(diagnostic: Diagnostic, index: number)
   const suffix = diagnostic.path && diagnostic.path !== "/" ? diagnostic.path : "";
   return {
     ...diagnostic,
-    path: `/spatialQueries/cases/${index}${suffix}`
+    path: `/spatialQueries/cases/${index}${suffix}`,
   };
 }
 
@@ -1265,7 +1342,7 @@ function spatialQueryRuntimeDiagnostic(error: unknown): Diagnostic {
     severity: "error",
     code: DiagnosticCodes.RenderAdapterError,
     message: error instanceof Error ? error.message : "Renderer adapter failed while creating spatial query evidence.",
-    path: "/spatialQueries"
+    path: "/spatialQueries",
   };
 }
 
@@ -1273,7 +1350,9 @@ function createHeadlessAdapter(renderer: "maplibre" | "mock"): RendererAdapter {
   return renderer === "mock" ? new MockAdapter() : new MapLibreAdapter();
 }
 
-async function buildSnapshotEvidence(input: GenerationEvidenceBundleInput): Promise<GenerationSnapshotEvidence & { diagnostics: Diagnostic[] }> {
+async function buildSnapshotEvidence(
+  input: GenerationEvidenceBundleInput,
+): Promise<GenerationSnapshotEvidence & { diagnostics: Diagnostic[] }> {
   const renderer = input.snapshot?.renderer ?? "maplibre";
   if (input.skeleton.status === "blocked") {
     return {
@@ -1282,14 +1361,14 @@ async function buildSnapshotEvidence(input: GenerationEvidenceBundleInput): Prom
       passed: false,
       dataUrlPresent: false,
       diagnosticCounts: zeroDiagnosticCounts(),
-      diagnostics: []
+      diagnostics: [],
     };
   }
 
   const response = await snapshotSpecTool({
     spec: input.skeleton.spec,
     renderer,
-    ...(input.snapshot?.options ? { snapshot: input.snapshot.options } : {})
+    ...(input.snapshot?.options ? { snapshot: input.snapshot.options } : {}),
   });
 
   if (!response.ok) {
@@ -1299,7 +1378,7 @@ async function buildSnapshotEvidence(input: GenerationEvidenceBundleInput): Prom
       passed: false,
       dataUrlPresent: false,
       diagnosticCounts: countDiagnostics(response.diagnostics),
-      diagnostics: response.diagnostics
+      diagnostics: response.diagnostics,
     };
   }
 
@@ -1310,17 +1389,20 @@ async function buildSnapshotEvidence(input: GenerationEvidenceBundleInput): Prom
     dataUrlPresent: typeof response.result.dataUrl === "string" && response.result.dataUrl.length > 0,
     diagnosticCounts: countDiagnostics(response.result.diagnostics),
     result: response.result,
-    diagnostics: response.result.diagnostics
+    diagnostics: response.result.diagnostics,
   };
 }
 
-function buildExportEvidence(skeleton: MapGenerationCommandSkeleton, validation: ValidationReport): GenerationExportEvidence {
+function buildExportEvidence(
+  skeleton: MapGenerationCommandSkeleton,
+  validation: ValidationReport,
+): GenerationExportEvidence {
   return {
     ready: skeleton.status === "ready" && validation.valid,
     ...(skeleton.spec.revision ? { revision: skeleton.spec.revision } : {}),
     sourceCount: Object.keys(skeleton.spec.sources).length,
     layerCount: skeleton.spec.layers.length,
-    diagnosticCounts: countDiagnostics(validation.diagnostics)
+    diagnosticCounts: countDiagnostics(validation.diagnostics),
   };
 }
 
@@ -1345,7 +1427,7 @@ function buildExampleManifestGenerationEvidenceSummary(input: {
     snapshotEvidence: input.snapshotEvidence,
     exportEvidence: input.exportEvidence,
     sceneBrowsing,
-    diagnostics: input.diagnostics
+    diagnostics: input.diagnostics,
   });
 
   return {
@@ -1353,37 +1435,44 @@ function buildExampleManifestGenerationEvidenceSummary(input: {
     status: input.status,
     delivery,
     targetDomains: input.input.skeleton.targetDomains,
-    toolSequence: ["get_context_summary", "validate_spec", "apply_commands", "snapshot_spec", "export_spec", "export_example_app"],
+    toolSequence: [
+      "get_context_summary",
+      "validate_spec",
+      "apply_commands",
+      "snapshot_spec",
+      "export_spec",
+      "export_example_app",
+    ],
     diagnosticCounts: countDiagnostics(input.diagnostics),
     command: {
       usedApplyCommands: input.commandEvidence.usedApplyCommands,
       commandCount: input.commandEvidence.commandCount,
       committed: input.commandEvidence.committed,
-      rolledBack: input.commandEvidence.rolledBack
+      rolledBack: input.commandEvidence.rolledBack,
     },
     planner: {
       provided: input.plannerEvidence.provided,
       confidenceLevel: input.plannerEvidence.confidence.level,
-      unsupportedIntentCount: input.plannerEvidence.unsupportedIntentFields.length
+      unsupportedIntentCount: input.plannerEvidence.unsupportedIntentFields.length,
     },
     spatialQuery: {
       requested: input.spatialQueryEvidence.requested,
       ready: input.spatialQueryEvidence.ready,
       status: input.spatialQueryEvidence.status,
       caseCount: input.spatialQueryEvidence.cases.length,
-      blockedOperations: input.spatialQueryEvidence.blockedOperations
+      blockedOperations: input.spatialQueryEvidence.blockedOperations,
     },
     sceneBrowsing,
     snapshot: {
       requested: input.snapshotEvidence.requested,
       renderer: input.snapshotEvidence.renderer,
-      passed: input.snapshotEvidence.passed
+      passed: input.snapshotEvidence.passed,
     },
     export: {
       ready: input.exportEvidence.ready,
       sourceCount: input.exportEvidence.sourceCount,
-      layerCount: input.exportEvidence.layerCount
-    }
+      layerCount: input.exportEvidence.layerCount,
+    },
   };
 }
 
@@ -1391,24 +1480,38 @@ function buildSceneBrowsingManifestSummary(
   input: GenerationEvidenceBundleInput,
   summary: ContextSummary,
   status: "ready" | "blocked",
-  diagnostics: Diagnostic[]
+  diagnostics: Diagnostic[],
 ): ExampleAppGenerationEvidenceSummary["sceneBrowsing"] {
   const diagnosticBlockerCodes = uniqueScene3DStableRuntimeBlockerCodes(
-    diagnostics.map((diagnostic) => diagnostic.blockerCode).filter(isScene3DStableRuntimeBlockerCode)
+    diagnostics.map((diagnostic) => diagnostic.blockerCode).filter(isScene3DStableRuntimeBlockerCode),
   );
-  const requested = input.skeleton.targetDomains.includes("scene-browsing") || summary.scene3d !== undefined || diagnosticBlockerCodes.length > 0;
+  const requested =
+    input.skeleton.targetDomains.includes("scene-browsing") ||
+    summary.scene3d !== undefined ||
+    diagnosticBlockerCodes.length > 0;
   const stableRuntimeBlockerCodes = requested
-    ? uniqueScene3DStableRuntimeBlockerCodes([...diagnosticBlockerCodes, ...Object.values(Scene3DStableRuntimeBlockerCodes)])
+    ? uniqueScene3DStableRuntimeBlockerCodes([
+        ...diagnosticBlockerCodes,
+        ...Object.values(Scene3DStableRuntimeBlockerCodes),
+      ])
     : [];
 
   return {
     requested,
-    status: !requested ? "not-requested" : status === "blocked" || diagnosticBlockerCodes.length > 0 ? "blocked" : "experimental",
+    status: !requested
+      ? "not-requested"
+      : status === "blocked" || diagnosticBlockerCodes.length > 0
+        ? "blocked"
+        : "experimental",
     extensionPresent: summary.scene3d !== undefined,
     stableViewMode: false,
     runtimeSupported: false,
     stableRuntimeBlocked: true,
-    state: !requested ? "not-requested" : status === "blocked" || diagnosticBlockerCodes.length > 0 ? "blocked" : "extension-only",
+    state: !requested
+      ? "not-requested"
+      : status === "blocked" || diagnosticBlockerCodes.length > 0
+        ? "blocked"
+        : "extension-only",
     sourceCount: summary.scene3d?.sourceCount ?? 0,
     layerCount: summary.scene3d?.layerCount ?? 0,
     sourceIds: summary.scene3d?.sources.map((source) => source.id) ?? [],
@@ -1416,7 +1519,7 @@ function buildSceneBrowsingManifestSummary(
     pickableLayerCount: summary.scene3d?.pickableLayerCount ?? 0,
     mockSnapshotPassed: summary.scene3d?.snapshot.mockPassed ?? false,
     mockQueryPickCount: summary.scene3d?.query.pickCount ?? 0,
-    stableRuntimeBlockerCodes
+    stableRuntimeBlockerCodes,
   };
 }
 
@@ -1439,7 +1542,8 @@ function buildDeliverySummary(input: {
   const followUps = buildDeliveryFollowUps(input, sourceReadiness);
   const status = deliveryStatus(input.status, confirmationRequired, followUps.length);
   const dataAndAnalysisBlockerCount =
-    input.spatialQueryEvidence.diagnosticCounts.error + sourceReadiness.filter((source) => source.state === "blocked").length;
+    input.spatialQueryEvidence.diagnosticCounts.error +
+    sourceReadiness.filter((source) => source.state === "blocked").length;
   const dataAndAnalysisFollowUpCount = dataSectionFollowUpCount(followUps);
   const sceneBrowsingBlockerCount =
     input.sceneBrowsing.status === "blocked"
@@ -1451,7 +1555,7 @@ function buildDeliverySummary(input: {
       (confirmation.reason === "external-resource" ||
         confirmation.reason === "network-fetch" ||
         confirmation.reason === "archive-parsing" ||
-        confirmation.reason === "worker-use")
+        confirmation.reason === "worker-use"),
   );
 
   return {
@@ -1461,7 +1565,7 @@ function buildDeliverySummary(input: {
       ready: status === "ready",
       blocked: status === "blocked",
       needsConfirmation: status === "needs-confirmation",
-      followUpRequired: status === "follow-up-required"
+      followUpRequired: status === "follow-up-required",
     },
     sections: [
       {
@@ -1469,61 +1573,72 @@ function buildDeliverySummary(input: {
         status,
         blockerCount: countDiagnostics(input.diagnostics).error,
         confirmationRequired,
-        followUpCount: followUps.length
+        followUpCount: followUps.length,
       },
       {
         id: "files",
         status: "ready",
         blockerCount: 0,
         confirmationRequired: false,
-        followUpCount: 0
+        followUpCount: 0,
       },
       {
         id: "map-edits",
         status: input.commandEvidence.diagnosticCounts.error > 0 ? "blocked" : "ready",
         blockerCount: input.commandEvidence.diagnosticCounts.error,
         confirmationRequired: false,
-        followUpCount: followUps.filter((followUp) => followUp.id.startsWith("planner.")).length
+        followUpCount: followUps.filter((followUp) => followUp.id.startsWith("planner.")).length,
       },
       {
         id: "data-and-analysis",
-        status: dataAndAnalysisBlockerCount > 0 ? "blocked" : dataConfirmationRequired ? "needs-confirmation" : dataAndAnalysisFollowUpCount > 0 ? "follow-up-required" : "ready",
+        status:
+          dataAndAnalysisBlockerCount > 0
+            ? "blocked"
+            : dataConfirmationRequired
+              ? "needs-confirmation"
+              : dataAndAnalysisFollowUpCount > 0
+                ? "follow-up-required"
+                : "ready",
         blockerCount: dataAndAnalysisBlockerCount,
         confirmationRequired: dataConfirmationRequired,
-        followUpCount: dataAndAnalysisFollowUpCount
+        followUpCount: dataAndAnalysisFollowUpCount,
       },
       {
         id: "scene-browsing",
-        status: sceneBrowsingBlockerCount > 0 ? "blocked" : input.sceneBrowsing.requested ? "follow-up-required" : "ready",
+        status:
+          sceneBrowsingBlockerCount > 0 ? "blocked" : input.sceneBrowsing.requested ? "follow-up-required" : "ready",
         blockerCount: sceneBrowsingBlockerCount,
         confirmationRequired: false,
-        followUpCount: followUps.filter((followUp) => followUp.id.startsWith("scene-browsing.")).length
-      }
+        followUpCount: followUps.filter((followUp) => followUp.id.startsWith("scene-browsing.")).length,
+      },
     ],
     confirmations,
     confirmationRequired,
     followUps,
     sourceReadiness,
     sourcePromotionCandidates,
-    spatialQueryReadiness
+    spatialQueryReadiness,
   };
 }
 
 function buildSpatialQueryDeliveryReadiness(
-  spatialQueryEvidence: GenerationSpatialQueryEvidence
+  spatialQueryEvidence: GenerationSpatialQueryEvidence,
 ): ExampleAppDeliverySummary["spatialQueryReadiness"] {
-  const followUpTaskIds = spatialQueryEvidence.capabilityGate.waiver ? [spatialQueryEvidence.capabilityGate.waiver.followUpTaskId] : [];
-  const passedCaseCount = spatialQueryEvidence.cases.filter((entry) => entry.passed && entry.diagnosticCounts.error === 0).length;
+  const followUpTaskIds = spatialQueryEvidence.capabilityGate.waiver
+    ? [spatialQueryEvidence.capabilityGate.waiver.followUpTaskId]
+    : [];
+  const passedCaseCount = spatialQueryEvidence.cases.filter(
+    (entry) => entry.passed && entry.diagnosticCounts.error === 0,
+  ).length;
   const failedCaseCount = spatialQueryEvidence.cases.length - passedCaseCount;
   const blockerCount = spatialQueryEvidence.diagnosticCounts.error;
-  const state =
-    !spatialQueryEvidence.requested
-      ? "not-requested"
-      : blockerCount > 0 || spatialQueryEvidence.status === "blocked"
-        ? "blocked"
-        : followUpTaskIds.length > 0
-          ? "follow-up-required"
-          : "ready";
+  const state = !spatialQueryEvidence.requested
+    ? "not-requested"
+    : blockerCount > 0 || spatialQueryEvidence.status === "blocked"
+      ? "blocked"
+      : followUpTaskIds.length > 0
+        ? "follow-up-required"
+        : "ready";
 
   return {
     requested: spatialQueryEvidence.requested,
@@ -1556,15 +1671,15 @@ function buildSpatialQueryDeliveryReadiness(
       resultLimit: entry.resultLimit,
       resultTruncated: entry.resultTruncated,
       fixtureHash: entry.fixtureHash,
-      diagnosticCounts: entry.diagnosticCounts
-    }))
+      diagnosticCounts: entry.diagnosticCounts,
+    })),
   };
 }
 
 function deliveryStatus(
   status: "ready" | "blocked",
   confirmationRequired: boolean,
-  followUpCount: number
+  followUpCount: number,
 ): ExampleAppDeliverySummary["status"] {
   if (status === "blocked") return "blocked";
   if (confirmationRequired) return "needs-confirmation";
@@ -1585,7 +1700,9 @@ function buildSourceReadiness(spec: MapSpec): ExampleAppDeliverySummary["sourceR
         queryReady: true,
         resourcePolicy,
         confirmationReasons,
-        notes: ["Inline GeoJSON is schema-valid, display-ready, and eligible for deterministic point/bbox query evidence."]
+        notes: [
+          "Inline GeoJSON is schema-valid, display-ready, and eligible for deterministic point/bbox query evidence.",
+        ],
       };
     }
 
@@ -1597,7 +1714,9 @@ function buildSourceReadiness(spec: MapSpec): ExampleAppDeliverySummary["sourceR
         queryReady: false,
         resourcePolicy,
         confirmationReasons,
-        notes: ["URL GeoJSON is display/export ready, but headless query evidence must not fetch it without a future loader contract."]
+        notes: [
+          "URL GeoJSON is display/export ready, but headless query evidence must not fetch it without a future loader contract.",
+        ],
       };
     }
 
@@ -1610,7 +1729,9 @@ function buildSourceReadiness(spec: MapSpec): ExampleAppDeliverySummary["sourceR
         resourcePolicy,
         confirmationReasons,
         ...(archiveContract ? { archiveContract } : {}),
-        notes: ["PMTiles is URL-compatible for display/export evidence, while archive parsing and feature query support remain future contracts."]
+        notes: [
+          "PMTiles is URL-compatible for display/export evidence, while archive parsing and feature query support remain future contracts.",
+        ],
       };
     }
 
@@ -1622,7 +1743,7 @@ function buildSourceReadiness(spec: MapSpec): ExampleAppDeliverySummary["sourceR
         queryReady: false,
         resourcePolicy,
         confirmationReasons,
-        notes: ["Raster tiles are display/export ready; feature query and raster sampling remain blocked future work."]
+        notes: ["Raster tiles are display/export ready; feature query and raster sampling remain blocked future work."],
       };
     }
 
@@ -1634,7 +1755,9 @@ function buildSourceReadiness(spec: MapSpec): ExampleAppDeliverySummary["sourceR
         queryReady: false,
         resourcePolicy,
         confirmationReasons,
-        notes: ["Vector tile URLs are display/export ready; headless feature query support requires a future tile decode contract."]
+        notes: [
+          "Vector tile URLs are display/export ready; headless feature query support requires a future tile decode contract.",
+        ],
       };
     }
 
@@ -1645,19 +1768,21 @@ function buildSourceReadiness(spec: MapSpec): ExampleAppDeliverySummary["sourceR
       queryReady: false,
       resourcePolicy,
       confirmationReasons,
-      notes: ["This source type is outside the current public MapSpec source readiness matrix."]
+      notes: ["This source type is outside the current public MapSpec source readiness matrix."],
     };
   });
 }
 
 function buildSourcePromotionCandidates(
-  sourceReadiness: ExampleAppDeliverySummary["sourceReadiness"]
+  sourceReadiness: ExampleAppDeliverySummary["sourceReadiness"],
 ): NonNullable<ExampleAppDeliverySummary["sourcePromotionCandidates"]> {
   return sourceReadiness.flatMap((source) => {
     if (source.state === "supported") return [];
-    const definition = sourcePromotionCandidateDefinitions[source.type as keyof typeof sourcePromotionCandidateDefinitions];
+    const definition =
+      sourcePromotionCandidateDefinitions[source.type as keyof typeof sourcePromotionCandidateDefinitions];
     if (!definition) return [];
-    const archiveContract = source.archiveContract ?? (source.type === "pmtiles" ? createPmtilesArchiveContract() : undefined);
+    const archiveContract =
+      source.archiveContract ?? (source.type === "pmtiles" ? createPmtilesArchiveContract() : undefined);
 
     return [
       {
@@ -1669,8 +1794,8 @@ function buildSourcePromotionCandidates(
         target: definition.target,
         exitCondition: definition.exitCondition,
         sourceIds: [source.sourceId],
-        notes: [...source.notes, definition.note]
-      }
+        notes: [...source.notes, definition.note],
+      },
     ];
   });
 }
@@ -1681,50 +1806,56 @@ const sourcePromotionCandidateDefinitions = {
     target: "PMTiles archive metadata promotion gate",
     exitCondition:
       "Schema, resource-policy, and manifest evidence must prove archive metadata is explicit while archive parsing and feature query remain blocked.",
-    note: "Promote only one format at a time; archive parsing stays blocked until the gate passes."
+    note: "Promote only one format at a time; archive parsing stays blocked until the gate passes.",
   },
   geoparquet: {
     format: "geoparquet",
     target: "GeoParquet source schema gate",
     exitCondition:
       "TypeBox schema, CRS and encoding diagnostics, range policy, and no-runtime-claim manifest tests must pass before runtime loading is promoted.",
-    note: "Runtime loading stays blocked until schema and diagnostics land."
+    note: "Runtime loading stays blocked until schema and diagnostics land.",
   },
   flatgeobuf: {
     format: "flatgeobuf",
     target: "FlatGeobuf source schema gate",
     exitCondition:
       "Stream and index schema, resource policy, and deterministic negative fixtures must pass before runtime loading is promoted.",
-    note: "Only file-list evidence is allowed before the schema gate."
+    note: "Only file-list evidence is allowed before the schema gate.",
   },
   geotiff: {
     format: "geotiff",
     target: "GeoTIFF raster source gate",
     exitCondition:
       "Raster schema, band/CRS/no-data diagnostics, resource policy, and snapshot strategy must land before display/export is promoted.",
-    note: "Raster sampling stays blocked until display evidence exists."
+    note: "Raster sampling stays blocked until display evidence exists.",
   },
   geozarr: {
     format: "geozarr",
     target: "GeoZarr array source gate",
     exitCondition:
       "Array-store schema, chunk policy, worker budget, and blocked query/sampling diagnostics must land before runtime support is promoted.",
-    note: "Chunked array support stays blocked until deterministic fixtures exist."
-  }
+    note: "Chunked array support stays blocked until deterministic fixtures exist.",
+  },
 } as const;
 
-function sourceResourcePolicy(source: MapSpec["sources"][string]): NonNullable<ExampleAppDeliverySummary["sourceReadiness"][number]["resourcePolicy"]> {
+function sourceResourcePolicy(
+  source: MapSpec["sources"][string],
+): NonNullable<ExampleAppDeliverySummary["sourceReadiness"][number]["resourcePolicy"]> {
   return source.type === "geojson" || source.type === "pmtiles" || source.type === "raster" || source.type === "vector"
     ? "passed"
     : "not-applicable";
 }
 
-function sourceArchiveContract(source: MapSpec["sources"][string]): ExampleAppDeliverySummary["sourceReadiness"][number]["archiveContract"] | undefined {
+function sourceArchiveContract(
+  source: MapSpec["sources"][string],
+): ExampleAppDeliverySummary["sourceReadiness"][number]["archiveContract"] | undefined {
   if (source.type !== "pmtiles") return undefined;
   return createPmtilesArchiveContract();
 }
 
-function createPmtilesArchiveContract(): NonNullable<ExampleAppDeliverySummary["sourceReadiness"][number]["archiveContract"]> {
+function createPmtilesArchiveContract(): NonNullable<
+  ExampleAppDeliverySummary["sourceReadiness"][number]["archiveContract"]
+> {
   return {
     state: "explicit",
     metadataFields: [
@@ -1737,13 +1868,15 @@ function createPmtilesArchiveContract(): NonNullable<ExampleAppDeliverySummary["
       "tileType",
       "minZoom",
       "maxZoom",
-      "bounds"
+      "bounds",
     ],
-    policyFields: ["maxArchiveBytes", "maxRootDirectoryBytes", "allowRangeRequests", "maxRangeSegments", "timeoutMs"]
+    policyFields: ["maxArchiveBytes", "maxRootDirectoryBytes", "allowRangeRequests", "maxRangeSegments", "timeoutMs"],
   };
 }
 
-function sourceConfirmationReasons(source: MapSpec["sources"][string]): ExampleAppDeliverySummary["sourceReadiness"][number]["confirmationReasons"] {
+function sourceConfirmationReasons(
+  source: MapSpec["sources"][string],
+): ExampleAppDeliverySummary["sourceReadiness"][number]["confirmationReasons"] {
   const urls = sourceUrls(source);
   const reasons = new Set<ExampleAppDeliverySummary["sourceReadiness"][number]["confirmationReasons"][number]>();
   if (urls.length > 0) reasons.add("external-resource");
@@ -1765,12 +1898,10 @@ function isRemoteUrl(value: string): boolean {
 }
 
 function buildDeliveryConfirmations(
-  sourceReadiness: ExampleAppDeliverySummary["sourceReadiness"]
+  sourceReadiness: ExampleAppDeliverySummary["sourceReadiness"],
 ): ExampleAppDeliverySummary["confirmations"] {
   const sourcesByReason = (reason: ExampleAppDeliverySummary["confirmations"][number]["reason"]): string[] =>
-    sourceReadiness
-      .filter((source) => source.confirmationReasons.includes(reason))
-      .map((source) => source.sourceId);
+    sourceReadiness.filter((source) => source.confirmationReasons.includes(reason)).map((source) => source.sourceId);
 
   const externalSourceIds = sourcesByReason("external-resource");
   const networkSourceIds = sourcesByReason("network-fetch");
@@ -1781,30 +1912,30 @@ function buildDeliveryConfirmations(
       reason: "external-resource",
       required: externalSourceIds.length > 0,
       target: "MapSpec.sources URL-bearing entries",
-      ...(externalSourceIds.length > 0 ? { sourceIds: externalSourceIds } : {})
+      ...(externalSourceIds.length > 0 ? { sourceIds: externalSourceIds } : {}),
     },
     {
       reason: "network-fetch",
       required: networkSourceIds.length > 0,
       target: "future resource loader fetch",
-      ...(networkSourceIds.length > 0 ? { sourceIds: networkSourceIds } : {})
+      ...(networkSourceIds.length > 0 ? { sourceIds: networkSourceIds } : {}),
     },
     {
       reason: "archive-parsing",
       required: archiveSourceIds.length > 0,
       target: "future archive parser or range reader",
-      ...(archiveSourceIds.length > 0 ? { sourceIds: archiveSourceIds } : {})
+      ...(archiveSourceIds.length > 0 ? { sourceIds: archiveSourceIds } : {}),
     },
     {
       reason: "worker-use",
       required: false,
-      target: "future worker-backed data decode"
+      target: "future worker-backed data decode",
     },
     {
       reason: "file-write",
       required: false,
-      target: "export_example_app manifest output"
-    }
+      target: "export_example_app manifest output",
+    },
   ];
 }
 
@@ -1814,7 +1945,7 @@ function buildDeliveryFollowUps(
     spatialQueryEvidence: GenerationSpatialQueryEvidence;
     sceneBrowsing: ExampleAppGenerationEvidenceSummary["sceneBrowsing"];
   },
-  sourceReadiness: ExampleAppDeliverySummary["sourceReadiness"]
+  sourceReadiness: ExampleAppDeliverySummary["sourceReadiness"],
 ): ExampleAppDeliverySummary["followUps"] {
   const followUps: ExampleAppDeliverySummary["followUps"] = [];
 
@@ -1823,7 +1954,7 @@ function buildDeliveryFollowUps(
       id: `planner.unsupported-intent.${field}`,
       owner: "@ai-agent",
       targetArtifact: "packages/ai/src/tools/generationEvidence.ts",
-      reason: `Planner intent field "${field}" is not accepted by the current generation contract.`
+      reason: `Planner intent field "${field}" is not accepted by the current generation contract.`,
     });
   }
 
@@ -1832,16 +1963,19 @@ function buildDeliveryFollowUps(
       id: `analysis.blocked-operation.${operation}`,
       owner: "@engine-agent",
       targetArtifact: "docs/planning/feature-specs/spatial-analysis-readiness.md",
-      reason: `Spatial analysis operation "${operation}" needs schema, command semantics, diagnostics, fixtures, and MCP exposure assessment before promotion.`
+      reason: `Spatial analysis operation "${operation}" needs schema, command semantics, diagnostics, fixtures, and MCP exposure assessment before promotion.`,
     });
   }
 
-  if (input.spatialQueryEvidence.capabilityGate.status === "waived" && input.spatialQueryEvidence.capabilityGate.waiver) {
+  if (
+    input.spatialQueryEvidence.capabilityGate.status === "waived" &&
+    input.spatialQueryEvidence.capabilityGate.waiver
+  ) {
     followUps.push({
       id: `spatial-query.capability-waiver.${input.spatialQueryEvidence.capabilityGate.waiver.followUpTaskId}`,
       owner: "@ai-agent",
       targetArtifact: "packages/ai/src/tools/generationEvidence.ts",
-      reason: `Spatial query capability waiver must be closed by ${input.spatialQueryEvidence.capabilityGate.waiver.followUpTaskId} before treating adapter query support as complete.`
+      reason: `Spatial query capability waiver must be closed by ${input.spatialQueryEvidence.capabilityGate.waiver.followUpTaskId} before treating adapter query support as complete.`,
     });
   }
 
@@ -1850,7 +1984,7 @@ function buildDeliveryFollowUps(
       id: `source-readiness.${source.sourceId}`,
       owner: "@engine-agent",
       targetArtifact: "docs/planning/feature-specs/cloud-native-source-readiness.md",
-      reason: `Source "${source.sourceId}" is ${source.type} readiness-only; runtime fetch, archive parsing, or query semantics need a future contract before stronger claims.`
+      reason: `Source "${source.sourceId}" is ${source.type} readiness-only; runtime fetch, archive parsing, or query semantics need a future contract before stronger claims.`,
     });
   }
 
@@ -1859,8 +1993,9 @@ function buildDeliveryFollowUps(
       id: "scene-browsing.stable-runtime-gate",
       owner: "@quality-guardian",
       targetArtifact: "docs/planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md",
-      reason: "Scene browsing is extension-only; stable runtime promotion still needs a future quality-guardian and coordinator Go decision.",
-      blockerCode: Scene3DStableRuntimeBlockerCodes.ViewMode
+      reason:
+        "Scene browsing is extension-only; stable runtime promotion still needs a future quality-guardian and coordinator Go decision.",
+      blockerCode: Scene3DStableRuntimeBlockerCodes.ViewMode,
     });
   }
 
@@ -1876,13 +2011,13 @@ function dataSectionFollowUpCount(followUps: ExampleAppDeliverySummary["followUp
     (followUp) =>
       followUp.id.startsWith("analysis.") ||
       followUp.id.startsWith("source-readiness.") ||
-      followUp.id.startsWith("spatial-query.")
+      followUp.id.startsWith("spatial-query."),
   ).length;
 }
 
 function buildExampleEvidence(
   exampleId: ExampleId,
-  generationEvidence: ExampleAppGenerationEvidenceSummary
+  generationEvidence: ExampleAppGenerationEvidenceSummary,
 ): GenerationExampleEvidence & { diagnostics: Diagnostic[] } {
   const response = exportExampleAppTool({ exampleId, generationEvidence });
   if (!response.ok) {
@@ -1891,7 +2026,7 @@ function buildExampleEvidence(
       writesFiles: false,
       fileCount: 0,
       diagnosticCounts: countDiagnostics(response.diagnostics),
-      diagnostics: response.diagnostics
+      diagnostics: response.diagnostics,
     };
   }
 
@@ -1901,11 +2036,14 @@ function buildExampleEvidence(
     fileCount: response.result.files.length,
     ...(response.result.generationEvidence ? { generationEvidence: response.result.generationEvidence } : {}),
     diagnosticCounts: zeroDiagnosticCounts(),
-    diagnostics: []
+    diagnostics: [],
   };
 }
 
-function commandEvidenceDiagnostics(skeleton: MapGenerationCommandSkeleton, commandEvidence: GenerationCommandEvidence): Diagnostic[] {
+function commandEvidenceDiagnostics(
+  skeleton: MapGenerationCommandSkeleton,
+  commandEvidence: GenerationCommandEvidence,
+): Diagnostic[] {
   if (skeleton.commands.length === 0) return [];
   return specMismatchDiagnosticsFromEvidence(skeleton, commandEvidence);
 }
@@ -1914,12 +2052,15 @@ function specMismatchDiagnostics(skeleton: MapGenerationCommandSkeleton, result:
   return JSON.stringify(result.spec) === JSON.stringify(skeleton.spec) ? [] : [specMismatchDiagnostic()];
 }
 
-function specMismatchDiagnosticsFromEvidence(skeleton: MapGenerationCommandSkeleton, commandEvidence: GenerationCommandEvidence): Diagnostic[] {
+function specMismatchDiagnosticsFromEvidence(
+  skeleton: MapGenerationCommandSkeleton,
+  commandEvidence: GenerationCommandEvidence,
+): Diagnostic[] {
   if (!commandEvidence.usedApplyCommands || skeleton.commands.length === 0) return [];
   const replay = applyCommandsTool({
     spec: skeleton.baseSpec,
     commands: skeleton.commands,
-    traceId: skeleton.traceId
+    traceId: skeleton.traceId,
   });
   if (!replay.ok) return replay.diagnostics;
   return specMismatchDiagnostics(skeleton, replay.result);
@@ -1935,33 +2076,42 @@ function specMismatchDiagnostic(): Diagnostic {
     fix: {
       kind: "manual",
       confidence: "high",
-      message: "Regenerate the skeleton spec by replaying commands from baseSpec instead of editing the MapSpec directly."
-    }
+      message:
+        "Regenerate the skeleton spec by replaying commands from baseSpec instead of editing the MapSpec directly.",
+    },
   };
 }
 
-function snapshotEvidenceDiagnostics(snapshotEvidence: GenerationSnapshotEvidence & { diagnostics?: Diagnostic[] }): Diagnostic[] {
+function snapshotEvidenceDiagnostics(
+  snapshotEvidence: GenerationSnapshotEvidence & { diagnostics?: Diagnostic[] },
+): Diagnostic[] {
   return snapshotEvidence.diagnostics ?? [];
 }
 
-function stripInternalDiagnostics(snapshotEvidence: GenerationSnapshotEvidence & { diagnostics?: Diagnostic[] }): GenerationSnapshotEvidence {
+function stripInternalDiagnostics(
+  snapshotEvidence: GenerationSnapshotEvidence & { diagnostics?: Diagnostic[] },
+): GenerationSnapshotEvidence {
   const { diagnostics: _diagnostics, ...publicEvidence } = snapshotEvidence;
   return publicEvidence;
 }
 
-function stripPlannerDiagnostics(plannerEvidence: GenerationPlannerEvidence & { diagnostics?: Diagnostic[] }): GenerationPlannerEvidence {
+function stripPlannerDiagnostics(
+  plannerEvidence: GenerationPlannerEvidence & { diagnostics?: Diagnostic[] },
+): GenerationPlannerEvidence {
   const { diagnostics: _diagnostics, ...publicEvidence } = plannerEvidence;
   return publicEvidence;
 }
 
 function stripSpatialQueryDiagnostics(
-  spatialQueryEvidence: GenerationSpatialQueryEvidence & { diagnostics?: Diagnostic[] }
+  spatialQueryEvidence: GenerationSpatialQueryEvidence & { diagnostics?: Diagnostic[] },
 ): GenerationSpatialQueryEvidence {
   const { diagnostics: _diagnostics, ...publicEvidence } = spatialQueryEvidence;
   return publicEvidence;
 }
 
-function stripExampleDiagnostics(exampleEvidence: GenerationExampleEvidence & { diagnostics?: Diagnostic[] }): GenerationExampleEvidence {
+function stripExampleDiagnostics(
+  exampleEvidence: GenerationExampleEvidence & { diagnostics?: Diagnostic[] },
+): GenerationExampleEvidence {
   const { diagnostics: _diagnostics, ...publicEvidence } = exampleEvidence;
   return publicEvidence;
 }
@@ -1975,9 +2125,14 @@ function uniqueSpatialQueryTypes(values: Array<"point" | "bbox">): Array<"point"
 }
 
 function isScene3DStableRuntimeBlockerCode(value: unknown): value is Scene3DStableRuntimeBlockerCode {
-  return typeof value === "string" && Object.values(Scene3DStableRuntimeBlockerCodes).includes(value as Scene3DStableRuntimeBlockerCode);
+  return (
+    typeof value === "string" &&
+    Object.values(Scene3DStableRuntimeBlockerCodes).includes(value as Scene3DStableRuntimeBlockerCode)
+  );
 }
 
-function uniqueScene3DStableRuntimeBlockerCodes(values: Scene3DStableRuntimeBlockerCode[]): Scene3DStableRuntimeBlockerCode[] {
+function uniqueScene3DStableRuntimeBlockerCodes(
+  values: Scene3DStableRuntimeBlockerCode[],
+): Scene3DStableRuntimeBlockerCode[] {
   return unique(values) as Scene3DStableRuntimeBlockerCode[];
 }

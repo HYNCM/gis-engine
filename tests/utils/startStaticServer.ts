@@ -1,5 +1,5 @@
-import { createServer, type Server } from "node:http";
 import { readFile } from "node:fs/promises";
+import { createServer, type Server } from "node:http";
 import { extname, join, normalize, resolve } from "node:path";
 
 export interface StaticServerHandle {
@@ -35,7 +35,7 @@ export async function startStaticServer(root: string): Promise<StaticServerHandl
 
   return {
     url: `http://127.0.0.1:${address.port}`,
-    close: () => new Promise((resolveClose) => server.close(() => resolveClose()))
+    close: () => new Promise((resolveClose) => server.close(() => resolveClose())),
   };
 }
 

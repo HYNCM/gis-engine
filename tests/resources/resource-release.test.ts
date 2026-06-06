@@ -1,12 +1,12 @@
+import { type MapCommand, MapLibreAdapter, MapRuntime, type MapSpec, MockAdapter } from "@gis-engine/engine";
 import { describe, expect, it } from "vitest";
 import before from "../fixtures/commands/replay/style-update/before.map.json";
-import { MapRuntime, MockAdapter, MapLibreAdapter, type MapCommand, type MapSpec } from "@gis-engine/engine";
 
 describe("resource release smoke", () => {
   it("destroys runtime resources and reports repeated destroy calls", async () => {
     const runtime = await MapRuntime.create(before as MapSpec, {
       adapter: new MockAdapter(),
-      container: {} as HTMLElement
+      container: {} as HTMLElement,
     });
 
     const firstReport = await runtime.destroy();
@@ -21,11 +21,11 @@ describe("resource release smoke", () => {
   it("keeps snapshot and query lifecycle paths bounded by destroy", async () => {
     const runtime = await MapRuntime.create(querySpec, {
       adapter: new MockAdapter(),
-      container: {} as HTMLElement
+      container: {} as HTMLElement,
     });
 
     await expect(runtime.snapshot({ targetLayers: ["places-circle"] })).resolves.toEqual(
-      expect.objectContaining({ passed: true })
+      expect.objectContaining({ passed: true }),
     );
 
     const queryResult = await runtime.queryFeatures({ point: [10, 10], layers: ["places-circle"] });
@@ -45,7 +45,7 @@ describe("resource release smoke", () => {
       id: "cmd-after-destroy",
       version: "0.1",
       type: "setView",
-      view: { zoom: 4 }
+      view: { zoom: 4 },
     };
     await expect(runtime.apply(command)).rejects.toThrow("MapRuntime has been destroyed.");
   });
@@ -54,7 +54,7 @@ describe("resource release smoke", () => {
     const adapter = new MockAdapter();
     const runtime = await MapRuntime.create(before as MapSpec, {
       adapter,
-      container: {} as HTMLElement
+      container: {} as HTMLElement,
     });
 
     const unsub1 = adapter.on("error", () => {});
@@ -65,7 +65,7 @@ describe("resource release smoke", () => {
 
     expect(report.destroyed).toBe(true);
     expect(report.resources).toBeDefined();
-    expect(report.resources!.listenersRemoved).toBe(3);
+    expect(report.resources?.listenersRemoved).toBe(3);
 
     unsub1();
     unsub2();
@@ -76,21 +76,21 @@ describe("resource release smoke", () => {
     const adapter = new MockAdapter();
     const runtime = await MapRuntime.create(before as MapSpec, {
       adapter,
-      container: {} as HTMLElement
+      container: {} as HTMLElement,
     });
 
     const report = await runtime.destroy();
 
     expect(report.destroyed).toBe(true);
     expect(report.resources).toBeDefined();
-    expect(report.resources!.listenersRemoved).toBe(0);
+    expect(report.resources?.listenersRemoved).toBe(0);
   });
 
   it("RESOURCE-003: MapLibreAdapter removes listeners and reports count", async () => {
     const adapter = new MapLibreAdapter();
     const runtime = await MapRuntime.create(before as MapSpec, {
       adapter,
-      container: {} as HTMLElement
+      container: {} as HTMLElement,
     });
 
     adapter.on("error", () => {});
@@ -100,33 +100,33 @@ describe("resource release smoke", () => {
 
     expect(report.destroyed).toBe(true);
     expect(report.resources).toBeDefined();
-    expect(report.resources!.listenersRemoved).toBe(2);
+    expect(report.resources?.listenersRemoved).toBe(2);
   });
 
   it("RESOURCE-004: MockAdapter reports verifiable: true in ResourceReport", async () => {
     const adapter = new MockAdapter();
     const runtime = await MapRuntime.create(before as MapSpec, {
       adapter,
-      container: {} as HTMLElement
+      container: {} as HTMLElement,
     });
 
     const report = await runtime.destroy();
 
     expect(report.resources).toBeDefined();
-    expect(report.resources!.verifiable).toBe(true);
+    expect(report.resources?.verifiable).toBe(true);
   });
 
   it("RESOURCE-004: MapLibreAdapter reports verifiable: true in ResourceReport", async () => {
     const adapter = new MapLibreAdapter();
     const runtime = await MapRuntime.create(before as MapSpec, {
       adapter,
-      container: {} as HTMLElement
+      container: {} as HTMLElement,
     });
 
     const report = await runtime.destroy();
 
     expect(report.resources).toBeDefined();
-    expect(report.resources!.verifiable).toBe(true);
+    expect(report.resources?.verifiable).toBe(true);
   });
 });
 
@@ -137,7 +137,7 @@ const querySpec: MapSpec = {
   view: {
     mode: "map2d",
     center: [10, 10],
-    zoom: 4
+    zoom: 4,
   },
   sources: {
     inline: {
@@ -148,11 +148,11 @@ const querySpec: MapSpec = {
           {
             type: "Feature",
             properties: { id: "point-a" },
-            geometry: { type: "Point", coordinates: [10, 10] }
-          }
-        ]
-      }
-    }
+            geometry: { type: "Point", coordinates: [10, 10] },
+          },
+        ],
+      },
+    },
   },
-  layers: [{ id: "places-circle", type: "circle", source: "inline" }]
+  layers: [{ id: "places-circle", type: "circle", source: "inline" }],
 };

@@ -1,10 +1,11 @@
 import { Ajv, type ErrorObject } from "ajv/dist/ajv.js";
 import { DiagnosticCodes } from "../diagnostics/codes.js";
+import { readString, toolInputErrorToCode } from "../internal/shared.js";
 import {
-  MapGenerationPromptPlannerInputSchema,
-  MapGenerationRequestSchema,
   type MapGenerationPromptPlannerInputFromSchema,
-  type MapGenerationRequestFromSchema
+  MapGenerationPromptPlannerInputSchema,
+  type MapGenerationRequestFromSchema,
+  MapGenerationRequestSchema,
 } from "../spec/schemas/index.js";
 import type { Diagnostic } from "../types.js";
 
@@ -37,9 +38,18 @@ export function planMapGenerationRequest(input: unknown): MapGenerationPromptPla
   if (!validatePlannerInput(input) || rawPromptDiagnostics.length > 0) {
     const diagnostics = uniqueDiagnostics([
       ...rawPromptDiagnostics,
-      ...toolInputErrorsToDiagnostics(validatePlannerInput.errors ?? [], "Invalid map generation prompt planner input.")
+      ...toolInputErrorsToDiagnostics(
+        validatePlannerInput.errors ?? [],
+        "Invalid map generation prompt planner input.",
+      ),
     ]);
-    return blockedPlan({ diagnostics, plannerId, promptHash, traceId, unsupportedIntentFields: unsupportedFields(input, diagnostics) });
+    return blockedPlan({
+      diagnostics,
+      plannerId,
+      promptHash,
+      traceId,
+      unsupportedIntentFields: unsupportedFields(input, diagnostics),
+    });
   }
 
   const typedInput = input as MapGenerationPromptPlannerInputFromSchema;
@@ -48,11 +58,14 @@ export function planMapGenerationRequest(input: unknown): MapGenerationPromptPla
     ...structuredClone(intent),
     promptHash: typedInput.promptHash,
     traceId,
-    ...(typedInput.createdAt ? { createdAt: typedInput.createdAt } : {})
+    ...(typedInput.createdAt ? { createdAt: typedInput.createdAt } : {}),
   };
 
   if (!validateGenerationRequest(request)) {
-    const diagnostics = toolInputErrorsToDiagnostics(validateGenerationRequest.errors ?? [], "Invalid planned map generation request.");
+    const diagnostics = toolInputErrorsToDiagnostics(
+      validateGenerationRequest.errors ?? [],
+      "Invalid planned map generation request.",
+    );
     return {
       status: "blocked",
       traceId,
@@ -63,8 +76,8 @@ export function planMapGenerationRequest(input: unknown): MapGenerationPromptPla
         promptHash: typedInput.promptHash,
         retainedRawPrompt: false,
         acceptedIntentFields: acceptedIntentFields(intent),
-        unsupportedIntentFields: unsupportedFields(input, diagnostics)
-      }
+        unsupportedIntentFields: unsupportedFields(input, diagnostics),
+      },
     };
   }
 
@@ -78,8 +91,8 @@ export function planMapGenerationRequest(input: unknown): MapGenerationPromptPla
       promptHash: typedInput.promptHash,
       retainedRawPrompt: false,
       acceptedIntentFields: acceptedIntentFields(intent),
-      unsupportedIntentFields: []
-    }
+      unsupportedIntentFields: [],
+    },
   };
 }
 
@@ -95,7 +108,7 @@ function blockedPlan(input: {
     traceId: input.traceId,
     request: {
       promptHash: input.promptHash,
-      traceId: input.traceId
+      traceId: input.traceId,
     },
     diagnostics: input.diagnostics,
     provenance: {
@@ -103,8 +116,8 @@ function blockedPlan(input: {
       promptHash: input.promptHash,
       retainedRawPrompt: false,
       acceptedIntentFields: [],
-      unsupportedIntentFields: input.unsupportedIntentFields
-    }
+      unsupportedIntentFields: input.unsupportedIntentFields,
+    },
   };
 }
 
@@ -117,16 +130,17 @@ function rawPromptRetentionDiagnostics(input: unknown): Diagnostic[] {
           {
             severity: "error",
             code: DiagnosticCodes.SpecUnknownField,
-            message: "Prompt planner inputs must use promptHash and structured intent; raw prompt text is not retained by default.",
+            message:
+              "Prompt planner inputs must use promptHash and structured intent; raw prompt text is not retained by default.",
             path: `/${field}`,
             fix: {
               kind: "manual",
               confidence: "high",
-              message: "Hash the prompt outside the planner and pass structured intent fields instead."
-            }
-          }
+              message: "Hash the prompt outside the planner and pass structured intent fields instead.",
+            },
+          },
         ]
-      : []
+      : [],
   );
 }
 
@@ -135,14 +149,8 @@ function toolInputErrorsToDiagnostics(errors: ErrorObject[], fallbackMessage: st
     severity: "error",
     code: toolInputErrorToCode(error),
     message: error.message ?? fallbackMessage,
-    path: (additionalPropertyPath(error) ?? error.instancePath) || "/"
+    path: (additionalPropertyPath(error) ?? error.instancePath) || "/",
   }));
-}
-
-function toolInputErrorToCode(error: ErrorObject): Diagnostic["code"] {
-  if (error.keyword === "additionalProperties") return DiagnosticCodes.SpecUnknownField;
-  if (error.keyword === "required") return DiagnosticCodes.SpecMissingField;
-  return DiagnosticCodes.SpecInvalidType;
 }
 
 function additionalPropertyPath(error: ErrorObject): string | undefined {
@@ -164,14 +172,8 @@ function acceptedIntentFields(intent: object): string[] {
   return Object.keys(intent).sort();
 }
 
-function readString(input: unknown, key: string): string | undefined {
-  if (!input || typeof input !== "object" || Array.isArray(input)) return undefined;
-  const value = (input as Record<string, unknown>)[key];
-  return typeof value === "string" && value.length > 0 ? value : undefined;
-}
-
 function inputHasOwnProperty(input: unknown, key: string): boolean {
-  return Boolean(input && typeof input === "object" && !Array.isArray(input) && Object.prototype.hasOwnProperty.call(input, key));
+  return Boolean(input && typeof input === "object" && !Array.isArray(input) && Object.hasOwn(input, key));
 }
 
 function defaultTraceId(promptHash: string): string {

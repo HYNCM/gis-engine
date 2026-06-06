@@ -1,12 +1,12 @@
-import { describe, expect, it } from "vitest";
 import { applyCommands, applyJsonPatch, type MapCommand, type MapSpec } from "@gis-engine/engine";
+import { describe, expect, it } from "vitest";
 
 const inlineGeoJsonSource: MapSpec["sources"][string] = {
   type: "geojson",
   data: {
     type: "FeatureCollection",
-    features: []
-  }
+    features: [],
+  },
 };
 
 const pointLayer: MapSpec["layers"][number] = {
@@ -15,12 +15,12 @@ const pointLayer: MapSpec["layers"][number] = {
   source: "points",
   paint: {
     "circle-color": "#111827",
-    "circle-radius": 4
+    "circle-radius": 4,
   },
   layout: {
     visibility: "visible",
-    "circle-sort-key": ["get", "rank"]
-  }
+    "circle-sort-key": ["get", "rank"],
+  },
 };
 
 interface CommandMatrixCase {
@@ -40,11 +40,11 @@ const cases: CommandMatrixCase[] = [
       type: "addSource",
       baseRevision: "1",
       sourceId: "points",
-      source: inlineGeoJsonSource
+      source: inlineGeoJsonSource,
     },
     assertSpec: (spec) => {
       expect(spec.sources.points).toEqual(inlineGeoJsonSource);
-    }
+    },
   },
   {
     name: "removeSource",
@@ -54,11 +54,11 @@ const cases: CommandMatrixCase[] = [
       version: "0.1",
       type: "removeSource",
       baseRevision: "1",
-      sourceId: "unused"
+      sourceId: "unused",
     },
     assertSpec: (spec) => {
       expect(spec.sources).toEqual({});
-    }
+    },
   },
   {
     name: "addLayer",
@@ -68,34 +68,34 @@ const cases: CommandMatrixCase[] = [
       version: "0.1",
       type: "addLayer",
       baseRevision: "1",
-      layer: pointLayer
+      layer: pointLayer,
     },
     assertSpec: (spec) => {
       expect(spec.layers.map((layer) => layer.id)).toEqual(["points"]);
-    }
+    },
   },
   {
     name: "removeLayer",
     spec: baseSpec({
       sources: { points: inlineGeoJsonSource },
-      layers: [pointLayer]
+      layers: [pointLayer],
     }),
     command: {
       id: "cmd-remove-layer",
       version: "0.1",
       type: "removeLayer",
       baseRevision: "1",
-      layerId: "points"
+      layerId: "points",
     },
     assertSpec: (spec) => {
       expect(spec.layers).toEqual([]);
-    }
+    },
   },
   {
     name: "setPaint",
     spec: baseSpec({
       sources: { points: inlineGeoJsonSource },
-      layers: [pointLayer]
+      layers: [pointLayer],
     }),
     command: {
       id: "cmd-set-paint",
@@ -104,21 +104,21 @@ const cases: CommandMatrixCase[] = [
       baseRevision: "1",
       layerId: "points",
       paint: {
-        "circle-color": "#ef4444"
-      }
+        "circle-color": "#ef4444",
+      },
     },
     assertSpec: (spec) => {
       expect(spec.layers[0]?.paint).toEqual({
         "circle-color": "#ef4444",
-        "circle-radius": 4
+        "circle-radius": 4,
       });
-    }
+    },
   },
   {
     name: "setLayout",
     spec: baseSpec({
       sources: { points: inlineGeoJsonSource },
-      layers: [pointLayer]
+      layers: [pointLayer],
     }),
     command: {
       id: "cmd-set-layout",
@@ -127,21 +127,21 @@ const cases: CommandMatrixCase[] = [
       baseRevision: "1",
       layerId: "points",
       layout: {
-        visibility: "none"
-      }
+        visibility: "none",
+      },
     },
     assertSpec: (spec) => {
       expect(spec.layers[0]?.layout).toEqual({
         visibility: "none",
-        "circle-sort-key": ["get", "rank"]
+        "circle-sort-key": ["get", "rank"],
       });
-    }
+    },
   },
   {
     name: "setFilter",
     spec: baseSpec({
       sources: { points: inlineGeoJsonSource },
-      layers: [pointLayer]
+      layers: [pointLayer],
     }),
     command: {
       id: "cmd-set-filter",
@@ -149,17 +149,17 @@ const cases: CommandMatrixCase[] = [
       type: "setFilter",
       baseRevision: "1",
       layerId: "points",
-      filter: ["==", ["get", "category"], "landmark"]
+      filter: ["==", ["get", "category"], "landmark"],
     },
     assertSpec: (spec) => {
       expect(spec.layers[0]?.filter).toEqual(["==", ["get", "category"], "landmark"]);
-    }
+    },
   },
   {
     name: "setLayerZoomRange",
     spec: baseSpec({
       sources: { points: inlineGeoJsonSource },
-      layers: [pointLayer]
+      layers: [pointLayer],
     }),
     command: {
       id: "cmd-set-layer-zoom-range",
@@ -168,11 +168,11 @@ const cases: CommandMatrixCase[] = [
       baseRevision: "1",
       layerId: "points",
       minzoom: 10,
-      maxzoom: 18
+      maxzoom: 18,
     },
     assertSpec: (spec) => {
       expect(spec.layers[0]).toMatchObject({ minzoom: 10, maxzoom: 18 });
-    }
+    },
   },
   {
     name: "setView",
@@ -184,17 +184,17 @@ const cases: CommandMatrixCase[] = [
       baseRevision: "1",
       view: {
         center: [120.1, 30.2],
-        zoom: 12
-      }
+        zoom: 12,
+      },
     },
     assertSpec: (spec) => {
       expect(spec.view).toEqual({
         mode: "map2d",
         center: [120.1, 30.2],
         zoom: 12,
-        pitch: 15
+        pitch: 15,
       });
-    }
+    },
   },
   {
     name: "setCapabilities",
@@ -207,16 +207,16 @@ const cases: CommandMatrixCase[] = [
       capabilities: {
         dimensions: ["2d"],
         renderer: "maplibre",
-        experimental: []
-      }
+        experimental: [],
+      },
     },
     assertSpec: (spec) => {
       expect(spec.capabilities).toEqual({
         dimensions: ["2d"],
         renderer: "maplibre",
-        experimental: []
+        experimental: [],
       });
-    }
+    },
   },
   {
     name: "setInteractions",
@@ -230,17 +230,17 @@ const cases: CommandMatrixCase[] = [
         pan: true,
         zoom: true,
         click: true,
-        popup: true
-      }
+        popup: true,
+      },
     },
     assertSpec: (spec) => {
       expect(spec.interactions).toEqual({
         pan: true,
         zoom: true,
         click: true,
-        popup: true
+        popup: true,
       });
-    }
+    },
   },
   {
     name: "fitBounds",
@@ -250,16 +250,16 @@ const cases: CommandMatrixCase[] = [
       version: "0.1",
       type: "fitBounds",
       baseRevision: "1",
-      bounds: [100, 20, 120, 40]
+      bounds: [100, 20, 120, 40],
     },
     assertSpec: (spec) => {
       expect(spec.view).toEqual({
         mode: "map2d",
         bearing: 10,
         pitch: 20,
-        bounds: [100, 20, 120, 40]
+        bounds: [100, 20, 120, 40],
       });
-    }
+    },
   },
   {
     name: "reorderLayer",
@@ -267,19 +267,19 @@ const cases: CommandMatrixCase[] = [
       sources: { points: inlineGeoJsonSource },
       layers: [
         { id: "point-outline", type: "circle", source: "points" },
-        { id: "points", type: "circle", source: "points" }
-      ]
+        { id: "points", type: "circle", source: "points" },
+      ],
     }),
     command: {
       id: "cmd-reorder-layer",
       version: "0.1",
       type: "reorderLayer",
       baseRevision: "1",
-      layerId: "point-outline"
+      layerId: "point-outline",
     },
     assertSpec: (spec) => {
       expect(spec.layers.map((layer) => layer.id)).toEqual(["points", "point-outline"]);
-    }
+    },
   },
   {
     name: "setSceneCamera",
@@ -289,11 +289,11 @@ const cases: CommandMatrixCase[] = [
       version: "0.1",
       type: "setSceneCamera",
       baseRevision: "1",
-      camera: sceneCamera()
+      camera: sceneCamera(),
     },
     assertSpec: (spec) => {
       expect(spec.extensions?.scene3d).toEqual({ camera: sceneCamera() });
-    }
+    },
   },
   {
     name: "addSceneSource",
@@ -304,11 +304,13 @@ const cases: CommandMatrixCase[] = [
       type: "addSceneSource",
       baseRevision: "1",
       sourceId: "city",
-      source: sceneTilesetSource()
+      source: sceneTilesetSource(),
     },
     assertSpec: (spec) => {
-      expect((spec.extensions?.scene3d as { sources?: Record<string, unknown> }).sources?.city).toEqual(sceneTilesetSource());
-    }
+      expect((spec.extensions?.scene3d as { sources?: Record<string, unknown> }).sources?.city).toEqual(
+        sceneTilesetSource(),
+      );
+    },
   },
   {
     name: "addSceneLayer",
@@ -318,11 +320,11 @@ const cases: CommandMatrixCase[] = [
       version: "0.1",
       type: "addSceneLayer",
       baseRevision: "1",
-      layer: sceneTilesetLayer()
+      layer: sceneTilesetLayer(),
     },
     assertSpec: (spec) => {
       expect((spec.extensions?.scene3d as { layers?: unknown[] }).layers).toEqual([sceneTilesetLayer()]);
-    }
+    },
   },
   {
     name: "setSceneLayerVisibility",
@@ -333,11 +335,11 @@ const cases: CommandMatrixCase[] = [
       type: "setSceneLayerVisibility",
       baseRevision: "1",
       layerId: "city",
-      visible: false
+      visible: false,
     },
     assertSpec: (spec) => {
       expect((spec.extensions?.scene3d as { layers?: Array<{ visible?: boolean }> }).layers?.[0]?.visible).toBe(false);
-    }
+    },
   },
   {
     name: "removeSceneLayer",
@@ -347,11 +349,11 @@ const cases: CommandMatrixCase[] = [
       version: "0.1",
       type: "removeSceneLayer",
       baseRevision: "1",
-      layerId: "city"
+      layerId: "city",
     },
     assertSpec: (spec) => {
       expect((spec.extensions?.scene3d as { layers?: unknown[] }).layers).toEqual([]);
-    }
+    },
   },
   {
     name: "removeSceneSource",
@@ -361,12 +363,12 @@ const cases: CommandMatrixCase[] = [
       version: "0.1",
       type: "removeSceneSource",
       baseRevision: "1",
-      sourceId: "city"
+      sourceId: "city",
     },
     assertSpec: (spec) => {
       expect((spec.extensions?.scene3d as { sources?: Record<string, unknown> }).sources).toEqual({});
-    }
-  }
+    },
+  },
 ];
 
 describe("command matrix replay/dryRun/rollback", () => {
@@ -404,11 +406,11 @@ function baseSpec(overrides: Partial<MapSpec> = {}): MapSpec {
     view: {
       mode: "map2d",
       center: [0, 0],
-      zoom: 2
+      zoom: 2,
     },
     sources: {},
     layers: [],
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -417,23 +419,23 @@ function sceneSpec(scene: Record<string, unknown> = {}): MapSpec {
     extensions: {
       scene3d: {
         camera: sceneCamera(),
-        ...scene
-      }
-    }
+        ...scene,
+      },
+    },
   });
 }
 
 function sceneCamera() {
   return {
     position: [120.15, 30.28, 1200] as [number, number, number],
-    target: [120.15, 30.28, 0] as [number, number, number]
+    target: [120.15, 30.28, 0] as [number, number, number],
   };
 }
 
 function sceneTilesetSource() {
   return {
     type: "3d-tiles" as const,
-    url: "./data/city/tileset.json"
+    url: "./data/city/tileset.json",
   };
 }
 
@@ -442,6 +444,6 @@ function sceneTilesetLayer() {
     id: "city",
     type: "tileset3d" as const,
     source: "city",
-    pickable: true
+    pickable: true,
   };
 }

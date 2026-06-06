@@ -1,14 +1,13 @@
-import { Ajv } from "ajv/dist/ajv.js";
-import type { ErrorObject } from "ajv/dist/ajv.js";
 import {
-  ApplyCommandsToolInputSchema,
-  DiagnosticCodes,
-  applyCommands,
   type ApplyCommandsResult,
+  ApplyCommandsToolInputSchema,
+  applyCommands,
   type Diagnostic,
   type MapCommand,
-  type MapSpec
+  type MapSpec,
+  toolInputErrorToCode,
 } from "@gis-engine/engine";
+import { Ajv } from "ajv/dist/ajv.js";
 
 export interface ApplyCommandsToolInput {
   spec: MapSpec;
@@ -34,8 +33,8 @@ export function applyCommandsTool(input: unknown): ApplyCommandsToolResult {
         severity: "error",
         code: toolInputErrorToCode(error),
         message: error.message ?? "Invalid applyCommands tool input.",
-        path: error.instancePath || "/"
-      }))
+        path: error.instancePath || "/",
+      })),
     };
   }
 
@@ -46,15 +45,8 @@ export function applyCommandsTool(input: unknown): ApplyCommandsToolResult {
       dryRun: typedInput.dryRun ?? false,
       ...(typedInput.transaction ? { transaction: typedInput.transaction } : {}),
       ...(typedInput.collectTrace ? { collectTrace: true } : {}),
-      ...(typedInput.traceId ? { traceId: typedInput.traceId } : {})
+      ...(typedInput.traceId ? { traceId: typedInput.traceId } : {}),
     }),
-    diagnostics: []
+    diagnostics: [],
   };
-}
-
-function toolInputErrorToCode(error: ErrorObject): Diagnostic["code"] {
-  if (error.keyword === "additionalProperties") return DiagnosticCodes.SpecUnknownField;
-  if (error.keyword === "required") return DiagnosticCodes.SpecMissingField;
-  if (error.keyword === "const" && error.instancePath.endsWith("/version")) return DiagnosticCodes.SpecInvalidVersion;
-  return DiagnosticCodes.SpecInvalidType;
 }

@@ -2,19 +2,13 @@ import { defineConfig } from "vitepress";
 
 export default defineConfig({
   title: "GIS Engine",
-  description:
-    "AI-native, schema-first map engine — deterministic, replayable, auditable.",
+  description: "AI-native, schema-first map engine — deterministic, replayable, auditable.",
   lang: "en-US",
   base: "/gis-engine/",
   lastUpdated: true,
   cleanUrls: true,
 
-  head: [
-    [
-      "link",
-      { rel: "icon", type: "image/svg+xml", href: "/gis-engine/favicon.svg" },
-    ],
-  ],
+  head: [["link", { rel: "icon", type: "image/svg+xml", href: "/gis-engine/favicon.svg" }]],
 
   themeConfig: {
     logo: {
@@ -86,9 +80,7 @@ export default defineConfig({
       ],
     },
 
-    socialLinks: [
-      { icon: "github", link: "https://github.com/HYNCM/gis-engine" },
-    ],
+    socialLinks: [{ icon: "github", link: "https://github.com/HYNCM/gis-engine" }],
 
     search: {
       provider: "local",

@@ -1,5 +1,5 @@
+import { MapRuntime, type MapSpec, MockAdapter } from "@gis-engine/engine";
 import { describe, expect, it } from "vitest";
-import { MapRuntime, MockAdapter, type MapSpec } from "@gis-engine/engine";
 
 /**
  * VPE-001: 3-scene strict visual maintenance
@@ -10,7 +10,7 @@ describe("strict visual maintenance: 3-scene smoke", () => {
   it("GeoJSON scene: snapshot passes with inline data", async () => {
     const runtime = await MapRuntime.create(geojsonScene, {
       adapter: new MockAdapter(),
-      container: {} as HTMLElement
+      container: {} as HTMLElement,
     });
 
     const snapshot = await runtime.snapshot({ targetLayers: ["places-circle"] });
@@ -23,7 +23,7 @@ describe("strict visual maintenance: 3-scene smoke", () => {
   it("MVT-equivalent scene: vector source with tile URL passes validation", async () => {
     const runtime = await MapRuntime.create(mvtScene, {
       adapter: new MockAdapter(),
-      container: {} as HTMLElement
+      container: {} as HTMLElement,
     });
 
     const validation = runtime.validate();
@@ -35,7 +35,7 @@ describe("strict visual maintenance: 3-scene smoke", () => {
   it("fill-extrusion-lite scene: snapshot passes with extrusion layer", async () => {
     const runtime = await MapRuntime.create(extrusionScene, {
       adapter: new MockAdapter(),
-      container: {} as HTMLElement
+      container: {} as HTMLElement,
     });
 
     const snapshot = await runtime.snapshot({ targetLayers: ["buildings-extrusion"] });
@@ -50,12 +50,12 @@ describe("strict visual maintenance: 3-scene smoke", () => {
     for (const scene of scenes) {
       const runtime = await MapRuntime.create(scene, {
         adapter: new MockAdapter(),
-        container: {} as HTMLElement
+        container: {} as HTMLElement,
       });
       const report = await runtime.destroy();
       expect(report.destroyed).toBe(true);
       expect(report.resources).toBeDefined();
-      expect(report.resources!.verifiable).toBe(true);
+      expect(report.resources?.verifiable).toBe(true);
     }
   });
 });
@@ -71,15 +71,19 @@ const geojsonScene: MapSpec = {
       data: {
         type: "FeatureCollection",
         features: [
-          { type: "Feature", properties: { name: "West Lake" }, geometry: { type: "Point", coordinates: [120.15, 30.25] } },
-          { type: "Feature", properties: { name: "Canal" }, geometry: { type: "Point", coordinates: [120.14, 30.32] } }
-        ]
-      }
-    }
+          {
+            type: "Feature",
+            properties: { name: "West Lake" },
+            geometry: { type: "Point", coordinates: [120.15, 30.25] },
+          },
+          { type: "Feature", properties: { name: "Canal" }, geometry: { type: "Point", coordinates: [120.14, 30.32] } },
+        ],
+      },
+    },
   },
   layers: [
-    { id: "places-circle", type: "circle", source: "places", paint: { "circle-color": "#2563eb", "circle-radius": 6 } }
-  ]
+    { id: "places-circle", type: "circle", source: "places", paint: { "circle-color": "#2563eb", "circle-radius": 6 } },
+  ],
 };
 
 const mvtScene: MapSpec = {
@@ -90,8 +94,8 @@ const mvtScene: MapSpec = {
   sources: {
     districts: {
       type: "vector",
-      tiles: ["http://localhost:8080/tiles/{z}/{x}/{y}.pbf"]
-    }
+      tiles: ["http://localhost:8080/tiles/{z}/{x}/{y}.pbf"],
+    },
   },
   layers: [
     {
@@ -99,9 +103,9 @@ const mvtScene: MapSpec = {
       type: "fill",
       source: "districts",
       metadata: { "source-layer": "districts" },
-      paint: { "fill-color": "#22c55e", "fill-opacity": 0.4 }
-    }
-  ]
+      paint: { "fill-color": "#22c55e", "fill-opacity": 0.4 },
+    },
+  ],
 };
 
 const extrusionScene: MapSpec = {
@@ -110,7 +114,7 @@ const extrusionScene: MapSpec = {
   revision: "1",
   capabilities: {
     dimensions: ["2_5d"],
-    experimental: ["fill-extrusion-lite"]
+    experimental: ["fill-extrusion-lite"],
   },
   view: { mode: "map2_5d", center: [120.15, 30.28], zoom: 15 },
   sources: {
@@ -122,11 +126,22 @@ const extrusionScene: MapSpec = {
           {
             type: "Feature",
             properties: { height: 50, name: "Tower A" },
-            geometry: { type: "Polygon", coordinates: [[[120.15, 30.28], [120.151, 30.28], [120.151, 30.281], [120.15, 30.281], [120.15, 30.28]]] }
-          }
-        ]
-      }
-    }
+            geometry: {
+              type: "Polygon",
+              coordinates: [
+                [
+                  [120.15, 30.28],
+                  [120.151, 30.28],
+                  [120.151, 30.281],
+                  [120.15, 30.281],
+                  [120.15, 30.28],
+                ],
+              ],
+            },
+          },
+        ],
+      },
+    },
   },
   layers: [
     {
@@ -136,8 +151,8 @@ const extrusionScene: MapSpec = {
       paint: {
         "fill-extrusion-color": "#6366f1",
         "fill-extrusion-height": ["get", "height"],
-        "fill-extrusion-opacity": 0.8
-      }
-    }
-  ]
+        "fill-extrusion-opacity": 0.8,
+      },
+    },
+  ],
 };

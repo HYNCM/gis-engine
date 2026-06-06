@@ -10,8 +10,8 @@
 //
 // =============================================================================
 
+import type { MapCommand, MapSpec } from "@gis-engine/engine";
 import { createMap, validateSpec } from "@gis-engine/engine";
-import type { MapSpec, MapCommand } from "@gis-engine/engine";
 
 // Import the GeoJSON data for world cities.
 // Vite treats the .geojson file as a raw asset; parse it into inline GeoJSON
@@ -82,9 +82,11 @@ const spec: MapSpec = {
         "circle-radius": [
           "step",
           ["get", "population"],
-          6,          // default: 6px
-          20000000, 8,  // 20M+: 8px
-          30000000, 12, // 30M+: 12px
+          6, // default: 6px
+          20000000,
+          8, // 20M+: 8px
+          30000000,
+          12, // 30M+: 12px
         ],
         "circle-color": "#3b82f6",
         "circle-stroke-width": 1.5,
@@ -168,15 +170,7 @@ async function main(): Promise<void> {
     type: "setPaint",
     layerId: "city-circles",
     paint: {
-      "circle-radius": [
-        "step",
-        ["get", "population"],
-        6,
-        20000000,
-        8,
-        30000000,
-        12,
-      ],
+      "circle-radius": ["step", ["get", "population"], 6, 20000000, 8, 30000000, 12],
       "circle-color": "#ef4444",
       "circle-stroke-width": 1.5,
       "circle-stroke-color": "#7f1d1d",

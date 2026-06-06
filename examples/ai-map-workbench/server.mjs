@@ -1,24 +1,24 @@
-import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
+import { createServer } from "node:http";
 import { createRequire } from "node:module";
 import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createInitialSpec } from "./initial-map.mjs";
 import { planMockAiEdit } from "./mock-ai.mjs";
 import {
+  callOpenAiCompatibleProvider,
   DEFAULT_PROVIDER_REQUEST_TIMEOUT_MS,
   DEFAULT_PROVIDER_RESPONSE_BYTE_CAP,
-  callOpenAiCompatibleProvider
 } from "./openai-compatible-provider.mjs";
 import {
   buildProviderProfiles,
   providerDisabledDiagnostic,
   publicProviderProfiles,
   readProviderApiKey,
-  resolveProviderProfile
+  resolveProviderProfile,
 } from "./provider-profiles.mjs";
-import { createReviewDecision } from "./review-decisions.mjs";
 import { computeReviewConsoleState } from "./review-console.mjs";
+import { createReviewDecision } from "./review-decisions.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicRoot = resolve(__dirname, "public");
@@ -29,7 +29,7 @@ const mimeTypes = new Map([
   [".css", "text/css; charset=utf-8"],
   [".html", "text/html; charset=utf-8"],
   [".js", "text/javascript; charset=utf-8"],
-  [".json", "application/json; charset=utf-8"]
+  [".json", "application/json; charset=utf-8"],
 ]);
 
 export async function createWorkbenchServer(options = {}) {
@@ -43,11 +43,11 @@ export async function createWorkbenchServer(options = {}) {
   const providerProfiles = buildProviderProfiles(env, { productMode: options.providerProductMode ?? true });
   const providerRequestTimeoutMs = readPositiveInteger(
     options.providerRequestTimeoutMs ?? env.GIS_WORKBENCH_PROVIDER_TIMEOUT_MS,
-    DEFAULT_PROVIDER_REQUEST_TIMEOUT_MS
+    DEFAULT_PROVIDER_REQUEST_TIMEOUT_MS,
   );
   const providerResponseByteCap = readPositiveInteger(
     options.providerResponseByteCap ?? env.GIS_WORKBENCH_PROVIDER_RESPONSE_BYTE_CAP,
-    DEFAULT_PROVIDER_RESPONSE_BYTE_CAP
+    DEFAULT_PROVIDER_RESPONSE_BYTE_CAP,
   );
   const sessionId = options.sessionId ?? createSessionId();
   const projectId = options.projectId ?? "project_demo";
@@ -74,7 +74,7 @@ export async function createWorkbenchServer(options = {}) {
       if (request.method === "GET" && url.pathname === "/api/audit") {
         return sendJson(response, {
           sessionId,
-          records: auditRecords
+          records: auditRecords,
         });
       }
 
@@ -82,7 +82,7 @@ export async function createWorkbenchServer(options = {}) {
         return sendJson(response, {
           sessionId,
           projectId,
-          decisions: reviewDecisions
+          decisions: reviewDecisions,
         });
       }
 
@@ -99,7 +99,7 @@ export async function createWorkbenchServer(options = {}) {
           principal: reviewPrincipal,
           projectId,
           decisionId: `review-${reviewDecisions.length + 1}`,
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
         });
 
         if (!reviewResult.ok) {
@@ -109,7 +109,7 @@ export async function createWorkbenchServer(options = {}) {
             decision: null,
             decisions: reviewDecisions,
             diagnostics: reviewResult.diagnostics,
-            commandEvidence: commandEvidence([], false, false)
+            commandEvidence: commandEvidence([], false, false),
           });
         }
 
@@ -121,13 +121,13 @@ export async function createWorkbenchServer(options = {}) {
           decision: reviewResult.decision,
           decisions: reviewDecisions,
           diagnostics: [],
-          commandEvidence: commandEvidence([], false, false)
+          commandEvidence: commandEvidence([], false, false),
         });
       }
 
       if (request.method === "GET" && url.pathname === "/api/providers") {
         return sendJson(response, {
-          providers: publicProviderProfiles(providerProfiles)
+          providers: publicProviderProfiles(providerProfiles),
         });
       }
 
@@ -143,7 +143,7 @@ export async function createWorkbenchServer(options = {}) {
           const providerOutput = await plannerProvider({
             message,
             spec: structuredClone(planningSpec),
-            summary: summarizeSpec(planningSpec)
+            summary: summarizeSpec(planningSpec),
           });
           const providerResult = await applyProviderOutput({
             engine,
@@ -155,7 +155,7 @@ export async function createWorkbenchServer(options = {}) {
             sessionId,
             auditRecords,
             fromRevision,
-            fromEpoch: planningEpoch
+            fromEpoch: planningEpoch,
           });
           if (providerResult.activeSpec && providerResult.activeSpec !== activeSpec) {
             replaceActiveSpec(providerResult.activeSpec);
@@ -175,9 +175,9 @@ export async function createWorkbenchServer(options = {}) {
               fromRevision,
               provider: {
                 providerId: "unknown-provider",
-                retainedRawPrompt: false
+                retainedRawPrompt: false,
               },
-              diagnostics: [providerDiagnostic("/providerProfile", "Selected provider profile is not configured.")]
+              diagnostics: [providerDiagnostic("/providerProfile", "Selected provider profile is not configured.")],
             });
           }
 
@@ -186,7 +186,7 @@ export async function createWorkbenchServer(options = {}) {
               sessionId,
               fromRevision,
               provider: blockedProviderEvidence({ providerId: providerProfile.id }),
-              diagnostics: [providerDiagnostic("/providerProfile", "Selected provider protocol is not supported.")]
+              diagnostics: [providerDiagnostic("/providerProfile", "Selected provider protocol is not supported.")],
             });
           }
 
@@ -196,7 +196,7 @@ export async function createWorkbenchServer(options = {}) {
               sessionId,
               fromRevision,
               provider: blockedProviderEvidence({ providerId: providerProfile.id }),
-              diagnostics: [providerDiagnostic(disabledDiagnostic.path, disabledDiagnostic.message)]
+              diagnostics: [providerDiagnostic(disabledDiagnostic.path, disabledDiagnostic.message)],
             });
           }
 
@@ -207,7 +207,7 @@ export async function createWorkbenchServer(options = {}) {
             summary: summarizeSpec(planningSpec),
             fetchImpl,
             timeoutMs: providerRequestTimeoutMs,
-            responseByteCap: providerResponseByteCap
+            responseByteCap: providerResponseByteCap,
           });
 
           if (!providerResponse.ok) {
@@ -215,7 +215,7 @@ export async function createWorkbenchServer(options = {}) {
               sessionId,
               fromRevision,
               provider: providerResponse.provider,
-              diagnostics: providerResponse.diagnostics
+              diagnostics: providerResponse.diagnostics,
             });
           }
 
@@ -229,7 +229,7 @@ export async function createWorkbenchServer(options = {}) {
             sessionId,
             auditRecords,
             fromRevision,
-            fromEpoch: planningEpoch
+            fromEpoch: planningEpoch,
           });
           if (providerResult.activeSpec && providerResult.activeSpec !== activeSpec) {
             replaceActiveSpec(providerResult.activeSpec);
@@ -252,14 +252,14 @@ export async function createWorkbenchServer(options = {}) {
             commandCount: 0,
             diagnostics: [],
             fromRevision,
-            toRevision: activeSpec.revision ?? "0"
+            toRevision: activeSpec.revision ?? "0",
           });
           return sendJson(response, {
             ...statePayload(engine, "reset", activeSpec),
             plan,
             results: [],
             traces: [],
-            commandEvidence: commandEvidence([], false, false)
+            commandEvidence: commandEvidence([], false, false),
           });
         }
 
@@ -271,20 +271,20 @@ export async function createWorkbenchServer(options = {}) {
             commandCount: 0,
             diagnostics: [],
             fromRevision,
-            toRevision: activeSpec.revision ?? "0"
+            toRevision: activeSpec.revision ?? "0",
           });
           return sendJson(response, {
             ...statePayload(engine, "unsupported", activeSpec),
             plan,
             results: [],
             traces: [],
-            commandEvidence: commandEvidence([], false, false)
+            commandEvidence: commandEvidence([], false, false),
           });
         }
 
         const applied = engine.applyCommands(activeSpec, plan.commands, {
           collectTrace: true,
-          traceId: `workbench.${plan.intent}.${activeSpec.revision ?? "0"}`
+          traceId: `workbench.${plan.intent}.${activeSpec.revision ?? "0"}`,
         });
         if (applied.committed && !applied.rolledBack) {
           replaceActiveSpec(applied.spec);
@@ -292,7 +292,9 @@ export async function createWorkbenchServer(options = {}) {
 
         const failed = applied.results.some((result) => result.status === "failed");
         const status = failed ? "blocked" : "applied";
-        lastCompactEvidence = failed ? null : { delivery: { status: "ready", sourceReadiness: mockSourceReadiness(activeSpec) } };
+        lastCompactEvidence = failed
+          ? null
+          : { delivery: { status: "ready", sourceReadiness: mockSourceReadiness(activeSpec) } };
         appendAuditRecord(auditRecords, {
           sessionId,
           providerId: "mock-ai",
@@ -302,7 +304,7 @@ export async function createWorkbenchServer(options = {}) {
           commandCount: applied.results.length,
           diagnostics: applied.results.flatMap((result) => result.diagnostics),
           fromRevision,
-          toRevision: activeSpec.revision ?? "0"
+          toRevision: activeSpec.revision ?? "0",
         });
         return sendJson(response, {
           ...statePayload(engine, status, activeSpec),
@@ -310,7 +312,7 @@ export async function createWorkbenchServer(options = {}) {
           ...(lastCompactEvidence ? { generationEvidence: lastCompactEvidence } : {}),
           results: applied.results,
           traces: applied.traces ?? [],
-          commandEvidence: commandEvidence(applied.results, applied.committed, applied.rolledBack)
+          commandEvidence: commandEvidence(applied.results, applied.committed, applied.rolledBack),
         });
       }
 
@@ -319,12 +321,12 @@ export async function createWorkbenchServer(options = {}) {
         const query = await queryActiveFeatures(engine, activeSpec, {
           point: body.point,
           bbox: body.bbox,
-          layers: Array.isArray(body.layers) ? body.layers : ["poi-circles"]
+          layers: Array.isArray(body.layers) ? body.layers : ["poi-circles"],
         });
         return sendJson(response, {
           status: query.diagnostics.some((diagnostic) => diagnostic.severity === "error") ? "blocked" : "queried",
           query,
-          summary: statePayload(engine, "ready", activeSpec).summary
+          summary: statePayload(engine, "ready", activeSpec).summary,
         });
       }
 
@@ -347,9 +349,9 @@ export async function createWorkbenchServer(options = {}) {
       sendJson(
         response,
         {
-          error: error instanceof Error ? error.message : "Workbench server error."
+          error: error instanceof Error ? error.message : "Workbench server error.",
         },
-        500
+        500,
       );
     }
   });
@@ -372,7 +374,7 @@ export async function createWorkbenchServer(options = {}) {
     close: () =>
       new Promise((resolveClose, rejectClose) => {
         server.close((error) => (error ? rejectClose(error) : resolveClose()));
-      })
+      }),
   };
 }
 
@@ -410,8 +412,8 @@ function statePayload(engine, status, spec) {
       sourceCount: Object.keys(spec.sources).length,
       layerCount: spec.layers.length,
       center: spec.view.center ?? null,
-      zoom: spec.view.zoom ?? null
-    }
+      zoom: spec.view.zoom ?? null,
+    },
   };
 }
 
@@ -420,7 +422,7 @@ function summarizeSpec(spec) {
     mapId: spec.id ?? "unknown",
     revision: spec.revision ?? "0",
     sourceCount: Object.keys(spec.sources).length,
-    layerCount: spec.layers.length
+    layerCount: spec.layers.length,
   };
 }
 
@@ -440,7 +442,7 @@ async function applyProviderOutput({
   sessionId,
   auditRecords,
   fromRevision,
-  fromEpoch
+  fromEpoch,
 }) {
   const initialStaleResult = staleProviderResult({
     engine,
@@ -450,7 +452,7 @@ async function applyProviderOutput({
     sessionId,
     auditRecords,
     fromRevision,
-    fromEpoch
+    fromEpoch,
   });
   if (initialStaleResult) return initialStaleResult;
 
@@ -467,7 +469,7 @@ async function applyProviderOutput({
       commandCount: 0,
       diagnostics: providerPlan.diagnostics,
       fromRevision,
-      toRevision: baseSpec.revision ?? "0"
+      toRevision: baseSpec.revision ?? "0",
     });
     return {
       payload: {
@@ -477,8 +479,8 @@ async function applyProviderOutput({
         results: [],
         traces: [],
         diagnostics: providerPlan.diagnostics,
-        commandEvidence: commandEvidence([], false, false)
-      }
+        commandEvidence: commandEvidence([], false, false),
+      },
     };
   }
 
@@ -486,7 +488,7 @@ async function applyProviderOutput({
   const skeleton = engine.createMapGenerationCommandSkeleton({
     ...plan.request,
     mapId: plan.request.mapId ?? baseSpec.id,
-    baseSpec
+    baseSpec,
   });
 
   if (skeleton.status === "blocked") {
@@ -499,7 +501,7 @@ async function applyProviderOutput({
       commandCount: 0,
       diagnostics: skeleton.diagnostics,
       fromRevision,
-      toRevision: baseSpec.revision ?? "0"
+      toRevision: baseSpec.revision ?? "0",
     });
     return {
       payload: {
@@ -509,8 +511,8 @@ async function applyProviderOutput({
         results: [],
         traces: [],
         diagnostics: skeleton.diagnostics,
-        commandEvidence: commandEvidence([], false, false)
-      }
+        commandEvidence: commandEvidence([], false, false),
+      },
     };
   }
 
@@ -521,8 +523,8 @@ async function applyProviderOutput({
       plan,
       ...(providerPlan.result.provider.confidence
         ? { confidence: plannerConfidence(providerPlan.result.provider.confidence) }
-        : {})
-    }
+        : {}),
+    },
   });
 
   if (!generationEvidence.ok) {
@@ -535,7 +537,7 @@ async function applyProviderOutput({
       commandCount: 0,
       diagnostics: generationEvidence.diagnostics,
       fromRevision,
-      toRevision: baseSpec.revision ?? "0"
+      toRevision: baseSpec.revision ?? "0",
     });
     return {
       payload: {
@@ -545,8 +547,8 @@ async function applyProviderOutput({
         results: [],
         traces: [],
         diagnostics: generationEvidence.diagnostics,
-        commandEvidence: commandEvidence([], false, false)
-      }
+        commandEvidence: commandEvidence([], false, false),
+      },
     };
   }
 
@@ -558,13 +560,13 @@ async function applyProviderOutput({
     sessionId,
     auditRecords,
     fromRevision,
-    fromEpoch
+    fromEpoch,
   });
   if (preApplyStaleResult) return preApplyStaleResult;
 
   const applied = engine.applyCommands(baseSpec, skeleton.commands, {
     collectTrace: true,
-    traceId: skeleton.traceId
+    traceId: skeleton.traceId,
   });
   const nextSpec = applied.committed && !applied.rolledBack ? applied.spec : baseSpec;
 
@@ -580,7 +582,7 @@ async function applyProviderOutput({
     commandCount: applied.results.length,
     diagnostics: applied.results.flatMap((result) => result.diagnostics),
     fromRevision,
-    toRevision: nextSpec.revision ?? "0"
+    toRevision: nextSpec.revision ?? "0",
   });
   return {
     activeSpec: nextSpec,
@@ -591,8 +593,8 @@ async function applyProviderOutput({
       generationEvidence: compactEvidence,
       results: applied.results,
       traces: applied.traces ?? [],
-      commandEvidence: commandEvidence(applied.results, applied.committed, applied.rolledBack)
-    }
+      commandEvidence: commandEvidence(applied.results, applied.committed, applied.rolledBack),
+    },
   };
 }
 
@@ -604,12 +606,12 @@ function staleProviderResult({
   sessionId,
   auditRecords,
   fromRevision,
-  fromEpoch
+  fromEpoch,
 }) {
   if ((currentSpec.revision ?? "0") === fromRevision && currentEpoch === fromEpoch) return undefined;
   const provider = blockedProviderEvidence(providerOutput);
   const diagnostics = [
-    providerDiagnostic("/providerRevision", "Provider output is stale because the active map revision changed.")
+    providerDiagnostic("/providerRevision", "Provider output is stale because the active map revision changed."),
   ];
   appendAuditRecord(auditRecords, {
     sessionId,
@@ -620,7 +622,7 @@ function staleProviderResult({
     commandCount: 0,
     diagnostics,
     fromRevision,
-    toRevision: currentSpec.revision ?? "0"
+    toRevision: currentSpec.revision ?? "0",
   });
   return {
     payload: {
@@ -630,8 +632,8 @@ function staleProviderResult({
       results: [],
       traces: [],
       diagnostics,
-      commandEvidence: commandEvidence([], false, false)
-    }
+      commandEvidence: commandEvidence([], false, false),
+    },
   };
 }
 
@@ -643,7 +645,7 @@ function sendProviderBlocked(response, engine, activeSpec, auditRecords, input) 
     commandCount: 0,
     diagnostics: input.diagnostics,
     fromRevision: input.fromRevision,
-    toRevision: activeSpec.revision ?? "0"
+    toRevision: activeSpec.revision ?? "0",
   });
   return sendJson(response, {
     ...statePayload(engine, "blocked", activeSpec),
@@ -652,7 +654,7 @@ function sendProviderBlocked(response, engine, activeSpec, auditRecords, input) 
     results: [],
     traces: [],
     diagnostics: input.diagnostics,
-    commandEvidence: commandEvidence([], false, false)
+    commandEvidence: commandEvidence([], false, false),
   });
 }
 
@@ -662,7 +664,7 @@ function providerDiagnostic(path, message) {
     code: "CAPABILITY.UNSUPPORTED",
     message,
     path,
-    fix: { kind: "manual", confidence: "high", message: "Select a configured provider profile." }
+    fix: { kind: "manual", confidence: "high", message: "Select a configured provider profile." },
   };
 }
 
@@ -673,7 +675,7 @@ function blockedProviderEvidence(providerOutput) {
       : "unknown-provider";
   return {
     providerId: safeEvidenceProviderId(rawProviderId),
-    retainedRawPrompt: false
+    retainedRawPrompt: false,
   };
 }
 
@@ -685,7 +687,7 @@ function plannerConfidence(confidence) {
   return {
     level: confidence.level,
     score: confidenceScore(confidence.level),
-    reasons: confidence.reasons
+    reasons: confidence.reasons,
   };
 }
 
@@ -706,7 +708,7 @@ function compactGenerationEvidence(evidence) {
       confidence: evidence.plannerEvidence.confidence,
       acceptedIntentFields: evidence.plannerEvidence.acceptedIntentFields,
       unsupportedIntentFields: evidence.plannerEvidence.unsupportedIntentFields,
-      diagnosticCounts: evidence.plannerEvidence.diagnosticCounts
+      diagnosticCounts: evidence.plannerEvidence.diagnosticCounts,
     },
     delivery: evidence.delivery,
     command: {
@@ -714,9 +716,9 @@ function compactGenerationEvidence(evidence) {
       commandCount: evidence.commandEvidence.commandCount,
       committed: evidence.commandEvidence.committed,
       rolledBack: evidence.commandEvidence.rolledBack,
-      diagnosticCounts: evidence.commandEvidence.diagnosticCounts
+      diagnosticCounts: evidence.commandEvidence.diagnosticCounts,
     },
-    diagnostics: evidence.diagnostics
+    diagnostics: evidence.diagnostics,
   };
 }
 
@@ -731,10 +733,10 @@ function compactReviewEvidence(auditRecord, generationEvidence) {
           sourceReadiness: generationEvidence.delivery.sourceReadiness,
           delivery: {
             status: generationEvidence.delivery.status,
-            sourceReadiness: generationEvidence.delivery.sourceReadiness
-          }
+            sourceReadiness: generationEvidence.delivery.sourceReadiness,
+          },
         }
-      : {})
+      : {}),
   };
 }
 
@@ -752,7 +754,7 @@ function appendAuditRecord(records, input) {
     diagnosticCounts: countDiagnostics(input.diagnostics ?? []),
     ...(diagnosticCodes.length > 0 ? { diagnosticCodes } : {}),
     fromRevision: input.fromRevision,
-    toRevision: input.toRevision
+    toRevision: input.toRevision,
   });
   if (records.length > 50) records.splice(0, records.length - 50);
 }
@@ -772,7 +774,7 @@ function countDiagnostics(diagnostics) {
       }
       return counts;
     },
-    { error: 0, warning: 0, info: 0 }
+    { error: 0, warning: 0, info: 0 },
   );
 }
 
@@ -789,7 +791,10 @@ function mockSourceReadiness(spec) {
             ? "supported"
             : "blocked",
     queryReady: source.type === "geojson" && typeof source.data !== "string",
-    resourcePolicy: source.type === "geojson" || source.type === "pmtiles" || source.type === "raster" || source.type === "vector" ? "passed" : "not-applicable",
+    resourcePolicy:
+      source.type === "geojson" || source.type === "pmtiles" || source.type === "raster" || source.type === "vector"
+        ? "passed"
+        : "not-applicable",
     ...(source.type === "pmtiles"
       ? {
           archiveContract: {
@@ -804,12 +809,18 @@ function mockSourceReadiness(spec) {
               "tileType",
               "minZoom",
               "maxZoom",
-              "bounds"
+              "bounds",
             ],
-            policyFields: ["maxArchiveBytes", "maxRootDirectoryBytes", "allowRangeRequests", "maxRangeSegments", "timeoutMs"]
-          }
+            policyFields: [
+              "maxArchiveBytes",
+              "maxRootDirectoryBytes",
+              "allowRangeRequests",
+              "maxRangeSegments",
+              "timeoutMs",
+            ],
+          },
         }
-      : {})
+      : {}),
   }));
 }
 
@@ -848,7 +859,7 @@ function commandEvidence(results, committed, rolledBack) {
     committed,
     rolledBack,
     failed: results.some((result) => result.status === "failed"),
-    changedPathCount: results.reduce((count, result) => count + result.changedPaths.length, 0)
+    changedPathCount: results.reduce((count, result) => count + result.changedPaths.length, 0),
   };
 }
 
@@ -869,7 +880,7 @@ async function serveVendor(pathname, response) {
   const filename = pathname.replace("/vendor/", "");
   const allowed = new Map([
     ["maplibre-gl.js", "maplibre-gl.js"],
-    ["maplibre-gl.css", "maplibre-gl.css"]
+    ["maplibre-gl.css", "maplibre-gl.css"],
   ]);
   const asset = allowed.get(filename);
   if (!asset) return sendJson(response, { error: "Vendor asset not found." }, 404);
@@ -889,7 +900,7 @@ async function sendFile(response, filePath) {
   try {
     const data = await readFile(filePath);
     response.writeHead(200, {
-      "content-type": mimeTypes.get(extname(filePath)) ?? "application/octet-stream"
+      "content-type": mimeTypes.get(extname(filePath)) ?? "application/octet-stream",
     });
     response.end(data);
   } catch {
@@ -899,7 +910,7 @@ async function sendFile(response, filePath) {
 
 function sendJson(response, payload, statusCode = 200) {
   response.writeHead(statusCode, {
-    "content-type": "application/json; charset=utf-8"
+    "content-type": "application/json; charset=utf-8",
   });
   response.end(JSON.stringify(payload));
 }
@@ -907,7 +918,7 @@ function sendJson(response, payload, statusCode = 200) {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const portArg = Number.parseInt(process.env.PORT ?? "4321", 10);
   const server = await createWorkbenchServer({
-    port: Number.isSafeInteger(portArg) ? portArg : 4321
+    port: Number.isSafeInteger(portArg) ? portArg : 4321,
   });
   console.log(`AI Map Workbench running at ${server.url}`);
 }

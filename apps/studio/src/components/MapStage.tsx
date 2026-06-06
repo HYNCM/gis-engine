@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
 import type { Map as MapLibreMap, StyleSpecification } from "maplibre-gl";
+import { useEffect, useRef, useState } from "react";
 import type { BasemapOption, ServerState } from "../App";
 
 interface Props {
@@ -53,11 +53,7 @@ export default function MapStage({
         setMapReadyToken((token) => token + 1);
       } catch (error) {
         if (!cancelled) {
-          setMapLoadError(
-            error instanceof Error
-              ? error.message
-              : "Map renderer failed to load",
-          );
+          setMapLoadError(error instanceof Error ? error.message : "Map renderer failed to load");
         }
       }
     }
@@ -79,7 +75,7 @@ export default function MapStage({
     const observer = new ResizeObserver(() => map.resize());
     observer.observe(container);
     return () => observer.disconnect();
-  }, [mapReadyToken]);
+  }, []);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -102,7 +98,7 @@ export default function MapStage({
         );
       }
     });
-  }, [mapReadyToken, serverState?.style, serverState?.summary.revision]);
+  }, [serverState?.style, serverState?.summary.revision, serverState?.summary]);
 
   const badgeColor =
     status === "ready" || status === "applied" || status === "reviewed"
@@ -120,9 +116,7 @@ export default function MapStage({
         </div>
       )}
       {mapLoadError && (
-        <div className="absolute inset-0 grid place-items-center bg-gray-950 text-xs text-red-300">
-          {mapLoadError}
-        </div>
+        <div className="absolute inset-0 grid place-items-center bg-gray-950 text-xs text-red-300">{mapLoadError}</div>
       )}
       <div className="absolute left-0 right-0 top-0 flex items-center justify-between border-b border-gray-800 bg-gray-900/80 px-4 py-2 backdrop-blur">
         <div className="flex items-center gap-3">
@@ -132,27 +126,15 @@ export default function MapStage({
             className="rounded border border-gray-700 bg-gray-800 px-2 py-1 text-xs text-gray-300 focus:border-blue-500 focus:outline-none"
           >
             {basemaps.map((basemap) => (
-              <option
-                key={basemap.id}
-                value={basemap.id}
-                disabled={!basemap.enabled}
-              >
-                {basemap.missingCredential
-                  ? `${basemap.label} (${basemap.missingCredential})`
-                  : basemap.label}
+              <option key={basemap.id} value={basemap.id} disabled={!basemap.enabled}>
+                {basemap.missingCredential ? `${basemap.label} (${basemap.missingCredential})` : basemap.label}
               </option>
             ))}
           </select>
           <p className="font-mono text-xs text-gray-500">
-            {serverState
-              ? `v${serverState.summary.revision} · ${serverState.summary.layerCount} layers`
-              : "--"}
+            {serverState ? `v${serverState.summary.revision} · ${serverState.summary.layerCount} layers` : "--"}
           </p>
-          {savedMsg && (
-            <span className="animate-pulse text-xs text-green-400">
-              {savedMsg}
-            </span>
-          )}
+          {savedMsg && <span className="animate-pulse text-xs text-green-400">{savedMsg}</span>}
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -163,9 +145,7 @@ export default function MapStage({
           >
             💾 Save
           </button>
-          <span className={`rounded-full px-2 py-0.5 text-xs ${badgeColor}`}>
-            {status}
-          </span>
+          <span className={`rounded-full px-2 py-0.5 text-xs ${badgeColor}`}>{status}</span>
         </div>
       </div>
       <div className="absolute bottom-4 left-4 rounded bg-gray-900/80 px-3 py-1.5 font-mono text-xs text-gray-400 backdrop-blur">

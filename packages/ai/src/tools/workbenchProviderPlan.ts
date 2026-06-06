@@ -1,4 +1,9 @@
-import { DiagnosticCodes, planMapGenerationRequest, type Diagnostic, type MapGenerationPromptPlan } from "@gis-engine/engine";
+import {
+  type Diagnostic,
+  DiagnosticCodes,
+  type MapGenerationPromptPlan,
+  planMapGenerationRequest,
+} from "@gis-engine/engine";
 
 export interface WorkbenchProviderConfidence {
   level: "low" | "medium" | "high";
@@ -33,7 +38,15 @@ export type WorkbenchProviderPlanResponse =
   | { ok: true; result: WorkbenchProviderPlan; diagnostics: [] }
   | { ok: false; diagnostics: Diagnostic[] };
 
-const forbiddenOutputFields = ["rawPrompt", "prompt", "promptText", "javascript", "commands", "mapSpec", "patch"] as const;
+const forbiddenOutputFields = [
+  "rawPrompt",
+  "prompt",
+  "promptText",
+  "javascript",
+  "commands",
+  "mapSpec",
+  "patch",
+] as const;
 
 export function normalizeWorkbenchProviderPlan(input: WorkbenchProviderPlanInput): WorkbenchProviderPlanResponse {
   const providerId = normalizeProviderId(input.providerId);
@@ -52,7 +65,7 @@ export function normalizeWorkbenchProviderPlan(input: WorkbenchProviderPlanInput
     promptHash,
     ...(traceId ? { traceId } : {}),
     plannerId: providerId,
-    intent: input.intent
+    intent: input.intent,
   });
 
   if (plan.status === "blocked") {
@@ -66,10 +79,10 @@ export function normalizeWorkbenchProviderPlan(input: WorkbenchProviderPlanInput
       provider: {
         providerId,
         retainedRawPrompt: false,
-        ...(input.confidence ? { confidence: input.confidence } : {})
-      }
+        ...(input.confidence ? { confidence: input.confidence } : {}),
+      },
     },
-    diagnostics: []
+    diagnostics: [],
   };
 }
 
@@ -82,13 +95,13 @@ function unsupportedProviderOutputDiagnostic(fields: readonly string[]): Diagnos
     fix: {
       kind: "manual",
       confidence: "high",
-      message: `Remove unsupported provider field(s): ${fields.join(", ")}. Normalize model output into structured intent.`
-    }
+      message: `Remove unsupported provider field(s): ${fields.join(", ")}. Normalize model output into structured intent.`,
+    },
   };
 }
 
 function hasOwn(input: WorkbenchProviderPlanInput, field: (typeof forbiddenOutputFields)[number]): boolean {
-  return Object.prototype.hasOwnProperty.call(input, field);
+  return Object.hasOwn(input, field);
 }
 
 function normalizeProviderId(providerId: string | undefined): string {

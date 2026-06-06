@@ -1,24 +1,21 @@
-import { type Diagnostic } from "@gis-engine/engine";
+import type { Diagnostic } from "@gis-engine/engine";
 
 export const DiagnosticCountsSchema = {
   type: "object",
   properties: {
     error: { type: "number" },
     warning: { type: "number" },
-    info: { type: "number" }
+    info: { type: "number" },
   },
   required: ["error", "warning", "info"],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 export function countDiagnostics(diagnostics: Diagnostic[]): Record<Diagnostic["severity"], number> {
-  return diagnostics.reduce<Record<Diagnostic["severity"], number>>(
-    (counts, diagnostic) => {
-      counts[diagnostic.severity] += 1;
-      return counts;
-    },
-    zeroDiagnosticCounts()
-  );
+  return diagnostics.reduce<Record<Diagnostic["severity"], number>>((counts, diagnostic) => {
+    counts[diagnostic.severity] += 1;
+    return counts;
+  }, zeroDiagnosticCounts());
 }
 
 export function zeroDiagnosticCounts(): Record<Diagnostic["severity"], number> {
@@ -31,7 +28,7 @@ export function stripNestedIds<T>(value: T): T {
   return Object.fromEntries(
     Object.entries(value)
       .filter(([key]) => key !== "$id")
-      .map(([key, entry]) => [key, stripNestedIds(entry)])
+      .map(([key, entry]) => [key, stripNestedIds(entry)]),
   ) as T;
 }
 

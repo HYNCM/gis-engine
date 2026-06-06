@@ -30,6 +30,6 @@ export function getAtPath(value: unknown, path: string): unknown {
   return current;
 }
 
-function unescapePathSegment(segment: string): string {
+export function unescapePathSegment(segment: string): string {
   return segment.replaceAll("~1", "/").replaceAll("~0", "~");
 }

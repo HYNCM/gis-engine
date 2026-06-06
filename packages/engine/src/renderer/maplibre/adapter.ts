@@ -12,9 +12,15 @@ import type {
   SnapshotOptions,
   SnapshotResult,
 } from "../../types.js";
-import type { AdapterApplyResult, AdapterEventListener, RenderContext, RendererAdapter, Unsubscribe } from "../adapter.js";
+import type {
+  AdapterApplyResult,
+  AdapterEventListener,
+  RenderContext,
+  RendererAdapter,
+  Unsubscribe,
+} from "../adapter.js";
 import { queryInlineGeoJsonFeatures } from "../queryGeoJson.js";
-import { transformMapSpecToMapLibreStyle, type MapLibreStyle } from "./transformer.js";
+import { type MapLibreStyle, transformMapSpecToMapLibreStyle } from "./transformer.js";
 
 const TRANSPARENT_PNG_DATA_URL =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/xcAAgMBgN4nS3QAAAAASUVORK5CYII=";
@@ -32,13 +38,34 @@ export class MapLibreAdapter implements RendererAdapter {
       dimensions: ["2d", "2_5d"],
       sources: ["geojson", "raster", "pmtiles", "vector"],
       layers: ["background", "raster", "fill", "line", "circle", "symbol-lite", "fill-extrusion-lite"],
-      expressions: ["get", "has", "literal", "case", "match", "interpolate", "step", "zoom", "all", "any", "!", "==", "!=", ">", "<", ">=", "<=", "in", "to-number", "to-string"],
+      expressions: [
+        "get",
+        "has",
+        "literal",
+        "case",
+        "match",
+        "interpolate",
+        "step",
+        "zoom",
+        "all",
+        "any",
+        "!",
+        "==",
+        "!=",
+        ">",
+        "<",
+        ">=",
+        "<=",
+        "in",
+        "to-number",
+        "to-string",
+      ],
       queries: ["point", "bbox"],
       snapshot: {
         supported: true,
-        formats: ["png", "data-url"]
+        formats: ["png", "data-url"],
       },
-      experimental: ["fill-extrusion-lite"]
+      experimental: ["fill-extrusion-lite"],
     };
   }
 
@@ -52,16 +79,16 @@ export class MapLibreAdapter implements RendererAdapter {
     this.#style = result.style ?? null;
   }
 
-  async applyPatch(patch: JsonPatchOperation[], context: RenderContext): Promise<AdapterApplyResult> {
+  async applyPatch(patch: JsonPatchOperation[], _context: RenderContext): Promise<AdapterApplyResult> {
     if (!this.#spec) {
       return {
         diagnostics: [
           {
             severity: "error",
             code: DiagnosticCodes.RenderAdapterError,
-            message: "MapLibreAdapter must load a MapSpec before applying patches."
-          }
-        ]
+            message: "MapLibreAdapter must load a MapSpec before applying patches.",
+          },
+        ],
       };
     }
 
@@ -81,8 +108,8 @@ export class MapLibreAdapter implements RendererAdapter {
         {
           severity: "error" as const,
           code: DiagnosticCodes.CommandInvalidPatch,
-          message: error instanceof Error ? error.message : "Failed to apply patch."
-        }
+          message: error instanceof Error ? error.message : "Failed to apply patch.",
+        },
       ];
       this.emit("error", diagnostics[0]);
       return { diagnostics };
@@ -101,16 +128,16 @@ export class MapLibreAdapter implements RendererAdapter {
           {
             severity: "error",
             code: DiagnosticCodes.SnapshotBlankCanvas,
-            message: "MapLibreAdapter has no rendered style to snapshot."
-          }
-        ]
+            message: "MapLibreAdapter has no rendered style to snapshot.",
+          },
+        ],
       };
     }
 
     return {
       passed: true,
       diagnostics: [],
-      dataUrl: TRANSPARENT_PNG_DATA_URL
+      dataUrl: TRANSPARENT_PNG_DATA_URL,
     };
   }
 
@@ -126,8 +153,8 @@ export class MapLibreAdapter implements RendererAdapter {
       diagnostics: [],
       resources: {
         listenersRemoved,
-        verifiable: true
-      }
+        verifiable: true,
+      },
     };
   }
 

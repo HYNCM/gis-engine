@@ -35,7 +35,7 @@ const DISALLOWED_KEYS = new Set([
   "responsebody",
   "screenshot",
   "spec",
-  "stack"
+  "stack",
 ]);
 
 export function authorizeAuditOperation(input) {
@@ -89,7 +89,7 @@ export function createDurableAuditRecord(input) {
     diagnosticCodes: diagnosticCodes.value.length > 0 ? diagnosticCodes.value : undefined,
     fromRevision: safeRevision(input.fromRevision),
     toRevision: safeRevision(input.toRevision),
-    reviewOutcome: normalizeReviewOutcome(input.reviewOutcome)
+    reviewOutcome: normalizeReviewOutcome(input.reviewOutcome),
   });
 
   if (byteLength(JSON.stringify(record)) > AUDIT_RECORD_BYTE_CAP) {
@@ -102,7 +102,7 @@ export function createAuditExportEnvelope(input) {
   const access = authorizeAuditOperation({
     operation: "export",
     principal: input?.principal,
-    projectId: input?.projectId
+    projectId: input?.projectId,
   });
   if (!access.ok) return access;
   if (!isIsoTimestamp(input?.generatedAt)) return auditError("/auditExport", "Audit export timestamp is invalid.");
@@ -124,7 +124,7 @@ export function createAuditExportEnvelope(input) {
     projectId: input.projectId,
     filters: normalizeExportFilters(input.filters),
     records,
-    nextCursor: isSafeToken(input.nextCursor) ? input.nextCursor : null
+    nextCursor: isSafeToken(input.nextCursor) ? input.nextCursor : null,
   };
   if (byteLength(JSON.stringify(envelope)) > AUDIT_EXPORT_BYTE_CAP) {
     return auditError("/auditExport/size", "Audit export exceeds the byte cap.");
@@ -136,13 +136,17 @@ export function createAuditDeletionReceipt(input) {
   const access = authorizeAuditOperation({
     operation: "delete",
     principal: input?.principal,
-    projectId: input?.projectId
+    projectId: input?.projectId,
   });
   if (!access.ok) return access;
   if (!isIsoTimestamp(input?.deletedAt)) return auditError("/auditDeletion", "Audit deletion timestamp is invalid.");
   if (!isSafeToken(input?.actorId)) return auditError("/auditDeletion", "Audit deletion actor is invalid.");
   if (!isSafeToken(input?.reasonCode)) return auditError("/auditDeletion", "Audit deletion reason is invalid.");
-  if (!Number.isSafeInteger(input?.deletedCount) || input.deletedCount < 0 || input.deletedCount > AUDIT_DELETION_RECORD_CAP) {
+  if (
+    !Number.isSafeInteger(input?.deletedCount) ||
+    input.deletedCount < 0 ||
+    input.deletedCount > AUDIT_DELETION_RECORD_CAP
+  ) {
     return auditError("/auditDeletion/size", "Audit deletion count exceeds the cap.");
   }
   const filterSummary = normalizeDeletionFilter(input.filterSummary);
@@ -157,14 +161,15 @@ export function createAuditDeletionReceipt(input) {
       actorId: input.actorId,
       reasonCode: input.reasonCode,
       filterSummary: filterSummary.value,
-      deletedCount: input.deletedCount
-    }
+      deletedCount: input.deletedCount,
+    },
   };
 }
 
 export function auditPayloadSafe(value) {
   const disallowedPath = findDisallowedPayloadPath(value);
-  if (disallowedPath) return auditError(`/auditPayload${disallowedPath}`, "Audit payload contains a disallowed raw field.");
+  if (disallowedPath)
+    return auditError(`/auditPayload${disallowedPath}`, "Audit payload contains a disallowed raw field.");
   return { ok: true };
 }
 
@@ -173,7 +178,8 @@ function normalizeDiagnosticCodes(value) {
   if (value.length > 20) return auditError("/auditPayload/diagnostics", "Audit diagnostic code list exceeds the cap.");
   const entries = [];
   for (const item of value) {
-    if (!item || typeof item !== "object") return auditError("/auditPayload/diagnostics", "Audit diagnostic code entry is invalid.");
+    if (!item || typeof item !== "object")
+      return auditError("/auditPayload/diagnostics", "Audit diagnostic code entry is invalid.");
     if (!isSafeToken(item.code) || typeof item.path !== "string" || !item.path.startsWith("/")) {
       return auditError("/auditPayload/diagnostics", "Audit diagnostic code entry is invalid.");
     }
@@ -186,7 +192,7 @@ function diagnosticCodesFrom(diagnostics) {
   if (!Array.isArray(diagnostics)) return [];
   return diagnostics.map((diagnostic) => ({
     code: diagnostic?.code,
-    path: diagnostic?.path
+    path: diagnostic?.path,
   }));
 }
 
@@ -194,7 +200,7 @@ function normalizeDiagnosticCounts(value) {
   return {
     error: nonNegativeInteger(value?.error),
     warning: nonNegativeInteger(value?.warning),
-    info: nonNegativeInteger(value?.info)
+    info: nonNegativeInteger(value?.info),
   };
 }
 
@@ -211,7 +217,9 @@ function normalizeExportFilters(value) {
   return removeUndefined({
     from: isIsoTimestamp(value.from) ? value.from : undefined,
     to: isIsoTimestamp(value.to) ? value.to : undefined,
-    status: Array.isArray(value.status) ? value.status.filter((status) => VALID_STATUSES.has(status)).slice(0, 10) : undefined
+    status: Array.isArray(value.status)
+      ? value.status.filter((status) => VALID_STATUSES.has(status)).slice(0, 10)
+      : undefined,
   });
 }
 
@@ -226,9 +234,11 @@ function normalizeDeletionFilter(value) {
     sessionId: isSafeToken(value.sessionId) ? value.sessionId : undefined,
     from: isIsoTimestamp(value.from) ? value.from : undefined,
     to: isIsoTimestamp(value.to) ? value.to : undefined,
-    status: VALID_STATUSES.has(value.status) ? value.status : undefined
+    status: VALID_STATUSES.has(value.status) ? value.status : undefined,
   });
-  return Object.keys(filter).length > 0 ? { ok: true, value: filter } : auditError("/auditDeletion", "Audit deletion filter is empty.");
+  return Object.keys(filter).length > 0
+    ? { ok: true, value: filter }
+    : auditError("/auditDeletion", "Audit deletion filter is empty.");
 }
 
 function findDisallowedPayloadPath(value, path = "") {
@@ -263,9 +273,9 @@ function auditError(path, message) {
         code: AUDIT_DIAGNOSTIC_CODE,
         message,
         path,
-        fix: { kind: "manual", confidence: "high", message: "Use compact audit evidence only." }
-      }
-    ]
+        fix: { kind: "manual", confidence: "high", message: "Use compact audit evidence only." },
+      },
+    ],
   };
 }
 

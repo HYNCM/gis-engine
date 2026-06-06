@@ -1,11 +1,15 @@
-import { describe, expect, it } from "vitest";
-import Ajv from "ajv";
-import { createMapGenerationCommandSkeleton, planMapGenerationRequest, type MapGenerationCommandSkeleton } from "@gis-engine/engine";
 import {
+  createGenerationEvidenceBundle,
   GenerationEvidenceBundleInputSchema,
   GenerationEvidenceBundleSchema,
-  createGenerationEvidenceBundle
 } from "@gis-engine/ai";
+import {
+  createMapGenerationCommandSkeleton,
+  type MapGenerationCommandSkeleton,
+  planMapGenerationRequest,
+} from "@gis-engine/engine";
+import Ajv from "ajv";
+import { describe, expect, it } from "vitest";
 
 describe("generation evidence bundle", () => {
   it("composes existing MCP tool contracts without adding tool aliases", async () => {
@@ -16,16 +20,16 @@ describe("generation evidence bundle", () => {
       targetDomains: ["feature-display"],
       view: {
         center: [120.15, 30.28],
-        zoom: 11
+        zoom: 11,
       },
       sources: {
         services: {
           type: "geojson",
           data: {
             type: "FeatureCollection",
-            features: []
-          }
-        }
+            features: [],
+          },
+        },
       },
       layers: [
         {
@@ -34,10 +38,10 @@ describe("generation evidence bundle", () => {
           source: "services",
           paint: {
             "circle-color": "#2563eb",
-            "circle-radius": 6
-          }
-        }
-      ]
+            "circle-radius": 6,
+          },
+        },
+      ],
     });
 
     const response = await createGenerationEvidenceBundle({
@@ -49,10 +53,10 @@ describe("generation evidence bundle", () => {
           width: 320,
           height: 180,
           format: "data-url",
-          targetLayers: ["service-points"]
-        }
+          targetLayers: ["service-points"],
+        },
       },
-      exampleId: "ai-map-edit"
+      exampleId: "ai-map-edit",
     });
 
     expect(response.ok).toBe(true);
@@ -66,7 +70,7 @@ describe("generation evidence bundle", () => {
         ready: true,
         blocked: false,
         needsConfirmation: false,
-        followUpRequired: false
+        followUpRequired: false,
       },
       confirmationRequired: false,
       sourceReadiness: [
@@ -74,9 +78,9 @@ describe("generation evidence bundle", () => {
           sourceId: "services",
           type: "geojson",
           state: "supported",
-          queryReady: true
-        })
-      ]
+          queryReady: true,
+        }),
+      ],
     });
     expect(response.result.summary.sourceReadiness).toContainEqual(
       expect.objectContaining({
@@ -84,8 +88,8 @@ describe("generation evidence bundle", () => {
         type: "geojson",
         state: "supported",
         queryReady: true,
-        resourcePolicy: "passed"
-      })
+        resourcePolicy: "passed",
+      }),
     );
     expect(response.result.toolSequence).toEqual([
       "get_context_summary",
@@ -93,7 +97,7 @@ describe("generation evidence bundle", () => {
       "apply_commands",
       "snapshot_spec",
       "export_spec",
-      "export_example_app"
+      "export_example_app",
     ]);
     expect(response.result.toolSequence.every((tool) => /^[a-z]+(?:_[a-z]+)*$/.test(tool))).toBe(true);
     expect(response.result.toolSequence).not.toContain("generate_map_app");
@@ -103,7 +107,7 @@ describe("generation evidence bundle", () => {
       commandCount: 3,
       committed: true,
       rolledBack: false,
-      diagnosticCounts: { error: 0, warning: 0, info: 0 }
+      diagnosticCounts: { error: 0, warning: 0, info: 0 },
     });
     expect(response.result.plannerEvidence).toMatchObject({
       provided: false,
@@ -114,19 +118,19 @@ describe("generation evidence bundle", () => {
       retainedRawPrompt: false,
       confidence: {
         level: "unknown",
-        score: 0
-      }
+        score: 0,
+      },
     });
     expect(response.result.snapshotEvidence).toMatchObject({
       requested: true,
       renderer: "maplibre",
       passed: true,
-      dataUrlPresent: true
+      dataUrlPresent: true,
     });
     expect(response.result.exportEvidence).toMatchObject({
       ready: true,
       sourceCount: 1,
-      layerCount: 1
+      layerCount: 1,
     });
     expect(response.result.exampleEvidence).toMatchObject({
       exampleId: "ai-map-edit",
@@ -136,7 +140,7 @@ describe("generation evidence bundle", () => {
         status: "ready",
         delivery: {
           status: "ready",
-          confirmationRequired: false
+          confirmationRequired: false,
         },
         targetDomains: ["feature-display"],
         diagnosticCounts: { error: 0, warning: 0, info: 0 },
@@ -144,36 +148,36 @@ describe("generation evidence bundle", () => {
           usedApplyCommands: true,
           commandCount: 3,
           committed: true,
-          rolledBack: false
+          rolledBack: false,
         },
         planner: {
           provided: false,
           confidenceLevel: "unknown",
-          unsupportedIntentCount: 0
+          unsupportedIntentCount: 0,
         },
         spatialQuery: {
           requested: false,
           ready: false,
           status: "not-requested",
           caseCount: 0,
-          blockedOperations: []
+          blockedOperations: [],
         },
         snapshot: {
           requested: true,
           renderer: "maplibre",
-          passed: true
+          passed: true,
         },
         export: {
           ready: true,
           sourceCount: 1,
-          layerCount: 1
-        }
-      }
+          layerCount: 1,
+        },
+      },
     });
     expect(response.result.summary.capabilitySummary.domains.map((domain) => domain.id)).toEqual([
       "feature-display",
       "spatial-analysis",
-      "scene-browsing"
+      "scene-browsing",
     ]);
   });
 
@@ -182,7 +186,7 @@ describe("generation evidence bundle", () => {
       mapId: "tampered-evidence",
       promptHash: "sha256:tampered-evidence",
       traceId: "trace-tampered-evidence",
-      view: { zoom: 8 }
+      view: { zoom: 8 },
     });
     const tampered: MapGenerationCommandSkeleton = {
       ...skeleton,
@@ -190,14 +194,14 @@ describe("generation evidence bundle", () => {
         ...skeleton.spec,
         view: {
           ...skeleton.spec.view,
-          zoom: 99
-        }
-      }
+          zoom: 99,
+        },
+      },
     };
 
     const response = await createGenerationEvidenceBundle({
       promptHash: "sha256:tampered-evidence",
-      skeleton: tampered
+      skeleton: tampered,
     });
 
     expect(response.ok).toBe(true);
@@ -207,15 +211,15 @@ describe("generation evidence bundle", () => {
       status: "blocked",
       acceptance: {
         state: "blocked",
-        blocked: true
-      }
+        blocked: true,
+      },
     });
     expect(response.result.commandEvidence.diagnosticCounts.error).toBe(1);
     expect(response.result.diagnostics).toContainEqual(
       expect.objectContaining({
         code: "COMMAND.INVALID_PATCH",
-        path: "/skeleton/spec"
-      })
+        path: "/skeleton/spec",
+      }),
     );
   });
 
@@ -231,9 +235,9 @@ describe("generation evidence bundle", () => {
             type: "geojson",
             data: {
               type: "FeatureCollection",
-              features: []
-            }
-          }
+              features: [],
+            },
+          },
         },
         layers: [
           {
@@ -241,11 +245,11 @@ describe("generation evidence bundle", () => {
             type: "circle",
             source: "services",
             paint: {
-              "circle-color": "#0f766e"
-            }
-          }
-        ]
-      }
+              "circle-color": "#0f766e",
+            },
+          },
+        ],
+      },
     });
     const skeleton = createMapGenerationCommandSkeleton(plan.request);
 
@@ -257,9 +261,9 @@ describe("generation evidence bundle", () => {
         confidence: {
           level: "high",
           score: 0.96,
-          reasons: ["Structured intent matched the supported feature-display planner boundary."]
-        }
-      }
+          reasons: ["Structured intent matched the supported feature-display planner boundary."],
+        },
+      },
     });
 
     expect(response.ok).toBe(true);
@@ -275,17 +279,17 @@ describe("generation evidence bundle", () => {
       confidence: {
         level: "high",
         score: 0.96,
-        reasons: ["Structured intent matched the supported feature-display planner boundary."]
+        reasons: ["Structured intent matched the supported feature-display planner boundary."],
       },
       acceptedIntentFields: ["layers", "mapId", "sources", "targetDomains"],
       unsupportedIntentFields: [],
       sourcePromptHashes: ["sha256:planner-evidence"],
-      diagnosticCounts: { error: 0, warning: 0, info: 0 }
+      diagnosticCounts: { error: 0, warning: 0, info: 0 },
     });
     expect(response.result.commandEvidence).toMatchObject({
       usedApplyCommands: true,
       traceId: "trace-planner-evidence",
-      commandCount: 2
+      commandCount: 2,
     });
     expect(response.result.toolSequence).not.toContain("generate_map_app");
   });
@@ -298,7 +302,7 @@ describe("generation evidence bundle", () => {
         mapId: "spatial-query-evidence",
         targetDomains: ["feature-display", "spatial-analysis"],
         analysis: {
-          operations: ["point-query", "bbox-query"]
+          operations: ["point-query", "bbox-query"],
         },
         sources: {
           incidents: {
@@ -309,16 +313,16 @@ describe("generation evidence bundle", () => {
                 {
                   type: "Feature",
                   properties: { id: "incident-1" },
-                  geometry: { type: "Point", coordinates: [120.15, 30.28] }
+                  geometry: { type: "Point", coordinates: [120.15, 30.28] },
                 },
                 {
                   type: "Feature",
                   properties: { id: "incident-2" },
-                  geometry: { type: "Point", coordinates: [120.18, 30.3] }
-                }
-              ]
-            }
-          }
+                  geometry: { type: "Point", coordinates: [120.18, 30.3] },
+                },
+              ],
+            },
+          },
         },
         layers: [
           {
@@ -326,11 +330,11 @@ describe("generation evidence bundle", () => {
             type: "circle",
             source: "incidents",
             paint: {
-              "circle-color": "#dc2626"
-            }
-          }
-        ]
-      }
+              "circle-color": "#dc2626",
+            },
+          },
+        ],
+      },
     });
     const skeleton = createMapGenerationCommandSkeleton(plan.request);
 
@@ -347,9 +351,9 @@ describe("generation evidence bundle", () => {
         queries: ["point", "bbox"],
         snapshot: {
           supported: true,
-          formats: ["data-url"]
+          formats: ["data-url"],
         },
-        experimental: []
+        experimental: [],
       },
       spatialQueries: {
         renderer: "mock",
@@ -358,16 +362,16 @@ describe("generation evidence bundle", () => {
             id: "incident-point",
             operation: "point-query",
             point: [120.15, 30.28],
-            layers: ["incident-points"]
+            layers: ["incident-points"],
           },
           {
             id: "incident-bbox",
             operation: "bbox-query",
             bbox: [120.14, 30.27, 120.19, 30.31],
-            layers: ["incident-points"]
-          }
-        ]
-      }
+            layers: ["incident-points"],
+          },
+        ],
+      },
     });
 
     expect(response.ok).toBe(true);
@@ -386,14 +390,14 @@ describe("generation evidence bundle", () => {
       capabilityGate: {
         status: "passed",
         requiredQueries: ["bbox", "point"],
-        providedQueries: ["bbox", "point"]
+        providedQueries: ["bbox", "point"],
       },
       queryableSourceIds: ["incidents"],
       queryableLayerIds: ["incident-points"],
       hiddenLayerIds: [],
       unsupportedSourceIds: [],
       missingSourceIds: [],
-      diagnosticCounts: { error: 0, warning: 0, info: 0 }
+      diagnosticCounts: { error: 0, warning: 0, info: 0 },
     });
     expect(response.result.spatialQueryEvidence.cases).toEqual([
       expect.objectContaining({
@@ -403,7 +407,7 @@ describe("generation evidence bundle", () => {
         sourceIds: ["incidents"],
         featureCount: 1,
         passed: true,
-        diagnosticCounts: { error: 0, warning: 0, info: 0 }
+        diagnosticCounts: { error: 0, warning: 0, info: 0 },
       }),
       expect.objectContaining({
         id: "incident-bbox",
@@ -412,33 +416,33 @@ describe("generation evidence bundle", () => {
         sourceIds: ["incidents"],
         featureCount: 2,
         passed: true,
-        diagnosticCounts: { error: 0, warning: 0, info: 0 }
-      })
+        diagnosticCounts: { error: 0, warning: 0, info: 0 },
+      }),
     ]);
     expect(response.result.exampleEvidence.generationEvidence).toMatchObject({
       status: "ready",
       planner: {
         provided: true,
         confidenceLevel: "high",
-        unsupportedIntentCount: 0
+        unsupportedIntentCount: 0,
       },
       spatialQuery: {
         requested: true,
         ready: true,
         status: "ready",
         caseCount: 2,
-        blockedOperations: []
+        blockedOperations: [],
       },
       snapshot: {
         requested: true,
         renderer: "maplibre",
-        passed: true
+        passed: true,
       },
       export: {
         ready: true,
         sourceCount: 1,
-        layerCount: 1
-      }
+        layerCount: 1,
+      },
     });
     expect(response.result.toolSequence).not.toContain("spatial_query");
   });
@@ -446,8 +450,8 @@ describe("generation evidence bundle", () => {
   it("records capped deterministic spatial query fixture evidence without feature payloads", async () => {
     const skeleton = createSpatialQuerySkeleton("capped-query-fixture", {
       sources: {
-        incidents: inlineIncidentSource(105)
-      }
+        incidents: inlineIncidentSource(105),
+      },
     });
     const input = {
       promptHash: "sha256:capped-query-fixture",
@@ -460,10 +464,10 @@ describe("generation evidence bundle", () => {
             id: "capped-point",
             operation: "point-query" as const,
             point: [120.15, 30.28] as [number, number],
-            layers: ["incident-points"]
-          }
-        ]
-      }
+            layers: ["incident-points"],
+          },
+        ],
+      },
     };
 
     const first = await createGenerationEvidenceBundle(input);
@@ -482,8 +486,8 @@ describe("generation evidence bundle", () => {
         resultLimit: 100,
         resultTruncated: true,
         passed: true,
-        diagnosticCounts: { error: 0, warning: 0, info: 0 }
-      })
+        diagnosticCounts: { error: 0, warning: 0, info: 0 },
+      }),
     ]);
     const [firstCase] = first.result.spatialQueryEvidence.cases;
     const [secondCase] = second.result.spatialQueryEvidence.cases;
@@ -501,7 +505,7 @@ describe("generation evidence bundle", () => {
       id: "incident-point",
       operation: "point-query" as const,
       point: [120.15, 30.28] as [number, number],
-      layers: ["incident-points"]
+      layers: ["incident-points"],
     };
 
     const [ready, followUpRequired, blocked] = await Promise.all([
@@ -511,8 +515,8 @@ describe("generation evidence bundle", () => {
         capabilities: spatialQueryCapabilities,
         spatialQueries: {
           renderer: "mock",
-          cases: [queryCase]
-        }
+          cases: [queryCase],
+        },
       }),
       createGenerationEvidenceBundle({
         promptHash: "sha256:delivery-query-waiver",
@@ -522,19 +526,19 @@ describe("generation evidence bundle", () => {
           capabilityWaiver: {
             reason: "Adapter query capability report will be closed by the delivery mapping follow-up.",
             approvedBy: "@quality-guardian",
-            followUpTaskId: "TASK-2026W23-SQH-006"
+            followUpTaskId: "TASK-2026W23-SQH-006",
           },
-          cases: [queryCase]
-        }
+          cases: [queryCase],
+        },
       }),
       createGenerationEvidenceBundle({
         promptHash: "sha256:delivery-query-blocked",
         skeleton: blockedSkeleton,
         spatialQueries: {
           renderer: "mock",
-          cases: [queryCase]
-        }
-      })
+          cases: [queryCase],
+        },
+      }),
     ]);
 
     expect(ready.ok).toBe(true);
@@ -544,7 +548,8 @@ describe("generation evidence bundle", () => {
       throw new Error("Expected spatial query delivery fixtures to return structured evidence.");
     }
 
-    const dataSection = (bundle: typeof ready.result) => bundle.delivery.sections.find((entry) => entry.id === "data-and-analysis");
+    const dataSection = (bundle: typeof ready.result) =>
+      bundle.delivery.sections.find((entry) => entry.id === "data-and-analysis");
 
     expect(ready.result.delivery.spatialQueryReadiness).toMatchObject({
       requested: true,
@@ -577,21 +582,23 @@ describe("generation evidence bundle", () => {
           featureCount: 1,
           resultLimit: 100,
           resultTruncated: false,
-          diagnosticCounts: { error: 0, warning: 0, info: 0 }
-        })
-      ]
+          diagnosticCounts: { error: 0, warning: 0, info: 0 },
+        }),
+      ],
     });
     expect(dataSection(ready.result)).toMatchObject({
       status: "ready",
       blockerCount: 0,
-      followUpCount: 0
+      followUpCount: 0,
     });
     expect(ready.result.exampleEvidence.generationEvidence?.delivery.spatialQueryReadiness).toMatchObject({
       state: "ready",
       caseCount: 1,
-      passedCaseCount: 1
+      passedCaseCount: 1,
     });
-    expect(JSON.stringify(ready.result.exampleEvidence.generationEvidence?.delivery.spatialQueryReadiness)).not.toContain("FeatureCollection");
+    expect(
+      JSON.stringify(ready.result.exampleEvidence.generationEvidence?.delivery.spatialQueryReadiness),
+    ).not.toContain("FeatureCollection");
 
     expect(followUpRequired.result.delivery.spatialQueryReadiness).toMatchObject({
       requested: true,
@@ -603,12 +610,12 @@ describe("generation evidence bundle", () => {
       failedCaseCount: 0,
       blockerCount: 0,
       followUpCount: 1,
-      followUpTaskIds: ["TASK-2026W23-SQH-006"]
+      followUpTaskIds: ["TASK-2026W23-SQH-006"],
     });
     expect(dataSection(followUpRequired.result)).toMatchObject({
       status: "follow-up-required",
       blockerCount: 0,
-      followUpCount: 1
+      followUpCount: 1,
     });
 
     expect(blocked.result.delivery.spatialQueryReadiness).toMatchObject({
@@ -621,12 +628,12 @@ describe("generation evidence bundle", () => {
       failedCaseCount: 0,
       blockerCount: 1,
       followUpCount: 0,
-      followUpTaskIds: []
+      followUpTaskIds: [],
     });
     expect(dataSection(blocked.result)).toMatchObject({
       status: "blocked",
       blockerCount: 1,
-      followUpCount: 0
+      followUpCount: 0,
     });
     expect(blocked.result.toolSequence).not.toContain("spatial_query");
   });
@@ -638,7 +645,7 @@ describe("generation evidence bundle", () => {
       traceId: "trace-missing-query-capability",
       targetDomains: ["feature-display", "spatial-analysis"],
       analysis: {
-        operations: ["point-query"]
+        operations: ["point-query"],
       },
       sources: {
         incidents: {
@@ -649,19 +656,19 @@ describe("generation evidence bundle", () => {
               {
                 type: "Feature",
                 properties: { id: "incident-1" },
-                geometry: { type: "Point", coordinates: [120.15, 30.28] }
-              }
-            ]
-          }
-        }
+                geometry: { type: "Point", coordinates: [120.15, 30.28] },
+              },
+            ],
+          },
+        },
       },
       layers: [
         {
           id: "incident-points",
           type: "circle",
-          source: "incidents"
-        }
-      ]
+          source: "incidents",
+        },
+      ],
     });
 
     const response = await createGenerationEvidenceBundle({
@@ -674,10 +681,10 @@ describe("generation evidence bundle", () => {
             id: "incident-point",
             operation: "point-query",
             point: [120.15, 30.28],
-            layers: ["incident-points"]
-          }
-        ]
-      }
+            layers: ["incident-points"],
+          },
+        ],
+      },
     });
 
     expect(response.ok).toBe(true);
@@ -692,17 +699,17 @@ describe("generation evidence bundle", () => {
       capabilityGate: {
         status: "blocked",
         requiredQueries: ["point"],
-        providedQueries: []
+        providedQueries: [],
       },
       cases: [],
-      diagnosticCounts: { error: 1, warning: 0, info: 0 }
+      diagnosticCounts: { error: 1, warning: 0, info: 0 },
     });
     expect(response.result.diagnostics).toContainEqual(
       expect.objectContaining({
         severity: "error",
         code: "CAPABILITY.UNSUPPORTED",
-        path: "/capabilities/queries"
-      })
+        path: "/capabilities/queries",
+      }),
     );
   });
 
@@ -713,7 +720,7 @@ describe("generation evidence bundle", () => {
       traceId: "trace-waived-query-capability",
       targetDomains: ["feature-display", "spatial-analysis"],
       analysis: {
-        operations: ["point-query"]
+        operations: ["point-query"],
       },
       sources: {
         incidents: {
@@ -724,19 +731,19 @@ describe("generation evidence bundle", () => {
               {
                 type: "Feature",
                 properties: { id: "incident-1" },
-                geometry: { type: "Point", coordinates: [120.15, 30.28] }
-              }
-            ]
-          }
-        }
+                geometry: { type: "Point", coordinates: [120.15, 30.28] },
+              },
+            ],
+          },
+        },
       },
       layers: [
         {
           id: "incident-points",
           type: "circle",
-          source: "incidents"
-        }
-      ]
+          source: "incidents",
+        },
+      ],
     });
 
     const response = await createGenerationEvidenceBundle({
@@ -747,17 +754,17 @@ describe("generation evidence bundle", () => {
         capabilityWaiver: {
           reason: "Adapter query capability report is tracked by a follow-up hardening task.",
           approvedBy: "@quality-guardian",
-          followUpTaskId: "TASK-2026W23-SQH-003"
+          followUpTaskId: "TASK-2026W23-SQH-003",
         },
         cases: [
           {
             id: "incident-point",
             operation: "point-query",
             point: [120.15, 30.28],
-            layers: ["incident-points"]
-          }
-        ]
-      }
+            layers: ["incident-points"],
+          },
+        ],
+      },
     });
 
     expect(response.ok).toBe(true);
@@ -776,18 +783,18 @@ describe("generation evidence bundle", () => {
         waiver: {
           reason: "Adapter query capability report is tracked by a follow-up hardening task.",
           approvedBy: "@quality-guardian",
-          followUpTaskId: "TASK-2026W23-SQH-003"
-        }
+          followUpTaskId: "TASK-2026W23-SQH-003",
+        },
       },
-      diagnosticCounts: { error: 0, warning: 0, info: 0 }
+      diagnosticCounts: { error: 0, warning: 0, info: 0 },
     });
     expect(response.result.spatialQueryEvidence.cases).toEqual([
       expect.objectContaining({
         id: "incident-point",
         operation: "point-query",
         featureCount: 1,
-        passed: true
-      })
+        passed: true,
+      }),
     ]);
   });
 
@@ -798,24 +805,24 @@ describe("generation evidence bundle", () => {
       traceId: "trace-missing-query-cases",
       targetDomains: ["feature-display", "spatial-analysis"],
       analysis: {
-        operations: ["point-query"]
+        operations: ["point-query"],
       },
       sources: {
         incidents: {
           type: "geojson",
           data: {
             type: "FeatureCollection",
-            features: []
-          }
-        }
+            features: [],
+          },
+        },
       },
       layers: [
         {
           id: "incident-points",
           type: "circle",
-          source: "incidents"
-        }
-      ]
+          source: "incidents",
+        },
+      ],
     });
 
     const response = await createGenerationEvidenceBundle({
@@ -830,10 +837,10 @@ describe("generation evidence bundle", () => {
         queries: ["point"],
         snapshot: {
           supported: true,
-          formats: ["data-url"]
+          formats: ["data-url"],
         },
-        experimental: []
-      }
+        experimental: [],
+      },
     });
 
     expect(response.ok).toBe(true);
@@ -847,17 +854,17 @@ describe("generation evidence bundle", () => {
       capabilityGate: {
         status: "passed",
         requiredQueries: ["point"],
-        providedQueries: ["point"]
+        providedQueries: ["point"],
       },
       cases: [],
-      diagnosticCounts: { error: 1, warning: 0, info: 0 }
+      diagnosticCounts: { error: 1, warning: 0, info: 0 },
     });
     expect(response.result.diagnostics).toContainEqual(
       expect.objectContaining({
         severity: "error",
         code: "CAPABILITY.UNSUPPORTED",
-        path: "/spatialQueries/cases"
-      })
+        path: "/spatialQueries/cases",
+      }),
     );
   });
 
@@ -875,10 +882,10 @@ describe("generation evidence bundle", () => {
             id: "bad-point",
             operation: "point-query",
             point: [Number.NaN, 30.28],
-            layers: ["incident-points"]
-          }
-        ]
-      }
+            layers: ["incident-points"],
+          },
+        ],
+      },
     });
 
     expect(response.ok).toBe(true);
@@ -889,15 +896,15 @@ describe("generation evidence bundle", () => {
         id: "bad-point",
         passed: false,
         featureCount: 0,
-        diagnosticCounts: { error: 1, warning: 0, info: 0 }
-      })
+        diagnosticCounts: { error: 1, warning: 0, info: 0 },
+      }),
     ]);
     expect(response.result.diagnostics).toContainEqual(
       expect.objectContaining({
         severity: "error",
         code: "GEO.INVALID_COORDINATES",
-        path: "/spatialQueries/cases/0/point"
-      })
+        path: "/spatialQueries/cases/0/point",
+      }),
     );
   });
 
@@ -915,16 +922,16 @@ describe("generation evidence bundle", () => {
             id: "reversed-bbox",
             operation: "bbox-query",
             bbox: [120.2, 30.3, 120.1, 30.2],
-            layers: ["incident-points"]
+            layers: ["incident-points"],
           },
           {
             id: "empty-point",
             operation: "point-query",
             point: [0, 0],
-            layers: ["incident-points"]
-          }
-        ]
-      }
+            layers: ["incident-points"],
+          },
+        ],
+      },
     });
 
     expect(response.ok).toBe(true);
@@ -934,35 +941,35 @@ describe("generation evidence bundle", () => {
       requested: true,
       ready: false,
       status: "blocked",
-      diagnosticCounts: { error: 2, warning: 0, info: 0 }
+      diagnosticCounts: { error: 2, warning: 0, info: 0 },
     });
     expect(response.result.spatialQueryEvidence.cases).toEqual([
       expect.objectContaining({
         id: "reversed-bbox",
         passed: false,
         featureCount: 0,
-        diagnosticCounts: { error: 1, warning: 0, info: 0 }
+        diagnosticCounts: { error: 1, warning: 0, info: 0 },
       }),
       expect.objectContaining({
         id: "empty-point",
         passed: false,
         featureCount: 0,
-        diagnosticCounts: { error: 1, warning: 0, info: 0 }
-      })
+        diagnosticCounts: { error: 1, warning: 0, info: 0 },
+      }),
     ]);
     expect(response.result.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           severity: "error",
           code: "GEO.EMPTY_BBOX",
-          path: "/spatialQueries/cases/0/bbox"
+          path: "/spatialQueries/cases/0/bbox",
         }),
         expect.objectContaining({
           severity: "error",
           code: "CAPABILITY.UNSUPPORTED",
-          path: "/spatialQueries/cases/1/result"
-        })
-      ])
+          path: "/spatialQueries/cases/1/result",
+        }),
+      ]),
     );
   });
 
@@ -972,24 +979,24 @@ describe("generation evidence bundle", () => {
         incidents: inlineIncidentSource(),
         remote: {
           type: "geojson",
-          data: "./data/incidents.geojson"
+          data: "./data/incidents.geojson",
         },
         archive: {
           type: "pmtiles",
-          url: "pmtiles://local/incidents.pmtiles"
+          url: "pmtiles://local/incidents.pmtiles",
         },
         vector: {
           type: "vector",
-          tiles: ["./tiles/{z}/{x}/{y}.pbf"]
-        }
+          tiles: ["./tiles/{z}/{x}/{y}.pbf"],
+        },
       },
       layers: [
         { id: "incident-points", type: "circle", source: "incidents" },
         { id: "hidden-points", type: "circle", source: "incidents", layout: { visibility: "none" } },
         { id: "remote-points", type: "circle", source: "remote" },
         { id: "archive-points", type: "circle", source: "archive" },
-        { id: "vector-points", type: "circle", source: "vector" }
-      ]
+        { id: "vector-points", type: "circle", source: "vector" },
+      ],
     });
 
     const response = await createGenerationEvidenceBundle({
@@ -1003,34 +1010,34 @@ describe("generation evidence bundle", () => {
             id: "missing-layer",
             operation: "point-query",
             point: [120.15, 30.28],
-            layers: ["missing-layer"]
+            layers: ["missing-layer"],
           },
           {
             id: "hidden-layer",
             operation: "point-query",
             point: [120.15, 30.28],
-            layers: ["hidden-points"]
+            layers: ["hidden-points"],
           },
           {
             id: "url-geojson",
             operation: "point-query",
             point: [120.15, 30.28],
-            layers: ["remote-points"]
+            layers: ["remote-points"],
           },
           {
             id: "pmtiles-source",
             operation: "point-query",
             point: [120.15, 30.28],
-            layers: ["archive-points"]
+            layers: ["archive-points"],
           },
           {
             id: "vector-source",
             operation: "point-query",
             point: [120.15, 30.28],
-            layers: ["vector-points"]
-          }
-        ]
-      }
+            layers: ["vector-points"],
+          },
+        ],
+      },
     });
 
     expect(response.ok).toBe(true);
@@ -1045,36 +1052,36 @@ describe("generation evidence bundle", () => {
       hiddenLayerIds: ["hidden-points"],
       unsupportedSourceIds: ["archive", "remote", "vector"],
       missingSourceIds: [],
-      diagnosticCounts: { error: 5, warning: 0, info: 0 }
+      diagnosticCounts: { error: 5, warning: 0, info: 0 },
     });
     expect(response.result.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           severity: "error",
           code: "LAYER.NOT_FOUND",
-          path: "/spatialQueries/cases/0/layers/0"
+          path: "/spatialQueries/cases/0/layers/0",
         }),
         expect.objectContaining({
           severity: "error",
           code: "CAPABILITY.UNSUPPORTED",
-          path: "/spatialQueries/cases/1/layers/0"
+          path: "/spatialQueries/cases/1/layers/0",
         }),
         expect.objectContaining({
           severity: "error",
           code: "CAPABILITY.UNSUPPORTED",
-          path: "/spatialQueries/cases/2/sources/remote/data"
+          path: "/spatialQueries/cases/2/sources/remote/data",
         }),
         expect.objectContaining({
           severity: "error",
           code: "CAPABILITY.UNSUPPORTED",
-          path: "/spatialQueries/cases/3/sources/archive/url"
+          path: "/spatialQueries/cases/3/sources/archive/url",
         }),
         expect.objectContaining({
           severity: "error",
           code: "CAPABILITY.UNSUPPORTED",
-          path: "/spatialQueries/cases/4/sources/vector"
-        })
-      ])
+          path: "/spatialQueries/cases/4/sources/vector",
+        }),
+      ]),
     );
   });
 
@@ -1084,8 +1091,8 @@ describe("generation evidence bundle", () => {
       ...skeleton,
       spec: {
         ...skeleton.spec,
-        layers: [...skeleton.spec.layers, { id: "missing-source-layer", type: "circle", source: "missing-source" }]
-      }
+        layers: [...skeleton.spec.layers, { id: "missing-source-layer", type: "circle", source: "missing-source" }],
+      },
     };
 
     const response = await createGenerationEvidenceBundle({
@@ -1099,10 +1106,10 @@ describe("generation evidence bundle", () => {
             id: "missing-source",
             operation: "point-query",
             point: [120.15, 30.28],
-            layers: ["missing-source-layer"]
-          }
-        ]
-      }
+            layers: ["missing-source-layer"],
+          },
+        ],
+      },
     });
 
     expect(response.ok).toBe(true);
@@ -1113,16 +1120,16 @@ describe("generation evidence bundle", () => {
       ready: false,
       status: "blocked",
       missingSourceIds: ["missing-source"],
-      diagnosticCounts: { error: 1, warning: 0, info: 0 }
+      diagnosticCounts: { error: 1, warning: 0, info: 0 },
     });
     expect(response.result.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           severity: "error",
           code: "SRC.NOT_FOUND",
-          path: "/spatialQueries/cases/0/layers/0/source"
-        })
-      ])
+          path: "/spatialQueries/cases/0/layers/0/source",
+        }),
+      ]),
     );
   });
 
@@ -1132,8 +1139,8 @@ describe("generation evidence bundle", () => {
       traceId: "trace-raw-prompt",
       rawPrompt: "keep this prompt in the evidence",
       intent: {
-        mapId: "raw-prompt"
-      }
+        mapId: "raw-prompt",
+      },
     });
     const skeleton = createMapGenerationCommandSkeleton(plan.request);
 
@@ -1141,8 +1148,8 @@ describe("generation evidence bundle", () => {
       promptHash: "sha256:raw-prompt",
       skeleton,
       planner: {
-        plan
-      }
+        plan,
+      },
     });
 
     expect(response.ok).toBe(true);
@@ -1155,16 +1162,16 @@ describe("generation evidence bundle", () => {
       diagnosticCounts: { error: 1, warning: 0, info: 0 },
       confidence: {
         level: "low",
-        score: 0
-      }
+        score: 0,
+      },
     });
     expect(response.result.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           code: "SPEC.UNKNOWN_FIELD",
-          path: "/rawPrompt"
-        })
-      ])
+          path: "/rawPrompt",
+        }),
+      ]),
     );
   });
 
@@ -1177,22 +1184,22 @@ describe("generation evidence bundle", () => {
       sources: {
         parcels: {
           type: "pmtiles",
-          url: "pmtiles://local/parcels.pmtiles"
-        }
+          url: "pmtiles://local/parcels.pmtiles",
+        },
       },
       layers: [
         {
           id: "parcel-fills",
           type: "fill",
-          source: "parcels"
-        }
-      ]
+          source: "parcels",
+        },
+      ],
     });
 
     const response = await createGenerationEvidenceBundle({
       promptHash: "sha256:pmtiles-delivery",
       skeleton,
-      exampleId: "pmtiles-local"
+      exampleId: "pmtiles-local",
     });
 
     expect(response.ok).toBe(true);
@@ -1204,7 +1211,7 @@ describe("generation evidence bundle", () => {
         state: "needs-confirmation",
         needsConfirmation: true,
         ready: false,
-        blocked: false
+        blocked: false,
       },
       confirmationRequired: true,
       sourceReadiness: [
@@ -1217,11 +1224,11 @@ describe("generation evidence bundle", () => {
           archiveContract: expect.objectContaining({
             state: "explicit",
             metadataFields: expect.arrayContaining(["specVersion", "archiveBytes", "rootDirectoryLength"]),
-            policyFields: expect.arrayContaining(["maxArchiveBytes", "timeoutMs"])
+            policyFields: expect.arrayContaining(["maxArchiveBytes", "timeoutMs"]),
           }),
-          confirmationReasons: ["external-resource", "archive-parsing"]
-        })
-      ]
+          confirmationReasons: ["external-resource", "archive-parsing"],
+        }),
+      ],
     });
     expect(response.result.summary.sources).toContainEqual(
       expect.objectContaining({
@@ -1229,9 +1236,9 @@ describe("generation evidence bundle", () => {
         type: "pmtiles",
         sourceContract: expect.objectContaining({
           kind: "archive",
-          state: "explicit"
-        })
-      })
+          state: "explicit",
+        }),
+      }),
     );
     expect(response.result.summary.sourceReadiness).toContainEqual(
       expect.objectContaining({
@@ -1241,9 +1248,9 @@ describe("generation evidence bundle", () => {
         queryReady: false,
         resourcePolicy: "passed",
         archiveContract: expect.objectContaining({
-          state: "explicit"
-        })
-      })
+          state: "explicit",
+        }),
+      }),
     );
     expect(response.result.delivery.sourcePromotionCandidates).toContainEqual(
       expect.objectContaining({
@@ -1254,29 +1261,29 @@ describe("generation evidence bundle", () => {
         archiveContract: expect.objectContaining({
           state: "explicit",
           metadataFields: expect.arrayContaining(["specVersion", "archiveBytes"]),
-          policyFields: expect.arrayContaining(["maxArchiveBytes", "timeoutMs"])
+          policyFields: expect.arrayContaining(["maxArchiveBytes", "timeoutMs"]),
         }),
-        target: "PMTiles archive metadata promotion gate"
-      })
+        target: "PMTiles archive metadata promotion gate",
+      }),
     );
     expect(response.result.delivery.confirmations).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           reason: "external-resource",
           required: true,
-          sourceIds: ["parcels"]
+          sourceIds: ["parcels"],
         }),
         expect.objectContaining({
           reason: "archive-parsing",
           required: true,
-          sourceIds: ["parcels"]
+          sourceIds: ["parcels"],
         }),
         expect.objectContaining({
           reason: "file-write",
           required: false,
-          target: "export_example_app manifest output"
-        })
-      ])
+          target: "export_example_app manifest output",
+        }),
+      ]),
     );
     expect(response.result.exampleEvidence).toMatchObject({
       exampleId: "pmtiles-local",
@@ -1284,9 +1291,9 @@ describe("generation evidence bundle", () => {
       generationEvidence: {
         delivery: {
           status: "needs-confirmation",
-          confirmationRequired: true
-        }
-      }
+          confirmationRequired: true,
+        },
+      },
     });
     expect(response.result.exampleEvidence.generationEvidence?.delivery?.sourcePromotionCandidates).toContainEqual(
       expect.objectContaining({
@@ -1295,11 +1302,11 @@ describe("generation evidence bundle", () => {
         state: "readiness-only",
         resourcePolicy: "passed",
         archiveContract: expect.objectContaining({
-          state: "explicit"
-        })
-      })
+          state: "explicit",
+        }),
+      }),
     );
-    });
+  });
 
   it("marks extension-only scene browsing as follow-up-required without stable runtime promotion", async () => {
     const skeleton = createMapGenerationCommandSkeleton({
@@ -1310,28 +1317,28 @@ describe("generation evidence bundle", () => {
       scene3d: {
         camera: {
           position: [120.15, 30.28, 1200],
-          target: [120.15, 30.28, 0]
+          target: [120.15, 30.28, 0],
         },
         sources: {
           city: {
             type: "3d-tiles",
-            url: "./data/city/tileset.json"
-          }
+            url: "./data/city/tileset.json",
+          },
         },
         layers: [
           {
             id: "city",
             type: "tileset3d",
             source: "city",
-            pickable: true
-          }
-        ]
-      }
+            pickable: true,
+          },
+        ],
+      },
     });
 
     const response = await createGenerationEvidenceBundle({
       promptHash: "sha256:scene-delivery",
-      skeleton
+      skeleton,
     });
 
     expect(response.ok).toBe(true);
@@ -1343,15 +1350,15 @@ describe("generation evidence bundle", () => {
         state: "follow-up-required",
         followUpRequired: true,
         needsConfirmation: false,
-        blocked: false
-      }
+        blocked: false,
+      },
     });
     expect(response.result.delivery.followUps).toContainEqual(
       expect.objectContaining({
         id: "scene-browsing.stable-runtime-gate",
         owner: "@quality-guardian",
-        blockerCode: "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED"
-      })
+        blockerCode: "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED",
+      }),
     );
     expect(response.result.exampleEvidence.generationEvidence?.sceneBrowsing).toMatchObject({
       requested: true,
@@ -1363,8 +1370,8 @@ describe("generation evidence bundle", () => {
       stableRuntimeBlockerCodes: [
         "SCENE3D.STABLE_RUNTIME_DIMENSIONS_BLOCKED",
         "SCENE3D.STABLE_RUNTIME_RENDERER_BLOCKED",
-        "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED"
-      ]
+        "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED",
+      ],
     });
   });
 
@@ -1379,23 +1386,23 @@ describe("generation evidence bundle", () => {
           type: "geojson",
           data: {
             type: "FeatureCollection",
-            features: []
-          }
-        }
+            features: [],
+          },
+        },
       },
       layers: [
         {
           id: "service-points",
           type: "circle",
-          source: "services"
-        }
-      ]
+          source: "services",
+        },
+      ],
     });
     const blockedBaseSkeleton = createMapGenerationCommandSkeleton({
       mapId: "delivery-blocked",
       promptHash: "sha256:delivery-blocked",
       traceId: "trace-delivery-blocked",
-      view: { zoom: 8 }
+      view: { zoom: 8 },
     });
     const blockedSkeleton: MapGenerationCommandSkeleton = {
       ...blockedBaseSkeleton,
@@ -1403,9 +1410,9 @@ describe("generation evidence bundle", () => {
         ...blockedBaseSkeleton.spec,
         view: {
           ...blockedBaseSkeleton.spec.view,
-          zoom: 99
-        }
-      }
+          zoom: 99,
+        },
+      },
     };
     const confirmationSkeleton = createMapGenerationCommandSkeleton({
       mapId: "delivery-confirmation",
@@ -1415,16 +1422,16 @@ describe("generation evidence bundle", () => {
       sources: {
         parcels: {
           type: "pmtiles",
-          url: "pmtiles://local/parcels.pmtiles"
-        }
+          url: "pmtiles://local/parcels.pmtiles",
+        },
       },
       layers: [
         {
           id: "parcel-fills",
           type: "fill",
-          source: "parcels"
-        }
-      ]
+          source: "parcels",
+        },
+      ],
     });
     const followUpSkeleton = createMapGenerationCommandSkeleton({
       mapId: "delivery-follow-up",
@@ -1434,42 +1441,42 @@ describe("generation evidence bundle", () => {
       scene3d: {
         camera: {
           position: [120.15, 30.28, 1200],
-          target: [120.15, 30.28, 0]
+          target: [120.15, 30.28, 0],
         },
         sources: {
           city: {
             type: "3d-tiles",
-            url: "./data/city/tileset.json"
-          }
+            url: "./data/city/tileset.json",
+          },
         },
         layers: [
           {
             id: "city",
             type: "tileset3d",
             source: "city",
-            pickable: true
-          }
-        ]
-      }
+            pickable: true,
+          },
+        ],
+      },
     });
 
     const [ready, blocked, needsConfirmation, followUpRequired] = await Promise.all([
       createGenerationEvidenceBundle({
         promptHash: "sha256:delivery-ready",
-        skeleton: readySkeleton
+        skeleton: readySkeleton,
       }),
       createGenerationEvidenceBundle({
         promptHash: "sha256:delivery-blocked",
-        skeleton: blockedSkeleton
+        skeleton: blockedSkeleton,
       }),
       createGenerationEvidenceBundle({
         promptHash: "sha256:delivery-confirmation",
-        skeleton: confirmationSkeleton
+        skeleton: confirmationSkeleton,
       }),
       createGenerationEvidenceBundle({
         promptHash: "sha256:delivery-follow-up",
-        skeleton: followUpSkeleton
-      })
+        skeleton: followUpSkeleton,
+      }),
     ]);
 
     expect(ready.ok).toBe(true);
@@ -1480,7 +1487,8 @@ describe("generation evidence bundle", () => {
       throw new Error("Expected delivery-review acceptance fixtures to return structured evidence.");
     }
 
-    const section = (bundle: typeof ready.result, id: string) => bundle.delivery.sections.find((entry) => entry.id === id);
+    const section = (bundle: typeof ready.result, id: string) =>
+      bundle.delivery.sections.find((entry) => entry.id === id);
 
     expect(ready.result.delivery).toMatchObject({
       status: "ready",
@@ -1489,33 +1497,33 @@ describe("generation evidence bundle", () => {
         ready: true,
         blocked: false,
         needsConfirmation: false,
-        followUpRequired: false
+        followUpRequired: false,
       },
       confirmationRequired: false,
       confirmations: expect.arrayContaining([
         expect.objectContaining({ reason: "external-resource", required: false }),
-        expect.objectContaining({ reason: "file-write", required: false })
+        expect.objectContaining({ reason: "file-write", required: false }),
       ]),
-      followUps: []
+      followUps: [],
     });
     expect(section(ready.result, "readiness")).toMatchObject({
       status: "ready",
       blockerCount: 0,
       confirmationRequired: false,
-      followUpCount: 0
+      followUpCount: 0,
     });
     expect(section(ready.result, "data-and-analysis")).toMatchObject({
       status: "ready",
       blockerCount: 0,
       confirmationRequired: false,
-      followUpCount: 0
+      followUpCount: 0,
     });
     expect(ready.result.delivery.sourceReadiness).toContainEqual(
       expect.objectContaining({
         sourceId: "services",
         state: "supported",
-        confirmationReasons: []
-      })
+        confirmationReasons: [],
+      }),
     );
 
     expect(blocked.result.delivery).toMatchObject({
@@ -1525,28 +1533,28 @@ describe("generation evidence bundle", () => {
         ready: false,
         blocked: true,
         needsConfirmation: false,
-        followUpRequired: false
+        followUpRequired: false,
       },
-      confirmationRequired: false
+      confirmationRequired: false,
     });
     expect(section(blocked.result, "readiness")).toMatchObject({
       status: "blocked",
       blockerCount: 1,
-      confirmationRequired: false
+      confirmationRequired: false,
     });
     expect(section(blocked.result, "map-edits")).toMatchObject({
       status: "blocked",
-      blockerCount: 1
+      blockerCount: 1,
     });
     expect(blocked.result.commandEvidence).toMatchObject({
       usedApplyCommands: true,
-      diagnosticCounts: { error: 1, warning: 0, info: 0 }
+      diagnosticCounts: { error: 1, warning: 0, info: 0 },
     });
     expect(blocked.result.diagnostics).toContainEqual(
       expect.objectContaining({
         code: "COMMAND.INVALID_PATCH",
-        path: "/skeleton/spec"
-      })
+        path: "/skeleton/spec",
+      }),
     );
 
     expect(needsConfirmation.result.delivery).toMatchObject({
@@ -1556,39 +1564,39 @@ describe("generation evidence bundle", () => {
         ready: false,
         blocked: false,
         needsConfirmation: true,
-        followUpRequired: false
+        followUpRequired: false,
       },
       confirmationRequired: true,
       confirmations: expect.arrayContaining([
         expect.objectContaining({
           reason: "external-resource",
           required: true,
-          sourceIds: ["parcels"]
+          sourceIds: ["parcels"],
         }),
         expect.objectContaining({
           reason: "archive-parsing",
           required: true,
-          sourceIds: ["parcels"]
-        })
-      ])
+          sourceIds: ["parcels"],
+        }),
+      ]),
     });
     expect(section(needsConfirmation.result, "readiness")).toMatchObject({
       status: "needs-confirmation",
-      confirmationRequired: true
+      confirmationRequired: true,
     });
     expect(section(needsConfirmation.result, "data-and-analysis")).toMatchObject({
       status: "needs-confirmation",
       blockerCount: 0,
       confirmationRequired: true,
-      followUpCount: 1
+      followUpCount: 1,
     });
     expect(needsConfirmation.result.delivery.sourceReadiness).toContainEqual(
       expect.objectContaining({
         sourceId: "parcels",
         type: "pmtiles",
         state: "readiness-only",
-        confirmationReasons: ["external-resource", "archive-parsing"]
-      })
+        confirmationReasons: ["external-resource", "archive-parsing"],
+      }),
     );
 
     expect(followUpRequired.result.delivery).toMatchObject({
@@ -1598,34 +1606,34 @@ describe("generation evidence bundle", () => {
         ready: false,
         blocked: false,
         needsConfirmation: false,
-        followUpRequired: true
+        followUpRequired: true,
       },
       confirmationRequired: false,
       followUps: expect.arrayContaining([
         expect.objectContaining({
           id: "scene-browsing.stable-runtime-gate",
           owner: "@quality-guardian",
-          blockerCode: "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED"
-        })
-      ])
+          blockerCode: "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED",
+        }),
+      ]),
     });
     expect(section(followUpRequired.result, "readiness")).toMatchObject({
       status: "follow-up-required",
       confirmationRequired: false,
-      followUpCount: 1
+      followUpCount: 1,
     });
     expect(section(followUpRequired.result, "scene-browsing")).toMatchObject({
       status: "follow-up-required",
       blockerCount: 0,
       confirmationRequired: false,
-      followUpCount: 1
+      followUpCount: 1,
     });
     expect(followUpRequired.result.exampleEvidence.generationEvidence?.sceneBrowsing).toMatchObject({
       requested: true,
       status: "experimental",
       state: "extension-only",
       stableRuntimeBlocked: true,
-      stableViewMode: false
+      stableViewMode: false,
     });
   });
 
@@ -1636,7 +1644,7 @@ describe("generation evidence bundle", () => {
     const skeleton = createMapGenerationCommandSkeleton({ mapId: "schema-evidence" });
     const response = await createGenerationEvidenceBundle({
       promptHash: "sha256:schema-evidence",
-      skeleton
+      skeleton,
     });
 
     expect(validateInput({ promptHash: "sha256:schema-evidence", skeleton, unexpected: true })).toBe(false);
@@ -1645,8 +1653,8 @@ describe("generation evidence bundle", () => {
       validateInput({
         promptHash: "sha256:schema-evidence",
         skeleton,
-        snapshot: { renderer: "scene3d" }
-      })
+        snapshot: { renderer: "scene3d" },
+      }),
     ).toBe(false);
     expect(validateInput.errors?.some((error) => error.instancePath === "/snapshot/renderer")).toBe(true);
     expect(response.ok).toBe(true);
@@ -1664,9 +1672,9 @@ const spatialQueryCapabilities = {
   queries: ["point", "bbox"],
   snapshot: {
     supported: true,
-    formats: ["data-url"]
+    formats: ["data-url"],
   },
-  experimental: []
+  experimental: [],
 } as const;
 
 function createSpatialQuerySkeleton(
@@ -1674,7 +1682,7 @@ function createSpatialQuerySkeleton(
   overrides: {
     sources?: Record<string, unknown>;
     layers?: Array<Record<string, unknown>>;
-  } = {}
+  } = {},
 ) {
   return createMapGenerationCommandSkeleton({
     mapId: id,
@@ -1682,12 +1690,12 @@ function createSpatialQuerySkeleton(
     traceId: `trace-${id}`,
     targetDomains: ["feature-display", "spatial-analysis"],
     analysis: {
-      operations: ["point-query", "bbox-query"]
+      operations: ["point-query", "bbox-query"],
     },
     sources: overrides.sources ?? {
-      incidents: inlineIncidentSource()
+      incidents: inlineIncidentSource(),
     },
-    layers: overrides.layers ?? [{ id: "incident-points", type: "circle", source: "incidents" }]
+    layers: overrides.layers ?? [{ id: "incident-points", type: "circle", source: "incidents" }],
   });
 }
 
@@ -1699,8 +1707,8 @@ function inlineIncidentSource(featureCount = 1) {
       features: Array.from({ length: featureCount }, (_, index) => ({
         type: "Feature",
         properties: { id: `incident-${index + 1}` },
-        geometry: { type: "Point", coordinates: [120.15, 30.28] }
-      }))
-    }
+        geometry: { type: "Point", coordinates: [120.15, 30.28] },
+      })),
+    },
   };
 }

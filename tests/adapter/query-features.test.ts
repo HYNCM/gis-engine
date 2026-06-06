@@ -1,5 +1,11 @@
+import {
+  type FeatureQueryResult,
+  MapLibreAdapter,
+  type MapSpec,
+  MockAdapter,
+  type RendererAdapter,
+} from "@gis-engine/engine";
 import { describe, expect, it } from "vitest";
-import { MapLibreAdapter, MockAdapter, type FeatureQueryResult, type MapSpec, type RendererAdapter } from "@gis-engine/engine";
 
 const querySpec: MapSpec = {
   version: "0.1",
@@ -8,7 +14,7 @@ const querySpec: MapSpec = {
   view: {
     mode: "map2d",
     center: [0, 0],
-    zoom: 2
+    zoom: 2,
   },
   sources: {
     inline: {
@@ -19,12 +25,12 @@ const querySpec: MapSpec = {
           {
             type: "Feature",
             properties: { id: "point-a" },
-            geometry: { type: "Point", coordinates: [10, 10] }
+            geometry: { type: "Point", coordinates: [10, 10] },
           },
           {
             type: "Feature",
             properties: { id: "point-b" },
-            geometry: { type: "Point", coordinates: [20, 20] }
+            geometry: { type: "Point", coordinates: [20, 20] },
           },
           {
             type: "Feature",
@@ -37,39 +43,39 @@ const querySpec: MapSpec = {
                   [5, 0],
                   [5, 5],
                   [0, 5],
-                  [0, 0]
-                ]
-              ]
-            }
-          }
-        ]
-      }
+                  [0, 0],
+                ],
+              ],
+            },
+          },
+        ],
+      },
     },
     remote: {
       type: "geojson",
-      data: "./data/remote.geojson"
+      data: "./data/remote.geojson",
     },
     raster: {
       type: "raster",
-      tiles: ["./tiles/{z}/{x}/{y}.png"]
+      tiles: ["./tiles/{z}/{x}/{y}.png"],
     },
     tiles: {
       type: "pmtiles",
-      url: "pmtiles://example.pmtiles"
-    }
+      url: "pmtiles://example.pmtiles",
+    },
   },
   layers: [
     { id: "places-circle", type: "circle", source: "inline" },
     { id: "areas-fill", type: "fill", source: "inline" },
     { id: "remote-circle", type: "circle", source: "remote" },
     { id: "raster-layer", type: "raster", source: "raster" },
-    { id: "pmtiles-layer", type: "circle", source: "tiles" }
-  ]
+    { id: "pmtiles-layer", type: "circle", source: "tiles" },
+  ],
 };
 
 const adapters: Array<{ name: string; create: () => RendererAdapter }> = [
   { name: "MockAdapter", create: () => new MockAdapter() },
-  { name: "MapLibreAdapter", create: () => new MapLibreAdapter() }
+  { name: "MapLibreAdapter", create: () => new MapLibreAdapter() },
 ];
 
 describe.each(adapters)("queryFeatures MVP in $name", ({ create }) => {
@@ -99,7 +105,7 @@ describe.each(adapters)("queryFeatures MVP in $name", ({ create }) => {
 
     const result = await adapter.queryFeatures({
       point: [0, 0],
-      layers: ["remote-circle", "raster-layer", "pmtiles-layer"]
+      layers: ["remote-circle", "raster-layer", "pmtiles-layer"],
     });
 
     expect(result.features).toEqual([]);
@@ -107,18 +113,18 @@ describe.each(adapters)("queryFeatures MVP in $name", ({ create }) => {
       expect.objectContaining({
         severity: "error",
         code: "CAPABILITY.UNSUPPORTED",
-        path: "/sources/remote/data"
+        path: "/sources/remote/data",
       }),
       expect.objectContaining({
         severity: "error",
         code: "CAPABILITY.UNSUPPORTED",
-        path: "/sources/raster"
+        path: "/sources/raster",
       }),
       expect.objectContaining({
         severity: "error",
         code: "CAPABILITY.UNSUPPORTED",
-        path: "/sources/tiles/url"
-      })
+        path: "/sources/tiles/url",
+      }),
     ]);
   });
 
@@ -134,16 +140,16 @@ describe.each(adapters)("queryFeatures MVP in $name", ({ create }) => {
       expect.objectContaining({
         severity: "error",
         code: "GEO.INVALID_COORDINATES",
-        path: "/point"
-      })
+        path: "/point",
+      }),
     ]);
     expect(reversedBbox.features).toEqual([]);
     expect(reversedBbox.diagnostics).toEqual([
       expect.objectContaining({
         severity: "error",
         code: "GEO.EMPTY_BBOX",
-        path: "/bbox"
-      })
+        path: "/bbox",
+      }),
     ]);
   });
 });

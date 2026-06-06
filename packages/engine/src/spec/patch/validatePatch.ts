@@ -10,7 +10,7 @@ export function validatePatch(patch: JsonPatchOperation[]): Diagnostic[] {
         severity: "error",
         code: DiagnosticCodes.CommandInvalidPatch,
         message: `Patch operation ${index} path must be a JSON Pointer.`,
-        path: `/patch/${index}/path`
+        path: `/patch/${index}/path`,
       });
     }
 
@@ -19,7 +19,7 @@ export function validatePatch(patch: JsonPatchOperation[]): Diagnostic[] {
         severity: "error",
         code: DiagnosticCodes.CommandInvalidPatch,
         message: `Patch operation ${index} requires a value.`,
-        path: `/patch/${index}/value`
+        path: `/patch/${index}/value`,
       });
     }
   }

@@ -1,7 +1,7 @@
+import { type MapSpec, transformMapSpecToMapLibreStyle } from "@gis-engine/engine";
 import { describe, expect, it } from "vitest";
 import before from "../fixtures/commands/replay/style-update/before.map.json";
 import fillExtrusionLite from "../fixtures/specs/valid/fill-extrusion-lite.map.json";
-import { transformMapSpecToMapLibreStyle, type MapSpec } from "@gis-engine/engine";
 
 describe("MapSpecToMapLibreStyleTransformer", () => {
   it("transforms a supported MapSpec into a MapLibre style", () => {
@@ -13,7 +13,7 @@ describe("MapSpecToMapLibreStyleTransformer", () => {
     expect(result.style?.layers[0]).toMatchObject({
       id: "district-fill",
       type: "fill",
-      source: "districts"
+      source: "districts",
     });
   });
 
@@ -22,8 +22,8 @@ describe("MapSpecToMapLibreStyleTransformer", () => {
     spec.layers[0] = {
       ...spec.layers[0]!,
       paint: {
-        "fill-color": ["coalesce", ["get", "kind"], "#fff"]
-      }
+        "fill-color": ["coalesce", ["get", "kind"], "#fff"],
+      },
     };
 
     const result = transformMapSpecToMapLibreStyle(spec);
@@ -40,12 +40,12 @@ describe("MapSpecToMapLibreStyleTransformer", () => {
         tiles: ["./tiles/{z}/{x}/{y}.pbf"],
         minzoom: 0,
         maxzoom: 12,
-        attribution: "Local test tiles"
-      }
+        attribution: "Local test tiles",
+      },
     };
     spec.layers[0] = {
       ...spec.layers[0]!,
-      metadata: { "source-layer": "districts" }
+      metadata: { "source-layer": "districts" },
     };
 
     const result = transformMapSpecToMapLibreStyle(spec);
@@ -56,7 +56,7 @@ describe("MapSpecToMapLibreStyleTransformer", () => {
       tiles: ["./tiles/{z}/{x}/{y}.pbf"],
       minzoom: 0,
       maxzoom: 12,
-      attribution: "Local test tiles"
+      attribution: "Local test tiles",
     });
     expect(result.style?.layers[0]?.["source-layer"]).toBe("districts");
   });
@@ -67,7 +67,7 @@ describe("MapSpecToMapLibreStyleTransformer", () => {
       ...spec.layers[0]!,
       filter: ["==", ["get", "category"], "landmark"],
       minzoom: 9,
-      maxzoom: 17
+      maxzoom: 17,
     };
 
     const result = transformMapSpecToMapLibreStyle(spec);
@@ -76,7 +76,7 @@ describe("MapSpecToMapLibreStyleTransformer", () => {
     expect(result.style?.layers[0]).toMatchObject({
       filter: ["==", ["get", "category"], "landmark"],
       minzoom: 9,
-      maxzoom: 17
+      maxzoom: 17,
     });
   });
 
@@ -84,7 +84,7 @@ describe("MapSpecToMapLibreStyleTransformer", () => {
     const spec = structuredClone(before) as MapSpec;
     spec.layers[0] = {
       ...spec.layers[0]!,
-      type: "fill-extrusion-lite"
+      type: "fill-extrusion-lite",
     };
 
     const result = transformMapSpecToMapLibreStyle(spec);
@@ -93,8 +93,8 @@ describe("MapSpecToMapLibreStyleTransformer", () => {
     expect(result.diagnostics.filter((diagnostic) => diagnostic.severity === "error")).toEqual([
       expect.objectContaining({
         code: "CAPABILITY.UNSUPPORTED",
-        path: "/layers/0/type"
-      })
+        path: "/layers/0/type",
+      }),
     ]);
   });
 
@@ -111,8 +111,8 @@ describe("MapSpecToMapLibreStyleTransformer", () => {
         "fill-extrusion-color": "#38bdf8",
         "fill-extrusion-height": ["to-number", ["get", "height"], 0],
         "fill-extrusion-base": 0,
-        "fill-extrusion-opacity": 0.75
-      }
+        "fill-extrusion-opacity": 0.75,
+      },
     });
   });
 });

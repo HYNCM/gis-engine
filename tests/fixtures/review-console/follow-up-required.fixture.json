@@ -2,7 +2,13 @@
   "status": "follow-up-required",
   "delivery": {
     "status": "follow-up-required",
-    "acceptance": { "state": "follow-up-required", "ready": false, "blocked": false, "needsConfirmation": false, "followUpRequired": true },
+    "acceptance": {
+      "state": "follow-up-required",
+      "ready": false,
+      "blocked": false,
+      "needsConfirmation": false,
+      "followUpRequired": true
+    },
     "sections": [
       { "id": "readiness", "state": "ready" },
       { "id": "files", "state": "ready" },
@@ -12,7 +18,12 @@
     ],
     "confirmations": [],
     "followUps": [
-      { "id": "TASK-2026W24-CNS-001", "owner": "@builder", "targetArtifact": "PMTiles archive metadata promotion gate", "reason": "pmtiles-archive-readiness" }
+      {
+        "id": "TASK-2026W24-CNS-001",
+        "owner": "@builder",
+        "targetArtifact": "PMTiles archive metadata promotion gate",
+        "reason": "pmtiles-archive-readiness"
+      }
     ],
     "sourceReadiness": [
       {
@@ -35,7 +46,13 @@
             "maxZoom",
             "bounds"
           ],
-          "policyFields": ["maxArchiveBytes", "maxRootDirectoryBytes", "allowRangeRequests", "maxRangeSegments", "timeoutMs"]
+          "policyFields": [
+            "maxArchiveBytes",
+            "maxRootDirectoryBytes",
+            "allowRangeRequests",
+            "maxRangeSegments",
+            "timeoutMs"
+          ]
         }
       }
     ],
@@ -45,5 +62,10 @@
   "commandEvidence": { "count": 1, "committed": 1, "rolledBack": 0, "traceId": "trace-followup-001" },
   "exportEvidence": { "ready": true, "sourceCount": 1, "layerCount": 1 },
   "diagnostics": [],
-  "spatialQueryEvidence": { "requested": true, "ready": false, "cases": [{ "operation": "point-query", "state": "ready" }], "capabilityGate": "follow-up-required" }
+  "spatialQueryEvidence": {
+    "requested": true,
+    "ready": false,
+    "cases": [{ "operation": "point-query", "state": "ready" }],
+    "capabilityGate": "follow-up-required"
+  }
 }

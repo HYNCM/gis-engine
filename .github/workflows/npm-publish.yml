@@ -34,6 +34,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   verify:
@@ -49,6 +50,7 @@ jobs:
           node-version: "22"
           cache: "pnpm"
       - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
       - run: pnpm build:schema
       - run: pnpm check
 
@@ -89,22 +91,22 @@ jobs:
       # scene3d 在 ai 之前因为 ai 依赖 scene3d
 
       - name: 发布 @gis-engine/engine
-        run: cd packages/engine && pnpm publish --no-git-checks
+        run: cd packages/engine && pnpm publish --no-git-checks --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: 发布 @gis-engine/scene3d
-        run: cd packages/scene3d && pnpm publish --no-git-checks
+        run: cd packages/scene3d && pnpm publish --no-git-checks --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: 发布 @gis-engine/ai
-        run: cd packages/ai && pnpm publish --no-git-checks
+        run: cd packages/ai && pnpm publish --no-git-checks --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: 发布 @gis-engine/cli
-        run: cd packages/cli && pnpm publish --no-git-checks
+        run: cd packages/cli && pnpm publish --no-git-checks --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 

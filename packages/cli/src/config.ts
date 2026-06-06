@@ -5,8 +5,8 @@
  */
 
 import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
 import { homedir } from "node:os";
+import { join } from "node:path";
 
 export interface CliConfig {
   projectName: string;
@@ -161,25 +161,25 @@ export function parseArgs(argv: string[]): CliConfig {
   }
 
   // Env vars override file config but are overridden by flags
-  if (process.env.GIS_ENGINE_TEMPLATE && !argv.some(a => a.startsWith("--template") || a === "-t")) {
+  if (process.env.GIS_ENGINE_TEMPLATE && !argv.some((a) => a.startsWith("--template") || a === "-t")) {
     template = process.env.GIS_ENGINE_TEMPLATE;
   }
-  if (process.env.GIS_ENGINE_PROVIDER && !argv.some(a => a.startsWith("--provider") || a === "-p")) {
+  if (process.env.GIS_ENGINE_PROVIDER && !argv.some((a) => a.startsWith("--provider") || a === "-p")) {
     provider = process.env.GIS_ENGINE_PROVIDER;
   }
-  if (process.env.GIS_ENGINE_PROMPT && !argv.some(a => a.startsWith("--prompt"))) {
+  if (process.env.GIS_ENGINE_PROMPT && !argv.some((a) => a.startsWith("--prompt"))) {
     prompt = process.env.GIS_ENGINE_PROMPT;
   }
-  if (process.env.GIS_ENGINE_MODEL && !argv.some(a => a.startsWith("--model"))) {
+  if (process.env.GIS_ENGINE_MODEL && !argv.some((a) => a.startsWith("--model"))) {
     model = process.env.GIS_ENGINE_MODEL;
   }
-  if (process.env.GIS_ENGINE_BASE_URL && !argv.some(a => a.startsWith("--base-url"))) {
+  if (process.env.GIS_ENGINE_BASE_URL && !argv.some((a) => a.startsWith("--base-url"))) {
     baseUrl = process.env.GIS_ENGINE_BASE_URL;
   }
-  if (process.env.GIS_ENGINE_API_KEY && !argv.some(a => a.startsWith("--api-key"))) {
+  if (process.env.GIS_ENGINE_API_KEY && !argv.some((a) => a.startsWith("--api-key"))) {
     apiKey = process.env.GIS_ENGINE_API_KEY;
   }
-  if (process.env.GIS_ENGINE_TIMEOUT && !argv.some(a => a.startsWith("--timeout"))) {
+  if (process.env.GIS_ENGINE_TIMEOUT && !argv.some((a) => a.startsWith("--timeout"))) {
     const parsed = Number(process.env.GIS_ENGINE_TIMEOUT);
     if (Number.isFinite(parsed) && parsed > 0) timeout = parsed;
   }

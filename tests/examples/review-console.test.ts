@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
-import readyFixture from "../fixtures/review-console/ready.fixture.json";
+import {
+  computeReviewConsoleState,
+  REVIEW_CONSOLE_VERSION,
+  REVIEW_SECTION_IDS,
+} from "../../examples/ai-map-workbench/review-console.mjs";
 import blockedFixture from "../fixtures/review-console/blocked.fixture.json";
-import confirmFixture from "../fixtures/review-console/needs-confirmation.fixture.json";
 import followUpFixture from "../fixtures/review-console/follow-up-required.fixture.json";
-import { computeReviewConsoleState, REVIEW_SECTION_IDS, REVIEW_CONSOLE_VERSION } from "../../examples/ai-map-workbench/review-console.mjs";
+import confirmFixture from "../fixtures/review-console/needs-confirmation.fixture.json";
+import readyFixture from "../fixtures/review-console/ready.fixture.json";
 
 describe("review-console contract", () => {
   it("computes ready state from valid evidence", () => {
@@ -22,7 +26,7 @@ describe("review-console contract", () => {
     expect(result.deliveryStatus).toBe("blocked");
     expect(result.sourceReadiness[0].sourceContract).toMatchObject({
       kind: "schema",
-      state: "explicit"
+      state: "explicit",
     });
     expect(result.sourcePromotionCandidates).toContainEqual(
       expect.objectContaining({
@@ -30,18 +34,18 @@ describe("review-console contract", () => {
         format: "geoparquet",
         sourceContract: expect.objectContaining({
           kind: "schema",
-          state: "explicit"
-        })
-      })
+          state: "explicit",
+        }),
+      }),
     );
-    const dataSection = result.sections.find(s => s.id === "data-and-sources");
+    const dataSection = result.sections.find((s) => s.id === "data-and-sources");
     expect(dataSection?.state).toBe("blocked");
     expect(dataSection?.sources?.[0].format).toBe("geoparquet");
     expect(dataSection?.sources?.[0].sourceContract).toMatchObject({
       kind: "schema",
       state: "explicit",
       metadataFields: expect.arrayContaining(["type", "url", "crs", "encoding"]),
-      policyFields: expect.arrayContaining(["maxFileBytes", "timeoutMs"])
+      policyFields: expect.arrayContaining(["maxFileBytes", "timeoutMs"]),
     });
     expect(dataSection?.promotionCandidates).toContainEqual(
       expect.objectContaining({
@@ -50,9 +54,9 @@ describe("review-console contract", () => {
         state: "blocked",
         sourceContract: expect.objectContaining({
           kind: "schema",
-          state: "explicit"
-        })
-      })
+          state: "explicit",
+        }),
+      }),
     );
   });
 
@@ -78,17 +82,17 @@ describe("review-console contract", () => {
         archiveContract: expect.objectContaining({
           state: "explicit",
           metadataFields: expect.arrayContaining(["specVersion", "archiveBytes"]),
-          policyFields: expect.arrayContaining(["maxArchiveBytes", "timeoutMs"])
+          policyFields: expect.arrayContaining(["maxArchiveBytes", "timeoutMs"]),
         }),
-        target: "PMTiles archive metadata promotion gate"
-      })
+        target: "PMTiles archive metadata promotion gate",
+      }),
     );
-    const dataSection = result.sections.find(s => s.id === "data-and-sources");
+    const dataSection = result.sections.find((s) => s.id === "data-and-sources");
     expect(dataSection?.state).toBe("follow-up-required");
     expect(dataSection?.sources?.[0].state).toBe("readiness-only");
     expect(dataSection?.sources?.[0].resourcePolicy).toBe("passed");
     expect(dataSection?.sources?.[0].archiveContract).toMatchObject({
-      state: "explicit"
+      state: "explicit",
     });
     expect(dataSection?.promotionCandidates).toContainEqual(
       expect.objectContaining({
@@ -97,9 +101,9 @@ describe("review-console contract", () => {
         state: "readiness-only",
         resourcePolicy: "passed",
         archiveContract: expect.objectContaining({
-          state: "explicit"
-        })
-      })
+          state: "explicit",
+        }),
+      }),
     );
   });
 
@@ -111,7 +115,7 @@ describe("review-console contract", () => {
 
   it("returns all six review section IDs", () => {
     const result = computeReviewConsoleState(readyFixture);
-    const sectionIds = result.sections.map(s => s.id);
+    const sectionIds = result.sections.map((s) => s.id);
     expect(sectionIds).toEqual(REVIEW_SECTION_IDS);
   });
 
@@ -123,14 +127,14 @@ describe("review-console contract", () => {
 
   it("scene-browsing section always reports stableRuntimeBlocked: true", () => {
     const result = computeReviewConsoleState(readyFixture);
-    const scene = result.sections.find(s => s.id === "scene-browsing");
+    const scene = result.sections.find((s) => s.id === "scene-browsing");
     expect(scene?.evidence.stableRuntimeBlocked).toBe(true);
     expect(scene?.evidence.extensionOnly).toBe(true);
   });
 
   it("map-edits section reflects command evidence", () => {
     const ready = computeReviewConsoleState(readyFixture);
-    const mapEdits = ready.sections.find(s => s.id === "map-edits");
+    const mapEdits = ready.sections.find((s) => s.id === "map-edits");
     expect(mapEdits?.state).toBe("ready");
     expect(mapEdits?.evidence.commandCount).toBe(3);
     expect(mapEdits?.evidence.committed).toBe(3);
@@ -138,7 +142,7 @@ describe("review-console contract", () => {
 
   it("files-and-export section is side-effect free", () => {
     const result = computeReviewConsoleState(readyFixture);
-    const files = result.sections.find(s => s.id === "files-and-export");
+    const files = result.sections.find((s) => s.id === "files-and-export");
     expect(files?.evidence.sideEffectFree).toBe(true);
   });
 });

@@ -30,13 +30,13 @@ export const DiagnosticCodes = {
   SecurityUnsupportedAssetType: "SECURITY.UNSUPPORTED_ASSET_TYPE",
   GeoInvalidCoordinates: "GEO.INVALID_COORDINATES",
   GeoEmptyBbox: "GEO.EMPTY_BBOX",
-  SchemaInvalid: "SCHEMA.INVALID"
+  SchemaInvalid: "SCHEMA.INVALID",
 } as const;
 
 export const Scene3DStableRuntimeBlockerCodes = {
   ViewMode: "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED",
   Renderer: "SCENE3D.STABLE_RUNTIME_RENDERER_BLOCKED",
-  Dimensions: "SCENE3D.STABLE_RUNTIME_DIMENSIONS_BLOCKED"
+  Dimensions: "SCENE3D.STABLE_RUNTIME_DIMENSIONS_BLOCKED",
 } as const;
 
 export type DiagnosticCode = (typeof DiagnosticCodes)[keyof typeof DiagnosticCodes];

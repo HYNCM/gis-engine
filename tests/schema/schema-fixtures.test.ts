@@ -1,22 +1,22 @@
+import { type MapSpec, Scene3DStableRuntimeBlockerCodes, validateSpec } from "@gis-engine/engine";
 import { describe, expect, it } from "vitest";
-import invalidSpec from "../fixtures/specs/invalid/layer-source-missing.map.json";
 import expectedInvalidCodes from "../fixtures/specs/invalid/layer-source-missing.diagnostics.json";
-import invalidScene3dBlockedUrl from "../fixtures/specs/invalid/scene3d-extension-blocked-url.map.json";
+import invalidSpec from "../fixtures/specs/invalid/layer-source-missing.map.json";
 import expectedScene3dBlockedUrlDiagnostics from "../fixtures/specs/invalid/scene3d-extension-blocked-url.diagnostics.json";
-import invalidScene3dUnknownField from "../fixtures/specs/invalid/scene3d-extension-unknown-field.map.json";
+import invalidScene3dBlockedUrl from "../fixtures/specs/invalid/scene3d-extension-blocked-url.map.json";
 import expectedScene3dUnknownFieldDiagnostics from "../fixtures/specs/invalid/scene3d-extension-unknown-field.diagnostics.json";
+import invalidScene3dUnknownField from "../fixtures/specs/invalid/scene3d-extension-unknown-field.map.json";
 import basicGeoJson from "../fixtures/specs/valid/basic-geojson.map.json";
-import vectorTileUrl from "../fixtures/specs/valid/vector-tile-url.map.json";
 import fillExtrusionLite from "../fixtures/specs/valid/fill-extrusion-lite.map.json";
 import scene3dExtension from "../fixtures/specs/valid/scene3d-extension.map.json";
-import { Scene3DStableRuntimeBlockerCodes, validateSpec, type MapSpec } from "@gis-engine/engine";
+import vectorTileUrl from "../fixtures/specs/valid/vector-tile-url.map.json";
 
 describe("MapSpec fixtures", () => {
   it.each([
     ["basic-geojson", basicGeoJson],
     ["vector-tile-url", vectorTileUrl],
     ["fill-extrusion-lite", fillExtrusionLite],
-    ["scene3d-extension", scene3dExtension]
+    ["scene3d-extension", scene3dExtension],
   ])("accepts valid fixture %s", (_name, spec) => {
     const report = validateSpec(spec);
     expect(report.valid).toBe(true);
@@ -31,7 +31,7 @@ describe("MapSpec fixtures", () => {
 
   it.each([
     ["scene3d-extension-blocked-url", invalidScene3dBlockedUrl, expectedScene3dBlockedUrlDiagnostics],
-    ["scene3d-extension-unknown-field", invalidScene3dUnknownField, expectedScene3dUnknownFieldDiagnostics]
+    ["scene3d-extension-unknown-field", invalidScene3dUnknownField, expectedScene3dUnknownFieldDiagnostics],
   ])("reports expected diagnostics for invalid fixture %s", (_name, spec, expectedDiagnostics) => {
     const report = validateSpec(spec);
 
@@ -45,7 +45,7 @@ describe("MapSpec fixtures", () => {
     const spec = structuredClone(basicGeoJson) as MapSpec;
     spec.layers[1] = {
       ...spec.layers[1]!,
-      type: "fill-extrusion-lite"
+      type: "fill-extrusion-lite",
     };
 
     const missingGate = validateSpec(spec);
@@ -53,14 +53,14 @@ describe("MapSpec fixtures", () => {
     expect(missingGate.diagnostics).toContainEqual(
       expect.objectContaining({
         code: "CAPABILITY.UNSUPPORTED",
-        path: "/layers/1/type"
-      })
+        path: "/layers/1/type",
+      }),
     );
 
     spec.view.mode = "map2_5d";
     spec.capabilities = {
       dimensions: ["2_5d"],
-      experimental: ["fill-extrusion-lite"]
+      experimental: ["fill-extrusion-lite"],
     };
 
     const withGate = validateSpec(spec);
@@ -74,7 +74,7 @@ describe("MapSpec fixtures", () => {
     spec.capabilities = {
       renderer: "scene3d",
       dimensions: ["3d"],
-      experimental: ["scene3d"]
+      experimental: ["scene3d"],
     };
 
     const report = validateSpec(spec);
@@ -84,19 +84,19 @@ describe("MapSpec fixtures", () => {
         expect.objectContaining({
           code: "CAPABILITY.UNSUPPORTED",
           blockerCode: Scene3DStableRuntimeBlockerCodes.ViewMode,
-          path: "/view/mode"
+          path: "/view/mode",
         }),
         expect.objectContaining({
           code: "CAPABILITY.UNSUPPORTED",
           blockerCode: Scene3DStableRuntimeBlockerCodes.Renderer,
-          path: "/capabilities/renderer"
+          path: "/capabilities/renderer",
         }),
         expect.objectContaining({
           code: "CAPABILITY.UNSUPPORTED",
           blockerCode: Scene3DStableRuntimeBlockerCodes.Dimensions,
-          path: "/capabilities/dimensions"
-        })
-      ])
+          path: "/capabilities/dimensions",
+        }),
+      ]),
     );
   });
 });

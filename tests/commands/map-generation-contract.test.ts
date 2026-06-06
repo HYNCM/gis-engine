@@ -1,15 +1,15 @@
-import { describe, expect, it } from "vitest";
 import {
   createMapGenerationCommandSkeleton,
-  planMapGenerationRequest,
   MapGenerationCommandSkeletonSchema,
   MapGenerationPromptPlannerInputSchema,
   MapGenerationPromptPlanSchema,
+  type MapGenerationRequestFromSchema,
   MapGenerationRequestSchema,
+  planMapGenerationRequest,
   validateSpec,
-  type MapGenerationRequestFromSchema
 } from "@gis-engine/engine";
 import Ajv from "ajv";
+import { describe, expect, it } from "vitest";
 
 describe("map generation command skeleton contract", () => {
   it("turns feature-display generation input into auditable commands and a valid MapSpec", () => {
@@ -21,20 +21,20 @@ describe("map generation command skeleton contract", () => {
       targetDomains: ["feature-display", "spatial-analysis"],
       capabilities: {
         dimensions: ["2d"],
-        renderer: "maplibre"
+        renderer: "maplibre",
       },
       view: {
         center: [120.15, 30.28],
-        zoom: 11
+        zoom: 11,
       },
       sources: {
         services: {
           type: "geojson",
           data: {
             type: "FeatureCollection",
-            features: []
-          }
-        }
+            features: [],
+          },
+        },
       },
       layers: [
         {
@@ -43,15 +43,15 @@ describe("map generation command skeleton contract", () => {
           source: "services",
           paint: {
             "circle-color": "#2563eb",
-            "circle-radius": 6
-          }
-        }
+            "circle-radius": 6,
+          },
+        },
       ],
       interactions: {
         hover: true,
         click: true,
-        popup: true
-      }
+        popup: true,
+      },
     };
 
     const skeleton = createMapGenerationCommandSkeleton(request);
@@ -63,7 +63,7 @@ describe("map generation command skeleton contract", () => {
       "setView",
       "addSource",
       "addLayer",
-      "setInteractions"
+      "setInteractions",
     ]);
     expect(skeleton.commands.every((command) => command.sourcePromptHash === "sha256:nla-city-services")).toBe(true);
     expect(skeleton.spec.id).toBe("nla-city-services");
@@ -77,14 +77,14 @@ describe("map generation command skeleton contract", () => {
       status: "blocked",
       requestedOperations: [],
       acceptedQueryOperations: [],
-      blockedOperations: []
+      blockedOperations: [],
     });
     expect(skeleton.diagnostics).toEqual([
       expect.objectContaining({
         severity: "warning",
         code: "CAPABILITY.UNSUPPORTED",
-        path: "/targetDomains"
-      })
+        path: "/targetDomains",
+      }),
     ]);
   });
 
@@ -95,8 +95,8 @@ describe("map generation command skeleton contract", () => {
       view: { mode: "scene3d" },
       capabilities: {
         dimensions: ["3d"],
-        renderer: "scene3d"
-      }
+        renderer: "scene3d",
+      },
     });
 
     expect(skeleton.status).toBe("blocked");
@@ -107,19 +107,19 @@ describe("map generation command skeleton contract", () => {
         expect.objectContaining({
           code: "CAPABILITY.UNSUPPORTED",
           blockerCode: "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED",
-          path: "/view/mode"
+          path: "/view/mode",
         }),
         expect.objectContaining({
           code: "CAPABILITY.UNSUPPORTED",
           blockerCode: "SCENE3D.STABLE_RUNTIME_RENDERER_BLOCKED",
-          path: "/capabilities/renderer"
+          path: "/capabilities/renderer",
         }),
         expect.objectContaining({
           code: "CAPABILITY.UNSUPPORTED",
           blockerCode: "SCENE3D.STABLE_RUNTIME_DIMENSIONS_BLOCKED",
-          path: "/capabilities/dimensions"
-        })
-      ])
+          path: "/capabilities/dimensions",
+        }),
+      ]),
     );
   });
 
@@ -131,9 +131,9 @@ describe("map generation command skeleton contract", () => {
           type: "geojson",
           data: {
             type: "FeatureCollection",
-            features: []
-          }
-        }
+            features: [],
+          },
+        },
       },
       layers: [
         {
@@ -141,31 +141,36 @@ describe("map generation command skeleton contract", () => {
           type: "fill",
           source: "districts",
           paint: {
-            "fill-color": "#22c55e"
-          }
-        }
+            "fill-color": "#22c55e",
+          },
+        },
       ],
       styleEdits: [
         {
           layerId: "district-fill",
           paint: {
-            "fill-opacity": 0.45
+            "fill-opacity": 0.45,
           },
           layout: {
-            visibility: "visible"
-          }
-        }
-      ]
+            visibility: "visible",
+          },
+        },
+      ],
     });
 
     expect(skeleton.status).toBe("ready");
-    expect(skeleton.commands.map((command) => command.type)).toEqual(["addSource", "addLayer", "setPaint", "setLayout"]);
+    expect(skeleton.commands.map((command) => command.type)).toEqual([
+      "addSource",
+      "addLayer",
+      "setPaint",
+      "setLayout",
+    ]);
     expect(skeleton.spec.layers[0]?.paint).toEqual({
       "fill-color": "#22c55e",
-      "fill-opacity": 0.45
+      "fill-opacity": 0.45,
     });
     expect(skeleton.spec.layers[0]?.layout).toEqual({
-      visibility: "visible"
+      visibility: "visible",
     });
   });
 
@@ -174,8 +179,8 @@ describe("map generation command skeleton contract", () => {
       mapId: "blocked-analysis",
       targetDomains: ["spatial-analysis"],
       analysis: {
-        operations: ["point-query", "buffer", "routing"]
-      }
+        operations: ["point-query", "buffer", "routing"],
+      },
     });
 
     expect(skeleton.status).toBe("blocked");
@@ -185,35 +190,35 @@ describe("map generation command skeleton contract", () => {
       status: "blocked",
       requestedOperations: ["point-query", "buffer", "routing"],
       acceptedQueryOperations: ["point-query"],
-      blockedOperations: ["buffer", "routing"]
+      blockedOperations: ["buffer", "routing"],
     });
     expect(skeleton.analysisEvidence.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           severity: "error",
           code: "CAPABILITY.UNSUPPORTED",
-          path: "/analysis/operations/1"
+          path: "/analysis/operations/1",
         }),
         expect.objectContaining({
           severity: "error",
           code: "CAPABILITY.UNSUPPORTED",
-          path: "/analysis/operations/2"
-        })
-      ])
+          path: "/analysis/operations/2",
+        }),
+      ]),
     );
     expect(skeleton.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           severity: "error",
           code: "CAPABILITY.UNSUPPORTED",
-          path: "/analysis/operations/1"
+          path: "/analysis/operations/1",
         }),
         expect.objectContaining({
           severity: "error",
           code: "CAPABILITY.UNSUPPORTED",
-          path: "/analysis/operations/2"
-        })
-      ])
+          path: "/analysis/operations/2",
+        }),
+      ]),
     );
   });
 
@@ -224,47 +229,51 @@ describe("map generation command skeleton contract", () => {
       scene3d: {
         camera: {
           position: [120.15, 30.28, 1200],
-          target: [120.15, 30.28, 0]
+          target: [120.15, 30.28, 0],
         },
         sources: {
           city: {
             type: "3d-tiles",
-            url: "./data/city/tileset.json"
-          }
+            url: "./data/city/tileset.json",
+          },
         },
         layers: [
           {
             id: "city",
             type: "tileset3d",
             source: "city",
-            pickable: true
-          }
-        ]
-      }
+            pickable: true,
+          },
+        ],
+      },
     });
 
     expect(skeleton.status).toBe("ready");
-    expect(skeleton.commands.map((command) => command.type)).toEqual(["setSceneCamera", "addSceneSource", "addSceneLayer"]);
+    expect(skeleton.commands.map((command) => command.type)).toEqual([
+      "setSceneCamera",
+      "addSceneSource",
+      "addSceneLayer",
+    ]);
     expect(skeleton.spec.view.mode).toBe("map2d");
     expect(skeleton.spec.extensions?.scene3d).toMatchObject({
       camera: {
         position: [120.15, 30.28, 1200],
-        target: [120.15, 30.28, 0]
+        target: [120.15, 30.28, 0],
       },
       sources: {
         city: {
           type: "3d-tiles",
-          url: "./data/city/tileset.json"
-        }
+          url: "./data/city/tileset.json",
+        },
       },
       layers: [
         {
           id: "city",
           type: "tileset3d",
           source: "city",
-          pickable: true
-        }
-      ]
+          pickable: true,
+        },
+      ],
     });
   });
 
@@ -278,16 +287,16 @@ describe("map generation command skeleton contract", () => {
         targetDomains: ["feature-display", "spatial-analysis"],
         capabilities: {
           dimensions: ["2d"],
-          renderer: "maplibre"
+          renderer: "maplibre",
         },
         sources: {
           services: {
             type: "geojson",
             data: {
               type: "FeatureCollection",
-              features: []
-            }
-          }
+              features: [],
+            },
+          },
         },
         layers: [
           {
@@ -295,14 +304,14 @@ describe("map generation command skeleton contract", () => {
             type: "circle",
             source: "services",
             paint: {
-              "circle-color": "#0f766e"
-            }
-          }
+              "circle-color": "#0f766e",
+            },
+          },
         ],
         analysis: {
-          operations: ["point-query"]
-        }
-      }
+          operations: ["point-query"],
+        },
+      },
     });
 
     expect(plan.status).toBe("ready");
@@ -310,14 +319,14 @@ describe("map generation command skeleton contract", () => {
       mapId: "planner-city-services",
       promptHash: "sha256:planner-city-services",
       traceId: "trace-planner-city-services",
-      targetDomains: ["feature-display", "spatial-analysis"]
+      targetDomains: ["feature-display", "spatial-analysis"],
     });
     expect(plan.provenance).toEqual({
       plannerId: "structured-intent-v0.1",
       promptHash: "sha256:planner-city-services",
       retainedRawPrompt: false,
       acceptedIntentFields: ["analysis", "capabilities", "layers", "mapId", "sources", "targetDomains"],
-      unsupportedIntentFields: []
+      unsupportedIntentFields: [],
     });
 
     const skeleton = createMapGenerationCommandSkeleton(plan.request);
@@ -328,12 +337,12 @@ describe("map generation command skeleton contract", () => {
       status: "ready",
       requestedOperations: ["point-query"],
       acceptedQueryOperations: ["point-query"],
-      blockedOperations: []
+      blockedOperations: [],
     });
     expect(skeleton.commands.map((command) => command.sourcePromptHash)).toEqual([
       "sha256:planner-city-services",
       "sha256:planner-city-services",
-      "sha256:planner-city-services"
+      "sha256:planner-city-services",
     ]);
     expect(validateSpec(skeleton.spec).valid).toBe(true);
   });
@@ -343,27 +352,27 @@ describe("map generation command skeleton contract", () => {
       promptHash: "sha256:raw-prompt",
       rawPrompt: "Show me every sensitive source exactly as typed.",
       intent: {
-        mapId: "raw-prompt"
-      }
+        mapId: "raw-prompt",
+      },
     });
 
     expect(plan.status).toBe("blocked");
     expect(plan.request).toEqual({
       promptHash: "sha256:raw-prompt",
-      traceId: "planner.sha256-raw-prompt"
+      traceId: "planner.sha256-raw-prompt",
     });
     expect(plan.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           severity: "error",
           code: "SPEC.UNKNOWN_FIELD",
-          path: "/rawPrompt"
-        })
-      ])
+          path: "/rawPrompt",
+        }),
+      ]),
     );
     expect(plan.provenance).toMatchObject({
       retainedRawPrompt: false,
-      unsupportedIntentFields: expect.arrayContaining(["rawPrompt"])
+      unsupportedIntentFields: expect.arrayContaining(["rawPrompt"]),
     });
   });
 
@@ -377,7 +386,7 @@ describe("map generation command skeleton contract", () => {
     const skeleton = createMapGenerationCommandSkeleton({
       mapId: "schema-check",
       sources: {},
-      layers: []
+      layers: [],
     });
 
     expect(validateRequest({ mapId: "schema-check", unexpected: true })).toBe(false);

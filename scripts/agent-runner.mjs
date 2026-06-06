@@ -18,23 +18,10 @@
  */
 
 import { execSync } from "node:child_process";
-import {
-  mkdirSync,
-  writeFileSync,
-  readFileSync,
-  openSync,
-  closeSync,
-  unlinkSync,
-  statSync,
-} from "node:fs";
-import { join, dirname } from "node:path";
+import { closeSync, mkdirSync, openSync, readFileSync, statSync, unlinkSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  AGENT_REGISTRY,
-  getAgentOutput,
-  listAgentNames,
-  resolveAgentName,
-} from "./agent-registry.mjs";
+import { AGENT_REGISTRY, getAgentOutput, listAgentNames, resolveAgentName } from "./agent-registry.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
@@ -50,9 +37,7 @@ function getDateStr() {
 /** 获取当前周字符串 */
 function getWeekStr() {
   const d = new Date();
-  const utcDate = new Date(
-    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
-  );
+  const utcDate = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
   const day = utcDate.getUTCDay() || 7;
   utcDate.setUTCDate(utcDate.getUTCDate() + 4 - day);
   const isoYear = utcDate.getUTCFullYear();
@@ -70,19 +55,14 @@ function getMonthStr() {
 /** 获取 Git SHA */
 function getGitSha() {
   try {
-    return execSync("git rev-parse --short HEAD", { cwd: ROOT })
-      .toString()
-      .trim();
+    return execSync("git rev-parse --short HEAD", { cwd: ROOT }).toString().trim();
   } catch {
     return "unknown";
   }
 }
 
 function sleep(ms) {
-  if (
-    typeof Atomics !== "undefined" &&
-    typeof SharedArrayBuffer !== "undefined"
-  ) {
+  if (typeof Atomics !== "undefined" && typeof SharedArrayBuffer !== "undefined") {
     Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
     return;
   }
@@ -111,9 +91,7 @@ function acquireRunLock(lockPath, { maxAttempts = 50, intervalMs = 100 } = {}) {
         // ignore stale metadata errors
       }
       if (attempt >= maxAttempts) {
-        throw new Error(
-          `Could not acquire agent-runner lock at ${lockPath} after ${attempt} attempts`,
-        );
+        throw new Error(`Could not acquire agent-runner lock at ${lockPath} after ${attempt} attempts`);
       }
       sleep(intervalMs);
     }
@@ -143,10 +121,7 @@ class PlanningStateManager {
   }
 
   /** 为规划文件获取文件级锁 */
-  acquireFileLock(
-    relativeFilePath,
-    { maxAttempts = 30, intervalMs = 200 } = {},
-  ) {
+  acquireFileLock(relativeFilePath, { maxAttempts = 30, intervalMs = 200 } = {}) {
     const lockPath = join(this.root, `${relativeFilePath}.lock`);
     let attempt = 0;
     while (true) {
@@ -170,9 +145,7 @@ class PlanningStateManager {
           // ignore stale metadata errors
         }
         if (attempt >= maxAttempts) {
-          throw new Error(
-            `Could not acquire planning lock for ${relativeFilePath} after ${attempt} attempts`,
-          );
+          throw new Error(`Could not acquire planning lock for ${relativeFilePath} after ${attempt} attempts`);
         }
         sleep(intervalMs);
       }
@@ -204,7 +177,7 @@ class PlanningStateManager {
 
       // 匹配 TASK-YYYY-NAME-NNN 模式，并尝试找到所有者信息
       const taskPattern = /TASK-\d{4}[A-Z]+-\d{3}/g;
-      const ownerPattern = /owner[:\s]+`?@([\w-]+)`?/gi;
+      const _ownerPattern = /owner[:\s]+`?@([\w-]+)`?/gi;
 
       let match;
       while ((match = taskPattern.exec(content)) !== null) {
@@ -303,12 +276,7 @@ class HealthCheck {
       orchestrator: ["docs/planning", "docs/research", "docs/reviews"],
       product: ["docs/research"],
       quality: ["packages", "tests", "docs/reviews"],
-      builder: [
-        "packages/engine",
-        "packages/ai",
-        "packages/scene3d-three-adapter",
-        "tests",
-      ],
+      builder: ["packages/engine", "packages/ai", "packages/scene3d-three-adapter", "tests"],
       docs: ["docs", "README.md", "CHANGELOG.md"],
     };
 
@@ -348,10 +316,7 @@ class HealthCheck {
       }
 
       // 必须有机生成标识
-      if (
-        !content.includes("automation-generated") &&
-        !content.includes("Automation Notice")
-      ) {
+      if (!content.includes("automation-generated") && !content.includes("Automation Notice")) {
         issues.push("缺少自动化生成标识");
       }
 
@@ -381,10 +346,7 @@ class HealthCheck {
         continue; // ad-hoc agent 不强制
       }
 
-      const { outputDir } = getAgentOutput(
-        def,
-        def.period === "daily" ? todayStr : getWeekStr(),
-      );
+      const { outputDir } = getAgentOutput(def, def.period === "daily" ? todayStr : getWeekStr());
       const reportPath = join(this.root, outputDir, expectedFile);
       try {
         const stats = statSync(reportPath);
@@ -435,7 +397,7 @@ function formatGateOutput(output) {
 }
 
 /** 生成 YAML front matter */
-function generateFrontMatter(agentName, agentDef, period, gateResults) {
+function generateFrontMatter(agentName, agentDef, period, _gateResults) {
   const now = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
   const decisionLevel = getReportDecisionLevel();
   const reportAgent = agentDef.reportAgent ?? agentName;
@@ -529,9 +491,7 @@ function generateReport(agentName, agentDef, period, gateResults) {
   } else {
     lines.push("## Machine Gate Evidence");
     lines.push("");
-    lines.push(
-      "No gates were run by this invocation. This report is template-only evidence.",
-    );
+    lines.push("No gates were run by this invocation. This report is template-only evidence.");
     lines.push("");
   }
 
@@ -544,9 +504,7 @@ function generateReport(agentName, agentDef, period, gateResults) {
 
   lines.push("## Handoff Required");
   lines.push("");
-  lines.push(
-    "<!-- Add accepted follow-up tasks, downstream owners, and target artifacts after specialist review. -->",
-  );
+  lines.push("<!-- Add accepted follow-up tasks, downstream owners, and target artifacts after specialist review. -->");
   lines.push("");
 
   return lines.join("\n");
@@ -589,9 +547,7 @@ Agent Runner — GIS Engine 多智能体调用脚本
   }
 
   if (rawAgentName !== agentName && rawAgentName !== "all") {
-    console.warn(
-      `⚠️ 旧智能体入口 ${rawAgentName} 已映射到 ${agentName}，请迁移到新 5-agent 命名。`,
-    );
+    console.warn(`⚠️ 旧智能体入口 ${rawAgentName} 已映射到 ${agentName}，请迁移到新 5-agent 命名。`);
   }
 
   // 解析选项
@@ -668,10 +624,8 @@ Agent Runner — GIS Engine 多智能体调用脚本
       // 确定周期
       let period = options.period;
       if (!period) {
-        if (periodType === "daily" || def.period === "daily")
-          period = getDateStr();
-        else if (periodType === "weekly" || def.period === "weekly")
-          period = getWeekStr();
+        if (periodType === "daily" || def.period === "daily") period = getDateStr();
+        else if (periodType === "weekly" || def.period === "weekly") period = getWeekStr();
         else if (def.period === "monthly") period = getMonthStr();
         else period = getDateStr();
       }

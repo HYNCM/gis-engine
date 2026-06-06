@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import ChatPanel from "./components/ChatPanel";
-import MapStage from "./components/MapStage";
 import EvidencePanel from "./components/EvidencePanel";
+import MapStage from "./components/MapStage";
 
 export interface ServerState {
   status: "ready" | "loading" | "blocked" | "applied" | "reviewed";
@@ -151,11 +151,7 @@ export interface SavedMapHandoff {
     updatedAt: string;
   };
   handoff: {
-    status:
-      | "needs-review"
-      | "accepted"
-      | "blocked"
-      | "follow-up-required";
+    status: "needs-review" | "accepted" | "blocked" | "follow-up-required";
     latestReviewDecisionId: string | null;
     latestReviewOutcome: string | null;
     followUpTaskIds: string[];
@@ -182,11 +178,7 @@ export interface SavedMapReviewLedger {
     updatedAt: string;
   };
   handoff: {
-    status:
-      | "needs-review"
-      | "accepted"
-      | "blocked"
-      | "follow-up-required";
+    status: "needs-review" | "accepted" | "blocked" | "follow-up-required";
     latestReviewDecisionId: string | null;
     latestReviewOutcome: string | null;
     followUpTaskIds: string[];
@@ -235,17 +227,8 @@ export interface SavedMapReviewLedger {
   };
 }
 
-export type SavedMapReviewLedgerAuditStatus =
-  | "all"
-  | "applied"
-  | "blocked"
-  | "ready"
-  | "reviewed";
-export type SavedMapReviewLedgerReviewOutcome =
-  | "all"
-  | "accepted"
-  | "blocked"
-  | "follow-up-required";
+export type SavedMapReviewLedgerAuditStatus = "all" | "applied" | "blocked" | "ready" | "reviewed";
+export type SavedMapReviewLedgerReviewOutcome = "all" | "accepted" | "blocked" | "follow-up-required";
 
 export interface SavedMapReviewLedgerQuery {
   auditStatus?: SavedMapReviewLedgerAuditStatus;
@@ -305,11 +288,7 @@ export interface SavedMapReviewExport {
     updatedAt: string;
   };
   handoff: {
-    status:
-      | "needs-review"
-      | "accepted"
-      | "blocked"
-      | "follow-up-required";
+    status: "needs-review" | "accepted" | "blocked" | "follow-up-required";
     latestReviewDecisionId: string | null;
     latestReviewOutcome: string | null;
   };
@@ -348,19 +327,13 @@ function buildLoadedWorkspaceEvidence(
   }
 
   return {
-    ...(latestReview?.commandEvidence
-      ? { commandEvidence: latestReview.commandEvidence }
-      : {}),
+    ...(latestReview?.commandEvidence ? { commandEvidence: latestReview.commandEvidence } : {}),
     ...(providerSource
       ? {
           provider: {
             providerId: providerSource.providerId,
-            ...(providerSource.promptHash
-              ? { promptHash: providerSource.promptHash }
-              : {}),
-            ...(providerSource.traceId
-              ? { traceId: providerSource.traceId }
-              : {}),
+            ...(providerSource.promptHash ? { promptHash: providerSource.promptHash } : {}),
+            ...(providerSource.traceId ? { traceId: providerSource.traceId } : {}),
           },
         }
       : {}),
@@ -382,13 +355,9 @@ export default function App() {
   const [auditRecords, setAuditRecords] = useState<AuditRecord[]>([]);
   const [reviewDecisions, setReviewDecisions] = useState<ReviewDecision[]>([]);
   const [savedMaps, setSavedMaps] = useState<SavedMapSummary[]>([]);
-  const [selectedHandoff, setSelectedHandoff] = useState<SavedMapHandoff | null>(
-    null,
-  );
-  const [selectedLedger, setSelectedLedger] =
-    useState<SavedMapReviewLedger | null>(null);
-  const [selectedExport, setSelectedExport] =
-    useState<SavedMapReviewExport | null>(null);
+  const [selectedHandoff, setSelectedHandoff] = useState<SavedMapHandoff | null>(null);
+  const [selectedLedger, setSelectedLedger] = useState<SavedMapReviewLedger | null>(null);
+  const [selectedExport, setSelectedExport] = useState<SavedMapReviewExport | null>(null);
 
   const flashSavedMsg = useCallback((message: string) => {
     setSavedMsg(message);
@@ -469,18 +438,10 @@ export default function App() {
     setMessages([
       {
         role: "assistant",
-        content:
-          "Welcome! Try: 'make points red', 'show only landmarks', or 'make points visible above zoom 12'.",
+        content: "Welcome! Try: 'make points red', 'show only landmarks', or 'make points visible above zoom 12'.",
       },
     ]);
-  }, [
-    fetchAudit,
-    fetchBasemaps,
-    fetchMaps,
-    fetchProviders,
-    fetchReviewDecisions,
-    fetchState,
-  ]);
+  }, [fetchAudit, fetchBasemaps, fetchMaps, fetchProviders, fetchReviewDecisions, fetchState]);
 
   const sendMessage = async (text: string): Promise<ServerState | null> => {
     setMessages((previous) => [...previous, { role: "user", content: text }]);
@@ -495,9 +456,7 @@ export default function App() {
       const data: ServerState = await response.json();
       const commandEvidence = data.commandEvidence;
       const diagnostics = data.diagnostics || [];
-      const errorCount = diagnostics.filter(
-        (diagnostic) => diagnostic.severity === "error",
-      ).length;
+      const errorCount = diagnostics.filter((diagnostic) => diagnostic.severity === "error").length;
       const reply =
         data.status === "applied"
           ? `Done. ${commandEvidence?.changedPathCount ?? 0} path(s) changed.`
@@ -520,12 +479,7 @@ export default function App() {
       ]);
       setServerState(data);
       setStatus(data.status);
-      await Promise.all([
-        fetchAudit(),
-        fetchReviewDecisions(),
-        fetchBasemaps(),
-        fetchMaps(),
-      ]);
+      await Promise.all([fetchAudit(), fetchReviewDecisions(), fetchBasemaps(), fetchMaps()]);
       return data;
     } catch (error) {
       setMessages((previous) => [
@@ -540,56 +494,53 @@ export default function App() {
     }
   };
 
-  const submitReviewDecision = useCallback(
-    async (request: ReviewDecisionRequest) => {
-      const payload = {
-        outcome: request.outcome,
-        reasonCodes: request.reasonCodes,
-        ...(request.followUpTaskIds && request.followUpTaskIds.length > 0
-          ? { followUpTaskIds: request.followUpTaskIds }
-          : {}),
-      };
-      try {
-        const response = await fetch("/api/review-decision", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        const data = await response.json();
-        const diagnostics = data.diagnostics || [];
-        const reply = data.decision
-          ? `Review recorded: ${data.decision.outcome}.`
-          : "Review could not be recorded. See evidence.";
+  const submitReviewDecision = useCallback(async (request: ReviewDecisionRequest) => {
+    const payload = {
+      outcome: request.outcome,
+      reasonCodes: request.reasonCodes,
+      ...(request.followUpTaskIds && request.followUpTaskIds.length > 0
+        ? { followUpTaskIds: request.followUpTaskIds }
+        : {}),
+    };
+    try {
+      const response = await fetch("/api/review-decision", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      const diagnostics = data.diagnostics || [];
+      const reply = data.decision
+        ? `Review recorded: ${data.decision.outcome}.`
+        : "Review could not be recorded. See evidence.";
 
-        setMessages((previous) => [
-          ...previous,
-          {
-            role: "assistant",
-            content: reply,
-            status: data.status,
-            evidence: {
-              commandEvidence: data.commandEvidence,
-              diagnostics,
-            },
+      setMessages((previous) => [
+        ...previous,
+        {
+          role: "assistant",
+          content: reply,
+          status: data.status,
+          evidence: {
+            commandEvidence: data.commandEvidence,
+            diagnostics,
           },
-        ]);
-        setStatus(data.status || "reviewed");
-        if (Array.isArray(data.decisions)) {
-          setReviewDecisions(data.decisions);
-        }
-      } catch (error) {
-        setMessages((previous) => [
-          ...previous,
-          {
-            role: "assistant",
-            content: `Review error: ${error instanceof Error ? error.message : "Unknown error"}`,
-          },
-        ]);
-        setStatus("blocked");
+        },
+      ]);
+      setStatus(data.status || "reviewed");
+      if (Array.isArray(data.decisions)) {
+        setReviewDecisions(data.decisions);
       }
-    },
-    [],
-  );
+    } catch (error) {
+      setMessages((previous) => [
+        ...previous,
+        {
+          role: "assistant",
+          content: `Review error: ${error instanceof Error ? error.message : "Unknown error"}`,
+        },
+      ]);
+      setStatus("blocked");
+    }
+  }, []);
 
   const saveMap = async () => {
     try {
@@ -657,111 +608,86 @@ export default function App() {
     [fetchBasemaps, fetchMaps, flashSavedMsg],
   );
 
-  const inspectSavedMap = useCallback(
-    async (mapId: string) => {
-      try {
-        const response = await fetch(`/api/maps/${mapId}/handoff`);
-        const data = (await response.json()) as SavedMapHandoff | { error?: string };
-        if (!response.ok) {
-          throw new Error(
-            "error" in data && typeof data.error === "string"
-              ? data.error
-              : "Inspect failed",
-          );
-        }
-        setSelectedHandoff(data as SavedMapHandoff);
-        setSelectedLedger(null);
-        setSelectedExport(null);
-      } catch (error) {
-        setMessages((previous) => [
-          ...previous,
-          {
-            role: "assistant",
-            content: `Inspect error: ${error instanceof Error ? error.message : "Unknown error"}`,
-          },
-        ]);
+  const inspectSavedMap = useCallback(async (mapId: string) => {
+    try {
+      const response = await fetch(`/api/maps/${mapId}/handoff`);
+      const data = (await response.json()) as SavedMapHandoff | { error?: string };
+      if (!response.ok) {
+        throw new Error("error" in data && typeof data.error === "string" ? data.error : "Inspect failed");
       }
-    },
-    [],
-  );
+      setSelectedHandoff(data as SavedMapHandoff);
+      setSelectedLedger(null);
+      setSelectedExport(null);
+    } catch (error) {
+      setMessages((previous) => [
+        ...previous,
+        {
+          role: "assistant",
+          content: `Inspect error: ${error instanceof Error ? error.message : "Unknown error"}`,
+        },
+      ]);
+    }
+  }, []);
 
-  const inspectSavedMapLedger = useCallback(
-    async (mapId: string, query: SavedMapReviewLedgerQuery = {}) => {
-      try {
-        const auditStatus = query.auditStatus ?? "all";
-        const reviewOutcome = query.reviewOutcome ?? "all";
-        const limit = query.limit ?? 25;
-        const params = new URLSearchParams({
-          audit_status: auditStatus,
-          review_outcome: reviewOutcome,
-          limit: String(limit),
-        });
-        const response = await fetch(`/api/maps/${mapId}/review-ledger?${params}`);
-        const data = (await response.json()) as
-          | SavedMapReviewLedger
-          | { error?: string };
-        if (!response.ok) {
-          throw new Error(
-            "error" in data && typeof data.error === "string"
-              ? data.error
-              : "Ledger inspect failed",
-          );
-        }
-        setSelectedLedger(data as SavedMapReviewLedger);
-        setSelectedHandoff(null);
-        setSelectedExport(null);
-      } catch (error) {
-        setMessages((previous) => [
-          ...previous,
-          {
-            role: "assistant",
-            content: `Ledger error: ${error instanceof Error ? error.message : "Unknown error"}`,
-          },
-        ]);
+  const inspectSavedMapLedger = useCallback(async (mapId: string, query: SavedMapReviewLedgerQuery = {}) => {
+    try {
+      const auditStatus = query.auditStatus ?? "all";
+      const reviewOutcome = query.reviewOutcome ?? "all";
+      const limit = query.limit ?? 25;
+      const params = new URLSearchParams({
+        audit_status: auditStatus,
+        review_outcome: reviewOutcome,
+        limit: String(limit),
+      });
+      const response = await fetch(`/api/maps/${mapId}/review-ledger?${params}`);
+      const data = (await response.json()) as SavedMapReviewLedger | { error?: string };
+      if (!response.ok) {
+        throw new Error("error" in data && typeof data.error === "string" ? data.error : "Ledger inspect failed");
       }
-    },
-    [],
-  );
+      setSelectedLedger(data as SavedMapReviewLedger);
+      setSelectedHandoff(null);
+      setSelectedExport(null);
+    } catch (error) {
+      setMessages((previous) => [
+        ...previous,
+        {
+          role: "assistant",
+          content: `Ledger error: ${error instanceof Error ? error.message : "Unknown error"}`,
+        },
+      ]);
+    }
+  }, []);
 
-  const inspectSavedMapExport = useCallback(
-    async (mapId: string, query: SavedMapReviewExportQuery = {}) => {
-      try {
-        const cursor = query.cursor ?? 0;
-        const kind = query.kind ?? "all";
-        const statusFilter = query.status ?? "all";
-        const limit = query.limit ?? 10;
-        const params = new URLSearchParams({
-          cursor: String(cursor),
-          kind,
-          status: statusFilter,
-          limit: String(limit),
-        });
-        const response = await fetch(`/api/maps/${mapId}/review-export?${params}`);
-        const data = (await response.json()) as
-          | SavedMapReviewExport
-          | { error?: string };
-        if (!response.ok) {
-          throw new Error(
-            "error" in data && typeof data.error === "string"
-              ? data.error
-              : "Export inspect failed",
-          );
-        }
-        setSelectedExport(data as SavedMapReviewExport);
-        setSelectedHandoff(null);
-        setSelectedLedger(null);
-      } catch (error) {
-        setMessages((previous) => [
-          ...previous,
-          {
-            role: "assistant",
-            content: `Export error: ${error instanceof Error ? error.message : "Unknown error"}`,
-          },
-        ]);
+  const inspectSavedMapExport = useCallback(async (mapId: string, query: SavedMapReviewExportQuery = {}) => {
+    try {
+      const cursor = query.cursor ?? 0;
+      const kind = query.kind ?? "all";
+      const statusFilter = query.status ?? "all";
+      const limit = query.limit ?? 10;
+      const params = new URLSearchParams({
+        cursor: String(cursor),
+        kind,
+        status: statusFilter,
+        limit: String(limit),
+      });
+      const response = await fetch(`/api/maps/${mapId}/review-export?${params}`);
+      const data = (await response.json()) as SavedMapReviewExport | { error?: string };
+      if (!response.ok) {
+        throw new Error("error" in data && typeof data.error === "string" ? data.error : "Export inspect failed");
       }
-    },
-    [],
-  );
+      setSelectedExport(data as SavedMapReviewExport);
+      setSelectedHandoff(null);
+      setSelectedLedger(null);
+    } catch (error) {
+      setMessages((previous) => [
+        ...previous,
+        {
+          role: "assistant",
+          content: `Export error: ${error instanceof Error ? error.message : "Unknown error"}`,
+        },
+      ]);
+    }
+  }, []);
 
   const deleteSavedMap = useCallback(
     async (mapId: string) => {
@@ -772,15 +698,9 @@ export default function App() {
           throw new Error(data.error || "Delete failed");
         }
         await fetchMaps();
-        setSelectedHandoff((current) =>
-          current?.workspace.mapId === mapId ? null : current,
-        );
-        setSelectedLedger((current) =>
-          current?.workspace.mapId === mapId ? null : current,
-        );
-        setSelectedExport((current) =>
-          current?.workspace.mapId === mapId ? null : current,
-        );
+        setSelectedHandoff((current) => (current?.workspace.mapId === mapId ? null : current));
+        setSelectedLedger((current) => (current?.workspace.mapId === mapId ? null : current));
+        setSelectedExport((current) => (current?.workspace.mapId === mapId ? null : current));
         flashSavedMsg("Deleted saved map");
       } catch (error) {
         flashSavedMsg("Delete failed");
@@ -799,7 +719,7 @@ export default function App() {
   const changeBasemap = async (basemapId: string) => {
     setCurrentBasemap(basemapId);
     const data = await sendMessage(`switch to ${basemapId} basemap`);
-    if (!data || data.status !== "applied") {
+    if (data?.status !== "applied") {
       await fetchBasemaps();
     }
   };

@@ -13,31 +13,11 @@
 import { createHash } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import {
-  createMapGenerationCommandSkeleton,
-  applyCommands,
-  validateSpec,
-} from "@gis-engine/engine";
-import {
-  createGenerationEvidenceBundle,
-  normalizeWorkbenchProviderPlan,
-} from "@gis-engine/ai";
-import {
-  createProviderDiagnostics,
-  resolveProviderProfile,
-  readProviderApiKey,
-  CLI_API_KEY_ENVS,
-} from "./provider.js";
-import {
-  callProvider,
-  type ProviderConfidence,
-} from "./provider-http.js";
-import {
-  getTemplate,
-  type AppTemplateContext,
-  type AppConfig,
-  normalizeAppConfig,
-} from "./templates/index.js";
+import { createGenerationEvidenceBundle, normalizeWorkbenchProviderPlan } from "@gis-engine/ai";
+import { applyCommands, createMapGenerationCommandSkeleton, validateSpec } from "@gis-engine/engine";
+import { CLI_API_KEY_ENVS, createProviderDiagnostics, readProviderApiKey, resolveProviderProfile } from "./provider.js";
+import { callProvider, type ProviderConfidence } from "./provider-http.js";
+import { type AppConfig, type AppTemplateContext, getTemplate, normalizeAppConfig } from "./templates/index.js";
 
 export interface GenerateOptions {
   projectName: string;
@@ -196,23 +176,25 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
   const intentAppConfig = intent.appConfig as Record<string, unknown> | undefined;
 
   if (intentAppType || opts.template === "app") {
-    const appType = (intentAppType === "dashboard" || intentAppType === "locator")
-      ? intentAppType
-      : "explorer";
+    const appType = intentAppType === "dashboard" || intentAppType === "locator" ? intentAppType : "explorer";
     const intentComponents = Array.isArray(intentAppConfig?.components)
       ? intentAppConfig.components.filter((component): component is string => typeof component === "string")
       : undefined;
-    appConfig = normalizeAppConfig({
-      appType,
-      title: typeof intentAppConfig?.title === "string" ? intentAppConfig.title : opts.projectName,
-      description: typeof intentAppConfig?.description === "string"
-        ? intentAppConfig.description
-        : `Interactive ${appType} map application`,
-      ...(intentComponents !== undefined ? { components: intentComponents } : {}),
-    }, {
-      projectName: opts.projectName,
-      description: `Interactive ${appType} map application`,
-    });
+    appConfig = normalizeAppConfig(
+      {
+        appType,
+        title: typeof intentAppConfig?.title === "string" ? intentAppConfig.title : opts.projectName,
+        description:
+          typeof intentAppConfig?.description === "string"
+            ? intentAppConfig.description
+            : `Interactive ${appType} map application`,
+        ...(intentComponents !== undefined ? { components: intentComponents } : {}),
+      },
+      {
+        projectName: opts.projectName,
+        description: `Interactive ${appType} map application`,
+      },
+    );
   }
 
   const deliverySummary = {
@@ -239,30 +221,26 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
 
     // map.json — the generated MapSpec
     const mapPath = join(outDir, "map.json");
-    writeFileSync(mapPath, JSON.stringify(applied.spec, null, 2) + "\n", "utf-8");
+    writeFileSync(mapPath, `${JSON.stringify(applied.spec, null, 2)}\n`, "utf-8");
     files.push("map.json");
 
     // delivery-summary.json — evidence without raw prompt
     const summaryPath = join(outDir, "delivery-summary.json");
-    writeFileSync(summaryPath, JSON.stringify(deliverySummary, null, 2) + "\n", "utf-8");
+    writeFileSync(summaryPath, `${JSON.stringify(deliverySummary, null, 2)}\n`, "utf-8");
     files.push("delivery-summary.json");
 
     // evidence.json — full evidence bundle
     if (evidenceResult.ok) {
       const evidencePath = join(outDir, "evidence.json");
-      writeFileSync(evidencePath, JSON.stringify(evidenceResult.result, null, 2) + "\n", "utf-8");
+      writeFileSync(evidencePath, `${JSON.stringify(evidenceResult.result, null, 2)}\n`, "utf-8");
       files.push("evidence.json");
     }
 
     // diagnostics.json — all diagnostics from the pipeline
-    const allDiagnostics = [
-      ...plan.diagnostics,
-      ...skeleton.diagnostics,
-      ...validation.diagnostics,
-    ];
+    const allDiagnostics = [...plan.diagnostics, ...skeleton.diagnostics, ...validation.diagnostics];
     if (allDiagnostics.length > 0) {
       const diagPath = join(outDir, "diagnostics.json");
-      writeFileSync(diagPath, JSON.stringify(allDiagnostics, null, 2) + "\n", "utf-8");
+      writeFileSync(diagPath, `${JSON.stringify(allDiagnostics, null, 2)}\n`, "utf-8");
       files.push("diagnostics.json");
     }
 

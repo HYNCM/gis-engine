@@ -18,14 +18,10 @@
 
 import { execSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { AGENT_REGISTRY } from "./agent-registry.mjs";
-import {
-  buildHandoffLedger,
-  findLatestReport,
-  writeHandoffLedger,
-} from "./handoff-ledger.mjs";
+import { buildHandoffLedger, findLatestReport, writeHandoffLedger } from "./handoff-ledger.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
@@ -34,9 +30,7 @@ const DASHBOARD_AGENTS = ["orchestrator", "product", "quality", "builder", "docs
 
 function getGitSha() {
   try {
-    return execSync("git rev-parse --short HEAD", { cwd: ROOT })
-      .toString()
-      .trim();
+    return execSync("git rev-parse --short HEAD", { cwd: ROOT }).toString().trim();
   } catch {
     return "unknown";
   }
@@ -117,9 +111,7 @@ function generateDashboard(metrics, anomalies, period) {
   lines.push("");
   lines.push(`# Agent Health Dashboard (as of ${period})`);
   lines.push("");
-  lines.push(
-    "> ⚠️ 本 Dashboard 由 `scripts/dashboard-generator.mjs` 自动生成。",
-  );
+  lines.push("> ⚠️ 本 Dashboard 由 `scripts/dashboard-generator.mjs` 自动生成。");
   lines.push("> 状态为自动化推断，需 orchestrator 审查后确认。");
   lines.push("");
 
@@ -158,9 +150,7 @@ function generateDashboard(metrics, anomalies, period) {
     lines.push("| --- | --- | --- |");
     for (const a of anomalies) {
       const icon = a.severity === "error" ? "🔴" : "🟡";
-      lines.push(
-        `| ${a.flow}<br/>*${a.description}* | ${a.issue} | ${icon} ${a.severity} |`,
-      );
+      lines.push(`| ${a.flow}<br/>*${a.description}* | ${a.issue} | ${icon} ${a.severity} |`);
     }
   }
 
@@ -176,14 +166,11 @@ function generateDashboard(metrics, anomalies, period) {
     const agentDef = AGENT_REGISTRY[m.agent];
     if (!agentDef?.slaMaxHours) continue;
     const maxDays = agentDef.slaMaxHours / 24;
-    const desc =
-      agentDef.cadence === "daily" ? "每日 00:00 UTC" : "周一 00:00 UTC";
+    const desc = agentDef.cadence === "daily" ? "每日 00:00 UTC" : "周一 00:00 UTC";
     const compliant = m.ageDays !== null && m.ageDays <= maxDays;
     const icon = compliant ? "✅" : "❌";
     const ageStr = m.ageDays !== null ? `${m.ageDays}d` : "missing";
-    lines.push(
-      `| @${m.agent} | ${desc} | ${maxDays}d | ${ageStr} | ${icon} ${compliant ? "compliant" : "breach"} |`,
-    );
+    lines.push(`| @${m.agent} | ${desc} | ${maxDays}d | ${ageStr} | ${icon} ${compliant ? "compliant" : "breach"} |`);
   }
 
   lines.push("");
@@ -199,13 +186,9 @@ function generateDashboard(metrics, anomalies, period) {
 
   for (const m of metrics) {
     if (m.status === "missing") {
-      actionItems.push(
-        `- [ ] **@${m.agent}**: 无任何报告产出 → 确认 agent 是否已激活`,
-      );
+      actionItems.push(`- [ ] **@${m.agent}**: 无任何报告产出 → 确认 agent 是否已激活`);
     } else if (m.status === "overdue") {
-      actionItems.push(
-        `- [ ] **@${m.agent}**: 报告逾期 ${m.ageDays} 天 → 手动触发或检查 cron`,
-      );
+      actionItems.push(`- [ ] **@${m.agent}**: 报告逾期 ${m.ageDays} 天 → 手动触发或检查 cron`);
     }
   }
 
@@ -224,12 +207,8 @@ function generateDashboard(metrics, anomalies, period) {
   lines.push("");
 
   // ── 统计 ──
-  const okCount = metrics.filter(
-    (m) => m.status === "ok" || m.status === "fresh",
-  ).length;
-  const problemCount = metrics.filter(
-    (m) => m.status === "overdue" || m.status === "missing",
-  ).length;
+  const okCount = metrics.filter((m) => m.status === "ok" || m.status === "fresh").length;
+  const problemCount = metrics.filter((m) => m.status === "overdue" || m.status === "missing").length;
   lines.push("## Summary");
   lines.push("");
   lines.push(`- **健康 agent**: ${okCount}/${metrics.length}`);
@@ -264,15 +243,9 @@ async function main() {
   console.log(`🔍 检测数据流异常...`);
   const anomalies = detectDataFlowAnomalies(ledger);
 
-  const okCount = metrics.filter(
-    (m) => m.status === "ok" || m.status === "fresh",
-  ).length;
-  const problemCount = metrics.filter(
-    (m) => m.status === "overdue" || m.status === "missing",
-  ).length;
-  console.log(
-    `   ✅ ${okCount} 健康, 🔴 ${problemCount} 问题, ⚠️ ${anomalies.length} 数据流异常`,
-  );
+  const okCount = metrics.filter((m) => m.status === "ok" || m.status === "fresh").length;
+  const problemCount = metrics.filter((m) => m.status === "overdue" || m.status === "missing").length;
+  console.log(`   ✅ ${okCount} 健康, 🔴 ${problemCount} 问题, ⚠️ ${anomalies.length} 数据流异常`);
   console.log("");
 
   const dashboard = generateDashboard(metrics, anomalies, period);

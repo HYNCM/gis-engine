@@ -1,13 +1,12 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
-import { describe, expect, it } from "vitest";
-import scene3dExtensionSpec from "../fixtures/specs/valid/scene3d-extension.map.json";
 import {
-  Scene3DStableRuntimeBlockerCodes,
-  validateSpec,
   type MapSpec,
-  type SceneView3DExtension
+  Scene3DStableRuntimeBlockerCodes,
+  type SceneView3DExtension,
+  validateSpec,
 } from "@gis-engine/engine";
+import { describe, expect, it } from "vitest";
 import { evaluateScene3DReleaseVisualGate } from "../../packages/scene3d/src/index.js";
 import {
   auditScene3DThreeAdapterDependencyBoundary,
@@ -19,8 +18,9 @@ import {
   getScene3DThreeAdapterCapabilities,
   getScene3DThreeAdapterLifecycleSemantics,
   getScene3DThreeAdapterStableRendererContract,
-  scene3dThreeAdapterBoundary
+  scene3dThreeAdapterBoundary,
 } from "../../packages/scene3d-three-adapter/src/index.js";
+import scene3dExtensionSpec from "../fixtures/specs/valid/scene3d-extension.map.json";
 
 describe("SceneView3D Three.js adapter spike", () => {
   it("exposes an isolated spike boundary without enabling stable runtime support", () => {
@@ -32,8 +32,8 @@ describe("SceneView3D Three.js adapter spike", () => {
         status: "spike",
         stableViewMode: false,
         targetRenderer: "three",
-        targetTilesRenderer: "3d-tiles-renderer"
-      })
+        targetTilesRenderer: "3d-tiles-renderer",
+      }),
     );
     expect(capabilities.renderer).toBe("scene3d-three-adapter");
     expect(capabilities.experimental).toContain("sceneview3d-three-adapter-spike");
@@ -49,8 +49,8 @@ describe("SceneView3D Three.js adapter spike", () => {
         stableViewMode: false,
         runtimeSupported: false,
         stableRuntimeBlocked: true,
-        promotionDecisionTask: "TASK-2026W23-SRC-006"
-      })
+        promotionDecisionTask: "TASK-2026W23-SRC-006",
+      }),
     );
     expect(contract.guardrails).toEqual({
       schemaFirst: true,
@@ -58,7 +58,7 @@ describe("SceneView3D Three.js adapter spike", () => {
       structuredDiagnostics: true,
       snapshotVerification: true,
       resourcePolicyRequired: true,
-      adapterBoundaryRequired: true
+      adapterBoundaryRequired: true,
     });
     expect(contract.obligations.map((obligation) => obligation.id)).toEqual([
       "load",
@@ -69,18 +69,18 @@ describe("SceneView3D Three.js adapter spike", () => {
       "query",
       "destroy",
       "diagnostics",
-      "resourceCleanup"
+      "resourceCleanup",
     ]);
     expect(contract.obligations.every((obligation) => obligation.required)).toBe(true);
     expect(contract.obligations.find((obligation) => obligation.id === "snapshot")).toEqual(
       expect.objectContaining({
-        requiredEvidence: expect.arrayContaining(["Scene3DMockSnapshotResult", "visual snapshot report"])
-      })
+        requiredEvidence: expect.arrayContaining(["Scene3DMockSnapshotResult", "visual snapshot report"]),
+      }),
     );
     expect(contract.obligations.find((obligation) => obligation.id === "query")).toEqual(
       expect.objectContaining({
-        requiredEvidence: expect.arrayContaining(["Scene3DQueryResult", "pick coverage report"])
-      })
+        requiredEvidence: expect.arrayContaining(["Scene3DQueryResult", "pick coverage report"]),
+      }),
     );
     expect(contract.lifecycleSemantics.map((semantic) => semantic.operation)).toEqual([
       "load",
@@ -91,13 +91,13 @@ describe("SceneView3D Three.js adapter spike", () => {
       "failure",
       "cancel",
       "destroy",
-      "resourceCleanup"
+      "resourceCleanup",
     ]);
     expect(contract.lifecycleSemantics.find((semantic) => semantic.operation === "failure")).toEqual(
       expect.objectContaining({
         to: "failed",
-        diagnosticPaths: expect.arrayContaining(["/runtime/failed/load", "/extensions/scene3d/sources"])
-      })
+        diagnosticPaths: expect.arrayContaining(["/runtime/failed/load", "/extensions/scene3d/sources"]),
+      }),
     );
     expect(contract.diagnostics).toEqual(
       expect.arrayContaining([
@@ -105,21 +105,21 @@ describe("SceneView3D Three.js adapter spike", () => {
           severity: "error",
           code: "CAPABILITY.UNSUPPORTED",
           blockerCode: Scene3DStableRuntimeBlockerCodes.ViewMode,
-          path: "/view/mode"
+          path: "/view/mode",
         }),
         expect.objectContaining({
           severity: "error",
           code: "CAPABILITY.UNSUPPORTED",
           blockerCode: Scene3DStableRuntimeBlockerCodes.Renderer,
-          path: "/capabilities/renderer"
+          path: "/capabilities/renderer",
         }),
         expect.objectContaining({
           severity: "error",
           code: "CAPABILITY.UNSUPPORTED",
           blockerCode: Scene3DStableRuntimeBlockerCodes.Dimensions,
-          path: "/capabilities/dimensions"
-        })
-      ])
+          path: "/capabilities/dimensions",
+        }),
+      ]),
     );
   });
 
@@ -131,29 +131,29 @@ describe("SceneView3D Three.js adapter spike", () => {
         kind: "Scene3DThreeAdapterLifecycleSemanticsReport",
         stableViewMode: false,
         runtimeSupported: false,
-        stableRuntimeBlocked: true
-      })
+        stableRuntimeBlocked: true,
+      }),
     );
     expect(report.semantics.every((semantic) => semantic.deterministic)).toBe(true);
     expect(report.semantics.find((semantic) => semantic.operation === "resize")).toEqual(
       expect.objectContaining({
         diagnosticCodes: expect.arrayContaining(["RENDER.ADAPTER_ERROR"]),
-        diagnosticPaths: ["/renderer/resize/width", "/renderer/resize/height"]
-      })
+        diagnosticPaths: ["/renderer/resize/width", "/renderer/resize/height"],
+      }),
     );
     expect(report.semantics.find((semantic) => semantic.operation === "cancel")).toEqual(
       expect.objectContaining({
         to: "destroyed",
         idempotent: true,
-        diagnosticPaths: expect.arrayContaining(["/runtime/destroy", "/runtime/destroyed/load"])
-      })
+        diagnosticPaths: expect.arrayContaining(["/runtime/destroy", "/runtime/destroyed/load"]),
+      }),
     );
     expect(report.diagnostics).toContainEqual(
       expect.objectContaining({
         severity: "error",
         code: "CAPABILITY.UNSUPPORTED",
-        path: "/capabilities/renderer"
-      })
+        path: "/capabilities/renderer",
+      }),
     );
   });
 
@@ -163,7 +163,7 @@ describe("SceneView3D Three.js adapter spike", () => {
     spec.capabilities = {
       renderer: "scene3d",
       dimensions: ["3d"],
-      experimental: ["sceneview3d-v1"]
+      experimental: ["sceneview3d-v1"],
     };
 
     const report = validateSpec(spec);
@@ -175,19 +175,19 @@ describe("SceneView3D Three.js adapter spike", () => {
         expect.objectContaining({
           code: "CAPABILITY.UNSUPPORTED",
           blockerCode: Scene3DStableRuntimeBlockerCodes.ViewMode,
-          path: "/view/mode"
+          path: "/view/mode",
         }),
         expect.objectContaining({
           code: "CAPABILITY.UNSUPPORTED",
           blockerCode: Scene3DStableRuntimeBlockerCodes.Renderer,
-          path: "/capabilities/renderer"
+          path: "/capabilities/renderer",
         }),
         expect.objectContaining({
           code: "CAPABILITY.UNSUPPORTED",
           blockerCode: Scene3DStableRuntimeBlockerCodes.Dimensions,
-          path: "/capabilities/dimensions"
-        })
-      ])
+          path: "/capabilities/dimensions",
+        }),
+      ]),
     );
   });
 
@@ -199,8 +199,8 @@ describe("SceneView3D Three.js adapter spike", () => {
         textureCount: { "terrain-dem": 1, "station-model": 4 },
         textureBytes: { "terrain-dem": 262_144, "station-model": 2_097_152 },
         elapsedMs: { "city-tiles": 120, "station-model": 250 },
-        workerCount: 1
-      }
+        workerCount: 1,
+      },
     });
 
     expect(loadPlan).toEqual({
@@ -211,30 +211,30 @@ describe("SceneView3D Three.js adapter spike", () => {
           sourceId: "terrain-dem",
           url: "./data/terrain/{z}/{x}/{y}.png",
           textureCount: 1,
-          textureBytes: 262_144
+          textureBytes: 262_144,
         },
         {
           kind: "tileset-json",
           sourceId: "city-tiles",
           url: "./data/city/tileset.json",
           byteLength: 512_000,
-          elapsedMs: 120
+          elapsedMs: 120,
         },
         {
           kind: "model",
           sourceId: "station-model",
           url: "./data/models/station.glb",
           byteLength: 1_048_576,
-          elapsedMs: 250
+          elapsedMs: 250,
         },
         {
           kind: "texture",
           sourceId: "station-model",
           url: "./data/models/station.glb",
           textureCount: 4,
-          textureBytes: 2_097_152
-        }
-      ]
+          textureBytes: 2_097_152,
+        },
+      ],
     });
   });
 
@@ -245,8 +245,8 @@ describe("SceneView3D Three.js adapter spike", () => {
         modelBytes: { "station-model": 1_048_576 },
         textureCount: { "terrain-dem": 1, "station-model": 4 },
         textureBytes: { "terrain-dem": 262_144, "station-model": 2_097_152 },
-        workerCount: 1
-      }
+        workerCount: 1,
+      },
     });
 
     expect(report.kind).toBe("Scene3DThreeAdapterSpikeReport");
@@ -259,8 +259,8 @@ describe("SceneView3D Three.js adapter spike", () => {
       expect.objectContaining({
         severity: "info",
         code: "CAPABILITY.UNSUPPORTED",
-        path: "/extensions/scene3d"
-      })
+        path: "/extensions/scene3d",
+      }),
     );
   });
 
@@ -271,8 +271,8 @@ describe("SceneView3D Three.js adapter spike", () => {
         modelBytes: { "station-model": 1_048_576 },
         textureCount: { "terrain-dem": 1, "station-model": 4 },
         textureBytes: { "terrain-dem": 262_144, "station-model": 2_097_152 },
-        workerCount: 1
-      }
+        workerCount: 1,
+      },
     });
 
     const evidence = createScene3DThreeAdapterRendererEvidence(spikeReport);
@@ -283,8 +283,8 @@ describe("SceneView3D Three.js adapter spike", () => {
       expect.objectContaining({
         severity: "error",
         code: "CAPABILITY.UNSUPPORTED",
-        path: "/rendererVisualEvidence"
-      })
+        path: "/rendererVisualEvidence",
+      }),
     );
   });
 
@@ -295,8 +295,8 @@ describe("SceneView3D Three.js adapter spike", () => {
         modelBytes: { "station-model": 1_048_576 },
         textureCount: { "terrain-dem": 1, "station-model": 4 },
         textureBytes: { "terrain-dem": 262_144, "station-model": 2_097_152 },
-        workerCount: 1
-      }
+        workerCount: 1,
+      },
     });
     const evidence = createScene3DThreeAdapterRendererEvidence(spikeReport, {
       capture: {
@@ -306,22 +306,22 @@ describe("SceneView3D Three.js adapter spike", () => {
         nonTransparentPixels: 240_000,
         changedPixelsFromBackground: 120_000,
         targetLayerPixels: {
-          "city-buildings": 42_000
+          "city-buildings": 42_000,
         },
-        consoleErrors: []
-      }
+        consoleErrors: [],
+      },
     });
     const releaseGate = evaluateScene3DReleaseVisualGate(scene3dExtension(), {
       ciTier: "release",
       loadedSourceIds: ["terrain-dem", "city-tiles", "station-model"],
-      rendererVisualEvidence: evidence
+      rendererVisualEvidence: evidence,
     });
 
     expect(evidence).toEqual({
       passed: true,
       renderer: "scene3d-three-adapter",
       reportPath: "test-results/scene3d-three-adapter/report.json",
-      diagnostics: []
+      diagnostics: [],
     });
     expect(releaseGate.decision).toBe("passed");
     expect(releaseGate.accepted).toBe(true);
@@ -334,8 +334,8 @@ describe("SceneView3D Three.js adapter spike", () => {
         modelBytes: { "station-model": 1_048_576 },
         textureCount: { "terrain-dem": 1, "station-model": 4 },
         textureBytes: { "terrain-dem": 262_144, "station-model": 2_097_152 },
-        workerCount: 1
-      }
+        workerCount: 1,
+      },
     });
 
     expect(runtime.stableViewMode).toBe(false);
@@ -349,13 +349,13 @@ describe("SceneView3D Three.js adapter spike", () => {
       expect.objectContaining({
         severity: "info",
         code: "CAPABILITY.UNSUPPORTED",
-        path: "/extensions/scene3d"
-      })
+        path: "/extensions/scene3d",
+      }),
     );
 
     const snapshot = await runtime.snapshot({
       format: "data-url",
-      requireLoadedResources: true
+      requireLoadedResources: true,
     });
     expect(snapshot.passed).toBe(true);
     expect(snapshot.summary).toEqual(
@@ -364,18 +364,15 @@ describe("SceneView3D Three.js adapter spike", () => {
         layerCount: 3,
         visibleLayerCount: 3,
         pickableLayerCount: 2,
-        format: "data-url"
-      })
+        format: "data-url",
+      }),
     );
     expect(snapshot.dataUrl).toMatch(/^data:image\/png;base64,/);
 
     const query = await runtime.query();
     expect(query.diagnostics).toEqual([]);
     expect(query.picks).toHaveLength(2);
-    expect(query.picks.map((pick) => pick.objectId)).toEqual([
-      "city-tiles:city:mock",
-      "station-model:station:mock"
-    ]);
+    expect(query.picks.map((pick) => pick.objectId)).toEqual(["city-tiles:city:mock", "station-model:station:mock"]);
 
     const evidence = runtime.rendererEvidence({
       capture: {
@@ -384,13 +381,13 @@ describe("SceneView3D Three.js adapter spike", () => {
         height: 600,
         nonTransparentPixels: 240_000,
         changedPixelsFromBackground: 120_000,
-        consoleErrors: []
-      }
+        consoleErrors: [],
+      },
     });
     const releaseGate = evaluateScene3DReleaseVisualGate(scene3dExtension(), {
       ciTier: "release",
       loadedSourceIds: ["terrain-dem", "city-tiles", "station-model"],
-      rendererVisualEvidence: evidence
+      rendererVisualEvidence: evidence,
     });
 
     expect(evidence.passed).toBe(true);
@@ -408,9 +405,9 @@ describe("SceneView3D Three.js adapter spike", () => {
           loadedBeforeDestroy: true,
           failedBeforeDestroy: false,
           plannedResourceCount: 4,
-          plannedWorkerCount: 1
-        })
-      })
+          plannedWorkerCount: 1,
+        }),
+      }),
     );
 
     const destroyedSnapshot = await runtime.snapshot();
@@ -419,8 +416,8 @@ describe("SceneView3D Three.js adapter spike", () => {
       expect.objectContaining({
         severity: "info",
         code: "RENDER.DESTROYED",
-        path: "/runtime/destroyed/snapshot"
-      })
+        path: "/runtime/destroyed/snapshot",
+      }),
     );
 
     const destroyedQuery = await runtime.query();
@@ -429,8 +426,8 @@ describe("SceneView3D Three.js adapter spike", () => {
       expect.objectContaining({
         severity: "info",
         code: "RENDER.DESTROYED",
-        path: "/runtime/destroyed/query"
-      })
+        path: "/runtime/destroyed/query",
+      }),
     );
   });
 
@@ -439,8 +436,8 @@ describe("SceneView3D Three.js adapter spike", () => {
       estimates: {
         tilesetJsonBytes: { "city-tiles": 2_000_000 },
         modelBytes: { "station-model": 1_048_576 },
-        workerCount: 1
-      }
+        workerCount: 1,
+      },
     });
 
     const loadReport = await runtime.load();
@@ -451,14 +448,14 @@ describe("SceneView3D Three.js adapter spike", () => {
         expect.objectContaining({
           severity: "error",
           code: "SECURITY.RESOURCE_TOO_LARGE",
-          path: "/extensions/scene3d/sources/city-tiles/url"
+          path: "/extensions/scene3d/sources/city-tiles/url",
         }),
         expect.objectContaining({
           severity: "error",
           code: "RENDER.ADAPTER_ERROR",
-          path: "/runtime/failed/load"
-        })
-      ])
+          path: "/runtime/failed/load",
+        }),
+      ]),
     );
 
     const snapshot = await runtime.snapshot({ format: "data-url" });
@@ -468,8 +465,8 @@ describe("SceneView3D Three.js adapter spike", () => {
       expect.objectContaining({
         severity: "error",
         code: "RENDER.ADAPTER_ERROR",
-        path: "/runtime/failed/snapshot"
-      })
+        path: "/runtime/failed/snapshot",
+      }),
     );
 
     const query = await runtime.query();
@@ -478,8 +475,8 @@ describe("SceneView3D Three.js adapter spike", () => {
       expect.objectContaining({
         severity: "error",
         code: "RENDER.ADAPTER_ERROR",
-        path: "/runtime/failed/query"
-      })
+        path: "/runtime/failed/query",
+      }),
     );
 
     const destroyReport = await runtime.destroy();
@@ -487,8 +484,8 @@ describe("SceneView3D Three.js adapter spike", () => {
       expect.objectContaining({
         loadedBeforeDestroy: false,
         failedBeforeDestroy: true,
-        alreadyDestroyed: false
-      })
+        alreadyDestroyed: false,
+      }),
     );
   });
 
@@ -499,15 +496,15 @@ describe("SceneView3D Three.js adapter spike", () => {
         modelBytes: { "station-model": 1_048_576 },
         textureCount: { "terrain-dem": 1, "station-model": 4 },
         textureBytes: { "terrain-dem": 262_144, "station-model": 2_097_152 },
-        workerCount: 1
-      }
+        workerCount: 1,
+      },
     });
     await runtime.load();
 
     const snapshot = await runtime.snapshot({
       width: 0,
       height: Number.NaN,
-      format: "data-url"
+      format: "data-url",
     });
 
     expect(snapshot.passed).toBe(false);
@@ -516,14 +513,14 @@ describe("SceneView3D Three.js adapter spike", () => {
         expect.objectContaining({
           severity: "error",
           code: "RENDER.ADAPTER_ERROR",
-          path: "/renderer/resize/width"
+          path: "/renderer/resize/width",
         }),
         expect.objectContaining({
           severity: "error",
           code: "RENDER.ADAPTER_ERROR",
-          path: "/renderer/resize/height"
-        })
-      ])
+          path: "/renderer/resize/height",
+        }),
+      ]),
     );
   });
 
@@ -534,8 +531,8 @@ describe("SceneView3D Three.js adapter spike", () => {
         modelBytes: { "station-model": 1_048_576 },
         textureCount: { "terrain-dem": 1, "station-model": 4 },
         textureBytes: { "terrain-dem": 262_144, "station-model": 2_097_152 },
-        workerCount: 1
-      }
+        workerCount: 1,
+      },
     });
 
     const missingSummary = createScene3DThreeAdapterPromotionEvidenceSummary(runtime.spikeReport);
@@ -549,14 +546,14 @@ describe("SceneView3D Three.js adapter spike", () => {
       expect.objectContaining({
         severity: "error",
         code: "CAPABILITY.UNSUPPORTED",
-        path: "/promotionEvidence/load"
-      })
+        path: "/promotionEvidence/load",
+      }),
     );
 
     const loadReport = await runtime.load();
     const snapshot = await runtime.snapshot({
       format: "data-url",
-      requireLoadedResources: true
+      requireLoadedResources: true,
     });
     const query = await runtime.query();
     const rendererVisualEvidence = runtime.rendererEvidence({
@@ -567,16 +564,16 @@ describe("SceneView3D Three.js adapter spike", () => {
         nonTransparentPixels: 240_000,
         changedPixelsFromBackground: 120_000,
         targetLayerPixels: {
-          "city-buildings": 42_000
+          "city-buildings": 42_000,
         },
-        consoleErrors: []
-      }
+        consoleErrors: [],
+      },
     });
     const summary = createScene3DThreeAdapterPromotionEvidenceSummary(runtime.spikeReport, {
       loadReport,
       snapshot,
       query,
-      rendererVisualEvidence
+      rendererVisualEvidence,
     });
 
     expect(summary).toEqual(
@@ -585,37 +582,37 @@ describe("SceneView3D Three.js adapter spike", () => {
         stableViewMode: false,
         runtimeSupported: false,
         decisionReady: true,
-        stablePromotionAllowed: false
-      })
+        stablePromotionAllowed: false,
+      }),
     );
     expect(summary.evidence.resourcePolicy).toEqual({
       valid: true,
       resourceCount: 4,
       workerCount: 1,
-      diagnostics: { error: 0, warning: 0, info: 0 }
+      diagnostics: { error: 0, warning: 0, info: 0 },
     });
     expect(summary.evidence.load).toEqual({
       present: true,
       loaded: true,
-      diagnostics: { error: 0, warning: 0, info: 1 }
+      diagnostics: { error: 0, warning: 0, info: 1 },
     });
     expect(summary.evidence.snapshot).toEqual({
       present: true,
       passed: true,
       pendingSourceCount: 0,
       format: "data-url",
-      diagnostics: { error: 0, warning: 0, info: 0 }
+      diagnostics: { error: 0, warning: 0, info: 0 },
     });
     expect(summary.evidence.query).toEqual({
       present: true,
       pickCount: 2,
-      diagnostics: { error: 0, warning: 0, info: 0 }
+      diagnostics: { error: 0, warning: 0, info: 0 },
     });
     expect(summary.evidence.rendererVisual).toEqual({
       present: true,
       passed: true,
       reportPath: "test-results/scene3d-three-adapter/report.json",
-      diagnostics: { error: 0, warning: 0, info: 0 }
+      diagnostics: { error: 0, warning: 0, info: 0 },
     });
     expect(summary.diagnosticCounts.error).toBe(0);
   });
@@ -625,8 +622,8 @@ describe("SceneView3D Three.js adapter spike", () => {
       estimates: {
         tilesetJsonBytes: { "city-tiles": 2_000_000 },
         modelBytes: { "station-model": 1_048_576 },
-        workerCount: 1
-      }
+        workerCount: 1,
+      },
     });
     const evidence = createScene3DThreeAdapterRendererEvidence(spikeReport, {
       capture: {
@@ -635,8 +632,8 @@ describe("SceneView3D Three.js adapter spike", () => {
         height: 600,
         nonTransparentPixels: 240_000,
         changedPixelsFromBackground: 120_000,
-        consoleErrors: []
-      }
+        consoleErrors: [],
+      },
     });
 
     expect(evidence.passed).toBe(false);
@@ -644,8 +641,8 @@ describe("SceneView3D Three.js adapter spike", () => {
       expect.objectContaining({
         severity: "error",
         code: "SECURITY.RESOURCE_TOO_LARGE",
-        path: "/extensions/scene3d/sources/city-tiles/url"
-      })
+        path: "/extensions/scene3d/sources/city-tiles/url",
+      }),
     );
   });
 
@@ -658,11 +655,11 @@ describe("SceneView3D Three.js adapter spike", () => {
     const sourceImportRoots = [
       packageSourceImports("@gis-engine/engine", "packages/engine/src"),
       packageSourceImports("@gis-engine/scene3d", "packages/scene3d/src"),
-      packageSourceImports("@gis-engine/ai", "packages/ai/src")
+      packageSourceImports("@gis-engine/ai", "packages/ai/src"),
     ];
     const audit = auditScene3DThreeAdapterDependencyBoundary({
       manifests: [enginePackage, scene3dPackage, aiPackage, threeAdapterPackage],
-      sourceImports: sourceImportRoots
+      sourceImports: sourceImportRoots,
     });
 
     expect(contract.dependencyBoundary).toEqual(
@@ -671,8 +668,8 @@ describe("SceneView3D Three.js adapter spike", () => {
         allowedRendererPackage: "@gis-engine/scene3d-three-adapter",
         runtimePackages: ["three", "3d-tiles-renderer"],
         corePackagesMustRemainRendererFree: ["@gis-engine/engine", "@gis-engine/scene3d", "@gis-engine/ai"],
-        currentPackageManifestStatus: "not-declared-during-spike"
-      })
+        currentPackageManifestStatus: "not-declared-during-spike",
+      }),
     );
     expect(audit).toEqual(
       expect.objectContaining({
@@ -681,8 +678,8 @@ describe("SceneView3D Three.js adapter spike", () => {
         runtimeSupported: false,
         valid: true,
         diagnostics: [],
-        diagnosticCounts: { error: 0, warning: 0, info: 0 }
-      })
+        diagnosticCounts: { error: 0, warning: 0, info: 0 },
+      }),
     );
     expect(audit.audit).toEqual({
       adapterOwnedPackages: ["@gis-engine/scene3d-three-adapter"],
@@ -694,11 +691,11 @@ describe("SceneView3D Three.js adapter spike", () => {
         "@loaders.gl/gltf",
         "three-stdlib",
         "3d-tiles-renderer",
-        "@loaders.gl/core"
+        "@loaders.gl/core",
       ],
       dependencyFields: ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"],
       manifestCount: 4,
-      sourceImportRootCount: 3
+      sourceImportRootCount: 3,
     });
 
     for (const dependency of scene3dThreeAdapterBoundary.requiredRuntimePeerDependencies) {
@@ -712,7 +709,9 @@ describe("SceneView3D Three.js adapter spike", () => {
 
     for (const sourceImportRoot of sourceImportRoots) {
       expect(sourceImportRoot.imports).not.toContain("@gis-engine/scene3d-three-adapter");
-      expect(sourceImportRoot.imports.some((specifier) => specifier.startsWith("@gis-engine/scene3d-three-adapter/"))).toBe(false);
+      expect(
+        sourceImportRoot.imports.some((specifier) => specifier.startsWith("@gis-engine/scene3d-three-adapter/")),
+      ).toBe(false);
     }
   });
 
@@ -723,44 +722,44 @@ describe("SceneView3D Three.js adapter spike", () => {
           packageName: "@gis-engine/engine",
           path: "packages/engine/package.json",
           dependencies: {
-            three: "^0.180.0"
-          }
+            three: "^0.180.0",
+          },
         },
         {
           packageName: "@gis-engine/scene3d",
           path: "packages/scene3d/package.json",
-          dependencies: {}
+          dependencies: {},
         },
         {
           packageName: "@gis-engine/ai",
           path: "packages/ai/package.json",
-          dependencies: {}
+          dependencies: {},
         },
         {
           packageName: "@gis-engine/scene3d-three-adapter",
           path: "packages/scene3d-three-adapter/package.json",
           peerDependencies: {
-            "3d-tiles-renderer": "^0.4.0"
-          }
-        }
+            "3d-tiles-renderer": "^0.4.0",
+          },
+        },
       ],
       sourceImports: [
         {
           packageName: "@gis-engine/engine",
           root: "packages/engine/src",
-          imports: ["3d-tiles-renderer/core"]
+          imports: ["3d-tiles-renderer/core"],
         },
         {
           packageName: "@gis-engine/scene3d",
           root: "packages/scene3d/src",
-          imports: []
+          imports: [],
         },
         {
           packageName: "@gis-engine/ai",
           root: "packages/ai/src",
-          imports: []
-        }
-      ]
+          imports: [],
+        },
+      ],
     });
 
     expect(audit.valid).toBe(false);
@@ -770,20 +769,19 @@ describe("SceneView3D Three.js adapter spike", () => {
         expect.objectContaining({
           severity: "error",
           code: "CAPABILITY.UNSUPPORTED",
-          path: "/dependencyBoundary/manifests/@gis-engine~1engine/dependencies/three"
+          path: "/dependencyBoundary/manifests/@gis-engine~1engine/dependencies/three",
         }),
         expect.objectContaining({
           severity: "error",
           code: "CAPABILITY.UNSUPPORTED",
-          path: "/dependencyBoundary/imports/@gis-engine~1engine/3d-tiles-renderer~1core"
+          path: "/dependencyBoundary/imports/@gis-engine~1engine/3d-tiles-renderer~1core",
         }),
         expect.objectContaining({
           severity: "error",
           code: "CAPABILITY.UNSUPPORTED",
-          path:
-            "/dependencyBoundary/manifests/@gis-engine~1scene3d-three-adapter/peerDependencies/3d-tiles-renderer"
-        })
-      ])
+          path: "/dependencyBoundary/manifests/@gis-engine~1scene3d-three-adapter/peerDependencies/3d-tiles-renderer",
+        }),
+      ]),
     );
   });
 
@@ -826,7 +824,7 @@ function readPackageJson(path: string) {
     dependencies: packageJson.dependencies,
     devDependencies: packageJson.devDependencies,
     peerDependencies: packageJson.peerDependencies,
-    optionalDependencies: packageJson.optionalDependencies
+    optionalDependencies: packageJson.optionalDependencies,
   };
 }
 
@@ -834,7 +832,7 @@ function packageSourceImports(packageName: string, root: string) {
   return {
     packageName,
     root,
-    imports: sourceFiles(root).flatMap((sourcePath) => importSpecifiers(readFileSync(sourcePath, "utf8")))
+    imports: sourceFiles(root).flatMap((sourcePath) => importSpecifiers(readFileSync(sourcePath, "utf8"))),
   };
 }
 
@@ -860,7 +858,7 @@ function importSpecifiers(source: string): string[] {
   const patterns = [
     /\bfrom\s+["']([^"']+)["']/g,
     /\bimport\s+["']([^"']+)["']/g,
-    /\bimport\s*\(\s*["']([^"']+)["']\s*\)/g
+    /\bimport\s*\(\s*["']([^"']+)["']\s*\)/g,
   ];
 
   for (const pattern of patterns) {

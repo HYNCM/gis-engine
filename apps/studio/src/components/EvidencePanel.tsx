@@ -63,15 +63,10 @@ export default function EvidencePanel({
   onReviewDecision,
   onClose,
 }: Props) {
-  const [reviewOutcome, setReviewOutcome] =
-    useState<ReviewDecision["outcome"]>("accepted");
-  const [selectedReasonCodes, setSelectedReasonCodes] = useState<
-    ReviewDecisionReasonCode[]
-  >(["review-accepted"]);
+  const [reviewOutcome, setReviewOutcome] = useState<ReviewDecision["outcome"]>("accepted");
+  const [selectedReasonCodes, setSelectedReasonCodes] = useState<ReviewDecisionReasonCode[]>(["review-accepted"]);
   const [followUpTaskInput, setFollowUpTaskInput] = useState("");
-  const lastMsg = messages
-    .filter((m) => m.role === "assistant" && m.evidence)
-    .at(-1);
+  const lastMsg = messages.filter((m) => m.role === "assistant" && m.evidence).at(-1);
   const ev = lastMsg?.evidence;
   const diags = ev?.diagnostics || serverState?.diagnostics || [];
   const cmd = ev?.commandEvidence || serverState?.commandEvidence;
@@ -82,23 +77,18 @@ export default function EvidencePanel({
     .split(",")
     .map((taskId) => taskId.trim())
     .filter(Boolean);
-  const invalidFollowUpTaskIds = followUpTaskIds.filter(
-    (taskId) => !FOLLOW_UP_TASK_ID_PATTERN.test(taskId),
-  );
+  const invalidFollowUpTaskIds = followUpTaskIds.filter((taskId) => !FOLLOW_UP_TASK_ID_PATTERN.test(taskId));
   const reviewValidation = !latestAudit
     ? "No audit record yet."
-    : reviewOutcome === "accepted" &&
-        (latestAudit.status === "blocked" ||
-          latestAudit.diagnosticCounts.error > 0)
+    : reviewOutcome === "accepted" && (latestAudit.status === "blocked" || latestAudit.diagnosticCounts.error > 0)
       ? "Accepted decisions require non-blocked evidence."
       : selectedReasonCodes.length === 0
         ? "Select at least one review reason."
-      : reviewOutcome === "follow-up-required" && followUpTaskIds.length === 0
-        ? "Follow-up decisions require at least one task id."
-      : reviewOutcome === "follow-up-required" &&
-            invalidFollowUpTaskIds.length > 0
-          ? "Follow-up task ids must match TASK-YYYYWww-ABC-000."
-          : null;
+        : reviewOutcome === "follow-up-required" && followUpTaskIds.length === 0
+          ? "Follow-up decisions require at least one task id."
+          : reviewOutcome === "follow-up-required" && invalidFollowUpTaskIds.length > 0
+            ? "Follow-up task ids must match TASK-YYYYWww-ABC-000."
+            : null;
   const canSubmitReview = canReview && reviewValidation === null;
 
   const setReviewComposerOutcome = (outcome: ReviewDecision["outcome"]) => {
@@ -123,9 +113,7 @@ export default function EvidencePanel({
     onReviewDecision({
       outcome: reviewOutcome,
       reasonCodes: selectedReasonCodes,
-      ...(reviewOutcome === "follow-up-required"
-        ? { followUpTaskIds }
-        : {}),
+      ...(reviewOutcome === "follow-up-required" ? { followUpTaskIds } : {}),
     });
   };
 
@@ -133,16 +121,10 @@ export default function EvidencePanel({
     <>
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 shrink-0">
         <div>
-          <p className="text-xs text-blue-400 font-medium tracking-wide">
-            EVIDENCE
-          </p>
+          <p className="text-xs text-blue-400 font-medium tracking-wide">EVIDENCE</p>
           <h2 className="text-sm font-semibold">Review Trail</h2>
         </div>
-        <button
-          onClick={onClose}
-          className="text-gray-500 hover:text-gray-300 text-sm px-1"
-          title="Close evidence"
-        >
+        <button onClick={onClose} className="text-gray-500 hover:text-gray-300 text-sm px-1" title="Close evidence">
           x
         </button>
       </div>
@@ -153,17 +135,11 @@ export default function EvidencePanel({
             <p className="text-gray-400 font-medium">Map Summary</p>
             <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-gray-300">
               <span>Revision</span>
-              <span className="text-right font-mono">
-                {serverState.summary.revision}
-              </span>
+              <span className="text-right font-mono">{serverState.summary.revision}</span>
               <span>Sources</span>
-              <span className="text-right">
-                {serverState.summary.sourceCount}
-              </span>
+              <span className="text-right">{serverState.summary.sourceCount}</span>
               <span>Layers</span>
-              <span className="text-right">
-                {serverState.summary.layerCount}
-              </span>
+              <span className="text-right">{serverState.summary.layerCount}</span>
             </div>
           </div>
         )}
@@ -173,40 +149,23 @@ export default function EvidencePanel({
             <p className="text-gray-400 font-medium">Last Command</p>
             <div className="space-y-0.5 text-gray-300">
               <p>
-                Commands:{" "}
-                <span className="font-mono">{cmd.commandCount ?? "--"}</span>
+                Commands: <span className="font-mono">{cmd.commandCount ?? "--"}</span>
               </p>
               <p>
                 Committed:{" "}
-                <span
-                  className={cmd.committed ? "text-green-400" : "text-red-400"}
-                >
-                  {String(cmd.committed)}
-                </span>
+                <span className={cmd.committed ? "text-green-400" : "text-red-400"}>{String(cmd.committed)}</span>
               </p>
               <p>
                 Rolled back:{" "}
-                <span
-                  className={
-                    cmd.rolledBack ? "text-yellow-400" : "text-gray-500"
-                  }
-                >
-                  {String(cmd.rolledBack)}
-                </span>
+                <span className={cmd.rolledBack ? "text-yellow-400" : "text-gray-500"}>{String(cmd.rolledBack)}</span>
               </p>
               {cmd.failed != null && (
                 <p>
-                  Failed:{" "}
-                  <span
-                    className={cmd.failed ? "text-red-400" : "text-gray-500"}
-                  >
-                    {String(cmd.failed)}
-                  </span>
+                  Failed: <span className={cmd.failed ? "text-red-400" : "text-gray-500"}>{String(cmd.failed)}</span>
                 </p>
               )}
               <p>
-                Paths changed:{" "}
-                <span className="font-mono">{cmd.changedPathCount}</span>
+                Paths changed: <span className="font-mono">{cmd.changedPathCount}</span>
               </p>
             </div>
           </div>
@@ -218,20 +177,11 @@ export default function EvidencePanel({
             <p className="text-gray-300 font-mono">{provider.providerId}</p>
             {provider.confidence && (
               <p className="text-gray-500">
-                Confidence: {provider.confidence.level} (
-                {(provider.confidence.score * 100).toFixed(0)}%)
+                Confidence: {provider.confidence.level} ({(provider.confidence.score * 100).toFixed(0)}%)
               </p>
             )}
-            {provider.promptHash && (
-              <p className="text-gray-500 font-mono break-all">
-                prompt: {provider.promptHash}
-              </p>
-            )}
-            {provider.traceId && (
-              <p className="text-gray-500 font-mono break-all">
-                trace: {provider.traceId}
-              </p>
-            )}
+            {provider.promptHash && <p className="text-gray-500 font-mono break-all">prompt: {provider.promptHash}</p>}
+            {provider.traceId && <p className="text-gray-500 font-mono break-all">trace: {provider.traceId}</p>}
           </div>
         )}
 
@@ -278,10 +228,7 @@ export default function EvidencePanel({
               {REVIEW_REASON_OPTIONS[reviewOutcome].map((option) => {
                 const checked = selectedReasonCodes.includes(option.value);
                 return (
-                  <label
-                    key={option.value}
-                    className="flex items-center gap-2 text-gray-300"
-                  >
+                  <label key={option.value} className="flex items-center gap-2 text-gray-300">
                     <input
                       type="checkbox"
                       checked={checked}
@@ -327,9 +274,7 @@ export default function EvidencePanel({
             {reviewValidation ? (
               <p className="text-[11px] text-amber-300">{reviewValidation}</p>
             ) : (
-              <span className="text-[11px] text-gray-600">
-                Outcome stays append-only and payload-free.
-              </span>
+              <span className="text-[11px] text-gray-600">Outcome stays append-only and payload-free.</span>
             )}
             <button
               disabled={!canSubmitReview}
@@ -345,27 +290,19 @@ export default function EvidencePanel({
           <div className="bg-gray-800 rounded-lg p-3 space-y-1">
             <p className="text-gray-400 font-medium">Replay Context</p>
             <p className="text-gray-300">
-              Revision{" "}
-              <span className="font-mono">{latestAudit.fromRevision}</span> to{" "}
+              Revision <span className="font-mono">{latestAudit.fromRevision}</span> to{" "}
               <span className="font-mono">{latestAudit.toRevision}</span>
             </p>
             <p className="text-gray-500">
-              Provider{" "}
-              <span className="font-mono">{latestAudit.providerId}</span>,{" "}
-              {latestAudit.commandCount} command(s)
+              Provider <span className="font-mono">{latestAudit.providerId}</span>, {latestAudit.commandCount}{" "}
+              command(s)
             </p>
-            {latestAudit.promptHash && (
-              <p className="text-gray-600 font-mono break-all">
-                {latestAudit.promptHash}
-              </p>
-            )}
+            {latestAudit.promptHash && <p className="text-gray-600 font-mono break-all">{latestAudit.promptHash}</p>}
           </div>
         )}
 
         <div className="space-y-1">
-          <p className="text-gray-400 font-medium">
-            Session Audit ({auditRecords.length})
-          </p>
+          <p className="text-gray-400 font-medium">Session Audit ({auditRecords.length})</p>
           {auditRecords.length === 0 ? (
             <p className="text-gray-600 italic">No session records</p>
           ) : (
@@ -375,9 +312,7 @@ export default function EvidencePanel({
               .map((record) => (
                 <div key={record.id} className="rounded bg-gray-800/70 p-2">
                   <div className="flex justify-between gap-2">
-                    <span className="font-mono text-gray-300">
-                      {record.status}
-                    </span>
+                    <span className="font-mono text-gray-300">{record.status}</span>
                     <span className="text-gray-500">
                       {record.fromRevision} to {record.toRevision}
                     </span>
@@ -386,8 +321,7 @@ export default function EvidencePanel({
                     {record.providerId} / {record.commandCount} command(s)
                   </p>
                   <p className="text-gray-600">
-                    errors {record.diagnosticCounts.error}, warnings{" "}
-                    {record.diagnosticCounts.warning}
+                    errors {record.diagnosticCounts.error}, warnings {record.diagnosticCounts.warning}
                   </p>
                 </div>
               ))
@@ -395,9 +329,7 @@ export default function EvidencePanel({
         </div>
 
         <div className="space-y-1">
-          <p className="text-gray-400 font-medium">
-            Review History ({reviewDecisions.length})
-          </p>
+          <p className="text-gray-400 font-medium">Review History ({reviewDecisions.length})</p>
           {reviewDecisions.length === 0 ? (
             <p className="text-gray-600 italic">No review decisions</p>
           ) : (
@@ -405,28 +337,17 @@ export default function EvidencePanel({
               .slice(-5)
               .reverse()
               .map((decision) => (
-                <div
-                  key={decision.decisionId}
-                  className="rounded bg-gray-800/70 p-2"
-                >
+                <div key={decision.decisionId} className="rounded bg-gray-800/70 p-2">
                   <p className="font-mono text-gray-300">{decision.outcome}</p>
-                  <p className="text-gray-500">
-                    {decision.reasonCodes.join(", ")}
-                  </p>
-                  {decision.followUpTaskIds && (
-                    <p className="text-gray-600">
-                      {decision.followUpTaskIds.join(", ")}
-                    </p>
-                  )}
+                  <p className="text-gray-500">{decision.reasonCodes.join(", ")}</p>
+                  {decision.followUpTaskIds && <p className="text-gray-600">{decision.followUpTaskIds.join(", ")}</p>}
                 </div>
               ))
           )}
         </div>
 
         <div className="space-y-1">
-          <p className="text-gray-400 font-medium">
-            Diagnostics ({diags.length})
-          </p>
+          <p className="text-gray-400 font-medium">Diagnostics ({diags.length})</p>
           {diags.length === 0 ? (
             <p className="text-gray-600 italic">No issues</p>
           ) : (
@@ -437,25 +358,18 @@ export default function EvidencePanel({
               >
                 <p className="text-gray-300 font-mono text-[11px]">{d.code}</p>
                 <p className="text-gray-400 mt-0.5">{d.message}</p>
-                {d.path && (
-                  <p className="text-gray-600 text-[10px] mt-0.5">
-                    path: {d.path}
-                  </p>
-                )}
+                {d.path && <p className="text-gray-600 text-[10px] mt-0.5">path: {d.path}</p>}
               </div>
             ))
           )}
         </div>
 
-        {!cmd &&
-          !provider &&
-          diags.length === 0 &&
-          auditRecords.length === 0 && (
-            <div className="text-center py-8 text-gray-600">
-              <p>Send a message to see</p>
-              <p>review evidence here.</p>
-            </div>
-          )}
+        {!cmd && !provider && diags.length === 0 && auditRecords.length === 0 && (
+          <div className="text-center py-8 text-gray-600">
+            <p>Send a message to see</p>
+            <p>review evidence here.</p>
+          </div>
+        )}
       </div>
     </>
   );

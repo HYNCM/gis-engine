@@ -1,12 +1,6 @@
 import type { DiagnosticCode, Scene3DStableRuntimeBlockerCode } from "./diagnostics/codes.js";
 
-export type JsonValue =
-  | null
-  | boolean
-  | number
-  | string
-  | JsonValue[]
-  | { [key: string]: JsonValue };
+export type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 
 export interface JsonPatchOperation {
   op: "add" | "remove" | "replace";

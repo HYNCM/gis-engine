@@ -14,7 +14,7 @@ const PERF_TREND_FILE_PATTERN = /^perf-trend-\d{4}-W\d{2}\.md$/;
 export const PERF_TREND_SCALES = [
   { name: "1k", featureCount: 1_000, createBudgetMs: 5_000, queryBudgetMs: 2_000, destroyBudgetMs: 1_000 },
   { name: "10k", featureCount: 10_000, createBudgetMs: 15_000, queryBudgetMs: 5_000, destroyBudgetMs: 2_000 },
-  { name: "100k", featureCount: 100_000, createBudgetMs: 60_000, queryBudgetMs: 30_000, destroyBudgetMs: 10_000 }
+  { name: "100k", featureCount: 100_000, createBudgetMs: 60_000, queryBudgetMs: 30_000, destroyBudgetMs: 10_000 },
 ];
 
 export async function measurePerfTrendScale(scale) {
@@ -32,8 +32,7 @@ export async function measurePerfTrendScale(scale) {
   const report = await runtime.destroy();
   const destroyMs = performance.now() - destroyStartedAt;
 
-  const passed =
-    createMs < scale.createBudgetMs && queryMs < scale.queryBudgetMs && destroyMs < scale.destroyBudgetMs;
+  const passed = createMs < scale.createBudgetMs && queryMs < scale.queryBudgetMs && destroyMs < scale.destroyBudgetMs;
 
   return {
     ...scale,
@@ -42,7 +41,7 @@ export async function measurePerfTrendScale(scale) {
     destroyMs,
     passed,
     queryCount: query.features.length,
-    destroyed: report.destroyed
+    destroyed: report.destroyed,
   };
 }
 
@@ -54,13 +53,7 @@ export async function collectPerfTrendMeasurements(scales = PERF_TREND_SCALES) {
   return measurements;
 }
 
-export function formatPerfTrendReport({
-  period,
-  generatedAt,
-  repoRevision,
-  measurements,
-  previousReport
-}) {
+export function formatPerfTrendReport({ period, generatedAt, repoRevision, measurements, previousReport }) {
   const lines = [
     "---",
     "title: Perf Trend Ledger",
@@ -69,7 +62,7 @@ export function formatPerfTrendReport({
     `repo_revision: "${repoRevision}"`,
     "inputs:",
     "  - tests/perf/perf-trend-ledger.test.ts",
-    "owner: \"@builder @quality\"",
+    'owner: "@builder @quality"',
     "decision_level: info",
     "---",
     "",
@@ -78,21 +71,17 @@ export function formatPerfTrendReport({
     "Evidence only. This report records local create/query/destroy measurements for inline GeoJSON fixtures.",
     "",
     "| Scale | Features | Create (ms) | Query (ms) | Destroy (ms) | Budgets (ms) | Pass |",
-    "| --- | ---: | ---: | ---: | ---: | --- | --- |"
+    "| --- | ---: | ---: | ---: | ---: | --- | --- |",
   ];
 
   for (const measurement of measurements) {
     lines.push(
-      `| ${measurement.name} | ${measurement.featureCount} | ${measurement.createMs.toFixed(1)} | ${measurement.queryMs.toFixed(1)} | ${measurement.destroyMs.toFixed(1)} | ${measurement.createBudgetMs} / ${measurement.queryBudgetMs} / ${measurement.destroyBudgetMs} | ${measurement.passed ? "yes" : "no"} |`
+      `| ${measurement.name} | ${measurement.featureCount} | ${measurement.createMs.toFixed(1)} | ${measurement.queryMs.toFixed(1)} | ${measurement.destroyMs.toFixed(1)} | ${measurement.createBudgetMs} / ${measurement.queryBudgetMs} / ${measurement.destroyBudgetMs} | ${measurement.passed ? "yes" : "no"} |`,
     );
   }
 
   const passedCount = measurements.filter((measurement) => measurement.passed).length;
-  lines.push(
-    "",
-    `Passed scales: ${passedCount}/${measurements.length}`,
-    `Collected at: ${generatedAt}`
-  );
+  lines.push("", `Passed scales: ${passedCount}/${measurements.length}`, `Collected at: ${generatedAt}`);
 
   if (previousReport) {
     const comparisonRows = comparePerfTrendMeasurements(measurements, previousReport.measurements);
@@ -102,11 +91,11 @@ export function formatPerfTrendReport({
       `Compared with ${previousReport.file} (${previousReport.period})`,
       "",
       "| Scale | Create Delta (ms) | Query Delta (ms) | Destroy Delta (ms) |",
-      "| --- | ---: | ---: | ---: |"
+      "| --- | ---: | ---: | ---: |",
     );
     for (const row of comparisonRows) {
       lines.push(
-        `| ${row.name} | ${formatDelta(row.createDeltaMs)} | ${formatDelta(row.queryDeltaMs)} | ${formatDelta(row.destroyDeltaMs)} |`
+        `| ${row.name} | ${formatDelta(row.createDeltaMs)} | ${formatDelta(row.queryDeltaMs)} | ${formatDelta(row.destroyDeltaMs)} |`,
       );
     }
   }
@@ -120,7 +109,8 @@ export async function writePerfTrendReport(options = {}) {
   const repoRevision = options.repoRevision ?? gitRevision();
   const measurements = options.measurements ?? (await collectPerfTrendMeasurements());
   const previousReport =
-    options.previousReport ?? readLatestPerfTrendReport(options.outputPath ? resolve(ROOT, options.outputPath) : undefined);
+    options.previousReport ??
+    readLatestPerfTrendReport(options.outputPath ? resolve(ROOT, options.outputPath) : undefined);
   const markdown = formatPerfTrendReport({ period, generatedAt, repoRevision, measurements, previousReport });
 
   if (options.outputPath) {
@@ -141,7 +131,7 @@ export function comparePerfTrendMeasurements(currentMeasurements, previousMeasur
       name: measurement.name,
       createDeltaMs: previous ? measurement.createMs - previous.createMs : null,
       queryDeltaMs: previous ? measurement.queryMs - previous.queryMs : null,
-      destroyDeltaMs: previous ? measurement.destroyMs - previous.destroyMs : null
+      destroyDeltaMs: previous ? measurement.destroyMs - previous.destroyMs : null,
     };
   });
 }
@@ -154,7 +144,7 @@ export function readPerfTrendReport(reportPath) {
     period: frontMatter.period,
     generatedAt: frontMatter.generatedAt,
     repoRevision: frontMatter.repoRevision,
-    measurements: parsePerfTrendMeasurements(content)
+    measurements: parsePerfTrendMeasurements(content),
   };
 }
 
@@ -166,7 +156,7 @@ export function readLatestPerfTrendReport(excludePath) {
       return {
         file,
         path,
-        generatedAt: parsePerfTrendFrontMatter(readFileSync(path, "utf8")).generatedAt
+        generatedAt: parsePerfTrendFrontMatter(readFileSync(path, "utf8")).generatedAt,
       };
     })
     .filter((report) => report.path !== excludePath)
@@ -183,8 +173,8 @@ function createInlineGeoJsonSpec(scale) {
     properties: { id: `f-${index}`, value: index },
     geometry: {
       type: "Point",
-      coordinates: [10 + (index % 100) * 0.01, 10 + Math.floor(index / 100) * 0.01]
-    }
+      coordinates: [10 + (index % 100) * 0.01, 10 + Math.floor(index / 100) * 0.01],
+    },
   }));
 
   return {
@@ -195,17 +185,17 @@ function createInlineGeoJsonSpec(scale) {
     sources: {
       [`scale-${name}`]: {
         type: "geojson",
-        data: { type: "FeatureCollection", features }
-      }
+        data: { type: "FeatureCollection", features },
+      },
     },
     layers: [
       {
         id: `scale-${name}-circle`,
         type: "circle",
         source: `scale-${name}`,
-        paint: { "circle-color": "#2563eb", "circle-radius": 3 }
-      }
-    ]
+        paint: { "circle-color": "#2563eb", "circle-radius": 3 },
+      },
+    ],
   };
 }
 
@@ -219,7 +209,7 @@ function parsePerfTrendFrontMatter(content) {
     file: undefined,
     period,
     generatedAt: Number.isNaN(generatedAt.getTime()) ? new Date(0) : generatedAt,
-    repoRevision
+    repoRevision,
   };
 }
 
@@ -232,7 +222,9 @@ function parsePerfTrendMeasurements(content) {
     const match = line.match(rowPattern);
     if (!match) continue;
     const [, name, featureCount, createMs, queryMs, destroyMs, budgets, passed] = match;
-    const [createBudgetMs, queryBudgetMs, destroyBudgetMs] = budgets.split(" / ").map((value) => Number.parseFloat(value.trim()));
+    const [createBudgetMs, queryBudgetMs, destroyBudgetMs] = budgets
+      .split(" / ")
+      .map((value) => Number.parseFloat(value.trim()));
     measurements.push({
       name,
       featureCount: Number.parseInt(featureCount, 10),
@@ -242,7 +234,7 @@ function parsePerfTrendMeasurements(content) {
       createBudgetMs,
       queryBudgetMs,
       destroyBudgetMs,
-      passed: passed === "yes"
+      passed: passed === "yes",
     });
   }
 
@@ -267,7 +259,7 @@ function gitRevision() {
   try {
     return execFileSync("git", ["rev-parse", "--short", "HEAD"], {
       cwd: ROOT,
-      encoding: "utf8"
+      encoding: "utf8",
     }).trim();
   } catch {
     return "unknown";
@@ -277,7 +269,7 @@ function gitRevision() {
 function parseArgs(argv) {
   const args = {
     outputPath: undefined,
-    period: undefined
+    period: undefined,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -302,7 +294,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const args = parseArgs(process.argv.slice(2));
   const result = await writePerfTrendReport({
     outputPath: args.outputPath,
-    period: args.period
+    period: args.period,
   });
   if (!args.outputPath) {
     process.stdout.write(result.markdown);

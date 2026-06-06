@@ -1,10 +1,10 @@
-import { describe, expect, it, vi } from "vitest";
 import {
   callProvider,
-  DEFAULT_PROVIDER_TIMEOUT_MS,
   DEFAULT_PROVIDER_BYTE_CAP,
+  DEFAULT_PROVIDER_TIMEOUT_MS,
   type ProviderProfile,
 } from "@gis-engine/cli";
+import { describe, expect, it, vi } from "vitest";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -29,9 +29,12 @@ function mockFetchSuccess(content: Record<string, unknown>) {
     status: 200,
     headers: new Headers({ "content-type": "application/json" }),
     body: null,
-    text: () => Promise.resolve(JSON.stringify({
-      choices: [{ message: { content: JSON.stringify(content) } }],
-    })),
+    text: () =>
+      Promise.resolve(
+        JSON.stringify({
+          choices: [{ message: { content: JSON.stringify(content) } }],
+        }),
+      ),
   });
 }
 
@@ -116,8 +119,8 @@ describe("provider-http-happy-path", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.providerOutput.confidence).toBeDefined();
-    expect(result.providerOutput.confidence!.level).toBe("high");
-    expect(result.providerOutput.confidence!.reasons).toHaveLength(2);
+    expect(result.providerOutput.confidence?.level).toBe("high");
+    expect(result.providerOutput.confidence?.reasons).toHaveLength(2);
   });
 
   it("parses JSON response wrapped in ```json``` fence", async () => {
@@ -127,9 +130,12 @@ describe("provider-http-happy-path", () => {
       status: 200,
       headers: new Headers({ "content-type": "application/json" }),
       body: null,
-      text: () => Promise.resolve(JSON.stringify({
-        choices: [{ message: { content: fencedContent } }],
-      })),
+      text: () =>
+        Promise.resolve(
+          JSON.stringify({
+            choices: [{ message: { content: fencedContent } }],
+          }),
+        ),
     });
 
     const result = await callProvider({
@@ -244,9 +250,12 @@ describe("provider-http-errors", () => {
       status: 200,
       headers: new Headers(),
       body: null,
-      text: () => Promise.resolve(JSON.stringify({
-        choices: [{ message: { content: "just a plain string" } }],
-      })),
+      text: () =>
+        Promise.resolve(
+          JSON.stringify({
+            choices: [{ message: { content: "just a plain string" } }],
+          }),
+        ),
     });
 
     const result = await callProvider({
@@ -375,8 +384,8 @@ describe("provider-http-confidence-sanitization", () => {
     if (!result.ok) return;
     expect(result.providerOutput.confidence).toBeDefined();
     // The reason containing the API key should be filtered out
-    expect(result.providerOutput.confidence!.reasons).not.toContain(`key is ${TEST_API_KEY}`);
-    expect(result.providerOutput.confidence!.reasons).toContain("valid geojson source");
+    expect(result.providerOutput.confidence?.reasons).not.toContain(`key is ${TEST_API_KEY}`);
+    expect(result.providerOutput.confidence?.reasons).toContain("valid geojson source");
   });
 
   it("truncates confidence reasons to max 3", async () => {
@@ -397,7 +406,7 @@ describe("provider-http-confidence-sanitization", () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.providerOutput.confidence!.reasons).toHaveLength(3);
+    expect(result.providerOutput.confidence?.reasons).toHaveLength(3);
   });
 
   it("returns undefined confidence for invalid level", async () => {

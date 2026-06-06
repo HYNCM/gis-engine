@@ -1,24 +1,24 @@
-import { Ajv } from "ajv/dist/ajv.js";
 import {
-  CapabilityReportSchema,
-  MapSpecSchema,
-  validateSpec,
   type CapabilityReport,
+  CapabilityReportSchema,
   type Diagnostic,
   type MapSpec,
-  type ValidationReport
+  MapSpecSchema,
+  type ValidationReport,
+  validateSpec,
 } from "@gis-engine/engine";
-import { getContextSummary, type ContextSummary } from "./contextSummary.js";
+import { Ajv } from "ajv/dist/ajv.js";
+import { type ContextSummary, getContextSummary } from "./contextSummary.js";
 import { toolInputErrorsToDiagnostics } from "./schemaDiagnostics.js";
 
 export const ExplainSpecToolInputSchema = {
   type: "object",
   properties: {
     spec: MapSpecSchema,
-    capabilities: CapabilityReportSchema
+    capabilities: CapabilityReportSchema,
   },
   required: ["spec"],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 export interface ExplainSpecToolInput {
@@ -43,7 +43,7 @@ export function explainSpecTool(input: unknown): ExplainSpecToolResponse {
   if (!validateInput(input)) {
     return {
       ok: false,
-      diagnostics: toolInputErrorsToDiagnostics(validateInput.errors, "Invalid explain_spec tool input.")
+      diagnostics: toolInputErrorsToDiagnostics(validateInput.errors, "Invalid explain_spec tool input."),
     };
   }
 
@@ -54,11 +54,11 @@ export function explainSpecTool(input: unknown): ExplainSpecToolResponse {
     result: {
       summary: getContextSummary({
         spec: typedInput.spec,
-        ...(typedInput.capabilities ? { capabilities: typedInput.capabilities } : {})
+        ...(typedInput.capabilities ? { capabilities: typedInput.capabilities } : {}),
       }),
       validation,
-      diagnostics: validation.diagnostics
+      diagnostics: validation.diagnostics,
     },
-    diagnostics: []
+    diagnostics: [],
   };
 }

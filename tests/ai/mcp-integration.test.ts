@@ -1,11 +1,11 @@
+import { callGisEngineTool, createGisEngineMcpServer, listGisEngineTools } from "@gis-engine/ai";
+import type { MapSpec } from "@gis-engine/engine";
 import { describe, expect, it } from "vitest";
+import pmtilesLocalSpec from "../../examples/pmtiles-local/map.json";
 import before from "../fixtures/commands/replay/style-update/before.map.json";
 import commands from "../fixtures/commands/replay/style-update/commands.json";
 import scene3dExtensionSpec from "../fixtures/specs/valid/scene3d-extension.map.json";
 import vectorTileUrl from "../fixtures/specs/valid/vector-tile-url.map.json";
-import pmtilesLocalSpec from "../../examples/pmtiles-local/map.json";
-import type { MapSpec } from "@gis-engine/engine";
-import { callGisEngineTool, createGisEngineMcpServer, listGisEngineTools } from "@gis-engine/ai";
 
 function manifestDeliverySummary(status: "ready" | "blocked" | "needs-confirmation" | "follow-up-required" = "ready") {
   return {
@@ -15,7 +15,7 @@ function manifestDeliverySummary(status: "ready" | "blocked" | "needs-confirmati
       ready: status === "ready",
       blocked: status === "blocked",
       needsConfirmation: status === "needs-confirmation",
-      followUpRequired: status === "follow-up-required"
+      followUpRequired: status === "follow-up-required",
     },
     sections: [
       {
@@ -23,7 +23,7 @@ function manifestDeliverySummary(status: "ready" | "blocked" | "needs-confirmati
         status,
         blockerCount: status === "blocked" ? 1 : 0,
         confirmationRequired: status === "needs-confirmation",
-        followUpCount: status === "follow-up-required" ? 1 : 0
+        followUpCount: status === "follow-up-required" ? 1 : 0,
       },
       { id: "files", status: "ready", blockerCount: 0, confirmationRequired: false, followUpCount: 0 },
       {
@@ -31,29 +31,33 @@ function manifestDeliverySummary(status: "ready" | "blocked" | "needs-confirmati
         status: status === "blocked" ? "blocked" : "ready",
         blockerCount: status === "blocked" ? 1 : 0,
         confirmationRequired: false,
-        followUpCount: 0
+        followUpCount: 0,
       },
       {
         id: "data-and-analysis",
         status: status === "needs-confirmation" ? "needs-confirmation" : "ready",
         blockerCount: 0,
         confirmationRequired: status === "needs-confirmation",
-        followUpCount: 0
+        followUpCount: 0,
       },
       {
         id: "scene-browsing",
         status: status === "follow-up-required" ? "follow-up-required" : "ready",
         blockerCount: 0,
         confirmationRequired: false,
-        followUpCount: status === "follow-up-required" ? 1 : 0
-      }
+        followUpCount: status === "follow-up-required" ? 1 : 0,
+      },
     ],
     confirmations: [
-      { reason: "external-resource", required: status === "needs-confirmation", target: "MapSpec.sources URL-bearing entries" },
+      {
+        reason: "external-resource",
+        required: status === "needs-confirmation",
+        target: "MapSpec.sources URL-bearing entries",
+      },
       { reason: "network-fetch", required: false, target: "future resource loader fetch" },
       { reason: "archive-parsing", required: false, target: "future archive parser or range reader" },
       { reason: "worker-use", required: false, target: "future worker-backed data decode" },
-      { reason: "file-write", required: false, target: "export_example_app manifest output" }
+      { reason: "file-write", required: false, target: "export_example_app manifest output" },
     ],
     confirmationRequired: status === "needs-confirmation",
     followUps: [],
@@ -79,8 +83,8 @@ function manifestDeliverySummary(status: "ready" | "blocked" | "needs-confirmati
       missingSourceIds: [],
       hiddenLayerIds: [],
       blockedOperations: [],
-      cases: []
-    }
+      cases: [],
+    },
   };
 }
 
@@ -97,7 +101,7 @@ describe("MCP Server Integration", () => {
       "get_context_summary",
       "snapshot_spec",
       "explain_spec",
-      "export_example_app"
+      "export_example_app",
     ]);
     expect(tools.map((tool) => tool.name)).not.toContain("snapshotSpec");
     expect(tools.map((tool) => tool.name)).not.toContain("explainSpec");
@@ -114,13 +118,13 @@ describe("MCP Server Integration", () => {
             version: "0.1",
             view: { center: [200, 100] },
             sources: {},
-            layers: []
-          }
-        }
-      }
+            layers: [],
+          },
+        },
+      },
     });
 
-    const report = JSON.parse(result.content[0]!.text) as { valid: boolean; diagnostics: Array<{ code: string }> };
+    const report = JSON.parse(result.content[0]?.text) as { valid: boolean; diagnostics: Array<{ code: string }> };
     expect(report.valid).toBe(false);
     expect(report.diagnostics.some((diagnostic) => diagnostic.code === "GEO.INVALID_COORDINATES")).toBe(true);
   });
@@ -129,11 +133,11 @@ describe("MCP Server Integration", () => {
     const result = await callGisEngineTool({
       params: {
         name: "validate_spec",
-        arguments: {}
-      }
+        arguments: {},
+      },
     });
 
-    const diagnostics = JSON.parse(result.content[0]!.text) as Array<{ code: string; path?: string }>;
+    const diagnostics = JSON.parse(result.content[0]?.text) as Array<{ code: string; path?: string }>;
     expect(result.isError).toBe(true);
     expect(diagnostics).toContainEqual(expect.objectContaining({ code: "SPEC.MISSING_FIELD", path: "/" }));
   });
@@ -144,12 +148,12 @@ describe("MCP Server Integration", () => {
         name: "export_spec",
         arguments: {
           spec: before,
-          commands
-        }
-      }
+          commands,
+        },
+      },
     });
 
-    const spec = JSON.parse(result.content[0]!.text) as { revision?: string };
+    const spec = JSON.parse(result.content[0]?.text) as { revision?: string };
     expect(spec.revision).toBe("2");
   });
 
@@ -161,12 +165,12 @@ describe("MCP Server Integration", () => {
           spec: before,
           commands,
           collectTrace: true,
-          traceId: "mcp-audit-1"
-        }
-      }
+          traceId: "mcp-audit-1",
+        },
+      },
     });
 
-    const payload = JSON.parse(result.content[0]!.text) as {
+    const payload = JSON.parse(result.content[0]?.text) as {
       traceId: string;
       traces?: Array<{ traceId: string; commandId: string; status: string; changedPaths: string[] }>;
     };
@@ -176,7 +180,7 @@ describe("MCP Server Integration", () => {
       traceId: "mcp-audit-1",
       commandId: "cmd-style-districts",
       status: "applied",
-      changedPaths: ["/layers/0/paint/fill-color", "/layers/0/paint/fill-opacity", "/revision"]
+      changedPaths: ["/layers/0/paint/fill-color", "/layers/0/paint/fill-opacity", "/revision"],
     });
   });
 
@@ -186,23 +190,28 @@ describe("MCP Server Integration", () => {
     const invalidSpecResult = await callGisEngineTool({
       params: {
         name: "export_spec",
-        arguments: { spec: invalidSpec }
-      }
+        arguments: { spec: invalidSpec },
+      },
     });
-    const validationDiagnostics = JSON.parse(invalidSpecResult.content[0]!.text) as Array<{ code: string; path?: string }>;
+    const validationDiagnostics = JSON.parse(invalidSpecResult.content[0]?.text) as Array<{
+      code: string;
+      path?: string;
+    }>;
     expect(invalidSpecResult.isError).toBe(true);
-    expect(validationDiagnostics).toContainEqual(expect.objectContaining({ code: "GEO.INVALID_COORDINATES", path: "/view/center" }));
+    expect(validationDiagnostics).toContainEqual(
+      expect.objectContaining({ code: "GEO.INVALID_COORDINATES", path: "/view/center" }),
+    );
 
     const invalidCommandResult = await callGisEngineTool({
       params: {
         name: "export_spec",
         arguments: {
           spec: before,
-          commands: [{ id: "cmd-view", version: "0.1", type: "setView", view: { zoom: 8 }, unexpected: true }]
-        }
-      }
+          commands: [{ id: "cmd-view", version: "0.1", type: "setView", view: { zoom: 8 }, unexpected: true }],
+        },
+      },
     });
-    const commandDiagnostics = JSON.parse(invalidCommandResult.content[0]!.text) as Array<{ code: string }>;
+    const commandDiagnostics = JSON.parse(invalidCommandResult.content[0]?.text) as Array<{ code: string }>;
     expect(invalidCommandResult.isError).toBe(true);
     expect(commandDiagnostics).toContainEqual(expect.objectContaining({ code: "SPEC.UNKNOWN_FIELD" }));
   });
@@ -211,11 +220,11 @@ describe("MCP Server Integration", () => {
     const result = await callGisEngineTool({
       params: {
         name: "get_context_summary",
-        arguments: { spec: before }
-      }
+        arguments: { spec: before },
+      },
     });
 
-    const summary = JSON.parse(result.content[0]!.text) as {
+    const summary = JSON.parse(result.content[0]?.text) as {
       id?: string;
       revision?: string;
       sources: Array<{ id: string; type: string }>;
@@ -240,27 +249,35 @@ describe("MCP Server Integration", () => {
         type: "geojson",
         state: "readiness-only",
         queryReady: false,
-        resourcePolicy: "passed"
-      })
+        resourcePolicy: "passed",
+      }),
     );
     expect(summary.validation).toMatchObject({ valid: true, diagnosticCounts: { error: 0 } });
-    expect(summary.capabilitySummary.domains.map((domain) => domain.id)).toEqual(["feature-display", "spatial-analysis", "scene-browsing"]);
+    expect(summary.capabilitySummary.domains.map((domain) => domain.id)).toEqual([
+      "feature-display",
+      "spatial-analysis",
+      "scene-browsing",
+    ]);
     expect(summary.capabilitySummary.domains.find((domain) => domain.id === "feature-display")).toMatchObject({
-      status: "supported"
+      status: "supported",
     });
-    expect(summary.capabilitySummary.domains.find((domain) => domain.id === "feature-display")?.tools.join(" ")).toContain("apply_commands");
-    expect(summary.capabilitySummary.domains.find((domain) => domain.id === "spatial-analysis")?.blocked.join(" ")).toContain("buffer");
+    expect(
+      summary.capabilitySummary.domains.find((domain) => domain.id === "feature-display")?.tools.join(" "),
+    ).toContain("apply_commands");
+    expect(
+      summary.capabilitySummary.domains.find((domain) => domain.id === "spatial-analysis")?.blocked.join(" "),
+    ).toContain("buffer");
   });
 
   it("surfaces PMTiles archive contract status in context summaries", async () => {
     const result = await callGisEngineTool({
       params: {
         name: "get_context_summary",
-        arguments: { spec: pmtilesLocalSpec }
-      }
+        arguments: { spec: pmtilesLocalSpec },
+      },
     });
 
-    const summary = JSON.parse(result.content[0]!.text) as {
+    const summary = JSON.parse(result.content[0]?.text) as {
       validation: { valid: boolean };
       sources: Array<{
         id: string;
@@ -295,9 +312,9 @@ describe("MCP Server Integration", () => {
           kind: "archive",
           state: "explicit",
           metadataFields: expect.arrayContaining(["specVersion", "archiveBytes", "rootDirectoryLength"]),
-          policyFields: expect.arrayContaining(["maxArchiveBytes", "allowRangeRequests", "timeoutMs"])
-        })
-      })
+          policyFields: expect.arrayContaining(["maxArchiveBytes", "allowRangeRequests", "timeoutMs"]),
+        }),
+      }),
     );
     expect(summary.sourceReadiness).toContainEqual(
       expect.objectContaining({
@@ -309,9 +326,9 @@ describe("MCP Server Integration", () => {
         archiveContract: expect.objectContaining({
           state: "explicit",
           metadataFields: expect.arrayContaining(["specVersion", "archiveBytes", "rootDirectoryLength"]),
-          policyFields: expect.arrayContaining(["maxArchiveBytes", "allowRangeRequests", "timeoutMs"])
-        })
-      })
+          policyFields: expect.arrayContaining(["maxArchiveBytes", "allowRangeRequests", "timeoutMs"]),
+        }),
+      }),
     );
   });
 
@@ -319,11 +336,11 @@ describe("MCP Server Integration", () => {
     const result = await callGisEngineTool({
       params: {
         name: "get_context_summary",
-        arguments: { spec: scene3dExtensionSpec }
-      }
+        arguments: { spec: scene3dExtensionSpec },
+      },
     });
 
-    const summary = JSON.parse(result.content[0]!.text) as {
+    const summary = JSON.parse(result.content[0]?.text) as {
       scene3d?: {
         status: string;
         stableViewMode: boolean;
@@ -350,24 +367,29 @@ describe("MCP Server Integration", () => {
       pickableLayerCount: 2,
       snapshot: { mockPassed: true, pendingSourceIds: [] },
       query: { pickCount: 2 },
-      capabilities: { renderer: "scene3d", dimensions: ["3d"] }
+      capabilities: { renderer: "scene3d", dimensions: ["3d"] },
     });
     expect(summary.scene3d).not.toHaveProperty("rendererEvidence");
     expect(summary.scene3d).not.toHaveProperty("promotionEvidence");
     const sceneDomain = summary.capabilitySummary.domains.find((domain) => domain.id === "scene-browsing");
     expect(sceneDomain).toMatchObject({ status: "experimental" });
     expect(sceneDomain?.blocked.join(" ")).toContain('stable view.mode: "scene3d" runtime rendering is blocked');
-    expect(sceneDomain?.evidence).toEqual(expect.arrayContaining(["scene3d.status=extension-only", "scene3d.stableViewMode=false"]));
+    expect(sceneDomain?.evidence).toEqual(
+      expect.arrayContaining(["scene3d.status=extension-only", "scene3d.stableViewMode=false"]),
+    );
   });
 
   it("covers v0.2 vector tile and expression contracts through MCP tools", async () => {
     const validateResult = await callGisEngineTool({
       params: {
         name: "validate_spec",
-        arguments: { spec: vectorTileUrl }
-      }
+        arguments: { spec: vectorTileUrl },
+      },
     });
-    const validation = JSON.parse(validateResult.content[0]!.text) as { valid: boolean; diagnostics: Array<{ code: string }> };
+    const validation = JSON.parse(validateResult.content[0]?.text) as {
+      valid: boolean;
+      diagnostics: Array<{ code: string }>;
+    };
     expect(validateResult.isError).toBeUndefined();
     expect(validation.valid).toBe(true);
     expect(validation.diagnostics).toEqual([]);
@@ -385,12 +407,12 @@ describe("MCP Server Integration", () => {
             expressions: ["case", "match", "zoom", "to-number", "to-string"],
             queries: ["point"],
             snapshot: { supported: true, formats: ["data-url"] },
-            experimental: []
-          }
-        }
-      }
+            experimental: [],
+          },
+        },
+      },
     });
-    const explanation = JSON.parse(explainResult.content[0]!.text) as {
+    const explanation = JSON.parse(explainResult.content[0]?.text) as {
       summary: {
         sources: Array<{ id: string; type: string }>;
         layers: Array<{ id: string; type: string; source?: string }>;
@@ -404,10 +426,14 @@ describe("MCP Server Integration", () => {
     expect(explanation.summary.sources).toEqual([{ id: "local-parcels", type: "vector" }]);
     expect(explanation.summary.layers.map((layer) => layer.id)).toEqual(["parcel-fill", "parcel-outline"]);
     expect(explanation.summary.capabilities?.sources).toContain("vector");
-    expect(explanation.summary.capabilities?.expressions).toEqual(expect.arrayContaining(["case", "match", "zoom", "to-number", "to-string"]));
-    expect(explanation.summary.capabilitySummary.domains.find((domain) => domain.id === "spatial-analysis")?.supported.join(" ")).toContain(
-      "declared query capabilities: point"
+    expect(explanation.summary.capabilities?.expressions).toEqual(
+      expect.arrayContaining(["case", "match", "zoom", "to-number", "to-string"]),
     );
+    expect(
+      explanation.summary.capabilitySummary.domains
+        .find((domain) => domain.id === "spatial-analysis")
+        ?.supported.join(" "),
+    ).toContain("declared query capabilities: point");
 
     const snapshotResult = await callGisEngineTool({
       params: {
@@ -415,11 +441,15 @@ describe("MCP Server Integration", () => {
         arguments: {
           spec: vectorTileUrl,
           renderer: "maplibre",
-          snapshot: { width: 320, height: 180, format: "data-url", targetLayers: ["parcel-fill"] }
-        }
-      }
+          snapshot: { width: 320, height: 180, format: "data-url", targetLayers: ["parcel-fill"] },
+        },
+      },
     });
-    const snapshot = JSON.parse(snapshotResult.content[0]!.text) as { passed: boolean; dataUrl?: string; validation: { valid: boolean } };
+    const snapshot = JSON.parse(snapshotResult.content[0]?.text) as {
+      passed: boolean;
+      dataUrl?: string;
+      validation: { valid: boolean };
+    };
     expect(snapshotResult.isError).toBeUndefined();
     expect(snapshot.validation.valid).toBe(true);
     expect(snapshot.passed).toBe(true);
@@ -428,10 +458,10 @@ describe("MCP Server Integration", () => {
     const exportResult = await callGisEngineTool({
       params: {
         name: "export_spec",
-        arguments: { spec: vectorTileUrl }
-      }
+        arguments: { spec: vectorTileUrl },
+      },
     });
-    const exported = JSON.parse(exportResult.content[0]!.text) as typeof vectorTileUrl;
+    const exported = JSON.parse(exportResult.content[0]?.text) as typeof vectorTileUrl;
     expect(exportResult.isError).toBeUndefined();
     expect(exported.sources["local-parcels"].type).toBe("vector");
     expect(exported.layers[0]?.metadata?.["source-layer"]).toBe("parcels");
@@ -452,19 +482,19 @@ describe("MCP Server Integration", () => {
             queries: ["point"],
             snapshot: { supported: true, formats: ["gif"] },
             experimental: [],
-            unexpected: true
-          }
-        }
-      }
+            unexpected: true,
+          },
+        },
+      },
     });
-    const diagnostics = JSON.parse(result.content[0]!.text) as Array<{ code: string; path?: string }>;
+    const diagnostics = JSON.parse(result.content[0]?.text) as Array<{ code: string; path?: string }>;
     expect(result.isError).toBe(true);
     expect(diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ code: "SPEC.UNKNOWN_FIELD", path: "/capabilities" }),
         expect.objectContaining({ code: "SPEC.INVALID_TYPE", path: "/capabilities/dimensions/0" }),
-        expect.objectContaining({ code: "SPEC.INVALID_TYPE", path: "/capabilities/snapshot/formats/0" })
-      ])
+        expect.objectContaining({ code: "SPEC.INVALID_TYPE", path: "/capabilities/snapshot/formats/0" }),
+      ]),
     );
   });
 
@@ -474,24 +504,27 @@ describe("MCP Server Integration", () => {
       ...invalidSpec.layers[0]!,
       paint: {
         "fill-color": ["match", ["get", "class"], { bad: "label" }, "#22c55e", "#f97316"],
-        "fill-opacity": ["case", "not-boolean", 0.4, 0.2]
-      }
+        "fill-opacity": ["case", "not-boolean", 0.4, 0.2],
+      },
     };
 
     const result = await callGisEngineTool({
       params: {
         name: "validate_spec",
-        arguments: { spec: invalidSpec }
-      }
+        arguments: { spec: invalidSpec },
+      },
     });
-    const report = JSON.parse(result.content[0]!.text) as { valid: boolean; diagnostics: Array<{ code: string; path?: string }> };
+    const report = JSON.parse(result.content[0]?.text) as {
+      valid: boolean;
+      diagnostics: Array<{ code: string; path?: string }>;
+    };
     expect(result.isError).toBeUndefined();
     expect(report.valid).toBe(false);
     expect(report.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ code: "EXPR.TYPE_MISMATCH", path: "/layers/0/paint/fill-color/2" }),
-        expect.objectContaining({ code: "EXPR.TYPE_MISMATCH", path: "/layers/0/paint/fill-opacity/1" })
-      ])
+        expect.objectContaining({ code: "EXPR.TYPE_MISMATCH", path: "/layers/0/paint/fill-opacity/1" }),
+      ]),
     );
   });
 
@@ -499,20 +532,20 @@ describe("MCP Server Integration", () => {
     const contextResult = await callGisEngineTool({
       params: {
         name: "get_context_summary",
-        arguments: { spec: before, unexpected: true }
-      }
+        arguments: { spec: before, unexpected: true },
+      },
     });
-    const contextDiagnostics = JSON.parse(contextResult.content[0]!.text) as Array<{ code: string }>;
+    const contextDiagnostics = JSON.parse(contextResult.content[0]?.text) as Array<{ code: string }>;
     expect(contextResult.isError).toBe(true);
     expect(contextDiagnostics).toContainEqual(expect.objectContaining({ code: "SPEC.UNKNOWN_FIELD" }));
 
     const unknownToolResult = await callGisEngineTool({
       params: {
         name: "missing_tool",
-        arguments: {}
-      }
+        arguments: {},
+      },
     });
-    const unknownToolDiagnostics = JSON.parse(unknownToolResult.content[0]!.text) as Array<{ code: string }>;
+    const unknownToolDiagnostics = JSON.parse(unknownToolResult.content[0]?.text) as Array<{ code: string }>;
     expect(unknownToolResult.isError).toBe(true);
     expect(unknownToolDiagnostics).toContainEqual(expect.objectContaining({ code: "COMMAND.UNSUPPORTED" }));
   });
@@ -524,12 +557,12 @@ describe("MCP Server Integration", () => {
         arguments: {
           spec: before,
           renderer: "maplibre",
-          snapshot: { width: 320, height: 180, format: "data-url" }
-        }
-      }
+          snapshot: { width: 320, height: 180, format: "data-url" },
+        },
+      },
     });
 
-    const snapshot = JSON.parse(result.content[0]!.text) as {
+    const snapshot = JSON.parse(result.content[0]?.text) as {
       passed: boolean;
       renderer: string;
       dataUrl?: string;
@@ -551,14 +584,14 @@ describe("MCP Server Integration", () => {
         arguments: {
           spec: {
             ...before,
-            view: { ...before.view, center: [200, 100] }
+            view: { ...before.view, center: [200, 100] },
           },
-          renderer: "mock"
-        }
-      }
+          renderer: "mock",
+        },
+      },
     });
 
-    const snapshot = JSON.parse(result.content[0]!.text) as {
+    const snapshot = JSON.parse(result.content[0]?.text) as {
       passed: boolean;
       validation: { valid: boolean };
       diagnostics: Array<{ code: string; path?: string }>;
@@ -566,7 +599,9 @@ describe("MCP Server Integration", () => {
     expect(result.isError).toBeUndefined();
     expect(snapshot.passed).toBe(false);
     expect(snapshot.validation.valid).toBe(false);
-    expect(snapshot.diagnostics).toContainEqual(expect.objectContaining({ code: "GEO.INVALID_COORDINATES", path: "/view/center" }));
+    expect(snapshot.diagnostics).toContainEqual(
+      expect.objectContaining({ code: "GEO.INVALID_COORDINATES", path: "/view/center" }),
+    );
   });
 
   it("rejects scene3d snapshot requests through the MCP schema", async () => {
@@ -575,12 +610,12 @@ describe("MCP Server Integration", () => {
         name: "snapshot_spec",
         arguments: {
           spec: before,
-          renderer: "scene3d"
-        }
-      }
+          renderer: "scene3d",
+        },
+      },
     });
 
-    const diagnostics = JSON.parse(result.content[0]!.text) as Array<{ code: string; path?: string }>;
+    const diagnostics = JSON.parse(result.content[0]?.text) as Array<{ code: string; path?: string }>;
     expect(result.isError).toBe(true);
     expect(diagnostics).toContainEqual(expect.objectContaining({ code: "SPEC.INVALID_TYPE", path: "/renderer" }));
   });
@@ -597,15 +632,15 @@ describe("MCP Server Integration", () => {
               {
                 id: "broken-layer",
                 type: "circle",
-                source: "missing-source"
-              }
-            ]
-          }
-        }
-      }
+                source: "missing-source",
+              },
+            ],
+          },
+        },
+      },
     });
 
-    const explanation = JSON.parse(result.content[0]!.text) as {
+    const explanation = JSON.parse(result.content[0]?.text) as {
       summary: {
         id?: string;
         validation: { valid: boolean; diagnosticCounts: { error: number } };
@@ -633,25 +668,32 @@ describe("MCP Server Integration", () => {
             status: "ready",
             delivery: manifestDeliverySummary(),
             targetDomains: ["feature-display", "spatial-analysis"],
-            toolSequence: ["get_context_summary", "validate_spec", "apply_commands", "snapshot_spec", "export_spec", "export_example_app"],
+            toolSequence: [
+              "get_context_summary",
+              "validate_spec",
+              "apply_commands",
+              "snapshot_spec",
+              "export_spec",
+              "export_example_app",
+            ],
             diagnosticCounts: { error: 0, warning: 0, info: 0 },
             command: {
               usedApplyCommands: true,
               commandCount: 2,
               committed: true,
-              rolledBack: false
+              rolledBack: false,
             },
             planner: {
               provided: true,
               confidenceLevel: "high",
-              unsupportedIntentCount: 0
+              unsupportedIntentCount: 0,
             },
             spatialQuery: {
               requested: true,
               ready: true,
               status: "ready",
               caseCount: 2,
-              blockedOperations: []
+              blockedOperations: [],
             },
             sceneBrowsing: {
               requested: false,
@@ -668,24 +710,24 @@ describe("MCP Server Integration", () => {
               pickableLayerCount: 0,
               mockSnapshotPassed: false,
               mockQueryPickCount: 0,
-              stableRuntimeBlockerCodes: []
+              stableRuntimeBlockerCodes: [],
             },
             snapshot: {
               requested: true,
               renderer: "mock",
-              passed: true
+              passed: true,
             },
             export: {
               ready: true,
               sourceCount: 1,
-              layerCount: 1
-            }
-          }
-        }
-      }
+              layerCount: 1,
+            },
+          },
+        },
+      },
     });
 
-    const manifest = JSON.parse(result.content[0]!.text) as {
+    const manifest = JSON.parse(result.content[0]?.text) as {
       exampleId: string;
       writesFiles: boolean;
       files: Array<Record<string, unknown>>;
@@ -711,9 +753,9 @@ describe("MCP Server Integration", () => {
       spatialQuery: { caseCount: 2 },
       sceneBrowsing: {
         requested: false,
-        stableRuntimeBlockerCodes: []
+        stableRuntimeBlockerCodes: [],
       },
-      snapshot: { renderer: "mock", passed: true }
+      snapshot: { renderer: "mock", passed: true },
     });
   });
 
@@ -728,25 +770,32 @@ describe("MCP Server Integration", () => {
             status: "ready",
             delivery: manifestDeliverySummary("follow-up-required"),
             targetDomains: ["scene-browsing"],
-            toolSequence: ["get_context_summary", "validate_spec", "apply_commands", "snapshot_spec", "export_spec", "export_example_app"],
+            toolSequence: [
+              "get_context_summary",
+              "validate_spec",
+              "apply_commands",
+              "snapshot_spec",
+              "export_spec",
+              "export_example_app",
+            ],
             diagnosticCounts: { error: 0, warning: 0, info: 0 },
             command: {
               usedApplyCommands: true,
               commandCount: 3,
               committed: true,
-              rolledBack: false
+              rolledBack: false,
             },
             planner: {
               provided: true,
               confidenceLevel: "medium",
-              unsupportedIntentCount: 0
+              unsupportedIntentCount: 0,
             },
             spatialQuery: {
               requested: false,
               ready: false,
               status: "not-requested",
               caseCount: 0,
-              blockedOperations: []
+              blockedOperations: [],
             },
             sceneBrowsing: {
               requested: true,
@@ -766,25 +815,25 @@ describe("MCP Server Integration", () => {
               stableRuntimeBlockerCodes: [
                 "SCENE3D.STABLE_RUNTIME_DIMENSIONS_BLOCKED",
                 "SCENE3D.STABLE_RUNTIME_RENDERER_BLOCKED",
-                "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED"
-              ]
+                "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED",
+              ],
             },
             snapshot: {
               requested: true,
               renderer: "mock",
-              passed: true
+              passed: true,
             },
             export: {
               ready: true,
               sourceCount: 0,
-              layerCount: 0
-            }
-          }
-        }
-      }
+              layerCount: 0,
+            },
+          },
+        },
+      },
     });
 
-    const manifest = JSON.parse(result.content[0]!.text) as {
+    const manifest = JSON.parse(result.content[0]?.text) as {
       writesFiles: boolean;
       generationEvidence?: {
         sceneBrowsing: {
@@ -810,8 +859,8 @@ describe("MCP Server Integration", () => {
       stableRuntimeBlockerCodes: [
         "SCENE3D.STABLE_RUNTIME_DIMENSIONS_BLOCKED",
         "SCENE3D.STABLE_RUNTIME_RENDERER_BLOCKED",
-        "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED"
-      ]
+        "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED",
+      ],
     });
   });
 });

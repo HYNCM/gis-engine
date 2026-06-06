@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { DiagnosticCodes } from "@gis-engine/engine";
 import { normalizeWorkbenchProviderPlan } from "@gis-engine/ai";
+import { DiagnosticCodes } from "@gis-engine/engine";
+import { describe, expect, it } from "vitest";
 
 describe("workbench provider plan normalization", () => {
   it("accepts structured provider intent and produces a planner plan", () => {
@@ -14,14 +14,14 @@ describe("workbench provider plan normalization", () => {
         styleEdits: [
           {
             layerId: "poi-circles",
-            paint: { "circle-color": "#ef4444" }
-          }
-        ]
+            paint: { "circle-color": "#ef4444" },
+          },
+        ],
       },
       confidence: {
         level: "medium",
-        reasons: ["Provider returned structured feature-display intent."]
-      }
+        reasons: ["Provider returned structured feature-display intent."],
+      },
     });
 
     expect(response.ok).toBe(true);
@@ -34,8 +34,8 @@ describe("workbench provider plan normalization", () => {
       retainedRawPrompt: false,
       confidence: {
         level: "medium",
-        reasons: ["Provider returned structured feature-display intent."]
-      }
+        reasons: ["Provider returned structured feature-display intent."],
+      },
     });
   });
 
@@ -44,7 +44,7 @@ describe("workbench provider plan normalization", () => {
       providerId: "unsafe-provider",
       promptHash: "sha256:unsafe-provider",
       rawPrompt: "make points red",
-      javascript: "map.setPaintProperty('poi-circles', 'circle-color', 'red')"
+      javascript: "map.setPaintProperty('poi-circles', 'circle-color', 'red')",
     });
 
     expect(response.ok).toBe(false);
@@ -52,8 +52,8 @@ describe("workbench provider plan normalization", () => {
       expect.objectContaining({
         severity: "error",
         code: DiagnosticCodes.CapabilityUnsupported,
-        path: "/providerOutput"
-      })
+        path: "/providerOutput",
+      }),
     ]);
   });
 
@@ -67,8 +67,8 @@ describe("workbench provider plan normalization", () => {
       intent: {
         mapId: "provider-feature-display",
         targetDomains: ["feature-display"],
-        styleEdits: [{ layerId: "poi-circles", paint: { "circle-color": "#ef4444" } }]
-      }
+        styleEdits: [{ layerId: "poi-circles", paint: { "circle-color": "#ef4444" } }],
+      },
     });
 
     expect(response.ok).toBe(true);
@@ -89,8 +89,8 @@ describe("workbench provider plan normalization", () => {
       intent: {
         mapId: "provider-feature-display",
         targetDomains: ["feature-display"],
-        styleEdits: [{ layerId: "poi-circles", paint: { "circle-color": "#ef4444" } }]
-      }
+        styleEdits: [{ layerId: "poi-circles", paint: { "circle-color": "#ef4444" } }],
+      },
     });
 
     expect(response.ok).toBe(false);
@@ -98,8 +98,8 @@ describe("workbench provider plan normalization", () => {
       expect.objectContaining({
         severity: "error",
         code: DiagnosticCodes.CapabilityUnsupported,
-        path: "/providerOutput"
-      })
+        path: "/providerOutput",
+      }),
     );
     expect(JSON.stringify(response)).not.toContain(rawPromptHash);
   });

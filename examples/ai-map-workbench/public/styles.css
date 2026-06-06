@@ -32,11 +32,15 @@ body {
   overflow: hidden;
   background:
     linear-gradient(90deg, rgba(23, 27, 24, 0.035) 1px, transparent 1px),
-    linear-gradient(rgba(23, 27, 24, 0.025) 1px, transparent 1px),
-    #eef2ee;
+    linear-gradient(rgba(23, 27, 24, 0.025) 1px, transparent 1px), #eef2ee;
   background-size: 28px 28px;
   color: var(--ink);
-  font-family: Avenir Next, Aptos, ui-sans-serif, system-ui, sans-serif;
+  font-family:
+    Avenir Next,
+    Aptos,
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
 }
 
 button,

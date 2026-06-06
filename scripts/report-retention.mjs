@@ -1,14 +1,11 @@
 #!/usr/bin/env node
 
-import { readFileSync, readdirSync, unlinkSync } from "node:fs";
+import { readdirSync, readFileSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 
 const ROOT = new URL("..", import.meta.url).pathname;
 const REVIEW_DIR = join(ROOT, "docs/reviews");
-const KEEP_COUNT = Number.parseInt(
-  process.argv.find((arg) => arg.startsWith("--keep="))?.split("=")[1] ?? "7",
-  10,
-);
+const KEEP_COUNT = Number.parseInt(process.argv.find((arg) => arg.startsWith("--keep="))?.split("=")[1] ?? "7", 10);
 const apply = process.argv.includes("--apply");
 
 const REPORT_CLASSES = [
@@ -52,9 +49,7 @@ let deleteCount = 0;
 for (const reportClass of REPORT_CLASSES) {
   const reports = collectReports(reportClass.pattern);
   const stale = reports.slice(KEEP_COUNT);
-  console.log(
-    `${reportClass.name}: ${reports.length} found, ${stale.length} stale, keep ${KEEP_COUNT}`,
-  );
+  console.log(`${reportClass.name}: ${reports.length} found, ${stale.length} stale, keep ${KEEP_COUNT}`);
   for (const report of stale) {
     deleteCount += 1;
     if (apply) {

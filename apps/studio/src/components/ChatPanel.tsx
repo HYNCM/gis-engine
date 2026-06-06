@@ -1,19 +1,19 @@
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
   AuditRecord,
   ChatMessage,
   ProviderProfile,
   ReviewDecision,
-  SavedMapReviewLedgerAuditStatus,
-  SavedMapReviewLedgerQuery,
-  SavedMapReviewLedgerReviewOutcome,
+  SavedMapHandoff,
   SavedMapReviewExport,
   SavedMapReviewExportEvent,
   SavedMapReviewExportKind,
   SavedMapReviewExportQuery,
   SavedMapReviewExportStatus,
-  SavedMapHandoff,
   SavedMapReviewLedger,
+  SavedMapReviewLedgerAuditStatus,
+  SavedMapReviewLedgerQuery,
+  SavedMapReviewLedgerReviewOutcome,
   SavedMapSummary,
 } from "../App";
 
@@ -116,21 +116,15 @@ function exportEventSummary(event: SavedMapReviewExportEvent) {
       event.commandCount ?? 0
     } command(s)`;
   }
-  return `delivery ${event.deliveryStatus ?? "unknown"} · ${
-    event.commandEvidence?.commandCount ?? 0
-  } command(s)`;
+  return `delivery ${event.deliveryStatus ?? "unknown"} · ${event.commandEvidence?.commandCount ?? 0} command(s)`;
 }
 
 function auditRecordSummary(record: AuditRecord) {
-  return `revision ${record.fromRevision} -> ${record.toRevision} · ${
-    record.commandCount
-  } command(s)`;
+  return `revision ${record.fromRevision} -> ${record.toRevision} · ${record.commandCount} command(s)`;
 }
 
 function reviewDecisionSummary(decision: ReviewDecision) {
-  return `delivery ${decision.deliveryStatus ?? "unknown"} · ${
-    decision.commandEvidence?.commandCount ?? 0
-  } command(s)`;
+  return `delivery ${decision.deliveryStatus ?? "unknown"} · ${decision.commandEvidence?.commandCount ?? 0} command(s)`;
 }
 
 export default function ChatPanel({
@@ -156,7 +150,7 @@ export default function ChatPanel({
   const bottomRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -171,16 +165,10 @@ export default function ChatPanel({
     <>
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 shrink-0">
         <div>
-          <p className="text-xs text-blue-400 font-medium tracking-wide">
-            GIS ENGINE
-          </p>
+          <p className="text-xs text-blue-400 font-medium tracking-wide">GIS ENGINE</p>
           <h1 className="text-base font-semibold">AI Map Studio</h1>
         </div>
-        <button
-          onClick={onClose}
-          className="text-gray-500 hover:text-gray-300 text-sm px-1"
-          title="Close"
-        >
+        <button onClick={onClose} className="text-gray-500 hover:text-gray-300 text-sm px-1" title="Close">
           ✕
         </button>
       </div>
@@ -195,14 +183,16 @@ export default function ChatPanel({
         >
           {enabledProviders.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.label}{p.model ? ` / ${p.model}` : ""}
+              {p.label}
+              {p.model ? ` / ${p.model}` : ""}
             </option>
           ))}
           {providers
             .filter((p) => !p.enabled)
             .map((p) => (
               <option key={p.id} value={p.id} disabled>
-                {p.label}{p.model ? ` / ${p.model}` : ""} ({p.missingCredential ? "credential needed" : "unavailable"})
+                {p.label}
+                {p.model ? ` / ${p.model}` : ""} ({p.missingCredential ? "credential needed" : "unavailable"})
               </option>
             ))}
         </select>
@@ -226,26 +216,20 @@ export default function ChatPanel({
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="truncate text-xs font-medium text-gray-200">
-                        {map.name}
-                      </p>
+                      <p className="truncate text-xs font-medium text-gray-200">{map.name}</p>
                       <p className="text-[11px] text-gray-500">
                         v{map.revision} · {map.basemapId}
                       </p>
                     </div>
                     {isCurrent && (
-                      <span className="rounded bg-blue-900/50 px-1.5 py-0.5 text-[10px] text-blue-200">
-                        Current
-                      </span>
+                      <span className="rounded bg-blue-900/50 px-1.5 py-0.5 text-[10px] text-blue-200">Current</span>
                     )}
                   </div>
                   <p className="mt-1 text-[11px] text-gray-600">
                     audit {map.auditRecordCount} · review {map.reviewDecisionCount}
                   </p>
                   <div className="mt-2 flex items-center justify-between gap-2">
-                    <span className="text-[10px] text-gray-600">
-                      {new Date(map.updatedAt).toLocaleString()}
-                    </span>
+                    <span className="text-[10px] text-gray-600">{new Date(map.updatedAt).toLocaleString()}</span>
                     <div className="flex flex-wrap justify-end gap-1">
                       <button
                         onClick={() => onInspectExport(map.id)}
@@ -295,23 +279,15 @@ export default function ChatPanel({
         <div className="px-4 py-3 border-b border-gray-800 shrink-0">
           <div className="mb-2 flex items-center justify-between">
             <label className="text-xs text-gray-500">Workspace Handoff</label>
-            <span className="text-[11px] text-gray-600">
-              {selectedHandoff.handoff.status}
-            </span>
+            <span className="text-[11px] text-gray-600">{selectedHandoff.handoff.status}</span>
           </div>
           <div className="rounded border border-gray-800 bg-gray-900/70 p-2">
-            <p className="text-xs font-medium text-gray-200">
-              {selectedHandoff.workspace.name}
-            </p>
+            <p className="text-xs font-medium text-gray-200">{selectedHandoff.workspace.name}</p>
             <p className="mt-1 text-[11px] text-gray-500">
-              v{selectedHandoff.workspace.revision} ·{" "}
-              {selectedHandoff.workspace.basemapId} · audit{" "}
-              {selectedHandoff.evidence.auditRecordCount} · review{" "}
-              {selectedHandoff.evidence.reviewDecisionCount}
+              v{selectedHandoff.workspace.revision} · {selectedHandoff.workspace.basemapId} · audit{" "}
+              {selectedHandoff.evidence.auditRecordCount} · review {selectedHandoff.evidence.reviewDecisionCount}
             </p>
-            <p className="mt-1 text-[11px] text-gray-600">
-              {selectedHandoff.handoffVersion}
-            </p>
+            <p className="mt-1 text-[11px] text-gray-600">{selectedHandoff.handoffVersion}</p>
             <pre className="mt-2 max-h-48 overflow-auto rounded bg-gray-950 p-2 text-[10px] leading-4 text-gray-400">
               {JSON.stringify(selectedHandoff, null, 2)}
             </pre>
@@ -323,35 +299,25 @@ export default function ChatPanel({
         <div className="px-4 py-3 border-b border-gray-800 shrink-0">
           <div className="mb-2 flex items-center justify-between">
             <label className="text-xs text-gray-500">Review Ledger</label>
-            <span className="text-[11px] text-gray-600">
-              {selectedLedger.handoff.status}
-            </span>
+            <span className="text-[11px] text-gray-600">{selectedLedger.handoff.status}</span>
           </div>
           <div className="rounded border border-gray-800 bg-gray-900/70 p-2">
-            <p className="text-xs font-medium text-gray-200">
-              {selectedLedger.workspace.name}
-            </p>
+            <p className="text-xs font-medium text-gray-200">{selectedLedger.workspace.name}</p>
             <p className="mt-1 text-[11px] text-gray-500">
-              v{selectedLedger.workspace.revision} ·{" "}
-              {selectedLedger.workspace.basemapId} · audit{" "}
-              {selectedLedger.summary.matchingAuditRecordCount}/
-              {selectedLedger.audit.recordCount} · review{" "}
-              {selectedLedger.summary.matchingReviewDecisionCount}/
-              {selectedLedger.review.decisionCount}
+              v{selectedLedger.workspace.revision} · {selectedLedger.workspace.basemapId} · audit{" "}
+              {selectedLedger.summary.matchingAuditRecordCount}/{selectedLedger.audit.recordCount} · review{" "}
+              {selectedLedger.summary.matchingReviewDecisionCount}/{selectedLedger.review.decisionCount}
             </p>
             <p className="mt-1 text-[11px] text-gray-600">
-              accepted {selectedLedger.summary.reviewOutcomeCounts.accepted} ·
-              blocked {selectedLedger.summary.reviewOutcomeCounts.blocked} ·
-              follow-up {selectedLedger.summary.reviewOutcomeCounts.followUpRequired}
+              accepted {selectedLedger.summary.reviewOutcomeCounts.accepted} · blocked{" "}
+              {selectedLedger.summary.reviewOutcomeCounts.blocked} · follow-up{" "}
+              {selectedLedger.summary.reviewOutcomeCounts.followUpRequired}
             </p>
             <p className="mt-1 text-[11px] text-gray-600">
-              audit status {selectedLedger.filters.auditStatus} · review outcome{" "}
-              {selectedLedger.filters.reviewOutcome} · limit{" "}
-              {selectedLedger.filters.limit}
+              audit status {selectedLedger.filters.auditStatus} · review outcome {selectedLedger.filters.reviewOutcome}{" "}
+              · limit {selectedLedger.filters.limit}
             </p>
-            <p className="mt-1 text-[11px] text-gray-600">
-              {selectedLedger.reviewLedgerVersion}
-            </p>
+            <p className="mt-1 text-[11px] text-gray-600">{selectedLedger.reviewLedgerVersion}</p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <label className="flex items-center gap-1 text-[11px] text-gray-500">
                 Audit
@@ -359,8 +325,7 @@ export default function ChatPanel({
                   value={selectedLedger.filters.auditStatus}
                   onChange={(event) =>
                     onInspectLedger(selectedLedger.workspace.mapId, {
-                      auditStatus: event.target
-                        .value as SavedMapReviewLedgerAuditStatus,
+                      auditStatus: event.target.value as SavedMapReviewLedgerAuditStatus,
                       reviewOutcome: selectedLedger.filters.reviewOutcome,
                       limit: selectedLedger.filters.limit,
                     })
@@ -382,8 +347,7 @@ export default function ChatPanel({
                   onChange={(event) =>
                     onInspectLedger(selectedLedger.workspace.mapId, {
                       auditStatus: selectedLedger.filters.auditStatus,
-                      reviewOutcome: event.target
-                        .value as SavedMapReviewLedgerReviewOutcome,
+                      reviewOutcome: event.target.value as SavedMapReviewLedgerReviewOutcome,
                       limit: selectedLedger.filters.limit,
                     })
                   }
@@ -424,8 +388,7 @@ export default function ChatPanel({
                 <div className="mb-1 flex items-center justify-between">
                   <label className="text-xs text-gray-500">Audit Records</label>
                   <span className="text-[11px] text-gray-600">
-                    {selectedLedger.audit.returnedRecordCount}/
-                    {selectedLedger.audit.matchingRecordCount}
+                    {selectedLedger.audit.returnedRecordCount}/{selectedLedger.audit.matchingRecordCount}
                   </span>
                 </div>
                 <div className="max-h-36 space-y-1 overflow-y-auto pr-1">
@@ -435,24 +398,16 @@ export default function ChatPanel({
                     </p>
                   ) : (
                     selectedLedger.audit.records.map((record) => (
-                      <div
-                        key={record.id}
-                        className="rounded border border-gray-800 bg-gray-950/70 p-2"
-                      >
+                      <div key={record.id} className="rounded border border-gray-800 bg-gray-950/70 p-2">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-[11px] font-medium text-gray-200">
-                            {record.status}
-                          </p>
-                          <span className="text-[10px] text-gray-600">
-                            {record.toRevision}
-                          </span>
+                          <p className="text-[11px] font-medium text-gray-200">{record.status}</p>
+                          <span className="text-[10px] text-gray-600">{record.toRevision}</span>
                         </div>
                         <p className="mt-1 text-[11px] text-gray-400">
                           provider {record.providerId} · {auditRecordSummary(record)}
                         </p>
                         <p className="mt-1 text-[10px] text-gray-500">
-                          diagnostics e{record.diagnosticCounts.error} / w
-                          {record.diagnosticCounts.warning} / i
+                          diagnostics e{record.diagnosticCounts.error} / w{record.diagnosticCounts.warning} / i
                           {record.diagnosticCounts.info}
                         </p>
                       </div>
@@ -464,8 +419,7 @@ export default function ChatPanel({
                 <div className="mb-1 flex items-center justify-between">
                   <label className="text-xs text-gray-500">Review Decisions</label>
                   <span className="text-[11px] text-gray-600">
-                    {selectedLedger.review.returnedDecisionCount}/
-                    {selectedLedger.review.matchingDecisionCount}
+                    {selectedLedger.review.returnedDecisionCount}/{selectedLedger.review.matchingDecisionCount}
                   </span>
                 </div>
                 <div className="max-h-36 space-y-1 overflow-y-auto pr-1">
@@ -475,33 +429,22 @@ export default function ChatPanel({
                     </p>
                   ) : (
                     selectedLedger.review.decisions.map((decision) => (
-                      <div
-                        key={decision.decisionId}
-                        className="rounded border border-gray-800 bg-gray-950/70 p-2"
-                      >
+                      <div key={decision.decisionId} className="rounded border border-gray-800 bg-gray-950/70 p-2">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-[11px] font-medium text-gray-200">
-                            {decision.outcome}
-                          </p>
-                          <span className="text-[10px] text-gray-600">
-                            {decision.decisionId}
-                          </span>
+                          <p className="text-[11px] font-medium text-gray-200">{decision.outcome}</p>
+                          <span className="text-[10px] text-gray-600">{decision.decisionId}</span>
                         </div>
                         <p className="mt-1 text-[11px] text-gray-400">
-                          provider {decision.providerId} ·{" "}
-                          {reviewDecisionSummary(decision)}
+                          provider {decision.providerId} · {reviewDecisionSummary(decision)}
                         </p>
                         {decision.reasonCodes.length > 0 && (
+                          <p className="mt-1 text-[10px] text-gray-500">reasons {decision.reasonCodes.join(", ")}</p>
+                        )}
+                        {decision.followUpTaskIds && decision.followUpTaskIds.length > 0 && (
                           <p className="mt-1 text-[10px] text-gray-500">
-                            reasons {decision.reasonCodes.join(", ")}
+                            follow-up {decision.followUpTaskIds.join(", ")}
                           </p>
                         )}
-                        {decision.followUpTaskIds &&
-                          decision.followUpTaskIds.length > 0 && (
-                            <p className="mt-1 text-[10px] text-gray-500">
-                              follow-up {decision.followUpTaskIds.join(", ")}
-                            </p>
-                          )}
                       </div>
                     ))
                   )}
@@ -509,9 +452,7 @@ export default function ChatPanel({
               </div>
             </div>
             <details className="mt-2 rounded border border-gray-800 bg-gray-950/60 p-2">
-              <summary className="cursor-pointer text-[11px] text-gray-400">
-                Raw Ledger
-              </summary>
+              <summary className="cursor-pointer text-[11px] text-gray-400">Raw Ledger</summary>
               <pre className="mt-2 max-h-48 overflow-auto text-[10px] leading-4 text-gray-400">
                 {JSON.stringify(selectedLedger, null, 2)}
               </pre>
@@ -525,49 +466,32 @@ export default function ChatPanel({
           <div className="mb-2 flex items-center justify-between">
             <label className="text-xs text-gray-500">Review Export</label>
             <span className="text-[11px] text-gray-600">
-              {selectedExport.summary.returnedEventCount}/
-              {selectedExport.summary.matchingEventCount}
+              {selectedExport.summary.returnedEventCount}/{selectedExport.summary.matchingEventCount}
             </span>
           </div>
           <div className="rounded border border-gray-800 bg-gray-900/70 p-2">
-            <p className="text-xs font-medium text-gray-200">
-              {selectedExport.workspace.name}
-            </p>
+            <p className="text-xs font-medium text-gray-200">{selectedExport.workspace.name}</p>
             <p className="mt-1 text-[11px] text-gray-500">
-              v{selectedExport.workspace.revision} ·{" "}
-              {selectedExport.workspace.basemapId} · matched{" "}
-              {selectedExport.summary.matchingEventCount}/
-              {selectedExport.summary.totalEventCount}
+              v{selectedExport.workspace.revision} · {selectedExport.workspace.basemapId} · matched{" "}
+              {selectedExport.summary.matchingEventCount}/{selectedExport.summary.totalEventCount}
             </p>
             <p className="mt-1 text-[11px] text-gray-600">
-              audit {selectedExport.summary.matchingAuditEventCount}/
-              {selectedExport.summary.auditEventCount} · review{" "}
-              {selectedExport.summary.matchingReviewEventCount}/
-              {selectedExport.summary.reviewEventCount}
+              audit {selectedExport.summary.matchingAuditEventCount}/{selectedExport.summary.auditEventCount} · review{" "}
+              {selectedExport.summary.matchingReviewEventCount}/{selectedExport.summary.reviewEventCount}
             </p>
             <p className="mt-1 text-[11px] text-gray-600">
-              cursor {selectedExport.filters.cursor} · limit{" "}
-              {selectedExport.filters.limit}
+              cursor {selectedExport.filters.cursor} · limit {selectedExport.filters.limit}
             </p>
             <p className="mt-1 text-[11px] text-gray-600">
-              kind {selectedExport.filters.kind} · status{" "}
-              {selectedExport.filters.status}
+              kind {selectedExport.filters.kind} · status {selectedExport.filters.status}
             </p>
-            {selectedExport.summary.pageNewestEventAt &&
-              selectedExport.summary.pageOldestEventAt && (
-                <p className="mt-1 text-[11px] text-gray-600">
-                  {new Date(
-                    selectedExport.summary.pageNewestEventAt,
-                  ).toLocaleString()}{" "}
-                  →{" "}
-                  {new Date(
-                    selectedExport.summary.pageOldestEventAt,
-                  ).toLocaleString()}
-                </p>
-              )}
-            <p className="mt-1 text-[11px] text-gray-600">
-              {selectedExport.reviewExportVersion}
-            </p>
+            {selectedExport.summary.pageNewestEventAt && selectedExport.summary.pageOldestEventAt && (
+              <p className="mt-1 text-[11px] text-gray-600">
+                {new Date(selectedExport.summary.pageNewestEventAt).toLocaleString()} →{" "}
+                {new Date(selectedExport.summary.pageOldestEventAt).toLocaleString()}
+              </p>
+            )}
+            <p className="mt-1 text-[11px] text-gray-600">{selectedExport.reviewExportVersion}</p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <div className="flex overflow-hidden rounded border border-gray-800">
                 {EXPORT_KIND_OPTIONS.map((option) => {
@@ -641,8 +565,7 @@ export default function ChatPanel({
               <div className="mb-2 flex items-center justify-between">
                 <label className="text-xs text-gray-500">Returned Events</label>
                 <span className="text-[11px] text-gray-600">
-                  {selectedExport.summary.returnedEventCount}/
-                  {selectedExport.summary.matchingEventCount}
+                  {selectedExport.summary.returnedEventCount}/{selectedExport.summary.matchingEventCount}
                 </span>
               </div>
               {selectedExport.events.length === 0 ? (
@@ -661,13 +584,9 @@ export default function ChatPanel({
                           <p className="text-[11px] font-medium text-gray-200">
                             {eventKindLabel(event.kind)} · {event.status}
                           </p>
-                          <p className="text-[10px] text-gray-500">
-                            {new Date(event.timestamp).toLocaleString()}
-                          </p>
+                          <p className="text-[10px] text-gray-500">{new Date(event.timestamp).toLocaleString()}</p>
                         </div>
-                        <span
-                          className={`rounded border px-1.5 py-0.5 text-[10px] ${eventStatusTone(event)}`}
-                        >
+                        <span className={`rounded border px-1.5 py-0.5 text-[10px] ${eventStatusTone(event)}`}>
                           {event.status}
                         </span>
                       </div>
@@ -675,19 +594,14 @@ export default function ChatPanel({
                         provider {event.providerId} · {exportEventSummary(event)}
                       </p>
                       <p className="mt-1 text-[10px] text-gray-500">
-                        diagnostics e{event.diagnosticCounts.error} / w
-                        {event.diagnosticCounts.warning} / i
+                        diagnostics e{event.diagnosticCounts.error} / w{event.diagnosticCounts.warning} / i
                         {event.diagnosticCounts.info}
                       </p>
                       {event.reasonCodes && event.reasonCodes.length > 0 && (
-                        <p className="mt-1 text-[10px] text-gray-500">
-                          reasons {event.reasonCodes.join(", ")}
-                        </p>
+                        <p className="mt-1 text-[10px] text-gray-500">reasons {event.reasonCodes.join(", ")}</p>
                       )}
                       {event.followUpTaskIds && event.followUpTaskIds.length > 0 && (
-                        <p className="mt-1 text-[10px] text-gray-500">
-                          follow-up {event.followUpTaskIds.join(", ")}
-                        </p>
+                        <p className="mt-1 text-[10px] text-gray-500">follow-up {event.followUpTaskIds.join(", ")}</p>
                       )}
                     </div>
                   ))}
@@ -698,19 +612,12 @@ export default function ChatPanel({
               {selectedExport.filters.cursor > 0 ? (
                 <button
                   onClick={() =>
-                    onInspectExport(
-                      selectedExport.workspace.mapId,
-                      {
-                        cursor: Math.max(
-                          selectedExport.filters.cursor -
-                            selectedExport.filters.limit,
-                          0,
-                        ),
-                        kind: selectedExport.filters.kind,
-                        status: selectedExport.filters.status,
-                        limit: selectedExport.filters.limit,
-                      },
-                    )
+                    onInspectExport(selectedExport.workspace.mapId, {
+                      cursor: Math.max(selectedExport.filters.cursor - selectedExport.filters.limit, 0),
+                      kind: selectedExport.filters.kind,
+                      status: selectedExport.filters.status,
+                      limit: selectedExport.filters.limit,
+                    })
                   }
                   disabled={status === "thinking"}
                   className="rounded bg-gray-800 px-2 py-1 text-[11px] text-gray-300 transition hover:bg-gray-700 disabled:opacity-40"
@@ -738,9 +645,7 @@ export default function ChatPanel({
               )}
             </div>
             <details className="mt-2 rounded border border-gray-800 bg-gray-950/60 p-2">
-              <summary className="cursor-pointer text-[11px] text-gray-400">
-                Raw Envelope
-              </summary>
+              <summary className="cursor-pointer text-[11px] text-gray-400">Raw Envelope</summary>
               <pre className="mt-2 max-h-48 overflow-auto text-[10px] leading-4 text-gray-400">
                 {JSON.stringify(selectedExport, null, 2)}
               </pre>
@@ -751,10 +656,7 @@ export default function ChatPanel({
 
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
         {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-          >
+          <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             <div
               className={`max-w-[88%] rounded-lg px-3 py-2 text-sm ${msg.role === "user" ? "bg-blue-700 text-white" : "bg-gray-800 text-gray-200"}`}
             >
@@ -785,19 +687,12 @@ export default function ChatPanel({
         ))}
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="px-4 py-3 border-t border-gray-800 shrink-0"
-      >
+      <form onSubmit={handleSubmit} className="px-4 py-3 border-t border-gray-800 shrink-0">
         <div className="flex gap-2">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={
-              status === "thinking"
-                ? "AI is thinking..."
-                : "Describe your map change..."
-            }
+            placeholder={status === "thinking" ? "AI is thinking..." : "Describe your map change..."}
             className="flex-1 bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition"
             disabled={status === "thinking"}
           />

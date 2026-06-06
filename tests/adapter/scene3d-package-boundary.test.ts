@@ -1,9 +1,13 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
-import { describe, expect, it } from "vitest";
-import scene3dExtensionSpec from "../fixtures/specs/valid/scene3d-extension.map.json";
-import { explainScene3DScaffold, getScene3DV1Capabilities, scene3dPackageBoundary } from "../../packages/scene3d/src/index.js";
 import type { SceneView3DExtension } from "@gis-engine/engine";
+import { describe, expect, it } from "vitest";
+import {
+  explainScene3DScaffold,
+  getScene3DV1Capabilities,
+  scene3dPackageBoundary,
+} from "../../packages/scene3d/src/index.js";
+import scene3dExtensionSpec from "../fixtures/specs/valid/scene3d-extension.map.json";
 
 const rendererDependencies = [
   "three",
@@ -12,7 +16,7 @@ const rendererDependencies = [
   "@loaders.gl/3d-tiles",
   "@loaders.gl/gltf",
   "@loaders.gl/core",
-  "three-stdlib"
+  "three-stdlib",
 ];
 
 describe("SceneView3D package boundary", () => {
@@ -35,8 +39,8 @@ describe("SceneView3D package boundary", () => {
       expect.objectContaining({
         severity: "info",
         code: "CAPABILITY.UNSUPPORTED",
-        path: "/extensions/scene3d"
-      })
+        path: "/extensions/scene3d",
+      }),
     );
   });
 
@@ -46,17 +50,24 @@ describe("SceneView3D package boundary", () => {
     const forbidden = new Set([...scene3dPackageBoundary.forbiddenCoreDependencies, ...rendererDependencies]);
 
     for (const dependency of forbidden) {
-      expect(packageDependencyNames(enginePackage), `packages/engine/package.json must not depend on ${dependency}`).not.toContain(dependency);
-      expect(packageDependencyNames(scene3dPackage), `packages/scene3d/package.json must not depend on ${dependency}`).not.toContain(dependency);
+      expect(
+        packageDependencyNames(enginePackage),
+        `packages/engine/package.json must not depend on ${dependency}`,
+      ).not.toContain(dependency);
+      expect(
+        packageDependencyNames(scene3dPackage),
+        `packages/scene3d/package.json must not depend on ${dependency}`,
+      ).not.toContain(dependency);
     }
   });
 
   it("keeps renderer implementation imports out of engine and scene3d source", () => {
-    const rendererModule = "(?:three|cesium|3d-tiles-renderer|@loaders\\.gl/(?:3d-tiles|gltf|core)|three-stdlib)(?:/[^\"']*)?";
+    const rendererModule =
+      "(?:three|cesium|3d-tiles-renderer|@loaders\\.gl/(?:3d-tiles|gltf|core)|three-stdlib)(?:/[^\"']*)?";
     const importPatterns = [
       new RegExp(`\\bfrom\\s+["']${rendererModule}["']`),
       new RegExp(`\\bimport\\s+["']${rendererModule}["']`),
-      new RegExp(`\\bimport\\s*\\(\\s*["']${rendererModule}["']\\s*\\)`)
+      new RegExp(`\\bimport\\s*\\(\\s*["']${rendererModule}["']\\s*\\)`),
     ];
 
     for (const sourcePath of sourceFiles("packages/engine/src", "packages/scene3d/src")) {
@@ -87,7 +98,7 @@ function packageDependencyNames(packageJson: {
     ...Object.keys(packageJson.dependencies ?? {}),
     ...Object.keys(packageJson.devDependencies ?? {}),
     ...Object.keys(packageJson.peerDependencies ?? {}),
-    ...Object.keys(packageJson.optionalDependencies ?? {})
+    ...Object.keys(packageJson.optionalDependencies ?? {}),
   ];
 }
 

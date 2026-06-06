@@ -25,18 +25,11 @@ export const AGENT_REGISTRY = {
     modelPolicy: {
       tier: "frontier-research",
       reasoningEffort: "high",
-      routingNote:
-        "Use when dated external releases, standards, or dependency changes can alter roadmap priority.",
+      routingNote: "Use when dated external releases, standards, or dependency changes can alter roadmap priority.",
     },
-    outputDir: (period) =>
-      /^\d{4}-\d{2}$/.test(period) ? "docs/planning" : "docs/research",
-    outputFile: (period) =>
-      /^\d{4}-\d{2}$/.test(period)
-        ? "monthly-roadmap.md"
-        : `competitor-updates-${period}.md`,
-    reportSearch: [
-      { dir: "docs/research", pattern: /^competitor-updates-.*\.md$/ },
-    ],
+    outputDir: (period) => (/^\d{4}-\d{2}$/.test(period) ? "docs/planning" : "docs/research"),
+    outputFile: (period) => (/^\d{4}-\d{2}$/.test(period) ? "monthly-roadmap.md" : `competitor-updates-${period}.md`),
+    reportSearch: [{ dir: "docs/research", pattern: /^competitor-updates-.*\.md$/ }],
     gates: [],
     gateDecisionLevel: "advisory",
     slaMaxHours: 48,
@@ -48,18 +41,12 @@ export const AGENT_REGISTRY = {
     modelPolicy: {
       tier: "frontier-quality",
       reasoningEffort: "high",
-      routingNote:
-        "Use for blocking merge/release gate decisions, architecture review, and waiver review.",
+      routingNote: "Use for blocking merge/release gate decisions, architecture review, and waiver review.",
     },
     outputDir: "docs/reviews",
     outputFile: (period) => `quality-gate-${period}.md`,
     reportSearch: [{ dir: "docs/reviews", pattern: /^quality-gate-.*\.md$/ }],
-    gates: [
-      "pnpm build:schema",
-      "pnpm check",
-      "pnpm test:snapshot:smoke",
-      "pnpm test:release:scene3d",
-    ],
+    gates: ["pnpm build:schema", "pnpm check", "pnpm test:snapshot:smoke", "pnpm test:release:scene3d"],
     gateDecisionLevel: "blocking",
     slaMaxHours: 24,
   },
@@ -70,14 +57,11 @@ export const AGENT_REGISTRY = {
     modelPolicy: {
       tier: "coding-implementation",
       reasoningEffort: "medium",
-      routingNote:
-        "Use for bounded implementation slices with schema, MCP, adapter, or diagnostic implications.",
+      routingNote: "Use for bounded implementation slices with schema, MCP, adapter, or diagnostic implications.",
     },
     outputDir: "docs/reviews",
     outputFile: (period) => `builder-evidence-${period}.md`,
-    reportSearch: [
-      { dir: "docs/reviews", pattern: /^builder-evidence-.*\.md$/ },
-    ],
+    reportSearch: [{ dir: "docs/reviews", pattern: /^builder-evidence-.*\.md$/ }],
     gates: ["pnpm build:schema", "pnpm check", "pnpm test"],
     gateDecisionLevel: "advisory",
     slaMaxHours: null,
@@ -89,14 +73,11 @@ export const AGENT_REGISTRY = {
     modelPolicy: {
       tier: "efficient-docs",
       reasoningEffort: "low",
-      routingNote:
-        "Use for documentation consistency, link audits, release-note alignment after evidence exists.",
+      routingNote: "Use for documentation consistency, link audits, release-note alignment after evidence exists.",
     },
     outputDir: "docs/reviews",
     outputFile: (period) => `documentation-audit-${period}.md`,
-    reportSearch: [
-      { dir: "docs/reviews", pattern: /^documentation-audit-.*\.md$/ },
-    ],
+    reportSearch: [{ dir: "docs/reviews", pattern: /^documentation-audit-.*\.md$/ }],
     gates: ["pnpm test:docs", "node scripts/doc-generator.mjs links"],
     gateDecisionLevel: "advisory",
     slaMaxHours: 48,
@@ -115,9 +96,7 @@ export const AGENT_REGISTRY = {
     },
     outputDir: "docs/planning",
     outputFile: (period) => `evolution-review-${period}.md`,
-    reportSearch: [
-      { dir: "docs/planning", pattern: /^evolution-review-.*\.md$/ },
-    ],
+    reportSearch: [{ dir: "docs/planning", pattern: /^evolution-review-.*\.md$/ }],
     gates: [],
     gateDecisionLevel: "advisory",
     slaMaxHours: null,
@@ -172,14 +151,8 @@ export function resolveAgentName(name) {
 }
 
 export function getAgentOutput(agentDef, period) {
-  const outputDir =
-    typeof agentDef.outputDir === "function"
-      ? agentDef.outputDir(period)
-      : agentDef.outputDir;
-  const outputFile =
-    typeof agentDef.outputFile === "function"
-      ? agentDef.outputFile(period)
-      : agentDef.outputFile;
+  const outputDir = typeof agentDef.outputDir === "function" ? agentDef.outputDir(period) : agentDef.outputDir;
+  const outputFile = typeof agentDef.outputFile === "function" ? agentDef.outputFile(period) : agentDef.outputFile;
   return { outputDir, outputFile };
 }
 

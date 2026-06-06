@@ -33,9 +33,7 @@ const REQUIRED_COLUMNS = [
 
 export function resolveStorePath(env = process.env) {
   const configuredPath = env.STUDIO_DB_PATH?.trim();
-  return configuredPath
-    ? resolve(configuredPath)
-    : join(homedir(), ".gis-engine", "studio", "studio.sqlite");
+  return configuredPath ? resolve(configuredPath) : join(homedir(), ".gis-engine", "studio", "studio.sqlite");
 }
 
 export function resetStoreForTests() {
@@ -93,10 +91,7 @@ function storedMapMetadata(row) {
     id: row.id,
     name: row.name,
     revision: row.revision,
-    basemapId:
-      typeof row.basemap_id === "string" && row.basemap_id.length > 0
-        ? row.basemap_id
-        : "none",
+    basemapId: typeof row.basemap_id === "string" && row.basemap_id.length > 0 ? row.basemap_id : "none",
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     auditRecordCount: parseStoredJson(row.audit_records, []).length,
@@ -117,15 +112,7 @@ async function getDb() {
 
 export async function saveMap(input) {
   const db = await getDb();
-  const {
-    id,
-    name,
-    spec,
-    revision,
-    basemapId = "none",
-    auditRecords = [],
-    reviewDecisions = [],
-  } = input;
+  const { id, name, spec, revision, basemapId = "none", auditRecords = [], reviewDecisions = [] } = input;
   const json = JSON.stringify(spec);
   const serializedAuditRecords = JSON.stringify(auditRecords);
   const serializedReviewDecisions = JSON.stringify(reviewDecisions);
@@ -133,28 +120,12 @@ export async function saveMap(input) {
   if (existing.length > 0 && existing[0].values.length > 0) {
     db.run(
       "UPDATE maps SET name = ?, spec = ?, revision = ?, basemap_id = ?, audit_records = ?, review_decisions = ?, updated_at = datetime('now') WHERE id = ?",
-      [
-        name,
-        json,
-        revision,
-        basemapId,
-        serializedAuditRecords,
-        serializedReviewDecisions,
-        id,
-      ],
+      [name, json, revision, basemapId, serializedAuditRecords, serializedReviewDecisions, id],
     );
   } else {
     db.run(
       "INSERT INTO maps (id, name, spec, revision, basemap_id, audit_records, review_decisions) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [
-        id,
-        name,
-        json,
-        revision,
-        basemapId,
-        serializedAuditRecords,
-        serializedReviewDecisions,
-      ],
+      [id, name, json, revision, basemapId, serializedAuditRecords, serializedReviewDecisions],
     );
   }
   await persistDb(db);

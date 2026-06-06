@@ -1,4 +1,4 @@
-import { Type, type Static } from "@sinclair/typebox";
+import { type Static, Type } from "@sinclair/typebox";
 
 const SceneVector3Schema = Type.Tuple([Type.Number(), Type.Number(), Type.Number()]);
 const ScenePositionSchema = SceneVector3Schema;
@@ -11,26 +11,26 @@ export const SceneCameraSchema = Type.Object(
     up: Type.Optional(SceneVector3Schema),
     fov: Type.Optional(Type.Number({ exclusiveMinimum: 0, exclusiveMaximum: 180 })),
     near: Type.Optional(Type.Number({ exclusiveMinimum: 0 })),
-    far: Type.Optional(Type.Number({ exclusiveMinimum: 0 }))
+    far: Type.Optional(Type.Number({ exclusiveMinimum: 0 })),
   },
-  { additionalProperties: false }
+  { additionalProperties: false },
 );
 
 const SceneAmbientLightSchema = Type.Object(
   {
     type: Type.Literal("ambient"),
-    intensity: Type.Optional(Type.Number({ minimum: 0 }))
+    intensity: Type.Optional(Type.Number({ minimum: 0 })),
   },
-  { additionalProperties: false }
+  { additionalProperties: false },
 );
 
 const SceneDirectionalLightSchema = Type.Object(
   {
     type: Type.Literal("directional"),
     direction: SceneVector3Schema,
-    intensity: Type.Optional(Type.Number({ minimum: 0 }))
+    intensity: Type.Optional(Type.Number({ minimum: 0 })),
   },
-  { additionalProperties: false }
+  { additionalProperties: false },
 );
 
 export const SceneLightSchema = Type.Union([SceneAmbientLightSchema, SceneDirectionalLightSchema]);
@@ -39,26 +39,26 @@ export const SceneDepthOptionsSchema = Type.Object(
   {
     enabled: Type.Optional(Type.Boolean()),
     mode: Type.Optional(Type.Union([Type.Literal("standard"), Type.Literal("logarithmic")])),
-    clearColor: Type.Optional(Type.String())
+    clearColor: Type.Optional(Type.String()),
   },
-  { additionalProperties: false }
+  { additionalProperties: false },
 );
 
 export const SceneTransformSchema = Type.Object(
   {
     translate: Type.Optional(SceneVector3Schema),
     rotate: Type.Optional(SceneVector3Schema),
-    scale: Type.Optional(Type.Union([Type.Number({ exclusiveMinimum: 0 }), SceneVector3Schema]))
+    scale: Type.Optional(Type.Union([Type.Number({ exclusiveMinimum: 0 }), SceneVector3Schema])),
   },
-  { additionalProperties: false }
+  { additionalProperties: false },
 );
 
 export const SceneTerrainSchema = Type.Object(
   {
     source: Type.String({ minLength: 1 }),
-    exaggeration: Type.Optional(Type.Number({ minimum: 0 }))
+    exaggeration: Type.Optional(Type.Number({ minimum: 0 })),
   },
-  { additionalProperties: false }
+  { additionalProperties: false },
 );
 
 const TerrainRasterDemSourceSchema = Type.Object(
@@ -66,9 +66,9 @@ const TerrainRasterDemSourceSchema = Type.Object(
     type: Type.Literal("terrain-raster-dem"),
     url: Type.String({ minLength: 1 }),
     encoding: Type.Optional(Type.Union([Type.Literal("mapbox"), Type.Literal("terrarium")])),
-    attribution: Type.Optional(Type.String())
+    attribution: Type.Optional(Type.String()),
   },
-  { additionalProperties: false }
+  { additionalProperties: false },
 );
 
 const Tileset3dSourceSchema = Type.Object(
@@ -76,9 +76,9 @@ const Tileset3dSourceSchema = Type.Object(
     type: Type.Literal("3d-tiles"),
     url: Type.String({ minLength: 1 }),
     maximumScreenSpaceError: Type.Optional(Type.Number({ minimum: 0 })),
-    attribution: Type.Optional(Type.String())
+    attribution: Type.Optional(Type.String()),
   },
-  { additionalProperties: false }
+  { additionalProperties: false },
 );
 
 const GltfSourceSchema = Type.Object(
@@ -86,9 +86,9 @@ const GltfSourceSchema = Type.Object(
     type: Type.Literal("gltf"),
     url: Type.String({ minLength: 1 }),
     transform: Type.Optional(SceneTransformSchema),
-    attribution: Type.Optional(Type.String())
+    attribution: Type.Optional(Type.String()),
   },
-  { additionalProperties: false }
+  { additionalProperties: false },
 );
 
 export const SceneSourceSchema = Type.Union([TerrainRasterDemSourceSchema, Tileset3dSourceSchema, GltfSourceSchema]);
@@ -98,9 +98,9 @@ const SceneTerrainLayerSchema = Type.Object(
     id: Type.String({ minLength: 1 }),
     type: Type.Literal("terrain"),
     source: Type.String({ minLength: 1 }),
-    visible: Type.Optional(Type.Boolean())
+    visible: Type.Optional(Type.Boolean()),
   },
-  { additionalProperties: false }
+  { additionalProperties: false },
 );
 
 const SceneTileset3dLayerSchema = Type.Object(
@@ -109,9 +109,9 @@ const SceneTileset3dLayerSchema = Type.Object(
     type: Type.Literal("tileset3d"),
     source: Type.String({ minLength: 1 }),
     visible: Type.Optional(Type.Boolean()),
-    pickable: Type.Optional(Type.Boolean())
+    pickable: Type.Optional(Type.Boolean()),
   },
-  { additionalProperties: false }
+  { additionalProperties: false },
 );
 
 const SceneModelLayerSchema = Type.Object(
@@ -120,9 +120,9 @@ const SceneModelLayerSchema = Type.Object(
     type: Type.Literal("model"),
     source: Type.String({ minLength: 1 }),
     visible: Type.Optional(Type.Boolean()),
-    pickable: Type.Optional(Type.Boolean())
+    pickable: Type.Optional(Type.Boolean()),
   },
-  { additionalProperties: false }
+  { additionalProperties: false },
 );
 
 export const SceneLayerSchema = Type.Union([SceneTerrainLayerSchema, SceneTileset3dLayerSchema, SceneModelLayerSchema]);
@@ -133,9 +133,9 @@ export const SceneSnapshotOptionsSchema = Type.Object(
     height: Type.Optional(Type.Integer({ minimum: 1 })),
     pixelRatio: Type.Optional(Type.Number({ exclusiveMinimum: 0 })),
     format: Type.Optional(Type.Union([Type.Literal("png"), Type.Literal("data-url")])),
-    requireLoadedResources: Type.Optional(Type.Boolean())
+    requireLoadedResources: Type.Optional(Type.Boolean()),
   },
-  { additionalProperties: false }
+  { additionalProperties: false },
 );
 
 export const SceneResourcePolicySchema = Type.Object(
@@ -150,9 +150,9 @@ export const SceneResourcePolicySchema = Type.Object(
     maxTextureBytes: Type.Optional(Type.Integer({ minimum: 1 })),
     maxWorkers: Type.Optional(Type.Integer({ minimum: 0 })),
     timeoutMs: Type.Optional(Type.Integer({ minimum: 1 })),
-    retryCount: Type.Optional(Type.Integer({ minimum: 0 }))
+    retryCount: Type.Optional(Type.Integer({ minimum: 0 })),
   },
-  { additionalProperties: false }
+  { additionalProperties: false },
 );
 
 export const SceneView3DExtensionSchema = Type.Object(
@@ -164,12 +164,12 @@ export const SceneView3DExtensionSchema = Type.Object(
     sources: Type.Optional(Type.Record(Type.String({ minLength: 1 }), SceneSourceSchema)),
     layers: Type.Optional(Type.Array(SceneLayerSchema)),
     snapshot: Type.Optional(SceneSnapshotOptionsSchema),
-    resourcePolicy: Type.Optional(SceneResourcePolicySchema)
+    resourcePolicy: Type.Optional(SceneResourcePolicySchema),
   },
   {
     $id: "https://gis-engine.dev/schemas/sceneview3d.v1.schema.json",
-    additionalProperties: false
-  }
+    additionalProperties: false,
+  },
 );
 
 export type SceneView3DExtensionFromSchema = Static<typeof SceneView3DExtensionSchema>;

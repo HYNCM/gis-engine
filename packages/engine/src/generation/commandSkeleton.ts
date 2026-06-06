@@ -1,14 +1,19 @@
 import { Ajv, type ErrorObject } from "ajv/dist/ajv.js";
-import { DiagnosticCodes, Scene3DStableRuntimeBlockerCodes, type Scene3DStableRuntimeBlockerCode } from "../diagnostics/codes.js";
 import { applyCommands } from "../commands/applyCommands.js";
-import { validateSpec } from "../spec/validate.js";
 import {
-  MapGenerationRequestSchema,
+  DiagnosticCodes,
+  type Scene3DStableRuntimeBlockerCode,
+  Scene3DStableRuntimeBlockerCodes,
+} from "../diagnostics/codes.js";
+import { readString, toolInputErrorToCode } from "../internal/shared.js";
+import {
   type MapGenerationAnalysisOperation,
   type MapGenerationQueryReadinessOperation,
   type MapGenerationRequestFromSchema,
-  type MapGenerationTargetDomain
+  MapGenerationRequestSchema,
+  type MapGenerationTargetDomain,
 } from "../spec/schemas/index.js";
+import { validateSpec } from "../spec/validate.js";
 import type { Diagnostic, MapCommand, MapSpec, SceneView3DExtension } from "../types.js";
 
 export interface MapGenerationAnalysisEvidence {
@@ -41,10 +46,13 @@ export function createMapGenerationCommandSkeleton(input: unknown): MapGeneratio
   if (!validateGenerationRequest(input)) {
     return blockedSkeleton({
       baseSpec: fallbackBaseSpec,
-      diagnostics: toolInputErrorsToDiagnostics(validateGenerationRequest.errors ?? [], "Invalid map generation request."),
+      diagnostics: toolInputErrorsToDiagnostics(
+        validateGenerationRequest.errors ?? [],
+        "Invalid map generation request.",
+      ),
       analysisEvidence: notRequestedAnalysisEvidence(),
       targetDomains: ["feature-display"],
-      traceId
+      traceId,
     });
   }
 
@@ -60,7 +68,7 @@ export function createMapGenerationCommandSkeleton(input: unknown): MapGeneratio
       diagnostics: baseValidation.diagnostics,
       analysisEvidence: boundary.analysisEvidence,
       targetDomains,
-      traceId
+      traceId,
     });
   }
 
@@ -73,7 +81,7 @@ export function createMapGenerationCommandSkeleton(input: unknown): MapGeneratio
       diagnostics: boundaryDiagnostics,
       analysisEvidence: boundary.analysisEvidence,
       targetDomains,
-      traceId
+      traceId,
     });
   }
 
@@ -87,7 +95,7 @@ export function createMapGenerationCommandSkeleton(input: unknown): MapGeneratio
       spec: structuredClone(baseSpec),
       commands,
       diagnostics: boundaryDiagnostics,
-      traceId
+      traceId,
     };
   }
 
@@ -104,7 +112,7 @@ export function createMapGenerationCommandSkeleton(input: unknown): MapGeneratio
     spec: applied.spec,
     commands,
     diagnostics,
-    traceId
+    traceId,
   };
 }
 
@@ -114,7 +122,7 @@ function buildGenerationCommands(request: MapGenerationRequestFromSchema): MapCo
     version: "0.1" as const,
     author: { type: "agent" as const, name: "gis-engine-nla" },
     ...(request.createdAt ? { createdAt: request.createdAt } : {}),
-    ...(request.promptHash ? { sourcePromptHash: request.promptHash } : {})
+    ...(request.promptHash ? { sourcePromptHash: request.promptHash } : {}),
   };
 
   if (request.capabilities) {
@@ -123,7 +131,7 @@ function buildGenerationCommands(request: MapGenerationRequestFromSchema): MapCo
       id: "gen-set-capabilities",
       type: "setCapabilities",
       reason: "Apply AI generation capability gates before adding map content.",
-      capabilities: request.capabilities
+      capabilities: request.capabilities,
     });
   }
 
@@ -133,7 +141,7 @@ function buildGenerationCommands(request: MapGenerationRequestFromSchema): MapCo
       id: "gen-set-view",
       type: "setView",
       reason: "Apply AI generation viewport intent.",
-      view: request.view
+      view: request.view,
     });
   }
 
@@ -144,7 +152,7 @@ function buildGenerationCommands(request: MapGenerationRequestFromSchema): MapCo
       type: "addSource",
       reason: "Add AI generation source declaration.",
       sourceId,
-      source
+      source,
     });
   }
 
@@ -154,7 +162,7 @@ function buildGenerationCommands(request: MapGenerationRequestFromSchema): MapCo
       id: `gen-add-layer-${sanitizeCommandPart(layer.id)}`,
       type: "addLayer",
       reason: "Add AI generation layer declaration.",
-      layer
+      layer,
     });
   }
 
@@ -166,7 +174,7 @@ function buildGenerationCommands(request: MapGenerationRequestFromSchema): MapCo
         type: "setPaint",
         reason: "Apply AI generation paint style edit.",
         layerId: styleEdit.layerId,
-        paint: styleEdit.paint
+        paint: styleEdit.paint,
       });
     }
     if (styleEdit.layout) {
@@ -176,7 +184,7 @@ function buildGenerationCommands(request: MapGenerationRequestFromSchema): MapCo
         type: "setLayout",
         reason: "Apply AI generation layout style edit.",
         layerId: styleEdit.layerId,
-        layout: styleEdit.layout
+        layout: styleEdit.layout,
       });
     }
   }
@@ -187,7 +195,7 @@ function buildGenerationCommands(request: MapGenerationRequestFromSchema): MapCo
       id: "gen-set-interactions",
       type: "setInteractions",
       reason: "Apply AI generation interaction affordances.",
-      interactions: request.interactions
+      interactions: request.interactions,
     });
   }
 
@@ -197,7 +205,7 @@ function buildGenerationCommands(request: MapGenerationRequestFromSchema): MapCo
       id: "gen-set-scene-camera",
       type: "setSceneCamera",
       reason: "Attach extension-only SceneView3D camera evidence without enabling stable scene3d view mode.",
-      camera: request.scene3d.camera
+      camera: request.scene3d.camera,
     });
 
     for (const [sourceId, source] of sortedEntries(request.scene3d.sources ?? {})) {
@@ -207,7 +215,7 @@ function buildGenerationCommands(request: MapGenerationRequestFromSchema): MapCo
         type: "addSceneSource",
         reason: "Attach extension-only SceneView3D source evidence.",
         sourceId,
-        source
+        source,
       });
     }
 
@@ -217,7 +225,7 @@ function buildGenerationCommands(request: MapGenerationRequestFromSchema): MapCo
         id: `gen-add-scene-layer-${sanitizeCommandPart(layer.id)}`,
         type: "addSceneLayer",
         reason: "Attach extension-only SceneView3D layer evidence.",
-        layer
+        layer,
       });
     }
   }
@@ -227,7 +235,7 @@ function buildGenerationCommands(request: MapGenerationRequestFromSchema): MapCo
 
 function generationBoundaryEvidence(
   request: MapGenerationRequestFromSchema,
-  targetDomains: MapGenerationTargetDomain[]
+  targetDomains: MapGenerationTargetDomain[],
 ): { diagnostics: Diagnostic[]; analysisEvidence: MapGenerationAnalysisEvidence } {
   const diagnostics: Diagnostic[] = [];
   const analysisEvidence = buildAnalysisEvidence(request, targetDomains);
@@ -239,13 +247,14 @@ function generationBoundaryEvidence(
     diagnostics.push({
       severity: "warning",
       code: DiagnosticCodes.CapabilityUnsupported,
-      message: "Scene browsing generation requires an extensions.scene3d payload; stable scene3d view mode is not a fallback.",
+      message:
+        "Scene browsing generation requires an extensions.scene3d payload; stable scene3d view mode is not a fallback.",
       path: "/scene3d",
       fix: {
         kind: "manual",
         confidence: "high",
-        message: "Provide scene3d camera, sources, and layers under the extension-only scene3d request field."
-      }
+        message: "Provide scene3d camera, sources, and layers under the extension-only scene3d request field.",
+      },
     });
   }
 
@@ -254,11 +263,15 @@ function generationBoundaryEvidence(
   }
 
   if (request.capabilities?.renderer === "scene3d") {
-    diagnostics.push(stableScene3DBlockedDiagnostic("/capabilities/renderer", Scene3DStableRuntimeBlockerCodes.Renderer));
+    diagnostics.push(
+      stableScene3DBlockedDiagnostic("/capabilities/renderer", Scene3DStableRuntimeBlockerCodes.Renderer),
+    );
   }
 
   if (request.capabilities?.dimensions?.includes("3d")) {
-    diagnostics.push(stableScene3DBlockedDiagnostic("/capabilities/dimensions", Scene3DStableRuntimeBlockerCodes.Dimensions));
+    diagnostics.push(
+      stableScene3DBlockedDiagnostic("/capabilities/dimensions", Scene3DStableRuntimeBlockerCodes.Dimensions),
+    );
   }
 
   diagnostics.push(...unsupportedScene3DCommandDiagnostics(request.scene3d));
@@ -279,16 +292,16 @@ function styleEditDiagnostics(request: MapGenerationRequestFromSchema): Diagnost
             fix: {
               kind: "manual",
               confidence: "high",
-              message: "Add a paint or layout object, or remove the empty style edit."
-            }
-          }
-        ]
+              message: "Add a paint or layout object, or remove the empty style edit.",
+            },
+          },
+        ],
   );
 }
 
 function buildAnalysisEvidence(
   request: MapGenerationRequestFromSchema,
-  targetDomains: MapGenerationTargetDomain[]
+  targetDomains: MapGenerationTargetDomain[],
 ): MapGenerationAnalysisEvidence {
   if (!targetDomains.includes("spatial-analysis")) return notRequestedAnalysisEvidence();
 
@@ -309,11 +322,12 @@ function buildAnalysisEvidence(
               fix: {
                 kind: "manual",
                 confidence: "high",
-                message: "Use point-query or bbox-query readiness, or wait for a future geoprocessing command contract."
-              }
-            }
-          ]
-    )
+                message:
+                  "Use point-query or bbox-query readiness, or wait for a future geoprocessing command contract.",
+              },
+            },
+          ],
+    ),
   ];
 
   return {
@@ -322,7 +336,7 @@ function buildAnalysisEvidence(
     requestedOperations,
     acceptedQueryOperations,
     blockedOperations,
-    diagnostics
+    diagnostics,
   };
 }
 
@@ -333,18 +347,22 @@ function missingAnalysisOperationDiagnostics(request: MapGenerationRequestFromSc
         {
           severity: "warning",
           code: DiagnosticCodes.CapabilityUnsupported,
-          message: "Spatial-analysis generation is readiness-only; buffer, overlay, routing, and aggregation commands are not public yet.",
+          message:
+            "Spatial-analysis generation is readiness-only; buffer, overlay, routing, and aggregation commands are not public yet.",
           path: "/targetDomains",
           fix: {
             kind: "manual",
             confidence: "medium",
-            message: "Use get_context_summary and adapter query capabilities for read-only analysis planning until geoprocessing commands are added."
-          }
-        }
+            message:
+              "Use get_context_summary and adapter query capabilities for read-only analysis planning until geoprocessing commands are added.",
+          },
+        },
       ];
 }
 
-function isQueryReadinessOperation(operation: MapGenerationAnalysisOperation): operation is MapGenerationQueryReadinessOperation {
+function isQueryReadinessOperation(
+  operation: MapGenerationAnalysisOperation,
+): operation is MapGenerationQueryReadinessOperation {
   return operation === "point-query" || operation === "bbox-query";
 }
 
@@ -355,7 +373,7 @@ function notRequestedAnalysisEvidence(): MapGenerationAnalysisEvidence {
     requestedOperations: [],
     acceptedQueryOperations: [],
     blockedOperations: [],
-    diagnostics: []
+    diagnostics: [],
   };
 }
 
@@ -376,10 +394,11 @@ function unsupportedScene3DCommandDiagnostics(scene3d: SceneView3DExtension | un
             fix: {
               kind: "manual",
               confidence: "medium",
-              message: "Keep this field in authored SceneView3D specs, or add a command contract before using it in generated command skeletons."
-            }
-          }
-        ]
+              message:
+                "Keep this field in authored SceneView3D specs, or add a command contract before using it in generated command skeletons.",
+            },
+          },
+        ],
   );
 }
 
@@ -388,13 +407,14 @@ function stableScene3DBlockedDiagnostic(path: string, blockerCode: Scene3DStable
     severity: "error",
     code: DiagnosticCodes.CapabilityUnsupported,
     blockerCode,
-    message: 'Stable view.mode: "scene3d" generation is blocked; use extensions.scene3d for extension-only scene browsing evidence.',
+    message:
+      'Stable view.mode: "scene3d" generation is blocked; use extensions.scene3d for extension-only scene browsing evidence.',
     path,
     fix: {
       kind: "manual",
       confidence: "high",
-      message: 'Keep view.mode as "map2d" or "map2_5d" and place 3D browsing data under extensions.scene3d.'
-    }
+      message: 'Keep view.mode as "map2d" or "map2_5d" and place 3D browsing data under extensions.scene3d.',
+    },
   };
 }
 
@@ -413,7 +433,7 @@ function blockedSkeleton(input: {
     spec: structuredClone(input.baseSpec),
     commands: [],
     diagnostics: input.diagnostics,
-    traceId: input.traceId
+    traceId: input.traceId,
   };
 }
 
@@ -423,10 +443,10 @@ function createBaseSpec(mapId?: string): MapSpec {
     ...(mapId ? { id: mapId } : {}),
     revision: "0",
     view: {
-      mode: "map2d"
+      mode: "map2d",
     },
     sources: {},
-    layers: []
+    layers: [],
   };
 }
 
@@ -435,25 +455,12 @@ function toolInputErrorsToDiagnostics(errors: ErrorObject[], fallbackMessage: st
     severity: "error",
     code: toolInputErrorToCode(error),
     message: error.message ?? fallbackMessage,
-    path: error.instancePath || "/"
+    path: error.instancePath || "/",
   }));
-}
-
-function toolInputErrorToCode(error: ErrorObject): Diagnostic["code"] {
-  if (error.keyword === "additionalProperties") return DiagnosticCodes.SpecUnknownField;
-  if (error.keyword === "required") return DiagnosticCodes.SpecMissingField;
-  if (error.keyword === "const" && error.instancePath.endsWith("/version")) return DiagnosticCodes.SpecInvalidVersion;
-  return DiagnosticCodes.SpecInvalidType;
 }
 
 function sortedEntries<T>(record: Record<string, T>): Array<[string, T]> {
   return Object.entries(record).sort(([left], [right]) => left.localeCompare(right));
-}
-
-function readString(input: unknown, key: string): string | undefined {
-  if (!input || typeof input !== "object" || Array.isArray(input)) return undefined;
-  const value = (input as Record<string, unknown>)[key];
-  return typeof value === "string" && value.length > 0 ? value : undefined;
 }
 
 function sanitizeCommandPart(value: string): string {

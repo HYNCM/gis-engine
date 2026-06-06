@@ -1,19 +1,16 @@
 import {
-  DiagnosticCodes,
-  Scene3DStableRuntimeBlockerCodes,
   type CapabilityReport,
   type Diagnostic,
+  DiagnosticCodes,
   type ResourceReport,
+  Scene3DStableRuntimeBlockerCodes,
   type SceneSource,
-  type SceneView3DExtension
+  type SceneView3DExtension,
 } from "@gis-engine/engine";
 import {
-  getScene3DV1Capabilities,
-  scene3dPackageBoundary,
-  queryScene3DMock,
-  snapshotScene3DMock,
-  validateSceneResourceLoadPlan,
   type DiagnosticCounts,
+  getScene3DV1Capabilities,
+  queryScene3DMock,
   type Scene3DMockSnapshotOptions,
   type Scene3DMockSnapshotResult,
   type Scene3DQueryOptions,
@@ -21,13 +18,16 @@ import {
   type Scene3DRendererVisualEvidence,
   type SceneResourceLoadEntry,
   type SceneResourceLoadPlan,
-  type SceneResourceLoadReport
+  type SceneResourceLoadReport,
+  scene3dPackageBoundary,
+  snapshotScene3DMock,
+  validateSceneResourceLoadPlan,
 } from "@gis-engine/scene3d";
 
 const scene3dThreeAdapterForbiddenCoreDependencies = [
   ...scene3dPackageBoundary.forbiddenCoreDependencies,
   "3d-tiles-renderer",
-  "@loaders.gl/core"
+  "@loaders.gl/core",
 ] as const;
 
 export const scene3dThreeAdapterBoundary = {
@@ -37,7 +37,7 @@ export const scene3dThreeAdapterBoundary = {
   targetRenderer: "three",
   targetTilesRenderer: "3d-tiles-renderer",
   forbiddenCoreDependencies: scene3dThreeAdapterForbiddenCoreDependencies,
-  requiredRuntimePeerDependencies: ["three", "3d-tiles-renderer"]
+  requiredRuntimePeerDependencies: ["three", "3d-tiles-renderer"],
 } as const;
 
 export type Scene3DThreeAdapterBoundary = typeof scene3dThreeAdapterBoundary;
@@ -137,7 +137,7 @@ export const scene3dThreeAdapterStableRendererContractObligations = [
     adapterResponsibility:
       "Validate the SceneView3D extension and resource load plan before creating adapter-local Three.js or 3DTilesRendererJS resources.",
     requiredEvidence: ["Scene3DThreeAdapterRuntimeLoadReport", "SceneResourceLoadReport"],
-    diagnosticPaths: ["/extensions/scene3d", "/extensions/scene3d/sources"]
+    diagnosticPaths: ["/extensions/scene3d", "/extensions/scene3d/sources"],
   },
   {
     id: "render",
@@ -145,7 +145,7 @@ export const scene3dThreeAdapterStableRendererContractObligations = [
     adapterResponsibility:
       "Render terrain, 3D Tiles, and glTF layers through adapter-local renderer state without mutating MapSpec runtime state.",
     requiredEvidence: ["Scene3DRendererVisualEvidence", "nonblank frame metrics"],
-    diagnosticPaths: ["/rendererVisualEvidence", "/renderer/render"]
+    diagnosticPaths: ["/rendererVisualEvidence", "/renderer/render"],
   },
   {
     id: "resize",
@@ -153,7 +153,7 @@ export const scene3dThreeAdapterStableRendererContractObligations = [
     adapterResponsibility:
       "Apply width, height, and pixel ratio changes deterministically and report invalid viewport dimensions as diagnostics.",
     requiredEvidence: ["snapshot.summary.width", "snapshot.summary.height"],
-    diagnosticPaths: ["/renderer/resize", "/snapshot/summary"]
+    diagnosticPaths: ["/renderer/resize", "/snapshot/summary"],
   },
   {
     id: "camera",
@@ -161,7 +161,7 @@ export const scene3dThreeAdapterStableRendererContractObligations = [
     adapterResponsibility:
       "Apply SceneView3D camera position, target, up vector, field of view, and clipping values from schema-validated inputs.",
     requiredEvidence: ["SceneView3D camera contract", "snapshot/query camera consistency"],
-    diagnosticPaths: ["/extensions/scene3d/camera", "/renderer/camera"]
+    diagnosticPaths: ["/extensions/scene3d/camera", "/renderer/camera"],
   },
   {
     id: "snapshot",
@@ -169,7 +169,7 @@ export const scene3dThreeAdapterStableRendererContractObligations = [
     adapterResponsibility:
       "Return deterministic png or data-url snapshots with resource-pending diagnostics when required sources are not loaded.",
     requiredEvidence: ["Scene3DMockSnapshotResult", "visual snapshot report"],
-    diagnosticPaths: ["/snapshot", "/snapshot/resources"]
+    diagnosticPaths: ["/snapshot", "/snapshot/resources"],
   },
   {
     id: "query",
@@ -177,7 +177,7 @@ export const scene3dThreeAdapterStableRendererContractObligations = [
     adapterResponsibility:
       "Expose deterministic picking and 3D query results with layer, source, object id, position, and properties fields.",
     requiredEvidence: ["Scene3DQueryResult", "pick coverage report"],
-    diagnosticPaths: ["/query", "/query/picks"]
+    diagnosticPaths: ["/query", "/query/picks"],
   },
   {
     id: "destroy",
@@ -185,7 +185,7 @@ export const scene3dThreeAdapterStableRendererContractObligations = [
     adapterResponsibility:
       "Make destroy idempotent, stop future rendering work, and return stable diagnostics for post-destroy operations.",
     requiredEvidence: ["ResourceReport", "post-destroy snapshot/query diagnostics"],
-    diagnosticPaths: ["/runtime/destroy", "/runtime/destroyed"]
+    diagnosticPaths: ["/runtime/destroy", "/runtime/destroyed"],
   },
   {
     id: "diagnostics",
@@ -193,7 +193,7 @@ export const scene3dThreeAdapterStableRendererContractObligations = [
     adapterResponsibility:
       "Return structured Diagnostic objects for every load, render, snapshot, query, lifecycle, and resource-policy failure path.",
     requiredEvidence: ["diagnostic code inventory", "adapter contract tests"],
-    diagnosticPaths: ["/diagnostics"]
+    diagnosticPaths: ["/diagnostics"],
   },
   {
     id: "resourceCleanup",
@@ -201,8 +201,8 @@ export const scene3dThreeAdapterStableRendererContractObligations = [
     adapterResponsibility:
       "Dispose renderer, scene graph, geometries, materials, textures, workers, event listeners, and object URLs owned by the adapter.",
     requiredEvidence: ["resource cleanup report", "worker/texture disposal audit"],
-    diagnosticPaths: ["/resources/cleanup", "/runtime/destroy"]
-  }
+    diagnosticPaths: ["/resources/cleanup", "/runtime/destroy"],
+  },
 ] as const satisfies readonly Scene3DThreeAdapterStableRendererContractObligation[];
 
 export const scene3dThreeAdapterLifecycleSemantics = [
@@ -215,7 +215,7 @@ export const scene3dThreeAdapterLifecycleSemantics = [
     stableRuntimeBlocked: true,
     diagnosticCodes: [DiagnosticCodes.CapabilityUnsupported, DiagnosticCodes.RenderAdapterError],
     diagnosticPaths: ["/extensions/scene3d", "/runtime/failed/load"],
-    evidence: "runtime.load validates the resource load plan before entering the loaded state."
+    evidence: "runtime.load validates the resource load plan before entering the loaded state.",
   },
   {
     operation: "reload",
@@ -226,7 +226,7 @@ export const scene3dThreeAdapterLifecycleSemantics = [
     stableRuntimeBlocked: true,
     diagnosticCodes: [DiagnosticCodes.CapabilityUnsupported],
     diagnosticPaths: ["/extensions/scene3d"],
-    evidence: "repeated runtime.load calls return the same adapter-local load report."
+    evidence: "repeated runtime.load calls return the same adapter-local load report.",
   },
   {
     operation: "resize",
@@ -237,7 +237,7 @@ export const scene3dThreeAdapterLifecycleSemantics = [
     stableRuntimeBlocked: true,
     diagnosticCodes: [DiagnosticCodes.RenderAdapterError],
     diagnosticPaths: ["/renderer/resize/width", "/renderer/resize/height"],
-    evidence: "snapshot width and height act as the adapter-local resize contract and reject invalid dimensions."
+    evidence: "snapshot width and height act as the adapter-local resize contract and reject invalid dimensions.",
   },
   {
     operation: "snapshot",
@@ -249,10 +249,11 @@ export const scene3dThreeAdapterLifecycleSemantics = [
     diagnosticCodes: [
       DiagnosticCodes.RenderAdapterError,
       DiagnosticCodes.RenderDestroyed,
-      DiagnosticCodes.SnapshotResourcePending
+      DiagnosticCodes.SnapshotResourcePending,
     ],
     diagnosticPaths: ["/runtime/not-loaded/snapshot", "/runtime/failed/snapshot", "/runtime/destroyed/snapshot"],
-    evidence: "snapshot returns deterministic summaries and stable lifecycle diagnostics for pre-load, failed, and destroyed states."
+    evidence:
+      "snapshot returns deterministic summaries and stable lifecycle diagnostics for pre-load, failed, and destroyed states.",
   },
   {
     operation: "query",
@@ -263,7 +264,8 @@ export const scene3dThreeAdapterLifecycleSemantics = [
     stableRuntimeBlocked: true,
     diagnosticCodes: [DiagnosticCodes.RenderAdapterError, DiagnosticCodes.RenderDestroyed],
     diagnosticPaths: ["/runtime/not-loaded/query", "/runtime/failed/query", "/runtime/destroyed/query"],
-    evidence: "query returns deterministic picks after load and empty results with stable diagnostics before load, after failure, or after destroy."
+    evidence:
+      "query returns deterministic picks after load and empty results with stable diagnostics before load, after failure, or after destroy.",
   },
   {
     operation: "failure",
@@ -276,10 +278,11 @@ export const scene3dThreeAdapterLifecycleSemantics = [
       DiagnosticCodes.RenderAdapterError,
       DiagnosticCodes.SecurityResourceTooLarge,
       DiagnosticCodes.SecurityResourceTimeout,
-      DiagnosticCodes.SecurityUnsupportedAssetType
+      DiagnosticCodes.SecurityUnsupportedAssetType,
     ],
     diagnosticPaths: ["/runtime/failed/load", "/extensions/scene3d/sources"],
-    evidence: "resource-policy errors keep the runtime unloaded and move later snapshot/query calls into the failed state."
+    evidence:
+      "resource-policy errors keep the runtime unloaded and move later snapshot/query calls into the failed state.",
   },
   {
     operation: "cancel",
@@ -290,7 +293,7 @@ export const scene3dThreeAdapterLifecycleSemantics = [
     stableRuntimeBlocked: true,
     diagnosticCodes: [DiagnosticCodes.RenderDestroyed],
     diagnosticPaths: ["/runtime/destroy", "/runtime/destroyed/load"],
-    evidence: "destroy-before-load and destroy-after-failure are deterministic cancellation paths."
+    evidence: "destroy-before-load and destroy-after-failure are deterministic cancellation paths.",
   },
   {
     operation: "destroy",
@@ -301,7 +304,7 @@ export const scene3dThreeAdapterLifecycleSemantics = [
     stableRuntimeBlocked: true,
     diagnosticCodes: [DiagnosticCodes.RenderDestroyed],
     diagnosticPaths: ["/runtime/destroy", "/runtime/destroyed/destroy"],
-    evidence: "destroy is idempotent and post-destroy operations cannot revive adapter resources."
+    evidence: "destroy is idempotent and post-destroy operations cannot revive adapter resources.",
   },
   {
     operation: "resourceCleanup",
@@ -312,8 +315,8 @@ export const scene3dThreeAdapterLifecycleSemantics = [
     stableRuntimeBlocked: true,
     diagnosticCodes: [DiagnosticCodes.RenderDestroyed],
     diagnosticPaths: ["/resources/cleanup", "/runtime/destroy"],
-    evidence: "destroy returns deterministic cleanup counters for planned resources and workers."
-  }
+    evidence: "destroy returns deterministic cleanup counters for planned resources and workers.",
+  },
 ] as const satisfies readonly Scene3DThreeAdapterLifecycleSemantic[];
 
 export interface Scene3DThreeAdapterLoadEstimates {
@@ -459,7 +462,7 @@ export const scene3dThreeAdapterDependencyBoundaryAuditPolicy = {
   adapterOwnedPackages: [scene3dThreeAdapterBoundary.packageName],
   rendererFreePackages: ["@gis-engine/engine", "@gis-engine/scene3d", "@gis-engine/ai"],
   rendererPackages: scene3dThreeAdapterBoundary.forbiddenCoreDependencies,
-  dependencyFields: ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"]
+  dependencyFields: ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"],
 } as const satisfies {
   adapterOwnedPackages: readonly string[];
   rendererFreePackages: readonly string[];
@@ -507,7 +510,7 @@ export function getScene3DThreeAdapterCapabilities(): CapabilityReport {
   return {
     ...capabilities,
     renderer: "scene3d-three-adapter",
-    experimental: [...(capabilities.experimental ?? []), "sceneview3d-three-adapter-spike"]
+    experimental: [...(capabilities.experimental ?? []), "sceneview3d-three-adapter-spike"],
   };
 }
 
@@ -528,7 +531,7 @@ export function getScene3DThreeAdapterStableRendererContract(): Scene3DThreeAdap
       runtimePackages: scene3dThreeAdapterBoundary.requiredRuntimePeerDependencies,
       corePackagesMustRemainRendererFree: scene3dThreeAdapterDependencyBoundaryAuditPolicy.rendererFreePackages,
       forbiddenCoreDependencies: scene3dThreeAdapterBoundary.forbiddenCoreDependencies,
-      currentPackageManifestStatus: "not-declared-during-spike"
+      currentPackageManifestStatus: "not-declared-during-spike",
     },
     obligations: scene3dThreeAdapterStableRendererContractObligations,
     lifecycleSemantics: scene3dThreeAdapterLifecycleSemantics,
@@ -538,9 +541,9 @@ export function getScene3DThreeAdapterStableRendererContract(): Scene3DThreeAdap
       structuredDiagnostics: true,
       snapshotVerification: true,
       resourcePolicyRequired: true,
-      adapterBoundaryRequired: true
+      adapterBoundaryRequired: true,
     },
-    diagnostics: stableRuntimeBlockedDiagnostics()
+    diagnostics: stableRuntimeBlockedDiagnostics(),
   };
 }
 
@@ -553,17 +556,19 @@ export function getScene3DThreeAdapterLifecycleSemantics(): Scene3DThreeAdapterL
     runtimeSupported: false,
     stableRuntimeBlocked: true,
     semantics: scene3dThreeAdapterLifecycleSemantics,
-    diagnostics: stableRuntimeBlockedDiagnostics()
+    diagnostics: stableRuntimeBlockedDiagnostics(),
   };
 }
 
 export function auditScene3DThreeAdapterDependencyBoundary(
-  options: Scene3DThreeAdapterDependencyBoundaryAuditOptions
+  options: Scene3DThreeAdapterDependencyBoundaryAuditOptions,
 ): Scene3DThreeAdapterDependencyBoundaryAudit {
   const contract = getScene3DThreeAdapterStableRendererContract();
   const diagnostics: Diagnostic[] = [];
   const manifestsByPackage = new Map(options.manifests.map((manifest) => [manifest.packageName, manifest]));
-  const importsByPackage = new Map(options.sourceImports.map((sourceImport) => [sourceImport.packageName, sourceImport]));
+  const importsByPackage = new Map(
+    options.sourceImports.map((sourceImport) => [sourceImport.packageName, sourceImport]),
+  );
 
   for (const packageName of scene3dThreeAdapterDependencyBoundaryAuditPolicy.rendererFreePackages) {
     const manifest = manifestsByPackage.get(packageName);
@@ -603,16 +608,16 @@ export function auditScene3DThreeAdapterDependencyBoundary(
       rendererPackages: scene3dThreeAdapterDependencyBoundaryAuditPolicy.rendererPackages,
       dependencyFields: scene3dThreeAdapterDependencyBoundaryAuditPolicy.dependencyFields,
       manifestCount: options.manifests.length,
-      sourceImportRootCount: options.sourceImports.length
+      sourceImportRootCount: options.sourceImports.length,
     },
     diagnostics,
-    diagnosticCounts: countDiagnostics(diagnostics)
+    diagnosticCounts: countDiagnostics(diagnostics),
   };
 }
 
 export function buildScene3DThreeAdapterLoadPlan(
   extension: SceneView3DExtension,
-  options: Scene3DThreeAdapterSpikeOptions = {}
+  options: Scene3DThreeAdapterSpikeOptions = {},
 ): SceneResourceLoadPlan {
   const resources: SceneResourceLoadEntry[] = [];
   const estimates = options.estimates;
@@ -623,13 +628,13 @@ export function buildScene3DThreeAdapterLoadPlan(
 
   return {
     workerCount: estimates?.workerCount ?? defaultWorkerCount(extension),
-    resources
+    resources,
   };
 }
 
 export function evaluateScene3DThreeAdapterSpike(
   extension: SceneView3DExtension,
-  options: Scene3DThreeAdapterSpikeOptions = {}
+  options: Scene3DThreeAdapterSpikeOptions = {},
 ): Scene3DThreeAdapterSpikeReport {
   const loadPlan = buildScene3DThreeAdapterLoadPlan(extension, options);
   const resourceReport = validateSceneResourceLoadPlan(extension, loadPlan);
@@ -645,13 +650,13 @@ export function evaluateScene3DThreeAdapterSpike(
     loadPlan,
     resourceReport,
     diagnostics,
-    diagnosticCounts: countDiagnostics(diagnostics)
+    diagnosticCounts: countDiagnostics(diagnostics),
   };
 }
 
 export function createScene3DThreeAdapterRendererEvidence(
   spikeReport: Scene3DThreeAdapterSpikeReport,
-  options: Scene3DThreeAdapterRendererEvidenceOptions = {}
+  options: Scene3DThreeAdapterRendererEvidenceOptions = {},
 ): Scene3DRendererVisualEvidence {
   const diagnostics = [...spikeReport.resourceReport.diagnostics, ...(options.diagnostics ?? [])];
   const capture = options.capture;
@@ -666,13 +671,13 @@ export function createScene3DThreeAdapterRendererEvidence(
     passed: spikeReport.resourceReport.valid && diagnostics.every((diagnostic) => diagnostic.severity !== "error"),
     renderer: "scene3d-three-adapter",
     ...(capture ? { reportPath: capture.reportPath } : {}),
-    diagnostics
+    diagnostics,
   };
 }
 
 export function createScene3DThreeAdapterPromotionEvidenceSummary(
   spikeReport: Scene3DThreeAdapterSpikeReport,
-  options: Scene3DThreeAdapterPromotionEvidenceOptions = {}
+  options: Scene3DThreeAdapterPromotionEvidenceOptions = {},
 ): Scene3DThreeAdapterPromotionEvidenceSummary {
   const loadDiagnostics = options.loadReport
     ? [...options.loadReport.diagnostics]
@@ -688,13 +693,15 @@ export function createScene3DThreeAdapterPromotionEvidenceSummary(
     snapshotDiagnostics.push(incompletePromotionEvidenceDiagnostic("snapshot", "Snapshot evidence did not pass."));
   }
 
-  const queryDiagnostics = options.query ? [...options.query.diagnostics] : [missingPromotionEvidenceDiagnostic("query")];
+  const queryDiagnostics = options.query
+    ? [...options.query.diagnostics]
+    : [missingPromotionEvidenceDiagnostic("query")];
   const rendererVisualDiagnostics = options.rendererVisualEvidence
     ? [...(options.rendererVisualEvidence.diagnostics ?? [])]
     : [missingPromotionEvidenceDiagnostic("rendererVisual")];
   if (options.rendererVisualEvidence && !options.rendererVisualEvidence.passed) {
     rendererVisualDiagnostics.push(
-      incompletePromotionEvidenceDiagnostic("rendererVisual", "Renderer visual evidence did not pass.")
+      incompletePromotionEvidenceDiagnostic("rendererVisual", "Renderer visual evidence did not pass."),
     );
   }
 
@@ -704,7 +711,7 @@ export function createScene3DThreeAdapterPromotionEvidenceSummary(
     ...snapshotDiagnostics,
     ...queryDiagnostics,
     ...rendererVisualDiagnostics,
-    ...(options.diagnostics ?? [])
+    ...(options.diagnostics ?? []),
   ];
   const decisionReady =
     spikeReport.resourceReport.valid &&
@@ -719,7 +726,7 @@ export function createScene3DThreeAdapterPromotionEvidenceSummary(
     present: options.rendererVisualEvidence !== undefined,
     passed: options.rendererVisualEvidence?.passed ?? false,
     ...(options.rendererVisualEvidence?.reportPath ? { reportPath: options.rendererVisualEvidence.reportPath } : {}),
-    diagnostics: countDiagnostics(rendererVisualDiagnostics)
+    diagnostics: countDiagnostics(rendererVisualDiagnostics),
   };
 
   return {
@@ -735,35 +742,35 @@ export function createScene3DThreeAdapterPromotionEvidenceSummary(
         valid: spikeReport.resourceReport.valid,
         resourceCount: spikeReport.loadPlan.resources?.length ?? 0,
         workerCount: spikeReport.loadPlan.workerCount ?? 0,
-        diagnostics: countDiagnostics(spikeReport.resourceReport.diagnostics)
+        diagnostics: countDiagnostics(spikeReport.resourceReport.diagnostics),
       },
       load: {
         present: options.loadReport !== undefined,
         loaded: options.loadReport?.loaded ?? false,
-        diagnostics: countDiagnostics(loadDiagnostics)
+        diagnostics: countDiagnostics(loadDiagnostics),
       },
       snapshot: {
         present: options.snapshot !== undefined,
         passed: options.snapshot?.passed ?? false,
         pendingSourceCount: options.snapshot?.pendingSourceIds.length ?? 0,
         ...(options.snapshot ? { format: options.snapshot.summary.format } : {}),
-        diagnostics: countDiagnostics(snapshotDiagnostics)
+        diagnostics: countDiagnostics(snapshotDiagnostics),
       },
       query: {
         present: options.query !== undefined,
         pickCount: options.query?.picks.length ?? 0,
-        diagnostics: countDiagnostics(queryDiagnostics)
+        diagnostics: countDiagnostics(queryDiagnostics),
       },
-      rendererVisual
+      rendererVisual,
     },
     diagnostics,
-    diagnosticCounts: countDiagnostics(diagnostics)
+    diagnosticCounts: countDiagnostics(diagnostics),
   };
 }
 
 export function createScene3DThreeAdapterRuntime(
   extension: SceneView3DExtension,
-  options: Scene3DThreeAdapterSpikeOptions = {}
+  options: Scene3DThreeAdapterSpikeOptions = {},
 ): Scene3DThreeAdapterRuntime {
   return new Scene3DThreeAdapterRuntimeImpl(extension, options);
 }
@@ -795,7 +802,7 @@ class Scene3DThreeAdapterRuntimeImpl implements Scene3DThreeAdapterRuntime {
         loaded: false,
         diagnostics: [destroyedDiagnostic("load")],
         resourceReport: this.spikeReport.resourceReport,
-        spikeReport: this.spikeReport
+        spikeReport: this.spikeReport,
       };
     }
 
@@ -811,7 +818,7 @@ class Scene3DThreeAdapterRuntimeImpl implements Scene3DThreeAdapterRuntime {
         loaded: false,
         diagnostics: [...this.spikeReport.diagnostics, failedDiagnostic("load")],
         resourceReport: this.spikeReport.resourceReport,
-        spikeReport: this.spikeReport
+        spikeReport: this.spikeReport,
       };
     }
 
@@ -826,29 +833,33 @@ class Scene3DThreeAdapterRuntimeImpl implements Scene3DThreeAdapterRuntime {
       loaded: true,
       diagnostics: [...this.spikeReport.diagnostics],
       resourceReport: this.spikeReport.resourceReport,
-      spikeReport: this.spikeReport
+      spikeReport: this.spikeReport,
     };
   }
 
   async snapshot(options: Scene3DMockSnapshotOptions = {}): Promise<Scene3DMockSnapshotResult> {
     if (this.#destroyed) return destroyedSnapshotResult(this.#extension, options);
-    if (this.#failed) return failedSnapshotResult(this.#extension, options, this.spikeReport.resourceReport.diagnostics);
+    if (this.#failed)
+      return failedSnapshotResult(this.#extension, options, this.spikeReport.resourceReport.diagnostics);
     if (!this.#loaded) return notLoadedSnapshotResult(this.#extension, options);
 
     const snapshot = snapshotScene3DMock(this.#extension, {
       ...options,
       loadedSourceIds: options.loadedSourceIds ?? Object.keys(this.#extension.sources ?? {}),
-      requireLoadedResources: options.requireLoadedResources ?? true
+      requireLoadedResources: options.requireLoadedResources ?? true,
     });
     const diagnostics = [
       ...this.spikeReport.resourceReport.diagnostics,
       ...snapshot.diagnostics,
-      ...viewportDimensionDiagnostics(options.width ?? this.#extension.snapshot?.width, options.height ?? this.#extension.snapshot?.height)
+      ...viewportDimensionDiagnostics(
+        options.width ?? this.#extension.snapshot?.width,
+        options.height ?? this.#extension.snapshot?.height,
+      ),
     ];
     return {
       ...snapshot,
       passed: !diagnostics.some((diagnostic) => diagnostic.severity === "error"),
-      diagnostics
+      diagnostics,
     };
   }
 
@@ -859,7 +870,7 @@ class Scene3DThreeAdapterRuntimeImpl implements Scene3DThreeAdapterRuntime {
     if (this.#failed) {
       return {
         picks: [],
-        diagnostics: [failedDiagnostic("query"), ...this.spikeReport.resourceReport.diagnostics]
+        diagnostics: [failedDiagnostic("query"), ...this.spikeReport.resourceReport.diagnostics],
       };
     }
     if (!this.#loaded) {
@@ -869,7 +880,7 @@ class Scene3DThreeAdapterRuntimeImpl implements Scene3DThreeAdapterRuntime {
     const query = queryScene3DMock(this.#extension, options);
     return {
       picks: query.picks,
-      diagnostics: [...this.spikeReport.resourceReport.diagnostics, ...query.diagnostics]
+      diagnostics: [...this.spikeReport.resourceReport.diagnostics, ...query.diagnostics],
     };
   }
 
@@ -894,7 +905,7 @@ class Scene3DThreeAdapterRuntimeImpl implements Scene3DThreeAdapterRuntime {
 function sourceLoadEntries(
   sourceId: string,
   source: SceneSource,
-  estimates: Scene3DThreeAdapterLoadEstimates | undefined
+  estimates: Scene3DThreeAdapterLoadEstimates | undefined,
 ): SceneResourceLoadEntry[] {
   if (source.type === "3d-tiles") {
     return [
@@ -903,8 +914,8 @@ function sourceLoadEntries(
         sourceId,
         url: source.url,
         byteLength: estimates?.tilesetJsonBytes?.[sourceId],
-        elapsedMs: estimates?.elapsedMs?.[sourceId]
-      })
+        elapsedMs: estimates?.elapsedMs?.[sourceId],
+      }),
     ];
   }
 
@@ -915,8 +926,8 @@ function sourceLoadEntries(
         sourceId,
         url: source.url,
         byteLength: estimates?.modelBytes?.[sourceId],
-        elapsedMs: estimates?.elapsedMs?.[sourceId]
-      })
+        elapsedMs: estimates?.elapsedMs?.[sourceId],
+      }),
     ];
     const textureCount = estimates?.textureCount?.[sourceId];
     const textureBytes = estimates?.textureBytes?.[sourceId];
@@ -927,8 +938,8 @@ function sourceLoadEntries(
           sourceId,
           url: source.url,
           textureCount,
-          textureBytes
-        })
+          textureBytes,
+        }),
       );
     }
     return entries;
@@ -942,8 +953,8 @@ function sourceLoadEntries(
         url: source.url,
         textureCount: estimates?.textureCount?.[sourceId] ?? 1,
         textureBytes: estimates?.textureBytes?.[sourceId],
-        elapsedMs: estimates?.elapsedMs?.[sourceId]
-      })
+        elapsedMs: estimates?.elapsedMs?.[sourceId],
+      }),
     ];
   }
 
@@ -964,8 +975,8 @@ function unsupportedRuntimeDiagnostic(): Diagnostic {
     fix: {
       kind: "manual",
       confidence: "medium",
-      message: "Keep SceneView3D rendering behind the adapter spike until real snapshot/query/visual evidence passes."
-    }
+      message: "Keep SceneView3D rendering behind the adapter spike until real snapshot/query/visual evidence passes.",
+    },
   };
 }
 
@@ -974,25 +985,25 @@ function stableRuntimeBlockedDiagnostics(): Diagnostic[] {
     stableRuntimeBlockedDiagnostic(
       "/view/mode",
       Scene3DStableRuntimeBlockerCodes.ViewMode,
-      'Stable view.mode: "scene3d" remains blocked until the SceneView3D stable renderer contract is accepted.'
+      'Stable view.mode: "scene3d" remains blocked until the SceneView3D stable renderer contract is accepted.',
     ),
     stableRuntimeBlockedDiagnostic(
       "/capabilities/renderer",
       Scene3DStableRuntimeBlockerCodes.Renderer,
-      "The Three.js adapter contract is adapter-local evidence only and does not promote the core scene3d renderer."
+      "The Three.js adapter contract is adapter-local evidence only and does not promote the core scene3d renderer.",
     ),
     stableRuntimeBlockedDiagnostic(
       "/capabilities/dimensions",
       Scene3DStableRuntimeBlockerCodes.Dimensions,
-      "SceneView3D 3D capability remains blocked in the stable runtime until quality-guardian and coordinator accept promotion."
-    )
+      "SceneView3D 3D capability remains blocked in the stable runtime until quality-guardian and coordinator accept promotion.",
+    ),
   ];
 }
 
 function stableRuntimeBlockedDiagnostic(
   path: string,
   blockerCode: NonNullable<Diagnostic["blockerCode"]>,
-  message: string
+  message: string,
 ): Diagnostic {
   return {
     severity: "error",
@@ -1004,8 +1015,9 @@ function stableRuntimeBlockedDiagnostic(
     fix: {
       kind: "manual",
       confidence: "high",
-      message: "Keep SceneView3D stable runtime blocked until the stable renderer contract and promotion gate are accepted."
-    }
+      message:
+        "Keep SceneView3D stable runtime blocked until the stable renderer contract and promotion gate are accepted.",
+    },
   };
 }
 
@@ -1019,14 +1031,14 @@ function missingDependencyBoundaryEvidenceDiagnostic(kind: "manifest" | "imports
     fix: {
       kind: "manual",
       confidence: "high",
-      message: "Provide package manifest and source import evidence before accepting the adapter dependency boundary."
-    }
+      message: "Provide package manifest and source import evidence before accepting the adapter dependency boundary.",
+    },
   };
 }
 
 function manifestRendererDependencyDiagnostics(
   manifest: Scene3DThreeAdapterPackageManifestEvidence,
-  adapterSpikeManifest: boolean
+  adapterSpikeManifest: boolean,
 ): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
   const rendererPackages: readonly string[] = scene3dThreeAdapterDependencyBoundaryAuditPolicy.rendererPackages;
@@ -1043,15 +1055,15 @@ function manifestRendererDependencyDiagnostics(
         path: `/dependencyBoundary/manifests/${jsonPointerSegment(manifest.packageName)}/${field}/${jsonPointerSegment(dependency)}`,
         relatedResources: [
           { kind: "adapter", id: scene3dThreeAdapterBoundary.packageName },
-          { kind: "adapter", id: manifest.packageName, path: manifest.path }
+          { kind: "adapter", id: manifest.packageName, path: manifest.path },
         ],
         fix: {
           kind: "manual",
           confidence: "high",
           message: adapterSpikeManifest
             ? "Keep Three.js and 3DTilesRendererJS undeclared during the spike evidence phase."
-            : "Move renderer dependencies into an approved adapter package and keep core packages renderer-free."
-        }
+            : "Move renderer dependencies into an approved adapter package and keep core packages renderer-free.",
+        },
       });
     }
   }
@@ -1059,12 +1071,14 @@ function manifestRendererDependencyDiagnostics(
   return diagnostics;
 }
 
-function sourceImportRendererDependencyDiagnostics(sourceImport: Scene3DThreeAdapterSourceImportEvidence): Diagnostic[] {
+function sourceImportRendererDependencyDiagnostics(
+  sourceImport: Scene3DThreeAdapterSourceImportEvidence,
+): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
 
   for (const importSpecifier of sourceImport.imports) {
     const rendererPackage = scene3dThreeAdapterDependencyBoundaryAuditPolicy.rendererPackages.find((dependency) =>
-      isPackageOrSubpath(importSpecifier, dependency)
+      isPackageOrSubpath(importSpecifier, dependency),
     );
     if (!rendererPackage) continue;
 
@@ -1075,13 +1089,13 @@ function sourceImportRendererDependencyDiagnostics(sourceImport: Scene3DThreeAda
       path: `/dependencyBoundary/imports/${jsonPointerSegment(sourceImport.packageName)}/${jsonPointerSegment(importSpecifier)}`,
       relatedResources: [
         { kind: "adapter", id: scene3dThreeAdapterBoundary.packageName },
-        { kind: "adapter", id: sourceImport.packageName, path: sourceImport.root }
+        { kind: "adapter", id: sourceImport.packageName, path: sourceImport.root },
       ],
       fix: {
         kind: "manual",
         confidence: "high",
-        message: "Keep renderer implementation imports inside the SceneView3D Three.js adapter package."
-      }
+        message: "Keep renderer implementation imports inside the SceneView3D Three.js adapter package.",
+      },
     });
   }
 
@@ -1100,15 +1114,14 @@ function missingRendererCaptureDiagnostic(): Diagnostic {
   return {
     severity: "error",
     code: DiagnosticCodes.CapabilityUnsupported,
-    message:
-      "The Three.js SceneView3D adapter does not have renderer visual capture evidence yet.",
+    message: "The Three.js SceneView3D adapter does not have renderer visual capture evidence yet.",
     path: "/rendererVisualEvidence",
     fix: {
       kind: "manual",
       confidence: "high",
       message:
-        "Run a release-capable Three.js adapter visual runner and provide frame metrics before treating renderer evidence as passing."
-    }
+        "Run a release-capable Three.js adapter visual runner and provide frame metrics before treating renderer evidence as passing.",
+    },
   };
 }
 
@@ -1124,8 +1137,8 @@ function validateRendererCapture(capture: Scene3DThreeAdapterVisualCapture): Dia
       fix: {
         kind: "manual",
         confidence: "high",
-        message: "Capture a browser/WebGL frame with positive width and height."
-      }
+        message: "Capture a browser/WebGL frame with positive width and height.",
+      },
     });
   }
 
@@ -1138,8 +1151,8 @@ function validateRendererCapture(capture: Scene3DThreeAdapterVisualCapture): Dia
       fix: {
         kind: "manual",
         confidence: "high",
-        message: "Render a frame with nontransparent pixels and pixels changed from the background."
-      }
+        message: "Render a frame with nontransparent pixels and pixels changed from the background.",
+      },
     });
   }
 
@@ -1152,8 +1165,8 @@ function validateRendererCapture(capture: Scene3DThreeAdapterVisualCapture): Dia
       fix: {
         kind: "manual",
         confidence: "high",
-        message: "Fix browser console errors before accepting renderer visual evidence."
-      }
+        message: "Fix browser console errors before accepting renderer visual evidence.",
+      },
     });
   }
 
@@ -1169,8 +1182,8 @@ function missingPromotionEvidenceDiagnostic(component: string): Diagnostic {
     fix: {
       kind: "manual",
       confidence: "high",
-      message: "Collect load, snapshot, query, and renderer visual evidence before requesting a promotion decision."
-    }
+      message: "Collect load, snapshot, query, and renderer visual evidence before requesting a promotion decision.",
+    },
   };
 }
 
@@ -1183,8 +1196,8 @@ function incompletePromotionEvidenceDiagnostic(component: string, message: strin
     fix: {
       kind: "manual",
       confidence: "high",
-      message: "Fix the failing evidence component before requesting a promotion decision."
-    }
+      message: "Fix the failing evidence component before requesting a promotion decision.",
+    },
   };
 }
 
@@ -1210,8 +1223,8 @@ function destroyedDiagnostic(operation: string): Diagnostic {
     fix: {
       kind: "manual",
       confidence: "high",
-      message: "Create and load a fresh Scene3DThreeAdapter runtime before invoking lifecycle operations."
-    }
+      message: "Create and load a fresh Scene3DThreeAdapter runtime before invoking lifecycle operations.",
+    },
   };
 }
 
@@ -1225,8 +1238,9 @@ function notLoadedDiagnostic(operation: string): Diagnostic {
     fix: {
       kind: "manual",
       confidence: "high",
-      message: "Call runtime.load() and verify the load report before invoking snapshot, query, or renderer evidence operations."
-    }
+      message:
+        "Call runtime.load() and verify the load report before invoking snapshot, query, or renderer evidence operations.",
+    },
   };
 }
 
@@ -1240,8 +1254,8 @@ function failedDiagnostic(operation: string): Diagnostic {
     fix: {
       kind: "manual",
       confidence: "high",
-      message: "Inspect the resource-policy diagnostics, create a corrected runtime, and load it before retrying."
-    }
+      message: "Inspect the resource-policy diagnostics, create a corrected runtime, and load it before retrying.",
+    },
   };
 }
 
@@ -1266,8 +1280,8 @@ function invalidViewportDimensionDiagnostic(dimension: "width" | "height", value
     fix: {
       kind: "manual",
       confidence: "high",
-      message: "Provide positive finite viewport dimensions before requesting a renderer snapshot."
-    }
+      message: "Provide positive finite viewport dimensions before requesting a renderer snapshot.",
+    },
   };
 }
 
@@ -1277,56 +1291,56 @@ function isPositiveFinite(value: number): boolean {
 
 function destroyedSnapshotResult(
   extension: SceneView3DExtension,
-  options: Scene3DMockSnapshotOptions
+  options: Scene3DMockSnapshotOptions,
 ): Scene3DMockSnapshotResult {
   const snapshot = snapshotScene3DMock(extension, {
     ...options,
     loadedSourceIds: [],
-    requireLoadedResources: true
+    requireLoadedResources: true,
   });
   const { dataUrl, ...rest } = snapshot;
   void dataUrl;
   return {
     ...rest,
     passed: false,
-    diagnostics: [destroyedDiagnostic("snapshot")]
+    diagnostics: [destroyedDiagnostic("snapshot")],
   };
 }
 
 function failedSnapshotResult(
   extension: SceneView3DExtension,
   options: Scene3DMockSnapshotOptions,
-  diagnostics: Diagnostic[]
+  diagnostics: Diagnostic[],
 ): Scene3DMockSnapshotResult {
   const snapshot = snapshotScene3DMock(extension, {
     ...options,
     loadedSourceIds: [],
-    requireLoadedResources: true
+    requireLoadedResources: true,
   });
   const { dataUrl, ...rest } = snapshot;
   void dataUrl;
   return {
     ...rest,
     passed: false,
-    diagnostics: [failedDiagnostic("snapshot"), ...diagnostics]
+    diagnostics: [failedDiagnostic("snapshot"), ...diagnostics],
   };
 }
 
 function notLoadedSnapshotResult(
   extension: SceneView3DExtension,
-  options: Scene3DMockSnapshotOptions
+  options: Scene3DMockSnapshotOptions,
 ): Scene3DMockSnapshotResult {
   const snapshot = snapshotScene3DMock(extension, {
     ...options,
     loadedSourceIds: [],
-    requireLoadedResources: true
+    requireLoadedResources: true,
   });
   const { dataUrl, ...rest } = snapshot;
   void dataUrl;
   return {
     ...rest,
     passed: false,
-    diagnostics: [notLoadedDiagnostic("snapshot")]
+    diagnostics: [notLoadedDiagnostic("snapshot")],
   };
 }
 
@@ -1335,7 +1349,7 @@ function destroyResourceReport(
   diagnostics: Diagnostic[],
   loadedBeforeDestroy: boolean,
   failedBeforeDestroy: boolean,
-  alreadyDestroyed: boolean
+  alreadyDestroyed: boolean,
 ): ResourceReport {
   return {
     destroyed: true,
@@ -1348,8 +1362,8 @@ function destroyResourceReport(
       failedBeforeDestroy,
       alreadyDestroyed,
       plannedResourceCount: loadPlan.resources?.length ?? 0,
-      plannedWorkerCount: loadPlan.workerCount ?? 0
-    }
+      plannedWorkerCount: loadPlan.workerCount ?? 0,
+    },
   };
 }
 

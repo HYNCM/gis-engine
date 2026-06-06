@@ -1,6 +1,14 @@
 import { DiagnosticCodes } from "../diagnostics/codes.js";
-import type { Diagnostic, JsonPatchOperation, MapCommand, MapCommandBase, MapSpec, SceneView3DExtension, SuggestedFix } from "../types.js";
-import { joinPath, escapePathSegment } from "../spec/patch/index.js";
+import { manualFix } from "../internal/shared.js";
+import { escapePathSegment, joinPath } from "../spec/patch/index.js";
+import type {
+  Diagnostic,
+  JsonPatchOperation,
+  MapCommand,
+  MapCommandBase,
+  MapSpec,
+  SceneView3DExtension,
+} from "../types.js";
 
 export interface BuildPatchResult {
   patch: JsonPatchOperation[];
@@ -18,7 +26,7 @@ export function buildPatch(command: MapCommand, spec: MapSpec): BuildPatchResult
       }
       return {
         patch: [{ op: "add", path: joinPath("sources", command.sourceId), value: command.source }],
-        diagnostics: []
+        diagnostics: [],
       };
 
     case "removeSource":
@@ -28,7 +36,10 @@ export function buildPatch(command: MapCommand, spec: MapSpec): BuildPatchResult
           message: `Source "${command.sourceId}" does not exist.`,
           path: "/sourceId",
           relatedResources: [{ kind: "source", id: command.sourceId }],
-          fix: manualFix("Check the source id or skip this removeSource command when the source is already absent.", "high")
+          fix: manualFix(
+            "Check the source id or skip this removeSource command when the source is already absent.",
+            "high",
+          ),
         });
       }
       return { patch: [{ op: "remove", path: joinPath("sources", command.sourceId) }], diagnostics: [] };
@@ -37,32 +48,62 @@ export function buildPatch(command: MapCommand, spec: MapSpec): BuildPatchResult
       if (spec.layers.some((layer) => layer.id === command.layer.id)) {
         return { patch: [], diagnostics: [], skipped: true };
       }
-      const insertIndex = command.beforeLayerId ? spec.layers.findIndex((layer) => layer.id === command.beforeLayerId) : spec.layers.length;
+      const insertIndex = command.beforeLayerId
+        ? spec.layers.findIndex((layer) => layer.id === command.beforeLayerId)
+        : spec.layers.length;
       if (insertIndex < 0) {
-        return missingBeforeLayer(command.beforeLayerId, "Add the anchor layer first, or omit beforeLayerId to append the new layer.");
+        return missingBeforeLayer(
+          command.beforeLayerId,
+          "Add the anchor layer first, or omit beforeLayerId to append the new layer.",
+        );
       }
       return { patch: [{ op: "add", path: `/layers/${insertIndex}`, value: command.layer }], diagnostics: [] };
     }
 
     case "removeLayer": {
       const index = spec.layers.findIndex((layer) => layer.id === command.layerId);
-      if (index < 0) return missingLayer(command.layerId, "/layerId", "Check the layer id or skip this removeLayer command when the layer is already absent.");
+      if (index < 0)
+        return missingLayer(
+          command.layerId,
+          "/layerId",
+          "Check the layer id or skip this removeLayer command when the layer is already absent.",
+        );
       return { patch: [{ op: "remove", path: `/layers/${index}` }], diagnostics: [] };
     }
 
     case "setPaint": {
       const index = spec.layers.findIndex((layer) => layer.id === command.layerId);
-      if (index < 0) return missingLayer(command.layerId, "/layerId", "Add the layer before setting paint, or update layerId to an existing layer.");
+      if (index < 0)
+        return missingLayer(
+          command.layerId,
+          "/layerId",
+          "Add the layer before setting paint, or update layerId to an existing layer.",
+        );
       const layer = spec.layers[index];
-      if (!layer) return missingLayer(command.layerId, "/layerId", "Add the layer before setting paint, or update layerId to an existing layer.");
+      if (!layer)
+        return missingLayer(
+          command.layerId,
+          "/layerId",
+          "Add the layer before setting paint, or update layerId to an existing layer.",
+        );
       return { patch: patchRecordMerge(`/layers/${index}/paint`, layer.paint, command.paint), diagnostics: [] };
     }
 
     case "setLayout": {
       const index = spec.layers.findIndex((layer) => layer.id === command.layerId);
-      if (index < 0) return missingLayer(command.layerId, "/layerId", "Add the layer before setting layout, or update layerId to an existing layer.");
+      if (index < 0)
+        return missingLayer(
+          command.layerId,
+          "/layerId",
+          "Add the layer before setting layout, or update layerId to an existing layer.",
+        );
       const layer = spec.layers[index];
-      if (!layer) return missingLayer(command.layerId, "/layerId", "Add the layer before setting layout, or update layerId to an existing layer.");
+      if (!layer)
+        return missingLayer(
+          command.layerId,
+          "/layerId",
+          "Add the layer before setting layout, or update layerId to an existing layer.",
+        );
       return { patch: patchRecordMerge(`/layers/${index}/layout`, layer.layout, command.layout), diagnostics: [] };
     }
 
@@ -78,13 +119,13 @@ export function buildPatch(command: MapCommand, spec: MapSpec): BuildPatchResult
     case "setCapabilities":
       return {
         patch: [{ op: spec.capabilities ? "replace" : "add", path: "/capabilities", value: command.capabilities }],
-        diagnostics: []
+        diagnostics: [],
       };
 
     case "setInteractions":
       return {
         patch: [{ op: spec.interactions ? "replace" : "add", path: "/interactions", value: command.interactions }],
-        diagnostics: []
+        diagnostics: [],
       };
 
     case "fitBounds":
@@ -97,11 +138,11 @@ export function buildPatch(command: MapCommand, spec: MapSpec): BuildPatchResult
               mode: spec.view.mode,
               bearing: spec.view.bearing,
               pitch: spec.view.pitch,
-              bounds: command.bounds
-            })
-          }
+              bounds: command.bounds,
+            }),
+          },
         ],
-        diagnostics: []
+        diagnostics: [],
       };
 
     case "reorderLayer":
@@ -131,7 +172,7 @@ export function buildPatch(command: MapCommand, spec: MapSpec): BuildPatchResult
         message: `Unsupported command "${(command as MapCommandBase).type}".`,
         path: "/type",
         relatedResources: [{ kind: "command", id: (command as MapCommandBase).id }],
-        fix: manualFix("Use one of the registered v0.1 command types.", "medium")
+        fix: manualFix("Use one of the registered v0.1 command types.", "medium"),
       });
   }
 }
@@ -141,22 +182,28 @@ function setSceneCamera(camera: SceneView3DExtension["camera"], spec: MapSpec): 
   if (!spec.extensions) {
     return {
       patch: [{ op: "add", path: "/extensions", value: { scene3d: { camera } } }],
-      diagnostics: []
+      diagnostics: [],
     };
   }
   if (!scene) {
     return {
       patch: [{ op: "add", path: "/extensions/scene3d", value: { camera } }],
-      diagnostics: []
+      diagnostics: [],
     };
   }
   return {
-    patch: [{ op: Object.hasOwn(scene, "camera") ? "replace" : "add", path: "/extensions/scene3d/camera", value: camera }],
-    diagnostics: []
+    patch: [
+      { op: Object.hasOwn(scene, "camera") ? "replace" : "add", path: "/extensions/scene3d/camera", value: camera },
+    ],
+    diagnostics: [],
   };
 }
 
-function addSceneSource(sourceId: string, source: NonNullable<SceneView3DExtension["sources"]>[string], spec: MapSpec): BuildPatchResult {
+function addSceneSource(
+  sourceId: string,
+  source: NonNullable<SceneView3DExtension["sources"]>[string],
+  spec: MapSpec,
+): BuildPatchResult {
   const scene = getSceneExtension(spec);
   if (!scene) return missingSceneExtension("Run setSceneCamera before adding SceneView3D sources.");
   if (scene.sources?.[sourceId]) return { patch: [], diagnostics: [], skipped: true };
@@ -164,13 +211,13 @@ function addSceneSource(sourceId: string, source: NonNullable<SceneView3DExtensi
   if (!scene.sources) {
     return {
       patch: [{ op: "add", path: "/extensions/scene3d/sources", value: { [sourceId]: source } }],
-      diagnostics: []
+      diagnostics: [],
     };
   }
 
   return {
     patch: [{ op: "add", path: joinPath("extensions", "scene3d", "sources", sourceId), value: source }],
-    diagnostics: []
+    diagnostics: [],
   };
 }
 
@@ -182,7 +229,10 @@ function removeSceneSource(sourceId: string, spec: MapSpec): BuildPatchResult {
       message: `Scene source "${sourceId}" does not exist.`,
       path: "/sourceId",
       relatedResources: [{ kind: "source", id: sourceId }],
-      fix: manualFix("Check the scene source id or skip this removeSceneSource command when the source is already absent.", "high")
+      fix: manualFix(
+        "Check the scene source id or skip this removeSceneSource command when the source is already absent.",
+        "high",
+      ),
     });
   }
   if (scene.layers?.some((layer) => layer.source === sourceId)) {
@@ -191,7 +241,7 @@ function removeSceneSource(sourceId: string, spec: MapSpec): BuildPatchResult {
       message: `Scene source "${sourceId}" is still referenced by one or more scene layers.`,
       path: "/sourceId",
       relatedResources: [{ kind: "source", id: sourceId }],
-      fix: manualFix("Remove or retarget scene layers before removing this scene source.", "high")
+      fix: manualFix("Remove or retarget scene layers before removing this scene source.", "high"),
     });
   }
   return { patch: [{ op: "remove", path: joinPath("extensions", "scene3d", "sources", sourceId) }], diagnostics: [] };
@@ -207,24 +257,33 @@ function addSceneLayer(layer: NonNullable<SceneView3DExtension["layers"]>[number
       path: "/layer/source",
       relatedResources: [
         { kind: "layer", id: layer.id },
-        { kind: "source", id: layer.source }
+        { kind: "source", id: layer.source },
       ],
-      fix: manualFix("Add the scene source before adding this scene layer.", "high")
+      fix: manualFix("Add the scene source before adding this scene layer.", "high"),
     });
   }
-  if (scene.layers?.some((candidate) => candidate.id === layer.id)) return { patch: [], diagnostics: [], skipped: true };
+  if (scene.layers?.some((candidate) => candidate.id === layer.id))
+    return { patch: [], diagnostics: [], skipped: true };
 
   if (!scene.layers) {
     return { patch: [{ op: "add", path: "/extensions/scene3d/layers", value: [layer] }], diagnostics: [] };
   }
 
-  return { patch: [{ op: "add", path: `/extensions/scene3d/layers/${scene.layers.length}`, value: layer }], diagnostics: [] };
+  return {
+    patch: [{ op: "add", path: `/extensions/scene3d/layers/${scene.layers.length}`, value: layer }],
+    diagnostics: [],
+  };
 }
 
 function removeSceneLayer(layerId: string, spec: MapSpec): BuildPatchResult {
   const scene = getSceneExtension(spec);
   const index = scene?.layers?.findIndex((layer) => layer.id === layerId) ?? -1;
-  if (index < 0) return missingLayer(layerId, "/layerId", "Check the scene layer id or skip this removeSceneLayer command when the layer is already absent.");
+  if (index < 0)
+    return missingLayer(
+      layerId,
+      "/layerId",
+      "Check the scene layer id or skip this removeSceneLayer command when the layer is already absent.",
+    );
   return { patch: [{ op: "remove", path: `/extensions/scene3d/layers/${index}` }], diagnostics: [] };
 }
 
@@ -232,15 +291,29 @@ function setSceneLayerVisibility(layerId: string, visible: boolean, spec: MapSpe
   const scene = getSceneExtension(spec);
   const index = scene?.layers?.findIndex((layer) => layer.id === layerId) ?? -1;
   if (index < 0) {
-    return missingLayer(layerId, "/layerId", "Add the scene layer before setting visibility, or update layerId to an existing scene layer.");
+    return missingLayer(
+      layerId,
+      "/layerId",
+      "Add the scene layer before setting visibility, or update layerId to an existing scene layer.",
+    );
   }
   const layer = scene?.layers?.[index];
   if (!layer) {
-    return missingLayer(layerId, "/layerId", "Add the scene layer before setting visibility, or update layerId to an existing scene layer.");
+    return missingLayer(
+      layerId,
+      "/layerId",
+      "Add the scene layer before setting visibility, or update layerId to an existing scene layer.",
+    );
   }
   return {
-    patch: [{ op: Object.hasOwn(layer, "visible") ? "replace" : "add", path: `/extensions/scene3d/layers/${index}/visible`, value: visible }],
-    diagnostics: []
+    patch: [
+      {
+        op: Object.hasOwn(layer, "visible") ? "replace" : "add",
+        path: `/extensions/scene3d/layers/${index}/visible`,
+        value: visible,
+      },
+    ],
+    diagnostics: [],
   };
 }
 
@@ -255,20 +328,36 @@ function missingSceneExtension(fixMessage: string): BuildPatchResult {
     message: "SceneView3D extension is missing.",
     path: "/extensions/scene3d",
     relatedResources: [{ kind: "schema", id: "sceneview3d" }],
-    fix: manualFix(fixMessage, "high")
+    fix: manualFix(fixMessage, "high"),
   });
 }
 
 function reorderLayer(layerId: string, beforeLayerId: string | undefined, spec: MapSpec): BuildPatchResult {
   const fromIndex = spec.layers.findIndex((layer) => layer.id === layerId);
-  if (fromIndex < 0) return missingLayer(layerId, "/layerId", "Add the layer before reordering it, or update layerId to an existing layer.");
+  if (fromIndex < 0)
+    return missingLayer(
+      layerId,
+      "/layerId",
+      "Add the layer before reordering it, or update layerId to an existing layer.",
+    );
   if (beforeLayerId === layerId) return { patch: [], diagnostics: [], skipped: true };
 
   const layer = spec.layers[fromIndex];
-  if (!layer) return missingLayer(layerId, "/layerId", "Add the layer before reordering it, or update layerId to an existing layer.");
+  if (!layer)
+    return missingLayer(
+      layerId,
+      "/layerId",
+      "Add the layer before reordering it, or update layerId to an existing layer.",
+    );
   const remainingLayers = spec.layers.filter((candidate) => candidate.id !== layerId);
-  const toIndex = beforeLayerId ? remainingLayers.findIndex((candidate) => candidate.id === beforeLayerId) : remainingLayers.length;
-  if (toIndex < 0) return missingBeforeLayer(beforeLayerId, "Use an existing beforeLayerId, or omit beforeLayerId to move the layer to the end.");
+  const toIndex = beforeLayerId
+    ? remainingLayers.findIndex((candidate) => candidate.id === beforeLayerId)
+    : remainingLayers.length;
+  if (toIndex < 0)
+    return missingBeforeLayer(
+      beforeLayerId,
+      "Use an existing beforeLayerId, or omit beforeLayerId to move the layer to the end.",
+    );
 
   const nextLayers = [...remainingLayers.slice(0, toIndex), layer, ...remainingLayers.slice(toIndex)];
   if (hasSameLayerOrder(spec.layers, nextLayers)) return { patch: [], diagnostics: [], skipped: true };
@@ -276,9 +365,9 @@ function reorderLayer(layerId: string, beforeLayerId: string | undefined, spec: 
   return {
     patch: [
       { op: "remove", path: `/layers/${fromIndex}` },
-      { op: "add", path: `/layers/${toIndex}`, value: layer }
+      { op: "add", path: `/layers/${toIndex}`, value: layer },
     ],
-    diagnostics: []
+    diagnostics: [],
   };
 }
 
@@ -288,9 +377,19 @@ function hasSameLayerOrder(current: MapSpec["layers"], next: MapSpec["layers"]):
 
 function setFilter(layerId: string, filter: unknown[] | null, spec: MapSpec): BuildPatchResult {
   const index = spec.layers.findIndex((layer) => layer.id === layerId);
-  if (index < 0) return missingLayer(layerId, "/layerId", "Add the layer before setting a filter, or update layerId to an existing layer.");
+  if (index < 0)
+    return missingLayer(
+      layerId,
+      "/layerId",
+      "Add the layer before setting a filter, or update layerId to an existing layer.",
+    );
   const layer = spec.layers[index];
-  if (!layer) return missingLayer(layerId, "/layerId", "Add the layer before setting a filter, or update layerId to an existing layer.");
+  if (!layer)
+    return missingLayer(
+      layerId,
+      "/layerId",
+      "Add the layer before setting a filter, or update layerId to an existing layer.",
+    );
 
   if (filter === null) {
     if (!Object.hasOwn(layer, "filter")) return { patch: [], diagnostics: [], skipped: true };
@@ -299,40 +398,54 @@ function setFilter(layerId: string, filter: unknown[] | null, spec: MapSpec): Bu
 
   return {
     patch: [{ op: Object.hasOwn(layer, "filter") ? "replace" : "add", path: `/layers/${index}/filter`, value: filter }],
-    diagnostics: []
+    diagnostics: [],
   };
 }
 
 function setLayerZoomRange(layerId: string, minzoom: number, maxzoom: number, spec: MapSpec): BuildPatchResult {
   const index = spec.layers.findIndex((layer) => layer.id === layerId);
-  if (index < 0) return missingLayer(layerId, "/layerId", "Add the layer before setting its zoom range, or update layerId to an existing layer.");
+  if (index < 0)
+    return missingLayer(
+      layerId,
+      "/layerId",
+      "Add the layer before setting its zoom range, or update layerId to an existing layer.",
+    );
   const layer = spec.layers[index];
-  if (!layer) return missingLayer(layerId, "/layerId", "Add the layer before setting its zoom range, or update layerId to an existing layer.");
+  if (!layer)
+    return missingLayer(
+      layerId,
+      "/layerId",
+      "Add the layer before setting its zoom range, or update layerId to an existing layer.",
+    );
   if (minzoom > maxzoom) {
     return failed({
       code: DiagnosticCodes.LayerZoomRangeInvalid,
       message: `Layer zoom range minzoom (${minzoom}) must be less than or equal to maxzoom (${maxzoom}).`,
       path: "/minzoom",
       relatedResources: [{ kind: "layer", id: layerId }],
-      fix: manualFix("Choose a minzoom less than or equal to maxzoom, or reset the layer range to 0-24.", "high")
+      fix: manualFix("Choose a minzoom less than or equal to maxzoom, or reset the layer range to 0-24.", "high"),
     });
   }
 
   return {
     patch: [
       { op: Object.hasOwn(layer, "minzoom") ? "replace" : "add", path: `/layers/${index}/minzoom`, value: minzoom },
-      { op: Object.hasOwn(layer, "maxzoom") ? "replace" : "add", path: `/layers/${index}/maxzoom`, value: maxzoom }
+      { op: Object.hasOwn(layer, "maxzoom") ? "replace" : "add", path: `/layers/${index}/maxzoom`, value: maxzoom },
     ],
-    diagnostics: []
+    diagnostics: [],
   };
 }
 
-function patchRecordMerge(path: string, current: Record<string, unknown> | undefined, next: Record<string, unknown>): JsonPatchOperation[] {
+function patchRecordMerge(
+  path: string,
+  current: Record<string, unknown> | undefined,
+  next: Record<string, unknown>,
+): JsonPatchOperation[] {
   if (!current) return [{ op: "add", path, value: next }];
   return Object.entries(next).map(([key, value]) => ({
     op: Object.hasOwn(current, key) ? "replace" : "add",
     path: `${path}/${escapePathSegment(key)}`,
-    value
+    value,
   }));
 }
 
@@ -346,7 +459,7 @@ function missingLayer(layerId: string, path: string, fixMessage: string): BuildP
     message: `Layer "${layerId}" does not exist.`,
     path,
     relatedResources: [{ kind: "layer", id: layerId }],
-    fix: manualFix(fixMessage, "high")
+    fix: manualFix(fixMessage, "high"),
   });
 }
 
@@ -354,17 +467,9 @@ function missingBeforeLayer(layerId: string | undefined, fixMessage: string): Bu
   return missingLayer(layerId ?? "unknown", "/beforeLayerId", fixMessage);
 }
 
-function manualFix(message: string, confidence: SuggestedFix["confidence"]): SuggestedFix {
-  return {
-    kind: "manual",
-    confidence,
-    message
-  };
-}
-
 function failed(diagnostic: BuildFailureDiagnostic): BuildPatchResult {
   return {
     patch: [],
-    diagnostics: [{ severity: "error", ...diagnostic }]
+    diagnostics: [{ severity: "error", ...diagnostic }],
   };
 }

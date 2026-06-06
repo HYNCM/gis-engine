@@ -27,7 +27,7 @@ const DISALLOWED_KEYS = new Set([
   "responsebody",
   "screenshot",
   "spec",
-  "stack"
+  "stack",
 ]);
 
 export function appendAuditRecord(records, input) {
@@ -46,7 +46,7 @@ export function appendAuditRecord(records, input) {
       ? { diagnosticCodes: compactDiagnosticCodes(input.diagnostics ?? []) }
       : {}),
     fromRevision: safeRevision(input.fromRevision),
-    toRevision: safeRevision(input.toRevision)
+    toRevision: safeRevision(input.toRevision),
   };
 
   records.push(record);
@@ -65,15 +65,18 @@ export function auditPayloadSafe(value) {
         code: AUDIT_DIAGNOSTIC_CODE,
         path: `/auditPayload${disallowedPath}`,
         message: "Audit payload contains a disallowed raw field.",
-        fix: { kind: "manual", confidence: "high", message: "Use compact audit evidence only." }
-      }
-    ]
+        fix: { kind: "manual", confidence: "high", message: "Use compact audit evidence only." },
+      },
+    ],
   };
 }
 
 export function compactDiagnosticCodes(diagnostics) {
   return diagnostics
-    .filter((diagnostic) => safeToken(diagnostic?.code) && typeof diagnostic?.path === "string" && diagnostic.path.startsWith("/"))
+    .filter(
+      (diagnostic) =>
+        safeToken(diagnostic?.code) && typeof diagnostic?.path === "string" && diagnostic.path.startsWith("/"),
+    )
     .slice(0, 20)
     .map((diagnostic) => ({ code: diagnostic.code, path: diagnostic.path.slice(0, 120) }));
 }
@@ -86,7 +89,7 @@ export function countDiagnostics(diagnostics) {
       }
       return counts;
     },
-    { error: 0, warning: 0, info: 0 }
+    { error: 0, warning: 0, info: 0 },
   );
 }
 

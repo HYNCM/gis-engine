@@ -1,5 +1,11 @@
 import { DiagnosticCodes } from "../diagnostics/codes.js";
-import { applyJsonPatch, changedPathsForPatch, invertPatch, normalizePatch, validatePatch } from "../spec/patch/index.js";
+import {
+  applyJsonPatch,
+  changedPathsForPatch,
+  invertPatch,
+  normalizePatch,
+  validatePatch,
+} from "../spec/patch/index.js";
 import { validateSpec } from "../spec/validate.js";
 import type { ApplyOptions, CommandResult, CommandTrace, Diagnostic, MapCommand, MapSpec } from "../types.js";
 import { buildPatch } from "./buildPatch.js";
@@ -15,7 +21,11 @@ export interface ApplyCommandsResult {
   traces?: CommandTrace[];
 }
 
-export function applyCommands(spec: MapSpec, commands: MapCommand | MapCommand[], options: ApplyOptions = {}): ApplyCommandsResult {
+export function applyCommands(
+  spec: MapSpec,
+  commands: MapCommand | MapCommand[],
+  options: ApplyOptions = {},
+): ApplyCommandsResult {
   const commandList = Array.isArray(commands) ? commands : [commands];
   const transaction = options.transaction ?? "atomic";
   const dryRun = options.dryRun ?? false;
@@ -36,12 +46,13 @@ export function applyCommands(spec: MapSpec, commands: MapCommand | MapCommand[]
           fix: {
             kind: "manual",
             confidence: "medium",
-            message: "Reload the latest MapSpec, rebase the command, then retry."
-          }
-        }
+            message: "Reload the latest MapSpec, rebase the command, then retry.",
+          },
+        },
       ]);
       appendResult(results, traces, command, failed);
-      if (transaction === "atomic") return finish(spec, results, { transaction, dryRun, traceId, committed: false, rolledBack: true }, traces);
+      if (transaction === "atomic")
+        return finish(spec, results, { transaction, dryRun, traceId, committed: false, rolledBack: true }, traces);
       continue;
     }
 
@@ -53,7 +64,7 @@ export function applyCommands(spec: MapSpec, commands: MapCommand | MapCommand[]
         status: "skipped",
         changedPaths: [],
         diagnostics: [],
-        traceId
+        traceId,
       };
       if (currentSpec.revision) {
         skipped.baseRevision = currentSpec.revision;
@@ -66,7 +77,8 @@ export function applyCommands(spec: MapSpec, commands: MapCommand | MapCommand[]
     if (hasErrors(build.diagnostics)) {
       const failed = failedResult(command, sequenceId, traceId, build.diagnostics);
       appendResult(results, traces, command, failed);
-      if (transaction === "atomic") return finish(spec, results, { transaction, dryRun, traceId, committed: false, rolledBack: true }, traces);
+      if (transaction === "atomic")
+        return finish(spec, results, { transaction, dryRun, traceId, committed: false, rolledBack: true }, traces);
       continue;
     }
 
@@ -77,7 +89,8 @@ export function applyCommands(spec: MapSpec, commands: MapCommand | MapCommand[]
     if (hasErrors(patchDiagnostics)) {
       const failed = failedResult(command, sequenceId, traceId, patchDiagnostics);
       appendResult(results, traces, command, failed);
-      if (transaction === "atomic") return finish(spec, results, { transaction, dryRun, traceId, committed: false, rolledBack: true }, traces);
+      if (transaction === "atomic")
+        return finish(spec, results, { transaction, dryRun, traceId, committed: false, rolledBack: true }, traces);
       continue;
     }
 
@@ -87,7 +100,8 @@ export function applyCommands(spec: MapSpec, commands: MapCommand | MapCommand[]
     if (!validation.valid) {
       const failed = failedResult(command, sequenceId, traceId, validation.diagnostics);
       appendResult(results, traces, command, failed);
-      if (transaction === "atomic") return finish(spec, results, { transaction, dryRun, traceId, committed: false, rolledBack: true }, traces);
+      if (transaction === "atomic")
+        return finish(spec, results, { transaction, dryRun, traceId, committed: false, rolledBack: true }, traces);
       continue;
     }
 
@@ -99,7 +113,7 @@ export function applyCommands(spec: MapSpec, commands: MapCommand | MapCommand[]
       patch,
       inversePatch,
       diagnostics: [],
-      traceId
+      traceId,
     };
     if (currentSpec.revision) result.baseRevision = currentSpec.revision;
     if (nextSpec.revision) result.nextRevision = nextSpec.revision;
@@ -110,17 +124,27 @@ export function applyCommands(spec: MapSpec, commands: MapCommand | MapCommand[]
     }
   }
 
-  return finish(dryRun ? spec : currentSpec, results, { transaction, dryRun, traceId, committed, rolledBack: false }, traces);
+  return finish(
+    dryRun ? spec : currentSpec,
+    results,
+    { transaction, dryRun, traceId, committed, rolledBack: false },
+    traces,
+  );
 }
 
-function failedResult(command: MapCommand, sequenceId: number, traceId: string, diagnostics: Diagnostic[]): CommandResult {
+function failedResult(
+  command: MapCommand,
+  sequenceId: number,
+  traceId: string,
+  diagnostics: Diagnostic[],
+): CommandResult {
   const result: CommandResult = {
     commandId: command.id,
     sequenceId,
     status: "failed",
     changedPaths: [],
     diagnostics,
-    traceId
+    traceId,
   };
   if (command.baseRevision) result.baseRevision = command.baseRevision;
   return result;
@@ -130,7 +154,12 @@ function hasErrors(diagnostics: Diagnostic[]): boolean {
   return diagnostics.some((diagnostic) => diagnostic.severity === "error");
 }
 
-function appendResult(results: CommandResult[], traces: CommandTrace[] | undefined, command: MapCommand, result: CommandResult): void {
+function appendResult(
+  results: CommandResult[],
+  traces: CommandTrace[] | undefined,
+  command: MapCommand,
+  result: CommandResult,
+): void {
   results.push(result);
   if (traces) traces.push(createCommandTrace(command, result));
 }
@@ -144,7 +173,7 @@ function createCommandTrace(command: MapCommand, result: CommandResult): Command
     startedAt: commandTraceTimestamp(command.createdAt, result.sequenceId, 0),
     endedAt: commandTraceTimestamp(command.createdAt, result.sequenceId, 1),
     diagnostics: structuredClone(result.diagnostics),
-    changedPaths: [...result.changedPaths]
+    changedPaths: [...result.changedPaths],
   };
   if (result.baseRevision) trace.baseRevision = result.baseRevision;
   if (result.nextRevision) trace.nextRevision = result.nextRevision;
@@ -176,7 +205,7 @@ function finish(
   spec: MapSpec,
   results: CommandResult[],
   meta: Omit<ApplyCommandsResult, "spec" | "results" | "traces">,
-  traces?: CommandTrace[]
+  traces?: CommandTrace[],
 ): ApplyCommandsResult {
   const result: ApplyCommandsResult = { spec, results, ...meta };
   if (traces) result.traces = traces;
@@ -186,7 +215,8 @@ function finish(
 function createTraceId(spec: MapSpec, commands: MapCommand[]): string {
   const specId = sanitizeTracePart(spec.id ?? "map");
   const revision = sanitizeTracePart(spec.revision ?? "0");
-  const commandPart = commands.length > 0 ? commands.map((command) => sanitizeTracePart(command.id)).join(".") : "empty";
+  const commandPart =
+    commands.length > 0 ? commands.map((command) => sanitizeTracePart(command.id)).join(".") : "empty";
   return `apply.${specId}.r${revision}.${commandPart}`;
 }
 

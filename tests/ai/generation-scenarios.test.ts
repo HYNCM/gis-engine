@@ -1,12 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { createGenerationEvidenceBundle } from "@gis-engine/ai";
 import {
+  type ApplyCommandsResult,
   applyCommands,
   applyJsonPatch,
   createMapGenerationCommandSkeleton,
-  type ApplyCommandsResult,
-  type MapSpec
+  type MapSpec,
 } from "@gis-engine/engine";
-import { createGenerationEvidenceBundle } from "@gis-engine/ai";
+import { describe, expect, it } from "vitest";
 
 describe("minimum natural-language generation scenarios", () => {
   it("covers feature-display source, layer, style, dry-run, replay, and rollback evidence", async () => {
@@ -17,16 +17,16 @@ describe("minimum natural-language generation scenarios", () => {
       targetDomains: ["feature-display"],
       view: {
         center: [120.15, 30.28],
-        zoom: 10
+        zoom: 10,
       },
       sources: {
         districts: {
           type: "geojson",
           data: {
             type: "FeatureCollection",
-            features: []
-          }
-        }
+            features: [],
+          },
+        },
       },
       layers: [
         {
@@ -34,8 +34,8 @@ describe("minimum natural-language generation scenarios", () => {
           type: "fill",
           source: "districts",
           paint: {
-            "fill-color": "#22c55e"
-          }
+            "fill-color": "#22c55e",
+          },
         },
         {
           id: "district-outline",
@@ -43,30 +43,30 @@ describe("minimum natural-language generation scenarios", () => {
           source: "districts",
           paint: {
             "line-color": "#14532d",
-            "line-width": 1.5
-          }
-        }
+            "line-width": 1.5,
+          },
+        },
       ],
       styleEdits: [
         {
           layerId: "district-fill",
           paint: {
-            "fill-opacity": 0.45
+            "fill-opacity": 0.45,
           },
           layout: {
-            visibility: "visible"
-          }
-        }
-      ]
+            visibility: "visible",
+          },
+        },
+      ],
     });
 
     const applied = applyCommands(skeleton.baseSpec, skeleton.commands, {
       collectTrace: true,
-      traceId: "trace-nla-feature-display"
+      traceId: "trace-nla-feature-display",
     });
     const dryRun = applyCommands(skeleton.baseSpec, skeleton.commands, {
       dryRun: true,
-      traceId: "trace-nla-feature-display-dry-run"
+      traceId: "trace-nla-feature-display-dry-run",
     });
     const rolledBack = rollbackAppliedCommands(applied);
     const evidence = await createGenerationEvidenceBundle({
@@ -78,14 +78,21 @@ describe("minimum natural-language generation scenarios", () => {
           width: 320,
           height: 180,
           format: "data-url",
-          targetLayers: ["district-fill", "district-outline"]
-        }
+          targetLayers: ["district-fill", "district-outline"],
+        },
       },
-      exampleId: "ai-map-edit"
+      exampleId: "ai-map-edit",
     });
 
     expect(skeleton.status).toBe("ready");
-    expect(skeleton.commands.map((command) => command.type)).toEqual(["setView", "addSource", "addLayer", "addLayer", "setPaint", "setLayout"]);
+    expect(skeleton.commands.map((command) => command.type)).toEqual([
+      "setView",
+      "addSource",
+      "addLayer",
+      "addLayer",
+      "setPaint",
+      "setLayout",
+    ]);
     expect(applied.spec).toEqual(skeleton.spec);
     expect(applied.results.every((result) => result.status === "applied")).toBe(true);
     expect(applied.traces?.map((trace) => trace.commandId)).toEqual(skeleton.commands.map((command) => command.id));
@@ -96,13 +103,13 @@ describe("minimum natural-language generation scenarios", () => {
     if (!evidence.ok) throw new Error("Expected feature-display generation evidence.");
     expect(evidence.result.status).toBe("ready");
     expect(evidence.result.commandEvidence.changedPaths).toEqual(
-      expect.arrayContaining(["/sources/districts", "/layers/0", "/layers/1", "/view", "/revision"])
+      expect.arrayContaining(["/sources/districts", "/layers/0", "/layers/1", "/view", "/revision"]),
     );
     expect(evidence.result.snapshotEvidence.passed).toBe(true);
     expect(evidence.result.exportEvidence).toMatchObject({
       ready: true,
       sourceCount: 1,
-      layerCount: 2
+      layerCount: 2,
     });
   });
 
@@ -113,7 +120,7 @@ describe("minimum natural-language generation scenarios", () => {
       traceId: "trace-nla-spatial-readiness",
       targetDomains: ["feature-display", "spatial-analysis"],
       analysis: {
-        operations: ["point-query", "bbox-query"]
+        operations: ["point-query", "bbox-query"],
       },
       sources: {
         incidents: {
@@ -124,16 +131,16 @@ describe("minimum natural-language generation scenarios", () => {
               {
                 type: "Feature",
                 properties: { id: "incident-1" },
-                geometry: { type: "Point", coordinates: [120.15, 30.28] }
+                geometry: { type: "Point", coordinates: [120.15, 30.28] },
               },
               {
                 type: "Feature",
                 properties: { id: "incident-2" },
-                geometry: { type: "Point", coordinates: [120.18, 30.3] }
-              }
-            ]
-          }
-        }
+                geometry: { type: "Point", coordinates: [120.18, 30.3] },
+              },
+            ],
+          },
+        },
       },
       layers: [
         {
@@ -142,10 +149,10 @@ describe("minimum natural-language generation scenarios", () => {
           source: "incidents",
           paint: {
             "circle-color": "#ef4444",
-            "circle-radius": 5
-          }
-        }
-      ]
+            "circle-radius": 5,
+          },
+        },
+      ],
     });
 
     const evidence = await createGenerationEvidenceBundle({
@@ -160,15 +167,15 @@ describe("minimum natural-language generation scenarios", () => {
         queries: ["point", "bbox"],
         snapshot: {
           supported: true,
-          formats: ["data-url"]
+          formats: ["data-url"],
         },
-        experimental: []
+        experimental: [],
       },
       snapshot: {
         renderer: "mock",
         options: {
-          targetLayers: ["incident-points"]
-        }
+          targetLayers: ["incident-points"],
+        },
       },
       spatialQueries: {
         renderer: "mock",
@@ -177,23 +184,23 @@ describe("minimum natural-language generation scenarios", () => {
             id: "incident-point-hit",
             operation: "point-query",
             point: [120.15, 30.28],
-            layers: ["incident-points"]
+            layers: ["incident-points"],
           },
           {
             id: "incident-bbox-hit",
             operation: "bbox-query",
             bbox: [120.14, 30.27, 120.19, 30.31],
-            layers: ["incident-points"]
-          }
-        ]
-      }
+            layers: ["incident-points"],
+          },
+        ],
+      },
     });
 
     expect(skeleton.status).toBe("ready");
     expect(skeleton.analysisEvidence).toMatchObject({
       requested: true,
       status: "ready",
-      acceptedQueryOperations: ["point-query", "bbox-query"]
+      acceptedQueryOperations: ["point-query", "bbox-query"],
     });
     expect(skeleton.diagnostics).toEqual([]);
     expect(evidence.ok).toBe(true);
@@ -212,7 +219,7 @@ describe("minimum natural-language generation scenarios", () => {
       capabilityQueries: ["bbox", "point"],
       queryableSourceIds: ["incidents"],
       queryableLayerIds: ["incident-points"],
-      diagnosticCounts: { error: 0, warning: 0, info: 0 }
+      diagnosticCounts: { error: 0, warning: 0, info: 0 },
     });
     expect(evidence.result.spatialQueryEvidence.cases).toEqual([
       expect.objectContaining({
@@ -222,7 +229,7 @@ describe("minimum natural-language generation scenarios", () => {
         sourceIds: ["incidents"],
         featureCount: 1,
         passed: true,
-        diagnosticCounts: { error: 0, warning: 0, info: 0 }
+        diagnosticCounts: { error: 0, warning: 0, info: 0 },
       }),
       expect.objectContaining({
         id: "incident-bbox-hit",
@@ -231,10 +238,12 @@ describe("minimum natural-language generation scenarios", () => {
         sourceIds: ["incidents"],
         featureCount: 2,
         passed: true,
-        diagnosticCounts: { error: 0, warning: 0, info: 0 }
-      })
+        diagnosticCounts: { error: 0, warning: 0, info: 0 },
+      }),
     ]);
-    const spatialDomain = evidence.result.summary.capabilitySummary.domains.find((domain) => domain.id === "spatial-analysis");
+    const spatialDomain = evidence.result.summary.capabilitySummary.domains.find(
+      (domain) => domain.id === "spatial-analysis",
+    );
     expect(spatialDomain?.status).toBe("experimental");
     expect(spatialDomain?.supported.join(" ")).toContain("declared query capabilities: bbox, point");
     expect(spatialDomain?.blocked.join(" ")).toContain("buffer");
@@ -243,7 +252,7 @@ describe("minimum natural-language generation scenarios", () => {
       usedApplyCommands: true,
       committed: true,
       rolledBack: false,
-      diagnosticCounts: { error: 0, warning: 0, info: 0 }
+      diagnosticCounts: { error: 0, warning: 0, info: 0 },
     });
   });
 
@@ -254,8 +263,8 @@ describe("minimum natural-language generation scenarios", () => {
       traceId: "trace-nla-blocked-analysis",
       targetDomains: ["spatial-analysis"],
       analysis: {
-        operations: ["buffer", "overlay", "aggregation"]
-      }
+        operations: ["buffer", "overlay", "aggregation"],
+      },
     });
 
     const evidence = await createGenerationEvidenceBundle({
@@ -270,10 +279,10 @@ describe("minimum natural-language generation scenarios", () => {
         queries: ["point", "bbox"],
         snapshot: {
           supported: true,
-          formats: ["data-url"]
+          formats: ["data-url"],
         },
-        experimental: []
-      }
+        experimental: [],
+      },
     });
 
     expect(skeleton.status).toBe("blocked");
@@ -282,8 +291,8 @@ describe("minimum natural-language generation scenarios", () => {
       expect.arrayContaining([
         expect.objectContaining({ code: "CAPABILITY.UNSUPPORTED", path: "/analysis/operations/0" }),
         expect.objectContaining({ code: "CAPABILITY.UNSUPPORTED", path: "/analysis/operations/1" }),
-        expect.objectContaining({ code: "CAPABILITY.UNSUPPORTED", path: "/analysis/operations/2" })
-      ])
+        expect.objectContaining({ code: "CAPABILITY.UNSUPPORTED", path: "/analysis/operations/2" }),
+      ]),
     );
     expect(evidence.ok).toBe(true);
     if (!evidence.ok) throw new Error("Expected blocked analysis evidence bundle.");
@@ -297,14 +306,14 @@ describe("minimum natural-language generation scenarios", () => {
       blockedOperations: ["buffer", "overlay", "aggregation"],
       unsupportedOperations: ["aggregation", "buffer", "intersection", "overlay", "routing"],
       cases: [],
-      diagnosticCounts: { error: 3, warning: 0, info: 0 }
+      diagnosticCounts: { error: 3, warning: 0, info: 0 },
     });
     expect(evidence.result.snapshotEvidence.requested).toBe(false);
     expect(evidence.result.exportEvidence.ready).toBe(false);
     expect(evidence.result.diagnostics).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ severity: "error", code: "CAPABILITY.UNSUPPORTED", path: "/analysis/operations/0" })
-      ])
+        expect.objectContaining({ severity: "error", code: "CAPABILITY.UNSUPPORTED", path: "/analysis/operations/0" }),
+      ]),
     );
   });
 
@@ -317,35 +326,39 @@ describe("minimum natural-language generation scenarios", () => {
       scene3d: {
         camera: {
           position: [120.15, 30.28, 1200],
-          target: [120.15, 30.28, 0]
+          target: [120.15, 30.28, 0],
         },
         sources: {
           city: {
             type: "3d-tiles",
-            url: "./data/city/tileset.json"
-          }
+            url: "./data/city/tileset.json",
+          },
         },
         layers: [
           {
             id: "city",
             type: "tileset3d",
             source: "city",
-            pickable: true
-          }
-        ]
-      }
+            pickable: true,
+          },
+        ],
+      },
     });
 
     const evidence = await createGenerationEvidenceBundle({
       promptHash: "sha256:nla-scene-extension-only",
       skeleton,
       snapshot: {
-        renderer: "mock"
-      }
+        renderer: "mock",
+      },
     });
 
     expect(skeleton.status).toBe("ready");
-    expect(skeleton.commands.map((command) => command.type)).toEqual(["setSceneCamera", "addSceneSource", "addSceneLayer"]);
+    expect(skeleton.commands.map((command) => command.type)).toEqual([
+      "setSceneCamera",
+      "addSceneSource",
+      "addSceneLayer",
+    ]);
     expect(skeleton.spec.view.mode).toBe("map2d");
     expect(skeleton.spec.capabilities?.renderer).toBeUndefined();
     expect(skeleton.spec.extensions?.scene3d).toBeDefined();
@@ -358,11 +371,13 @@ describe("minimum natural-language generation scenarios", () => {
       runtimeSupported: false,
       sourceCount: 1,
       layerCount: 1,
-      pickableLayerCount: 1
+      pickableLayerCount: 1,
     });
     expect(evidence.result.summary.scene3d).not.toHaveProperty("rendererEvidence");
     expect(evidence.result.summary.scene3d).not.toHaveProperty("promotionEvidence");
-    const sceneDomain = evidence.result.summary.capabilitySummary.domains.find((domain) => domain.id === "scene-browsing");
+    const sceneDomain = evidence.result.summary.capabilitySummary.domains.find(
+      (domain) => domain.id === "scene-browsing",
+    );
     expect(sceneDomain).toMatchObject({ status: "experimental" });
     expect(sceneDomain?.blocked.join(" ")).toContain('stable view.mode: "scene3d" runtime rendering is blocked');
     expect(evidence.result.exampleEvidence.generationEvidence?.sceneBrowsing).toMatchObject({
@@ -381,8 +396,8 @@ describe("minimum natural-language generation scenarios", () => {
       stableRuntimeBlockerCodes: [
         "SCENE3D.STABLE_RUNTIME_DIMENSIONS_BLOCKED",
         "SCENE3D.STABLE_RUNTIME_RENDERER_BLOCKED",
-        "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED"
-      ]
+        "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED",
+      ],
     });
   });
 
@@ -395,13 +410,13 @@ describe("minimum natural-language generation scenarios", () => {
       view: { mode: "scene3d" },
       capabilities: {
         dimensions: ["3d"],
-        renderer: "scene3d"
-      }
+        renderer: "scene3d",
+      },
     });
 
     const evidence = await createGenerationEvidenceBundle({
       promptHash: "sha256:nla-stable-scene-blocked",
-      skeleton
+      skeleton,
     });
 
     expect(skeleton.status).toBe("blocked");
@@ -415,17 +430,17 @@ describe("minimum natural-language generation scenarios", () => {
       expect.arrayContaining([
         expect.objectContaining({
           blockerCode: "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED",
-          path: "/view/mode"
+          path: "/view/mode",
         }),
         expect.objectContaining({
           blockerCode: "SCENE3D.STABLE_RUNTIME_RENDERER_BLOCKED",
-          path: "/capabilities/renderer"
+          path: "/capabilities/renderer",
         }),
         expect.objectContaining({
           blockerCode: "SCENE3D.STABLE_RUNTIME_DIMENSIONS_BLOCKED",
-          path: "/capabilities/dimensions"
-        })
-      ])
+          path: "/capabilities/dimensions",
+        }),
+      ]),
     );
     expect(evidence.result.exampleEvidence.generationEvidence?.sceneBrowsing).toMatchObject({
       requested: true,
@@ -443,8 +458,8 @@ describe("minimum natural-language generation scenarios", () => {
       stableRuntimeBlockerCodes: [
         "SCENE3D.STABLE_RUNTIME_DIMENSIONS_BLOCKED",
         "SCENE3D.STABLE_RUNTIME_RENDERER_BLOCKED",
-        "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED"
-      ]
+        "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED",
+      ],
     });
   });
 });

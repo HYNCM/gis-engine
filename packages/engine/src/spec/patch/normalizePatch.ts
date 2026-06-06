@@ -5,7 +5,7 @@ export function normalizePatch(patch: JsonPatchOperation[]): JsonPatchOperation[
   return patch.map((operation) => {
     const normalized: JsonPatchOperation = {
       ...operation,
-      path: normalizePatchPath(operation.path)
+      path: normalizePatchPath(operation.path),
     };
     return normalized;
   });

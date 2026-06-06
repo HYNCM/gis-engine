@@ -1,15 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createInitialSpec } from "../../apps/studio/server/index.mjs";
-import {
-  deleteMap,
-  listMaps,
-  loadMap,
-  resetStoreForTests,
-  saveMap,
-} from "../../apps/studio/server/store.mjs";
+import { deleteMap, listMaps, loadMap, resetStoreForTests, saveMap } from "../../apps/studio/server/store.mjs";
 
 let tempDir = "";
 let dbPath = "";

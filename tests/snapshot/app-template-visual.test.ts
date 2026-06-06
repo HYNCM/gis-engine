@@ -1,5 +1,5 @@
+import { MapRuntime, type MapSpec, MockAdapter, validateSpec } from "@gis-engine/engine";
 import { describe, expect, it } from "vitest";
-import { MapRuntime, MockAdapter, validateSpec, type MapSpec } from "@gis-engine/engine";
 
 /**
  * VPE-003: App-template visual scene
@@ -10,7 +10,7 @@ describe("app-template visual scene", () => {
   it("earthquake template: snapshot passes with clustered points", async () => {
     const runtime = await MapRuntime.create(earthquakeTemplateSpec, {
       adapter: new MockAdapter(),
-      container: {} as HTMLElement
+      container: {} as HTMLElement,
     });
 
     const snapshot = await runtime.snapshot({ targetLayers: ["quakes-circle"] });
@@ -43,14 +43,34 @@ const earthquakeTemplateSpec: MapSpec = {
       data: {
         type: "FeatureCollection",
         features: [
-          { type: "Feature", properties: { mag: 4.2, place: "San Francisco" }, geometry: { type: "Point", coordinates: [-122.42, 37.77] } },
-          { type: "Feature", properties: { mag: 3.1, place: "Oakland" }, geometry: { type: "Point", coordinates: [-122.27, 37.80] } },
-          { type: "Feature", properties: { mag: 5.5, place: "Napa" }, geometry: { type: "Point", coordinates: [-122.29, 38.30] } },
-          { type: "Feature", properties: { mag: 2.8, place: "Berkeley" }, geometry: { type: "Point", coordinates: [-122.27, 37.87] } },
-          { type: "Feature", properties: { mag: 6.1, place: "Santa Cruz" }, geometry: { type: "Point", coordinates: [-122.03, 36.97] } }
-        ]
-      }
-    }
+          {
+            type: "Feature",
+            properties: { mag: 4.2, place: "San Francisco" },
+            geometry: { type: "Point", coordinates: [-122.42, 37.77] },
+          },
+          {
+            type: "Feature",
+            properties: { mag: 3.1, place: "Oakland" },
+            geometry: { type: "Point", coordinates: [-122.27, 37.8] },
+          },
+          {
+            type: "Feature",
+            properties: { mag: 5.5, place: "Napa" },
+            geometry: { type: "Point", coordinates: [-122.29, 38.3] },
+          },
+          {
+            type: "Feature",
+            properties: { mag: 2.8, place: "Berkeley" },
+            geometry: { type: "Point", coordinates: [-122.27, 37.87] },
+          },
+          {
+            type: "Feature",
+            properties: { mag: 6.1, place: "Santa Cruz" },
+            geometry: { type: "Point", coordinates: [-122.03, 36.97] },
+          },
+        ],
+      },
+    },
   },
   layers: [
     { id: "background", type: "background", paint: { "background-color": "#f8fafc" } },
@@ -60,8 +80,8 @@ const earthquakeTemplateSpec: MapSpec = {
       source: "earthquakes",
       paint: {
         "circle-color": ["step", ["get", "mag"], "#22c55e", 4, "#eab308", 5, "#ef4444"],
-        "circle-radius": ["step", ["get", "mag"], 4, 4, 6, 5, 10]
-      }
-    }
-  ]
+        "circle-radius": ["step", ["get", "mag"], 4, 4, 6, 5, 10],
+      },
+    },
+  ],
 };

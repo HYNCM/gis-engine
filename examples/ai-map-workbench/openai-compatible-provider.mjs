@@ -19,7 +19,7 @@ export async function callOpenAiCompatibleProvider(input) {
     summary,
     fetchImpl = fetch,
     timeoutMs = DEFAULT_PROVIDER_REQUEST_TIMEOUT_MS,
-    responseByteCap = DEFAULT_PROVIDER_RESPONSE_BYTE_CAP
+    responseByteCap = DEFAULT_PROVIDER_RESPONSE_BYTE_CAP,
   } = input;
   if (!apiKey) return providerError(profile, "/providerProfile", "Provider credential is not configured.");
 
@@ -31,7 +31,7 @@ export async function callOpenAiCompatibleProvider(input) {
         method: "POST",
         headers: {
           authorization: `Bearer ${apiKey}`,
-          "content-type": "application/json"
+          "content-type": "application/json",
         },
         signal: timeout.signal,
         body: JSON.stringify({
@@ -39,11 +39,11 @@ export async function callOpenAiCompatibleProvider(input) {
           temperature: 0,
           messages: [
             { role: "system", content: systemPrompt(summary) },
-            { role: "user", content: message }
+            { role: "user", content: message },
           ],
-          response_format: { type: "json_object" }
-        })
-      })
+          response_format: { type: "json_object" },
+        }),
+      }),
     );
 
     if (!response.ok) {
@@ -63,18 +63,23 @@ export async function callOpenAiCompatibleProvider(input) {
     }
 
     const parsed = parseJsonObject(content);
-    if (!parsed.ok) return providerError(profile, "/providerResponse", "Provider response content must be a JSON object.");
+    if (!parsed.ok)
+      return providerError(profile, "/providerResponse", "Provider response content must be a JSON object.");
     if (!isStructuredIntent(parsed.value.intent)) {
       return providerError(profile, "/providerResponse", "Provider response must include structured intent.");
     }
     if (hasUnsafeIntent(parsed.value.intent, { apiKey, message })) {
-      return providerError(profile, "/providerResponse", "Provider response intent contains unsupported raw or sensitive content.");
+      return providerError(
+        profile,
+        "/providerResponse",
+        "Provider response intent contains unsupported raw or sensitive content.",
+      );
     }
 
     const confidence = sanitizeConfidence(parsed.value.confidence, {
       apiKey,
       message,
-      providerValue: parsed.value
+      providerValue: parsed.value,
     });
     return {
       ok: true,
@@ -83,14 +88,18 @@ export async function callOpenAiCompatibleProvider(input) {
         promptHash: hashPrompt(message),
         traceId: `provider.${profile.id}.${randomUUID()}`,
         intent: parsed.value.intent,
-        ...(confidence ? { confidence } : {})
-      }
+        ...(confidence ? { confidence } : {}),
+      },
     };
   } catch (error) {
     if (timeout.didTimeout() || error instanceof ProviderTimeoutError) {
       return providerError(profile, "/providerRequest/timeout", "Provider request timed out.");
     }
-    return providerError(profile, "/providerRequest", "Provider request failed before a valid JSON response was received.");
+    return providerError(
+      profile,
+      "/providerRequest",
+      "Provider request failed before a valid JSON response was received.",
+    );
   } finally {
     timeout.clear();
   }
@@ -113,7 +122,7 @@ function createProviderTimeout(timeoutMs) {
     signal: abortController.signal,
     didTimeout: () => timedOut,
     run: (promise) => Promise.race([promise, timeoutPromise]),
-    clear: () => clearTimeout(timeout)
+    clear: () => clearTimeout(timeout),
   };
 }
 
@@ -178,7 +187,7 @@ function systemPrompt(summary) {
     "You convert map-edit requests into JSON only.",
     "Return an object with intent and optional confidence.",
     "Do not return JavaScript, commands, MapSpec, patches, raw prompts, markdown, or prose.",
-    `Current map summary: ${JSON.stringify(summary)}`
+    `Current map summary: ${JSON.stringify(summary)}`,
   ].join("\n");
 }
 
@@ -215,7 +224,7 @@ function sanitizeConfidence(value, leakContext) {
 
   return {
     level: value.level,
-    reasons
+    reasons,
   };
 }
 
@@ -308,7 +317,7 @@ function isUnsafeProviderKey(key) {
     "credential",
     "credentials",
     "password",
-    "token"
+    "token",
   ].some((marker) => normalizedKey.includes(marker));
 }
 
@@ -325,7 +334,7 @@ function providerError(profile, path, message) {
     ok: false,
     provider: {
       providerId: profile?.id ?? "unknown-provider",
-      retainedRawPrompt: false
+      retainedRawPrompt: false,
     },
     diagnostics: [
       {
@@ -333,9 +342,13 @@ function providerError(profile, path, message) {
         code: CAPABILITY_UNSUPPORTED,
         message,
         path,
-        fix: { kind: "manual", confidence: "high", message: "Check provider configuration or return structured intent JSON." }
-      }
-    ]
+        fix: {
+          kind: "manual",
+          confidence: "high",
+          message: "Check provider configuration or return structured intent JSON.",
+        },
+      },
+    ],
   };
 }
 

@@ -5,7 +5,7 @@
  * 替代evolution-collector.mjs中的生成部分，提供结构化的snapshot输出
  */
 
-import { writeFileSync, readFileSync, mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -60,8 +60,7 @@ decision_level: info
 `;
 
   for (const [complexity, data] of Object.entries(d1.byComplexity || {})) {
-    const status =
-      data.avgDeviation <= 0.5 ? "✓" : data.avgDeviation <= 1.0 ? "🟡" : "🔴";
+    const status = data.avgDeviation <= 0.5 ? "✓" : data.avgDeviation <= 1.0 ? "🟡" : "🔴";
     content += `
 | Complexity | Count | Avg Deviation | Status |
 |---|---|---|---|
@@ -93,7 +92,7 @@ decision_level: info
 
 | Metric | Value |
 |--------|-------|
-| Critical path ratio | ${d2.criticalPathRatio ? d2.criticalPathRatio.toFixed(1) + "%" : "N/A"} |
+| Critical path ratio | ${d2.criticalPathRatio ? `${d2.criticalPathRatio.toFixed(1)}%` : "N/A"} |
 | Max wait time (hours) | ${d2.maxWaitTime || "N/A"} |
 | Bottleneck tasks | ${d2.bottleneckCount || 0} |
 
@@ -180,8 +179,7 @@ decision_level: info
     content += `#### New Pitfalls (${period})\n\n`;
     for (const p of d4.pitfalls) {
       content += `- **${p.id || "UNNAMED"}**: ${p.description || "No description"}\n`;
-      if (p.avoidanceStrategy)
-        content += `  - How to avoid: ${p.avoidanceStrategy}\n`;
+      if (p.avoidanceStrategy) content += `  - How to avoid: ${p.avoidanceStrategy}\n`;
     }
   }
 
@@ -273,23 +271,13 @@ ${
 
 ### Orchestrator Action Items
 
-${
-  d1.anomalies && d1.anomalies.length > 0
-    ? `- [ ] **D1 anomaly**: ${d1.anomalies[0].recommendation}\n`
+${d1.anomalies && d1.anomalies.length > 0 ? `- [ ] **D1 anomaly**: ${d1.anomalies[0].recommendation}\n` : ""}${
+  d2.anomalies && d2.anomalies.length > 0 ? `- [ ] **D2 anomaly**: ${d2.anomalies[0].recommendation}\n` : ""
+}${d3.anomalies && d3.anomalies.length > 0 ? `- [ ] **D3 anomaly**: ${d3.anomalies[0].recommendation}\n` : ""}${
+  d6.suggestedAdjustments && d6.suggestedAdjustments.length > 0
+    ? `- [ ] **D6 adjustments**: Review and approve weight changes\n`
     : ""
-}${
-    d2.anomalies && d2.anomalies.length > 0
-      ? `- [ ] **D2 anomaly**: ${d2.anomalies[0].recommendation}\n`
-      : ""
-  }${
-    d3.anomalies && d3.anomalies.length > 0
-      ? `- [ ] **D3 anomaly**: ${d3.anomalies[0].recommendation}\n`
-      : ""
-  }${
-    d6.suggestedAdjustments && d6.suggestedAdjustments.length > 0
-      ? `- [ ] **D6 adjustments**: Review and approve weight changes\n`
-      : ""
-  }
+}
 
 ---
 

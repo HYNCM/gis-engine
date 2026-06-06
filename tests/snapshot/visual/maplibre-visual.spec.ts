@@ -1,9 +1,9 @@
-import { chromium, expect, test, type Page, type TestInfo } from "@playwright/test";
 import { Buffer } from "node:buffer";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { chromium, expect, type Page, type TestInfo, test } from "@playwright/test";
 import { assertSnapshotReport, type SnapshotReport } from "../report.js";
 
 const require = createRequire(import.meta.url);
@@ -34,14 +34,14 @@ async function loadMapLibreBundle(page: Page, bundle: MapLibreBundle): Promise<v
     const fileUrl = pathToFileURL(bundle.scriptPath).href;
     await page.addScriptTag({
       type: "module",
-      content: `import * as maplibregl from ${JSON.stringify(fileUrl)}; window.maplibregl = maplibregl;`
+      content: `import * as maplibregl from ${JSON.stringify(fileUrl)}; window.maplibregl = maplibregl;`,
     });
   } else {
     await page.addScriptTag({ path: bundle.scriptPath });
   }
 }
 
-test("renders a real MapLibre visual snapshot when dependencies are available", async ({ }, testInfo) => {
+test("renders a real MapLibre visual snapshot when dependencies are available", async ({}, testInfo) => {
   const maplibre = resolveMapLibreBundle();
   if (!maplibre.scriptPath) {
     await completeUnavailable(testInfo, maplibre.reason);
@@ -59,7 +59,7 @@ test("renders a real MapLibre visual snapshot when dependencies are available", 
   try {
     const page = await browser.newPage({
       viewport: { width, height },
-      deviceScaleFactor: 1
+      deviceScaleFactor: 1,
     });
     const consoleErrors: string[] = [];
     page.on("console", (message) => {
@@ -90,14 +90,12 @@ test("renders a real MapLibre visual snapshot when dependencies are available", 
     const webgl = await page.evaluate(() => {
       const canvas = document.createElement("canvas");
       const context =
-        canvas.getContext("webgl2") ??
-        canvas.getContext("webgl") ??
-        canvas.getContext("experimental-webgl");
+        canvas.getContext("webgl2") ?? canvas.getContext("webgl") ?? canvas.getContext("experimental-webgl");
       if (!context) return { available: false };
       const gl = context as WebGLRenderingContext;
       return {
         available: true,
-        renderer: String(gl.getParameter(gl.RENDERER))
+        renderer: String(gl.getParameter(gl.RENDERER)),
       };
     });
     if (!webgl.available) {
@@ -119,7 +117,7 @@ test("renders a real MapLibre visual snapshot when dependencies are available", 
         if (!maplibregl?.Map) {
           return {
             ok: false,
-            reason: "maplibre-gl browser bundle did not expose window.maplibregl.Map."
+            reason: "maplibre-gl browser bundle did not expose window.maplibregl.Map.",
           };
         }
 
@@ -127,7 +125,7 @@ test("renders a real MapLibre visual snapshot when dependencies are available", 
         if (!container) {
           return {
             ok: false,
-            reason: "Map container was not mounted."
+            reason: "Map container was not mounted.",
           };
         }
 
@@ -136,7 +134,7 @@ test("renders a real MapLibre visual snapshot when dependencies are available", 
           const timeout = window.setTimeout(() => {
             finish({
               ok: false,
-              reason: "MapLibre render timed out before load/idle."
+              reason: "MapLibre render timed out before load/idle.",
             });
           }, 10_000);
           const map = new maplibregl.Map({
@@ -145,7 +143,7 @@ test("renders a real MapLibre visual snapshot when dependencies are available", 
             interactive: false,
             attributionControl: false,
             preserveDrawingBuffer: true,
-            fadeDuration: 0
+            fadeDuration: 0,
           }) as {
             getCanvas(): HTMLCanvasElement;
             once(event: string, listener: (event?: { error?: Error }) => void): void;
@@ -173,7 +171,7 @@ test("renders a real MapLibre visual snapshot when dependencies are available", 
             if (!context) {
               finish({
                 ok: false,
-                reason: "2D canvas context is unavailable for visual snapshot sampling."
+                reason: "2D canvas context is unavailable for visual snapshot sampling.",
               });
               return;
             }
@@ -199,14 +197,14 @@ test("renders a real MapLibre visual snapshot when dependencies are available", 
               canvasWidth: canvas.width,
               canvasHeight: canvas.height,
               nonTransparentSamples,
-              nonWhiteSamples
+              nonWhiteSamples,
             });
           }
 
           map.once("error", (event) => {
             finish({
               ok: false,
-              reason: event?.error?.message ?? "MapLibre emitted an error while rendering."
+              reason: event?.error?.message ?? "MapLibre emitted an error while rendering.",
             });
           });
           map.once("load", () => {
@@ -214,7 +212,7 @@ test("renders a real MapLibre visual snapshot when dependencies are available", 
           });
         });
       },
-      { style: visualMapLibreStyle() }
+      { style: visualMapLibreStyle() },
     );
 
     const report = createVisualReport(renderResult, consoleErrors);
@@ -235,7 +233,7 @@ test("renders a real MapLibre visual snapshot when dependencies are available", 
   }
 });
 
-test("renders a vector tile release acceptance snapshot with generated local MVT", async ({ }, testInfo) => {
+test("renders a vector tile release acceptance snapshot with generated local MVT", async ({}, testInfo) => {
   const maplibre = resolveMapLibreBundle();
   if (!maplibre.scriptPath) {
     await completeUnavailable(testInfo, maplibre.reason);
@@ -254,7 +252,7 @@ test("renders a vector tile release acceptance snapshot with generated local MVT
   try {
     const page = await browser.newPage({
       viewport: { width, height },
-      deviceScaleFactor: 1
+      deviceScaleFactor: 1,
     });
     const consoleErrors: string[] = [];
     page.on("console", (message) => {
@@ -270,9 +268,9 @@ test("renders a vector tile release acceptance snapshot with generated local MVT
         status: tileBytes ? 200 : 204,
         headers: {
           "access-control-allow-origin": "*",
-          "content-type": "application/vnd.mapbox-vector-tile"
+          "content-type": "application/vnd.mapbox-vector-tile",
         },
-        body: tileBytes ? Buffer.from(tileBytes) : Buffer.alloc(0)
+        body: tileBytes ? Buffer.from(tileBytes) : Buffer.alloc(0),
       });
     });
 
@@ -297,14 +295,12 @@ test("renders a vector tile release acceptance snapshot with generated local MVT
     const webgl = await page.evaluate(() => {
       const canvas = document.createElement("canvas");
       const context =
-        canvas.getContext("webgl2") ??
-        canvas.getContext("webgl") ??
-        canvas.getContext("experimental-webgl");
+        canvas.getContext("webgl2") ?? canvas.getContext("webgl") ?? canvas.getContext("experimental-webgl");
       if (!context) return { available: false };
       const gl = context as WebGLRenderingContext;
       return {
         available: true,
-        renderer: String(gl.getParameter(gl.RENDERER))
+        renderer: String(gl.getParameter(gl.RENDERER)),
       };
     });
     if (!webgl.available) {
@@ -319,12 +315,15 @@ test("renders a vector tile release acceptance snapshot with generated local MVT
       return;
     }
 
-    const renderResult = await renderStyleSnapshot(page, visualVectorTileStyle("https://tiles.local/tiles/{z}/{x}/{y}.pbf"));
+    const renderResult = await renderStyleSnapshot(
+      page,
+      visualVectorTileStyle("https://tiles.local/tiles/{z}/{x}/{y}.pbf"),
+    );
     const report = createVisualReport(renderResult, consoleErrors, {
       id: "vector-tile-url-fixture",
       revision: "1",
       sourceCount: 1,
-      layerCount: 2
+      layerCount: 2,
     });
     assertSnapshotReport(report);
     await attachReport(testInfo, report);
@@ -344,7 +343,7 @@ test("renders a vector tile release acceptance snapshot with generated local MVT
   }
 });
 
-test("renders a fill-extrusion-lite beta visual snapshot", async ({ }, testInfo) => {
+test("renders a fill-extrusion-lite beta visual snapshot", async ({}, testInfo) => {
   const maplibre = resolveMapLibreBundle();
   if (!maplibre.scriptPath) {
     await completeUnavailable(testInfo, maplibre.reason);
@@ -362,7 +361,7 @@ test("renders a fill-extrusion-lite beta visual snapshot", async ({ }, testInfo)
   try {
     const page = await browser.newPage({
       viewport: { width, height },
-      deviceScaleFactor: 1
+      deviceScaleFactor: 1,
     });
     const consoleErrors: string[] = [];
     page.on("console", (message) => {
@@ -393,14 +392,12 @@ test("renders a fill-extrusion-lite beta visual snapshot", async ({ }, testInfo)
     const webgl = await page.evaluate(() => {
       const canvas = document.createElement("canvas");
       const context =
-        canvas.getContext("webgl2") ??
-        canvas.getContext("webgl") ??
-        canvas.getContext("experimental-webgl");
+        canvas.getContext("webgl2") ?? canvas.getContext("webgl") ?? canvas.getContext("experimental-webgl");
       if (!context) return { available: false };
       const gl = context as WebGLRenderingContext;
       return {
         available: true,
-        renderer: String(gl.getParameter(gl.RENDERER))
+        renderer: String(gl.getParameter(gl.RENDERER)),
       };
     });
     if (!webgl.available) {
@@ -420,7 +417,7 @@ test("renders a fill-extrusion-lite beta visual snapshot", async ({ }, testInfo)
       id: "fill-extrusion-lite",
       revision: "1",
       sourceCount: 1,
-      layerCount: 1
+      layerCount: 1,
     });
     assertSnapshotReport(report);
     await attachReport(testInfo, report);
@@ -442,17 +439,17 @@ test("renders a fill-extrusion-lite beta visual snapshot", async ({ }, testInfo)
 
 type BrowserRenderResult =
   | {
-    ok: true;
-    dataUrl: string;
-    canvasWidth: number;
-    canvasHeight: number;
-    nonTransparentSamples: number;
-    nonWhiteSamples: number;
-  }
+      ok: true;
+      dataUrl: string;
+      canvasWidth: number;
+      canvasHeight: number;
+      nonTransparentSamples: number;
+      nonWhiteSamples: number;
+    }
   | {
-    ok: false;
-    reason: string;
-  };
+      ok: false;
+      reason: string;
+    };
 
 interface VectorTileServer {
   tileForUrl(url: string): Uint8Array | null;
@@ -465,11 +462,12 @@ interface GeoJsonVtIndex {
 async function renderStyleSnapshot(page: Page, style: unknown): Promise<BrowserRenderResult> {
   return await page.evaluate(
     async ({ style }) => {
-      const maplibregl = (window as typeof window & { maplibregl?: { Map?: new (options: unknown) => unknown } }).maplibregl;
+      const maplibregl = (window as typeof window & { maplibregl?: { Map?: new (options: unknown) => unknown } })
+        .maplibregl;
       if (!maplibregl?.Map) {
         return {
           ok: false,
-          reason: "maplibre-gl browser bundle did not expose window.maplibregl.Map."
+          reason: "maplibre-gl browser bundle did not expose window.maplibregl.Map.",
         };
       }
 
@@ -477,7 +475,7 @@ async function renderStyleSnapshot(page: Page, style: unknown): Promise<BrowserR
       if (!container) {
         return {
           ok: false,
-          reason: "Map container was not mounted."
+          reason: "Map container was not mounted.",
         };
       }
 
@@ -486,7 +484,7 @@ async function renderStyleSnapshot(page: Page, style: unknown): Promise<BrowserR
         const timeout = window.setTimeout(() => {
           finish({
             ok: false,
-            reason: "MapLibre render timed out before load/idle."
+            reason: "MapLibre render timed out before load/idle.",
           });
         }, 10_000);
         const map = new maplibregl.Map({
@@ -495,7 +493,7 @@ async function renderStyleSnapshot(page: Page, style: unknown): Promise<BrowserR
           interactive: false,
           attributionControl: false,
           preserveDrawingBuffer: true,
-          fadeDuration: 0
+          fadeDuration: 0,
         }) as {
           getCanvas(): HTMLCanvasElement;
           once(event: string, listener: (event?: { error?: Error }) => void): void;
@@ -523,7 +521,7 @@ async function renderStyleSnapshot(page: Page, style: unknown): Promise<BrowserR
           if (!context) {
             finish({
               ok: false,
-              reason: "2D canvas context is unavailable for visual snapshot sampling."
+              reason: "2D canvas context is unavailable for visual snapshot sampling.",
             });
             return;
           }
@@ -549,14 +547,14 @@ async function renderStyleSnapshot(page: Page, style: unknown): Promise<BrowserR
             canvasWidth: canvas.width,
             canvasHeight: canvas.height,
             nonTransparentSamples,
-            nonWhiteSamples
+            nonWhiteSamples,
           });
         }
 
         map.once("error", (event) => {
           finish({
             ok: false,
-            reason: event?.error?.message ?? "MapLibre emitted an error while rendering."
+            reason: event?.error?.message ?? "MapLibre emitted an error while rendering.",
           });
         });
         map.once("load", () => {
@@ -564,7 +562,7 @@ async function renderStyleSnapshot(page: Page, style: unknown): Promise<BrowserR
         });
       });
     },
-    { style }
+    { style },
   );
 }
 
@@ -574,7 +572,7 @@ async function createVectorTileServer(): Promise<VectorTileServer> {
     maxZoom: 14,
     indexMaxZoom: 14,
     extent: 4096,
-    tolerance: 1
+    tolerance: 1,
   });
 
   return {
@@ -587,7 +585,7 @@ async function createVectorTileServer(): Promise<VectorTileServer> {
       const tile = index.getTile(z, x, y);
       if (!tile) return null;
       return fromGeojsonVt({ parcels: tile });
-    }
+    },
   };
 }
 
@@ -596,16 +594,19 @@ async function loadVectorTileModules(): Promise<{
   fromGeojsonVt: (layers: Record<string, unknown>) => Uint8Array;
 }> {
   const maplibreRoot = dirname(require.resolve("maplibre-gl/package.json"));
-  const geoJsonVtPath = require.resolve("@maplibre/geojson-vt", { paths: [maplibreRoot] }).replace("geojson-vt.js", "geojson-vt.mjs");
+  const geoJsonVtPath = require
+    .resolve("@maplibre/geojson-vt", { paths: [maplibreRoot] })
+    .replace("geojson-vt.js", "geojson-vt.mjs");
   const vtPbfPath = require.resolve("@maplibre/vt-pbf", { paths: [maplibreRoot] });
   const [geoJsonVt, vtPbf] = await Promise.all([
     import(pathToFileURL(geoJsonVtPath).href),
-    import(pathToFileURL(vtPbfPath).href)
+    import(pathToFileURL(vtPbfPath).href),
   ]);
 
   return {
-    GeoJSONVT: (geoJsonVt as { GeoJSONVT: new (data: unknown, options: Record<string, unknown>) => GeoJsonVtIndex }).GeoJSONVT,
-    fromGeojsonVt: (vtPbf as { fromGeojsonVt: (layers: Record<string, unknown>) => Uint8Array }).fromGeojsonVt
+    GeoJSONVT: (geoJsonVt as { GeoJSONVT: new (data: unknown, options: Record<string, unknown>) => GeoJsonVtIndex })
+      .GeoJSONVT,
+    fromGeojsonVt: (vtPbf as { fromGeojsonVt: (layers: Record<string, unknown>) => Uint8Array }).fromGeojsonVt,
   };
 }
 
@@ -639,11 +640,11 @@ function resolveMapLibreBundle(): MapLibreBundle {
       return { scriptPath: esmPath, scriptType: "esm", reason: "" };
     }
     return {
-      reason: `maplibre-gl is installed at ${root}, but neither dist/maplibre-gl.js nor dist/maplibre-gl.mjs exists.`
+      reason: `maplibre-gl is installed at ${root}, but neither dist/maplibre-gl.js nor dist/maplibre-gl.mjs exists.`,
     };
   } catch {
     return {
-      reason: "maplibre-gl is not installed. Install maplibre-gl to run real MapLibre visual snapshots."
+      reason: "maplibre-gl is not installed. Install maplibre-gl to run real MapLibre visual snapshots.",
     };
   }
 }
@@ -673,25 +674,25 @@ function skippedVisualReport(reason: string): SnapshotReport {
       loaded: false,
       snapshotted: false,
       exported: false,
-      destroyed: false
+      destroyed: false,
     },
     spec: {
       id: "visual-maplibre",
       revision: "1",
       sourceCount: 1,
-      layerCount: 2
+      layerCount: 2,
     },
     diagnostics: [
       {
         severity: "info",
         code: "CAPABILITY.UNSUPPORTED",
-        message: reason
-      }
+        message: reason,
+      },
     ],
     consoleErrors: [],
     artifacts: {
-      reportJson: "attached:snapshot-report.json"
-    }
+      reportJson: "attached:snapshot-report.json",
+    },
   };
 }
 
@@ -702,10 +703,14 @@ function createVisualReport(
     id: "visual-maplibre",
     revision: "1",
     sourceCount: 1,
-    layerCount: 2
-  }
+    layerCount: 2,
+  },
 ): SnapshotReport {
-  const passed = renderResult.ok && renderResult.nonTransparentSamples > 0 && renderResult.nonWhiteSamples > 0 && consoleErrors.length === 0;
+  const passed =
+    renderResult.ok &&
+    renderResult.nonTransparentSamples > 0 &&
+    renderResult.nonWhiteSamples > 0 &&
+    consoleErrors.length === 0;
   const reason = renderResult.ok ? consoleErrors[0] : renderResult.reason;
   const report: SnapshotReport = {
     kind: "SnapshotReport",
@@ -719,14 +724,14 @@ function createVisualReport(
       loaded: renderResult.ok,
       snapshotted: renderResult.ok,
       exported: renderResult.ok,
-      destroyed: true
+      destroyed: true,
     },
     spec,
     diagnostics: visualDiagnostics(renderResult, consoleErrors),
     consoleErrors,
     artifacts: {
-      reportJson: "attached:snapshot-report.json"
-    }
+      reportJson: "attached:snapshot-report.json",
+    },
   };
 
   if (reason) report.reason = reason;
@@ -738,7 +743,7 @@ function createVisualReport(
       width,
       height,
       dataUrlPrefix: renderResult.dataUrl.slice(0, "data:image/png;base64,".length),
-      byteLength: renderResult.dataUrl.length
+      byteLength: renderResult.dataUrl.length,
     };
   }
 
@@ -751,15 +756,15 @@ function visualDiagnostics(renderResult: BrowserRenderResult, consoleErrors: str
       {
         severity: "error",
         code: "SNAPSHOT.BLANK_CANVAS",
-        message: renderResult.reason
-      }
+        message: renderResult.reason,
+      },
     ];
   }
 
   return consoleErrors.map((message) => ({
     severity: "error" as const,
     code: "RENDER.ADAPTER_ERROR",
-    message
+    message,
   }));
 }
 
@@ -778,24 +783,24 @@ function visualMapLibreStyle(): unknown {
             {
               type: "Feature",
               properties: {
-                name: "visual-snapshot-point"
+                name: "visual-snapshot-point",
               },
               geometry: {
                 type: "Point",
-                coordinates: [120.15, 30.28]
-              }
-            }
-          ]
-        }
-      }
+                coordinates: [120.15, 30.28],
+              },
+            },
+          ],
+        },
+      },
     },
     layers: [
       {
         id: "background",
         type: "background",
         paint: {
-          "background-color": "#e8f7ef"
-        }
+          "background-color": "#e8f7ef",
+        },
       },
       {
         id: "point",
@@ -805,10 +810,10 @@ function visualMapLibreStyle(): unknown {
           "circle-radius": 24,
           "circle-color": "#d7263d",
           "circle-stroke-color": "#102a43",
-          "circle-stroke-width": 3
-        }
-      }
-    ]
+          "circle-stroke-width": 3,
+        },
+      },
+    ],
   };
 }
 
@@ -824,8 +829,8 @@ function visualVectorTileStyle(tileUrl: string): unknown {
         tiles: [tileUrl],
         minzoom: 0,
         maxzoom: 14,
-        attribution: "Generated local vector tile"
-      }
+        attribution: "Generated local vector tile",
+      },
     },
     layers: [
       {
@@ -835,8 +840,8 @@ function visualVectorTileStyle(tileUrl: string): unknown {
         "source-layer": "parcels",
         paint: {
           "fill-color": ["match", ["to-string", ["get", "class"]], "park", "#22c55e", "water", "#38bdf8", "#f97316"],
-          "fill-opacity": 0.72
-        }
+          "fill-opacity": 0.72,
+        },
       },
       {
         id: "parcel-outline",
@@ -845,10 +850,10 @@ function visualVectorTileStyle(tileUrl: string): unknown {
         "source-layer": "parcels",
         paint: {
           "line-color": "#14532d",
-          "line-width": ["step", ["zoom"], 1, 12, ["to-number", ["get", "stroke_width"], 1], 14, 2]
-        }
-      }
-    ]
+          "line-width": ["step", ["zoom"], 1, 12, ["to-number", ["get", "stroke_width"], 1], 14, 2],
+        },
+      },
+    ],
   };
 }
 
@@ -870,7 +875,7 @@ function visualFillExtrusionStyle(): unknown {
               type: "Feature",
               properties: {
                 height: 120,
-                name: "Beta block"
+                name: "Beta block",
               },
               geometry: {
                 type: "Polygon",
@@ -880,14 +885,14 @@ function visualFillExtrusionStyle(): unknown {
                     [120.155, 30.275],
                     [120.155, 30.285],
                     [120.145, 30.285],
-                    [120.145, 30.275]
-                  ]
-                ]
-              }
-            }
-          ]
-        }
-      }
+                    [120.145, 30.275],
+                  ],
+                ],
+              },
+            },
+          ],
+        },
+      },
     },
     layers: [
       {
@@ -898,10 +903,10 @@ function visualFillExtrusionStyle(): unknown {
           "fill-extrusion-color": "#38bdf8",
           "fill-extrusion-height": ["to-number", ["get", "height"], 0],
           "fill-extrusion-base": 0,
-          "fill-extrusion-opacity": 0.75
-        }
-      }
-    ]
+          "fill-extrusion-opacity": 0.75,
+        },
+      },
+    ],
   };
 }
 
@@ -913,7 +918,7 @@ function vectorTileGeoJson(): unknown {
         type: "Feature",
         properties: {
           class: "park",
-          stroke_width: 2
+          stroke_width: 2,
         },
         geometry: {
           type: "Polygon",
@@ -923,19 +928,19 @@ function vectorTileGeoJson(): unknown {
               [120.34, 30.16],
               [120.34, 30.42],
               [120.02, 30.42],
-              [120.02, 30.16]
-            ]
-          ]
-        }
-      }
-    ]
+              [120.02, 30.16],
+            ],
+          ],
+        },
+      },
+    ],
   };
 }
 
 async function attachReport(testInfo: TestInfo, report: SnapshotReport): Promise<void> {
   await testInfo.attach("snapshot-report.json", {
     body: JSON.stringify(report, null, 2),
-    contentType: "application/json"
+    contentType: "application/json",
   });
 }
 

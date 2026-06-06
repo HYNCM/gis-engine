@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
-import scene3dExtensionSpec from "../../fixtures/specs/valid/scene3d-extension.map.json";
 import { DiagnosticCodes, type SceneView3DExtension } from "@gis-engine/engine";
+import { describe, expect, it } from "vitest";
 import { snapshotScene3DMock } from "../../../packages/scene3d/src/index.js";
+import scene3dExtensionSpec from "../../fixtures/specs/valid/scene3d-extension.map.json";
 
 describe("SceneView3D mock snapshot contract", () => {
   it("returns a deterministic data-url snapshot summary without a GPU", () => {
@@ -11,7 +11,7 @@ describe("SceneView3D mock snapshot contract", () => {
       height: 180,
       format: "data-url",
       requireLoadedResources: true,
-      loadedSourceIds: ["terrain-dem", "city-tiles", "station-model"]
+      loadedSourceIds: ["terrain-dem", "city-tiles", "station-model"],
     });
 
     expect(snapshot.passed).toBe(true);
@@ -24,7 +24,7 @@ describe("SceneView3D mock snapshot contract", () => {
       pickableLayerCount: 2,
       width: 320,
       height: 180,
-      format: "data-url"
+      format: "data-url",
     });
     expect(snapshot.pendingSourceIds).toEqual([]);
   });
@@ -32,7 +32,7 @@ describe("SceneView3D mock snapshot contract", () => {
   it("fails strict snapshots when required scene sources are pending", () => {
     const snapshot = snapshotScene3DMock(scene3dExtension(), {
       requireLoadedResources: true,
-      loadedSourceIds: ["terrain-dem"]
+      loadedSourceIds: ["terrain-dem"],
     });
 
     expect(snapshot.passed).toBe(false);
@@ -41,13 +41,13 @@ describe("SceneView3D mock snapshot contract", () => {
       expect.arrayContaining([
         expect.objectContaining({
           code: DiagnosticCodes.SnapshotResourcePending,
-          path: "/extensions/scene3d/sources/city-tiles"
+          path: "/extensions/scene3d/sources/city-tiles",
         }),
         expect.objectContaining({
           code: DiagnosticCodes.SnapshotResourcePending,
-          path: "/extensions/scene3d/sources/station-model"
-        })
-      ])
+          path: "/extensions/scene3d/sources/station-model",
+        }),
+      ]),
     );
   });
 
@@ -61,8 +61,8 @@ describe("SceneView3D mock snapshot contract", () => {
     expect(snapshot.diagnostics).toContainEqual(
       expect.objectContaining({
         code: DiagnosticCodes.SnapshotBlankCanvas,
-        path: "/extensions/scene3d/layers"
-      })
+        path: "/extensions/scene3d/layers",
+      }),
     );
   });
 });

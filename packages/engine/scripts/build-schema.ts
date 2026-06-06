@@ -11,7 +11,7 @@ import {
   MapGenerationPromptPlanSchema,
   MapGenerationRequestSchema,
   MapSpecSchema,
-  SceneView3DExtensionSchema
+  SceneView3DExtensionSchema,
 } from "../src/spec/schemas/index.js";
 
 const outDir = resolve("dist/schema");
@@ -25,7 +25,7 @@ const schemas = [
   ["map-generation-prompt-planner-input.v0.1.schema.json", MapGenerationPromptPlannerInputSchema],
   ["map-generation-prompt-plan.v0.1.schema.json", MapGenerationPromptPlanSchema],
   ["map-generation-command-skeleton.v0.1.schema.json", MapGenerationCommandSkeletonSchema],
-  ["ai-tools.v0.1.schema.json", ApplyCommandsToolInputSchema]
+  ["ai-tools.v0.1.schema.json", ApplyCommandsToolInputSchema],
 ] as const;
 
 await mkdir(outDir, { recursive: true });

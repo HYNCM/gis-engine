@@ -49,7 +49,15 @@ export interface TransformResult {
   diagnostics: Diagnostic[];
 }
 
-const supportedLayerTypes = new Set(["background", "raster", "fill", "line", "circle", "symbol-lite", "fill-extrusion-lite"]);
+const supportedLayerTypes = new Set([
+  "background",
+  "raster",
+  "fill",
+  "line",
+  "circle",
+  "symbol-lite",
+  "fill-extrusion-lite",
+]);
 
 export function transformMapSpecToMapLibreStyle(spec: MapSpec): TransformResult {
   const diagnostics: Diagnostic[] = [];
@@ -63,7 +71,7 @@ export function transformMapSpecToMapLibreStyle(spec: MapSpec): TransformResult 
   const style: MapLibreStyle = {
     version: 8,
     sources: transformSources(spec, diagnostics),
-    layers: transformLayers(spec, diagnostics)
+    layers: transformLayers(spec, diagnostics),
   };
   if (spec.id) style.name = spec.id;
   if (spec.view.center) style.center = spec.view.center;
@@ -94,7 +102,7 @@ function transformSource(sourceId: string, source: SourceSpec, diagnostics: Diag
       severity: "warning",
       code: DiagnosticCodes.CapabilityUnsupported,
       message: `PMTiles source "${sourceId}" is mapped to a vector source URL for MapLibre MVP.`,
-      path: `/sources/${sourceId}`
+      path: `/sources/${sourceId}`,
     });
     return { type: "vector", url: source.url };
   }
@@ -112,7 +120,7 @@ function transformSource(sourceId: string, source: SourceSpec, diagnostics: Diag
     severity: "error",
     code: DiagnosticCodes.CapabilityUnsupported,
     message: `Source "${sourceId}" of type "${(source as { type: string }).type}" is not supported by the MapLibre transformer.`,
-    path: `/sources/${sourceId}`
+    path: `/sources/${sourceId}`,
   });
   return { type: "geojson", data: null };
 }
@@ -126,20 +134,25 @@ function transformLayers(spec: MapSpec, diagnostics: Diagnostic[]): MapLibreLaye
   return layers;
 }
 
-function transformLayer(spec: MapSpec, layer: LayerSpec, index: number, diagnostics: Diagnostic[]): MapLibreLayer | undefined {
+function transformLayer(
+  spec: MapSpec,
+  layer: LayerSpec,
+  index: number,
+  diagnostics: Diagnostic[],
+): MapLibreLayer | undefined {
   if (!supportedLayerTypes.has(layer.type)) {
     diagnostics.push({
       severity: "error",
       code: DiagnosticCodes.CapabilityUnsupported,
       message: `Layer "${layer.id}" of type "${layer.type}" is not supported by the MapLibre MVP transformer.`,
-      path: `/layers/${index}/type`
+      path: `/layers/${index}/type`,
     });
     return undefined;
   }
 
   const styleLayer: MapLibreLayer = {
     id: layer.id,
-    type: mapLayerType(layer.type)
+    type: mapLayerType(layer.type),
   };
   if (layer.type !== "background" && layer.source) styleLayer.source = layer.source;
   const sourceLayer = sourceLayerFor(spec, layer);
@@ -162,7 +175,14 @@ function sourceLayerFor(spec: MapSpec, layer: LayerSpec): string | undefined {
 }
 
 function mapLayerType(layerType: LayerSpec["type"]): MapLibreLayer["type"] {
-  if (layerType === "background" || layerType === "raster" || layerType === "fill" || layerType === "line" || layerType === "circle") return layerType;
+  if (
+    layerType === "background" ||
+    layerType === "raster" ||
+    layerType === "fill" ||
+    layerType === "line" ||
+    layerType === "circle"
+  )
+    return layerType;
   if (layerType === "symbol-lite") return "symbol";
   if (layerType === "fill-extrusion-lite") return "fill-extrusion";
   throw new Error(`Unsupported MapLibre layer type: ${layerType}`);

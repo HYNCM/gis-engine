@@ -1,5 +1,6 @@
 import { applyCommands } from "../commands/applyCommands.js";
 import { DiagnosticCodes } from "../diagnostics/codes.js";
+import type { RendererAdapter } from "../renderer/adapter.js";
 import { validateSpec } from "../spec/validate.js";
 import type {
   ApplyOptions,
@@ -12,9 +13,8 @@ import type {
   ResourceReport,
   SnapshotOptions,
   SnapshotResult,
-  ValidationReport
+  ValidationReport,
 } from "../types.js";
-import type { RendererAdapter } from "../renderer/adapter.js";
 
 export interface MapRuntimeOptions {
   adapter: RendererAdapter;
@@ -74,7 +74,9 @@ export class MapRuntime {
     const result = applyCommands(this.#spec, commands, options);
     const commandList = Array.isArray(commands) ? commands : [commands];
     const patch = result.committed
-      ? result.results.flatMap((commandResult, index) => (commandList[index]?.dryRun ? [] : commandResult.patch ?? []))
+      ? result.results.flatMap((commandResult, index) =>
+          commandList[index]?.dryRun ? [] : (commandResult.patch ?? []),
+        )
       : [];
 
     if (!options.dryRun && patch.length > 0) {
@@ -127,9 +129,9 @@ export class MapRuntime {
           {
             severity: "info",
             code: DiagnosticCodes.RenderDestroyed,
-            message: "MapRuntime is already destroyed."
-          }
-        ]
+            message: "MapRuntime is already destroyed.",
+          },
+        ],
       };
     }
 
@@ -151,20 +153,22 @@ function markAdapterFailure(results: CommandResult[], diagnostics: Diagnostic[])
   return results.map((commandResult) => ({
     ...commandResult,
     status: "failed",
-    diagnostics: [...commandResult.diagnostics, ...adapterDiagnostics]
+    diagnostics: [...commandResult.diagnostics, ...adapterDiagnostics],
   }));
 }
 
 function ensureAdapterErrorDiagnostic(diagnostics: Diagnostic[]): Diagnostic[] {
-  const hasRenderAdapterError = diagnostics.some((diagnostic) => diagnostic.code === DiagnosticCodes.RenderAdapterError);
+  const hasRenderAdapterError = diagnostics.some(
+    (diagnostic) => diagnostic.code === DiagnosticCodes.RenderAdapterError,
+  );
   if (hasRenderAdapterError) return diagnostics;
   return [
     {
       severity: "error",
       code: DiagnosticCodes.RenderAdapterError,
-      message: "Renderer adapter failed while applying patches."
+      message: "Renderer adapter failed while applying patches.",
     },
-    ...diagnostics
+    ...diagnostics,
   ];
 }
 
@@ -172,6 +176,6 @@ function adapterErrorDiagnostic(error: unknown): Diagnostic {
   return {
     severity: "error",
     code: DiagnosticCodes.RenderAdapterError,
-    message: error instanceof Error ? error.message : "Renderer adapter failed while applying patches."
+    message: error instanceof Error ? error.message : "Renderer adapter failed while applying patches.",
   };
 }

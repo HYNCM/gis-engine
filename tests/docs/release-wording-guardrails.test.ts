@@ -16,7 +16,7 @@ const publicWordingFiles = [
   "docs/planning/feature-specs/spatial-analysis-promotion-criteria.md",
   "packages/ai/README.md",
   "packages/scene3d/README.md",
-  "packages/scene3d-three-adapter/README.md"
+  "packages/scene3d-three-adapter/README.md",
 ] as const;
 
 const requiredGuardrails: Array<{
@@ -27,37 +27,31 @@ const requiredGuardrails: Array<{
     file: "README.md",
     patterns: [
       /Generated-app scene browsing is an extension-only delivery signal/,
-      /stable\s+`view\.mode: "scene3d"` remains blocked/
-    ]
+      /stable\s+`view\.mode: "scene3d"` remains blocked/,
+    ],
   },
   {
     file: "CHANGELOG.md",
     patterns: [
       /does not enable stable 3D runtime rendering/,
-      /stable-runtime blocker codes.*stable `view\.mode: "scene3d"` blocked/s
-    ]
+      /stable-runtime blocker codes.*stable `view\.mode: "scene3d"` blocked/s,
+    ],
   },
   {
     file: "packages/ai/README.md",
-    patterns: [
-      /Scene browsing remains extension-only/,
-      /must not be cited as stable renderer evidence/
-    ]
+    patterns: [/Scene browsing remains extension-only/, /must not be cited as stable renderer evidence/],
   },
   {
     file: "docs/planning/feature-specs/generated-app-delivery-ux.md",
-    patterns: [
-      /does not make `export_example_app`\s+write files/,
-      /does not enable stable `view\.mode: "scene3d"`/
-    ]
+    patterns: [/does not make `export_example_app`\s+write files/, /does not enable stable `view\.mode: "scene3d"`/],
   },
   {
     file: "docs/planning/feature-specs/cloud-native-source-readiness.md",
-    patterns: [/must not fetch resources, parse archives, or write files/]
+    patterns: [/must not fetch resources, parse archives, or write files/],
   },
   {
     file: "docs/planning/feature-specs/spatial-analysis-promotion-criteria.md",
-    patterns: [/does not implement geoprocessing/, /Buffer\/intersection\/overlay\/routing\/aggregation \| blocked/]
+    patterns: [/does not implement geoprocessing/, /Buffer\/intersection\/overlay\/routing\/aggregation \| blocked/],
   },
   {
     file: "docs/engineering/release-wording-guardrails.md",
@@ -65,41 +59,38 @@ const requiredGuardrails: Array<{
       /stable `view\.mode: "scene3d"` remains blocked/,
       /`export_example_app` returns manifest and file metadata/,
       /GeoParquet\/FlatGeobuf\/GeoTIFF\/GeoZarr remain blocked/,
-      /advanced geoprocessing as available capability/
-    ]
-  }
+      /advanced geoprocessing as available capability/,
+    ],
+  },
 ];
 
 const forbiddenClaims: Array<{ name: string; pattern: RegExp }> = [
   {
     name: "stable scene3d runtime availability",
-    pattern:
-      /(?:stable\s+)?(?:SceneView3D|3D)\s+runtime\s+(?:is\s+)?(?:supported|enabled|available|ready)\b/i
+    pattern: /(?:stable\s+)?(?:SceneView3D|3D)\s+runtime\s+(?:is\s+)?(?:supported|enabled|available|ready)\b/i,
   },
   {
     name: "stable scene3d view mode availability",
-    pattern: /view\.mode:\s*"scene3d"\s+(?:is\s+)?(?:stable|supported|enabled|available|ready)\b/i
+    pattern: /view\.mode:\s*"scene3d"\s+(?:is\s+)?(?:stable|supported|enabled|available|ready)\b/i,
   },
   {
     name: "export_example_app file writes",
-    pattern:
-      /export_example_app.{0,120}\b(?:writes|creates|saves|persists)\b.{0,80}\b(?:file|files|disk|workspace)\b/i
+    pattern: /export_example_app.{0,120}\b(?:writes|creates|saves|persists)\b.{0,80}\b(?:file|files|disk|workspace)\b/i,
   },
   {
     name: "generated app file writes",
-    pattern:
-      /generated[- ]app.{0,120}\b(?:writes|creates|saves|persists)\b.{0,80}\b(?:file|files|disk|workspace)\b/i
+    pattern: /generated[- ]app.{0,120}\b(?:writes|creates|saves|persists)\b.{0,80}\b(?:file|files|disk|workspace)\b/i,
   },
   {
     name: "blocked cloud-native source support",
     pattern:
-      /(?:GeoParquet|FlatGeobuf|GeoTIFF|GeoZarr).{0,80}\b(?:is|are|now)\s+(?:supported|implemented|available|ready)\b/i
+      /(?:GeoParquet|FlatGeobuf|GeoTIFF|GeoZarr).{0,80}\b(?:is|are|now)\s+(?:supported|implemented|available|ready)\b/i,
   },
   {
     name: "advanced spatial analysis support",
     pattern:
-      /(?:buffer|intersection|overlay|routing|aggregation|geoprocessing).{0,120}\b(?:is|are|now)\s+(?:supported|implemented|available|ready|executable)\b/i
-  }
+      /(?:buffer|intersection|overlay|routing|aggregation|geoprocessing).{0,120}\b(?:is|are|now)\s+(?:supported|implemented|available|ready|executable)\b/i,
+  },
 ];
 
 function readRepoFile(path: string): string {

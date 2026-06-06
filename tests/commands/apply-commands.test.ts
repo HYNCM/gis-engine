@@ -1,11 +1,11 @@
+import { applyCommands, type MapCommand, type MapSpec } from "@gis-engine/engine";
 import { describe, expect, it } from "vitest";
-import before from "../fixtures/commands/replay/style-update/before.map.json";
-import commands from "../fixtures/commands/replay/style-update/commands.json";
-import after from "../fixtures/commands/replay/style-update/after.map.json";
 import conflictAuditBefore from "../fixtures/commands/replay/conflict-audit/before.map.json";
 import conflictAuditCommands from "../fixtures/commands/replay/conflict-audit/commands.json";
 import expectedConflictAuditTraces from "../fixtures/commands/replay/conflict-audit/expected-traces.json";
-import { applyCommands, type MapCommand, type MapSpec } from "@gis-engine/engine";
+import after from "../fixtures/commands/replay/style-update/after.map.json";
+import before from "../fixtures/commands/replay/style-update/before.map.json";
+import commands from "../fixtures/commands/replay/style-update/commands.json";
 
 describe("applyCommands", () => {
   it("applies a style update and returns patch metadata", () => {
@@ -16,7 +16,11 @@ describe("applyCommands", () => {
     expect(result.results[0]?.status).toBe("applied");
     expect(result.results[0]?.sequenceId).toBe(0);
     expect(result.results[0]?.traceId).toBe(result.traceId);
-    expect(result.results[0]?.changedPaths).toEqual(["/layers/0/paint/fill-color", "/layers/0/paint/fill-opacity", "/revision"]);
+    expect(result.results[0]?.changedPaths).toEqual([
+      "/layers/0/paint/fill-color",
+      "/layers/0/paint/fill-opacity",
+      "/revision",
+    ]);
     expect(result.results[0]?.inversePatch).toHaveLength(3);
     expect(result.transaction).toBe("atomic");
     expect(result.dryRun).toBe(false);
@@ -43,7 +47,7 @@ describe("applyCommands", () => {
       version: "0.1",
       type: "removeLayer",
       baseRevision: "2",
-      layerId: "missing-layer"
+      layerId: "missing-layer",
     };
 
     const result = applyCommands(before as MapSpec, [styleCommand, failingCommand]);
@@ -63,7 +67,7 @@ describe("applyCommands", () => {
       version: "0.1",
       type: "removeLayer",
       baseRevision: "2",
-      layerId: "missing-layer"
+      layerId: "missing-layer",
     };
 
     const result = applyCommands(before as MapSpec, [styleCommand, failingCommand], { transaction: "best-effort" });
@@ -101,11 +105,11 @@ describe("applyCommands", () => {
       author: {
         type: "agent",
         id: "agent-product-strategist",
-        name: "product-strategist"
+        name: "product-strategist",
       },
       reason: "Audit trace coverage.",
       createdAt: "2026-05-18T00:00:00.000Z",
-      sourcePromptHash: "sha256:command-audit-example"
+      sourcePromptHash: "sha256:command-audit-example",
     };
     const result = applyCommands(before as MapSpec, [command], { traceId: "trace-audit-1", collectTrace: true });
 
@@ -122,13 +126,13 @@ describe("applyCommands", () => {
         author: {
           type: "agent",
           id: "agent-product-strategist",
-          name: "product-strategist"
+          name: "product-strategist",
         },
         reason: "Audit trace coverage.",
         sourcePromptHash: "sha256:command-audit-example",
         changedPaths: ["/layers/0/paint/fill-color", "/layers/0/paint/fill-opacity", "/revision"],
-        diagnostics: []
-      }
+        diagnostics: [],
+      },
     ]);
   });
 
@@ -138,12 +142,15 @@ describe("applyCommands", () => {
       baseRevision: "stale",
       author: {
         type: "agent",
-        name: "conflict-agent"
+        name: "conflict-agent",
       },
       reason: "Try a stale command for conflict evidence.",
-      sourcePromptHash: "sha256:stale-command"
+      sourcePromptHash: "sha256:stale-command",
     };
-    const result = applyCommands(before as MapSpec, [staleCommand], { traceId: "trace-conflict-1", collectTrace: true });
+    const result = applyCommands(before as MapSpec, [staleCommand], {
+      traceId: "trace-conflict-1",
+      collectTrace: true,
+    });
 
     expect(result.traces).toHaveLength(1);
     expect(result.traces?.[0]).toMatchObject({
@@ -154,12 +161,12 @@ describe("applyCommands", () => {
       baseRevision: "stale",
       author: {
         type: "agent",
-        name: "conflict-agent"
+        name: "conflict-agent",
       },
       reason: "Try a stale command for conflict evidence.",
       sourcePromptHash: "sha256:stale-command",
       changedPaths: [],
-      diagnostics: [expect.objectContaining({ code: "CONFLICT.BASE_REVISION" })]
+      diagnostics: [expect.objectContaining({ code: "CONFLICT.BASE_REVISION" })],
     });
     expect(result.rolledBack).toBe(true);
   });
@@ -168,7 +175,7 @@ describe("applyCommands", () => {
     const result = applyCommands(conflictAuditBefore as MapSpec, conflictAuditCommands as MapCommand[], {
       transaction: "best-effort",
       collectTrace: true,
-      traceId: "fixture-conflict-audit"
+      traceId: "fixture-conflict-audit",
     });
 
     expect(result.spec.revision).toBe("4");

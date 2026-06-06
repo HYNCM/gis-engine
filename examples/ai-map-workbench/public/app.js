@@ -30,7 +30,7 @@ const statusLabels = {
   ready: "Ready",
   reviewed: "Reviewed",
   reset: "Reset",
-  unsupported: "Unsupported"
+  unsupported: "Unsupported",
 };
 
 init().catch((error) => {
@@ -89,15 +89,15 @@ async function loadProviders() {
   try {
     const result = await fetchJson("/api/providers");
     providerProfiles = Array.isArray(result.providers) ? result.providers : [];
-  } catch (error) {
+  } catch (_error) {
     providerProfiles = [
       {
         id: "mock-ai",
         label: "Mock AI",
         model: "deterministic-mock",
         enabled: true,
-        missingCredential: false
-      }
+        missingCredential: false,
+      },
     ];
   }
 
@@ -192,7 +192,7 @@ function reviewDecisionRequest(outcome) {
   return {
     outcome,
     reasonCodes: ["visual-evidence-required"],
-    followUpTaskIds: ["TASK-2026W23-AWP-006"]
+    followUpTaskIds: ["TASK-2026W23-AWP-006"],
   };
 }
 
@@ -210,10 +210,10 @@ function applyPayload(payload) {
       provider: payload.provider ?? null,
       generationEvidence: payload.generationEvidence ?? null,
       commandEvidence: payload.commandEvidence ?? null,
-      results: payload.results ?? []
+      results: payload.results ?? [],
     },
     null,
-    2
+    2,
   );
 }
 
@@ -221,7 +221,7 @@ async function refreshAudit() {
   try {
     const audit = await fetchJson("/api/audit");
     renderAudit(audit.records ?? []);
-  } catch (error) {
+  } catch (_error) {
     renderAudit([]);
   }
 }
@@ -230,7 +230,7 @@ async function refreshReviewDecisions() {
   try {
     const payload = await fetchJson("/api/review-decisions");
     renderReviewDecisions(payload.decisions ?? []);
-  } catch (error) {
+  } catch (_error) {
     renderReviewDecisions([]);
   }
 }
@@ -246,7 +246,7 @@ function renderMap(payload) {
       style: payload.style,
       center,
       zoom,
-      attributionControl: false
+      attributionControl: false,
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     map.on("click", (event) => queryMapFeatures(event.lngLat));
@@ -261,7 +261,7 @@ async function queryMapFeatures(lngLat) {
   const tolerance = Math.max(0.012, 0.08 / Math.max(1, 2 ** (zoom - 10)));
   const payload = await postJson("/api/query", {
     bbox: [lngLat.lng - tolerance, lngLat.lat - tolerance, lngLat.lng + tolerance, lngLat.lat + tolerance],
-    layers: ["poi-circles"]
+    layers: ["poi-circles"],
   });
   renderFeatureQuery(payload.query);
 }
@@ -276,7 +276,7 @@ function renderSummary(payload) {
     ["Revision", summary.revision ?? "--"],
     ["Sources", String(summary.sourceCount ?? 0)],
     ["Layers", String(summary.layerCount ?? 0)],
-    ["Commands", String(payload.commandEvidence?.commandCount ?? 0)]
+    ["Commands", String(payload.commandEvidence?.commandCount ?? 0)],
   ];
 
   summaryList.replaceChildren(
@@ -286,7 +286,7 @@ function renderSummary(payload) {
       const description = document.createElement("dd");
       description.textContent = value;
       return [term, description];
-    })
+    }),
   );
 }
 
@@ -306,7 +306,7 @@ function renderProviderEvidence(payload) {
     ["Planner", planner?.provided ? planner.plannerId : "mock fallback"],
     ["Confidence", provider?.confidence?.level ?? planner?.confidence?.level ?? "--"],
     ["Delivery", delivery?.status ?? "not requested"],
-    ["Prompt hash", evidence?.promptHash ?? "--"]
+    ["Prompt hash", evidence?.promptHash ?? "--"],
   ];
 
   providerList.replaceChildren(...definitionRows(rows));
@@ -333,7 +333,7 @@ function renderDiagnostics(diagnostics) {
       message.textContent = diagnostic.message;
       item.append(code, message);
       return item;
-    })
+    }),
   );
 }
 
@@ -377,7 +377,7 @@ function renderSourceReadiness(entries) {
       }
       article.append(title, meta, ...contractDetails);
       return article;
-    })
+    }),
   );
 }
 
@@ -397,7 +397,10 @@ function renderSourcePromotionCandidates(candidates) {
       const title = document.createElement("strong");
       title.textContent = `${candidate.format} / ${candidate.state}`;
       const meta = document.createElement("p");
-      const sourceIds = Array.isArray(candidate.sourceIds) && candidate.sourceIds.length > 0 ? candidate.sourceIds.join(", ") : "no sources";
+      const sourceIds =
+        Array.isArray(candidate.sourceIds) && candidate.sourceIds.length > 0
+          ? candidate.sourceIds.join(", ")
+          : "no sources";
       meta.textContent = `${candidate.candidateId} / ${sourceIds}`;
       const resourcePolicy = document.createElement("p");
       resourcePolicy.textContent = `Resource policy: ${candidate.resourcePolicy ?? "not-checked"}`;
@@ -416,7 +419,7 @@ function renderSourcePromotionCandidates(candidates) {
       }
       article.append(title, meta, resourcePolicy, ...contractDetails, details);
       return article;
-    })
+    }),
   );
 }
 
@@ -465,7 +468,7 @@ function renderFeatureQuery(query) {
         : "No properties";
       article.append(name, meta);
       return article;
-    })
+    }),
   );
 }
 
@@ -491,7 +494,7 @@ function renderAudit(records) {
         meta.textContent = `${record.fromRevision} -> ${record.toRevision} / ${record.providerId}`;
         article.append(title, meta);
         return article;
-      })
+      }),
   );
 }
 
@@ -517,7 +520,7 @@ function renderReviewDecisions(decisions) {
         meta.textContent = `${decision.auditRecordId ?? "no-audit"} / ${decision.providerId ?? "provider"}`;
         article.append(title, meta);
         return article;
-      })
+      }),
   );
 }
 
@@ -553,9 +556,9 @@ async function postJson(url, payload) {
   const response = await fetch(url, {
     method: "POST",
     headers: {
-      "content-type": "application/json"
+      "content-type": "application/json",
     },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
   });
   if (!response.ok) throw new Error(`Request failed: ${response.status}`);
   return response.json();

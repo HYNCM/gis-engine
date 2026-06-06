@@ -1,18 +1,17 @@
-import { describe, expect, it } from "vitest";
-import scene3dExtensionSpec from "../../fixtures/specs/valid/scene3d-extension.map.json";
 import {
-  DiagnosticCodes,
-  Scene3DStableRuntimeBlockerCodes,
-  validateSpec,
   type Diagnostic,
+  DiagnosticCodes,
   type MapSpec,
-  type SceneView3DExtension
+  Scene3DStableRuntimeBlockerCodes,
+  type SceneView3DExtension,
+  validateSpec,
 } from "@gis-engine/engine";
+import { describe, expect, it } from "vitest";
 import {
   evaluateScene3DReleaseVisualGate,
   queryScene3DMock,
+  type Scene3DRendererVisualEvidence,
   snapshotScene3DMock,
-  type Scene3DRendererVisualEvidence
 } from "../../../packages/scene3d/src/index.js";
 import {
   createScene3DThreeAdapterPromotionEvidenceSummary,
@@ -21,8 +20,9 @@ import {
   evaluateScene3DThreeAdapterSpike,
   getScene3DThreeAdapterLifecycleSemantics,
   getScene3DThreeAdapterStableRendererContract,
-  type Scene3DThreeAdapterRuntime
+  type Scene3DThreeAdapterRuntime,
 } from "../../../packages/scene3d-three-adapter/src/index.js";
+import scene3dExtensionSpec from "../../fixtures/specs/valid/scene3d-extension.map.json";
 
 const loadedSourceIds = ["terrain-dem", "city-tiles", "station-model"];
 const deterministicSnapshotOptions = {
@@ -30,14 +30,14 @@ const deterministicSnapshotOptions = {
   height: 180,
   format: "data-url" as const,
   requireLoadedResources: true,
-  loadedSourceIds
+  loadedSourceIds,
 };
 const adapterEstimates = {
   tilesetJsonBytes: { "city-tiles": 512_000 },
   modelBytes: { "station-model": 1_048_576 },
   textureCount: { "terrain-dem": 1, "station-model": 4 },
   textureBytes: { "terrain-dem": 262_144, "station-model": 2_097_152 },
-  workerCount: 1
+  workerCount: 1,
 };
 
 describe("SceneView3D stable renderer contract QA slice", () => {
@@ -52,7 +52,7 @@ describe("SceneView3D stable renderer contract QA slice", () => {
       "failure",
       "cancel",
       "destroy",
-      "resourceCleanup"
+      "resourceCleanup",
     ]);
     expect(contract.every((entry) => entry.deterministic)).toBe(true);
     expect(contract.every((entry) => entry.diagnosticCodes.length > 0)).toBe(true);
@@ -66,7 +66,7 @@ describe("SceneView3D stable renderer contract QA slice", () => {
     expect(preLoadSnapshot.passed).toBe(false);
     expectStructuredDiagnostics(preLoadSnapshot.diagnostics, [DiagnosticCodes.RenderAdapterError]);
     expect(preLoadSnapshot.diagnostics).toContainEqual(
-      expect.objectContaining({ path: "/runtime/not-loaded/snapshot" })
+      expect.objectContaining({ path: "/runtime/not-loaded/snapshot" }),
     );
 
     const preLoadQuery = await runtime.query();
@@ -91,7 +91,7 @@ describe("SceneView3D stable renderer contract QA slice", () => {
       pickableLayerCount: 2,
       width: 320,
       height: 180,
-      format: "data-url"
+      format: "data-url",
     });
     expect(repeatedSnapshot.summary).toEqual(snapshot.summary);
     expect(repeatedSnapshot.dataUrl).toBe(snapshot.dataUrl);
@@ -99,29 +99,29 @@ describe("SceneView3D stable renderer contract QA slice", () => {
     const resizedSnapshot = await runtime.snapshot({
       ...deterministicSnapshotOptions,
       width: 640,
-      height: 360
+      height: 360,
     });
     expect(resizedSnapshot.summary).toEqual(
       expect.objectContaining({
         width: 640,
         height: 360,
         sourceCount: snapshot.summary.sourceCount,
-        layerCount: snapshot.summary.layerCount
-      })
+        layerCount: snapshot.summary.layerCount,
+      }),
     );
 
     const invalidResizeSnapshot = await runtime.snapshot({
       ...deterministicSnapshotOptions,
       width: -1,
-      height: 0
+      height: 0,
     });
     expect(invalidResizeSnapshot.passed).toBe(false);
     expectStructuredDiagnostics(invalidResizeSnapshot.diagnostics, [DiagnosticCodes.RenderAdapterError]);
     expect(invalidResizeSnapshot.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ path: "/renderer/resize/width" }),
-        expect.objectContaining({ path: "/renderer/resize/height" })
-      ])
+        expect.objectContaining({ path: "/renderer/resize/height" }),
+      ]),
     );
 
     const query = await runtime.query({ layers: ["city", "station"] });
@@ -131,24 +131,22 @@ describe("SceneView3D stable renderer contract QA slice", () => {
     const failingRuntime = createScene3DThreeAdapterRuntime(scene3dExtension(), {
       estimates: {
         ...adapterEstimates,
-        tilesetJsonBytes: { "city-tiles": 2_000_000 }
-      }
+        tilesetJsonBytes: { "city-tiles": 2_000_000 },
+      },
     });
     const failureLoadReport = await failingRuntime.load();
     expect(failureLoadReport.loaded).toBe(false);
     expect(failureLoadReport.resourceReport.valid).toBe(false);
     expectStructuredDiagnostics(failureLoadReport.diagnostics, [
       DiagnosticCodes.SecurityResourceTooLarge,
-      DiagnosticCodes.RenderAdapterError
+      DiagnosticCodes.RenderAdapterError,
     ]);
     expect(failureLoadReport.diagnostics).toContainEqual(expect.objectContaining({ path: "/runtime/failed/load" }));
     const failureSnapshot = await failingRuntime.snapshot(deterministicSnapshotOptions);
     const failureQuery = await failingRuntime.query();
     expect(failureSnapshot.passed).toBe(false);
     expect(failureQuery.picks).toEqual([]);
-    expect(failureSnapshot.diagnostics).toContainEqual(
-      expect.objectContaining({ path: "/runtime/failed/snapshot" })
-    );
+    expect(failureSnapshot.diagnostics).toContainEqual(expect.objectContaining({ path: "/runtime/failed/snapshot" }));
     expect(failureQuery.diagnostics).toContainEqual(expect.objectContaining({ path: "/runtime/failed/query" }));
 
     const destroyReport = await runtime.destroy();
@@ -162,21 +160,21 @@ describe("SceneView3D stable renderer contract QA slice", () => {
           loadedBeforeDestroy: true,
           failedBeforeDestroy: false,
           plannedResourceCount: 4,
-          plannedWorkerCount: 1
-        })
-      })
+          plannedWorkerCount: 1,
+        }),
+      }),
     );
     expect(repeatedDestroyReport.destroyed).toBe(true);
     expect(repeatedDestroyReport.resources).toEqual(
       expect.objectContaining({
         alreadyDestroyed: true,
         loadedBeforeDestroy: false,
-        failedBeforeDestroy: false
-      })
+        failedBeforeDestroy: false,
+      }),
     );
     expectStructuredDiagnostics(repeatedDestroyReport.diagnostics, [DiagnosticCodes.RenderDestroyed]);
     expect(repeatedDestroyReport.diagnostics).toContainEqual(
-      expect.objectContaining({ path: "/runtime/destroyed/destroy" })
+      expect.objectContaining({ path: "/runtime/destroyed/destroy" }),
     );
 
     const afterDestroyLoad = await runtime.load();
@@ -190,7 +188,7 @@ describe("SceneView3D stable renderer contract QA slice", () => {
     expectStructuredDiagnostics(afterDestroyQuery.diagnostics, [DiagnosticCodes.RenderDestroyed]);
     expect(afterDestroyLoad.diagnostics).toContainEqual(expect.objectContaining({ path: "/runtime/destroyed/load" }));
     expect(afterDestroySnapshot.diagnostics).toContainEqual(
-      expect.objectContaining({ path: "/runtime/destroyed/snapshot" })
+      expect.objectContaining({ path: "/runtime/destroyed/snapshot" }),
     );
     expect(afterDestroyQuery.diagnostics).toContainEqual(expect.objectContaining({ path: "/runtime/destroyed/query" }));
 
@@ -200,8 +198,8 @@ describe("SceneView3D stable renderer contract QA slice", () => {
       expect.objectContaining({
         loadedBeforeDestroy: false,
         failedBeforeDestroy: false,
-        plannedResourceCount: 4
-      })
+        plannedResourceCount: 4,
+      }),
     );
     const cancelledLoad = await cancelledBeforeLoadRuntime.load();
     const cancelledQuery = await cancelledBeforeLoadRuntime.query();
@@ -222,19 +220,19 @@ describe("SceneView3D stable renderer contract QA slice", () => {
         .map((obligation) => ({
           id: obligation.id,
           requiredEvidence: obligation.requiredEvidence,
-          diagnosticPaths: obligation.diagnosticPaths
-        }))
+          diagnosticPaths: obligation.diagnosticPaths,
+        })),
     ).toEqual([
       {
         id: "snapshot",
         requiredEvidence: ["Scene3DMockSnapshotResult", "visual snapshot report"],
-        diagnosticPaths: ["/snapshot", "/snapshot/resources"]
+        diagnosticPaths: ["/snapshot", "/snapshot/resources"],
       },
       {
         id: "query",
         requiredEvidence: ["Scene3DQueryResult", "pick coverage report"],
-        diagnosticPaths: ["/query", "/query/picks"]
-      }
+        diagnosticPaths: ["/query", "/query/picks"],
+      },
     ]);
 
     const extension = scene3dExtension();
@@ -254,8 +252,8 @@ describe("SceneView3D stable renderer contract QA slice", () => {
         height: 180,
         nonTransparentPixels: 0,
         changedPixelsFromBackground: 0,
-        consoleErrors: []
-      }
+        consoleErrors: [],
+      },
     });
     expect(blankEvidence.passed).toBe(false);
     expectStructuredDiagnostics(blankEvidence.diagnostics ?? [], [DiagnosticCodes.SnapshotBlankCanvas]);
@@ -270,10 +268,10 @@ describe("SceneView3D stable renderer contract QA slice", () => {
         targetLayerPixels: {
           terrain: 16_640,
           city: 4_032,
-          station: 1_024
+          station: 1_024,
         },
-        consoleErrors: []
-      }
+        consoleErrors: [],
+      },
     });
     expect(nonblankEvidence.passed).toBe(true);
     expect(nonblankEvidence.diagnostics).toEqual([]);
@@ -281,13 +279,12 @@ describe("SceneView3D stable renderer contract QA slice", () => {
     const query = queryScene3DMock(extension);
     const repeatedQuery = queryScene3DMock(extension);
     expect(repeatedQuery).toEqual(query);
-    expect(query.picks.map((pick) => pick.objectId)).toEqual([
-      "city-tiles:city:mock",
-      "station-model:station:mock"
-    ]);
-    expect(query.picks.every((pick) => pick.position === extension.camera.target || vectorEquals(pick.position, extension.camera.target))).toBe(
-      true
-    );
+    expect(query.picks.map((pick) => pick.objectId)).toEqual(["city-tiles:city:mock", "station-model:station:mock"]);
+    expect(
+      query.picks.every(
+        (pick) => pick.position === extension.camera.target || vectorEquals(pick.position, extension.camera.target),
+      ),
+    ).toBe(true);
 
     const noHit = queryScene3DMock(extension, { layers: ["terrain"] });
     expect(noHit.picks).toEqual([]);
@@ -321,7 +318,7 @@ describe("SceneView3D stable renderer contract QA slice", () => {
     promotedSpec.view.mode = "scene3d";
     promotedSpec.capabilities = {
       renderer: "scene3d",
-      dimensions: ["3d"]
+      dimensions: ["3d"],
     };
 
     const validation = validateSpec(promotedSpec);
@@ -331,19 +328,19 @@ describe("SceneView3D stable renderer contract QA slice", () => {
         expect.objectContaining({
           code: DiagnosticCodes.CapabilityUnsupported,
           blockerCode: Scene3DStableRuntimeBlockerCodes.ViewMode,
-          path: "/view/mode"
+          path: "/view/mode",
         }),
         expect.objectContaining({
           code: DiagnosticCodes.CapabilityUnsupported,
           blockerCode: Scene3DStableRuntimeBlockerCodes.Renderer,
-          path: "/capabilities/renderer"
+          path: "/capabilities/renderer",
         }),
         expect.objectContaining({
           code: DiagnosticCodes.CapabilityUnsupported,
           blockerCode: Scene3DStableRuntimeBlockerCodes.Dimensions,
-          path: "/capabilities/dimensions"
-        })
-      ])
+          path: "/capabilities/dimensions",
+        }),
+      ]),
     );
 
     const runtime = createStableContractRuntime();
@@ -357,19 +354,19 @@ describe("SceneView3D stable renderer contract QA slice", () => {
         height: 180,
         nonTransparentPixels: 57_600,
         changedPixelsFromBackground: 24_000,
-        consoleErrors: []
-      }
+        consoleErrors: [],
+      },
     });
     const promotionSummary = createScene3DThreeAdapterPromotionEvidenceSummary(runtime.spikeReport, {
       loadReport,
       snapshot,
       query,
-      rendererVisualEvidence: rendererEvidence
+      rendererVisualEvidence: rendererEvidence,
     });
     const releaseGate = evaluateScene3DReleaseVisualGate(scene3dExtension(), {
       ciTier: "release",
       loadedSourceIds,
-      rendererVisualEvidence: rendererEvidence
+      rendererVisualEvidence: rendererEvidence,
     });
 
     expect(promotionSummary.decisionReady).toBe(true);
@@ -383,26 +380,26 @@ describe("SceneView3D stable renderer contract QA slice", () => {
       passed: true,
       renderer: "scene3d-mock",
       reportPath: "test-results/scene3d-mock/report.json",
-      diagnostics: []
+      diagnostics: [],
     };
     expect(
       assessStableRendererEvidence(mockEvidence, {
         stableViewMode: true,
-        runtimeSupported: true
-      }).diagnostics
+        runtimeSupported: true,
+      }).diagnostics,
     ).toContainEqual(
       expect.objectContaining({
         code: DiagnosticCodes.CapabilityUnsupported,
         blockerCode: Scene3DStableRuntimeBlockerCodes.Renderer,
-        path: "/rendererVisualEvidence/renderer"
-      })
+        path: "/rendererVisualEvidence/renderer",
+      }),
     );
     expect(assessStableRendererEvidence(rendererEvidence).diagnostics).toContainEqual(
       expect.objectContaining({
         code: DiagnosticCodes.CapabilityUnsupported,
         blockerCode: Scene3DStableRuntimeBlockerCodes.Renderer,
-        path: "/rendererVisualEvidence/stableViewMode"
-      })
+        path: "/rendererVisualEvidence/stableViewMode",
+      }),
     );
   });
 });
@@ -437,18 +434,23 @@ function vectorEquals(left: [number, number, number], right: [number, number, nu
 
 function assessStableRendererEvidence(
   evidence: Scene3DRendererVisualEvidence,
-  options: { stableViewMode?: boolean; runtimeSupported?: boolean } = {}
+  options: { stableViewMode?: boolean; runtimeSupported?: boolean } = {},
 ): { accepted: boolean; diagnostics: Diagnostic[] } {
   const diagnostics: Diagnostic[] = [];
   if (evidence.renderer.includes("mock")) {
-    diagnostics.push(stableRendererBlocked("/rendererVisualEvidence/renderer", "Mock SceneView3D evidence is not stable renderer evidence."));
+    diagnostics.push(
+      stableRendererBlocked(
+        "/rendererVisualEvidence/renderer",
+        "Mock SceneView3D evidence is not stable renderer evidence.",
+      ),
+    );
   }
   if (options.stableViewMode !== true || options.runtimeSupported !== true) {
     diagnostics.push(
       stableRendererBlocked(
         "/rendererVisualEvidence/stableViewMode",
-        "SceneView3D adapter evidence remains spike-local until the stable renderer contract is implemented."
-      )
+        "SceneView3D adapter evidence remains spike-local until the stable renderer contract is implemented.",
+      ),
     );
   }
   if (evidence.passed !== true) {
@@ -456,12 +458,12 @@ function assessStableRendererEvidence(
       severity: "error",
       code: DiagnosticCodes.RenderAdapterError,
       message: "Stable renderer evidence must be passing before promotion.",
-      path: "/rendererVisualEvidence/passed"
+      path: "/rendererVisualEvidence/passed",
     });
   }
   return {
     accepted: diagnostics.length === 0,
-    diagnostics
+    diagnostics,
   };
 }
 
@@ -475,7 +477,8 @@ function stableRendererBlocked(path: string, message: string): Diagnostic {
     fix: {
       kind: "manual",
       confidence: "high",
-      message: "Keep stable view.mode=\"scene3d\" disabled until real renderer lifecycle, snapshot, and query evidence passes."
-    }
+      message:
+        'Keep stable view.mode="scene3d" disabled until real renderer lifecycle, snapshot, and query evidence passes.',
+    },
   };
 }

@@ -1,6 +1,6 @@
+import { applyCommands, buildPatch, DiagnosticCodes, type MapCommand, type MapSpec } from "@gis-engine/engine";
 import { describe, expect, it } from "vitest";
 import before from "../fixtures/commands/replay/style-update/before.map.json";
-import { applyCommands, buildPatch, DiagnosticCodes, type MapCommand, type MapSpec } from "@gis-engine/engine";
 
 describe("command patch generation", () => {
   it("merges paint properties without dropping existing paint", () => {
@@ -11,15 +11,15 @@ describe("command patch generation", () => {
       baseRevision: "1",
       layerId: "district-fill",
       paint: {
-        "fill-color": "#ef4444"
-      }
+        "fill-color": "#ef4444",
+      },
     };
 
     const result = applyCommands(before as MapSpec, [command]);
 
     expect(result.spec.layers[0]?.paint).toEqual({
       "fill-color": "#ef4444",
-      "fill-opacity": 0.7
+      "fill-opacity": 0.7,
     });
     expect(result.results[0]?.changedPaths).toEqual(["/layers/0/paint/fill-color", "/revision"]);
   });
@@ -35,8 +35,8 @@ describe("command patch generation", () => {
       baseRevision: "1",
       layerId: "district-fill",
       paint: {
-        "fill-color": "#ef4444"
-      }
+        "fill-color": "#ef4444",
+      },
     };
 
     const result = applyCommands(spec, [command]);
@@ -53,8 +53,8 @@ describe("command patch generation", () => {
         type: "setFilter",
         baseRevision: "1",
         layerId: "district-fill",
-        filter: ["==", ["get", "category"], "landmark"]
-      }
+        filter: ["==", ["get", "category"], "landmark"],
+      },
     ]);
 
     expect(setResult.spec.layers[0]?.filter).toEqual(["==", ["get", "category"], "landmark"]);
@@ -67,8 +67,8 @@ describe("command patch generation", () => {
         type: "setFilter",
         baseRevision: "2",
         layerId: "district-fill",
-        filter: null
-      }
+        filter: null,
+      },
     ]);
 
     expect(clearResult.spec.layers[0]).not.toHaveProperty("filter");
@@ -83,9 +83,9 @@ describe("command patch generation", () => {
         type: "setLayerZoomRange",
         layerId: "district-fill",
         minzoom: 16,
-        maxzoom: 8
+        maxzoom: 8,
       },
-      before as MapSpec
+      before as MapSpec,
     );
 
     expect(result.patch).toEqual([]);
@@ -93,8 +93,8 @@ describe("command patch generation", () => {
       expect.objectContaining({
         severity: "error",
         code: DiagnosticCodes.LayerZoomRangeInvalid,
-        path: "/minzoom"
-      })
+        path: "/minzoom",
+      }),
     ]);
   });
 
@@ -107,7 +107,7 @@ describe("command patch generation", () => {
       version: "0.1",
       type: "reorderLayer",
       baseRevision: "1",
-      layerId: "district-fill"
+      layerId: "district-fill",
     };
 
     const result = applyCommands(spec, [command]);
@@ -124,9 +124,9 @@ describe("command patch generation", () => {
         version: "0.1",
         type: "addLayer",
         beforeLayerId: "missing-anchor",
-        layer: { id: "district-line", type: "line", source: "districts" }
+        layer: { id: "district-line", type: "line", source: "districts" },
       },
-      spec
+      spec,
     );
     const reorderLayer = buildPatch(
       {
@@ -134,9 +134,9 @@ describe("command patch generation", () => {
         version: "0.1",
         type: "reorderLayer",
         layerId: "district-fill",
-        beforeLayerId: "missing-anchor"
+        beforeLayerId: "missing-anchor",
       },
-      spec
+      spec,
     );
 
     for (const result of [addLayer, reorderLayer]) {
@@ -147,8 +147,8 @@ describe("command patch generation", () => {
           code: DiagnosticCodes.LayerNotFound,
           path: "/beforeLayerId",
           relatedResources: [expect.objectContaining({ kind: "layer", id: "missing-anchor" })],
-          fix: expect.objectContaining({ kind: "manual", confidence: "high" })
-        })
+          fix: expect.objectContaining({ kind: "manual", confidence: "high" }),
+        }),
       ]);
     }
   });
@@ -163,9 +163,9 @@ describe("command patch generation", () => {
         version: "0.1",
         type: "reorderLayer",
         layerId: "district-fill",
-        beforeLayerId: "district-line"
+        beforeLayerId: "district-line",
       },
-      spec
+      spec,
     );
     const beforeSelf = buildPatch(
       {
@@ -173,9 +173,9 @@ describe("command patch generation", () => {
         version: "0.1",
         type: "reorderLayer",
         layerId: "district-fill",
-        beforeLayerId: "district-fill"
+        beforeLayerId: "district-fill",
       },
-      spec
+      spec,
     );
 
     expect(alreadyBeforeNext).toEqual({ patch: [], diagnostics: [], skipped: true });
@@ -188,9 +188,9 @@ describe("command patch generation", () => {
         id: "cmd-remove-missing-source",
         version: "0.1",
         type: "removeSource",
-        sourceId: "missing-source"
+        sourceId: "missing-source",
       },
-      before as MapSpec
+      before as MapSpec,
     );
     const setPaint = buildPatch(
       {
@@ -199,10 +199,10 @@ describe("command patch generation", () => {
         type: "setPaint",
         layerId: "missing-layer",
         paint: {
-          "fill-color": "#ef4444"
-        }
+          "fill-color": "#ef4444",
+        },
       },
-      before as MapSpec
+      before as MapSpec,
     );
 
     expect(removeSource.diagnostics).toEqual([
@@ -211,8 +211,8 @@ describe("command patch generation", () => {
         code: DiagnosticCodes.SourceNotFound,
         path: "/sourceId",
         relatedResources: [expect.objectContaining({ kind: "source", id: "missing-source" })],
-        fix: expect.objectContaining({ kind: "manual", confidence: "high" })
-      })
+        fix: expect.objectContaining({ kind: "manual", confidence: "high" }),
+      }),
     ]);
     expect(setPaint.diagnostics).toEqual([
       expect.objectContaining({
@@ -220,8 +220,8 @@ describe("command patch generation", () => {
         code: DiagnosticCodes.LayerNotFound,
         path: "/layerId",
         relatedResources: [expect.objectContaining({ kind: "layer", id: "missing-layer" })],
-        fix: expect.objectContaining({ kind: "manual", confidence: "high" })
-      })
+        fix: expect.objectContaining({ kind: "manual", confidence: "high" }),
+      }),
     ]);
   });
 
@@ -232,16 +232,16 @@ describe("command patch generation", () => {
         version: "0.1",
         type: "addSceneSource",
         sourceId: "city",
-        source: { type: "3d-tiles", url: "./data/city/tileset.json" }
+        source: { type: "3d-tiles", url: "./data/city/tileset.json" },
       },
-      before as MapSpec
+      before as MapSpec,
     );
     const missingSource = buildPatch(
       {
         id: "cmd-scene-layer-missing-source",
         version: "0.1",
         type: "addSceneLayer",
-        layer: { id: "city", type: "tileset3d", source: "city" }
+        layer: { id: "city", type: "tileset3d", source: "city" },
       },
       {
         ...(before as MapSpec),
@@ -249,18 +249,18 @@ describe("command patch generation", () => {
           scene3d: {
             camera: {
               position: [120.15, 30.28, 1200],
-              target: [120.15, 30.28, 0]
-            }
-          }
-        }
-      }
+              target: [120.15, 30.28, 0],
+            },
+          },
+        },
+      },
     );
     const referencedSource = buildPatch(
       {
         id: "cmd-scene-remove-referenced-source",
         version: "0.1",
         type: "removeSceneSource",
-        sourceId: "city"
+        sourceId: "city",
       },
       {
         ...(before as MapSpec),
@@ -268,37 +268,37 @@ describe("command patch generation", () => {
           scene3d: {
             camera: {
               position: [120.15, 30.28, 1200],
-              target: [120.15, 30.28, 0]
+              target: [120.15, 30.28, 0],
             },
             sources: {
-              city: { type: "3d-tiles", url: "./data/city/tileset.json" }
+              city: { type: "3d-tiles", url: "./data/city/tileset.json" },
             },
-            layers: [{ id: "city", type: "tileset3d", source: "city" }]
-          }
-        }
-      }
+            layers: [{ id: "city", type: "tileset3d", source: "city" }],
+          },
+        },
+      },
     );
 
     expect(missingScene.diagnostics).toEqual([
       expect.objectContaining({
         severity: "error",
         code: DiagnosticCodes.SpecMissingField,
-        path: "/extensions/scene3d"
-      })
+        path: "/extensions/scene3d",
+      }),
     ]);
     expect(missingSource.diagnostics).toEqual([
       expect.objectContaining({
         severity: "error",
         code: DiagnosticCodes.SourceNotFound,
-        path: "/layer/source"
-      })
+        path: "/layer/source",
+      }),
     ]);
     expect(referencedSource.diagnostics).toEqual([
       expect.objectContaining({
         severity: "error",
         code: DiagnosticCodes.LayerSourceIncompatible,
-        path: "/sourceId"
-      })
+        path: "/sourceId",
+      }),
     ]);
   });
 
@@ -307,9 +307,9 @@ describe("command patch generation", () => {
       {
         id: "cmd-unsupported",
         version: "0.1",
-        type: "rotateMap"
+        type: "rotateMap",
       } as unknown as MapCommand,
-      before as MapSpec
+      before as MapSpec,
     );
 
     expect(result.diagnostics).toEqual([
@@ -318,8 +318,8 @@ describe("command patch generation", () => {
         code: DiagnosticCodes.CommandUnsupported,
         path: "/type",
         relatedResources: [expect.objectContaining({ kind: "command", id: "cmd-unsupported" })],
-        fix: expect.objectContaining({ kind: "manual" })
-      })
+        fix: expect.objectContaining({ kind: "manual" }),
+      }),
     ]);
   });
 });

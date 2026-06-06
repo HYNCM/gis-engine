@@ -1,22 +1,22 @@
-import { describe, expect, it } from "vitest";
 import * as engine from "@gis-engine/engine";
+import { describe, expect, it } from "vitest";
+import { appendAuditRecord } from "../../apps/studio/server/audit.mjs";
 import {
-  applyProviderCommands,
   applyLegacyIntent,
+  applyProviderCommands,
+  buildBasemapCommands,
+  buildProviders,
   buildSavedMapHandoff,
   buildSavedMapReviewExport,
   buildSavedMapReviewLedger,
-  buildBasemapCommands,
-  buildProviders,
   createInitialSpec,
   detectBasemapFromSpec,
   parseMapRoute,
-  publicProviderProfiles,
   publicBasemapOptions,
+  publicProviderProfiles,
   savedWorkspaceHandoffStatus,
-  statePayload
+  statePayload,
 } from "../../apps/studio/server/index.mjs";
-import { appendAuditRecord } from "../../apps/studio/server/audit.mjs";
 import { createReviewDecision } from "../../apps/studio/server/review-decisions.mjs";
 
 function layerById(spec: ReturnType<typeof createInitialSpec>, layerId: string) {
@@ -31,7 +31,7 @@ describe("AI Map Studio server state", () => {
     expect(payload.style).toMatchObject({
       version: 8,
       sources: expect.objectContaining({ points: expect.objectContaining({ type: "geojson" }) }),
-      layers: expect.arrayContaining([expect.objectContaining({ id: "basemap-background", type: "background" })])
+      layers: expect.arrayContaining([expect.objectContaining({ id: "basemap-background", type: "background" })]),
     });
     expect(payload.spec.sources).not.toHaveProperty("basemap");
     expect(payload.diagnostics).toEqual([]);
@@ -56,7 +56,7 @@ describe("AI Map Studio server state", () => {
     const profiles = buildProviders({
       DEEPSEEK_API_KEY: "sk-secret-provider-key",
       DEEPSEEK_BASE_URL: "https://secret-provider.example",
-      DEEPSEEK_MODEL: "deepseek-test-model"
+      DEEPSEEK_MODEL: "deepseek-test-model",
     });
     const publicProfiles = publicProviderProfiles(profiles);
 
@@ -66,7 +66,7 @@ describe("AI Map Studio server state", () => {
       protocol: "openai-chat-completions",
       model: "deepseek-test-model",
       enabled: true,
-      missingCredential: false
+      missingCredential: false,
     });
     const serialized = JSON.stringify(publicProfiles);
     expect(serialized).not.toContain("sk-secret-provider-key");
@@ -84,7 +84,7 @@ describe("AI Map Studio server state", () => {
 
       expect(payload.diagnostics).toEqual([]);
       expect(payload.style?.sources).toMatchObject({
-        basemap: expect.objectContaining({ tiles: [tilePath] })
+        basemap: expect.objectContaining({ tiles: [tilePath] }),
       });
     }
   });
@@ -104,8 +104,12 @@ describe("AI Map Studio server state", () => {
     expect(filtered.status).toBe("applied");
     expect(filtered.evidence).toMatchObject({ commandCount: 1, committed: true, rolledBack: false, failed: false });
     expect(layerById(filtered.nextSpec, "points-layer")?.filter).toEqual(["==", ["get", "category"], "landmark"]);
-    expect(statePayload(engine, filtered.status, filtered.nextSpec).style?.layers.find((layer: { id: string }) => layer.id === "points-layer")).toMatchObject({
-      filter: ["==", ["get", "category"], "landmark"]
+    expect(
+      statePayload(engine, filtered.status, filtered.nextSpec).style?.layers.find(
+        (layer: { id: string }) => layer.id === "points-layer",
+      ),
+    ).toMatchObject({
+      filter: ["==", ["get", "category"], "landmark"],
     });
 
     const ranged = applyLegacyIntent(engine, "make points visible above zoom 12", filtered.nextSpec);
@@ -121,36 +125,48 @@ describe("AI Map Studio server state", () => {
     expect(statePayload(engine, result.status, result.nextSpec).summary).toMatchObject({
       center: null,
       zoom: null,
-      bounds: [120.145, 30.245, 120.172, 30.274]
+      bounds: [120.145, 30.245, 120.172, 30.274],
     });
   });
 
   it("accepts provider setFilter and setLayerZoomRange actions", () => {
-    const filtered = applyProviderCommands(engine, {
-      action: "setFilter",
-      layerId: "points-layer",
-      filter: ["==", ["get", "category"], "museum"]
-    }, createInitialSpec());
+    const filtered = applyProviderCommands(
+      engine,
+      {
+        action: "setFilter",
+        layerId: "points-layer",
+        filter: ["==", ["get", "category"], "museum"],
+      },
+      createInitialSpec(),
+    );
 
     expect(filtered.status).toBe("applied");
     expect(layerById(filtered.nextSpec, "points-layer")?.filter).toEqual(["==", ["get", "category"], "museum"]);
 
-    const ranged = applyProviderCommands(engine, {
-      action: "setLayerZoomRange",
-      layerId: "points-layer",
-      minzoom: 8,
-      maxzoom: 16
-    }, filtered.nextSpec);
+    const ranged = applyProviderCommands(
+      engine,
+      {
+        action: "setLayerZoomRange",
+        layerId: "points-layer",
+        minzoom: 8,
+        maxzoom: 16,
+      },
+      filtered.nextSpec,
+    );
 
     expect(ranged.status).toBe("applied");
     expect(layerById(ranged.nextSpec, "points-layer")).toMatchObject({ minzoom: 8, maxzoom: 16 });
   });
 
   it("accepts provider fitBounds actions", () => {
-    const fit = applyProviderCommands(engine, {
-      action: "fitBounds",
-      bounds: [120.145, 30.245, 120.172, 30.274]
-    }, createInitialSpec());
+    const fit = applyProviderCommands(
+      engine,
+      {
+        action: "fitBounds",
+        bounds: [120.145, 30.245, 120.172, 30.274],
+      },
+      createInitialSpec(),
+    );
 
     expect(fit.status).toBe("applied");
     expect(fit.nextSpec.view).toMatchObject({ bounds: [120.145, 30.245, 120.172, 30.274] });
@@ -165,30 +181,38 @@ describe("AI Map Studio server state", () => {
           id: "labels-layer",
           type: "symbol-lite",
           source: "points",
-          layout: { visibility: "visible" }
-        }
-      ]
+          layout: { visibility: "visible" },
+        },
+      ],
     };
 
-    const hidden = applyProviderCommands(engine, {
-      action: "setLayout",
-      layerId: "labels-layer",
-      layout: { visibility: "none" }
-    }, spec);
+    const hidden = applyProviderCommands(
+      engine,
+      {
+        action: "setLayout",
+        layerId: "labels-layer",
+        layout: { visibility: "none" },
+      },
+      spec,
+    );
 
     expect(hidden.status).toBe("applied");
     expect(layerById(hidden.nextSpec, "labels-layer")?.layout).toMatchObject({ visibility: "none" });
 
-    const reordered = applyProviderCommands(engine, {
-      action: "reorderLayer",
-      layerId: "points-layer"
-    }, hidden.nextSpec);
+    const reordered = applyProviderCommands(
+      engine,
+      {
+        action: "reorderLayer",
+        layerId: "points-layer",
+      },
+      hidden.nextSpec,
+    );
 
     expect(reordered.status).toBe("applied");
     expect(reordered.nextSpec.layers.map((layer: { id: string }) => layer.id)).toEqual([
       "basemap-background",
       "labels-layer",
-      "points-layer"
+      "points-layer",
     ]);
   });
 
@@ -201,7 +225,7 @@ describe("AI Map Studio server state", () => {
       version: "0.1",
       type: "addSource",
       sourceId: "basemap",
-      source: expect.objectContaining({ tiles: ["/api/tiles/osm/{z}/{x}/{y}.png"] })
+      source: expect.objectContaining({ tiles: ["/api/tiles/osm/{z}/{x}/{y}.png"] }),
     });
     expect(addSource?.source).not.toHaveProperty("id");
 
@@ -209,7 +233,7 @@ describe("AI Map Studio server state", () => {
     expect(addLayer).toMatchObject({
       id: "studio-basemap-add-raster-layer",
       version: "0.1",
-      beforeLayerId: "points-layer"
+      beforeLayerId: "points-layer",
     });
     expect(addLayer).not.toHaveProperty("beforeId");
   });
@@ -240,22 +264,15 @@ describe("AI Map Studio server state", () => {
   it("detects the active basemap from saved Studio specs", () => {
     expect(detectBasemapFromSpec(createInitialSpec("none"))).toBe("none");
     expect(detectBasemapFromSpec(createInitialSpec("osm"))).toBe("osm");
-    expect(detectBasemapFromSpec(createInitialSpec("arcgis-imagery"))).toBe(
-      "arcgis-imagery",
-    );
+    expect(detectBasemapFromSpec(createInitialSpec("arcgis-imagery"))).toBe("arcgis-imagery");
   });
 
   it("derives handoff status from the latest review decision", () => {
     expect(savedWorkspaceHandoffStatus([])).toBe("needs-review");
-    expect(
-      savedWorkspaceHandoffStatus([{ outcome: "accepted" }]),
-    ).toBe("accepted");
-    expect(
-      savedWorkspaceHandoffStatus([
-        { outcome: "accepted" },
-        { outcome: "follow-up-required" },
-      ]),
-    ).toBe("follow-up-required");
+    expect(savedWorkspaceHandoffStatus([{ outcome: "accepted" }])).toBe("accepted");
+    expect(savedWorkspaceHandoffStatus([{ outcome: "accepted" }, { outcome: "follow-up-required" }])).toBe(
+      "follow-up-required",
+    );
   });
 
   it("builds a compact Studio local handoff envelope", () => {
@@ -823,7 +840,7 @@ describe("AI Map Studio server state", () => {
       expect(result.evidence).toMatchObject({ committed: true, rolledBack: false, failed: false });
       expect(payload.diagnostics).toEqual([]);
       expect(payload.style?.sources).toMatchObject({
-        basemap: expect.objectContaining({ tiles: [expectedTilePath] })
+        basemap: expect.objectContaining({ tiles: [expectedTilePath] }),
       });
     }
   });
@@ -842,16 +859,20 @@ describe("AI Map Studio server state", () => {
       expect.objectContaining({
         code: "STUDIO.BASEMAP_CREDENTIAL_REQUIRED",
         severity: "error",
-        path: "/basemap"
-      })
+        path: "/basemap",
+      }),
     ]);
   });
 
   it("blocks known MapLibre capabilities that do not have a command contract yet", () => {
-    const result = applyProviderCommands(engine, {
-      action: "unsupported",
-      message: "Terrain needs a command contract."
-    }, createInitialSpec());
+    const result = applyProviderCommands(
+      engine,
+      {
+        action: "unsupported",
+        message: "Terrain needs a command contract.",
+      },
+      createInitialSpec(),
+    );
 
     expect(result.status).toBe("blocked");
     expect(result.evidence).toMatchObject({ commandCount: 0, committed: false });
@@ -859,8 +880,8 @@ describe("AI Map Studio server state", () => {
       expect.objectContaining({
         code: "STUDIO.MAPLIBRE_CAPABILITY_UNSUPPORTED",
         path: "/providerOutput/action",
-        message: "Terrain needs a command contract."
-      })
+        message: "Terrain needs a command contract.",
+      }),
     ]);
   });
 
@@ -875,7 +896,7 @@ describe("AI Map Studio server state", () => {
       commandCount: 1,
       diagnostics: [],
       fromRevision: "1",
-      toRevision: "2"
+      toRevision: "2",
     });
 
     expect(records).toHaveLength(1);
@@ -885,7 +906,7 @@ describe("AI Map Studio server state", () => {
       providerId: "mock-ai",
       commandCount: 1,
       fromRevision: "1",
-      toRevision: "2"
+      toRevision: "2",
     });
     const serialized = JSON.stringify(record);
     expect(serialized).not.toMatch(/make points red|West Lake|MapSpec|commandBody|patch|baseUrl|apiKey/i);
@@ -901,7 +922,7 @@ describe("AI Map Studio server state", () => {
       commandCount: 1,
       diagnostics: [],
       fromRevision: "1",
-      toRevision: "2"
+      toRevision: "2",
     });
 
     const review = createReviewDecision({
@@ -910,7 +931,7 @@ describe("AI Map Studio server state", () => {
       principal: { role: "reviewer", projectIds: ["project_studio"] },
       projectId: "project_studio",
       decisionId: "review-1",
-      createdAt: "2026-06-03T00:00:00Z"
+      createdAt: "2026-06-03T00:00:00Z",
     });
 
     expect(review.ok).toBe(true);
@@ -920,7 +941,7 @@ describe("AI Map Studio server state", () => {
       outcome: "accepted",
       auditRecordId: auditRecord.id,
       providerId: "mock-ai",
-      commandEvidence: expect.objectContaining({ commandCount: 1, committed: true })
+      commandEvidence: expect.objectContaining({ commandCount: 1, committed: true }),
     });
     expect(JSON.stringify(review.decision)).not.toMatch(/MapSpec|commandBody|patch|rawPrompt|West Lake/i);
   });
@@ -933,27 +954,27 @@ describe("AI Map Studio server state", () => {
       commandCount: 1,
       diagnostics: [],
       fromRevision: "1",
-      toRevision: "2"
+      toRevision: "2",
     });
 
     const review = createReviewDecision({
       request: {
         outcome: "accepted",
-        reasonCodes: ["review-accepted", "visual-evidence-required"]
+        reasonCodes: ["review-accepted", "visual-evidence-required"],
       },
       evidence: auditRecord,
       principal: { role: "reviewer", projectIds: ["project_studio"] },
       projectId: "project_studio",
       decisionId: "review-1",
-      createdAt: "2026-06-03T00:00:00Z"
+      createdAt: "2026-06-03T00:00:00Z",
     });
 
     expect(review.ok).toBe(false);
     expect(review.diagnostics).toContainEqual(
       expect.objectContaining({
         code: "STUDIO.REVIEW_CONTRACT_VIOLATION",
-        path: "/reviewAction/reasons"
-      })
+        path: "/reviewAction/reasons",
+      }),
     );
   });
 
@@ -965,24 +986,20 @@ describe("AI Map Studio server state", () => {
       commandCount: 1,
       diagnostics: [],
       fromRevision: "1",
-      toRevision: "2"
+      toRevision: "2",
     });
 
     const review = createReviewDecision({
       request: {
         outcome: "follow-up-required",
-        reasonCodes: [
-          "delivery-needs-confirmation",
-          "audit-retention-follow-up",
-          "delivery-needs-confirmation"
-        ],
-        followUpTaskIds: ["TASK-2026W23-SER-001", "TASK-2026W23-SER-001"]
+        reasonCodes: ["delivery-needs-confirmation", "audit-retention-follow-up", "delivery-needs-confirmation"],
+        followUpTaskIds: ["TASK-2026W23-SER-001", "TASK-2026W23-SER-001"],
       },
       evidence: auditRecord,
       principal: { role: "reviewer", projectIds: ["project_studio"] },
       projectId: "project_studio",
       decisionId: "review-1",
-      createdAt: "2026-06-03T00:00:00Z"
+      createdAt: "2026-06-03T00:00:00Z",
     });
 
     expect(review.ok).toBe(true);
@@ -991,7 +1008,7 @@ describe("AI Map Studio server state", () => {
       recordVersion: "studio.review.v1",
       outcome: "follow-up-required",
       reasonCodes: ["delivery-needs-confirmation", "audit-retention-follow-up"],
-      followUpTaskIds: ["TASK-2026W23-SER-001"]
+      followUpTaskIds: ["TASK-2026W23-SER-001"],
     });
   });
 
@@ -1003,7 +1020,7 @@ describe("AI Map Studio server state", () => {
       commandCount: 1,
       diagnostics: [],
       fromRevision: "1",
-      toRevision: "2"
+      toRevision: "2",
     });
 
     const review = createReviewDecision({
@@ -1012,21 +1029,21 @@ describe("AI Map Studio server state", () => {
         reasonCodes: ["manual-review-blocked"],
         rawPrompt: "make points red",
         commands: [{ type: "setPaint" }],
-        spec: { id: "unsafe" }
+        spec: { id: "unsafe" },
       },
       evidence: auditRecord,
       principal: { role: "reviewer", projectIds: ["project_studio"] },
       projectId: "project_studio",
       decisionId: "review-1",
-      createdAt: "2026-06-03T00:00:00Z"
+      createdAt: "2026-06-03T00:00:00Z",
     });
 
     expect(review.ok).toBe(false);
     expect(review.diagnostics).toContainEqual(
       expect.objectContaining({
         code: "STUDIO.REVIEW_CONTRACT_VIOLATION",
-        path: "/reviewAction/commandSafety"
-      })
+        path: "/reviewAction/commandSafety",
+      }),
     );
     expect(JSON.stringify(review)).not.toContain("make points red");
   });

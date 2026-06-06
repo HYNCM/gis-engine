@@ -30,7 +30,7 @@ const DEFAULT_BASE_URLS: Record<string, string> = {
 
 export function createProviderDiagnostics(
   providerId: string,
-  options?: { model?: string; baseUrl?: string }
+  options?: { model?: string; baseUrl?: string },
 ): ProviderDiagnostic {
   const id = providerId.toLowerCase();
   const model = options?.model;
@@ -41,15 +41,11 @@ export function createProviderDiagnostics(
       providerId: id,
       status: "mock",
       mode: "mock",
-      diagnostics: [
-        "MOCK.PLANNER_ACTIVE",
-        "MOCK.DETERMINISTIC_OUTPUT",
-        "MOCK.NO_EXTERNAL_CALLS",
-      ],
+      diagnostics: ["MOCK.PLANNER_ACTIVE", "MOCK.DETERMINISTIC_OUTPUT", "MOCK.NO_EXTERNAL_CALLS"],
     };
   }
 
-  if (KNOWN_PROVIDERS.includes(id as typeof KNOWN_PROVIDERS[number])) {
+  if (KNOWN_PROVIDERS.includes(id as (typeof KNOWN_PROVIDERS)[number])) {
     const resolvedModel = model ?? DEFAULT_MODELS[id];
     const resolvedBaseUrl = baseUrl ?? DEFAULT_BASE_URLS[id];
     const diagnostics: string[] = [];
@@ -63,11 +59,7 @@ export function createProviderDiagnostics(
       mode: "openai-compatible",
       ...(resolvedModel !== undefined ? { model: resolvedModel } : {}),
       ...(resolvedBaseUrl !== undefined ? { baseUrl: resolvedBaseUrl } : {}),
-      diagnostics: [
-        ...diagnostics,
-        "PROVIDER.CONFIG_REQUIRED",
-        "PROVIDER.SERVER_ONLY",
-      ],
+      diagnostics: [...diagnostics, "PROVIDER.CONFIG_REQUIRED", "PROVIDER.SERVER_ONLY"],
     };
   }
 
@@ -77,10 +69,7 @@ export function createProviderDiagnostics(
     mode: "openai-compatible",
     ...(model !== undefined ? { model } : {}),
     ...(baseUrl !== undefined ? { baseUrl } : {}),
-    diagnostics: [
-      `PROVIDER.UNKNOWN_ID`,
-      `PROVIDER.CONFIG_REQUIRED`,
-    ],
+    diagnostics: [`PROVIDER.UNKNOWN_ID`, `PROVIDER.CONFIG_REQUIRED`],
   };
 }
 
@@ -100,7 +89,7 @@ export const CLI_API_KEY_ENVS: Record<string, string> = {
  */
 export function resolveProviderProfile(
   providerId: string,
-  options?: { model?: string; baseUrl?: string }
+  options?: { model?: string; baseUrl?: string },
 ): ProviderProfile {
   const id = providerId.toLowerCase();
   return {

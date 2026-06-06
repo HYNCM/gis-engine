@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
-import scene3dExtensionSpec from "../fixtures/specs/valid/scene3d-extension.map.json";
 import { DiagnosticCodes, type SceneView3DExtension } from "@gis-engine/engine";
+import { describe, expect, it } from "vitest";
 import { queryScene3DMock } from "../../packages/scene3d/src/index.js";
+import scene3dExtensionSpec from "../fixtures/specs/valid/scene3d-extension.map.json";
 
 describe("SceneView3D mock query contract", () => {
   it("returns deterministic pick results for visible pickable scene layers", () => {
@@ -17,8 +17,8 @@ describe("SceneView3D mock query contract", () => {
         properties: {
           mock: true,
           layerType: "tileset3d",
-          sourceType: "3d-tiles"
-        }
+          sourceType: "3d-tiles",
+        },
       },
       {
         objectId: "station-model:station:mock",
@@ -28,9 +28,9 @@ describe("SceneView3D mock query contract", () => {
         properties: {
           mock: true,
           layerType: "model",
-          sourceType: "gltf"
-        }
-      }
+          sourceType: "gltf",
+        },
+      },
     ]);
   });
 
@@ -41,8 +41,8 @@ describe("SceneView3D mock query contract", () => {
     expect(result.diagnostics).toContainEqual(
       expect.objectContaining({
         code: DiagnosticCodes.LayerNotFound,
-        path: "/extensions/scene3d/layers"
-      })
+        path: "/extensions/scene3d/layers",
+      }),
     );
   });
 

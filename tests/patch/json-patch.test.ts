@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { applyJsonPatch, invertPatch } from "@gis-engine/engine";
+import { describe, expect, it } from "vitest";
 
 describe("JSON patch utilities", () => {
   it("applies and inverts object changes", () => {
@@ -16,7 +16,7 @@ describe("JSON patch utilities", () => {
     const before = { layers: ["a", "b", "c"] };
     const patch = [
       { op: "remove" as const, path: "/layers/0" },
-      { op: "remove" as const, path: "/layers/0" }
+      { op: "remove" as const, path: "/layers/0" },
     ];
     const after = applyJsonPatch(before, patch);
     const inverse = invertPatch(before, patch);
@@ -27,7 +27,7 @@ describe("JSON patch utilities", () => {
 
   it("rejects replace on a missing object property", () => {
     expect(() => applyJsonPatch({ paint: {} }, [{ op: "replace", path: "/paint/color", value: "red" }])).toThrow(
-      /replace target/
+      /replace target/,
     );
   });
 });

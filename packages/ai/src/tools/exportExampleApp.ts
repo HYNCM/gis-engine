@@ -1,9 +1,16 @@
+import { type Diagnostic, Scene3DStableRuntimeBlockerCodes } from "@gis-engine/engine";
 import { Ajv } from "ajv/dist/ajv.js";
-import { Scene3DStableRuntimeBlockerCodes, type Diagnostic } from "@gis-engine/engine";
 import { toolInputErrorsToDiagnostics } from "./schemaDiagnostics.js";
 import { DiagnosticCountsSchema } from "./shared.js";
 
-const exampleIds = ["basic-geojson", "ai-map-edit", "raster-basemap", "pmtiles-local", "vector-tile-url", "fill-extrusion-lite"] as const;
+const exampleIds = [
+  "basic-geojson",
+  "ai-map-edit",
+  "raster-basemap",
+  "pmtiles-local",
+  "vector-tile-url",
+  "fill-extrusion-lite",
+] as const;
 
 export type ExampleId = (typeof exampleIds)[number];
 type Scene3DStableRuntimeBlockerCode =
@@ -11,32 +18,32 @@ type Scene3DStableRuntimeBlockerCode =
 
 const Scene3DStableRuntimeBlockerCodeSchema = {
   type: "string",
-  enum: Object.values(Scene3DStableRuntimeBlockerCodes)
+  enum: Object.values(Scene3DStableRuntimeBlockerCodes),
 } as const;
 
 const DeliveryStatusSchema = {
   type: "string",
-  enum: ["ready", "blocked", "needs-confirmation", "follow-up-required"]
+  enum: ["ready", "blocked", "needs-confirmation", "follow-up-required"],
 } as const;
 
 const DeliverySectionIdSchema = {
   type: "string",
-  enum: ["readiness", "files", "map-edits", "data-and-analysis", "scene-browsing"]
+  enum: ["readiness", "files", "map-edits", "data-and-analysis", "scene-browsing"],
 } as const;
 
 const DeliveryConfirmationReasonSchema = {
   type: "string",
-  enum: ["external-resource", "network-fetch", "archive-parsing", "worker-use", "file-write", "stable-scene3d-runtime"]
+  enum: ["external-resource", "network-fetch", "archive-parsing", "worker-use", "file-write", "stable-scene3d-runtime"],
 } as const;
 
 const SourceReadinessStateSchema = {
   type: "string",
-  enum: ["supported", "readiness-only", "blocked"]
+  enum: ["supported", "readiness-only", "blocked"],
 } as const;
 
 const SourceArchiveContractStateSchema = {
   type: "string",
-  enum: ["explicit", "not-applicable", "not-checked"]
+  enum: ["explicit", "not-applicable", "not-checked"],
 } as const;
 
 const SourceArchiveContractSchema = {
@@ -44,15 +51,15 @@ const SourceArchiveContractSchema = {
   properties: {
     state: SourceArchiveContractStateSchema,
     metadataFields: { type: "array", items: { type: "string" } },
-    policyFields: { type: "array", items: { type: "string" } }
+    policyFields: { type: "array", items: { type: "string" } },
   },
   required: ["state", "metadataFields", "policyFields"],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 const SourceContractKindSchema = {
   type: "string",
-  enum: ["archive", "schema"]
+  enum: ["archive", "schema"],
 } as const;
 
 const SourceContractSchema = {
@@ -61,40 +68,40 @@ const SourceContractSchema = {
     kind: SourceContractKindSchema,
     state: SourceArchiveContractStateSchema,
     metadataFields: { type: "array", items: { type: "string" } },
-    policyFields: { type: "array", items: { type: "string" } }
+    policyFields: { type: "array", items: { type: "string" } },
   },
   required: ["kind", "state", "metadataFields", "policyFields"],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 const SourcePromotionCandidateFormatSchema = {
   type: "string",
-  enum: ["pmtiles", "geoparquet", "flatgeobuf", "geotiff", "geozarr"]
+  enum: ["pmtiles", "geoparquet", "flatgeobuf", "geotiff", "geozarr"],
 } as const;
 
 const SpatialQueryReadinessStateSchema = {
   type: "string",
-  enum: ["not-requested", "ready", "blocked", "follow-up-required"]
+  enum: ["not-requested", "ready", "blocked", "follow-up-required"],
 } as const;
 
 const SpatialQueryCaseReadinessStateSchema = {
   type: "string",
-  enum: ["ready", "blocked"]
+  enum: ["ready", "blocked"],
 } as const;
 
 const SpatialQueryCapabilityGateStatusSchema = {
   type: "string",
-  enum: ["passed", "waived", "blocked"]
+  enum: ["passed", "waived", "blocked"],
 } as const;
 
 const SpatialQueryEvidenceStatusSchema = {
   type: "string",
-  enum: ["ready", "blocked", "not-requested"]
+  enum: ["ready", "blocked", "not-requested"],
 } as const;
 
 const SpatialQueryOperationSchema = {
   type: "string",
-  enum: ["point-query", "bbox-query"]
+  enum: ["point-query", "bbox-query"],
 } as const;
 
 export const ExampleAppDeliverySummarySchema = {
@@ -108,10 +115,10 @@ export const ExampleAppDeliverySummarySchema = {
         ready: { type: "boolean" },
         blocked: { type: "boolean" },
         needsConfirmation: { type: "boolean" },
-        followUpRequired: { type: "boolean" }
+        followUpRequired: { type: "boolean" },
       },
       required: ["state", "ready", "blocked", "needsConfirmation", "followUpRequired"],
-      additionalProperties: false
+      additionalProperties: false,
     },
     sections: {
       type: "array",
@@ -122,11 +129,11 @@ export const ExampleAppDeliverySummarySchema = {
           status: DeliveryStatusSchema,
           blockerCount: { type: "number" },
           confirmationRequired: { type: "boolean" },
-          followUpCount: { type: "number" }
+          followUpCount: { type: "number" },
         },
         required: ["id", "status", "blockerCount", "confirmationRequired", "followUpCount"],
-        additionalProperties: false
-      }
+        additionalProperties: false,
+      },
     },
     confirmations: {
       type: "array",
@@ -136,11 +143,11 @@ export const ExampleAppDeliverySummarySchema = {
           reason: DeliveryConfirmationReasonSchema,
           required: { type: "boolean" },
           target: { type: "string" },
-          sourceIds: { type: "array", items: { type: "string" } }
+          sourceIds: { type: "array", items: { type: "string" } },
         },
         required: ["reason", "required", "target"],
-        additionalProperties: false
-      }
+        additionalProperties: false,
+      },
     },
     confirmationRequired: { type: "boolean" },
     followUps: {
@@ -152,11 +159,11 @@ export const ExampleAppDeliverySummarySchema = {
           owner: { type: "string" },
           targetArtifact: { type: "string" },
           reason: { type: "string" },
-          blockerCode: { type: "string" }
+          blockerCode: { type: "string" },
         },
         required: ["id", "owner", "targetArtifact", "reason"],
-        additionalProperties: false
-      }
+        additionalProperties: false,
+      },
     },
     sourceReadiness: {
       type: "array",
@@ -169,19 +176,19 @@ export const ExampleAppDeliverySummarySchema = {
           queryReady: { type: "boolean" },
           resourcePolicy: {
             type: "string",
-            enum: ["passed", "blocked", "not-applicable", "not-checked"]
+            enum: ["passed", "blocked", "not-applicable", "not-checked"],
           },
           archiveContract: SourceArchiveContractSchema,
           sourceContract: SourceContractSchema,
           confirmationReasons: {
             type: "array",
-            items: DeliveryConfirmationReasonSchema
+            items: DeliveryConfirmationReasonSchema,
           },
-          notes: { type: "array", items: { type: "string" } }
+          notes: { type: "array", items: { type: "string" } },
         },
         required: ["sourceId", "type", "state", "queryReady", "confirmationReasons", "notes"],
-        additionalProperties: false
-      }
+        additionalProperties: false,
+      },
     },
     sourcePromotionCandidates: {
       type: "array",
@@ -193,18 +200,18 @@ export const ExampleAppDeliverySummarySchema = {
           state: SourceReadinessStateSchema,
           resourcePolicy: {
             type: "string",
-            enum: ["passed", "blocked", "not-applicable", "not-checked"]
+            enum: ["passed", "blocked", "not-applicable", "not-checked"],
           },
           archiveContract: SourceArchiveContractSchema,
           sourceContract: SourceContractSchema,
           target: { type: "string" },
           exitCondition: { type: "string" },
           sourceIds: { type: "array", items: { type: "string" } },
-          notes: { type: "array", items: { type: "string" } }
+          notes: { type: "array", items: { type: "string" } },
         },
         required: ["candidateId", "format", "state", "target", "exitCondition", "sourceIds", "notes"],
-        additionalProperties: false
-      }
+        additionalProperties: false,
+      },
     },
     spatialQueryReadiness: {
       type: "object",
@@ -243,7 +250,7 @@ export const ExampleAppDeliverySummarySchema = {
               resultLimit: { type: "number" },
               resultTruncated: { type: "boolean" },
               fixtureHash: { type: "string" },
-              diagnosticCounts: DiagnosticCountsSchema
+              diagnosticCounts: DiagnosticCountsSchema,
             },
             required: [
               "id",
@@ -255,11 +262,11 @@ export const ExampleAppDeliverySummarySchema = {
               "resultLimit",
               "resultTruncated",
               "fixtureHash",
-              "diagnosticCounts"
+              "diagnosticCounts",
             ],
-            additionalProperties: false
-          }
-        }
+            additionalProperties: false,
+          },
+        },
       },
       required: [
         "requested",
@@ -282,10 +289,10 @@ export const ExampleAppDeliverySummarySchema = {
         "missingSourceIds",
         "hiddenLayerIds",
         "blockedOperations",
-        "cases"
+        "cases",
       ],
-      additionalProperties: false
-    }
+      additionalProperties: false,
+    },
   },
   required: [
     "status",
@@ -295,9 +302,9 @@ export const ExampleAppDeliverySummarySchema = {
     "confirmationRequired",
     "followUps",
     "sourceReadiness",
-    "spatialQueryReadiness"
+    "spatialQueryReadiness",
   ],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 export const ExampleAppGenerationEvidenceSummarySchema = {
@@ -308,14 +315,22 @@ export const ExampleAppGenerationEvidenceSummarySchema = {
     delivery: ExampleAppDeliverySummarySchema,
     targetDomains: {
       type: "array",
-      items: { type: "string", enum: ["feature-display", "spatial-analysis", "scene-browsing"] }
+      items: { type: "string", enum: ["feature-display", "spatial-analysis", "scene-browsing"] },
     },
     toolSequence: {
       type: "array",
       items: {
         type: "string",
-        enum: ["validate_spec", "apply_commands", "export_spec", "get_context_summary", "snapshot_spec", "explain_spec", "export_example_app"]
-      }
+        enum: [
+          "validate_spec",
+          "apply_commands",
+          "export_spec",
+          "get_context_summary",
+          "snapshot_spec",
+          "explain_spec",
+          "export_example_app",
+        ],
+      },
     },
     diagnosticCounts: DiagnosticCountsSchema,
     command: {
@@ -324,20 +339,20 @@ export const ExampleAppGenerationEvidenceSummarySchema = {
         usedApplyCommands: { type: "boolean" },
         commandCount: { type: "number" },
         committed: { type: "boolean" },
-        rolledBack: { type: "boolean" }
+        rolledBack: { type: "boolean" },
       },
       required: ["usedApplyCommands", "commandCount", "committed", "rolledBack"],
-      additionalProperties: false
+      additionalProperties: false,
     },
     planner: {
       type: "object",
       properties: {
         provided: { type: "boolean" },
         confidenceLevel: { type: "string", enum: ["high", "medium", "low", "unknown"] },
-        unsupportedIntentCount: { type: "number" }
+        unsupportedIntentCount: { type: "number" },
       },
       required: ["provided", "confidenceLevel", "unsupportedIntentCount"],
-      additionalProperties: false
+      additionalProperties: false,
     },
     spatialQuery: {
       type: "object",
@@ -346,10 +361,10 @@ export const ExampleAppGenerationEvidenceSummarySchema = {
         ready: { type: "boolean" },
         status: { type: "string", enum: ["ready", "blocked", "not-requested"] },
         caseCount: { type: "number" },
-        blockedOperations: { type: "array", items: { type: "string" } }
+        blockedOperations: { type: "array", items: { type: "string" } },
       },
       required: ["requested", "ready", "status", "caseCount", "blockedOperations"],
-      additionalProperties: false
+      additionalProperties: false,
     },
     sceneBrowsing: {
       type: "object",
@@ -370,8 +385,8 @@ export const ExampleAppGenerationEvidenceSummarySchema = {
         mockQueryPickCount: { type: "number" },
         stableRuntimeBlockerCodes: {
           type: "array",
-          items: Scene3DStableRuntimeBlockerCodeSchema
-        }
+          items: Scene3DStableRuntimeBlockerCodeSchema,
+        },
       },
       required: [
         "requested",
@@ -388,30 +403,30 @@ export const ExampleAppGenerationEvidenceSummarySchema = {
         "pickableLayerCount",
         "mockSnapshotPassed",
         "mockQueryPickCount",
-        "stableRuntimeBlockerCodes"
+        "stableRuntimeBlockerCodes",
       ],
-      additionalProperties: false
+      additionalProperties: false,
     },
     snapshot: {
       type: "object",
       properties: {
         requested: { type: "boolean" },
         renderer: { type: "string", enum: ["maplibre", "mock"] },
-        passed: { type: "boolean" }
+        passed: { type: "boolean" },
       },
       required: ["requested", "renderer", "passed"],
-      additionalProperties: false
+      additionalProperties: false,
     },
     export: {
       type: "object",
       properties: {
         ready: { type: "boolean" },
         sourceCount: { type: "number" },
-        layerCount: { type: "number" }
+        layerCount: { type: "number" },
       },
       required: ["ready", "sourceCount", "layerCount"],
-      additionalProperties: false
-    }
+      additionalProperties: false,
+    },
   },
   required: [
     "status",
@@ -424,19 +439,19 @@ export const ExampleAppGenerationEvidenceSummarySchema = {
     "spatialQuery",
     "sceneBrowsing",
     "snapshot",
-    "export"
+    "export",
   ],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 export const ExportExampleAppToolInputSchema = {
   type: "object",
   properties: {
     exampleId: { type: "string", enum: exampleIds },
-    generationEvidence: ExampleAppGenerationEvidenceSummarySchema
+    generationEvidence: ExampleAppGenerationEvidenceSummarySchema,
   },
   required: ["exampleId"],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 export interface ExportExampleAppToolInput {
@@ -449,7 +464,15 @@ export interface ExampleAppGenerationEvidenceSummary {
   status: "ready" | "blocked";
   delivery: ExampleAppDeliverySummary;
   targetDomains: Array<"feature-display" | "spatial-analysis" | "scene-browsing">;
-  toolSequence: Array<"validate_spec" | "apply_commands" | "export_spec" | "get_context_summary" | "snapshot_spec" | "explain_spec" | "export_example_app">;
+  toolSequence: Array<
+    | "validate_spec"
+    | "apply_commands"
+    | "export_spec"
+    | "get_context_summary"
+    | "snapshot_spec"
+    | "explain_spec"
+    | "export_example_app"
+  >;
   diagnosticCounts: Record<Diagnostic["severity"], number>;
   command: {
     usedApplyCommands: boolean;
@@ -515,7 +538,13 @@ export interface ExampleAppDeliverySummary {
     followUpCount: number;
   }>;
   confirmations: Array<{
-    reason: "external-resource" | "network-fetch" | "archive-parsing" | "worker-use" | "file-write" | "stable-scene3d-runtime";
+    reason:
+      | "external-resource"
+      | "network-fetch"
+      | "archive-parsing"
+      | "worker-use"
+      | "file-write"
+      | "stable-scene3d-runtime";
     required: boolean;
     target: string;
     sourceIds?: string[];
@@ -545,7 +574,9 @@ export interface ExampleAppDeliverySummary {
       metadataFields: string[];
       policyFields: string[];
     };
-    confirmationReasons: Array<"external-resource" | "network-fetch" | "archive-parsing" | "worker-use" | "file-write" | "stable-scene3d-runtime">;
+    confirmationReasons: Array<
+      "external-resource" | "network-fetch" | "archive-parsing" | "worker-use" | "file-write" | "stable-scene3d-runtime"
+    >;
     notes: string[];
   }>;
   sourcePromotionCandidates?: Array<{
@@ -639,24 +670,24 @@ const manifests: Record<ExampleId, ExampleAppManifest> = {
         role: "spec",
         mediaType: "application/json",
         required: true,
-        description: "MapSpec for the point layer example."
+        description: "MapSpec for the point layer example.",
       },
       {
         path: "examples/basic-geojson/data/points.geojson",
         role: "data",
         mediaType: "application/geo+json",
         required: true,
-        description: "Local point features used by the GeoJSON source."
+        description: "Local point features used by the GeoJSON source.",
       },
       {
         path: "examples/basic-geojson/validate.ts",
         role: "script",
         mediaType: "text/typescript",
         required: false,
-        description: "Validation helper for the example MapSpec."
-      }
+        description: "Validation helper for the example MapSpec.",
+      },
     ],
-    notes: ["The manifest is descriptive only; export_example_app does not create or modify files."]
+    notes: ["The manifest is descriptive only; export_example_app does not create or modify files."],
   },
   "ai-map-edit": {
     exampleId: "ai-map-edit",
@@ -669,24 +700,24 @@ const manifests: Record<ExampleId, ExampleAppManifest> = {
         role: "spec",
         mediaType: "application/json",
         required: true,
-        description: "Initial MapSpec before command replay."
+        description: "Initial MapSpec before command replay.",
       },
       {
         path: "examples/ai-map-edit/commands.json",
         role: "commands",
         mediaType: "application/json",
         required: true,
-        description: "MapCommands applied to the initial spec."
+        description: "MapCommands applied to the initial spec.",
       },
       {
         path: "examples/ai-map-edit/audit.commands.json",
         role: "commands",
         mediaType: "application/json",
         required: false,
-        description: "Optional command replay example with author, reason, timestamp, and prompt-hash provenance."
-      }
+        description: "Optional command replay example with author, reason, timestamp, and prompt-hash provenance.",
+      },
     ],
-    notes: ["The manifest is descriptive only; export_example_app does not create or modify files."]
+    notes: ["The manifest is descriptive only; export_example_app does not create or modify files."],
   },
   "raster-basemap": {
     exampleId: "raster-basemap",
@@ -699,10 +730,10 @@ const manifests: Record<ExampleId, ExampleAppManifest> = {
         role: "spec",
         mediaType: "application/json",
         required: true,
-        description: "MapSpec with a raster basemap source and overlay layer."
-      }
+        description: "MapSpec with a raster basemap source and overlay layer.",
+      },
     ],
-    notes: ["The raster URL is a tile template path; tests validate and transform it without fetching tiles."]
+    notes: ["The raster URL is a tile template path; tests validate and transform it without fetching tiles."],
   },
   "pmtiles-local": {
     exampleId: "pmtiles-local",
@@ -715,10 +746,10 @@ const manifests: Record<ExampleId, ExampleAppManifest> = {
         role: "spec",
         mediaType: "application/json",
         required: true,
-        description: "MapSpec with a local PMTiles URL path."
-      }
+        description: "MapSpec with a local PMTiles URL path.",
+      },
     ],
-    notes: ["PMTiles coverage validates and transforms the URL path only; it does not parse PMTiles binaries."]
+    notes: ["PMTiles coverage validates and transforms the URL path only; it does not parse PMTiles binaries."],
   },
   "vector-tile-url": {
     exampleId: "vector-tile-url",
@@ -731,10 +762,12 @@ const manifests: Record<ExampleId, ExampleAppManifest> = {
         role: "spec",
         mediaType: "application/json",
         required: true,
-        description: "MapSpec with a local vector tile URL template."
-      }
+        description: "MapSpec with a local vector tile URL template.",
+      },
     ],
-    notes: ["Vector tile coverage validates URL templates, source-layer metadata, expressions, and snapshot contracts without requiring network tile fetches."]
+    notes: [
+      "Vector tile coverage validates URL templates, source-layer metadata, expressions, and snapshot contracts without requiring network tile fetches.",
+    ],
   },
   "fill-extrusion-lite": {
     exampleId: "fill-extrusion-lite",
@@ -747,11 +780,11 @@ const manifests: Record<ExampleId, ExampleAppManifest> = {
         role: "spec",
         mediaType: "application/json",
         required: true,
-        description: "MapSpec with 2.5D capability gates and a fill-extrusion-lite layer."
-      }
+        description: "MapSpec with 2.5D capability gates and a fill-extrusion-lite layer.",
+      },
     ],
-    notes: ["fill-extrusion-lite is experimental and requires capabilities.experimental plus a 2.5D view request."]
-  }
+    notes: ["fill-extrusion-lite is experimental and requires capabilities.experimental plus a 2.5D view request."],
+  },
 };
 
 const ajv = new Ajv({ allErrors: true, strict: false });
@@ -761,7 +794,7 @@ export function exportExampleAppTool(input: unknown): ExportExampleAppToolRespon
   if (!validateInput(input)) {
     return {
       ok: false,
-      diagnostics: toolInputErrorsToDiagnostics(validateInput.errors, "Invalid export_example_app tool input.")
+      diagnostics: toolInputErrorsToDiagnostics(validateInput.errors, "Invalid export_example_app tool input."),
     };
   }
 
@@ -769,12 +802,14 @@ export function exportExampleAppTool(input: unknown): ExportExampleAppToolRespon
   const result = structuredClone(manifests[typedInput.exampleId]);
   if (typedInput.generationEvidence) {
     result.generationEvidence = structuredClone(typedInput.generationEvidence);
-    result.notes.push("Generation evidence summary is caller-provided metadata; export_example_app still writes no files.");
+    result.notes.push(
+      "Generation evidence summary is caller-provided metadata; export_example_app still writes no files.",
+    );
   }
 
   return {
     ok: true,
     result,
-    diagnostics: []
+    diagnostics: [],
   };
 }

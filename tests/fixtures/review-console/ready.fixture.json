@@ -2,7 +2,13 @@
   "status": "ready",
   "delivery": {
     "status": "ready",
-    "acceptance": { "state": "ready", "ready": true, "blocked": false, "needsConfirmation": false, "followUpRequired": false },
+    "acceptance": {
+      "state": "ready",
+      "ready": true,
+      "blocked": false,
+      "needsConfirmation": false,
+      "followUpRequired": false
+    },
     "sections": [
       { "id": "readiness", "state": "ready" },
       { "id": "files", "state": "ready" },
@@ -21,5 +27,10 @@
   "commandEvidence": { "count": 3, "committed": 3, "rolledBack": 0, "traceId": "trace-ready-001" },
   "exportEvidence": { "ready": true, "sourceCount": 1, "layerCount": 2 },
   "diagnostics": [],
-  "spatialQueryEvidence": { "requested": true, "ready": true, "cases": [{ "operation": "point-query", "state": "ready" }], "capabilityGate": "ready" }
+  "spatialQueryEvidence": {
+    "requested": true,
+    "ready": true,
+    "cases": [{ "operation": "point-query", "state": "ready" }],
+    "capabilityGate": "ready"
+  }
 }

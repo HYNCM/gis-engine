@@ -2,7 +2,13 @@
   "status": "needs-confirmation",
   "delivery": {
     "status": "needs-confirmation",
-    "acceptance": { "state": "needs-confirmation", "ready": false, "blocked": false, "needsConfirmation": true, "followUpRequired": false },
+    "acceptance": {
+      "state": "needs-confirmation",
+      "ready": false,
+      "blocked": false,
+      "needsConfirmation": true,
+      "followUpRequired": false
+    },
     "sections": [
       { "id": "readiness", "state": "ready" },
       { "id": "files", "state": "needs-confirmation" },
@@ -11,11 +17,21 @@
       { "id": "scene-browsing", "state": "not-requested" }
     ],
     "confirmations": [
-      { "reason": "network-fetch", "sourceId": "remote-geojson", "detail": "External GeoJSON URL requires fetch confirmation" }
+      {
+        "reason": "network-fetch",
+        "sourceId": "remote-geojson",
+        "detail": "External GeoJSON URL requires fetch confirmation"
+      }
     ],
     "followUps": [],
     "sourceReadiness": [
-      { "id": "remote-geojson", "format": "geojson", "state": "supported", "queryReady": false, "resourcePolicy": "passed" }
+      {
+        "id": "remote-geojson",
+        "format": "geojson",
+        "state": "supported",
+        "queryReady": false,
+        "resourcePolicy": "passed"
+      }
     ],
     "spatialQueryReadiness": { "state": "not-requested" }
   },

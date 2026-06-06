@@ -1,22 +1,30 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import {
-  parseArgs,
-  createProviderDiagnostics,
-  resolveProviderProfile,
-  readProviderApiKey,
   CLI_API_KEY_ENVS,
+  createProviderDiagnostics,
   getTemplate,
-  TEMPLATES,
   hashPrompt,
   normalizeAppConfig,
+  parseArgs,
+  readProviderApiKey,
+  resolveProviderProfile,
+  TEMPLATES,
 } from "@gis-engine/cli";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // ---------------------------------------------------------------------------
 // config.ts — parseArgs
 // ---------------------------------------------------------------------------
 
 describe("cli-config-parseArgs", () => {
-  const ENV_KEYS = ["GIS_ENGINE_TEMPLATE", "GIS_ENGINE_PROVIDER", "GIS_ENGINE_PROMPT", "GIS_ENGINE_MODEL", "GIS_ENGINE_BASE_URL", "GIS_ENGINE_API_KEY", "GIS_ENGINE_TIMEOUT"];
+  const ENV_KEYS = [
+    "GIS_ENGINE_TEMPLATE",
+    "GIS_ENGINE_PROVIDER",
+    "GIS_ENGINE_PROMPT",
+    "GIS_ENGINE_MODEL",
+    "GIS_ENGINE_BASE_URL",
+    "GIS_ENGINE_API_KEY",
+    "GIS_ENGINE_TIMEOUT",
+  ];
   const savedEnv: Record<string, string | undefined> = {};
 
   beforeEach(() => {
@@ -129,13 +137,7 @@ describe("cli-config-parseArgs", () => {
   });
 
   it("parses a combined set of arguments", () => {
-    const config = parseArgs([
-      "my-map",
-      "--generate",
-      "-p", "mock",
-      "--prompt", "test",
-      "--dry-run",
-    ]);
+    const config = parseArgs(["my-map", "--generate", "-p", "mock", "--prompt", "test", "--dry-run"]);
     expect(config.projectName).toBe("my-map");
     expect(config.generate).toBe(true);
     expect(config.provider).toBe("mock");
@@ -211,10 +213,14 @@ describe("cli-config-parseArgs", () => {
     const config = parseArgs([
       "my-map",
       "--generate",
-      "-p", "deepseek",
-      "--model", "deepseek-chat",
-      "--base-url", "https://api.deepseek.com/v1",
-      "--prompt", "test",
+      "-p",
+      "deepseek",
+      "--model",
+      "deepseek-chat",
+      "--base-url",
+      "https://api.deepseek.com/v1",
+      "--prompt",
+      "test",
       "--yes",
       "--dry-run",
     ]);
@@ -357,19 +363,19 @@ describe("cli-templates", () => {
   it("getTemplate returns a Template for static-html", () => {
     const tpl = getTemplate("static-html");
     expect(tpl).toBeDefined();
-    expect(tpl!.name).toBe("static-html");
+    expect(tpl?.name).toBe("static-html");
   });
 
   it("getTemplate returns a Template for vite-ts", () => {
     const tpl = getTemplate("vite-ts");
     expect(tpl).toBeDefined();
-    expect(tpl!.name).toBe("vite-ts");
+    expect(tpl?.name).toBe("vite-ts");
   });
 
   it("getTemplate returns a Template for mapspec", () => {
     const tpl = getTemplate("mapspec");
     expect(tpl).toBeDefined();
-    expect(tpl!.name).toBe("mapspec");
+    expect(tpl?.name).toBe("mapspec");
   });
 
   it("getTemplate returns undefined for nonexistent template", () => {
@@ -429,7 +435,7 @@ describe("cli-templates", () => {
   it("getTemplate returns a Template for app", () => {
     const tpl = getTemplate("app");
     expect(tpl).toBeDefined();
-    expect(tpl!.name).toBe("app");
+    expect(tpl?.name).toBe("app");
   });
 
   it("app template generates full interactive application files", () => {
@@ -489,7 +495,7 @@ describe("cli-templates", () => {
     ]) {
       const file = files.find((entry) => entry.path === path);
       expect(file).toBeDefined();
-      expect(file!.content).toContain('import maplibregl from "maplibre-gl";');
+      expect(file?.content).toContain('import maplibregl from "maplibre-gl";');
     }
   });
 
@@ -554,12 +560,12 @@ describe("cli-templates", () => {
     expect(appFile.content).toContain('import FeaturePopup from "./components/FeaturePopup"');
     expect(appFile.content).toContain('import SearchBox from "./components/SearchBox"');
     expect(appFile.content).toContain('import BasemapSwitcher from "./components/BasemapSwitcher"');
-    expect(appFile.content).toContain('const syncSpecToMap =');
+    expect(appFile.content).toContain("const syncSpecToMap =");
     expect(appFile.content).toContain('nextMap.on("load"');
     expect(appFile.content).toContain('nextMap.on("error"');
     expect(appFile.content).toContain('setStatus("loading")');
-    expect(appFile.content).toContain('targetMap.addSource');
-    expect(appFile.content).toContain('targetMap.addLayer');
+    expect(appFile.content).toContain("targetMap.addSource");
+    expect(appFile.content).toContain("targetMap.addLayer");
   });
 
   it("app template exposes loading, reload, and responsive control states", () => {
@@ -573,9 +579,9 @@ describe("cli-templates", () => {
     const basemapSwitcher = files.find((f) => f.path === "src/components/BasemapSwitcher.tsx")!;
 
     expect(appFile.content).toContain('type MapLoadStatus = "loading" | "ready" | "empty" | "error";');
-    expect(appFile.content).toContain('Reload map.json');
-    expect(appFile.content).toContain('Load map.json');
-    expect(appFile.content).toContain('Could not load the selected map.json file.');
+    expect(appFile.content).toContain("Reload map.json");
+    expect(appFile.content).toContain("Load map.json");
+    expect(appFile.content).toContain("Could not load the selected map.json file.");
     expect(appFile.content).toContain('aria-live="polite"');
     expect(appFile.content).toContain('accept=".json,application/json"');
 
@@ -584,7 +590,7 @@ describe("cli-templates", () => {
     expect(legend.content).toContain("No visible layers yet.");
     expect(searchBox.content).toContain('aria-label="Search features"');
     expect(searchBox.content).toContain('type="button"');
-    expect(basemapSwitcher.content).toContain('aria-pressed={active === b.id}');
+    expect(basemapSwitcher.content).toContain("aria-pressed={active === b.id}");
     expect(basemapSwitcher.content).toContain("max-md:top-16");
   });
 });
@@ -736,11 +742,11 @@ describe("cli-provider-profile", () => {
   });
 
   it("CLI_API_KEY_ENVS maps deepseek to DEEPSEEK_API_KEY", () => {
-    expect(CLI_API_KEY_ENVS["deepseek"]).toBe("DEEPSEEK_API_KEY");
+    expect(CLI_API_KEY_ENVS.deepseek).toBe("DEEPSEEK_API_KEY");
   });
 
   it("CLI_API_KEY_ENVS maps openai to OPENAI_API_KEY", () => {
-    expect(CLI_API_KEY_ENVS["openai"]).toBe("OPENAI_API_KEY");
+    expect(CLI_API_KEY_ENVS.openai).toBe("OPENAI_API_KEY");
   });
 
   it("resolveProviderProfile uses defaults for deepseek", () => {

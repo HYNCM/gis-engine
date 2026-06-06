@@ -1,19 +1,25 @@
+import { DiagnosticCodes } from "../diagnostics/codes.js";
+import { applyJsonPatch } from "../spec/patch/index.js";
+import { validateSpec } from "../spec/validate.js";
 import type {
   CapabilityReport,
+  Diagnostic,
   FeatureQueryResult,
   JsonPatchOperation,
+  MapSpec,
   QueryFeaturesOptions,
   ResourceReport,
   SnapshotOptions,
   SnapshotResult,
-  MapSpec,
-  Diagnostic
 } from "../types.js";
-import { DiagnosticCodes } from "../diagnostics/codes.js";
-import { applyJsonPatch } from "../spec/patch/index.js";
-import { validateSpec } from "../spec/validate.js";
+import type {
+  AdapterApplyResult,
+  AdapterEventListener,
+  RenderContext,
+  RendererAdapter,
+  Unsubscribe,
+} from "./adapter.js";
 import { queryInlineGeoJsonFeatures } from "./queryGeoJson.js";
-import type { RendererAdapter, RenderContext, AdapterApplyResult, AdapterEventListener, Unsubscribe } from "./adapter.js";
 
 export class MockAdapter implements RendererAdapter {
   readonly id = "mock";
@@ -31,9 +37,9 @@ export class MockAdapter implements RendererAdapter {
       queries: ["point", "bbox"],
       snapshot: {
         supported: true,
-        formats: ["png", "data-url"]
+        formats: ["png", "data-url"],
       },
-      experimental: []
+      experimental: [],
     };
   }
 
@@ -49,9 +55,9 @@ export class MockAdapter implements RendererAdapter {
           {
             severity: "error",
             code: DiagnosticCodes.RenderAdapterError,
-            message: "MockAdapter must load a MapSpec before applying patches."
-          }
-        ]
+            message: "MockAdapter must load a MapSpec before applying patches.",
+          },
+        ],
       };
     }
 
@@ -67,9 +73,9 @@ export class MockAdapter implements RendererAdapter {
           {
             severity: "error",
             code: DiagnosticCodes.CommandInvalidPatch,
-            message: error instanceof Error ? error.message : "Failed to apply patch in MockAdapter."
-          }
-        ]
+            message: error instanceof Error ? error.message : "Failed to apply patch in MockAdapter.",
+          },
+        ],
       };
     }
   }
@@ -82,7 +88,7 @@ export class MockAdapter implements RendererAdapter {
     return {
       passed: true,
       diagnostics: [],
-      dataUrl: "data:image/png;base64,mock"
+      dataUrl: "data:image/png;base64,mock",
     };
   }
 
@@ -97,8 +103,8 @@ export class MockAdapter implements RendererAdapter {
       diagnostics: [],
       resources: {
         listenersRemoved,
-        verifiable: true
-      }
+        verifiable: true,
+      },
     };
   }
 
@@ -112,7 +118,7 @@ export class MockAdapter implements RendererAdapter {
     if (!this.#listeners.has(event)) {
       this.#listeners.set(event, new Set());
     }
-    this.#listeners.get(event)!.add(listener);
+    this.#listeners.get(event)?.add(listener);
     return () => this.#listeners.get(event)?.delete(listener);
   }
 

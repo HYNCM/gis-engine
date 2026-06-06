@@ -1,4 +1,5 @@
 import { DiagnosticCodes } from "../diagnostics/codes.js";
+import { manualFix } from "../internal/shared.js";
 import { joinPath } from "../spec/patch/index.js";
 import type {
   Diagnostic,
@@ -8,7 +9,6 @@ import type {
   MapSpec,
   QueryFeaturesOptions,
   SourceSpec,
-  SuggestedFix
 } from "../types.js";
 
 type Bbox = [number, number, number, number];
@@ -38,13 +38,13 @@ const geometryTypes = new Set([
   "MultiLineString",
   "Polygon",
   "MultiPolygon",
-  "GeometryCollection"
+  "GeometryCollection",
 ]);
 
 export function queryInlineGeoJsonFeatures(
   spec: MapSpec | null,
   options: QueryFeaturesOptions,
-  adapterId: string
+  adapterId: string,
 ): FeatureQueryResult {
   if (!spec) {
     return {
@@ -53,9 +53,9 @@ export function queryInlineGeoJsonFeatures(
         {
           severity: "error",
           code: DiagnosticCodes.RenderAdapterError,
-          message: `${adapterId} adapter must load a MapSpec before querying features.`
-        }
-      ]
+          message: `${adapterId} adapter must load a MapSpec before querying features.`,
+        },
+      ],
     };
   }
 
@@ -80,9 +80,9 @@ export function queryInlineGeoJsonFeatures(
         path: `/layers/${index}/source`,
         relatedResources: [
           { kind: "layer", id: layer.id },
-          { kind: "source", id: layer.source }
+          { kind: "source", id: layer.source },
         ],
-        fix: manualFix("Add the missing source or query a layer with an existing source.", "medium")
+        fix: manualFix("Add the missing source or query a layer with an existing source.", "medium"),
       });
       continue;
     }
@@ -114,7 +114,7 @@ export function queryInlineGeoJsonFeatures(
 function normalizeQuery(options: QueryFeaturesOptions): NormalizedQuery {
   const query: NormalizedQuery = {
     diagnostics: [],
-    valid: true
+    valid: true,
   };
   const hasPoint = options.point !== undefined;
   const hasBbox = options.bbox !== undefined;
@@ -128,7 +128,10 @@ function normalizeQuery(options: QueryFeaturesOptions): NormalizedQuery {
         code: DiagnosticCodes.GeoInvalidCoordinates,
         message: "queryFeatures point must be a finite [x, y] coordinate.",
         path: "/point",
-        fix: manualFix("Pass point as [longitude, latitude] in the same coordinate space as the inline GeoJSON data.", "medium")
+        fix: manualFix(
+          "Pass point as [longitude, latitude] in the same coordinate space as the inline GeoJSON data.",
+          "medium",
+        ),
       });
     }
   }
@@ -140,9 +143,13 @@ function normalizeQuery(options: QueryFeaturesOptions): NormalizedQuery {
       query.diagnostics.push({
         severity: "error",
         code: DiagnosticCodes.GeoEmptyBbox,
-        message: "queryFeatures bbox must be a finite [minX, minY, maxX, maxY] extent where min values do not exceed max values.",
+        message:
+          "queryFeatures bbox must be a finite [minX, minY, maxX, maxY] extent where min values do not exceed max values.",
         path: "/bbox",
-        fix: manualFix("Pass bbox as [minLng, minLat, maxLng, maxLat] in the same coordinate space as the inline GeoJSON data.", "medium")
+        fix: manualFix(
+          "Pass bbox as [minLng, minLat, maxLng, maxLat] in the same coordinate space as the inline GeoJSON data.",
+          "medium",
+        ),
       });
     }
   }
@@ -153,7 +160,7 @@ function normalizeQuery(options: QueryFeaturesOptions): NormalizedQuery {
       code: DiagnosticCodes.CapabilityUnsupported,
       message: "Headless queryFeatures requires either a point or bbox query.",
       path: "/",
-      fix: manualFix("Provide point or bbox query options.", "high")
+      fix: manualFix("Provide point or bbox query options.", "high"),
     });
   }
 
@@ -180,7 +187,7 @@ function selectLayers(spec: MapSpec, options: QueryFeaturesOptions, diagnostics:
         message: `Layer "${layerId}" does not exist.`,
         path: "/layers",
         relatedResources: [{ kind: "layer", id: layerId }],
-        fix: manualFix("Check the query layer id or omit layers to query all queryable layers.", "high")
+        fix: manualFix("Check the query layer id or omit layers to query all queryable layers.", "high"),
       });
       continue;
     }
@@ -195,7 +202,7 @@ function unsupportedSourceDiagnostic(
   sourceId: string,
   source: SourceSpec,
   sourcePath: string,
-  adapterId: string
+  adapterId: string,
 ): Diagnostic | undefined {
   if (source.type === "geojson" && typeof source.data !== "string") return undefined;
 
@@ -206,7 +213,10 @@ function unsupportedSourceDiagnostic(
       message: `Headless queryFeatures in ${adapterId} supports inline GeoJSON only; source "${sourceId}" uses URL/string GeoJSON data.`,
       path: `${sourcePath}/data`,
       relatedResources: [{ kind: "source", id: sourceId, path: sourcePath }],
-      fix: manualFix("Inline the GeoJSON Feature or FeatureCollection data before using headless queryFeatures.", "medium")
+      fix: manualFix(
+        "Inline the GeoJSON Feature or FeatureCollection data before using headless queryFeatures.",
+        "medium",
+      ),
     };
   }
 
@@ -217,7 +227,7 @@ function unsupportedSourceDiagnostic(
     message: `Headless queryFeatures in ${adapterId} does not support "${source.type}" source "${sourceId}".`,
     path,
     relatedResources: [{ kind: "source", id: sourceId, path: sourcePath }],
-    fix: manualFix("Use an inline GeoJSON source for headless feature queries.", "medium")
+    fix: manualFix("Use an inline GeoJSON source for headless feature queries.", "medium"),
   };
 }
 
@@ -230,11 +240,15 @@ function collectInlineFeatures(data: unknown, path: string, diagnostics: Diagnos
   if (data.type === "FeatureCollection") {
     const features = data.features;
     if (!Array.isArray(features)) {
-      diagnostics.push(invalidGeoJsonDiagnostic(`${path}/features`, "GeoJSON FeatureCollection.features must be an array."));
+      diagnostics.push(
+        invalidGeoJsonDiagnostic(`${path}/features`, "GeoJSON FeatureCollection.features must be an array."),
+      );
       return [];
     }
 
-    return features.flatMap((feature, index) => readFeature(feature, `${path}/features/${index}`, String(index), diagnostics));
+    return features.flatMap((feature, index) =>
+      readFeature(feature, `${path}/features/${index}`, String(index), diagnostics),
+    );
   }
 
   if (data.type === "Feature") {
@@ -250,7 +264,7 @@ function collectInlineFeatures(data: unknown, path: string, diagnostics: Diagnos
     code: DiagnosticCodes.CapabilityUnsupported,
     message: "Headless queryFeatures supports inline GeoJSON Feature, FeatureCollection, or Geometry data.",
     path,
-    fix: manualFix("Use a GeoJSON FeatureCollection with queryable Feature geometries.", "medium")
+    fix: manualFix("Use a GeoJSON FeatureCollection with queryable Feature geometries.", "medium"),
   });
   return [];
 }
@@ -271,7 +285,7 @@ function readFeature(value: unknown, path: string, key: string, diagnostics: Dia
       severity: "warning",
       code: DiagnosticCodes.GeoInvalidCoordinates,
       message: "GeoJSON feature has no bbox-able geometry for headless queryFeatures.",
-      path: `${path}/geometry`
+      path: `${path}/geometry`,
     });
     return [];
   }
@@ -280,8 +294,8 @@ function readFeature(value: unknown, path: string, key: string, diagnostics: Dia
     {
       key,
       feature: value as JsonValue,
-      bbox
-    }
+      bbox,
+    },
   ];
 }
 
@@ -297,7 +311,10 @@ function bboxFromGeometry(value: unknown): Bbox | undefined {
   if (value.type === "GeometryCollection") {
     const geometries = value.geometries;
     if (!Array.isArray(geometries)) return undefined;
-    return geometries.reduce<Bbox | undefined>((accumulator, geometry) => combineBbox(accumulator, bboxFromGeometry(geometry)), undefined);
+    return geometries.reduce<Bbox | undefined>(
+      (accumulator, geometry) => combineBbox(accumulator, bboxFromGeometry(geometry)),
+      undefined,
+    );
   }
 
   if (!geometryTypes.has(value.type)) return undefined;
@@ -336,7 +353,7 @@ function createEmptyBbox(): MutableBbox {
     minY: Number.POSITIVE_INFINITY,
     maxX: Number.NEGATIVE_INFINITY,
     maxY: Number.NEGATIVE_INFINITY,
-    valid: false
+    valid: false,
   };
 }
 
@@ -360,7 +377,7 @@ function combineBbox(left: Bbox | undefined, right: Bbox | undefined): Bbox | un
     Math.min(left[0], right[0]),
     Math.min(left[1], right[1]),
     Math.max(left[2], right[2]),
-    Math.max(left[3], right[3])
+    Math.max(left[3], right[3]),
   ];
 }
 
@@ -402,14 +419,6 @@ function invalidGeoJsonDiagnostic(path: string, message: string): Diagnostic {
     severity: "error",
     code: DiagnosticCodes.SpecInvalidType,
     message,
-    path
-  };
-}
-
-function manualFix(message: string, confidence: SuggestedFix["confidence"]): SuggestedFix {
-  return {
-    kind: "manual",
-    confidence,
-    message
+    path,
   };
 }

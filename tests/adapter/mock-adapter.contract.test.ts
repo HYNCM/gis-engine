@@ -1,8 +1,8 @@
+import { applyCommands, type MapCommand, type MapSpec, MockAdapter } from "@gis-engine/engine";
 import { describe, expect, it } from "vitest";
+import after from "../fixtures/commands/replay/style-update/after.map.json";
 import before from "../fixtures/commands/replay/style-update/before.map.json";
 import commands from "../fixtures/commands/replay/style-update/commands.json";
-import after from "../fixtures/commands/replay/style-update/after.map.json";
-import { applyCommands, MockAdapter, type MapCommand, type MapSpec } from "@gis-engine/engine";
 import { createAdapterContractSuite } from "./createAdapterContractSuite.js";
 
 createAdapterContractSuite("mock", () => new MockAdapter());
@@ -29,10 +29,10 @@ describe("MockAdapter state", () => {
         {
           op: "add",
           path: "/layers/1",
-          value: { id: "invalid-fill", type: "fill", source: "missing-source" }
-        }
+          value: { id: "invalid-fill", type: "fill", source: "missing-source" },
+        },
       ],
-      { container: {} as HTMLElement }
+      { container: {} as HTMLElement },
     );
 
     expect(adapterResult.diagnostics.some((diagnostic) => diagnostic.severity === "error")).toBe(true);

@@ -66,16 +66,9 @@ function fileMatches(file, patterns) {
 
 function buildPlan(files) {
   const gates = new Map();
-  const docsPatterns = [
-    /^docs\//,
-    /^README\.md$/,
-    /^CHANGELOG\.md$/,
-    /^AGENTS\.md$/,
-    /^\.github\/agent-templates\//,
-  ];
+  const docsPatterns = [/^docs\//, /^README\.md$/, /^CHANGELOG\.md$/, /^AGENTS\.md$/, /^\.github\/agent-templates\//];
   const docsOnly =
-    files.length > 0 &&
-    files.every((file) => fileMatches(file, docsPatterns) || /^\.github\//.test(file));
+    files.length > 0 && files.every((file) => fileMatches(file, docsPatterns) || /^\.github\//.test(file));
 
   addGate(gates, "git diff --check", "whitespace and patch hygiene");
 
@@ -118,11 +111,7 @@ function buildPlan(files) {
 
   if (
     files.some((file) =>
-      fileMatches(file, [
-        /^packages\/scene3d/,
-        /^packages\/scene3d-three-adapter\//,
-        /^tests\/adapter\//,
-      ]),
+      fileMatches(file, [/^packages\/scene3d/, /^packages\/scene3d-three-adapter\//, /^tests\/adapter\//]),
     )
   ) {
     addGate(gates, "pnpm test:adapter", "renderer adapter contract");
@@ -162,14 +151,7 @@ function serializePlan(files, gates) {
 }
 
 function renderMarkdown(plan) {
-  const lines = [
-    "# Path-aware Gate Plan",
-    "",
-    `Generated: ${plan.generated_at}`,
-    "",
-    "## Changed Files",
-    "",
-  ];
+  const lines = ["# Path-aware Gate Plan", "", `Generated: ${plan.generated_at}`, "", "## Changed Files", ""];
   if (plan.changed_files.length === 0) {
     lines.push("- (none detected)");
   } else {

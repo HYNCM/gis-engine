@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { computeReviewConsoleState, REVIEW_SECTION_IDS } from "../../examples/ai-map-workbench/review-console.mjs";
-import readyFixture from "../fixtures/review-console/ready.fixture.json";
 import blockedFixture from "../fixtures/review-console/blocked.fixture.json";
-import confirmFixture from "../fixtures/review-console/needs-confirmation.fixture.json";
 import followUpFixture from "../fixtures/review-console/follow-up-required.fixture.json";
+import confirmFixture from "../fixtures/review-console/needs-confirmation.fixture.json";
+import readyFixture from "../fixtures/review-console/ready.fixture.json";
 
 describe("QA Matrix: Prompt-to-Delivery scenarios", () => {
   describe("Card 1: Ready — simple GeoJSON display request", () => {
@@ -34,13 +34,28 @@ describe("QA Matrix: Prompt-to-Delivery scenarios", () => {
       expect(result.acceptance).toBe("blocked");
       expect(result.deliveryStatus).toBe("blocked");
       expect(result.sourceReadiness[0].sourceContract?.kind).toBe("schema");
-      expect(result.sourcePromotionCandidates.some((candidate: { format: string; sourceContract?: { kind: string } }) => candidate.format === "geoparquet" && candidate.sourceContract?.kind === "schema")).toBe(true);
+      expect(
+        result.sourcePromotionCandidates.some(
+          (candidate: { format: string; sourceContract?: { kind: string } }) =>
+            candidate.format === "geoparquet" && candidate.sourceContract?.kind === "schema",
+        ),
+      ).toBe(true);
 
       const dataSection = result.sections.find((s: { id: string }) => s.id === "data-and-sources");
       expect(dataSection?.state).toBe("blocked");
       expect(dataSection?.sources?.some((s: { state: string }) => s.state === "blocked")).toBe(true);
-      expect(dataSection?.sources?.some((s: { format: string; sourceContract?: { kind: string } }) => s.format === "geoparquet" && s.sourceContract?.kind === "schema")).toBe(true);
-      expect(dataSection?.promotionCandidates?.some((candidate: { format: string; sourceContract?: { kind: string } }) => candidate.format === "geoparquet" && candidate.sourceContract?.kind === "schema")).toBe(true);
+      expect(
+        dataSection?.sources?.some(
+          (s: { format: string; sourceContract?: { kind: string } }) =>
+            s.format === "geoparquet" && s.sourceContract?.kind === "schema",
+        ),
+      ).toBe(true);
+      expect(
+        dataSection?.promotionCandidates?.some(
+          (candidate: { format: string; sourceContract?: { kind: string } }) =>
+            candidate.format === "geoparquet" && candidate.sourceContract?.kind === "schema",
+        ),
+      ).toBe(true);
       expect(result.diagnosticCounts.errors).toBeGreaterThan(0);
     });
   });
@@ -73,16 +88,23 @@ describe("QA Matrix: Prompt-to-Delivery scenarios", () => {
             state: "readiness-only",
             resourcePolicy: "passed",
             archiveContract: expect.objectContaining({
-              state: "explicit"
-            })
-          })
-        ])
+              state: "explicit",
+            }),
+          }),
+        ]),
       );
 
       const dataSection = result.sections.find((s: { id: string }) => s.id === "data-and-sources");
       expect(dataSection?.state).toBe("follow-up-required");
       expect(dataSection?.sources?.some((s: { state: string }) => s.state === "readiness-only")).toBe(true);
-      expect(dataSection?.promotionCandidates?.some((candidate: { format: string; resourcePolicy?: string; archiveContract?: { state: string } }) => candidate.format === "pmtiles" && candidate.resourcePolicy === "passed" && candidate.archiveContract?.state === "explicit")).toBe(true);
+      expect(
+        dataSection?.promotionCandidates?.some(
+          (candidate: { format: string; resourcePolicy?: string; archiveContract?: { state: string } }) =>
+            candidate.format === "pmtiles" &&
+            candidate.resourcePolicy === "passed" &&
+            candidate.archiveContract?.state === "explicit",
+        ),
+      ).toBe(true);
 
       const scene = result.sections.find((s: { id: string }) => s.id === "scene-browsing");
       expect(scene?.evidence.stableRuntimeBlocked).toBe(true);
@@ -94,7 +116,7 @@ describe("QA Matrix: Prompt-to-Delivery scenarios", () => {
       { name: "ready", fixture: readyFixture, expected: "ready" },
       { name: "blocked", fixture: blockedFixture, expected: "blocked" },
       { name: "needs-confirmation", fixture: confirmFixture, expected: "needs-confirmation" },
-      { name: "follow-up-required", fixture: followUpFixture, expected: "follow-up-required" }
+      { name: "follow-up-required", fixture: followUpFixture, expected: "follow-up-required" },
     ];
 
     for (const { name, fixture, expected } of allFixtures) {

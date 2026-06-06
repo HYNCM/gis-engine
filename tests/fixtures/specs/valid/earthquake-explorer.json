@@ -9,12 +9,24 @@
           {
             "type": "Feature",
             "geometry": { "type": "Point", "coordinates": [37.0, 37.17] },
-            "properties": { "mag": 7.1, "place": "Turkey-Syria border", "time": "2024-02-06", "depth": 10, "tsunami": false }
+            "properties": {
+              "mag": 7.1,
+              "place": "Turkey-Syria border",
+              "time": "2024-02-06",
+              "depth": 10,
+              "tsunami": false
+            }
           },
           {
             "type": "Feature",
             "geometry": { "type": "Point", "coordinates": [141.0, 38.5] },
-            "properties": { "mag": 5.8, "place": "Off coast of Miyagi, Japan", "time": "2024-03-12", "depth": 45, "tsunami": false }
+            "properties": {
+              "mag": 5.8,
+              "place": "Off coast of Miyagi, Japan",
+              "time": "2024-03-12",
+              "depth": 45,
+              "tsunami": false
+            }
           },
           {
             "type": "Feature",
@@ -44,17 +56,35 @@
           {
             "type": "Feature",
             "geometry": { "type": "Point", "coordinates": [73.4, 36.1] },
-            "properties": { "mag": 6.3, "place": "Northern Pakistan", "time": "2024-09-03", "depth": 200, "tsunami": false }
+            "properties": {
+              "mag": 6.3,
+              "place": "Northern Pakistan",
+              "time": "2024-09-03",
+              "depth": 200,
+              "tsunami": false
+            }
           },
           {
             "type": "Feature",
             "geometry": { "type": "Point", "coordinates": [178.3, -17.8] },
-            "properties": { "mag": 7.3, "place": "Fiji Islands region", "time": "2024-10-11", "depth": 580, "tsunami": true }
+            "properties": {
+              "mag": 7.3,
+              "place": "Fiji Islands region",
+              "time": "2024-10-11",
+              "depth": 580,
+              "tsunami": true
+            }
           },
           {
             "type": "Feature",
             "geometry": { "type": "Point", "coordinates": [-149.9, 61.3] },
-            "properties": { "mag": 5.6, "place": "Southern Alaska, USA", "time": "2024-11-28", "depth": 40, "tsunami": false }
+            "properties": {
+              "mag": 5.6,
+              "place": "Southern Alaska, USA",
+              "time": "2024-11-28",
+              "depth": 40,
+              "tsunami": false
+            }
           }
         ]
       }
@@ -66,19 +96,19 @@
       "type": "circle",
       "source": "earthquakes",
       "paint": {
-        "circle-radius": [
-          "interpolate", ["linear"], ["get", "mag"],
-          5, 6,
-          6, 10,
-          7, 16,
-          8, 24
-        ],
+        "circle-radius": ["interpolate", ["linear"], ["get", "mag"], 5, 6, 6, 10, 7, 16, 8, 24],
         "circle-color": [
-          "interpolate", ["linear"], ["get", "mag"],
-          5, "#fbbf24",
-          6, "#f97316",
-          7, "#ef4444",
-          8, "#991b1b"
+          "interpolate",
+          ["linear"],
+          ["get", "mag"],
+          5,
+          "#fbbf24",
+          6,
+          "#f97316",
+          7,
+          "#ef4444",
+          8,
+          "#991b1b"
         ],
         "circle-opacity": 0.8,
         "circle-stroke-width": 1,

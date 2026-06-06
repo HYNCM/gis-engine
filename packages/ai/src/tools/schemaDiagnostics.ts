@@ -1,7 +1,10 @@
+import { type Diagnostic, DiagnosticCodes, toolInputErrorToCode } from "@gis-engine/engine";
 import type { ErrorObject } from "ajv/dist/ajv.js";
-import { DiagnosticCodes, type Diagnostic } from "@gis-engine/engine";
 
-export function toolInputErrorsToDiagnostics(errors: ErrorObject[] | null | undefined, fallbackMessage: string): Diagnostic[] {
+export function toolInputErrorsToDiagnostics(
+  errors: ErrorObject[] | null | undefined,
+  fallbackMessage: string,
+): Diagnostic[] {
   const ajvErrors = errors ?? [];
   if (ajvErrors.length === 0) {
     return [
@@ -9,8 +12,8 @@ export function toolInputErrorsToDiagnostics(errors: ErrorObject[] | null | unde
         severity: "error",
         code: DiagnosticCodes.SpecInvalidType,
         message: fallbackMessage,
-        path: "/"
-      }
+        path: "/",
+      },
     ];
   }
 
@@ -18,13 +21,6 @@ export function toolInputErrorsToDiagnostics(errors: ErrorObject[] | null | unde
     severity: "error",
     code: toolInputErrorToCode(error),
     message: error.message ?? fallbackMessage,
-    path: error.instancePath || "/"
+    path: error.instancePath || "/",
   }));
-}
-
-function toolInputErrorToCode(error: ErrorObject): Diagnostic["code"] {
-  if (error.keyword === "additionalProperties") return DiagnosticCodes.SpecUnknownField;
-  if (error.keyword === "required") return DiagnosticCodes.SpecMissingField;
-  if (error.keyword === "const" && error.instancePath.endsWith("/version")) return DiagnosticCodes.SpecInvalidVersion;
-  return DiagnosticCodes.SpecInvalidType;
 }

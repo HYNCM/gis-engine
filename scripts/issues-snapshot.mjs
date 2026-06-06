@@ -48,8 +48,7 @@ function fetchIssues() {
 
 function renderIssue(issue) {
   const labels = issue.labels?.map((label) => label.name).join(", ") || "-";
-  const assignees =
-    issue.assignees?.map((assignee) => `@${assignee.login}`).join(", ") || "-";
+  const assignees = issue.assignees?.map((assignee) => `@${assignee.login}`).join(", ") || "-";
   const milestone = issue.milestone?.title || "-";
   return `| #${issue.number} | ${issue.state} | [${issue.title}](${issue.url}) | ${labels} | ${assignees} | ${milestone} | ${issue.updatedAt} |`;
 }
@@ -90,9 +89,7 @@ function renderSnapshot(result) {
   lines.push(`- Total returned: ${result.issues.length}`);
   lines.push("");
   lines.push("## Issues", "");
-  lines.push(
-    "| Issue | State | Title | Labels | Assignees | Milestone | Updated |",
-  );
+  lines.push("| Issue | State | Title | Labels | Assignees | Milestone | Updated |");
   lines.push("| --- | --- | --- | --- | --- | --- | --- |");
   for (const issue of result.issues) {
     lines.push(renderIssue(issue));

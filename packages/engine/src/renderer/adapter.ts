@@ -2,12 +2,12 @@ import type {
   CapabilityReport,
   FeatureQueryResult,
   JsonPatchOperation,
+  MapSpec,
   QueryFeaturesOptions,
   ResourceReport,
   SnapshotOptions,
-  SnapshotResult
+  SnapshotResult,
 } from "../types.js";
-import type { MapSpec } from "../types.js";
 
 export interface RenderContext {
   container: HTMLElement;

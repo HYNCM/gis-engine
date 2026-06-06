@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
-import scene3dExtensionSpec from "../../fixtures/specs/valid/scene3d-extension.map.json";
 import { DiagnosticCodes, type SceneView3DExtension } from "@gis-engine/engine";
+import { describe, expect, it } from "vitest";
 import { evaluateScene3DReleaseVisualGate } from "../../../packages/scene3d/src/index.js";
+import scene3dExtensionSpec from "../../fixtures/specs/valid/scene3d-extension.map.json";
 import { runScene3DThreeAdapterBrowserRunner } from "../scene3d-browser-runner.js";
 
 describe("SceneView3D release visual gate", () => {
@@ -13,8 +13,8 @@ describe("SceneView3D release visual gate", () => {
         id: "SCENE3D-VISUAL-WAIVER-2026W27",
         approvedBy: "coordinator",
         reason: "SceneView3D has no stable renderer before the v1 adapter gate.",
-        followUpTaskId: "TASK-2026W27-005"
-      }
+        followUpTaskId: "TASK-2026W27-005",
+      },
     });
 
     expect(report.kind).toBe("Scene3DReleaseVisualGateReport");
@@ -24,7 +24,7 @@ describe("SceneView3D release visual gate", () => {
     expect(report.runtime).toEqual({
       status: "extension-only",
       stableViewMode: false,
-      rendererVisualRequired: true
+      rendererVisualRequired: true,
     });
     expect(report.waiver?.accepted).toBe(true);
     expect(report.evidence.snapshot.passed).toBe(true);
@@ -36,7 +36,7 @@ describe("SceneView3D release visual gate", () => {
   it("blocks release mode when renderer visual evidence lacks a waiver", () => {
     const report = evaluateScene3DReleaseVisualGate(scene3dExtension(), {
       ciTier: "release",
-      loadedSourceIds: ["terrain-dem", "city-tiles", "station-model"]
+      loadedSourceIds: ["terrain-dem", "city-tiles", "station-model"],
     });
 
     expect(report.decision).toBe("failed");
@@ -45,8 +45,8 @@ describe("SceneView3D release visual gate", () => {
       expect.objectContaining({
         severity: "error",
         code: DiagnosticCodes.CapabilityUnsupported,
-        path: "/extensions/scene3d"
-      })
+        path: "/extensions/scene3d",
+      }),
     );
   });
 
@@ -58,8 +58,8 @@ describe("SceneView3D release visual gate", () => {
         id: "SCENE3D-VISUAL-WAIVER-2026W27",
         approvedBy: "coordinator",
         reason: "SceneView3D has no stable renderer before the v1 adapter gate.",
-        followUpTaskId: "TASK-2026W27-005"
-      }
+        followUpTaskId: "TASK-2026W27-005",
+      },
     });
 
     expect(report.decision).toBe("failed");
@@ -70,13 +70,13 @@ describe("SceneView3D release visual gate", () => {
       expect.arrayContaining([
         expect.objectContaining({
           code: DiagnosticCodes.SnapshotResourcePending,
-          path: "/extensions/scene3d/sources/city-tiles"
+          path: "/extensions/scene3d/sources/city-tiles",
         }),
         expect.objectContaining({
           code: DiagnosticCodes.SnapshotResourcePending,
-          path: "/extensions/scene3d/sources/station-model"
-        })
-      ])
+          path: "/extensions/scene3d/sources/station-model",
+        }),
+      ]),
     );
   });
 
@@ -87,8 +87,8 @@ describe("SceneView3D release visual gate", () => {
       rendererVisualEvidence: {
         passed: true,
         renderer: "scene3d-browser-runner",
-        reportPath: "test-results/scene3d/visual-report.json"
-      }
+        reportPath: "test-results/scene3d/visual-report.json",
+      },
     });
 
     expect(report.decision).toBe("passed");
@@ -96,12 +96,12 @@ describe("SceneView3D release visual gate", () => {
     expect(report.runtime).toEqual({
       status: "extension-only",
       stableViewMode: false,
-      rendererVisualRequired: true
+      rendererVisualRequired: true,
     });
     expect(report.evidence.rendererVisual).toEqual({
       passed: true,
       renderer: "scene3d-browser-runner",
-      reportPath: "test-results/scene3d/visual-report.json"
+      reportPath: "test-results/scene3d/visual-report.json",
     });
   });
 
@@ -110,7 +110,7 @@ describe("SceneView3D release visual gate", () => {
     const report = evaluateScene3DReleaseVisualGate(scene3dExtension(), {
       ciTier: "release",
       loadedSourceIds: ["terrain-dem", "city-tiles", "station-model"],
-      rendererVisualEvidence: runner.rendererEvidence
+      rendererVisualEvidence: runner.rendererEvidence,
     });
 
     expect(runner.report.status).toBe("passed");
@@ -122,7 +122,7 @@ describe("SceneView3D release visual gate", () => {
     expect(runner.snapshot.pendingSourceIds).toEqual([]);
     expect(runner.query.picks.map((pick) => pick.objectId)).toEqual([
       "city-tiles:city:mock",
-      "station-model:station:mock"
+      "station-model:station:mock",
     ]);
     expect(runner.report.promotionMatrix).toEqual(
       expect.objectContaining({
@@ -139,8 +139,8 @@ describe("SceneView3D release visual gate", () => {
             diagnosticCounts: {
               error: 0,
               warning: 0,
-              info: 0
-            }
+              info: 0,
+            },
           },
           query: {
             pickCount: 2,
@@ -150,15 +150,15 @@ describe("SceneView3D release visual gate", () => {
             diagnosticCounts: {
               error: 0,
               warning: 0,
-              info: 0
-            }
-          }
+              info: 0,
+            },
+          },
         },
         readiness: expect.objectContaining({
           decisionReady: true,
-          stablePromotionAllowed: false
-        })
-      })
+          stablePromotionAllowed: false,
+        }),
+      }),
     );
     expect(report.decision).toBe("passed");
     expect(report.accepted).toBe(true);

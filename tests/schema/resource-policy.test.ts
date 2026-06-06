@@ -1,6 +1,12 @@
+import {
+  DiagnosticCodes,
+  defaultResourcePolicy,
+  type MapSpec,
+  validateResourceUrl,
+  validateSpec,
+} from "@gis-engine/engine";
 import { describe, expect, it } from "vitest";
 import scene3dExtensionSpec from "../fixtures/specs/valid/scene3d-extension.map.json";
-import { DiagnosticCodes, defaultResourcePolicy, validateResourceUrl, validateSpec, type MapSpec } from "@gis-engine/engine";
 
 describe("ResourcePolicy validation", () => {
   it("allows relative, localhost, and pmtiles resources by default", () => {
@@ -20,22 +26,26 @@ describe("ResourcePolicy validation", () => {
     expect(fileUrl.diagnostics).toContainEqual(
       expect.objectContaining({
         code: DiagnosticCodes.SecurityUrlBlocked,
-        path: "/sources/points/data"
-      })
+        path: "/sources/points/data",
+      }),
     );
     expect(remoteUrl.diagnostics).toContainEqual(
       expect.objectContaining({
         code: DiagnosticCodes.SecurityUrlBlocked,
-        path: "/sources/points/data"
-      })
+        path: "/sources/points/data",
+      }),
     );
   });
 
   it("allows remote http resources only when their host is allowlisted", () => {
-    const diagnostics = validateResourceUrl("https://tiles.example.com/tiles/{z}/{x}/{y}.png", "/sources/raster/tiles/0", {
-      ...defaultResourcePolicy,
-      allowedHosts: [...defaultResourcePolicy.allowedHosts, "tiles.example.com"]
-    });
+    const diagnostics = validateResourceUrl(
+      "https://tiles.example.com/tiles/{z}/{x}/{y}.png",
+      "/sources/raster/tiles/0",
+      {
+        ...defaultResourcePolicy,
+        allowedHosts: [...defaultResourcePolicy.allowedHosts, "tiles.example.com"],
+      },
+    );
 
     expect(diagnostics).toEqual([]);
   });
@@ -47,8 +57,8 @@ describe("ResourcePolicy validation", () => {
     expect(remote.diagnostics).toContainEqual(
       expect.objectContaining({
         code: DiagnosticCodes.SecurityUrlBlocked,
-        path: "/sources/points/data"
-      })
+        path: "/sources/points/data",
+      }),
     );
     expect(localhost.valid).toBe(true);
   });
@@ -61,20 +71,20 @@ describe("ResourcePolicy validation", () => {
     expect(raster.diagnostics).toContainEqual(
       expect.objectContaining({
         code: DiagnosticCodes.SecurityUrlBlocked,
-        path: "/sources/raster/tiles/0"
-      })
+        path: "/sources/raster/tiles/0",
+      }),
     );
     expect(pmtiles.diagnostics).toContainEqual(
       expect.objectContaining({
         code: DiagnosticCodes.SecurityUrlBlocked,
-        path: "/sources/parcels/url"
-      })
+        path: "/sources/parcels/url",
+      }),
     );
     expect(vector.diagnostics).toContainEqual(
       expect.objectContaining({
         code: DiagnosticCodes.SecurityUrlBlocked,
-        path: "/sources/vector/tiles/0"
-      })
+        path: "/sources/vector/tiles/0",
+      }),
     );
   });
 
@@ -84,8 +94,8 @@ describe("ResourcePolicy validation", () => {
     expect(blocked.diagnostics).toContainEqual(
       expect.objectContaining({
         code: DiagnosticCodes.SecurityUrlBlocked,
-        path: "/extensions/scene3d/sources/city-tiles/url"
-      })
+        path: "/extensions/scene3d/sources/city-tiles/url",
+      }),
     );
   });
 
@@ -104,8 +114,8 @@ describe("ResourcePolicy validation", () => {
     expect(report.diagnostics).not.toContainEqual(
       expect.objectContaining({
         code: DiagnosticCodes.SecurityUrlBlocked,
-        path: "/extensions/scene3d/sources/city-tiles/url"
-      })
+        path: "/extensions/scene3d/sources/city-tiles/url",
+      }),
     );
   });
   it("blocks relative URLs containing path traversal segments (..)", () => {
@@ -118,8 +128,8 @@ describe("ResourcePolicy validation", () => {
         expect.objectContaining({
           code: DiagnosticCodes.SecurityUrlBlocked,
           path: "/sources/points/data",
-          message: expect.stringContaining("path traversal")
-        })
+          message: expect.stringContaining("path traversal"),
+        }),
       );
     }
   });
@@ -135,19 +145,19 @@ describe("ResourcePolicy validation", () => {
   it("accepts custom resourcePolicy via validateSpec options", () => {
     const customPolicy = {
       ...defaultResourcePolicy,
-      allowedHosts: [...defaultResourcePolicy.allowedHosts, "tiles.example.com"]
+      allowedHosts: [...defaultResourcePolicy.allowedHosts, "tiles.example.com"],
     };
 
     const withDefault = validateSpec(withGeojsonData("https://tiles.example.com/data.geojson"));
     const withCustom = validateSpec(withGeojsonData("https://tiles.example.com/data.geojson"), {
-      resourcePolicy: customPolicy
+      resourcePolicy: customPolicy,
     });
 
     expect(withDefault.diagnostics).toContainEqual(
       expect.objectContaining({
         code: DiagnosticCodes.SecurityUrlBlocked,
-        path: "/sources/points/data"
-      })
+        path: "/sources/points/data",
+      }),
     );
     expect(withCustom.valid).toBe(true);
   });
@@ -157,8 +167,8 @@ describe("ResourcePolicy validation", () => {
     expect(diagnostics).toContainEqual(
       expect.objectContaining({
         code: DiagnosticCodes.SecurityUrlBlocked,
-        message: expect.stringContaining("path traversal")
-      })
+        message: expect.stringContaining("path traversal"),
+      }),
     );
   });
 });
@@ -181,8 +191,8 @@ describe("view.bounds semantic validation", () => {
         severity: "error",
         code: DiagnosticCodes.GeoInvalidCoordinates,
         path: "/view/bounds",
-        message: expect.stringContaining("west")
-      })
+        message: expect.stringContaining("west"),
+      }),
     );
   });
 
@@ -193,8 +203,8 @@ describe("view.bounds semantic validation", () => {
         severity: "error",
         code: DiagnosticCodes.GeoInvalidCoordinates,
         path: "/view/bounds",
-        message: expect.stringContaining("south")
-      })
+        message: expect.stringContaining("south"),
+      }),
     );
   });
 
@@ -213,17 +223,17 @@ function withGeojsonData(data: string): MapSpec {
     sources: {
       points: {
         type: "geojson",
-        data
-      }
+        data,
+      },
     },
     layers: [
       {
         id: "points",
         type: "circle",
         source: "points",
-        paint: { "circle-color": "#2563eb" }
-      }
-    ]
+        paint: { "circle-color": "#2563eb" },
+      },
+    ],
   };
 }
 
@@ -235,16 +245,16 @@ function withRasterTile(tileUrl: string): MapSpec {
     sources: {
       raster: {
         type: "raster",
-        tiles: [tileUrl]
-      }
+        tiles: [tileUrl],
+      },
     },
     layers: [
       {
         id: "raster-layer",
         type: "raster",
-        source: "raster"
-      }
-    ]
+        source: "raster",
+      },
+    ],
   };
 }
 
@@ -256,8 +266,8 @@ function withPmtilesUrl(url: string): MapSpec {
     sources: {
       parcels: {
         type: "pmtiles",
-        url
-      }
+        url,
+      },
     },
     layers: [
       {
@@ -265,9 +275,9 @@ function withPmtilesUrl(url: string): MapSpec {
         type: "fill",
         source: "parcels",
         metadata: { "source-layer": "parcels" },
-        paint: { "fill-color": "#22c55e" }
-      }
-    ]
+        paint: { "fill-color": "#22c55e" },
+      },
+    ],
   };
 }
 
@@ -279,17 +289,17 @@ function withVectorTile(tileUrl: string): MapSpec {
     sources: {
       vector: {
         type: "vector",
-        tiles: [tileUrl]
-      }
+        tiles: [tileUrl],
+      },
     },
     layers: [
       {
         id: "vector-fill",
         type: "fill",
         source: "vector",
-        metadata: { "source-layer": "districts" }
-      }
-    ]
+        metadata: { "source-layer": "districts" },
+      },
+    ],
   };
 }
 
@@ -306,6 +316,6 @@ function withBounds(bounds: [number, number, number, number]): MapSpec {
     id: "bounds-validation",
     view: { center: [120, 30], zoom: 10, bounds },
     sources: {},
-    layers: []
+    layers: [],
   };
 }

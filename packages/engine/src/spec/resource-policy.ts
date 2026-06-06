@@ -1,6 +1,6 @@
-import { escapePathSegment } from "./patch/path.js";
 import { DiagnosticCodes } from "../diagnostics/codes.js";
 import type { Diagnostic, MapSpec } from "../types.js";
+import { escapePathSegment } from "./patch/path.js";
 
 export type ResourceUrlScheme = "http:" | "https:" | "pmtiles:";
 
@@ -17,7 +17,7 @@ export const defaultResourcePolicy: ResourcePolicy = {
   allowRelativeUrls: true,
   allowedSchemes: ["http:", "https:", "pmtiles:"],
   allowedHosts: ["localhost", "127.0.0.1", "::1", "[::1]"],
-  timeoutMs: 10000
+  timeoutMs: 10000,
 };
 
 export function validateResourcePolicy(spec: MapSpec, policy: ResourcePolicy = defaultResourcePolicy): Diagnostic[] {
@@ -32,7 +32,8 @@ export function validateResourcePolicy(spec: MapSpec, policy: ResourcePolicy = d
 
     if (source.type === "raster" && Array.isArray(source.tiles)) {
       for (const [index, tileUrl] of source.tiles.entries()) {
-        if (typeof tileUrl === "string") diagnostics.push(...validateResourceUrl(tileUrl, `${sourcePath}/tiles/${index}`, policy));
+        if (typeof tileUrl === "string")
+          diagnostics.push(...validateResourceUrl(tileUrl, `${sourcePath}/tiles/${index}`, policy));
       }
     }
 
@@ -56,7 +57,11 @@ export function validateResourcePolicy(spec: MapSpec, policy: ResourcePolicy = d
   return diagnostics;
 }
 
-export function validateResourceUrl(urlString: string, path: string, policy: ResourcePolicy = defaultResourcePolicy): Diagnostic[] {
+export function validateResourceUrl(
+  urlString: string,
+  path: string,
+  policy: ResourcePolicy = defaultResourcePolicy,
+): Diagnostic[] {
   const trimmedUrl = urlString.trim();
   if (trimmedUrl.length === 0) return [blocked(urlString, path, "Resource URL must not be empty.")];
 
@@ -97,7 +102,12 @@ function isAllowedScheme(scheme: string, policy: ResourcePolicy): scheme is Reso
   return policy.allowedSchemes.includes(scheme as ResourceUrlScheme);
 }
 
-function validatePathPrefix(pathname: string, originalUrl: string, diagnosticPath: string, policy: ResourcePolicy): Diagnostic[] {
+function validatePathPrefix(
+  pathname: string,
+  originalUrl: string,
+  diagnosticPath: string,
+  policy: ResourcePolicy,
+): Diagnostic[] {
   if (!policy.allowedPathPrefixes || policy.allowedPathPrefixes.length === 0) return [];
 
   if (policy.allowedPathPrefixes.some((prefix) => pathname.startsWith(prefix))) return [];
@@ -115,8 +125,8 @@ function blocked(urlString: string, path: string, message: string): Diagnostic {
     fix: {
       kind: "manual",
       confidence: "medium",
-      message: "Use a relative, pmtiles:, localhost, or policy-allowlisted http(s) resource URL."
-    }
+      message: "Use a relative, pmtiles:, localhost, or policy-allowlisted http(s) resource URL.",
+    },
   };
 }
 

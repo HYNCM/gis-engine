@@ -16,11 +16,19 @@ interface NormalizedExpressionOptions {
   knownProperties: ReadonlySet<string>;
 }
 
-export function validateExpression(expr: unknown, path: string, options: ExpressionValidationOptions = {}): Diagnostic[] {
+export function validateExpression(
+  expr: unknown,
+  path: string,
+  options: ExpressionValidationOptions = {},
+): Diagnostic[] {
   return inferExpression(expr, path, normalizeOptions(options)).diagnostics;
 }
 
-export function validateFilterExpression(filter: unknown, path: string, options: ExpressionValidationOptions = {}): Diagnostic[] {
+export function validateFilterExpression(
+  filter: unknown,
+  path: string,
+  options: ExpressionValidationOptions = {},
+): Diagnostic[] {
   const inference = inferExpression(filter, path, normalizeOptions(options));
   const diagnostics = [...inference.diagnostics];
   if (!diagnostics.some((diagnostic) => diagnostic.severity === "error") && inference.type !== "boolean") {
@@ -28,7 +36,7 @@ export function validateFilterExpression(filter: unknown, path: string, options:
       severity: "error",
       code: DiagnosticCodes.ExpressionTypeMismatch,
       message: "Layer filter expressions must evaluate to boolean values.",
-      path
+      path,
     });
   }
   return diagnostics;
@@ -47,9 +55,9 @@ function inferExpression(expr: unknown, path: string, options: NormalizedExpress
           severity: "error",
           code: DiagnosticCodes.ExpressionInvalidArity,
           message: "Expression array cannot be empty.",
-          path
-        }
-      ]
+          path,
+        },
+      ],
     };
   }
 
@@ -62,9 +70,9 @@ function inferExpression(expr: unknown, path: string, options: NormalizedExpress
           severity: "error",
           code: DiagnosticCodes.ExpressionUnknownOperator,
           message: `Expression operator must be a string, found ${typeof operator}.`,
-          path: `${path}/0`
-        }
-      ]
+          path: `${path}/0`,
+        },
+      ],
     };
   }
 
@@ -111,9 +119,9 @@ function inferExpression(expr: unknown, path: string, options: NormalizedExpress
             severity: "error",
             code: DiagnosticCodes.ExpressionUnknownOperator,
             message: `Unknown expression operator "${operator}".`,
-            path: `${path}/0`
-          }
-        ]
+            path: `${path}/0`,
+          },
+        ],
       };
   }
 }
@@ -127,9 +135,9 @@ function inferLiteralExpression(expr: unknown[], path: string): ExpressionInfere
           severity: "error",
           code: DiagnosticCodes.ExpressionInvalidArity,
           message: `Expected 1 argument for "literal", found ${expr.length - 1}.`,
-          path
-        }
-      ]
+          path,
+        },
+      ],
     };
   }
 
@@ -147,9 +155,9 @@ function inferGetExpression(expr: unknown[], path: string, options: NormalizedEx
           severity: "error",
           code: DiagnosticCodes.ExpressionInvalidArity,
           message: `Expected 1 or 2 arguments for "get", found ${expr.length - 1}.`,
-          path
-        }
-      ]
+          path,
+        },
+      ],
     };
   }
 
@@ -158,8 +166,8 @@ function inferGetExpression(expr: unknown[], path: string, options: NormalizedEx
     diagnostics.push({
       severity: "error",
       code: DiagnosticCodes.ExpressionTypeMismatch,
-      message: "\"get\" property name must be a string.",
-      path: `${path}/1`
+      message: '"get" property name must be a string.',
+      path: `${path}/1`,
     });
   } else if (options.knownProperties.size > 0 && !options.knownProperties.has(propertyName)) {
     diagnostics.push({
@@ -170,8 +178,8 @@ function inferGetExpression(expr: unknown[], path: string, options: NormalizedEx
       fix: {
         kind: "manual",
         confidence: "low",
-        message: "Verify the source feature property name or provide a sample/property schema."
-      }
+        message: "Verify the source feature property name or provide a sample/property schema.",
+      },
     });
   }
 
@@ -186,10 +194,10 @@ function inferCaseExpression(expr: unknown[], path: string, options: NormalizedE
         {
           severity: "error",
           code: DiagnosticCodes.ExpressionInvalidArity,
-          message: "Expected \"case\" syntax: [\"case\", condition1, output1, ..., fallback].",
-          path
-        }
-      ]
+          message: 'Expected "case" syntax: ["case", condition1, output1, ..., fallback].',
+          path,
+        },
+      ],
     };
   }
 
@@ -201,8 +209,8 @@ function inferCaseExpression(expr: unknown[], path: string, options: NormalizedE
       diagnostics.push({
         severity: "error",
         code: DiagnosticCodes.ExpressionTypeMismatch,
-        message: "\"case\" conditions must evaluate to boolean values.",
-        path: `${path}/${conditionIndex}`
+        message: '"case" conditions must evaluate to boolean values.',
+        path: `${path}/${conditionIndex}`,
       });
     }
   }
@@ -213,7 +221,11 @@ function inferCaseExpression(expr: unknown[], path: string, options: NormalizedE
   return { type: outputs.type, diagnostics };
 }
 
-function inferMatchExpression(expr: unknown[], path: string, options: NormalizedExpressionOptions): ExpressionInference {
+function inferMatchExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+): ExpressionInference {
   if (expr.length < 5 || expr.length % 2 !== 1) {
     return {
       type: "unknown",
@@ -221,10 +233,10 @@ function inferMatchExpression(expr: unknown[], path: string, options: Normalized
         {
           severity: "error",
           code: DiagnosticCodes.ExpressionInvalidArity,
-          message: "Expected \"match\" syntax: [\"match\", input, label1, output1, ..., fallback].",
-          path
-        }
-      ]
+          message: 'Expected "match" syntax: ["match", input, label1, output1, ..., fallback].',
+          path,
+        },
+      ],
     };
   }
 
@@ -236,8 +248,8 @@ function inferMatchExpression(expr: unknown[], path: string, options: Normalized
       diagnostics.push({
         severity: "error",
         code: DiagnosticCodes.ExpressionTypeMismatch,
-        message: "\"match\" labels must be strings, numbers, booleans, or arrays of those literal values.",
-        path: `${path}/${labelIndex}`
+        message: '"match" labels must be strings, numbers, booleans, or arrays of those literal values.',
+        path: `${path}/${labelIndex}`,
       });
     }
   }
@@ -256,10 +268,10 @@ function inferStepExpression(expr: unknown[], path: string, options: NormalizedE
         {
           severity: "error",
           code: DiagnosticCodes.ExpressionInvalidArity,
-          message: "Expected \"step\" syntax: [\"step\", input, output0, stop1, output1, ...].",
-          path
-        }
-      ]
+          message: 'Expected "step" syntax: ["step", input, output0, stop1, output1, ...].',
+          path,
+        },
+      ],
     };
   }
 
@@ -271,8 +283,8 @@ function inferStepExpression(expr: unknown[], path: string, options: NormalizedE
       diagnostics.push({
         severity: "error",
         code: DiagnosticCodes.ExpressionTypeMismatch,
-        message: "\"step\" stop inputs must be numbers.",
-        path: `${path}/${stopIndex}`
+        message: '"step" stop inputs must be numbers.',
+        path: `${path}/${stopIndex}`,
       });
     }
   }
@@ -283,7 +295,11 @@ function inferStepExpression(expr: unknown[], path: string, options: NormalizedE
   return { type: outputs.type, diagnostics };
 }
 
-function inferInterpolateExpression(expr: unknown[], path: string, options: NormalizedExpressionOptions): ExpressionInference {
+function inferInterpolateExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+): ExpressionInference {
   if (expr.length < 7 || expr.length % 2 === 0) {
     return {
       type: "unknown",
@@ -291,10 +307,11 @@ function inferInterpolateExpression(expr: unknown[], path: string, options: Norm
         {
           severity: "error",
           code: DiagnosticCodes.ExpressionInvalidArity,
-          message: "Expected \"interpolate\" syntax: [\"interpolate\", [\"linear\"], input, stop1, output1, stop2, output2, ...].",
-          path
-        }
-      ]
+          message:
+            'Expected "interpolate" syntax: ["interpolate", ["linear"], input, stop1, output1, stop2, output2, ...].',
+          path,
+        },
+      ],
     };
   }
 
@@ -304,7 +321,7 @@ function inferInterpolateExpression(expr: unknown[], path: string, options: Norm
       severity: "error",
       code: DiagnosticCodes.CapabilityUnsupported,
       message: "Only linear interpolate expressions are supported in v0.1.",
-      path: `${path}/1`
+      path: `${path}/1`,
     });
   }
 
@@ -315,8 +332,8 @@ function inferInterpolateExpression(expr: unknown[], path: string, options: Norm
       diagnostics.push({
         severity: "error",
         code: DiagnosticCodes.ExpressionTypeMismatch,
-        message: "\"interpolate\" stop inputs must be numbers.",
-        path: `${path}/${stopIndex}`
+        message: '"interpolate" stop inputs must be numbers.',
+        path: `${path}/${stopIndex}`,
       });
     }
   }
@@ -328,8 +345,8 @@ function inferInterpolateExpression(expr: unknown[], path: string, options: Norm
     diagnostics.push({
       severity: "error",
       code: outputs.type === "string" ? DiagnosticCodes.ExpressionInvalidColor : DiagnosticCodes.ExpressionTypeMismatch,
-      message: "\"interpolate\" outputs must be numbers or valid color strings.",
-      path
+      message: '"interpolate" outputs must be numbers or valid color strings.',
+      path,
     });
   }
 
@@ -345,9 +362,9 @@ function inferZoomExpression(expr: unknown[], path: string): ExpressionInference
           severity: "error",
           code: DiagnosticCodes.ExpressionInvalidArity,
           message: `Expected 0 arguments for "zoom", found ${expr.length - 1}.`,
-          path
-        }
-      ]
+          path,
+        },
+      ],
     };
   }
 
@@ -363,9 +380,9 @@ function inferHasExpression(expr: unknown[], path: string, options: NormalizedEx
           severity: "error",
           code: DiagnosticCodes.ExpressionInvalidArity,
           message: `Expected 1 or 2 arguments for "has", found ${expr.length - 1}.`,
-          path
-        }
-      ]
+          path,
+        },
+      ],
     };
   }
 
@@ -375,8 +392,8 @@ function inferHasExpression(expr: unknown[], path: string, options: NormalizedEx
     diagnostics.push({
       severity: "error",
       code: DiagnosticCodes.ExpressionTypeMismatch,
-      message: "\"has\" property name must be a string.",
-      path: `${path}/1`
+      message: '"has" property name must be a string.',
+      path: `${path}/1`,
     });
   } else if (options.knownProperties.size > 0 && !options.knownProperties.has(propertyName)) {
     diagnostics.push({
@@ -387,15 +404,19 @@ function inferHasExpression(expr: unknown[], path: string, options: NormalizedEx
       fix: {
         kind: "manual",
         confidence: "low",
-        message: "Verify the source feature property name or provide a sample/property schema."
-      }
+        message: "Verify the source feature property name or provide a sample/property schema.",
+      },
     });
   }
   if (expr.length === 3) diagnostics.push(...inferExpression(expr[2], `${path}/2`, options).diagnostics);
   return { type: "boolean", diagnostics };
 }
 
-function inferLogicalExpression(expr: unknown[], path: string, options: NormalizedExpressionOptions): ExpressionInference {
+function inferLogicalExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+): ExpressionInference {
   const operator = String(expr[0]);
   if (expr.length < 2) {
     return {
@@ -405,9 +426,9 @@ function inferLogicalExpression(expr: unknown[], path: string, options: Normaliz
           severity: "error",
           code: DiagnosticCodes.ExpressionInvalidArity,
           message: `Expected at least 1 argument for "${operator}".`,
-          path
-        }
-      ]
+          path,
+        },
+      ],
     };
   }
 
@@ -420,7 +441,7 @@ function inferLogicalExpression(expr: unknown[], path: string, options: Normaliz
         severity: "error",
         code: DiagnosticCodes.ExpressionTypeMismatch,
         message: `"${operator}" arguments must evaluate to boolean values.`,
-        path: `${path}/${argumentIndex}`
+        path: `${path}/${argumentIndex}`,
       });
     }
   }
@@ -436,9 +457,9 @@ function inferNotExpression(expr: unknown[], path: string, options: NormalizedEx
           severity: "error",
           code: DiagnosticCodes.ExpressionInvalidArity,
           message: `Expected 1 argument for "!", found ${expr.length - 1}.`,
-          path
-        }
-      ]
+          path,
+        },
+      ],
     };
   }
 
@@ -448,14 +469,18 @@ function inferNotExpression(expr: unknown[], path: string, options: NormalizedEx
     diagnostics.push({
       severity: "error",
       code: DiagnosticCodes.ExpressionTypeMismatch,
-      message: "\"!\" argument must evaluate to a boolean value.",
-      path: `${path}/1`
+      message: '"!" argument must evaluate to a boolean value.',
+      path: `${path}/1`,
     });
   }
   return { type: "boolean", diagnostics };
 }
 
-function inferComparisonExpression(expr: unknown[], path: string, options: NormalizedExpressionOptions): ExpressionInference {
+function inferComparisonExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+): ExpressionInference {
   const operator = String(expr[0]);
   if (expr.length !== 3) {
     return {
@@ -465,15 +490,19 @@ function inferComparisonExpression(expr: unknown[], path: string, options: Norma
           severity: "error",
           code: DiagnosticCodes.ExpressionInvalidArity,
           message: `Expected 2 arguments for "${operator}", found ${expr.length - 1}.`,
-          path
-        }
-      ]
+          path,
+        },
+      ],
     };
   }
   return { type: "boolean", diagnostics: collectArgumentDiagnostics(expr, path, options, 1) };
 }
 
-function inferMembershipExpression(expr: unknown[], path: string, options: NormalizedExpressionOptions): ExpressionInference {
+function inferMembershipExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+): ExpressionInference {
   if (expr.length < 3) {
     return {
       type: "unknown",
@@ -482,15 +511,19 @@ function inferMembershipExpression(expr: unknown[], path: string, options: Norma
           severity: "error",
           code: DiagnosticCodes.ExpressionInvalidArity,
           message: `Expected at least 2 arguments for "in", found ${expr.length - 1}.`,
-          path
-        }
-      ]
+          path,
+        },
+      ],
     };
   }
   return { type: "boolean", diagnostics: collectArgumentDiagnostics(expr, path, options, 1) };
 }
 
-function inferToNumberExpression(expr: unknown[], path: string, options: NormalizedExpressionOptions): ExpressionInference {
+function inferToNumberExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+): ExpressionInference {
   if (expr.length < 2) {
     return {
       type: "unknown",
@@ -498,17 +531,21 @@ function inferToNumberExpression(expr: unknown[], path: string, options: Normali
         {
           severity: "error",
           code: DiagnosticCodes.ExpressionInvalidArity,
-          message: "Expected at least 1 argument for \"to-number\".",
-          path
-        }
-      ]
+          message: 'Expected at least 1 argument for "to-number".',
+          path,
+        },
+      ],
     };
   }
 
   return { type: "number", diagnostics: collectArgumentDiagnostics(expr, path, options, 1) };
 }
 
-function inferToStringExpression(expr: unknown[], path: string, options: NormalizedExpressionOptions): ExpressionInference {
+function inferToStringExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+): ExpressionInference {
   if (expr.length !== 2) {
     return {
       type: "unknown",
@@ -517,16 +554,21 @@ function inferToStringExpression(expr: unknown[], path: string, options: Normali
           severity: "error",
           code: DiagnosticCodes.ExpressionInvalidArity,
           message: `Expected 1 argument for "to-string", found ${expr.length - 1}.`,
-          path
-        }
-      ]
+          path,
+        },
+      ],
     };
   }
 
   return { type: "string", diagnostics: collectArgumentDiagnostics(expr, path, options, 1) };
 }
 
-function collectOutputTypes(expr: unknown[], path: string, options: NormalizedExpressionOptions, firstOutputIndex: number): ExpressionInference {
+function collectOutputTypes(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+  firstOutputIndex: number,
+): ExpressionInference {
   return collectOutputTypesAtIndexes(expr, path, options, outputIndexesFromStride(expr.length, firstOutputIndex));
 }
 
@@ -534,7 +576,7 @@ function collectOutputTypesAtIndexes(
   expr: unknown[],
   path: string,
   options: NormalizedExpressionOptions,
-  outputIndexes: number[]
+  outputIndexes: number[],
 ): ExpressionInference {
   const diagnostics: Diagnostic[] = [];
   let expectedType: ExprType | undefined;
@@ -554,7 +596,7 @@ function collectOutputTypesAtIndexes(
         severity: "error",
         code: DiagnosticCodes.ExpressionTypeMismatch,
         message: `Expression branch outputs must use a consistent type. Expected ${expectedType}, found ${output.type}.`,
-        path: `${path}/${outputIndex}`
+        path: `${path}/${outputIndex}`,
       });
     }
   }
@@ -582,7 +624,12 @@ function outputIndexesForMatch(length: number): number[] {
   return indexes;
 }
 
-function collectArgumentDiagnostics(expr: unknown[], path: string, options: NormalizedExpressionOptions, firstArgumentIndex: number): Diagnostic[] {
+function collectArgumentDiagnostics(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+  firstArgumentIndex: number,
+): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
   for (let argumentIndex = firstArgumentIndex; argumentIndex < expr.length; argumentIndex += 1) {
     diagnostics.push(...inferExpression(expr[argumentIndex], `${path}/${argumentIndex}`, options).diagnostics);
@@ -619,6 +666,6 @@ function isColorString(value: string): boolean {
 
 function normalizeOptions(options: ExpressionValidationOptions): NormalizedExpressionOptions {
   return {
-    knownProperties: new Set(options.knownProperties ?? [])
+    knownProperties: new Set(options.knownProperties ?? []),
   };
 }

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 /**
  * Evolution Collector — 进化度量收集脚本
  *
@@ -20,15 +21,9 @@
  *   2 - 错误：无法读取必要的构件
  */
 
-import {
-  readFileSync,
-  writeFileSync,
-  readdirSync,
-  existsSync,
-  mkdirSync,
-} from "node:fs";
-import { join, dirname } from "node:path";
 import { execSync } from "node:child_process";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import generateEvolutionSnapshot from "./evolution-snapshot-generator.mjs";
 
@@ -56,9 +51,7 @@ for (let i = 0; i < args.length; i++) {
 /** 获取当前 ISO 周（如 2026-W22） */
 function getCurrentWeek() {
   const d = new Date();
-  const utcDate = new Date(
-    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
-  );
+  const utcDate = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
   const day = utcDate.getUTCDay() || 7;
   utcDate.setUTCDate(utcDate.getUTCDate() + 4 - day);
   const isoYear = utcDate.getUTCFullYear();
@@ -115,7 +108,7 @@ function listFiles(dir, pattern) {
 
 /** 从 markdown 中提取 YAML front matter */
 function extractFrontMatter(content) {
-  if (!content || !content.startsWith("---")) return {};
+  if (!content?.startsWith("---")) return {};
   const end = content.indexOf("---", 3);
   if (end === -1) return {};
   const yaml = content.slice(3, end).trim();
@@ -126,10 +119,7 @@ function extractFrontMatter(content) {
     const key = line.slice(0, colonIdx).trim();
     let value = line.slice(colonIdx + 1).trim();
     // Remove quotes
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
       value = value.slice(1, -1);
     }
     result[key] = value;
@@ -146,29 +136,24 @@ function extractTaskTable(content) {
   const lines = content.split("\n");
   let inTable = false;
   let headers = [];
-  let headerLine = -1;
+  let _headerLine = -1;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
 
     // Detect table header with task columns
-    if (
-      line.startsWith("|") &&
-      line.includes("id") &&
-      line.includes("title") &&
-      line.includes("status")
-    ) {
+    if (line.startsWith("|") && line.includes("id") && line.includes("title") && line.includes("status")) {
       inTable = true;
       headers = line
         .split("|")
         .map((h) => h.trim())
         .filter(Boolean);
-      headerLine = i;
+      _headerLine = i;
       continue;
     }
 
     // Skip separator line
-    if (inTable && line.startsWith("|") && /^[\|\s\-:]+$/.test(line)) {
+    if (inTable && line.startsWith("|") && /^[|\s\-:]+$/.test(line)) {
       continue;
     }
 
@@ -197,11 +182,9 @@ function extractTaskTable(content) {
 }
 
 /** 从 sprint markdown 中查找 retrospective / lessons_learned 块 */
-function extractRetrospective(content) {
+function _extractRetrospective(content) {
   if (!content) return null;
-  const retroMatch = content.match(
-    /## Retrospective[\s\S]*?(?=\n## |\n---|\n$)/,
-  );
+  const retroMatch = content.match(/## Retrospective[\s\S]*?(?=\n## |\n---|\n$)/);
   if (!retroMatch) return null;
 
   const retro = { lessons: [] };
@@ -212,8 +195,8 @@ function extractRetrospective(content) {
   let m;
   while ((m = estPattern.exec(section)) !== null) {
     retro.lessons.push({
-      estimated: parseInt(m[1]),
-      actual: parseInt(m[2]),
+      estimated: parseInt(m[1], 10),
+      actual: parseInt(m[2], 10),
     });
   }
 
@@ -231,10 +214,7 @@ function collectEstimationAccuracy(tasks) {
     const complexity = (task.complexity || "S").toUpperCase();
     const estimated = complexityToHours(complexity);
     const actual = getTaskActualHours(task);
-    const deviation =
-      estimated > 0 && actual !== null
-        ? Math.abs(estimated - actual) / estimated
-        : null;
+    const deviation = estimated > 0 && actual !== null ? Math.abs(estimated - actual) / estimated : null;
     results.push({
       id: task.id,
       complexity,
@@ -252,10 +232,7 @@ function collectEstimationAccuracy(tasks) {
 
   const knownDeviations = results.filter((r) => r.deviation !== null);
   const avgDeviation =
-    knownDeviations.length > 0
-      ? knownDeviations.reduce((s, r) => s + r.deviation, 0) /
-        knownDeviations.length
-      : null;
+    knownDeviations.length > 0 ? knownDeviations.reduce((s, r) => s + r.deviation, 0) / knownDeviations.length : null;
 
   return {
     tasks: results,
@@ -272,9 +249,7 @@ function collectEstimationAccuracy(tasks) {
       knownActualCount: items.filter((i) => i.deviation !== null).length,
       avgDeviation:
         items.filter((i) => i.deviation !== null).length > 0
-          ? items
-              .filter((i) => i.deviation !== null)
-              .reduce((s, i) => s + i.deviation, 0) /
+          ? items.filter((i) => i.deviation !== null).reduce((s, i) => s + i.deviation, 0) /
             items.filter((i) => i.deviation !== null).length
           : null,
     })),
@@ -287,12 +262,7 @@ function complexityToHours(c) {
 }
 
 function getTaskActualHours(task) {
-  const candidates = [
-    task.actual_hours,
-    task["actual hours"],
-    task.actual,
-    task["actual h"],
-  ];
+  const candidates = [task.actual_hours, task["actual hours"], task.actual, task["actual h"]];
   for (const candidate of candidates) {
     const hours = parseOptionalHours(candidate);
     if (hours !== null) return hours;
@@ -312,11 +282,9 @@ function parseOptionalHours(value) {
 }
 
 // ── D2: 瓶颈检测 ──
-function detectBottlenecks(tasks, dependencyGraph) {
+function detectBottlenecks(tasks, _dependencyGraph) {
   const bottlenecks = [];
-  const criticalPathTasks = tasks.filter(
-    (t) => t.id && (t.priority === "P0" || t.critical_path === "true"),
-  );
+  const criticalPathTasks = tasks.filter((t) => t.id && (t.priority === "P0" || t.critical_path === "true"));
 
   // Check for single-owner blocking patterns
   const ownerBlockCount = {};
@@ -342,8 +310,7 @@ function detectBottlenecks(tasks, dependencyGraph) {
   }
 
   // Check critical path ratio
-  const criticalRatio =
-    tasks.length > 0 ? criticalPathTasks.length / tasks.length : 0;
+  const criticalRatio = tasks.length > 0 ? criticalPathTasks.length / tasks.length : 0;
   if (criticalRatio > 0.6) {
     bottlenecks.push({
       type: "high-critical-path-ratio",
@@ -385,10 +352,7 @@ function collectQualityTrends(reviewFiles) {
     }
   }
 
-  const firstPassRate =
-    gateResults.total > 0
-      ? ((gateResults.pass / gateResults.total) * 100).toFixed(1)
-      : null;
+  const firstPassRate = gateResults.total > 0 ? ((gateResults.pass / gateResults.total) * 100).toFixed(1) : null;
 
   return {
     gateResults,
@@ -407,16 +371,11 @@ function extractGateResultRows(content) {
 
     const headers = splitMarkdownRow(headerLine).map((h) => h.toLowerCase());
     const gateIndex = headers.findIndex((h) => ["gate", "command"].includes(h));
-    const resultIndex = headers.findIndex(
-      (h) => h === "result" || h === "status",
-    );
+    const resultIndex = headers.findIndex((h) => h === "result" || h === "status");
     if (gateIndex === -1 || resultIndex === -1) continue;
 
     let rowIndex = i + 1;
-    if (
-      lines[rowIndex]?.trim().startsWith("|") &&
-      /^[\|\s\-:]+$/.test(lines[rowIndex].trim())
-    ) {
+    if (lines[rowIndex]?.trim().startsWith("|") && /^[|\s\-:]+$/.test(lines[rowIndex].trim())) {
       rowIndex++;
     }
 
@@ -453,10 +412,7 @@ function normalizeGateResult(cell) {
   if (/^(✅\s*)?(pass|passed|green|ok)\b/.test(value) || value === "✅") {
     return "pass";
   }
-  if (
-    /^(❌\s*)?(fail|failed|blocked|block|red)\b/.test(value) ||
-    value === "❌"
-  ) {
+  if (/^(❌\s*)?(fail|failed|blocked|block|red)\b/.test(value) || value === "❌") {
     return "fail";
   }
   return null;
@@ -487,9 +443,7 @@ function extractPatterns(sprintContent) {
   }
 
   // Also scan for implicit patterns from section headers
-  const designDecisions = sprintContent.match(
-    /## (?:Design Decision|Architecture Note)[\s\S]*?(?=\n## |\n---|\n$)/g,
-  );
+  const designDecisions = sprintContent.match(/## (?:Design Decision|Architecture Note)[\s\S]*?(?=\n## |\n---|\n$)/g);
   if (designDecisions) {
     for (const dd of designDecisions) {
       patterns.push({
@@ -537,8 +491,7 @@ function collectResponsibilityDistribution(tasks) {
 
   const percentages = {};
   for (const [owner, count] of Object.entries(distribution)) {
-    percentages[owner] =
-      total > 0 ? ((count / total) * 100).toFixed(1) + "%" : "0%";
+    percentages[owner] = total > 0 ? `${((count / total) * 100).toFixed(1)}%` : "0%";
   }
 
   return { distribution, percentages, total };
@@ -558,9 +511,7 @@ function evaluateDecisionWeights(sprintContent) {
   return {
     scoresObserved: priorities.length,
     avgPriorityScore:
-      priorities.length > 0
-        ? (priorities.reduce((a, b) => a + b, 0) / priorities.length).toFixed(2)
-        : "N/A",
+      priorities.length > 0 ? (priorities.reduce((a, b) => a + b, 0) / priorities.length).toFixed(2) : "N/A",
   };
 }
 
@@ -589,7 +540,7 @@ function getRepoRevision() {
       cwd: ROOT,
       encoding: "utf-8",
     }).trim();
-  } catch (error) {
+  } catch (_error) {
     return "unknown";
   }
 }
@@ -603,15 +554,10 @@ function main() {
   const planDir = "docs/planning";
   const reviewDir = "docs/reviews";
 
-  const sprintFiles = listFiles(
-    planDir,
-    new RegExp(`sprint-${options.week}`, "i"),
-  );
+  const sprintFiles = listFiles(planDir, new RegExp(`sprint-${options.week}`, "i"));
   const reviewFiles = [
     ...listFiles(reviewDir, new RegExp(`${options.week}`, "i")),
-    ...getIsoWeekDatePatterns(options.week).flatMap((pattern) =>
-      listFiles(reviewDir, pattern),
-    ),
+    ...getIsoWeekDatePatterns(options.week).flatMap((pattern) => listFiles(reviewDir, pattern)),
   ];
 
   console.log(`📂 找到 ${sprintFiles.length} 个 sprint 文件`);
@@ -624,7 +570,7 @@ function main() {
   for (const file of sprintFiles) {
     const content = safeRead(file);
     if (!content) continue;
-    allSprintContent += content + "\n";
+    allSprintContent += `${content}\n`;
     const tasks = extractTaskTable(content);
     allTasks = allTasks.concat(tasks);
   }
@@ -658,15 +604,11 @@ function main() {
   if (options.patternsOnly) {
     console.log("\n## 提取的设计模式\n");
     for (const p of d4.patterns) {
-      console.log(
-        `- ${p.pattern_id || p.source}: ${p.description || p.name || "(未命名)"}`,
-      );
+      console.log(`- ${p.pattern_id || p.source}: ${p.description || p.name || "(未命名)"}`);
     }
     console.log("\n## 提取的陷阱\n");
     for (const p of d4.pitfalls) {
-      console.log(
-        `- ${p.pitfall_id || "未知"}: ${p.description || "(无描述)"}`,
-      );
+      console.log(`- ${p.pitfall_id || "未知"}: ${p.description || "(无描述)"}`);
     }
     return 0;
   }
@@ -674,9 +616,7 @@ function main() {
   if (options.anomalyOnly) {
     let anomalyCount = 0;
     if (d1.summary.avgDeviation !== null && d1.summary.avgDeviation > 1.0) {
-      console.log(
-        `⚠️ 估算偏差率异常: ${formatMetric(d1.summary.avgDeviation)}`,
-      );
+      console.log(`⚠️ 估算偏差率异常: ${formatMetric(d1.summary.avgDeviation)}`);
       anomalyCount++;
     }
     for (const b of d2) {
@@ -697,9 +637,7 @@ function main() {
 
   console.log("## D1: 估算准确度");
   console.log(`  任务数: ${d1.summary.count}`);
-  console.log(
-    `  实际工时已知/未知: ${d1.summary.knownActualCount}/${d1.summary.unknownActualCount}`,
-  );
+  console.log(`  实际工时已知/未知: ${d1.summary.knownActualCount}/${d1.summary.unknownActualCount}`);
   console.log(`  平均偏差率: ${formatMetric(d1.summary.avgDeviation)}`);
   for (const [complexity, data] of Object.entries(d1.byComplexity)) {
     console.log(
@@ -718,9 +656,7 @@ function main() {
 
   console.log("\n## D3: 质量趋势");
   console.log(`  首次通过率: ${d3.firstPassRate}`);
-  console.log(
-    `  通过: ${d3.gateResults.pass}, 失败: ${d3.gateResults.fail}, 豁免: ${d3.gateResults.waiver}`,
-  );
+  console.log(`  通过: ${d3.gateResults.pass}, 失败: ${d3.gateResults.fail}, 豁免: ${d3.gateResults.waiver}`);
 
   console.log("\n## D4: 知识积累");
   console.log(`  新模式: ${d4.patterns.length}`);
@@ -765,11 +701,7 @@ function main() {
       mkdirSync(dirname(ledgerPath), { recursive: true });
       const base = existingLedger.replace(/\s*$/, "\n");
       const updatedLedger = `${base}${newEntry.trimStart()}`;
-      writeFileSync(
-        ledgerPath,
-        updatedLedger.endsWith("\n") ? updatedLedger : `${updatedLedger}\n`,
-        "utf-8",
-      );
+      writeFileSync(ledgerPath, updatedLedger.endsWith("\n") ? updatedLedger : `${updatedLedger}\n`, "utf-8");
       console.log(`\n📝 已追加 ${options.week} 周条目到进化账本`);
     } else {
       console.log(`\n📝 ${options.week} 条目已存在于进化账本中`);
@@ -792,7 +724,7 @@ function main() {
       options.dryRun,
     );
 
-    if (snapshotResult && snapshotResult.path) {
+    if (snapshotResult?.path) {
       console.log(`✅ 已生成 Evolution Snapshot: ${snapshotResult.path}`);
     }
   }

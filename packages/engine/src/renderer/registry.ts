@@ -6,7 +6,7 @@ export type RendererAdapterFactory = () => RendererAdapter;
 
 const adapterFactories = new Map<string, RendererAdapterFactory>([
   ["maplibre", () => new MapLibreAdapter()],
-  ["mock", () => new MockAdapter()]
+  ["mock", () => new MockAdapter()],
 ]);
 
 export function registerAdapter(id: string, factory: RendererAdapterFactory): void {

@@ -15,14 +15,8 @@
  *   - 支持 unpkg / jsDelivr / esm.sh 部署
  */
 
-import {
-  mkdirSync,
-  writeFileSync,
-  readFileSync,
-  cpSync,
-  existsSync,
-} from "node:fs";
-import { join, dirname } from "node:path";
+import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -37,10 +31,10 @@ function getExportEntry(pkgName) {
   if (!existsSync(pkgPath)) return null;
   const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
   const exports = pkg.exports;
-  if (exports && exports["."] && exports["."].import) {
+  if (exports?.["."]?.import) {
     return exports["."].import;
   }
-  if (exports && exports["."]) {
+  if (exports?.["."]) {
     return exports["."];
   }
   return pkg.main || null;
@@ -83,9 +77,7 @@ function ensureDir(dir) {
 
 function getVersion(pkgName) {
   try {
-    const pkg = JSON.parse(
-      readFileSync(join(ROOT, "packages", pkgName, "package.json"), "utf-8"),
-    );
+    const pkg = JSON.parse(readFileSync(join(ROOT, "packages", pkgName, "package.json"), "utf-8"));
     return pkg.version;
   } catch {
     return "0.1.0";
@@ -94,9 +86,7 @@ function getVersion(pkgName) {
 
 function getDescription(pkgName) {
   try {
-    const pkg = JSON.parse(
-      readFileSync(join(ROOT, "packages", pkgName, "package.json"), "utf-8"),
-    );
+    const pkg = JSON.parse(readFileSync(join(ROOT, "packages", pkgName, "package.json"), "utf-8"));
     return pkg.description || `@gis-engine/${pkgName}`;
   } catch {
     return `@gis-engine/${pkgName}`;
@@ -223,10 +213,7 @@ function main() {
       writeFileSync(join(outDir, "index.mjs"), bundled.esm);
 
       // Package metadata
-      writeFileSync(
-        join(outDir, "package.json"),
-        generatePackageJson(pkg.name, version),
-      );
+      writeFileSync(join(outDir, "package.json"), generatePackageJson(pkg.name, version));
       writeFileSync(join(outDir, "README.md"), buildReadme(pkg.name));
     }
 
@@ -253,10 +240,7 @@ function main() {
         ]),
       ),
     };
-    writeFileSync(
-      join(CDN_OUT, "manifest.json"),
-      JSON.stringify(manifest, null, 2),
-    );
+    writeFileSync(join(CDN_OUT, "manifest.json"), JSON.stringify(manifest, null, 2));
     console.log(`\n📄 CDN manifest: ${join(CDN_OUT, "manifest.json")}`);
   }
 

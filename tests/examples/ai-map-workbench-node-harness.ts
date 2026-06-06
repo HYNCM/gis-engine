@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { Script, createContext } from "node:vm";
+import { createContext, Script } from "node:vm";
 
 type HarnessOptions = {
   includeDisabledProvider?: boolean;
@@ -93,7 +93,6 @@ export class WorkbenchNodeHarness {
   private readonly document: FakeDocument;
   private readonly window: FakeWindow;
   private readonly appJsPromise: Promise<string>;
-  private readyPromise: Promise<void>;
 
   constructor(options: HarnessOptions = {}) {
     this.providers = [
@@ -103,7 +102,7 @@ export class WorkbenchNodeHarness {
         protocol: "mock",
         model: "deterministic-mock",
         enabled: true,
-        missingCredential: false
+        missingCredential: false,
       },
       {
         id: "deepseek",
@@ -111,7 +110,7 @@ export class WorkbenchNodeHarness {
         protocol: "openai-chat-completions",
         model: "deepseek-v4-flash",
         enabled: true,
-        missingCredential: false
+        missingCredential: false,
       },
       ...(options.includeDisabledProvider
         ? [
@@ -121,10 +120,10 @@ export class WorkbenchNodeHarness {
               protocol: "openai-chat-completions",
               model: "disabled-model",
               enabled: false,
-              missingCredential: true
-            }
+              missingCredential: true,
+            },
           ]
-        : [])
+        : []),
     ];
     this.document = new FakeDocument();
     this.window = new FakeWindow(this.document);
@@ -141,7 +140,7 @@ export class WorkbenchNodeHarness {
         log: () => {},
         warn: (...args: unknown[]) => this.consoleErrors.push(args.map(String).join(" ")),
         info: () => {},
-        debug: () => {}
+        debug: () => {},
       },
       setTimeout,
       clearTimeout,
@@ -151,7 +150,7 @@ export class WorkbenchNodeHarness {
         return 0;
       },
       localStorage: this.window.localStorage,
-      maplibregl: createMapLibreStub(this.document)
+      maplibregl: createMapLibreStub(this.document),
     });
   }
 
@@ -176,7 +175,9 @@ export class WorkbenchNodeHarness {
     const select = this.mustGetElement("#provider-select") as FakeSelectElement;
     select.value = value;
     select.dispatchEvent(new FakeEvent("change", { bubbles: true }));
-    await this.waitFor(() => this.getProviderStatus().includes("Mock AI") || this.getProviderStatus().includes("DeepSeek"));
+    await this.waitFor(
+      () => this.getProviderStatus().includes("Mock AI") || this.getProviderStatus().includes("DeepSeek"),
+    );
   }
 
   async submitChat(message: string) {
@@ -210,7 +211,9 @@ export class WorkbenchNodeHarness {
       const requestComplete = this.reviewRequests.length > requestCount;
 
       if (outcome === "accepted") {
-        return requestComplete && ((status === "Reviewed" && reviewChanged) || (status === "Blocked" && diagnosticsChanged));
+        return (
+          requestComplete && ((status === "Reviewed" && reviewChanged) || (status === "Blocked" && diagnosticsChanged))
+        );
       }
 
       return requestComplete && (status === "Reviewed" || reviewChanged);
@@ -258,7 +261,7 @@ export class WorkbenchNodeHarness {
     return this.document.querySelectorAll(selector).map((element) => ({
       value: (element as FakeOptionElement).value,
       text: element.textContent.trim(),
-      disabled: (element as FakeOptionElement).disabled
+      disabled: (element as FakeOptionElement).disabled,
     }));
   }
 
@@ -294,16 +297,18 @@ export class WorkbenchNodeHarness {
     }
 
     if (stringUrl.endsWith("/api/state")) {
-      return jsonResponse(this.buildStatePayload({
-        status: "ready",
-        revision: String(this.revision)
-      }));
+      return jsonResponse(
+        this.buildStatePayload({
+          status: "ready",
+          revision: String(this.revision),
+        }),
+      );
     }
 
     if (stringUrl.endsWith("/api/audit")) {
       return jsonResponse({
         sessionId: "session_browser",
-        records: this.auditRecords
+        records: this.auditRecords,
       });
     }
 
@@ -311,7 +316,7 @@ export class WorkbenchNodeHarness {
       return jsonResponse({
         sessionId: "session_browser",
         projectId: "project_demo",
-        decisions: this.reviewDecisions
+        decisions: this.reviewDecisions,
       });
     }
 
@@ -320,10 +325,12 @@ export class WorkbenchNodeHarness {
       this.auditRecords.splice(0, this.auditRecords.length);
       this.reviewDecisions.splice(0, this.reviewDecisions.length);
       this.lastGenerationEvidence = null;
-      return jsonResponse(this.buildStatePayload({
-        status: "reset",
-        revision: "1"
-      }));
+      return jsonResponse(
+        this.buildStatePayload({
+          status: "reset",
+          revision: "1",
+        }),
+      );
     }
 
     if (stringUrl.endsWith("/api/chat") && method === "POST") {
@@ -343,7 +350,7 @@ export class WorkbenchNodeHarness {
         providerId: response.status === "applied" && response.provider ? response.provider.providerId : "mock-ai",
         commandCount: response.commandEvidence.commandCount,
         fromRevision,
-        toRevision: response.summary.revision
+        toRevision: response.summary.revision,
       });
       this.revision = Number.parseInt(response.summary.revision, 10) || this.revision;
       return jsonResponse(response);
@@ -363,8 +370,8 @@ export class WorkbenchNodeHarness {
             decision: null,
             decisions: this.reviewDecisions,
             diagnostics: reviewDiagnostics,
-            commandEvidence: { commandCount: 0, committed: false, rolledBack: false }
-          })
+            commandEvidence: { commandCount: 0, committed: false, rolledBack: false },
+          }),
         );
       }
 
@@ -372,7 +379,7 @@ export class WorkbenchNodeHarness {
         outcome: body.outcome ?? "accepted",
         reasonCodes: body.reasonCodes ?? [],
         auditRecordId,
-        providerId
+        providerId,
       };
       this.reviewDecisions.push(decision);
       return jsonResponse(
@@ -382,15 +389,15 @@ export class WorkbenchNodeHarness {
           decision,
           decisions: this.reviewDecisions,
           diagnostics: [],
-          commandEvidence: { commandCount: 0, committed: false, rolledBack: false }
-        })
+          commandEvidence: { commandCount: 0, committed: false, rolledBack: false },
+        }),
       );
     }
 
     throw new Error(`Unexpected fetch: ${stringUrl}`);
   }
 
-  private buildChatResponse(message: string, providerId: string, fromRevision: string): ChatResponse {
+  private buildChatResponse(message: string, providerId: string, _fromRevision: string): ChatResponse {
     if (providerId === "deepseek" && /source promotion/i.test(message)) {
       this.providerFetchCount += 1;
       return {
@@ -401,7 +408,7 @@ export class WorkbenchNodeHarness {
           sourceCount: 1,
           layerCount: 2,
           center: [120.15, 30.28],
-          zoom: 11
+          zoom: 11,
         },
         style: { version: 8, sources: {}, layers: [] },
         provider: {
@@ -409,8 +416,8 @@ export class WorkbenchNodeHarness {
           retainedRawPrompt: false,
           confidence: {
             level: "medium",
-            reasons: ["Structured PMTiles source promotion evidence."]
-          }
+            reasons: ["Structured PMTiles source promotion evidence."],
+          },
         },
         generationEvidence: {
           promptHash: "sha256:pmtiles-local",
@@ -436,16 +443,22 @@ export class WorkbenchNodeHarness {
                     "tileType",
                     "minZoom",
                     "maxZoom",
-                    "bounds"
+                    "bounds",
                   ],
-                  policyFields: ["maxArchiveBytes", "maxRootDirectoryBytes", "allowRangeRequests", "maxRangeSegments", "timeoutMs"]
+                  policyFields: [
+                    "maxArchiveBytes",
+                    "maxRootDirectoryBytes",
+                    "allowRangeRequests",
+                    "maxRangeSegments",
+                    "timeoutMs",
+                  ],
                 },
                 confirmationReasons: ["external-resource", "archive-parsing"],
                 notes: [
                   "PMTiles is URL-compatible for display/export evidence, while archive parsing and feature query support remain future contracts.",
-                  "Promote only one format at a time; archive parsing stays blocked until the gate passes."
-                ]
-              }
+                  "Promote only one format at a time; archive parsing stays blocked until the gate passes.",
+                ],
+              },
             ],
             sourcePromotionCandidates: [
               {
@@ -465,24 +478,30 @@ export class WorkbenchNodeHarness {
                     "tileType",
                     "minZoom",
                     "maxZoom",
-                    "bounds"
+                    "bounds",
                   ],
-                  policyFields: ["maxArchiveBytes", "maxRootDirectoryBytes", "allowRangeRequests", "maxRangeSegments", "timeoutMs"]
+                  policyFields: [
+                    "maxArchiveBytes",
+                    "maxRootDirectoryBytes",
+                    "allowRangeRequests",
+                    "maxRangeSegments",
+                    "timeoutMs",
+                  ],
                 },
                 target: "PMTiles archive metadata promotion gate",
                 exitCondition:
                   "Schema, resource-policy, and manifest evidence must prove archive metadata is explicit while archive parsing and feature query remain blocked.",
-                sourceIds: ["localPmtiles"]
-              }
-            ]
-          }
+                sourceIds: ["localPmtiles"],
+              },
+            ],
+          },
         },
         diagnostics: [],
         commandEvidence: { commandCount: 2, committed: true, rolledBack: false },
         results: [
           { commandId: "gen-add-source-localPmtiles", status: "applied" },
-          { commandId: "gen-add-layer-local-pmtiles-fill", status: "applied" }
-        ]
+          { commandId: "gen-add-layer-local-pmtiles-fill", status: "applied" },
+        ],
       };
     }
 
@@ -496,7 +515,7 @@ export class WorkbenchNodeHarness {
           sourceCount: 1,
           layerCount: 2,
           center: [120.15, 30.28],
-          zoom: 11
+          zoom: 11,
         },
         style: { version: 8, sources: {}, layers: [] },
         provider: {
@@ -504,8 +523,8 @@ export class WorkbenchNodeHarness {
           retainedRawPrompt: false,
           confidence: {
             level: "medium",
-            reasons: ["DeepSeek selected a structured point style edit."]
-          }
+            reasons: ["DeepSeek selected a structured point style edit."],
+          },
         },
         generationEvidence: {
           promptHash: "sha256:deepseek-red",
@@ -519,18 +538,20 @@ export class WorkbenchNodeHarness {
                 state: "supported",
                 queryReady: true,
                 resourcePolicy: "passed",
-                notes: ["Inline GeoJSON is schema-valid, display-ready, and eligible for deterministic point/bbox query evidence."]
-              }
+                notes: [
+                  "Inline GeoJSON is schema-valid, display-ready, and eligible for deterministic point/bbox query evidence.",
+                ],
+              },
             ],
-            sourcePromotionCandidates: []
-          }
+            sourcePromotionCandidates: [],
+          },
         },
         diagnostics: [],
         commandEvidence: { commandCount: 2, committed: true, rolledBack: false },
         results: [
           { commandId: "cmd-deepseek-red-points", status: "applied" },
-          { commandId: "cmd-deepseek-meta", status: "applied" }
-        ]
+          { commandId: "cmd-deepseek-meta", status: "applied" },
+        ],
       };
     }
 
@@ -542,7 +563,7 @@ export class WorkbenchNodeHarness {
         sourceCount: 1,
         layerCount: 2,
         center: [120.15, 30.28],
-        zoom: 11
+        zoom: 11,
       },
       style: { version: 8, sources: {}, layers: [] },
       generationEvidence: {
@@ -557,22 +578,28 @@ export class WorkbenchNodeHarness {
               state: "supported",
               queryReady: true,
               resourcePolicy: "passed",
-              notes: ["Inline GeoJSON is schema-valid, display-ready, and eligible for deterministic point/bbox query evidence."]
-            }
+              notes: [
+                "Inline GeoJSON is schema-valid, display-ready, and eligible for deterministic point/bbox query evidence.",
+              ],
+            },
           ],
-          sourcePromotionCandidates: []
-        }
+          sourcePromotionCandidates: [],
+        },
       },
       diagnostics: [],
       commandEvidence: { commandCount: 1, committed: true, rolledBack: false },
-      results: [{ commandId: "cmd-mock-blue-points", status: "applied" }]
+      results: [{ commandId: "cmd-mock-blue-points", status: "applied" }],
     };
   }
 
   private buildStatePayload(input: {
     status: string;
     revision?: string;
-    provider?: { providerId: string; retainedRawPrompt: false; confidence?: { level: "low" | "medium" | "high"; reasons: string[] } };
+    provider?: {
+      providerId: string;
+      retainedRawPrompt: false;
+      confidence?: { level: "low" | "medium" | "high"; reasons: string[] };
+    };
     generationEvidence?: unknown;
     diagnostics?: unknown[];
     commandEvidence?: { commandCount: number; committed: boolean; rolledBack: boolean };
@@ -588,12 +615,12 @@ export class WorkbenchNodeHarness {
         sourceCount: 1,
         layerCount: 2,
         center: [120.15, 30.28],
-        zoom: 11
+        zoom: 11,
       },
       style: {
         version: 8,
         sources: {},
-        layers: []
+        layers: [],
       },
       ...(input.provider ? { provider: input.provider } : {}),
       ...(input.generationEvidence !== undefined ? { generationEvidence: input.generationEvidence } : {}),
@@ -601,7 +628,7 @@ export class WorkbenchNodeHarness {
       ...(input.commandEvidence ? { commandEvidence: input.commandEvidence } : {}),
       ...(input.results ? { results: input.results } : {}),
       ...(input.decision ? { decision: input.decision } : {}),
-      ...(input.decisions ? { decisions: input.decisions } : {})
+      ...(input.decisions ? { decisions: input.decisions } : {}),
     };
   }
 
@@ -618,8 +645,8 @@ export class WorkbenchNodeHarness {
             severity: "error",
             code: "REVIEW.CONTRACT_VIOLATION",
             message: "Accepted decisions require ready delivery and supported source readiness.",
-            path: "/reviewAction/evidence"
-          }
+            path: "/reviewAction/evidence",
+          },
         ];
       }
       return [];
@@ -631,8 +658,8 @@ export class WorkbenchNodeHarness {
           severity: "error",
           code: "REVIEW.CONTRACT_VIOLATION",
           message: "Follow-up decisions require a reason code.",
-          path: "/reviewAction/followUp"
-        }
+          path: "/reviewAction/followUp",
+        },
       ];
     }
 
@@ -665,18 +692,22 @@ export function collectWorkbenchUiEvidence(document: FakeDocument) {
     providerOptions: document.querySelectorAll("#provider-select option").map((option) => ({
       value: (option as FakeOptionElement).value,
       text: option.textContent.trim(),
-      disabled: (option as FakeOptionElement).disabled
+      disabled: (option as FakeOptionElement).disabled,
     })),
     summaryRows: rowsFromDefinitionList("#summary-list"),
     providerRows: rowsFromDefinitionList("#provider-list"),
     diagnosticsText: document.querySelector("#diagnostics-list")?.textContent.trim() ?? "",
-    sourceReadinessCards: document.querySelectorAll("#source-readiness-list article").map((article) => article.textContent.trim()),
+    sourceReadinessCards: document
+      .querySelectorAll("#source-readiness-list article")
+      .map((article) => article.textContent.trim()),
     sourceReadinessText: document.querySelector("#source-readiness-list")?.textContent.trim() ?? "",
-    sourcePromotionCards: document.querySelectorAll("#source-promotion-list article").map((article) => article.textContent.trim()),
+    sourcePromotionCards: document
+      .querySelectorAll("#source-promotion-list article")
+      .map((article) => article.textContent.trim()),
     sourcePromotionText: document.querySelector("#source-promotion-list")?.textContent.trim() ?? "",
     auditText: document.querySelector("#audit-list")?.textContent.trim() ?? "",
     reviewText: document.querySelector("#review-list")?.textContent.trim() ?? "",
-    commandJson: JSON.parse(document.querySelector("#command-json")?.textContent.trim() || "{}")
+    commandJson: JSON.parse(document.querySelector("#command-json")?.textContent.trim() || "{}"),
   };
 }
 
@@ -690,21 +721,64 @@ function buildWorkbenchDom(document: FakeDocument) {
   const chatEye = element(document, "p", { className: "eyebrow", text: "Local mock AI" });
   const chatBadge = element(document, "span", { className: "tiny-badge", text: "Command only" });
   const h1 = element(document, "h1", { text: "AI Map Workbench" });
-  const chatSubtle = element(document, "p", { className: "subtle", text: "Structured chat edits for the current GIS Engine." });
-  const messages = element(document, "div", { id: "messages", className: "messages", attrs: { "aria-live": "polite" } });
-  const providerPicker = element(document, "section", { className: "provider-picker", attrs: { "aria-label": "Provider selection" } });
+  const chatSubtle = element(document, "p", {
+    className: "subtle",
+    text: "Structured chat edits for the current GIS Engine.",
+  });
+  const messages = element(document, "div", {
+    id: "messages",
+    className: "messages",
+    attrs: { "aria-live": "polite" },
+  });
+  const providerPicker = element(document, "section", {
+    className: "provider-picker",
+    attrs: { "aria-label": "Provider selection" },
+  });
   const providerLabel = element(document, "label", { attrs: { for: "provider-select" }, text: "Provider" });
-  const providerSelect = element(document, "select", { id: "provider-select", attrs: { "aria-describedby": "provider-status" } }) as FakeSelectElement;
-  const providerStatus = element(document, "p", { id: "provider-status", className: "provider-status", attrs: { role: "status" }, text: "Next request: Mock AI" });
-  const promptBank = element(document, "div", { className: "prompt-bank", attrs: { "aria-label": "Prompt shortcuts" } });
+  const providerSelect = element(document, "select", {
+    id: "provider-select",
+    attrs: { "aria-describedby": "provider-status" },
+  }) as FakeSelectElement;
+  const providerStatus = element(document, "p", {
+    id: "provider-status",
+    className: "provider-status",
+    attrs: { role: "status" },
+    text: "Next request: Mock AI",
+  });
+  const promptBank = element(document, "div", {
+    className: "prompt-bank",
+    attrs: { "aria-label": "Prompt shortcuts" },
+  });
   const prompts = ["make points red", "make points blue", "increase point size", "zoom to Hangzhou"];
   for (const prompt of prompts) {
-    promptBank.append(element(document, "button", { attrs: { type: "button", "data-prompt": prompt }, text: prompt === "make points red" ? "Red" : prompt === "make points blue" ? "Blue" : prompt === "increase point size" ? "Larger" : "Zoom" }));
+    promptBank.append(
+      element(document, "button", {
+        attrs: { type: "button", "data-prompt": prompt },
+        text:
+          prompt === "make points red"
+            ? "Red"
+            : prompt === "make points blue"
+              ? "Blue"
+              : prompt === "increase point size"
+                ? "Larger"
+                : "Zoom",
+      }),
+    );
   }
   const chatForm = element(document, "form", { id: "chat-form", className: "chat-form" });
-  const chatInputLabel = element(document, "label", { className: "sr-only", attrs: { for: "chat-input" }, text: "Map instruction" });
-  const chatInput = element(document, "input", { id: "chat-input", attrs: { name: "message", autocomplete: "off", placeholder: "Ask for a local map edit" } }) as FakeInputElement;
-  const chatSubmit = element(document, "button", { attrs: { type: "submit", "aria-label": "Send instruction" }, text: "Send" });
+  const chatInputLabel = element(document, "label", {
+    className: "sr-only",
+    attrs: { for: "chat-input" },
+    text: "Map instruction",
+  });
+  const chatInput = element(document, "input", {
+    id: "chat-input",
+    attrs: { name: "message", autocomplete: "off", placeholder: "Ask for a local map edit" },
+  }) as FakeInputElement;
+  const chatSubmit = element(document, "button", {
+    attrs: { type: "submit", "aria-label": "Send instruction" },
+    text: "Send",
+  });
 
   const mapStage = element(document, "main", { className: "map-stage" });
   const stageBar = element(document, "header", { className: "stage-bar" });
@@ -712,18 +786,33 @@ function buildWorkbenchDom(document: FakeDocument) {
   const stageEyebrow = element(document, "p", { className: "eyebrow", text: "Map display" });
   const stageTitle = element(document, "h2", { id: "map-title", text: "Starter POI scene" });
   const stageMeta = element(document, "div", { className: "stage-meta", attrs: { "aria-label": "Renderer context" } });
-  stageMeta.append(element(document, "span", { text: "MapLibre" }), element(document, "span", { text: "MapSpec v0.1" }));
+  stageMeta.append(
+    element(document, "span", { text: "MapLibre" }),
+    element(document, "span", { text: "MapSpec v0.1" }),
+  );
   const statusPill = element(document, "div", { id: "status-pill", className: "status-pill", text: "Loading" });
   const map = element(document, "div", { id: "map", className: "map-canvas", attrs: { "aria-label": "MapLibre map" } });
-  const mapReadout = element(document, "div", { className: "map-readout", attrs: { "aria-label": "Current map state" } });
-  mapReadout.append(element(document, "span", { id: "revision-readout", text: "revision --" }), element(document, "span", { id: "camera-readout", text: "camera --" }));
+  const mapReadout = element(document, "div", {
+    className: "map-readout",
+    attrs: { "aria-label": "Current map state" },
+  });
+  mapReadout.append(
+    element(document, "span", { id: "revision-readout", text: "revision --" }),
+    element(document, "span", { id: "camera-readout", text: "camera --" }),
+  );
 
-  const evidencePanel = element(document, "aside", { className: "evidence-panel", attrs: { "aria-label": "Engine evidence" } });
+  const evidencePanel = element(document, "aside", {
+    className: "evidence-panel",
+    attrs: { "aria-label": "Engine evidence" },
+  });
   const evidenceToggle = element(document, "button", { id: "toggle-evidence-panel", attrs: { type: "button" } });
   const evidenceContent = element(document, "div", { className: "panel-content" });
   const evidenceHeader = element(document, "header", { className: "panel-header compact" });
   const evidenceHeaderLine = element(document, "div", { className: "header-line" });
-  evidenceHeaderLine.append(element(document, "p", { className: "eyebrow", text: "Engine evidence" }), element(document, "span", { className: "tiny-badge live", text: "Live" }));
+  evidenceHeaderLine.append(
+    element(document, "p", { className: "eyebrow", text: "Engine evidence" }),
+    element(document, "span", { className: "tiny-badge live", text: "Live" }),
+  );
   evidenceHeader.append(evidenceHeaderLine, element(document, "h2", { text: "Command trail" }));
   const evidenceScroll = element(document, "div", { className: "evidence-scroll" });
   const sections = [
@@ -733,7 +822,7 @@ function buildWorkbenchDom(document: FakeDocument) {
     ["Source readiness", "source-readiness-list", "audit-list"],
     ["Source promotion", "source-promotion-list", "audit-list"],
     ["Feature query", "feature-query", "feature-query"],
-    ["Session audit", "audit-list", "audit-list"]
+    ["Session audit", "audit-list", "audit-list"],
   ] as const;
   for (const [title, id, className] of sections) {
     const section = element(document, "section", { className: "evidence-section" });
@@ -741,16 +830,36 @@ function buildWorkbenchDom(document: FakeDocument) {
     evidenceScroll.append(section);
   }
   const reviewSection = element(document, "section", { className: "evidence-section" });
-  const reviewActions = element(document, "div", { className: "review-actions", attrs: { "aria-label": "Review decision actions" } });
+  const reviewActions = element(document, "div", {
+    className: "review-actions",
+    attrs: { "aria-label": "Review decision actions" },
+  });
   reviewActions.append(
     element(document, "button", { attrs: { type: "button", "data-review-outcome": "accepted" }, text: "Accept" }),
     element(document, "button", { attrs: { type: "button", "data-review-outcome": "blocked" }, text: "Block" }),
-    element(document, "button", { attrs: { type: "button", "data-review-outcome": "follow-up-required" }, text: "Follow up" })
+    element(document, "button", {
+      attrs: { type: "button", "data-review-outcome": "follow-up-required" },
+      text: "Follow up",
+    }),
   );
-  reviewSection.append(element(document, "h3", { text: "Review decisions" }), reviewActions, element(document, "div", { id: "review-list", className: "audit-list" }));
+  reviewSection.append(
+    element(document, "h3", { text: "Review decisions" }),
+    reviewActions,
+    element(document, "div", { id: "review-list", className: "audit-list" }),
+  );
   evidenceScroll.append(reviewSection);
-  evidenceScroll.append(element(document, "section", { className: "evidence-section" }, [element(document, "h3", { text: "Last command" }), element(document, "pre", { id: "command-json", className: "code-panel", text: "{}" })]));
-  const resetButton = element(document, "button", { id: "reset-button", className: "reset-button", attrs: { type: "button" }, text: "Reset workbench" });
+  evidenceScroll.append(
+    element(document, "section", { className: "evidence-section" }, [
+      element(document, "h3", { text: "Last command" }),
+      element(document, "pre", { id: "command-json", className: "code-panel", text: "{}" }),
+    ]),
+  );
+  const resetButton = element(document, "button", {
+    id: "reset-button",
+    className: "reset-button",
+    attrs: { type: "button" },
+    text: "Reset workbench",
+  });
   evidenceContent.append(evidenceHeader, evidenceScroll);
   evidencePanel.append(evidenceToggle, evidenceContent);
 
@@ -768,7 +877,12 @@ function buildWorkbenchDom(document: FakeDocument) {
   document.body.append(shell);
 }
 
-function element(document: FakeDocument, tagName: string, options: { id?: string; className?: string; attrs?: Record<string, string>; text?: string } = {}, children: Array<FakeElement | FakeTextNode> = []) {
+function element(
+  document: FakeDocument,
+  tagName: string,
+  options: { id?: string; className?: string; attrs?: Record<string, string>; text?: string } = {},
+  children: Array<FakeElement | FakeTextNode> = [],
+) {
   const el = document.createElement(tagName);
   if (options.id) el.id = options.id;
   if (options.className) el.className = options.className;
@@ -803,19 +917,21 @@ function createMapLibreStub(document: FakeDocument) {
         container?.append(canvas);
       }
       addControl() {}
-      getZoom() { return 11; }
+      getZoom() {
+        return 11;
+      }
       jumpTo() {}
       on() {}
       resize() {}
       setStyle() {}
     },
-    NavigationControl: class {}
+    NavigationControl: class {},
   };
 }
 
 function jsonResponse(payload: unknown) {
   return new Response(JSON.stringify(payload), {
-    headers: { "content-type": "application/json" }
+    headers: { "content-type": "application/json" },
   });
 }
 
@@ -873,7 +989,14 @@ class FakeDocument {
   }
 
   createElement(tagName: string) {
-    const element = tagName.toLowerCase() === "select" ? new FakeSelectElement(this) : tagName.toLowerCase() === "input" ? new FakeInputElement(tagName, this) : tagName.toLowerCase() === "option" ? new FakeOptionElement(this) : new FakeElement(tagName, this);
+    const element =
+      tagName.toLowerCase() === "select"
+        ? new FakeSelectElement(this)
+        : tagName.toLowerCase() === "input"
+          ? new FakeInputElement(tagName, this)
+          : tagName.toLowerCase() === "option"
+            ? new FakeOptionElement(this)
+            : new FakeElement(tagName, this);
     this.allElements.push(element);
     return element;
   }
@@ -938,7 +1061,7 @@ class FakeElement {
       else this.classTokens.delete(token);
       this.syncClassAttr();
       return next;
-    }
+    },
   };
   readonly dataset: Record<string, string>;
 
@@ -950,7 +1073,7 @@ class FakeElement {
       set: (_target, prop: string, value: string) => {
         this.setAttribute(`data-${camelToKebab(prop)}`, String(value));
         return true;
-      }
+      },
     }) as Record<string, string>;
   }
 
@@ -999,7 +1122,7 @@ class FakeElement {
     if (!this.parentNode) return null;
     const siblings = this.parentNode.childNodes.filter((node): node is FakeElement => node instanceof FakeElement);
     const index = siblings.indexOf(this);
-    return index >= 0 ? siblings[index + 1] ?? null : null;
+    return index >= 0 ? (siblings[index + 1] ?? null) : null;
   }
 
   get isConnected() {
@@ -1051,7 +1174,7 @@ class FakeElement {
   }
 
   getAttribute(name: string) {
-    return this.attributes.has(name) ? this.attributes.get(name) ?? null : null;
+    return this.attributes.has(name) ? (this.attributes.get(name) ?? null) : null;
   }
 
   removeAttribute(name: string) {
@@ -1077,7 +1200,16 @@ class FakeElement {
 
   getBoundingClientRect() {
     const size = elementSizeFor(this);
-    return { x: 0, y: 0, width: size.width, height: size.height, top: 0, left: 0, right: size.width, bottom: size.height };
+    return {
+      x: 0,
+      y: 0,
+      width: size.width,
+      height: size.height,
+      top: 0,
+      left: 0,
+      right: size.width,
+      bottom: size.height,
+    };
   }
 
   private syncClassAttr(syncAttr = true) {
@@ -1092,11 +1224,7 @@ class FakeElement {
   }
 }
 
-class FakeInputElement extends FakeElement {
-  constructor(tagName: string, ownerDocument: FakeDocument) {
-    super(tagName, ownerDocument);
-  }
-}
+class FakeInputElement extends FakeElement {}
 
 class FakeSelectElement extends FakeElement {
   constructor(ownerDocument: FakeDocument) {
@@ -1187,7 +1315,7 @@ function parseSelector(selector: string) {
       const [name, rawValue] = body.split("=");
       parsed.attrs.push({
         name: name.trim(),
-        value: rawValue === undefined ? undefined : rawValue.trim().replace(/^['"]|['"]$/g, "")
+        value: rawValue === undefined ? undefined : rawValue.trim().replace(/^['"]|['"]$/g, ""),
       });
       i = end + 1;
       continue;

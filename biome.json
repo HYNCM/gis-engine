@@ -1,0 +1,127 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.4.16/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "includes": [
+      "**",
+      "!!**/dist",
+      "!!**/node_modules",
+      "!!**/coverage",
+      "!!**/test-results",
+      "!!**/playwright-report",
+      "!!**/.pnpm-store",
+      "!!docs/website/.vitepress/cache"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineEnding": "lf",
+    "lineWidth": 120
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "correctness": {
+        "noUnusedImports": "error",
+        "noUnusedVariables": "warn"
+      },
+      "suspicious": {
+        "noConsole": "warn",
+        "noExplicitAny": "error"
+      },
+      "style": {
+        "noNonNullAssertion": "warn",
+        "useConst": "error",
+        "useNodejsImportProtocol": "error"
+      }
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double",
+      "semicolons": "always",
+      "trailingCommas": "all"
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  },
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["scripts/**", "apps/**", "examples/**", "tests/**", "packages/cli/**", "packages/ai/src/mcp/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["scripts/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noAssignInExpressions": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/**"],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "useButtonType": "off",
+            "noLabelWithoutControl": "off"
+          },
+          "suspicious": {
+            "noArrayIndexKey": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["tests/**"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noEmptyPattern": "off"
+          },
+          "suspicious": {
+            "noImplicitAnyLet": "off",
+            "noExplicitAny": "warn",
+            "noNonNullAssertedOptionalChain": "warn"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["**/*.css"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noUnknownAtRules": "off"
+          }
+        }
+      }
+    }
+  ]
+}

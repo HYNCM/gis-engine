@@ -1,18 +1,30 @@
+import { DiagnosticCodes, type MapSpec, type SceneView3DExtension, validateSpec } from "@gis-engine/engine";
 import { describe, expect, it } from "vitest";
-import scene3dExtensionSpec from "../fixtures/specs/valid/scene3d-extension.map.json";
-import { DiagnosticCodes, validateSpec, type MapSpec, type SceneView3DExtension } from "@gis-engine/engine";
 import { defaultSceneResourceLoadPolicy, validateSceneResourceLoadPlan } from "../../packages/scene3d/src/index.js";
+import scene3dExtensionSpec from "../fixtures/specs/valid/scene3d-extension.map.json";
 
 describe("SceneView3D loader resource policy", () => {
   it("accepts a loader resource plan that stays within SceneResourcePolicy budgets", () => {
     const report = validateSceneResourceLoadPlan(scene3dExtension(), {
       workerCount: 1,
       resources: [
-        { kind: "tileset-json", sourceId: "city-tiles", url: "./data/city/tileset.json", byteLength: 512_000, elapsedMs: 120 },
-        { kind: "model", sourceId: "station-model", url: "./data/models/station.glb", byteLength: 1_048_576, elapsedMs: 300 },
+        {
+          kind: "tileset-json",
+          sourceId: "city-tiles",
+          url: "./data/city/tileset.json",
+          byteLength: 512_000,
+          elapsedMs: 120,
+        },
+        {
+          kind: "model",
+          sourceId: "station-model",
+          url: "./data/models/station.glb",
+          byteLength: 1_048_576,
+          elapsedMs: 300,
+        },
         { kind: "texture", sourceId: "station-model", textureCount: 4, textureBytes: 2_097_152 },
-        { kind: "worker", workerCount: 1 }
-      ]
+        { kind: "worker", workerCount: 1 },
+      ],
     });
 
     expect(report.valid).toBe(true);
@@ -25,7 +37,7 @@ describe("SceneView3D loader resource policy", () => {
       textureCount: 4,
       textureBytes: 2_097_152,
       workers: 2,
-      timedOutResources: 0
+      timedOutResources: 0,
     });
   });
 
@@ -38,7 +50,7 @@ describe("SceneView3D loader resource policy", () => {
       maxTextureCount: 1,
       maxTextureBytes: 300,
       maxWorkers: 1,
-      timeoutMs: 50
+      timeoutMs: 50,
     };
 
     const report = validateSceneResourceLoadPlan(extension, {
@@ -49,8 +61,8 @@ describe("SceneView3D loader resource policy", () => {
         { kind: "texture", sourceId: "station-model", textureCount: 2, textureBytes: 301 },
         { kind: "worker", workerCount: 1 },
         { kind: "draco-mesh", sourceId: "station-model", url: "./data/models/station.drc" },
-        { kind: "model", sourceId: "missing-model", url: "./data/models/missing.glb", byteLength: 10 }
-      ]
+        { kind: "model", sourceId: "missing-model", url: "./data/models/missing.glb", byteLength: 10 },
+      ],
     });
 
     expect(report.valid).toBe(false);
@@ -58,37 +70,37 @@ describe("SceneView3D loader resource policy", () => {
       expect.arrayContaining([
         expect.objectContaining({
           code: DiagnosticCodes.SecurityResourceTooLarge,
-          path: "/extensions/scene3d/sources/city-tiles/url"
+          path: "/extensions/scene3d/sources/city-tiles/url",
         }),
         expect.objectContaining({
           code: DiagnosticCodes.SecurityResourceTooLarge,
-          path: "/extensions/scene3d/sources/station-model/url"
+          path: "/extensions/scene3d/sources/station-model/url",
         }),
         expect.objectContaining({
           code: DiagnosticCodes.SecurityResourceTimeout,
-          path: "/extensions/scene3d/sources/station-model/url"
+          path: "/extensions/scene3d/sources/station-model/url",
         }),
         expect.objectContaining({
           code: DiagnosticCodes.SecurityResourceTooLarge,
-          path: "/extensions/scene3d/resourcePolicy/maxTextureCount"
+          path: "/extensions/scene3d/resourcePolicy/maxTextureCount",
         }),
         expect.objectContaining({
           code: DiagnosticCodes.SecurityResourceTooLarge,
-          path: "/extensions/scene3d/resourcePolicy/maxTextureBytes"
+          path: "/extensions/scene3d/resourcePolicy/maxTextureBytes",
         }),
         expect.objectContaining({
           code: DiagnosticCodes.SecurityResourceTooLarge,
-          path: "/extensions/scene3d/resourcePolicy/maxWorkers"
+          path: "/extensions/scene3d/resourcePolicy/maxWorkers",
         }),
         expect.objectContaining({
           code: DiagnosticCodes.SecurityUnsupportedAssetType,
-          path: "/extensions/scene3d/sources/station-model/url"
+          path: "/extensions/scene3d/sources/station-model/url",
         }),
         expect.objectContaining({
           code: DiagnosticCodes.SourceNotFound,
-          path: "/extensions/scene3d/sources/missing-model/url"
-        })
-      ])
+          path: "/extensions/scene3d/sources/missing-model/url",
+        }),
+      ]),
     );
   });
 
@@ -104,7 +116,7 @@ describe("SceneView3D loader resource policy", () => {
 
   it("requires external renderer asset URLs to pass SceneView3D resource policy before loader evidence is accepted", () => {
     const spec = scene3dSpec();
-    const scene = spec.extensions!.scene3d!;
+    const scene = spec.extensions?.scene3d!;
     scene.sources!["city-tiles"]!.url = "https://cdn.example.com/city/tileset.json";
     scene.sources!["station-model"]!.url = "https://assets.example.com/models/station.glb";
 
@@ -115,13 +127,13 @@ describe("SceneView3D loader resource policy", () => {
       expect.arrayContaining([
         expect.objectContaining({
           code: DiagnosticCodes.SecurityUrlBlocked,
-          path: "/extensions/scene3d/sources/city-tiles/url"
+          path: "/extensions/scene3d/sources/city-tiles/url",
         }),
         expect.objectContaining({
           code: DiagnosticCodes.SecurityUrlBlocked,
-          path: "/extensions/scene3d/sources/station-model/url"
-        })
-      ])
+          path: "/extensions/scene3d/sources/station-model/url",
+        }),
+      ]),
     );
 
     scene.resourcePolicy!.allowedHosts = ["cdn.example.com", "assets.example.com"];
@@ -130,14 +142,14 @@ describe("SceneView3D loader resource policy", () => {
     expect(allowlisted.diagnostics).not.toContainEqual(
       expect.objectContaining({
         code: DiagnosticCodes.SecurityUrlBlocked,
-        path: "/extensions/scene3d/sources/city-tiles/url"
-      })
+        path: "/extensions/scene3d/sources/city-tiles/url",
+      }),
     );
     expect(allowlisted.diagnostics).not.toContainEqual(
       expect.objectContaining({
         code: DiagnosticCodes.SecurityUrlBlocked,
-        path: "/extensions/scene3d/sources/station-model/url"
-      })
+        path: "/extensions/scene3d/sources/station-model/url",
+      }),
     );
   });
 });

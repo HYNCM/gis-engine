@@ -1,14 +1,20 @@
+import {
+  applyCommands,
+  type MapCommand,
+  type MapSpec,
+  transformMapSpecToMapLibreStyle,
+  validateSpec,
+} from "@gis-engine/engine";
 import { describe, expect, it } from "vitest";
-import basicGeojson from "../../examples/basic-geojson/map.json";
+import aiAuditCommands from "../../examples/ai-map-edit/audit.commands.json";
 import aiBefore from "../../examples/ai-map-edit/before.map.json";
 import aiCommands from "../../examples/ai-map-edit/commands.json";
-import aiAuditCommands from "../../examples/ai-map-edit/audit.commands.json";
+import { createInitialSpec as createAiMapWorkbenchSpec } from "../../examples/ai-map-workbench/initial-map.mjs";
+import basicGeojson from "../../examples/basic-geojson/map.json";
+import fillExtrusionLite from "../../examples/fill-extrusion-lite/map.json";
 import pmtilesLocal from "../../examples/pmtiles-local/map.json";
 import rasterBasemap from "../../examples/raster-basemap/map.json";
 import vectorTileUrl from "../../examples/vector-tile-url/map.json";
-import fillExtrusionLite from "../../examples/fill-extrusion-lite/map.json";
-import { createInitialSpec as createAiMapWorkbenchSpec } from "../../examples/ai-map-workbench/initial-map.mjs";
-import { applyCommands, transformMapSpecToMapLibreStyle, validateSpec, type MapCommand, type MapSpec } from "@gis-engine/engine";
 
 describe("examples gate", () => {
   const examples: Array<{
@@ -21,19 +27,19 @@ describe("examples gate", () => {
     {
       id: "basic-geojson",
       spec: () => basicGeojson as MapSpec,
-      firstLayerId: "poi-circles"
+      firstLayerId: "poi-circles",
     },
     {
       id: "ai-map-edit",
       spec: () => applyCommands(aiBefore as MapSpec, aiCommands as MapCommand[]).spec,
       firstLayerId: "poi-circles",
-      expectedRevision: "2"
+      expectedRevision: "2",
     },
     {
       id: "ai-map-workbench",
       spec: () => createAiMapWorkbenchSpec() as MapSpec,
       firstLayerId: "background",
-      expectedRevision: "1"
+      expectedRevision: "1",
     },
     {
       id: "raster-basemap",
@@ -43,9 +49,9 @@ describe("examples gate", () => {
         expect(style.sources["local-raster"]).toMatchObject({
           type: "raster",
           tiles: ["./tiles/{z}/{x}/{y}.png"],
-          tileSize: 256
+          tileSize: 256,
         });
-      }
+      },
     },
     {
       id: "pmtiles-local",
@@ -54,13 +60,13 @@ describe("examples gate", () => {
       assertTransform: (style) => {
         expect(style.sources["local-parcels"]).toMatchObject({
           type: "vector",
-          url: "./data/parcels.pmtiles"
+          url: "./data/parcels.pmtiles",
         });
         expect(style.layers[0]).toMatchObject({
           id: "parcel-fill",
-          "source-layer": "parcels"
+          "source-layer": "parcels",
         });
-      }
+      },
     },
     {
       id: "vector-tile-url",
@@ -71,14 +77,22 @@ describe("examples gate", () => {
           type: "vector",
           tiles: ["./tiles/{z}/{x}/{y}.pbf"],
           minzoom: 0,
-          maxzoom: 14
+          maxzoom: 14,
         });
         expect(style.layers[0]).toMatchObject({
           id: "parcel-fill",
-          "source-layer": "parcels"
+          "source-layer": "parcels",
         });
-        expect(style.layers[1]?.paint?.["line-width"]).toEqual(["step", ["zoom"], 0.5, 12, ["to-number", ["get", "stroke_width"], 1], 14, 2]);
-      }
+        expect(style.layers[1]?.paint?.["line-width"]).toEqual([
+          "step",
+          ["zoom"],
+          0.5,
+          12,
+          ["to-number", ["get", "stroke_width"], 1],
+          14,
+          2,
+        ]);
+      },
     },
     {
       id: "fill-extrusion-lite",
@@ -87,10 +101,10 @@ describe("examples gate", () => {
       assertTransform: (style) => {
         expect(style.layers[0]).toMatchObject({
           id: "district-extrusion",
-          type: "fill-extrusion"
+          type: "fill-extrusion",
         });
-      }
-    }
+      },
+    },
   ];
 
   it("covers the bundled examples", () => {
@@ -101,7 +115,7 @@ describe("examples gate", () => {
       "raster-basemap",
       "pmtiles-local",
       "vector-tile-url",
-      "fill-extrusion-lite"
+      "fill-extrusion-lite",
     ]);
   });
 
@@ -125,15 +139,17 @@ describe("examples gate", () => {
     expect(pmtilesLocal.sources["local-parcels"].url).toBe("./data/parcels.pmtiles");
     expect(transform.style?.sources["local-parcels"]).toMatchObject({
       type: "vector",
-      url: "./data/parcels.pmtiles"
+      url: "./data/parcels.pmtiles",
     });
-    expect(transform.diagnostics).toContainEqual(expect.objectContaining({ code: "CAPABILITY.UNSUPPORTED", severity: "warning" }));
+    expect(transform.diagnostics).toContainEqual(
+      expect.objectContaining({ code: "CAPABILITY.UNSUPPORTED", severity: "warning" }),
+    );
   });
 
   it("keeps the AI map edit audit command example replayable with traces", () => {
     const result = applyCommands(aiBefore as MapSpec, aiAuditCommands as MapCommand[], {
       collectTrace: true,
-      traceId: "example-ai-map-edit-audit"
+      traceId: "example-ai-map-edit-audit",
     });
 
     expect(result.spec.revision).toBe("2");
@@ -144,10 +160,10 @@ describe("examples gate", () => {
       author: {
         type: "agent",
         id: "agent-example",
-        name: "example-agent"
+        name: "example-agent",
       },
       reason: "Show an auditable AI edit with provenance fields.",
-      sourcePromptHash: "sha256:ai-map-edit-audited"
+      sourcePromptHash: "sha256:ai-map-edit-audited",
     });
   });
 });

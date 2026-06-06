@@ -1,8 +1,8 @@
+import { applyCommandsTool } from "@gis-engine/ai";
+import type { MapCommand } from "@gis-engine/engine";
 import { describe, expect, it } from "vitest";
 import before from "../fixtures/commands/replay/style-update/before.map.json";
 import commands from "../fixtures/commands/replay/style-update/commands.json";
-import type { MapCommand } from "@gis-engine/engine";
-import { applyCommandsTool } from "@gis-engine/ai";
 
 describe("applyCommandsTool", () => {
   it("validates input before applying commands", () => {
@@ -25,12 +25,12 @@ describe("applyCommandsTool", () => {
       version: "0.1",
       type: "removeLayer",
       baseRevision: "2",
-      layerId: "missing-layer"
+      layerId: "missing-layer",
     };
     const result = applyCommandsTool({
       spec: before,
       commands: [...(commands as MapCommand[]), failingCommand],
-      transaction: "best-effort"
+      transaction: "best-effort",
     });
 
     expect(result.ok).toBe(true);
@@ -45,7 +45,7 @@ describe("applyCommandsTool", () => {
       spec: before,
       commands,
       collectTrace: true,
-      traceId: "tool-audit-1"
+      traceId: "tool-audit-1",
     });
 
     expect(result.ok).toBe(true);
@@ -55,7 +55,7 @@ describe("applyCommandsTool", () => {
         traceId: "tool-audit-1",
         commandId: "cmd-style-districts",
         status: "applied",
-        changedPaths: ["/layers/0/paint/fill-color", "/layers/0/paint/fill-opacity", "/revision"]
+        changedPaths: ["/layers/0/paint/fill-color", "/layers/0/paint/fill-opacity", "/revision"],
       });
     }
   });

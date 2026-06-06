@@ -19,8 +19,8 @@
  * @module sources/contract
  */
 
-import type { Diagnostic, SourceSpec } from "../types.js";
 import type { ResourcePolicy } from "../spec/resource-policy.js";
+import type { Diagnostic, SourceSpec } from "../types.js";
 
 // ---------------------------------------------------------------------------
 // Lifecycle
@@ -42,23 +42,23 @@ export type SourceValidationStatus = "idle" | "validating" | "ready" | "error";
  * operations are feasible without probing the renderer.
  */
 export interface SourceCapabilitySummary {
-    /** The source type identifier (e.g. "geojson", "raster", "pmtiles", "vector"). */
-    sourceType: string;
+  /** The source type identifier (e.g. "geojson", "raster", "pmtiles", "vector"). */
+  sourceType: string;
 
-    /** Whether the source supports progressive/streaming loading. */
-    supportsStreaming: boolean;
+  /** Whether the source supports progressive/streaming loading. */
+  supportsStreaming: boolean;
 
-    /** Whether the source supports random-access queries (e.g. feature lookup by id). */
-    supportsRandomAccess: boolean;
+  /** Whether the source supports random-access queries (e.g. feature lookup by id). */
+  supportsRandomAccess: boolean;
 
-    /** Whether loading or decoding may require a Web Worker. */
-    requiresWorker: boolean;
+  /** Whether loading or decoding may require a Web Worker. */
+  requiresWorker: boolean;
 
-    /** Estimated on-wire or on-disk byte size, if known. */
-    estimatedByteSize?: number;
+  /** Estimated on-wire or on-disk byte size, if known. */
+  estimatedByteSize?: number;
 
-    /** Additional source-type-specific metadata. */
-    metadata?: Record<string, unknown>;
+  /** Additional source-type-specific metadata. */
+  metadata?: Record<string, unknown>;
 }
 
 // ---------------------------------------------------------------------------
@@ -70,20 +70,20 @@ export interface SourceCapabilitySummary {
  * and source-type-specific constraints.
  */
 export interface SourceValidationResult {
-    /** Final lifecycle status after validation. */
-    status: SourceValidationStatus;
+  /** Final lifecycle status after validation. */
+  status: SourceValidationStatus;
 
-    /** Source id from the MapSpec sources map. */
-    sourceId: string;
+  /** Source id from the MapSpec sources map. */
+  sourceId: string;
 
-    /** Source type discriminator (e.g. "geojson", "raster"). */
-    sourceType: string;
+  /** Source type discriminator (e.g. "geojson", "raster"). */
+  sourceType: string;
 
-    /** Diagnostics produced during validation. */
-    diagnostics: Diagnostic[];
+  /** Diagnostics produced during validation. */
+  diagnostics: Diagnostic[];
 
-    /** Capability summary when validation succeeds. */
-    capabilities?: SourceCapabilitySummary;
+  /** Capability summary when validation succeeds. */
+  capabilities?: SourceCapabilitySummary;
 }
 
 // ---------------------------------------------------------------------------
@@ -102,25 +102,25 @@ export interface SourceValidationResult {
  * versions may add `fetch()`, `abort()`, and `getFeatures()` methods.
  */
 export interface SourceLoader {
-    /** The source id this loader is bound to (matches MapSpec sources key). */
-    readonly sourceId: string;
+  /** The source id this loader is bound to (matches MapSpec sources key). */
+  readonly sourceId: string;
 
-    /**
-     * Validate a source spec against resource policy and type-specific rules.
-     *
-     * Implementations must:
-     * - Check URL schemes against the resource policy
-     * - Validate source-type-specific fields (tileSize ranges, zoom ranges, etc.)
-     * - Return structured diagnostics for any violation
-     * - NOT initiate network requests (validation is synchronous/spec-only)
-     */
-    validate(spec: SourceSpec, policy: ResourcePolicy): SourceValidationResult;
+  /**
+   * Validate a source spec against resource policy and type-specific rules.
+   *
+   * Implementations must:
+   * - Check URL schemes against the resource policy
+   * - Validate source-type-specific fields (tileSize ranges, zoom ranges, etc.)
+   * - Return structured diagnostics for any violation
+   * - NOT initiate network requests (validation is synchronous/spec-only)
+   */
+  validate(spec: SourceSpec, policy: ResourcePolicy): SourceValidationResult;
 
-    /**
-     * Return a static capability summary for this source type.
-     * Does not depend on a specific spec instance.
-     */
-    getCapabilitySummary(): SourceCapabilitySummary;
+  /**
+   * Return a static capability summary for this source type.
+   * Does not depend on a specific spec instance.
+   */
+  getCapabilitySummary(): SourceCapabilitySummary;
 }
 
 // ---------------------------------------------------------------------------
@@ -145,29 +145,29 @@ export type SourceLoaderFactory = (sourceId: string) => SourceLoader;
  * These are advisory and may be overridden by adapter-specific loaders.
  */
 export const SOURCE_CAPABILITY_PRESETS: Record<string, SourceCapabilitySummary> = {
-    geojson: {
-        sourceType: "geojson",
-        supportsStreaming: false,
-        supportsRandomAccess: true,
-        requiresWorker: false,
-        metadata: { maxInlineBytes: 5_242_880 /* 5 MB soft limit */ }
-    },
-    raster: {
-        sourceType: "raster",
-        supportsStreaming: true,
-        supportsRandomAccess: false,
-        requiresWorker: false
-    },
-    pmtiles: {
-        sourceType: "pmtiles",
-        supportsStreaming: true,
-        supportsRandomAccess: true,
-        requiresWorker: true
-    },
-    vector: {
-        sourceType: "vector",
-        supportsStreaming: true,
-        supportsRandomAccess: false,
-        requiresWorker: true
-    }
+  geojson: {
+    sourceType: "geojson",
+    supportsStreaming: false,
+    supportsRandomAccess: true,
+    requiresWorker: false,
+    metadata: { maxInlineBytes: 5_242_880 /* 5 MB soft limit */ },
+  },
+  raster: {
+    sourceType: "raster",
+    supportsStreaming: true,
+    supportsRandomAccess: false,
+    requiresWorker: false,
+  },
+  pmtiles: {
+    sourceType: "pmtiles",
+    supportsStreaming: true,
+    supportsRandomAccess: true,
+    requiresWorker: true,
+  },
+  vector: {
+    sourceType: "vector",
+    supportsStreaming: true,
+    supportsRandomAccess: false,
+    requiresWorker: true,
+  },
 };

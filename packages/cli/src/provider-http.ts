@@ -97,26 +97,16 @@ export async function callProvider(input: ProviderCallInput): Promise<ProviderCa
           ],
           response_format: { type: "json_object" },
         }),
-      })
+      }),
     );
 
     if (!response.ok) {
-      return providerError(
-        profile.id,
-        "/providerRequest",
-        `Provider request failed with HTTP ${response.status}.`
-      );
+      return providerError(profile.id, "/providerRequest", `Provider request failed with HTTP ${response.status}.`);
     }
 
-    const responseText = await timeout.run(
-      readResponseTextWithinCap(response, responseByteCap, timeout.signal)
-    );
+    const responseText = await timeout.run(readResponseTextWithinCap(response, responseByteCap, timeout.signal));
     if (!responseText.ok) {
-      return providerError(
-        profile.id,
-        "/providerResponse/size",
-        "Provider response exceeded the configured byte cap."
-      );
+      return providerError(profile.id, "/providerResponse/size", "Provider response exceeded the configured byte cap.");
     }
 
     const payload = parseJsonObject(responseText.value);
@@ -149,7 +139,7 @@ export async function callProvider(input: ProviderCallInput): Promise<ProviderCa
       return providerError(
         profile.id,
         "/providerResponse",
-        "Provider response intent contains unsupported raw or sensitive content."
+        "Provider response intent contains unsupported raw or sensitive content.",
       );
     }
 
@@ -176,7 +166,7 @@ export async function callProvider(input: ProviderCallInput): Promise<ProviderCa
     return providerError(
       profile.id,
       "/providerRequest",
-      "Provider request failed before a valid JSON response was received."
+      "Provider request failed before a valid JSON response was received.",
     );
   } finally {
     timeout.clear();
@@ -258,7 +248,7 @@ function createProviderTimeout(timeoutMs: number): ProviderTimeout {
 async function readResponseTextWithinCap(
   response: Response,
   byteCap: number,
-  signal: AbortSignal
+  signal: AbortSignal,
 ): Promise<{ ok: true; value: string } | { ok: false }> {
   const contentLength = Number(response.headers.get("content-length"));
   if (Number.isFinite(contentLength) && contentLength > byteCap) {
@@ -320,9 +310,7 @@ function byteLength(value: string): number {
 function parseJsonObject(content: string): { ok: true; value: unknown } | { ok: false } {
   try {
     const value = JSON.parse(stripJsonFence(content));
-    return value && typeof value === "object" && !Array.isArray(value)
-      ? { ok: true, value }
-      : { ok: false };
+    return value && typeof value === "object" && !Array.isArray(value) ? { ok: true, value } : { ok: false };
   } catch {
     return { ok: false };
   }
@@ -346,10 +334,7 @@ function isStructuredIntent(intent: unknown): boolean {
   return !!intent && typeof intent === "object" && !Array.isArray(intent);
 }
 
-function hasUnsafeIntent(
-  intent: Record<string, unknown>,
-  leakContext: { apiKey: string; message: string }
-): boolean {
+function hasUnsafeIntent(intent: Record<string, unknown>, leakContext: { apiKey: string; message: string }): boolean {
   const serializedIntent = JSON.stringify(intent);
   if (
     containsMarker(serializedIntent, unsafePromptMarker(leakContext.message)) ||
@@ -454,7 +439,7 @@ function collectForbiddenMarkers(ctx: LeakContext): ForbiddenMarker[] {
 function collectUnsafeProviderMarkers(
   value: unknown,
   markers: ForbiddenMarker[],
-  insideUnsafeProviderKey = false
+  insideUnsafeProviderKey = false,
 ): void {
   if (typeof value === "string") {
     if (insideUnsafeProviderKey) markers.push({ value, allowReverse: true });
@@ -484,9 +469,9 @@ function isSafeReason(reason: string, forbiddenMarkers: ForbiddenMarker[]): bool
 // ── Error factory ──────────────────────────────────────────────────────
 
 function providerError(
-  providerId: string,
+  _providerId: string,
   path: string,
-  message: string
+  message: string,
 ): { ok: false; diagnostics: ProviderCallDiagnostic[] } {
   return {
     ok: false,

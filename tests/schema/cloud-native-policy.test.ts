@@ -1,15 +1,13 @@
-import { describe, expect, it } from "vitest";
 import {
-  validatePMTilesArchivePolicy,
-  validateGeoParquetPolicy,
-  validateFlatGeobufPolicy,
-  defaultPMTilesArchivePolicy,
-  defaultGeoParquetPolicy,
   defaultFlatGeobufPolicy,
-  type PMTilesArchiveMetadata,
+  type FlatGeobufSourceSpec,
   type GeoParquetSourceSpec,
-  type FlatGeobufSourceSpec
+  type PMTilesArchiveMetadata,
+  validateFlatGeobufPolicy,
+  validateGeoParquetPolicy,
+  validatePMTilesArchivePolicy,
 } from "@gis-engine/engine";
+import { describe, expect, it } from "vitest";
 
 describe("CNS-001: PMTiles archive policy validation", () => {
   it("accepts valid PMTiles v3 archive metadata", () => {
@@ -19,7 +17,7 @@ describe("CNS-001: PMTiles archive policy validation", () => {
       rootDirectoryOffset: 0,
       rootDirectoryLength: 1024,
       hasVectorTiles: true,
-      hasRasterTiles: false
+      hasRasterTiles: false,
     };
     const diagnostics = validatePMTilesArchivePolicy(metadata);
     expect(diagnostics).toEqual([]);
@@ -32,12 +30,10 @@ describe("CNS-001: PMTiles archive policy validation", () => {
       rootDirectoryOffset: 0,
       rootDirectoryLength: 100,
       hasVectorTiles: false,
-      hasRasterTiles: false
+      hasRasterTiles: false,
     };
     const diagnostics = validatePMTilesArchivePolicy(metadata);
-    expect(diagnostics).toContainEqual(
-      expect.objectContaining({ path: "/pmtiles/specVersion", severity: "error" })
-    );
+    expect(diagnostics).toContainEqual(expect.objectContaining({ path: "/pmtiles/specVersion", severity: "error" }));
   });
 
   it("rejects archive exceeding byte limit", () => {
@@ -47,12 +43,10 @@ describe("CNS-001: PMTiles archive policy validation", () => {
       rootDirectoryOffset: 0,
       rootDirectoryLength: 100,
       hasVectorTiles: true,
-      hasRasterTiles: false
+      hasRasterTiles: false,
     };
     const diagnostics = validatePMTilesArchivePolicy(metadata);
-    expect(diagnostics).toContainEqual(
-      expect.objectContaining({ path: "/pmtiles/archiveBytes", severity: "error" })
-    );
+    expect(diagnostics).toContainEqual(expect.objectContaining({ path: "/pmtiles/archiveBytes", severity: "error" }));
   });
 
   it("rejects root directory exceeding limit", () => {
@@ -62,11 +56,11 @@ describe("CNS-001: PMTiles archive policy validation", () => {
       rootDirectoryOffset: 0,
       rootDirectoryLength: 20_000_000,
       hasVectorTiles: false,
-      hasRasterTiles: false
+      hasRasterTiles: false,
     };
     const diagnostics = validatePMTilesArchivePolicy(metadata);
     expect(diagnostics).toContainEqual(
-      expect.objectContaining({ path: "/pmtiles/rootDirectoryLength", severity: "error" })
+      expect.objectContaining({ path: "/pmtiles/rootDirectoryLength", severity: "error" }),
     );
   });
 
@@ -78,12 +72,10 @@ describe("CNS-001: PMTiles archive policy validation", () => {
       rootDirectoryLength: 100,
       hasVectorTiles: false,
       hasRasterTiles: false,
-      bounds: [-200, -100, 200, 100]
+      bounds: [-200, -100, 200, 100],
     };
     const diagnostics = validatePMTilesArchivePolicy(metadata);
-    expect(diagnostics).toContainEqual(
-      expect.objectContaining({ path: "/pmtiles/bounds", severity: "error" })
-    );
+    expect(diagnostics).toContainEqual(expect.objectContaining({ path: "/pmtiles/bounds", severity: "error" }));
   });
 });
 
@@ -96,36 +88,34 @@ describe("CNS-002: GeoParquet policy validation", () => {
       encoding: "WKB",
       crs: { authority: "EPSG", code: "4326" },
       rowCount: 1000,
-      fileBytes: 1_000_000
+      fileBytes: 1_000_000,
     };
     const diagnostics = validateGeoParquetPolicy(source);
     expect(diagnostics).toContainEqual(
       expect.objectContaining({
         code: "CAPABILITY.UNSUPPORTED",
-        path: "/sources/geoparquet/runtime"
-      })
+        path: "/sources/geoparquet/runtime",
+      }),
     );
     // Should have no errors -- only the runtime-blocked warning
-    expect(diagnostics.filter(d => d.severity === "error")).toEqual([]);
+    expect(diagnostics.filter((d) => d.severity === "error")).toEqual([]);
   });
 
   it("rejects empty URL", () => {
     const source: GeoParquetSourceSpec = { type: "geoparquet", url: "" };
     const diagnostics = validateGeoParquetPolicy(source);
-    expect(diagnostics).toContainEqual(
-      expect.objectContaining({ path: "/sources/geoparquet/url", severity: "error" })
-    );
+    expect(diagnostics).toContainEqual(expect.objectContaining({ path: "/sources/geoparquet/url", severity: "error" }));
   });
 
   it("rejects invalid bbox coordinates", () => {
     const source: GeoParquetSourceSpec = {
       type: "geoparquet",
       url: "data.parquet",
-      bbox: [-200, -100, 200, 100]
+      bbox: [-200, -100, 200, 100],
     };
     const diagnostics = validateGeoParquetPolicy(source);
     expect(diagnostics).toContainEqual(
-      expect.objectContaining({ path: "/sources/geoparquet/bbox", severity: "error" })
+      expect.objectContaining({ path: "/sources/geoparquet/bbox", severity: "error" }),
     );
   });
 
@@ -133,11 +123,11 @@ describe("CNS-002: GeoParquet policy validation", () => {
     const source: GeoParquetSourceSpec = {
       type: "geoparquet",
       url: "data.parquet",
-      fileBytes: 2_000_000_000
+      fileBytes: 2_000_000_000,
     };
     const diagnostics = validateGeoParquetPolicy(source);
     expect(diagnostics).toContainEqual(
-      expect.objectContaining({ path: "/sources/geoparquet/fileBytes", severity: "error" })
+      expect.objectContaining({ path: "/sources/geoparquet/fileBytes", severity: "error" }),
     );
   });
 
@@ -145,11 +135,11 @@ describe("CNS-002: GeoParquet policy validation", () => {
     const source: GeoParquetSourceSpec = {
       type: "geoparquet",
       url: "data.parquet",
-      rowCount: 20_000_000
+      rowCount: 20_000_000,
     };
     const diagnostics = validateGeoParquetPolicy(source);
     expect(diagnostics).toContainEqual(
-      expect.objectContaining({ path: "/sources/geoparquet/rowCount", severity: "error" })
+      expect.objectContaining({ path: "/sources/geoparquet/rowCount", severity: "error" }),
     );
   });
 
@@ -157,14 +147,14 @@ describe("CNS-002: GeoParquet policy validation", () => {
     const source: GeoParquetSourceSpec = {
       type: "geoparquet",
       url: "data.parquet",
-      crs: { authority: "IAU", code: "49900" }
+      crs: { authority: "IAU", code: "49900" },
     };
     const diagnostics = validateGeoParquetPolicy(source);
     expect(diagnostics).toContainEqual(
       expect.objectContaining({
         path: "/sources/geoparquet/crs/authority",
-        severity: "warning"
-      })
+        severity: "warning",
+      }),
     );
   });
 });
@@ -176,35 +166,33 @@ describe("CNS-003: FlatGeobuf policy validation", () => {
       url: "https://localhost/data.fgb",
       hasIndex: true,
       featureCount: 5000,
-      geometryType: "Polygon"
+      geometryType: "Polygon",
     };
     const diagnostics = validateFlatGeobufPolicy(source);
     expect(diagnostics).toContainEqual(
       expect.objectContaining({
         code: "CAPABILITY.UNSUPPORTED",
-        path: "/sources/flatgeobuf/runtime"
-      })
+        path: "/sources/flatgeobuf/runtime",
+      }),
     );
-    expect(diagnostics.filter(d => d.severity === "error")).toEqual([]);
+    expect(diagnostics.filter((d) => d.severity === "error")).toEqual([]);
   });
 
   it("rejects empty URL", () => {
     const source: FlatGeobufSourceSpec = { type: "flatgeobuf", url: "" };
     const diagnostics = validateFlatGeobufPolicy(source);
-    expect(diagnostics).toContainEqual(
-      expect.objectContaining({ path: "/sources/flatgeobuf/url", severity: "error" })
-    );
+    expect(diagnostics).toContainEqual(expect.objectContaining({ path: "/sources/flatgeobuf/url", severity: "error" }));
   });
 
   it("rejects file exceeding byte limit", () => {
     const source: FlatGeobufSourceSpec = {
       type: "flatgeobuf",
       url: "data.fgb",
-      fileBytes: 600_000_000
+      fileBytes: 600_000_000,
     };
     const diagnostics = validateFlatGeobufPolicy(source);
     expect(diagnostics).toContainEqual(
-      expect.objectContaining({ path: "/sources/flatgeobuf/fileBytes", severity: "error" })
+      expect.objectContaining({ path: "/sources/flatgeobuf/fileBytes", severity: "error" }),
     );
   });
 
@@ -212,14 +200,14 @@ describe("CNS-003: FlatGeobuf policy validation", () => {
     const source: FlatGeobufSourceSpec = {
       type: "flatgeobuf",
       url: "data.fgb",
-      hasIndex: false
+      hasIndex: false,
     };
     const diagnostics = validateFlatGeobufPolicy(source, {
       ...defaultFlatGeobufPolicy,
-      indexRequired: true
+      indexRequired: true,
     });
     expect(diagnostics).toContainEqual(
-      expect.objectContaining({ path: "/sources/flatgeobuf/hasIndex", severity: "error" })
+      expect.objectContaining({ path: "/sources/flatgeobuf/hasIndex", severity: "error" }),
     );
   });
 
@@ -227,11 +215,11 @@ describe("CNS-003: FlatGeobuf policy validation", () => {
     const source: FlatGeobufSourceSpec = {
       type: "flatgeobuf",
       url: "data.fgb",
-      bbox: [-200, 0, 0, 0]
+      bbox: [-200, 0, 0, 0],
     };
     const diagnostics = validateFlatGeobufPolicy(source);
     expect(diagnostics).toContainEqual(
-      expect.objectContaining({ path: "/sources/flatgeobuf/bbox", severity: "error" })
+      expect.objectContaining({ path: "/sources/flatgeobuf/bbox", severity: "error" }),
     );
   });
 });

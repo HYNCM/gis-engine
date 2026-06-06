@@ -22,7 +22,7 @@ const VALID_REASON_CODES = new Set([
   "delivery-needs-confirmation",
   "spatial-query-follow-up",
   "scene3d-extension-only",
-  "product-promotion-required"
+  "product-promotion-required",
 ]);
 const COMMAND_SAFETY_KEYS = new Set([
   "command",
@@ -34,7 +34,7 @@ const COMMAND_SAFETY_KEYS = new Set([
   "patch",
   "rawprompt",
   "rawproviderbody",
-  "spec"
+  "spec",
 ]);
 
 export function createReviewDecision(input) {
@@ -42,10 +42,12 @@ export function createReviewDecision(input) {
   const commandSafetyPath = findCommandSafetyViolation(request);
   if (commandSafetyPath) return reviewError("/reviewAction/commandSafety", "Review actions cannot mutate map state.");
   const payloadCheck = auditPayloadSafe(request);
-  if (!payloadCheck.ok) return reviewError("/reviewDecision/payload", "Review decision request contains raw payload fields.");
+  if (!payloadCheck.ok)
+    return reviewError("/reviewDecision/payload", "Review decision request contains raw payload fields.");
 
   const projectId = input?.projectId;
-  if (!isValidProjectId(projectId)) return reviewError("/reviewDecision/authorization", "Review project id is invalid.");
+  if (!isValidProjectId(projectId))
+    return reviewError("/reviewDecision/authorization", "Review project id is invalid.");
   const access = authorizeReviewDecision({ principal: input?.principal, projectId });
   if (!access.ok) return reviewError("/reviewDecision/authorization", "Reviewer cannot decide for this project.");
 
@@ -85,12 +87,12 @@ export function createReviewDecision(input) {
       committed: evidence.status === "applied" || evidence.status === "reset",
       rolledBack: false,
       failed: evidence.status === "blocked" || evidence.status === "unsupported",
-      changedPathCount: evidence.commandCount > 0 ? evidence.commandCount : 0
+      changedPathCount: evidence.commandCount > 0 ? evidence.commandCount : 0,
     },
     diagnosticCounts: normalizeDiagnosticCounts(evidence.diagnosticCounts),
     diagnosticCodes: diagnosticCodes.value.length > 0 ? diagnosticCodes.value : undefined,
     reasonCodes: reasonCodes.value,
-    followUpTaskIds: followUpTaskIds.value.length > 0 ? followUpTaskIds.value : undefined
+    followUpTaskIds: followUpTaskIds.value.length > 0 ? followUpTaskIds.value : undefined,
   });
 
   if (!isSafeToken(decision.decisionId) || !isIsoTimestamp(decision.createdAt) || !isSafeToken(decision.sessionId)) {
@@ -113,9 +115,16 @@ function validateOutcomeAgainstEvidence(outcome, evidence, reasonCodes, followUp
   const hasUnsupportedSourceReadiness = sourceReadiness.some((entry) => entry.state !== "supported");
   if (
     outcome === "accepted" &&
-    (errorCount > 0 || evidence.status === "blocked" || evidence.status === "unsupported" || deliveryStatus !== "ready" || hasUnsupportedSourceReadiness)
+    (errorCount > 0 ||
+      evidence.status === "blocked" ||
+      evidence.status === "unsupported" ||
+      deliveryStatus !== "ready" ||
+      hasUnsupportedSourceReadiness)
   ) {
-    return reviewError("/reviewAction/evidence", "Accepted decisions require ready delivery and supported source readiness.");
+    return reviewError(
+      "/reviewAction/evidence",
+      "Accepted decisions require ready delivery and supported source readiness.",
+    );
   }
   if (outcome === "blocked" && reasonCodes.length === 0) {
     return reviewError("/reviewAction/outcome", "Blocked decisions require a reason code.");
@@ -127,11 +136,14 @@ function validateOutcomeAgainstEvidence(outcome, evidence, reasonCodes, followUp
 }
 
 function normalizeReasonCodes(value) {
-  if (!Array.isArray(value) || value.length === 0) return reviewError("/reviewDecision/reasons", "Reason codes are required.");
-  if (value.length > REVIEW_REASON_CAP) return reviewError("/reviewDecision/reasons", "Reason code list exceeds the cap.");
+  if (!Array.isArray(value) || value.length === 0)
+    return reviewError("/reviewDecision/reasons", "Reason codes are required.");
+  if (value.length > REVIEW_REASON_CAP)
+    return reviewError("/reviewDecision/reasons", "Reason code list exceeds the cap.");
   const reasonCodes = [];
   for (const reasonCode of value) {
-    if (!VALID_REASON_CODES.has(reasonCode)) return reviewError("/reviewDecision/reasons", "Reason code is not supported.");
+    if (!VALID_REASON_CODES.has(reasonCode))
+      return reviewError("/reviewDecision/reasons", "Reason code is not supported.");
     if (!reasonCodes.includes(reasonCode)) reasonCodes.push(reasonCode);
   }
   return { ok: true, value: reasonCodes };
@@ -140,7 +152,8 @@ function normalizeReasonCodes(value) {
 function normalizeFollowUpTaskIds(value) {
   if (value === undefined) return { ok: true, value: [] };
   if (!Array.isArray(value)) return reviewError("/reviewDecision/followUps", "Follow-up task ids must be an array.");
-  if (value.length > REVIEW_FOLLOW_UP_CAP) return reviewError("/reviewDecision/followUps", "Follow-up task id list exceeds the cap.");
+  if (value.length > REVIEW_FOLLOW_UP_CAP)
+    return reviewError("/reviewDecision/followUps", "Follow-up task id list exceeds the cap.");
   const followUps = [];
   for (const taskId of value) {
     if (!/^TASK-\d{4}W\d{2}-[A-Z]+-\d{3}$/.test(taskId)) {
@@ -153,12 +166,13 @@ function normalizeFollowUpTaskIds(value) {
 
 function normalizeDiagnosticCodes(value) {
   if (!Array.isArray(value)) return { ok: true, value: [] };
-  if (value.length > REVIEW_DIAGNOSTIC_CAP) return reviewError("/reviewDecision/diagnostics", "Diagnostic list exceeds the cap.");
+  if (value.length > REVIEW_DIAGNOSTIC_CAP)
+    return reviewError("/reviewDecision/diagnostics", "Diagnostic list exceeds the cap.");
   return {
     ok: true,
     value: value
       .filter((item) => isSafeToken(item?.code) && typeof item?.path === "string" && item.path.startsWith("/"))
-      .map((item) => ({ code: item.code, path: item.path.slice(0, 120) }))
+      .map((item) => ({ code: item.code, path: item.path.slice(0, 120) })),
   };
 }
 
@@ -184,7 +198,7 @@ function normalizeDiagnosticCounts(value) {
   return {
     error: nonNegativeInteger(value?.error),
     warning: nonNegativeInteger(value?.warning),
-    info: nonNegativeInteger(value?.info)
+    info: nonNegativeInteger(value?.info),
   };
 }
 
@@ -207,9 +221,9 @@ function reviewError(path, message) {
         code: REVIEW_DIAGNOSTIC_CODE,
         message,
         path,
-        fix: { kind: "manual", confidence: "high", message: "Record compact review decision evidence only." }
-      }
-    ]
+        fix: { kind: "manual", confidence: "high", message: "Record compact review decision evidence only." },
+      },
+    ],
   };
 }
 

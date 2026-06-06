@@ -1,25 +1,25 @@
-import { describe, expect, it, vi } from "vitest";
-import before from "../fixtures/commands/replay/style-update/before.map.json";
-import commands from "../fixtures/commands/replay/style-update/commands.json";
 import {
-  MapRuntime,
-  MapSpecValidationError,
-  MockAdapter,
   type AdapterApplyResult,
   type AdapterEventListener,
   type CapabilityReport,
   type FeatureQueryResult,
   type JsonPatchOperation,
   type MapCommand,
+  MapRuntime,
   type MapSpec,
+  MapSpecValidationError,
+  MockAdapter,
   type QueryFeaturesOptions,
   type RenderContext,
   type RendererAdapter,
   type ResourceReport,
   type SnapshotOptions,
   type SnapshotResult,
-  type Unsubscribe
+  type Unsubscribe,
 } from "@gis-engine/engine";
+import { describe, expect, it } from "vitest";
+import before from "../fixtures/commands/replay/style-update/before.map.json";
+import commands from "../fixtures/commands/replay/style-update/commands.json";
 
 class RuntimeMockAdapter implements RendererAdapter {
   readonly id = "runtime-mock";
@@ -41,7 +41,7 @@ class RuntimeMockAdapter implements RendererAdapter {
       expressions: [],
       queries: [],
       snapshot: { supported: true, formats: ["data-url"] },
-      experimental: []
+      experimental: [],
     };
   }
 
@@ -85,7 +85,7 @@ describe("MapRuntime", () => {
     const adapter = new RuntimeMockAdapter();
     const runtime = await MapRuntime.create(before as MapSpec, {
       adapter,
-      container: {} as HTMLElement
+      container: {} as HTMLElement,
     });
 
     const results = await runtime.apply(commands as MapCommand[]);
@@ -103,17 +103,17 @@ describe("MapRuntime", () => {
     await expect(
       MapRuntime.create(invalidSpec, {
         adapter,
-        container: {} as HTMLElement
-      })
+        container: {} as HTMLElement,
+      }),
     ).rejects.toMatchObject({
       name: "MapSpecValidationError",
-      diagnostics: [expect.objectContaining({ code: "SRC.NOT_FOUND" })]
+      diagnostics: [expect.objectContaining({ code: "SRC.NOT_FOUND" })],
     });
     await expect(
       MapRuntime.create(invalidSpec, {
         adapter,
-        container: {} as HTMLElement
-      })
+        container: {} as HTMLElement,
+      }),
     ).rejects.toBeInstanceOf(MapSpecValidationError);
     expect(adapter.loadCalls).toBe(0);
   });
@@ -122,7 +122,7 @@ describe("MapRuntime", () => {
     const adapter = new RuntimeMockAdapter();
     const runtime = await MapRuntime.create(before as MapSpec, {
       adapter,
-      container: {} as HTMLElement
+      container: {} as HTMLElement,
     });
     const styleCommand = (commands as MapCommand[])[0]!;
     const failingCommand: MapCommand = {
@@ -130,7 +130,7 @@ describe("MapRuntime", () => {
       version: "0.1",
       type: "removeLayer",
       baseRevision: "2",
-      layerId: "missing-layer"
+      layerId: "missing-layer",
     };
 
     const results = await runtime.apply([styleCommand, failingCommand]);
@@ -144,7 +144,7 @@ describe("MapRuntime", () => {
     const adapter = new RuntimeMockAdapter();
     const runtime = await MapRuntime.create(before as MapSpec, {
       adapter,
-      container: {} as HTMLElement
+      container: {} as HTMLElement,
     });
     const styleCommand = (commands as MapCommand[])[0]!;
     const failingCommand: MapCommand = {
@@ -152,7 +152,7 @@ describe("MapRuntime", () => {
       version: "0.1",
       type: "removeLayer",
       baseRevision: "2",
-      layerId: "missing-layer"
+      layerId: "missing-layer",
     };
 
     const results = await runtime.apply([styleCommand, failingCommand], { transaction: "best-effort" });
@@ -166,7 +166,7 @@ describe("MapRuntime", () => {
     const adapter = new RuntimeMockAdapter();
     const runtime = await MapRuntime.create(before as MapSpec, {
       adapter,
-      container: {} as HTMLElement
+      container: {} as HTMLElement,
     });
     const previewCommand: MapCommand = { ...(commands as MapCommand[])[0]!, id: "cmd-preview-style", dryRun: true };
 
@@ -182,7 +182,7 @@ describe("MapRuntime", () => {
     const adapter = new RuntimeMockAdapter();
     const runtime = await MapRuntime.create(before as MapSpec, {
       adapter,
-      container: {} as HTMLElement
+      container: {} as HTMLElement,
     });
 
     const results = await runtime.apply(commands as MapCommand[], { dryRun: true });
@@ -197,7 +197,7 @@ describe("MapRuntime", () => {
     const adapter = new RuntimeMockAdapter();
     const runtime = await MapRuntime.create(before as MapSpec, {
       adapter,
-      container: {} as HTMLElement
+      container: {} as HTMLElement,
     });
     const previewCommand: MapCommand = { ...(commands as MapCommand[])[0]!, id: "cmd-preview-style", dryRun: true };
     const viewCommand: MapCommand = {
@@ -205,7 +205,7 @@ describe("MapRuntime", () => {
       version: "0.1",
       type: "setView",
       baseRevision: "1",
-      view: { zoom: 12 }
+      view: { zoom: 12 },
     };
 
     const results = await runtime.apply([previewCommand, viewCommand], { transaction: "best-effort" });
@@ -224,7 +224,7 @@ describe("MapRuntime", () => {
     adapter.applyDelayMs = 10;
     const runtime = await MapRuntime.create(before as MapSpec, {
       adapter,
-      container: {} as HTMLElement
+      container: {} as HTMLElement,
     });
     const styleCommand = (commands as MapCommand[])[0]!;
     const staleViewCommand: MapCommand = {
@@ -232,12 +232,12 @@ describe("MapRuntime", () => {
       version: "0.1",
       type: "setView",
       baseRevision: "1",
-      view: { zoom: 12 }
+      view: { zoom: 12 },
     };
 
     const [firstResults, secondResults] = await Promise.all([
       runtime.apply(styleCommand),
-      runtime.apply(staleViewCommand)
+      runtime.apply(staleViewCommand),
     ]);
 
     expect(firstResults[0]?.status).toBe("applied");
@@ -252,14 +252,14 @@ describe("MapRuntime", () => {
     const adapter = new RuntimeMockAdapter();
     const runtime = await MapRuntime.create(before as MapSpec, {
       adapter,
-      container: {} as HTMLElement
+      container: {} as HTMLElement,
     });
     adapter.applyDiagnostics = [
       {
         severity: "error",
         code: "RENDER.ADAPTER_ERROR",
-        message: "adapter rejected patch"
-      }
+        message: "adapter rejected patch",
+      },
     ];
 
     const results = await runtime.apply(commands as MapCommand[]);
@@ -279,12 +279,12 @@ describe("MapRuntime", () => {
       {
         severity: "error",
         code: "RENDER.ADAPTER_ERROR",
-        message: "adapter rejected patch"
-      }
+        message: "adapter rejected patch",
+      },
     ];
     const runtime = await MapRuntime.create(before as MapSpec, {
       adapter,
-      container: {} as HTMLElement
+      container: {} as HTMLElement,
     });
 
     await expect(runtime.apply(commands as MapCommand[])).rejects.toThrow("reload failed");
@@ -296,7 +296,7 @@ describe("MapRuntime", () => {
       version: "0.1",
       type: "setView",
       baseRevision: "1",
-      view: { zoom: 8 }
+      view: { zoom: 8 },
     };
 
     const recoveryResults = await runtime.apply(viewCommand);
@@ -309,7 +309,7 @@ describe("MapRuntime", () => {
   it("forwards queryFeatures to the committed adapter state", async () => {
     const runtime = await MapRuntime.create(runtimeQuerySpec(), {
       adapter: new MockAdapter(),
-      container: {} as HTMLElement
+      container: {} as HTMLElement,
     });
 
     const result = await runtime.queryFeatures({ point: [1, 2], layers: ["runtime-points"] });
@@ -317,8 +317,8 @@ describe("MapRuntime", () => {
     expect(result.diagnostics).toEqual([]);
     expect(result.features).toEqual([
       expect.objectContaining({
-        properties: { id: "runtime-point" }
-      })
+        properties: { id: "runtime-point" },
+      }),
     ]);
   });
 });
@@ -331,7 +331,7 @@ function runtimeQuerySpec(): MapSpec {
     view: {
       mode: "map2d",
       center: [0, 0],
-      zoom: 2
+      zoom: 2,
     },
     sources: {
       points: {
@@ -342,12 +342,12 @@ function runtimeQuerySpec(): MapSpec {
             {
               type: "Feature",
               properties: { id: "runtime-point" },
-              geometry: { type: "Point", coordinates: [1, 2] }
-            }
-          ]
-        }
-      }
+              geometry: { type: "Point", coordinates: [1, 2] },
+            },
+          ],
+        },
+      },
     },
-    layers: [{ id: "runtime-points", type: "circle", source: "points" }]
+    layers: [{ id: "runtime-points", type: "circle", source: "points" }],
   };
 }

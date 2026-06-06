@@ -1,11 +1,15 @@
-import { describe, expect, it } from "vitest";
+import {
+  createGenerationEvidenceBundle,
+  type GenerationEvidenceBundle,
+  type GenerationEvidenceBundleInput,
+} from "@gis-engine/ai";
 import {
   createMapGenerationCommandSkeleton,
-  planMapGenerationRequest,
   type MapGenerationCommandSkeleton,
-  type MapGenerationRequestFromSchema
+  type MapGenerationRequestFromSchema,
+  planMapGenerationRequest,
 } from "@gis-engine/engine";
-import { createGenerationEvidenceBundle, type GenerationEvidenceBundle, type GenerationEvidenceBundleInput } from "@gis-engine/ai";
+import { describe, expect, it } from "vitest";
 
 interface PromptEvidenceScenario {
   id: string;
@@ -27,16 +31,16 @@ describe("prompt-level generation evidence scenarios", () => {
         targetDomains: ["feature-display"],
         view: {
           center: [120.15, 30.28],
-          zoom: 10
+          zoom: 10,
         },
         sources: {
           districts: {
             type: "geojson",
             data: {
               type: "FeatureCollection",
-              features: []
-            }
-          }
+              features: [],
+            },
+          },
         },
         layers: [
           {
@@ -44,8 +48,8 @@ describe("prompt-level generation evidence scenarios", () => {
             type: "fill",
             source: "districts",
             paint: {
-              "fill-color": "#22c55e"
-            }
+              "fill-color": "#22c55e",
+            },
           },
           {
             id: "district-outline",
@@ -53,21 +57,21 @@ describe("prompt-level generation evidence scenarios", () => {
             source: "districts",
             paint: {
               "line-color": "#14532d",
-              "line-width": 1.5
-            }
-          }
+              "line-width": 1.5,
+            },
+          },
         ],
         styleEdits: [
           {
             layerId: "district-fill",
             paint: {
-              "fill-opacity": 0.45
+              "fill-opacity": 0.45,
             },
             layout: {
-              visibility: "visible"
-            }
-          }
-        ]
+              visibility: "visible",
+            },
+          },
+        ],
       },
       evidence: {
         snapshot: {
@@ -76,10 +80,10 @@ describe("prompt-level generation evidence scenarios", () => {
             width: 320,
             height: 180,
             format: "data-url",
-            targetLayers: ["district-fill", "district-outline"]
-          }
+            targetLayers: ["district-fill", "district-outline"],
+          },
         },
-        exampleId: "ai-map-edit"
+        exampleId: "ai-map-edit",
       },
       assertEvidence: (skeleton, evidence) => {
         expect(skeleton.status).toBe("ready");
@@ -89,18 +93,18 @@ describe("prompt-level generation evidence scenarios", () => {
           commandCount: 6,
           committed: true,
           rolledBack: false,
-          diagnosticCounts: { error: 0, warning: 0, info: 0 }
+          diagnosticCounts: { error: 0, warning: 0, info: 0 },
         });
         expect(evidence.snapshotEvidence).toMatchObject({
           requested: true,
           renderer: "maplibre",
           passed: true,
-          dataUrlPresent: true
+          dataUrlPresent: true,
         });
         expect(evidence.exportEvidence).toMatchObject({
           ready: true,
           sourceCount: 1,
-          layerCount: 2
+          layerCount: 2,
         });
         expect(evidence.exampleEvidence).toMatchObject({
           exampleId: "ai-map-edit",
@@ -113,19 +117,19 @@ describe("prompt-level generation evidence scenarios", () => {
               usedApplyCommands: true,
               commandCount: 6,
               committed: true,
-              rolledBack: false
+              rolledBack: false,
             },
             snapshot: {
               requested: true,
               renderer: "maplibre",
-              passed: true
+              passed: true,
             },
             export: {
               ready: true,
               sourceCount: 1,
-              layerCount: 2
-            }
-          }
+              layerCount: 2,
+            },
+          },
         });
         expect(evidence.delivery).toMatchObject({
           status: "ready",
@@ -134,9 +138,9 @@ describe("prompt-level generation evidence scenarios", () => {
             ready: true,
             blocked: false,
             needsConfirmation: false,
-            followUpRequired: false
+            followUpRequired: false,
           },
-          confirmationRequired: false
+          confirmationRequired: false,
         });
         expect(evidence.delivery.sections).toEqual(
           expect.arrayContaining([
@@ -144,13 +148,13 @@ describe("prompt-level generation evidence scenarios", () => {
             expect.objectContaining({ id: "files", status: "ready" }),
             expect.objectContaining({ id: "map-edits", status: "ready" }),
             expect.objectContaining({ id: "data-and-analysis", status: "ready" }),
-            expect.objectContaining({ id: "scene-browsing", status: "ready" })
-          ])
+            expect.objectContaining({ id: "scene-browsing", status: "ready" }),
+          ]),
         );
         expect(findDomain(evidence, "feature-display")).toMatchObject({
-          status: "supported"
+          status: "supported",
         });
-      }
+      },
     },
     {
       id: "spatial-analysis-readiness",
@@ -161,7 +165,7 @@ describe("prompt-level generation evidence scenarios", () => {
         traceId: "trace-prompt-spatial-readiness",
         targetDomains: ["feature-display", "spatial-analysis"],
         analysis: {
-          operations: ["point-query", "bbox-query"]
+          operations: ["point-query", "bbox-query"],
         },
         sources: {
           incidents: {
@@ -172,16 +176,16 @@ describe("prompt-level generation evidence scenarios", () => {
                 {
                   type: "Feature",
                   properties: { id: "incident-1" },
-                  geometry: { type: "Point", coordinates: [120.15, 30.28] }
+                  geometry: { type: "Point", coordinates: [120.15, 30.28] },
                 },
                 {
                   type: "Feature",
                   properties: { id: "incident-2" },
-                  geometry: { type: "Point", coordinates: [120.18, 30.3] }
-                }
-              ]
-            }
-          }
+                  geometry: { type: "Point", coordinates: [120.18, 30.3] },
+                },
+              ],
+            },
+          },
         },
         layers: [
           {
@@ -190,10 +194,10 @@ describe("prompt-level generation evidence scenarios", () => {
             source: "incidents",
             paint: {
               "circle-color": "#ef4444",
-              "circle-radius": 5
-            }
-          }
-        ]
+              "circle-radius": 5,
+            },
+          },
+        ],
       },
       evidence: {
         capabilities: {
@@ -205,15 +209,15 @@ describe("prompt-level generation evidence scenarios", () => {
           queries: ["point", "bbox"],
           snapshot: {
             supported: true,
-            formats: ["data-url"]
+            formats: ["data-url"],
           },
-          experimental: []
+          experimental: [],
         },
         snapshot: {
           renderer: "mock",
           options: {
-            targetLayers: ["incident-points"]
-          }
+            targetLayers: ["incident-points"],
+          },
         },
         spatialQueries: {
           renderer: "mock",
@@ -222,23 +226,23 @@ describe("prompt-level generation evidence scenarios", () => {
               id: "prompt-incident-point",
               operation: "point-query",
               point: [120.15, 30.28],
-              layers: ["incident-points"]
+              layers: ["incident-points"],
             },
             {
               id: "prompt-incident-bbox",
               operation: "bbox-query",
               bbox: [120.14, 30.27, 120.19, 30.31],
-              layers: ["incident-points"]
-            }
-          ]
-        }
+              layers: ["incident-points"],
+            },
+          ],
+        },
       },
       assertEvidence: (skeleton, evidence) => {
         expect(skeleton.status).toBe("ready");
         expect(skeleton.analysisEvidence).toMatchObject({
           requested: true,
           status: "ready",
-          acceptedQueryOperations: ["point-query", "bbox-query"]
+          acceptedQueryOperations: ["point-query", "bbox-query"],
         });
         expect(evidence.status).toBe("ready");
         expect(evidence.commandEvidence).toMatchObject({
@@ -246,12 +250,12 @@ describe("prompt-level generation evidence scenarios", () => {
           commandCount: 2,
           committed: true,
           rolledBack: false,
-          diagnosticCounts: { error: 0, warning: 0, info: 0 }
+          diagnosticCounts: { error: 0, warning: 0, info: 0 },
         });
         expect(evidence.snapshotEvidence).toMatchObject({
           requested: true,
           renderer: "mock",
-          passed: true
+          passed: true,
         });
         expect(evidence.spatialQueryEvidence).toMatchObject({
           requested: true,
@@ -262,11 +266,18 @@ describe("prompt-level generation evidence scenarios", () => {
           blockedOperations: [],
           queryableSourceIds: ["incidents"],
           queryableLayerIds: ["incident-points"],
-          diagnosticCounts: { error: 0, warning: 0, info: 0 }
+          diagnosticCounts: { error: 0, warning: 0, info: 0 },
         });
-        expect(evidence.spatialQueryEvidence.cases.map((entry) => [entry.id, entry.operation, entry.featureCount, entry.passed])).toEqual([
+        expect(
+          evidence.spatialQueryEvidence.cases.map((entry) => [
+            entry.id,
+            entry.operation,
+            entry.featureCount,
+            entry.passed,
+          ]),
+        ).toEqual([
           ["prompt-incident-point", "point-query", 1, true],
-          ["prompt-incident-bbox", "bbox-query", 2, true]
+          ["prompt-incident-bbox", "bbox-query", 2, true],
         ]);
         expect(evidence.exampleEvidence.generationEvidence).toMatchObject({
           status: "ready",
@@ -275,13 +286,13 @@ describe("prompt-level generation evidence scenarios", () => {
             ready: true,
             status: "ready",
             caseCount: 2,
-            blockedOperations: []
+            blockedOperations: [],
           },
           snapshot: {
             requested: true,
             renderer: "mock",
-            passed: true
-          }
+            passed: true,
+          },
         });
         expect(evidence.delivery).toMatchObject({
           status: "ready",
@@ -290,7 +301,7 @@ describe("prompt-level generation evidence scenarios", () => {
             ready: true,
             blocked: false,
             needsConfirmation: false,
-            followUpRequired: false
+            followUpRequired: false,
           },
           confirmationRequired: false,
           spatialQueryReadiness: {
@@ -303,8 +314,8 @@ describe("prompt-level generation evidence scenarios", () => {
             blockerCount: 0,
             followUpCount: 0,
             queryableLayerIds: ["incident-points"],
-            queryableSourceIds: ["incidents"]
-          }
+            queryableSourceIds: ["incidents"],
+          },
         });
         expect(evidence.delivery.sections).toEqual(
           expect.arrayContaining([
@@ -312,20 +323,20 @@ describe("prompt-level generation evidence scenarios", () => {
             expect.objectContaining({ id: "files", status: "ready" }),
             expect.objectContaining({ id: "map-edits", status: "ready" }),
             expect.objectContaining({ id: "data-and-analysis", status: "ready" }),
-            expect.objectContaining({ id: "scene-browsing", status: "ready" })
-          ])
+            expect.objectContaining({ id: "scene-browsing", status: "ready" }),
+          ]),
         );
         expect(evidence.exportEvidence).toMatchObject({
           ready: true,
           sourceCount: 1,
-          layerCount: 1
+          layerCount: 1,
         });
         const spatial = findDomain(evidence, "spatial-analysis");
         expect(spatial.status).toBe("experimental");
         expect(spatial.supported.join(" ")).toContain("declared query capabilities: bbox, point");
         expect(spatial.blocked.join(" ")).toContain("buffer");
         expect(spatial.blocked.join(" ")).toContain("routing");
-      }
+      },
     },
     {
       id: "delivery-needs-confirmation",
@@ -338,19 +349,19 @@ describe("prompt-level generation evidence scenarios", () => {
         sources: {
           parcels: {
             type: "pmtiles",
-            url: "pmtiles://local/parcels.pmtiles"
-          }
+            url: "pmtiles://local/parcels.pmtiles",
+          },
         },
         layers: [
           {
             id: "parcel-fills",
             type: "fill",
-            source: "parcels"
-          }
-        ]
+            source: "parcels",
+          },
+        ],
       },
       evidence: {
-        exampleId: "pmtiles-local"
+        exampleId: "pmtiles-local",
       },
       assertEvidence: (skeleton, evidence) => {
         expect(skeleton.status).toBe("ready");
@@ -362,9 +373,9 @@ describe("prompt-level generation evidence scenarios", () => {
             ready: false,
             blocked: false,
             needsConfirmation: true,
-            followUpRequired: false
+            followUpRequired: false,
           },
-          confirmationRequired: true
+          confirmationRequired: true,
         });
         expect(evidence.delivery.sections).toEqual(
           expect.arrayContaining([
@@ -372,15 +383,15 @@ describe("prompt-level generation evidence scenarios", () => {
             expect.objectContaining({ id: "files", status: "ready" }),
             expect.objectContaining({ id: "map-edits", status: "ready" }),
             expect.objectContaining({ id: "data-and-analysis", status: "needs-confirmation" }),
-            expect.objectContaining({ id: "scene-browsing", status: "ready" })
-          ])
+            expect.objectContaining({ id: "scene-browsing", status: "ready" }),
+          ]),
         );
         expect(evidence.exampleEvidence.generationEvidence).toMatchObject({
           status: "ready",
           delivery: {
             status: "needs-confirmation",
-            confirmationRequired: true
-          }
+            confirmationRequired: true,
+          },
         });
         expect(evidence.exampleEvidence.generationEvidence?.delivery?.sourceReadiness).toContainEqual(
           expect.objectContaining({
@@ -391,10 +402,10 @@ describe("prompt-level generation evidence scenarios", () => {
             archiveContract: expect.objectContaining({
               state: "explicit",
               metadataFields: expect.arrayContaining(["specVersion", "archiveBytes"]),
-              policyFields: expect.arrayContaining(["maxArchiveBytes", "timeoutMs"])
+              policyFields: expect.arrayContaining(["maxArchiveBytes", "timeoutMs"]),
             }),
-            confirmationReasons: ["external-resource", "archive-parsing"]
-          })
+            confirmationReasons: ["external-resource", "archive-parsing"],
+          }),
         );
         expect(evidence.exampleEvidence.generationEvidence?.delivery?.sourcePromotionCandidates).toContainEqual(
           expect.objectContaining({
@@ -403,13 +414,13 @@ describe("prompt-level generation evidence scenarios", () => {
             state: "readiness-only",
             resourcePolicy: "passed",
             archiveContract: expect.objectContaining({ state: "explicit" }),
-            target: "PMTiles archive metadata promotion gate"
-          })
+            target: "PMTiles archive metadata promotion gate",
+          }),
         );
         expect(findDomain(evidence, "feature-display")).toMatchObject({
-          status: "supported"
+          status: "supported",
         });
-      }
+      },
     },
     {
       id: "scene-browsing-extension-only",
@@ -422,28 +433,28 @@ describe("prompt-level generation evidence scenarios", () => {
         scene3d: {
           camera: {
             position: [120.15, 30.28, 1200],
-            target: [120.15, 30.28, 0]
+            target: [120.15, 30.28, 0],
           },
           sources: {
             city: {
               type: "3d-tiles",
-              url: "./data/city/tileset.json"
-            }
+              url: "./data/city/tileset.json",
+            },
           },
           layers: [
             {
               id: "city",
               type: "tileset3d",
               source: "city",
-              pickable: true
-            }
-          ]
-        }
+              pickable: true,
+            },
+          ],
+        },
       },
       evidence: {
         snapshot: {
-          renderer: "mock"
-        }
+          renderer: "mock",
+        },
       },
       assertEvidence: (skeleton, evidence) => {
         expect(skeleton.status).toBe("ready");
@@ -453,7 +464,7 @@ describe("prompt-level generation evidence scenarios", () => {
         expect(evidence.snapshotEvidence).toMatchObject({
           requested: true,
           renderer: "mock",
-          passed: true
+          passed: true,
         });
         expect(evidence.exportEvidence.ready).toBe(true);
         expect(evidence.delivery).toMatchObject({
@@ -463,9 +474,9 @@ describe("prompt-level generation evidence scenarios", () => {
             ready: false,
             blocked: false,
             needsConfirmation: false,
-            followUpRequired: true
+            followUpRequired: true,
           },
-          confirmationRequired: false
+          confirmationRequired: false,
         });
         expect(evidence.delivery.sections).toEqual(
           expect.arrayContaining([
@@ -473,8 +484,8 @@ describe("prompt-level generation evidence scenarios", () => {
             expect.objectContaining({ id: "files", status: "ready" }),
             expect.objectContaining({ id: "map-edits", status: "ready" }),
             expect.objectContaining({ id: "data-and-analysis", status: "ready" }),
-            expect.objectContaining({ id: "scene-browsing", status: "follow-up-required" })
-          ])
+            expect.objectContaining({ id: "scene-browsing", status: "follow-up-required" }),
+          ]),
         );
         expect(evidence.summary.scene3d).toMatchObject({
           status: "extension-only",
@@ -484,11 +495,11 @@ describe("prompt-level generation evidence scenarios", () => {
           layerCount: 1,
           pickableLayerCount: 1,
           snapshot: {
-            mockPassed: true
+            mockPassed: true,
           },
           query: {
-            pickCount: 1
-          }
+            pickCount: 1,
+          },
         });
         expect(evidence.summary.scene3d).not.toHaveProperty("rendererEvidence");
         expect(evidence.summary.scene3d).not.toHaveProperty("promotionEvidence");
@@ -508,13 +519,13 @@ describe("prompt-level generation evidence scenarios", () => {
           stableRuntimeBlockerCodes: [
             "SCENE3D.STABLE_RUNTIME_DIMENSIONS_BLOCKED",
             "SCENE3D.STABLE_RUNTIME_RENDERER_BLOCKED",
-            "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED"
-          ]
+            "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED",
+          ],
         });
         expect(findDomain(evidence, "scene-browsing")).toMatchObject({
-          status: "experimental"
+          status: "experimental",
         });
-      }
+      },
     },
     {
       id: "scene-browsing-stable-blocked",
@@ -525,12 +536,12 @@ describe("prompt-level generation evidence scenarios", () => {
         traceId: "trace-prompt-scene-stable-blocked",
         targetDomains: ["scene-browsing"],
         view: {
-          mode: "scene3d"
+          mode: "scene3d",
         },
         capabilities: {
           dimensions: ["3d"],
-          renderer: "scene3d"
-        }
+          renderer: "scene3d",
+        },
       },
       assertEvidence: (skeleton, evidence) => {
         expect(skeleton.status).toBe("blocked");
@@ -540,13 +551,13 @@ describe("prompt-level generation evidence scenarios", () => {
           usedApplyCommands: false,
           commandCount: 0,
           committed: false,
-          rolledBack: false
+          rolledBack: false,
         });
         expect(evidence.snapshotEvidence).toMatchObject({
           requested: false,
           renderer: "maplibre",
           passed: false,
-          dataUrlPresent: false
+          dataUrlPresent: false,
         });
         expect(evidence.exportEvidence.ready).toBe(false);
         expect(evidence.delivery).toMatchObject({
@@ -556,8 +567,8 @@ describe("prompt-level generation evidence scenarios", () => {
             ready: false,
             blocked: true,
             needsConfirmation: false,
-            followUpRequired: false
-          }
+            followUpRequired: false,
+          },
         });
         expect(evidence.delivery.sections).toEqual(
           expect.arrayContaining([
@@ -565,8 +576,8 @@ describe("prompt-level generation evidence scenarios", () => {
             expect.objectContaining({ id: "files", status: "ready" }),
             expect.objectContaining({ id: "map-edits", status: "ready" }),
             expect.objectContaining({ id: "data-and-analysis", status: "ready" }),
-            expect.objectContaining({ id: "scene-browsing", status: "blocked" })
-          ])
+            expect.objectContaining({ id: "scene-browsing", status: "blocked" }),
+          ]),
         );
         const sceneDomain = findDomain(evidence, "scene-browsing");
         expect(sceneDomain.status).toBe("experimental");
@@ -575,17 +586,17 @@ describe("prompt-level generation evidence scenarios", () => {
           expect.arrayContaining([
             expect.objectContaining({
               blockerCode: "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED",
-              path: "/view/mode"
+              path: "/view/mode",
             }),
             expect.objectContaining({
               blockerCode: "SCENE3D.STABLE_RUNTIME_RENDERER_BLOCKED",
-              path: "/capabilities/renderer"
+              path: "/capabilities/renderer",
             }),
             expect.objectContaining({
               blockerCode: "SCENE3D.STABLE_RUNTIME_DIMENSIONS_BLOCKED",
-              path: "/capabilities/dimensions"
-            })
-          ])
+              path: "/capabilities/dimensions",
+            }),
+          ]),
         );
         expect(evidence.exampleEvidence.generationEvidence?.sceneBrowsing).toMatchObject({
           requested: true,
@@ -601,11 +612,11 @@ describe("prompt-level generation evidence scenarios", () => {
           stableRuntimeBlockerCodes: [
             "SCENE3D.STABLE_RUNTIME_DIMENSIONS_BLOCKED",
             "SCENE3D.STABLE_RUNTIME_RENDERER_BLOCKED",
-            "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED"
-          ]
+            "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED",
+          ],
         });
-      }
-    }
+      },
+    },
   ];
 
   it.each(scenarios)("$id composes prompt-to-evidence output", async (scenario) => {
@@ -614,7 +625,7 @@ describe("prompt-level generation evidence scenarios", () => {
       promptHash: scenario.request.promptHash,
       ...(scenario.request.traceId ? { traceId: scenario.request.traceId } : {}),
       ...(scenario.request.createdAt ? { createdAt: scenario.request.createdAt } : {}),
-      intent: plannerIntentFromRequest(scenario.request)
+      intent: plannerIntentFromRequest(scenario.request),
     });
     expect(plan.status).toBe("ready");
     const skeleton = createMapGenerationCommandSkeleton(plan.request);
@@ -622,7 +633,7 @@ describe("prompt-level generation evidence scenarios", () => {
       promptHash: scenario.request.promptHash,
       skeleton,
       planner: { plan },
-      ...(scenario.evidence ?? {})
+      ...(scenario.evidence ?? {}),
     });
 
     expect(response.ok).toBe(true);
@@ -635,7 +646,7 @@ describe("prompt-level generation evidence scenarios", () => {
       promptHash: scenario.request.promptHash,
       traceId: scenario.request.traceId,
       retainedRawPrompt: false,
-      diagnosticCounts: { error: 0, warning: 0, info: 0 }
+      diagnosticCounts: { error: 0, warning: 0, info: 0 },
     });
     expect(response.result.toolSequence).toEqual([
       "get_context_summary",
@@ -643,7 +654,7 @@ describe("prompt-level generation evidence scenarios", () => {
       "apply_commands",
       "snapshot_spec",
       "export_spec",
-      "export_example_app"
+      "export_example_app",
     ]);
     expect(response.result.toolSequence).not.toContain("generate_map_app");
 
@@ -652,13 +663,16 @@ describe("prompt-level generation evidence scenarios", () => {
 });
 
 function plannerIntentFromRequest(
-  request: MapGenerationRequestFromSchema
+  request: MapGenerationRequestFromSchema,
 ): Omit<MapGenerationRequestFromSchema, "promptHash" | "traceId" | "createdAt"> {
   const { promptHash: _promptHash, traceId: _traceId, createdAt: _createdAt, ...intent } = request;
   return intent;
 }
 
-function findDomain(evidence: GenerationEvidenceBundle, domainId: "feature-display" | "spatial-analysis" | "scene-browsing") {
+function findDomain(
+  evidence: GenerationEvidenceBundle,
+  domainId: "feature-display" | "spatial-analysis" | "scene-browsing",
+) {
   const domain = evidence.summary.capabilitySummary.domains.find((entry) => entry.id === domainId);
   if (!domain) throw new Error(`Expected capability domain ${domainId}.`);
   return domain;

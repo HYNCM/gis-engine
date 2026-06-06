@@ -15,7 +15,7 @@
  *   - 输出退出码：0=全部合规, 1=存在违规, 2=存在 P0 阻断
  */
 
-import { join, dirname } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { AGENT_REGISTRY } from "./agent-registry.mjs";
 import { findLatestReport } from "./handoff-ledger.mjs";

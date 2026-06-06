@@ -1,4 +1,4 @@
-import { Type, type Static } from "@sinclair/typebox";
+import { type Static, Type } from "@sinclair/typebox";
 import { MapCommandSchema } from "./command.schema.js";
 import { DiagnosticSchema } from "./diagnostics.schema.js";
 import {
@@ -7,7 +7,7 @@ import {
   LayerSpecSchema,
   MapSpecSchema,
   SourceSpecSchema,
-  ViewSpecSchema
+  ViewSpecSchema,
 } from "./map-spec.schema.js";
 import { SceneView3DExtensionSchema } from "./sceneview3d.schema.js";
 
@@ -19,7 +19,7 @@ const NestedSceneView3DExtensionSchema = stripNestedIds(SceneView3DExtensionSche
 export const MapGenerationTargetDomainSchema = Type.Union([
   Type.Literal("feature-display"),
   Type.Literal("spatial-analysis"),
-  Type.Literal("scene-browsing")
+  Type.Literal("scene-browsing"),
 ]);
 
 export const MapGenerationAnalysisOperationSchema = Type.Union([
@@ -29,10 +29,13 @@ export const MapGenerationAnalysisOperationSchema = Type.Union([
   Type.Literal("intersection"),
   Type.Literal("overlay"),
   Type.Literal("routing"),
-  Type.Literal("aggregation")
+  Type.Literal("aggregation"),
 ]);
 
-export const MapGenerationQueryReadinessOperationSchema = Type.Union([Type.Literal("point-query"), Type.Literal("bbox-query")]);
+export const MapGenerationQueryReadinessOperationSchema = Type.Union([
+  Type.Literal("point-query"),
+  Type.Literal("bbox-query"),
+]);
 
 const PaintLayoutSchema = Type.Record(Type.String(), Type.Unknown());
 
@@ -40,16 +43,16 @@ const MapGenerationStyleEditSchema = Type.Object(
   {
     layerId: Type.String({ minLength: 1 }),
     paint: Type.Optional(PaintLayoutSchema),
-    layout: Type.Optional(PaintLayoutSchema)
+    layout: Type.Optional(PaintLayoutSchema),
   },
-  { additionalProperties: false }
+  { additionalProperties: false },
 );
 
 const MapGenerationAnalysisRequestSchema = Type.Object(
   {
-    operations: Type.Array(MapGenerationAnalysisOperationSchema, { minItems: 1 })
+    operations: Type.Array(MapGenerationAnalysisOperationSchema, { minItems: 1 }),
   },
-  { additionalProperties: false }
+  { additionalProperties: false },
 );
 
 export const MapGenerationAnalysisEvidenceSchema = Type.Object(
@@ -59,9 +62,9 @@ export const MapGenerationAnalysisEvidenceSchema = Type.Object(
     requestedOperations: Type.Array(MapGenerationAnalysisOperationSchema),
     acceptedQueryOperations: Type.Array(MapGenerationQueryReadinessOperationSchema),
     blockedOperations: Type.Array(MapGenerationAnalysisOperationSchema),
-    diagnostics: Type.Array(NestedDiagnosticSchema)
+    diagnostics: Type.Array(NestedDiagnosticSchema),
   },
-  { additionalProperties: false }
+  { additionalProperties: false },
 );
 
 export const MapGenerationRequestSchema = Type.Object(
@@ -79,12 +82,12 @@ export const MapGenerationRequestSchema = Type.Object(
     styleEdits: Type.Optional(Type.Array(MapGenerationStyleEditSchema)),
     interactions: Type.Optional(InteractionSpecSchema),
     analysis: Type.Optional(MapGenerationAnalysisRequestSchema),
-    scene3d: Type.Optional(NestedSceneView3DExtensionSchema)
+    scene3d: Type.Optional(NestedSceneView3DExtensionSchema),
   },
   {
     $id: "https://gis-engine.dev/schemas/map-generation-request.v0.1.schema.json",
-    additionalProperties: false
-  }
+    additionalProperties: false,
+  },
 );
 
 const NestedMapGenerationRequestSchema = stripNestedIds(MapGenerationRequestSchema);
@@ -101,9 +104,9 @@ const MapGenerationPlannerIntentSchema = Type.Object(
     styleEdits: Type.Optional(Type.Array(MapGenerationStyleEditSchema)),
     interactions: Type.Optional(InteractionSpecSchema),
     analysis: Type.Optional(MapGenerationAnalysisRequestSchema),
-    scene3d: Type.Optional(NestedSceneView3DExtensionSchema)
+    scene3d: Type.Optional(NestedSceneView3DExtensionSchema),
   },
-  { additionalProperties: false }
+  { additionalProperties: false },
 );
 
 const MapGenerationPlannerProvenanceSchema = Type.Object(
@@ -112,9 +115,9 @@ const MapGenerationPlannerProvenanceSchema = Type.Object(
     promptHash: Type.String({ minLength: 1 }),
     retainedRawPrompt: Type.Literal(false),
     acceptedIntentFields: Type.Array(Type.String()),
-    unsupportedIntentFields: Type.Array(Type.String())
+    unsupportedIntentFields: Type.Array(Type.String()),
   },
-  { additionalProperties: false }
+  { additionalProperties: false },
 );
 
 export const MapGenerationPromptPlannerInputSchema = Type.Object(
@@ -123,12 +126,12 @@ export const MapGenerationPromptPlannerInputSchema = Type.Object(
     traceId: Type.Optional(Type.String({ minLength: 1 })),
     createdAt: Type.Optional(Type.String({ minLength: 1 })),
     plannerId: Type.Optional(Type.String({ minLength: 1 })),
-    intent: Type.Optional(MapGenerationPlannerIntentSchema)
+    intent: Type.Optional(MapGenerationPlannerIntentSchema),
   },
   {
     $id: "https://gis-engine.dev/schemas/map-generation-prompt-planner-input.v0.1.schema.json",
-    additionalProperties: false
-  }
+    additionalProperties: false,
+  },
 );
 
 export const MapGenerationPromptPlanSchema = Type.Object(
@@ -137,12 +140,12 @@ export const MapGenerationPromptPlanSchema = Type.Object(
     traceId: Type.String({ minLength: 1 }),
     request: NestedMapGenerationRequestSchema,
     diagnostics: Type.Array(NestedDiagnosticSchema),
-    provenance: MapGenerationPlannerProvenanceSchema
+    provenance: MapGenerationPlannerProvenanceSchema,
   },
   {
     $id: "https://gis-engine.dev/schemas/map-generation-prompt-plan.v0.1.schema.json",
-    additionalProperties: false
-  }
+    additionalProperties: false,
+  },
 );
 
 export const MapGenerationCommandSkeletonSchema = Type.Object(
@@ -154,12 +157,12 @@ export const MapGenerationCommandSkeletonSchema = Type.Object(
     spec: NestedMapSpecSchema,
     commands: Type.Array(NestedMapCommandSchema),
     diagnostics: Type.Array(NestedDiagnosticSchema),
-    traceId: Type.String({ minLength: 1 })
+    traceId: Type.String({ minLength: 1 }),
   },
   {
     $id: "https://gis-engine.dev/schemas/map-generation-command-skeleton.v0.1.schema.json",
-    additionalProperties: false
-  }
+    additionalProperties: false,
+  },
 );
 
 export type MapGenerationTargetDomain = Static<typeof MapGenerationTargetDomainSchema>;
@@ -174,5 +177,9 @@ export type MapGenerationCommandSkeletonFromSchema = Static<typeof MapGeneration
 function stripNestedIds<T>(value: T): T {
   if (Array.isArray(value)) return value.map(stripNestedIds) as T;
   if (!value || typeof value !== "object") return value;
-  return Object.fromEntries(Object.entries(value).filter(([key]) => key !== "$id").map(([key, entry]) => [key, stripNestedIds(entry)])) as T;
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([key]) => key !== "$id")
+      .map(([key, entry]) => [key, stripNestedIds(entry)]),
+  ) as T;
 }

@@ -20,16 +20,9 @@
  */
 
 import { execSync } from "node:child_process";
-import {
-  existsSync,
-  readFileSync,
-  writeFileSync,
-  readdirSync,
-  mkdirSync,
-} from "node:fs";
-import { join, dirname, basename } from "node:path";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createHash } from "node:crypto";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
@@ -102,9 +95,7 @@ function generateChangelog() {
   };
 
   for (const line of lines) {
-    const match = line.match(
-      /^[a-f0-9]+\s+(feat|fix|docs|refactor|test|chore)(\(.*?\))?:\s*(.+)/
-    );
+    const match = line.match(/^[a-f0-9]+\s+(feat|fix|docs|refactor|test|chore)(\(.*?\))?:\s*(.+)/);
     if (match) {
       const [, type, scope, msg] = match;
       const scopeStr = scope ? `**${scope.slice(1, -1)}**: ` : "";
@@ -119,27 +110,27 @@ function generateChangelog() {
 
   if (categories.feat.length > 0) {
     changelog += "### Features\n\n";
-    changelog += categories.feat.join("\n") + "\n\n";
+    changelog += `${categories.feat.join("\n")}\n\n`;
   }
   if (categories.fix.length > 0) {
     changelog += "### Bug Fixes\n\n";
-    changelog += categories.fix.join("\n") + "\n\n";
+    changelog += `${categories.fix.join("\n")}\n\n`;
   }
   if (categories.docs.length > 0) {
     changelog += "### Documentation\n\n";
-    changelog += categories.docs.join("\n") + "\n\n";
+    changelog += `${categories.docs.join("\n")}\n\n`;
   }
   if (categories.refactor.length > 0) {
     changelog += "### Refactoring\n\n";
-    changelog += categories.refactor.join("\n") + "\n\n";
+    changelog += `${categories.refactor.join("\n")}\n\n`;
   }
   if (categories.test.length > 0) {
     changelog += "### Tests\n\n";
-    changelog += categories.test.join("\n") + "\n\n";
+    changelog += `${categories.test.join("\n")}\n\n`;
   }
 
   console.log(
-    `   找到 ${lines.length} commits (feat:${categories.feat.length}, fix:${categories.fix.length}, docs:${categories.docs.length})`
+    `   找到 ${lines.length} commits (feat:${categories.feat.length}, fix:${categories.fix.length}, docs:${categories.docs.length})`,
   );
 
   return changelog;
@@ -169,9 +160,7 @@ function generateFeatureMatrix() {
   for (const { dir, feature } of testDirs) {
     const fullPath = join(ROOT, dir);
     if (existsSync(fullPath)) {
-      const files = readdirSync(fullPath, { recursive: true }).filter((f) =>
-        f.endsWith(".test.ts")
-      );
+      const files = readdirSync(fullPath, { recursive: true }).filter((f) => f.endsWith(".test.ts"));
       features.push({
         feature,
         status: files.length > 0 ? "✅ tested" : "⚠️ no tests",
@@ -259,7 +248,7 @@ function checkDocLinks() {
     const linkRegex = /\[([^\]]+)\]\(\.\/([^)]+)\)/g;
     let match;
     while ((match = linkRegex.exec(content)) !== null) {
-      const [fullMatch, label, target] = match;
+      const [_fullMatch, label, target] = match;
       const docDir = dirname(docFile);
       const resolvedPath = join(ROOT, docDir, target);
 

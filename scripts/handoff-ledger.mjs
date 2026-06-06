@@ -1,17 +1,10 @@
 #!/usr/bin/env node
 
+import { execSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  readdirSync,
-  statSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { execSync } from "node:child_process";
 import { AGENT_REGISTRY, HANDOFF_FLOWS } from "./agent-registry.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -189,12 +182,7 @@ function main() {
     console.log(`Handoff ledger written: ${relative(ROOT, outputPath)}`);
   }
 
-  if (
-    check &&
-    ledger.flows.some(
-      (flow) => flow.required && ["error", "warning"].includes(flow.severity),
-    )
-  ) {
+  if (check && ledger.flows.some((flow) => flow.required && ["error", "warning"].includes(flow.severity))) {
     process.exit(1);
   }
 }

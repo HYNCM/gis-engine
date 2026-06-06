@@ -1,33 +1,33 @@
 import { pathToFileURL } from "node:url";
-import { Ajv, type ValidateFunction } from "ajv/dist/ajv.js";
+import {
+  ApplyCommandsToolInputSchema,
+  applyCommands,
+  type CapabilityReport,
+  CapabilityReportSchema,
+  type Diagnostic,
+  DiagnosticCodes,
+  DiagnosticSchema,
+  type MapCommand,
+  MapCommandSchema,
+  type MapSpec,
+  MapSpecSchema,
+  validateSpec,
+} from "@gis-engine/engine";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
-import {
-  ApplyCommandsToolInputSchema,
-  CapabilityReportSchema,
-  DiagnosticCodes,
-  DiagnosticSchema,
-  MapCommandSchema,
-  MapSpecSchema,
-  applyCommands,
-  validateSpec,
-  type CapabilityReport,
-  type Diagnostic,
-  type MapCommand,
-  type MapSpec
-} from "@gis-engine/engine";
+import { Ajv, type ValidateFunction } from "ajv/dist/ajv.js";
 import { applyCommandsTool } from "../tools/applyCommands.js";
 import { getContextSummary } from "../tools/contextSummary.js";
-import { explainSpecTool, ExplainSpecToolInputSchema } from "../tools/explainSpec.js";
+import { ExplainSpecToolInputSchema, explainSpecTool } from "../tools/explainSpec.js";
 import {
   ExampleAppGenerationEvidenceSummarySchema,
+  ExportExampleAppToolInputSchema,
   exportExampleAppTool,
-  ExportExampleAppToolInputSchema
 } from "../tools/exportExampleApp.js";
 import { toolInputErrorsToDiagnostics } from "../tools/schemaDiagnostics.js";
-import { snapshotSpecTool, SnapshotSpecToolInputSchema } from "../tools/snapshotSpec.js";
 import { DiagnosticCountsSchema, stripNestedIds } from "../tools/shared.js";
+import { SnapshotSpecToolInputSchema, snapshotSpecTool } from "../tools/snapshotSpec.js";
 
 const DiagnosticContractSchema = stripNestedIds(DiagnosticSchema);
 const CapabilityReportContractSchema = stripNestedIds(CapabilityReportSchema);
@@ -35,10 +35,10 @@ const CapabilityReportContractSchema = stripNestedIds(CapabilityReportSchema);
 export const ValidateSpecToolInputSchema = {
   type: "object",
   properties: {
-    spec: MapSpecSchema
+    spec: MapSpecSchema,
   },
   required: ["spec"],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 export const ExportSpecToolInputSchema = {
@@ -48,20 +48,20 @@ export const ExportSpecToolInputSchema = {
     commands: { type: "array", items: MapCommandSchema },
     dryRun: { type: "boolean" },
     transaction: { type: "string", enum: ["atomic", "best-effort"] },
-    traceId: { type: "string" }
+    traceId: { type: "string" },
   },
   required: ["spec"],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 export const ContextSummaryToolInputSchema = {
   type: "object",
   properties: {
     spec: MapSpecSchema,
-    capabilities: CapabilityReportContractSchema
+    capabilities: CapabilityReportContractSchema,
   },
   required: ["spec"],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 const JsonPatchOperationSchema = {
@@ -69,10 +69,10 @@ const JsonPatchOperationSchema = {
   properties: {
     op: { type: "string", enum: ["add", "remove", "replace"] },
     path: { type: "string" },
-    value: {}
+    value: {},
   },
   required: ["op", "path"],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 const ValidationReportSchema = {
@@ -85,14 +85,14 @@ const ValidationReportSchema = {
       properties: {
         sourceCount: { type: "number" },
         layerCount: { type: "number" },
-        visibleLayerCount: { type: "number" }
+        visibleLayerCount: { type: "number" },
       },
       required: ["sourceCount", "layerCount", "visibleLayerCount"],
-      additionalProperties: false
-    }
+      additionalProperties: false,
+    },
   },
   required: ["valid", "diagnostics", "stats"],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 const CommandResultSchema = {
@@ -107,10 +107,10 @@ const CommandResultSchema = {
     patch: { type: "array", items: JsonPatchOperationSchema },
     inversePatch: { type: "array", items: JsonPatchOperationSchema },
     diagnostics: { type: "array", items: DiagnosticContractSchema },
-    traceId: { type: "string" }
+    traceId: { type: "string" },
   },
   required: ["commandId", "sequenceId", "status", "changedPaths", "diagnostics"],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 const CommandAuthorSchema = {
@@ -118,10 +118,10 @@ const CommandAuthorSchema = {
   properties: {
     type: { type: "string", enum: ["human", "agent", "system"] },
     id: { type: "string" },
-    name: { type: "string" }
+    name: { type: "string" },
   },
   required: ["type"],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 const CommandTraceSchema = {
@@ -139,10 +139,10 @@ const CommandTraceSchema = {
     reason: { type: "string" },
     sourcePromptHash: { type: "string" },
     diagnostics: { type: "array", items: DiagnosticContractSchema },
-    changedPaths: { type: "array", items: { type: "string" } }
+    changedPaths: { type: "array", items: { type: "string" } },
   },
   required: ["traceId", "commandId", "sequenceId", "status", "startedAt", "endedAt", "diagnostics", "changedPaths"],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 export const ApplyCommandsToolResultSchema = {
@@ -155,10 +155,10 @@ export const ApplyCommandsToolResultSchema = {
     committed: { type: "boolean" },
     rolledBack: { type: "boolean" },
     traceId: { type: "string" },
-    traces: { type: "array", items: CommandTraceSchema }
+    traces: { type: "array", items: CommandTraceSchema },
   },
   required: ["spec", "results", "transaction", "dryRun", "committed", "rolledBack", "traceId"],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 export const ValidateSpecToolResultSchema = ValidationReportSchema;
@@ -176,22 +176,30 @@ const CapabilityDomainSummarySchema = {
       type: "array",
       items: {
         type: "string",
-        enum: ["validate_spec", "apply_commands", "export_spec", "get_context_summary", "snapshot_spec", "explain_spec", "export_example_app"]
-      }
+        enum: [
+          "validate_spec",
+          "apply_commands",
+          "export_spec",
+          "get_context_summary",
+          "snapshot_spec",
+          "explain_spec",
+          "export_example_app",
+        ],
+      },
     },
-    evidence: { type: "array", items: { type: "string" } }
+    evidence: { type: "array", items: { type: "string" } },
   },
   required: ["id", "status", "supported", "experimental", "blocked", "tools", "evidence"],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 const CapabilitySummarySchema = {
   type: "object",
   properties: {
-    domains: { type: "array", items: CapabilityDomainSummarySchema }
+    domains: { type: "array", items: CapabilityDomainSummarySchema },
   },
   required: ["domains"],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 const SourceContractSchema = {
@@ -200,10 +208,10 @@ const SourceContractSchema = {
     kind: { type: "string", enum: ["archive", "schema"] },
     state: { type: "string", enum: ["explicit", "not-applicable", "not-checked"] },
     metadataFields: { type: "array", items: { type: "string" } },
-    policyFields: { type: "array", items: { type: "string" } }
+    policyFields: { type: "array", items: { type: "string" } },
   },
   required: ["kind", "state", "metadataFields", "policyFields"],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 const SourceArchiveContractSchema = {
@@ -211,10 +219,10 @@ const SourceArchiveContractSchema = {
   properties: {
     state: { type: "string", enum: ["explicit", "not-applicable", "not-checked"] },
     metadataFields: { type: "array", items: { type: "string" } },
-    policyFields: { type: "array", items: { type: "string" } }
+    policyFields: { type: "array", items: { type: "string" } },
   },
   required: ["state", "metadataFields", "policyFields"],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 const SourceReadinessSchema = {
@@ -225,10 +233,10 @@ const SourceReadinessSchema = {
     state: { type: "string", enum: ["supported", "readiness-only", "blocked"] },
     queryReady: { type: "boolean" },
     resourcePolicy: { type: "string", enum: ["passed", "blocked", "not-applicable", "not-checked"] },
-    archiveContract: SourceArchiveContractSchema
+    archiveContract: SourceArchiveContractSchema,
   },
   required: ["sourceId", "type", "state", "queryReady", "resourcePolicy"],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 const Scene3DContextSummarySchema = {
@@ -248,11 +256,11 @@ const Scene3DContextSummarySchema = {
         properties: {
           id: { type: "string" },
           type: { type: "string" },
-          sourceContract: SourceContractSchema
+          sourceContract: SourceContractSchema,
         },
         required: ["id", "type"],
-        additionalProperties: false
-      }
+        additionalProperties: false,
+      },
     },
     layers: {
       type: "array",
@@ -263,11 +271,11 @@ const Scene3DContextSummarySchema = {
           type: { type: "string" },
           source: { type: "string" },
           visibility: { type: "string", enum: ["visible", "none"] },
-          pickable: { type: "boolean" }
+          pickable: { type: "boolean" },
         },
         required: ["id", "type", "source", "visibility", "pickable"],
-        additionalProperties: false
-      }
+        additionalProperties: false,
+      },
     },
     resourcePolicy: {
       type: "object",
@@ -278,31 +286,31 @@ const Scene3DContextSummarySchema = {
         maxTextureCount: { type: "number" },
         maxTextureBytes: { type: "number" },
         maxWorkers: { type: "number" },
-        timeoutMs: { type: "number" }
+        timeoutMs: { type: "number" },
       },
       required: ["present"],
-      additionalProperties: false
+      additionalProperties: false,
     },
     snapshot: {
       type: "object",
       properties: {
         mockPassed: { type: "boolean" },
         pendingSourceIds: { type: "array", items: { type: "string" } },
-        diagnosticCounts: DiagnosticCountsSchema
+        diagnosticCounts: DiagnosticCountsSchema,
       },
       required: ["mockPassed", "pendingSourceIds", "diagnosticCounts"],
-      additionalProperties: false
+      additionalProperties: false,
     },
     query: {
       type: "object",
       properties: {
         pickCount: { type: "number" },
-        diagnosticCounts: DiagnosticCountsSchema
+        diagnosticCounts: DiagnosticCountsSchema,
       },
       required: ["pickCount", "diagnosticCounts"],
-      additionalProperties: false
+      additionalProperties: false,
     },
-    capabilities: CapabilityReportSchema
+    capabilities: CapabilityReportSchema,
   },
   required: [
     "status",
@@ -317,9 +325,9 @@ const Scene3DContextSummarySchema = {
     "resourcePolicy",
     "snapshot",
     "query",
-    "capabilities"
+    "capabilities",
   ],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 export const ContextSummaryToolResultSchema = {
@@ -334,15 +342,15 @@ export const ContextSummaryToolResultSchema = {
         type: "object",
         properties: {
           id: { type: "string" },
-          type: { type: "string" }
+          type: { type: "string" },
         },
         required: ["id", "type"],
-        additionalProperties: false
-      }
+        additionalProperties: false,
+      },
     },
     sourceReadiness: {
       type: "array",
-      items: SourceReadinessSchema
+      items: SourceReadinessSchema,
     },
     layers: {
       type: "array",
@@ -352,27 +360,27 @@ export const ContextSummaryToolResultSchema = {
           id: { type: "string" },
           type: { type: "string" },
           source: { type: "string" },
-          visibility: { type: "string", enum: ["visible", "none"] }
+          visibility: { type: "string", enum: ["visible", "none"] },
         },
         required: ["id", "type", "visibility"],
-        additionalProperties: false
-      }
+        additionalProperties: false,
+      },
     },
     validation: {
       type: "object",
       properties: {
         valid: { type: "boolean" },
-        diagnosticCounts: DiagnosticCountsSchema
+        diagnosticCounts: DiagnosticCountsSchema,
       },
       required: ["valid", "diagnosticCounts"],
-      additionalProperties: false
+      additionalProperties: false,
     },
     capabilitySummary: CapabilitySummarySchema,
     capabilities: CapabilityReportContractSchema,
-    scene3d: Scene3DContextSummarySchema
+    scene3d: Scene3DContextSummarySchema,
   },
   required: ["view", "sources", "sourceReadiness", "layers", "validation", "capabilitySummary"],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 export const SnapshotSpecToolResultSchema = {
@@ -382,10 +390,10 @@ export const SnapshotSpecToolResultSchema = {
     diagnostics: { type: "array", items: DiagnosticContractSchema },
     dataUrl: { type: "string" },
     renderer: { type: "string", enum: ["maplibre", "mock"] },
-    validation: ValidationReportSchema
+    validation: ValidationReportSchema,
   },
   required: ["passed", "diagnostics", "renderer", "validation"],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 export const ExplainSpecToolResultSchema = {
@@ -393,10 +401,10 @@ export const ExplainSpecToolResultSchema = {
   properties: {
     summary: ContextSummaryToolResultSchema,
     validation: ValidationReportSchema,
-    diagnostics: { type: "array", items: DiagnosticContractSchema }
+    diagnostics: { type: "array", items: DiagnosticContractSchema },
   },
   required: ["summary", "validation", "diagnostics"],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 export const ExportExampleAppToolResultSchema = {
@@ -415,17 +423,17 @@ export const ExportExampleAppToolResultSchema = {
           role: { type: "string", enum: ["spec", "data", "commands", "script"] },
           mediaType: { type: "string" },
           required: { type: "boolean" },
-          description: { type: "string" }
+          description: { type: "string" },
         },
         required: ["path", "role", "mediaType", "required", "description"],
-        additionalProperties: false
-      }
+        additionalProperties: false,
+      },
     },
     notes: { type: "array", items: { type: "string" } },
-    generationEvidence: ExampleAppGenerationEvidenceSummarySchema
+    generationEvidence: ExampleAppGenerationEvidenceSummarySchema,
   },
   required: ["exampleId", "title", "description", "writesFiles", "files", "notes"],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 interface ValidateSpecToolInput {
@@ -458,44 +466,45 @@ export const gisEngineTools = [
     name: "apply_commands",
     description: "Apply a series of MapCommands to a MapSpec to modify the map state.",
     inputSchema: ApplyCommandsToolInputSchema,
-    outputSchema: ApplyCommandsToolResultSchema
+    outputSchema: ApplyCommandsToolResultSchema,
   },
   {
     name: "validate_spec",
     description: "Validate a MapSpec and return diagnostics.",
     inputSchema: ValidateSpecToolInputSchema,
-    outputSchema: ValidateSpecToolResultSchema
+    outputSchema: ValidateSpecToolResultSchema,
   },
   {
     name: "export_spec",
     description: "Return a validated, optionally command-modified MapSpec.",
     inputSchema: ExportSpecToolInputSchema,
-    outputSchema: ExportSpecToolResultSchema
+    outputSchema: ExportSpecToolResultSchema,
   },
   {
     name: "get_context_summary",
-    description: "Return a compact MapSpec summary plus AI orchestration capability boundaries for planning and review.",
+    description:
+      "Return a compact MapSpec summary plus AI orchestration capability boundaries for planning and review.",
     inputSchema: ContextSummaryToolInputSchema,
-    outputSchema: ContextSummaryToolResultSchema
+    outputSchema: ContextSummaryToolResultSchema,
   },
   {
     name: "snapshot_spec",
     description: "Validate a MapSpec and produce a headless snapshot result without real WebGL.",
     inputSchema: SnapshotSpecToolInputSchema,
-    outputSchema: SnapshotSpecToolResultSchema
+    outputSchema: SnapshotSpecToolResultSchema,
   },
   {
     name: "explain_spec",
     description: "Return a structured AI-facing summary, capability boundaries, and full validation diagnostics.",
     inputSchema: ExplainSpecToolInputSchema,
-    outputSchema: ExplainSpecToolResultSchema
+    outputSchema: ExplainSpecToolResultSchema,
   },
   {
     name: "export_example_app",
     description: "Return a manifest and file list for a bundled example without writing files.",
     inputSchema: ExportExampleAppToolInputSchema,
-    outputSchema: ExportExampleAppToolResultSchema
-  }
+    outputSchema: ExportExampleAppToolResultSchema,
+  },
 ] as const;
 
 export async function listGisEngineTools(): Promise<{ tools: typeof gisEngineTools }> {
@@ -515,13 +524,21 @@ export async function callGisEngineTool(request: { params: { name: string; argum
     }
 
     if (name === "validate_spec") {
-      const input = validateToolInput<ValidateSpecToolInput>(validateValidateSpecInput, args, "Invalid validate_spec tool input.");
+      const input = validateToolInput<ValidateSpecToolInput>(
+        validateValidateSpecInput,
+        args,
+        "Invalid validate_spec tool input.",
+      );
       if (!input.ok) return toolTextResult(input.diagnostics, true);
       return toolTextResult(validateSpec(input.input.spec));
     }
 
     if (name === "export_spec") {
-      const input = validateToolInput<ExportSpecToolInput>(validateExportSpecInput, args, "Invalid export_spec tool input.");
+      const input = validateToolInput<ExportSpecToolInput>(
+        validateExportSpecInput,
+        args,
+        "Invalid export_spec tool input.",
+      );
       if (!input.ok) return toolTextResult(input.diagnostics, true);
       const { spec, commands = [], dryRun = false, transaction, traceId } = input.input;
       const validation = validateSpec(spec);
@@ -530,7 +547,7 @@ export async function callGisEngineTool(request: { params: { name: string; argum
       const result = applyCommands(spec, commands, {
         dryRun,
         ...(transaction ? { transaction } : {}),
-        ...(traceId ? { traceId } : {})
+        ...(traceId ? { traceId } : {}),
       });
       const diagnostics = result.results.flatMap((commandResult) => commandResult.diagnostics);
       if (diagnostics.some((diagnostic) => diagnostic.severity === "error")) return toolTextResult(diagnostics, true);
@@ -538,7 +555,11 @@ export async function callGisEngineTool(request: { params: { name: string; argum
     }
 
     if (name === "get_context_summary") {
-      const input = validateToolInput<ContextSummaryToolInput>(validateContextSummaryInput, args, "Invalid get_context_summary tool input.");
+      const input = validateToolInput<ContextSummaryToolInput>(
+        validateContextSummaryInput,
+        args,
+        "Invalid get_context_summary tool input.",
+      );
       if (!input.ok) return toolTextResult(input.diagnostics, true);
       const { spec, capabilities } = input.input;
       return toolTextResult(getContextSummary({ spec, ...(capabilities ? { capabilities } : {}) }));
@@ -561,7 +582,10 @@ export async function callGisEngineTool(request: { params: { name: string; argum
 
     return toolTextResult([toolErrorDiagnostic(`Tool not found: ${name}`, DiagnosticCodes.CommandUnsupported)], true);
   } catch (error) {
-    return toolTextResult([toolErrorDiagnostic(error instanceof Error ? error.message : "Unknown tool failure.")], true);
+    return toolTextResult(
+      [toolErrorDiagnostic(error instanceof Error ? error.message : "Unknown tool failure.")],
+      true,
+    );
   }
 }
 
@@ -569,13 +593,13 @@ export function createGisEngineMcpServer(): Server {
   const server = new Server(
     {
       name: "gis-engine",
-      version: "0.1.0"
+      version: "0.1.0",
     },
     {
       capabilities: {
-        tools: {}
-      }
-    }
+        tools: {},
+      },
+    },
   );
 
   server.setRequestHandler(ListToolsRequestSchema, listGisEngineTools);
@@ -597,18 +621,25 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
   });
 }
 
-function toolTextResult(value: unknown, isError = false): { isError?: boolean; content: Array<{ type: "text"; text: string }> } {
+function toolTextResult(
+  value: unknown,
+  isError = false,
+): { isError?: boolean; content: Array<{ type: "text"; text: string }> } {
   return {
     ...(isError ? { isError: true } : {}),
-    content: [{ type: "text", text: JSON.stringify(value, null, 2) }]
+    content: [{ type: "text", text: JSON.stringify(value, null, 2) }],
   };
 }
 
-function validateToolInput<T>(validateInput: ValidateFunction, args: unknown, fallbackMessage: string): ToolInputResult<T> {
+function validateToolInput<T>(
+  validateInput: ValidateFunction,
+  args: unknown,
+  fallbackMessage: string,
+): ToolInputResult<T> {
   if (validateInput(args)) return { ok: true, input: args as T };
   return {
     ok: false,
-    diagnostics: toolInputErrorsToDiagnostics(validateInput.errors, fallbackMessage)
+    diagnostics: toolInputErrorsToDiagnostics(validateInput.errors, fallbackMessage),
   };
 }
 
@@ -617,6 +648,6 @@ function toolErrorDiagnostic(message: string, code: Diagnostic["code"] = Diagnos
     severity: "error",
     code,
     message,
-    path: "/"
+    path: "/",
   };
 }

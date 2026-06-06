@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import type { RendererAdapter } from "@gis-engine/engine";
+import { describe, expect, it } from "vitest";
 
 export function createAdapterContractSuite(name: string, createAdapter: () => RendererAdapter): void {
   describe(`${name} renderer adapter contract`, () => {

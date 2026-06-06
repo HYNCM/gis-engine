@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 /**
  * AI Map Studio Server
  *
@@ -13,17 +14,14 @@
  *   STUDIO_DB_PATH=./data/maps.db node apps/studio/server/index.mjs
  */
 
-import { createServer } from "node:http";
+import { createHash, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
+import { createServer } from "node:http";
 import { createRequire } from "node:module";
 import { dirname, extname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { createHash, randomUUID } from "node:crypto";
 import { appendAuditRecord, STUDIO_AUDIT_RECORD_CAP } from "./audit.mjs";
-import {
-  createReviewDecision,
-  STUDIO_REVIEW_DECISION_CAP,
-} from "./review-decisions.mjs";
+import { createReviewDecision, STUDIO_REVIEW_DECISION_CAP } from "./review-decisions.mjs";
 
 const provider = await import("./provider.mjs");
 const maplibreCapabilities = await import("./maplibre-capabilities.mjs");
@@ -31,7 +29,7 @@ const maplibreCapabilities = await import("./maplibre-capabilities.mjs");
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..", "..", "..");
 const PUBLIC_DIR = join(__dirname, "..", "dist");
-const require = createRequire(import.meta.url);
+const _require = createRequire(import.meta.url);
 
 const HOST = process.env.HOST || "127.0.0.1";
 const PORT = parseInt(process.env.PORT || "4321", 10);
@@ -41,7 +39,7 @@ async function loadEngine() {
   return import(enginePath);
 }
 
-async function loadAi() {
+async function _loadAi() {
   const aiPath = join(ROOT, "packages/ai/dist/index.js");
   return import(aiPath);
 }
@@ -168,10 +166,7 @@ export function publicBasemapOptions() {
 
 export function detectBasemapFromSpec(spec) {
   const basemapTiles = spec?.sources?.[BASEMAP_SOURCE_ID]?.tiles;
-  const firstTile =
-    Array.isArray(basemapTiles) && typeof basemapTiles[0] === "string"
-      ? basemapTiles[0]
-      : "";
+  const firstTile = Array.isArray(basemapTiles) && typeof basemapTiles[0] === "string" ? basemapTiles[0] : "";
   if (firstTile.includes("/api/tiles/osm/")) return "osm";
   if (firstTile.includes("/api/tiles/arcgis-imagery/")) return "arcgis-imagery";
   if (firstTile.includes("/api/tiles/bing-aerial/")) return "bing-aerial";
@@ -187,13 +182,7 @@ function normalizeBasemapId(value) {
   if (raw === "osm" || raw === "openstreetmap" || raw === "open-street-map") {
     return "osm";
   }
-  if (
-    raw === "arcgis" ||
-    raw === "esri" ||
-    raw === "satellite" ||
-    raw === "imagery" ||
-    raw === "arcgis-imagery"
-  ) {
+  if (raw === "arcgis" || raw === "esri" || raw === "satellite" || raw === "imagery" || raw === "arcgis-imagery") {
     return "arcgis-imagery";
   }
   if (raw === "bing" || raw === "bing-aerial" || raw === "bing-maps") {
@@ -222,9 +211,7 @@ function basemapUnavailableResult(spec, basemapId) {
     nextSpec: spec,
     diagnostics: [
       {
-        code: missing
-          ? "STUDIO.BASEMAP_CREDENTIAL_REQUIRED"
-          : "STUDIO.BASEMAP_UNAVAILABLE",
+        code: missing ? "STUDIO.BASEMAP_CREDENTIAL_REQUIRED" : "STUDIO.BASEMAP_UNAVAILABLE",
         severity: "error",
         path: "/basemap",
         message: missing
@@ -244,8 +231,7 @@ function basemapUnavailableResult(spec, basemapId) {
 }
 
 export function createInitialSpec(basemapId = DEFAULT_BASEMAP) {
-  const basemap =
-    BASEMAPS[normalizeBasemapId(basemapId)] || BASEMAPS[DEFAULT_BASEMAP];
+  const basemap = BASEMAPS[normalizeBasemapId(basemapId)] || BASEMAPS[DEFAULT_BASEMAP];
   const basemapSources = basemap.tiles
     ? {
         [BASEMAP_SOURCE_ID]: {
@@ -326,20 +312,8 @@ export function createInitialSpec(basemapId = DEFAULT_BASEMAP) {
 }
 
 export function applyProviderCommands(engine, output, spec) {
-  const {
-    action,
-    layerId,
-    paint,
-    layout,
-    filter,
-    view,
-    bounds,
-    layer,
-    minzoom,
-    maxzoom,
-    beforeLayerId,
-    message,
-  } = output;
+  const { action, layerId, paint, layout, filter, view, bounds, layer, minzoom, maxzoom, beforeLayerId, message } =
+    output;
   let commands = [];
   let nextBasemap = activeBasemap;
 
@@ -393,9 +367,7 @@ export function applyProviderCommands(engine, output, spec) {
     case "reorderLayer":
       if (layerId) {
         commands = [
-          studioCommand("reorderLayer", "reorder-layer", beforeLayerId
-            ? { layerId, beforeLayerId }
-            : { layerId }),
+          studioCommand("reorderLayer", "reorder-layer", beforeLayerId ? { layerId, beforeLayerId } : { layerId }),
         ];
       }
       break;
@@ -454,8 +426,7 @@ export function applyProviderCommands(engine, output, spec) {
     const result = engine.applyCommands(spec, commands, {
       traceId: `studio.${Date.now()}`,
     });
-    const nextSpec =
-      result.committed && !result.rolledBack ? result.spec : spec;
+    const nextSpec = result.committed && !result.rolledBack ? result.spec : spec;
     const failed = (result.results || []).some((entry) => entry.status === "failed");
     if (!failed && result.committed && !result.rolledBack) {
       activeBasemap = nextBasemap;
@@ -526,10 +497,7 @@ export function applyLegacyIntent(engine, intent, spec) {
       intent: "setPaint",
       layerId: POINTS_LAYER_ID,
       paint: {
-        "circle-radius": Math.min(
-          30,
-          (pointsLayer?.paint?.["circle-radius"] || 8) + 4,
-        ),
+        "circle-radius": Math.min(30, (pointsLayer?.paint?.["circle-radius"] || 8) + 4),
       },
     };
   } else if (message.includes("smaller") || message.includes("decrease")) {
@@ -537,10 +505,7 @@ export function applyLegacyIntent(engine, intent, spec) {
       intent: "setPaint",
       layerId: POINTS_LAYER_ID,
       paint: {
-        "circle-radius": Math.max(
-          3,
-          (pointsLayer?.paint?.["circle-radius"] || 8) - 4,
-        ),
+        "circle-radius": Math.max(3, (pointsLayer?.paint?.["circle-radius"] || 8) - 4),
       },
     };
   } else if (message.includes("hangzhou") || message.includes("zoom")) {
@@ -558,11 +523,7 @@ export function applyLegacyIntent(engine, intent, spec) {
     plan = { intent: "setBasemap", layerId: "arcgis-imagery" };
   } else if (message.includes("bing")) {
     plan = { intent: "setBasemap", layerId: "bing-aerial" };
-  } else if (
-    message.includes("no basemap") ||
-    message.includes("remove basemap") ||
-    message.includes("none basemap")
-  ) {
+  } else if (message.includes("no basemap") || message.includes("remove basemap") || message.includes("none basemap")) {
     plan = { intent: "setBasemap", layerId: "none" };
   }
 
@@ -616,9 +577,7 @@ export function applyLegacyIntent(engine, intent, spec) {
       }),
     ];
   } else if (plan.intent === "fitBounds") {
-    commands = [
-      studioCommand("fitBounds", "legacy-fit-bounds", { bounds: plan.bounds }),
-    ];
+    commands = [studioCommand("fitBounds", "legacy-fit-bounds", { bounds: plan.bounds })];
   } else if (plan.intent === "setView") {
     commands = [studioCommand("setView", "legacy-set-view", { view: plan.view })];
   }
@@ -675,8 +634,7 @@ export function buildBasemapCommands(basemapId, spec) {
   }
 
   const beforeLayerId = spec.layers.find(
-    (layer) =>
-      layer.id !== BASEMAP_LAYER_ID && layer.id !== BASEMAP_BACKGROUND_LAYER_ID,
+    (layer) => layer.id !== BASEMAP_LAYER_ID && layer.id !== BASEMAP_BACKGROUND_LAYER_ID,
   )?.id;
 
   if (basemap.tiles) {
@@ -743,10 +701,7 @@ function commandEvidence(result) {
     committed: result.committed || false,
     rolledBack: result.rolledBack || false,
     failed,
-    changedPathCount: results.reduce(
-      (count, entry) => count + (entry.changedPaths?.length || 0),
-      0,
-    ),
+    changedPathCount: results.reduce((count, entry) => count + (entry.changedPaths?.length || 0), 0),
   };
 }
 
@@ -791,21 +746,15 @@ function zoomRangeFromPrompt(message) {
     return null;
   }
 
-  const between = message.match(
-    /(?:zoom|缩放)[^\d]*(\d+(?:\.\d+)?)[^\d]+(?:to|and|-|到|至)[^\d]*(\d+(?:\.\d+)?)/,
-  );
+  const between = message.match(/(?:zoom|缩放)[^\d]*(\d+(?:\.\d+)?)[^\d]+(?:to|and|-|到|至)[^\d]*(\d+(?:\.\d+)?)/);
   if (between) {
     return normalizeZoomRange(Number(between[1]), Number(between[2]));
   }
 
-  const above = message.match(
-    /(?:above|after|from|over|>=|大于|超过|以上|之后)[^\d]*(\d+(?:\.\d+)?)/,
-  );
+  const above = message.match(/(?:above|after|from|over|>=|大于|超过|以上|之后)[^\d]*(\d+(?:\.\d+)?)/);
   if (above) return normalizeZoomRange(Number(above[1]), 24);
 
-  const below = message.match(
-    /(?:below|under|before|<=|小于|低于|以下|之前)[^\d]*(\d+(?:\.\d+)?)/,
-  );
+  const below = message.match(/(?:below|under|before|<=|小于|低于|以下|之前)[^\d]*(\d+(?:\.\d+)?)/);
   if (below) return normalizeZoomRange(0, Number(below[1]));
 
   return null;
@@ -862,11 +811,7 @@ function boundsForSource(source) {
 function collectCoordinatesFromGeoJson(value, bounds) {
   if (!value || typeof value !== "object") return;
   if (Array.isArray(value)) {
-    if (
-      value.length >= 2 &&
-      typeof value[0] === "number" &&
-      typeof value[1] === "number"
-    ) {
+    if (value.length >= 2 && typeof value[0] === "number" && typeof value[1] === "number") {
       const lng = value[0];
       const lat = value[1];
       bounds.west = Math.min(bounds.west, lng);
@@ -903,7 +848,7 @@ function isBoundsArray(value) {
 
 let activeSpec = createInitialSpec();
 let activeBasemap = DEFAULT_BASEMAP;
-let activeEpoch = 0;
+let _activeEpoch = 0;
 const sessionId = `studio.${randomUUID()}`;
 const projectId = normalizeProjectId(process.env.STUDIO_PROJECT_ID);
 const reviewPrincipal = { role: "reviewer", projectIds: [projectId] };
@@ -912,19 +857,8 @@ const reviewDecisions = [];
 export const STUDIO_LOCAL_HANDOFF_VERSION = "studio.local-handoff.v1";
 export const STUDIO_LOCAL_REVIEW_LEDGER_VERSION = "studio.review-ledger.v1";
 export const STUDIO_LOCAL_REVIEW_EXPORT_VERSION = "studio.review-export.v1";
-const REVIEW_LEDGER_AUDIT_STATUSES = new Set([
-  "all",
-  "applied",
-  "blocked",
-  "ready",
-  "reviewed",
-]);
-const REVIEW_LEDGER_REVIEW_OUTCOMES = new Set([
-  "all",
-  "accepted",
-  "blocked",
-  "follow-up-required",
-]);
+const REVIEW_LEDGER_AUDIT_STATUSES = new Set(["all", "applied", "blocked", "ready", "reviewed"]);
+const REVIEW_LEDGER_REVIEW_OUTCOMES = new Set(["all", "accepted", "blocked", "follow-up-required"]);
 const REVIEW_EXPORT_KINDS = new Set(["all", "audit", "review"]);
 const REVIEW_EXPORT_STATUSES = new Set([
   "all",
@@ -938,7 +872,7 @@ const REVIEW_EXPORT_STATUSES = new Set([
 
 function replaceActiveSpec(next) {
   activeSpec = next;
-  activeEpoch++;
+  _activeEpoch++;
 }
 
 function replaceBoundedRecords(target, nextRecords, cap) {
@@ -949,20 +883,13 @@ function replaceBoundedRecords(target, nextRecords, cap) {
 
 function replaceSessionEvidence(nextAuditRecords, nextReviewDecisions) {
   replaceBoundedRecords(auditRecords, nextAuditRecords, STUDIO_AUDIT_RECORD_CAP);
-  replaceBoundedRecords(
-    reviewDecisions,
-    nextReviewDecisions,
-    STUDIO_REVIEW_DECISION_CAP,
-  );
+  replaceBoundedRecords(reviewDecisions, nextReviewDecisions, STUDIO_REVIEW_DECISION_CAP);
 }
 
 export function statePayload(engine, status, spec) {
   const validation = engine.validateSpec(spec);
   const transform = engine.transformMapSpecToMapLibreStyle(spec);
-  const diagnostics = [
-    ...(validation.diagnostics || []),
-    ...(transform.diagnostics || []),
-  ];
+  const diagnostics = [...(validation.diagnostics || []), ...(transform.diagnostics || [])];
   return {
     status,
     spec,
@@ -986,16 +913,12 @@ export function parseMapRoute(pathname) {
     return { action: "load", mapId: loadMatch[1] };
   }
 
-  const reviewExportMatch = pathname.match(
-    /^\/api\/maps\/([a-zA-Z0-9-]+)\/review-export$/,
-  );
+  const reviewExportMatch = pathname.match(/^\/api\/maps\/([a-zA-Z0-9-]+)\/review-export$/);
   if (reviewExportMatch) {
     return { action: "review-export", mapId: reviewExportMatch[1] };
   }
 
-  const reviewLedgerMatch = pathname.match(
-    /^\/api\/maps\/([a-zA-Z0-9-]+)\/review-ledger$/,
-  );
+  const reviewLedgerMatch = pathname.match(/^\/api\/maps\/([a-zA-Z0-9-]+)\/review-ledger$/);
   if (reviewLedgerMatch) {
     return { action: "review-ledger", mapId: reviewLedgerMatch[1] };
   }
@@ -1021,9 +944,7 @@ function withCommandDiagnostics(payload, diagnostics = []) {
 }
 
 export function savedWorkspaceHandoffStatus(reviewHistory = []) {
-  const latestDecision = Array.isArray(reviewHistory)
-    ? reviewHistory[reviewHistory.length - 1]
-    : null;
+  const latestDecision = Array.isArray(reviewHistory) ? reviewHistory[reviewHistory.length - 1] : null;
   if (!latestDecision?.outcome) return "needs-review";
   return latestDecision.outcome;
 }
@@ -1058,13 +979,9 @@ export function buildSavedMapHandoff(map) {
     spec: map.spec,
     evidence: {
       auditRecordCount: Array.isArray(map.auditRecords) ? map.auditRecords.length : 0,
-      reviewDecisionCount: Array.isArray(map.reviewDecisions)
-        ? map.reviewDecisions.length
-        : 0,
+      reviewDecisionCount: Array.isArray(map.reviewDecisions) ? map.reviewDecisions.length : 0,
       auditRecords: Array.isArray(map.auditRecords) ? map.auditRecords : [],
-      reviewDecisions: Array.isArray(map.reviewDecisions)
-        ? map.reviewDecisions
-        : [],
+      reviewDecisions: Array.isArray(map.reviewDecisions) ? map.reviewDecisions : [],
     },
   };
 }
@@ -1140,10 +1057,7 @@ function parseLedgerLimit(value) {
 
 function filterLedgerRecords(records, field, selected, limit) {
   const allRecords = Array.isArray(records) ? records : [];
-  const matchingRecords =
-    selected === "all"
-      ? allRecords
-      : allRecords.filter((record) => record?.[field] === selected);
+  const matchingRecords = selected === "all" ? allRecords : allRecords.filter((record) => record?.[field] === selected);
   return {
     totalCount: allRecords.length,
     matchingCount: matchingRecords.length,
@@ -1155,18 +1069,8 @@ export function buildSavedMapReviewLedger(map, options = {}) {
   const auditStatus = parseLedgerAuditStatus(options.auditStatus);
   const reviewOutcome = parseLedgerReviewOutcome(options.reviewOutcome);
   const limit = parseLedgerLimit(options.limit);
-  const auditSelection = filterLedgerRecords(
-    map.auditRecords,
-    "status",
-    auditStatus,
-    limit,
-  );
-  const reviewSelection = filterLedgerRecords(
-    map.reviewDecisions,
-    "outcome",
-    reviewOutcome,
-    limit,
-  );
+  const auditSelection = filterLedgerRecords(map.auditRecords, "status", auditStatus, limit);
+  const reviewSelection = filterLedgerRecords(map.reviewDecisions, "outcome", reviewOutcome, limit);
   const latestAuditRecord =
     Array.isArray(map?.auditRecords) && map.auditRecords.length > 0
       ? map.auditRecords[map.auditRecords.length - 1]
@@ -1285,13 +1189,9 @@ function buildReviewExportEvent(decision) {
     deliveryStatus: decision.deliveryStatus,
     commandEvidence: decision.commandEvidence,
     diagnosticCounts: decision.diagnosticCounts,
-    ...(decision.diagnosticCodes
-      ? { diagnosticCodes: decision.diagnosticCodes }
-      : {}),
+    ...(decision.diagnosticCodes ? { diagnosticCodes: decision.diagnosticCodes } : {}),
     reasonCodes: decision.reasonCodes,
-    ...(decision.followUpTaskIds
-      ? { followUpTaskIds: decision.followUpTaskIds }
-      : {}),
+    ...(decision.followUpTaskIds ? { followUpTaskIds: decision.followUpTaskIds } : {}),
   };
 }
 
@@ -1319,10 +1219,7 @@ function eventMatchesReviewExportFilters(event, filters) {
 }
 
 function countEventsByKind(events, kind) {
-  return events.reduce(
-    (count, event) => (event?.kind === kind ? count + 1 : count),
-    0,
-  );
+  return events.reduce((count, event) => (event?.kind === kind ? count + 1 : count), 0);
 }
 
 export function buildSavedMapReviewExport(map, options = {}) {
@@ -1331,12 +1228,9 @@ export function buildSavedMapReviewExport(map, options = {}) {
   const kind = parseExportKind(options.kind);
   const status = parseExportStatus(options.status);
   const timeline = buildReviewExportTimeline(map);
-  const filteredTimeline = timeline.filter((event) =>
-    eventMatchesReviewExportFilters(event, { kind, status }),
-  );
+  const filteredTimeline = timeline.filter((event) => eventMatchesReviewExportFilters(event, { kind, status }));
   const events = filteredTimeline.slice(cursor, cursor + limit);
-  const nextCursor =
-    cursor + events.length < filteredTimeline.length ? cursor + events.length : null;
+  const nextCursor = cursor + events.length < filteredTimeline.length ? cursor + events.length : null;
 
   return {
     reviewExportVersion: STUDIO_LOCAL_REVIEW_EXPORT_VERSION,
@@ -1353,8 +1247,7 @@ export function buildSavedMapReviewExport(map, options = {}) {
       status: savedWorkspaceHandoffStatus(map.reviewDecisions),
       latestReviewDecisionId:
         Array.isArray(map?.reviewDecisions) && map.reviewDecisions.length > 0
-          ? map.reviewDecisions[map.reviewDecisions.length - 1]?.decisionId ||
-            null
+          ? map.reviewDecisions[map.reviewDecisions.length - 1]?.decisionId || null
           : null,
       latestReviewOutcome:
         Array.isArray(map?.reviewDecisions) && map.reviewDecisions.length > 0
@@ -1371,9 +1264,7 @@ export function buildSavedMapReviewExport(map, options = {}) {
       totalEventCount: timeline.length,
       matchingEventCount: filteredTimeline.length,
       auditEventCount: Array.isArray(map?.auditRecords) ? map.auditRecords.length : 0,
-      reviewEventCount: Array.isArray(map?.reviewDecisions)
-        ? map.reviewDecisions.length
-        : 0,
+      reviewEventCount: Array.isArray(map?.reviewDecisions) ? map.reviewDecisions.length : 0,
       matchingAuditEventCount: countEventsByKind(filteredTimeline, "audit"),
       matchingReviewEventCount: countEventsByKind(filteredTimeline, "review"),
       returnedEventCount: events.length,
@@ -1389,8 +1280,7 @@ const TILE_PROVIDERS = {
   osm: {
     contentType: "image/png",
     maxzoom: 19,
-    resolveUrl: ({ z, x, y }) =>
-      `https://tile.openstreetmap.org/${z}/${x}/${y}.png`,
+    resolveUrl: ({ z, x, y }) => `https://tile.openstreetmap.org/${z}/${x}/${y}.png`,
   },
   "arcgis-imagery": {
     contentType: "image/jpeg",
@@ -1420,33 +1310,23 @@ async function proxyBasemapTile(res, providerId, zValue, xValue, yValue) {
     const upstreamUrl = await tileProvider.resolveUrl(coords);
     const upstream = await fetch(upstreamUrl, {
       headers: {
-        "user-agent":
-          "GIS Engine Studio/0.1 (explicit user-selected basemap proxy)",
+        "user-agent": "GIS Engine Studio/0.1 (explicit user-selected basemap proxy)",
       },
     });
     if (!upstream.ok) {
-      return sendJson(
-        res,
-        { error: `Tile provider returned HTTP ${upstream.status}` },
-        502,
-      );
+      return sendJson(res, { error: `Tile provider returned HTTP ${upstream.status}` }, 502);
     }
 
     const body = Buffer.from(await upstream.arrayBuffer());
     res.writeHead(200, {
-      "Content-Type":
-        upstream.headers.get("content-type") || tileProvider.contentType,
+      "Content-Type": upstream.headers.get("content-type") || tileProvider.contentType,
       "Cache-Control": "public, max-age=3600",
       "Content-Length": body.byteLength,
     });
     res.end(body);
     return undefined;
   } catch (error) {
-    return sendJson(
-      res,
-      { error: error instanceof Error ? error.message : "Tile proxy failed" },
-      503,
-    );
+    return sendJson(res, { error: error instanceof Error ? error.message : "Tile proxy failed" }, 503);
   }
 }
 
@@ -1466,8 +1346,7 @@ async function resolveBingTileUrl({ z, x, y }) {
   if (!key) throw new Error("Bing Aerial requires BING_MAPS_KEY.");
 
   const metadata = await loadBingMetadata(key);
-  const subdomains =
-    metadata.subdomains.length > 0 ? metadata.subdomains : ["t0"];
+  const subdomains = metadata.subdomains.length > 0 ? metadata.subdomains : ["t0"];
   const subdomain = subdomains[Math.abs(x + y) % subdomains.length];
   return metadata.imageUrl
     .replace("{quadkey}", tileQuadKey(x, y, z))
@@ -1481,9 +1360,7 @@ async function loadBingMetadata(key) {
     return bingMetadataCache.value;
   }
 
-  const metadataUrl = new URL(
-    "https://dev.virtualearth.net/REST/V1/Imagery/Metadata/Aerial",
-  );
+  const metadataUrl = new URL("https://dev.virtualearth.net/REST/V1/Imagery/Metadata/Aerial");
   metadataUrl.searchParams.set("output", "json");
   metadataUrl.searchParams.set("include", "ImageryProviders");
   metadataUrl.searchParams.set("key", key);
@@ -1500,9 +1377,7 @@ async function loadBingMetadata(key) {
 
   const value = {
     imageUrl: String(resource.imageUrl).replace(/^http:/, "https:"),
-    subdomains: Array.isArray(resource.imageUrlSubdomains)
-      ? resource.imageUrlSubdomains.map(String)
-      : [],
+    subdomains: Array.isArray(resource.imageUrlSubdomains) ? resource.imageUrlSubdomains.map(String) : [],
   };
   bingMetadataCache = { key, value, expiresAt: now + 60 * 60 * 1000 };
   return value;
@@ -1522,27 +1397,19 @@ function tileQuadKey(x, y, z) {
 
 function sourcePropertiesSummary(spec) {
   return Object.fromEntries(
-    Object.entries(spec.sources || {}).map(([sourceId, source]) => [
-      sourceId,
-      collectGeoJsonPropertyKeys(source),
-    ]),
+    Object.entries(spec.sources || {}).map(([sourceId, source]) => [sourceId, collectGeoJsonPropertyKeys(source)]),
   );
 }
 
 function collectGeoJsonPropertyKeys(source) {
   if (source?.type !== "geojson" || typeof source.data === "string") return [];
   const features =
-    source.data?.type === "FeatureCollection" &&
-    Array.isArray(source.data.features)
+    source.data?.type === "FeatureCollection" && Array.isArray(source.data.features)
       ? source.data.features
       : source.data?.type === "Feature"
         ? [source.data]
         : [];
-  return Array.from(
-    new Set(
-      features.flatMap((feature) => Object.keys(feature?.properties || {})),
-    ),
-  ).sort();
+  return Array.from(new Set(features.flatMap((feature) => Object.keys(feature?.properties || {})))).sort();
 }
 
 function appendStudioAudit(input) {
@@ -1560,10 +1427,7 @@ function appendStudioAudit(input) {
 }
 
 function normalizeProjectId(value) {
-  return typeof value === "string" &&
-    /^project_[A-Za-z0-9][A-Za-z0-9_-]{0,62}$/.test(value)
-    ? value
-    : "project_studio";
+  return typeof value === "string" && /^project_[A-Za-z0-9][A-Za-z0-9_-]{0,62}$/.test(value) ? value : "project_studio";
 }
 
 function hashPrompt(message) {
@@ -1625,10 +1489,7 @@ async function main() {
 
         reviewDecisions.push(reviewResult.decision);
         if (reviewDecisions.length > STUDIO_REVIEW_DECISION_CAP) {
-          reviewDecisions.splice(
-            0,
-            reviewDecisions.length - STUDIO_REVIEW_DECISION_CAP,
-          );
+          reviewDecisions.splice(0, reviewDecisions.length - STUDIO_REVIEW_DECISION_CAP);
         }
         return sendJson(res, {
           status: "reviewed",
@@ -1640,24 +1501,15 @@ async function main() {
         });
       }
 
-      const tileMatch = url.pathname.match(
-        /^\/api\/tiles\/([a-z0-9-]+)\/(\d+)\/(\d+)\/(\d+)\.(png|jpg|jpeg)$/i,
-      );
+      const tileMatch = url.pathname.match(/^\/api\/tiles\/([a-z0-9-]+)\/(\d+)\/(\d+)\/(\d+)\.(png|jpg|jpeg)$/i);
       if (req.method === "GET" && tileMatch) {
-        return proxyBasemapTile(
-          res,
-          tileMatch[1],
-          tileMatch[2],
-          tileMatch[3],
-          tileMatch[4],
-        );
+        return proxyBasemapTile(res, tileMatch[1], tileMatch[2], tileMatch[3], tileMatch[4]);
       }
 
       if (req.method === "POST" && url.pathname === "/api/chat") {
         const body = await readJsonBody(req);
         const message = typeof body.message === "string" ? body.message.trim() : "";
-        const providerId =
-          typeof body.providerId === "string" ? body.providerId : "mock-ai";
+        const providerId = typeof body.providerId === "string" ? body.providerId : "mock-ai";
         const fromRevision = activeSpec.revision || "0";
 
         if (!message) {
@@ -1752,11 +1604,7 @@ async function main() {
             });
           }
 
-          const commandResult = applyProviderCommands(
-            engine,
-            result.providerOutput,
-            activeSpec,
-          );
+          const commandResult = applyProviderCommands(engine, result.providerOutput, activeSpec);
           const nextSpec = commandResult.nextSpec;
           const status = commandResult.status;
           if (status === "applied") replaceActiveSpec(nextSpec);
@@ -1769,17 +1617,12 @@ async function main() {
             commandEvidence: commandResult.evidence,
             diagnostics,
             fromRevision,
-            toRevision:
-              (status === "applied" ? nextSpec : activeSpec).revision || "0",
+            toRevision: (status === "applied" ? nextSpec : activeSpec).revision || "0",
           });
 
           return sendJson(res, {
             ...withCommandDiagnostics(
-              statePayload(
-                engine,
-                status,
-                status === "applied" ? nextSpec : activeSpec,
-              ),
+              statePayload(engine, status, status === "applied" ? nextSpec : activeSpec),
               diagnostics,
             ),
             commandEvidence: commandResult.evidence,
@@ -1805,10 +1648,7 @@ async function main() {
           commandEvidence: legacyResult.evidence,
           diagnostics: legacyResult.diagnostics,
           fromRevision,
-          toRevision:
-            (legacyResult.status === "applied"
-              ? legacyResult.nextSpec
-              : activeSpec).revision || "0",
+          toRevision: (legacyResult.status === "applied" ? legacyResult.nextSpec : activeSpec).revision || "0",
         });
 
         return sendJson(res, {
@@ -1816,9 +1656,7 @@ async function main() {
             statePayload(
               engine,
               legacyResult.status,
-              legacyResult.status === "applied"
-                ? legacyResult.nextSpec
-                : activeSpec,
+              legacyResult.status === "applied" ? legacyResult.nextSpec : activeSpec,
             ),
             legacyResult.diagnostics,
           ),
@@ -1852,9 +1690,7 @@ async function main() {
         const map = await store.loadMap(mapRoute.mapId);
         if (!map) return sendJson(res, { error: "Not found" }, 404);
         replaceActiveSpec(map.spec);
-        activeBasemap = normalizeBasemapId(
-          map.basemapId || detectBasemapFromSpec(map.spec),
-        );
+        activeBasemap = normalizeBasemapId(map.basemapId || detectBasemapFromSpec(map.spec));
         replaceSessionEvidence(map.auditRecords, map.reviewDecisions);
         return sendJson(res, {
           ...statePayload(engine, "ready", activeSpec),

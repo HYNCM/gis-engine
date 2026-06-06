@@ -1,18 +1,18 @@
-import { describe, expect, it } from "vitest";
-import before from "../fixtures/commands/replay/style-update/before.map.json";
-import commands from "../fixtures/commands/replay/style-update/commands.json";
-import after from "../fixtures/commands/replay/style-update/after.map.json";
-import fillExtrusionLite from "../fixtures/specs/valid/fill-extrusion-lite.map.json";
 import {
   applyCommands,
   createAdapter,
   listAdapters,
+  type MapCommand,
   MapLibreAdapter,
   MapRuntime,
+  type MapSpec,
   transformMapSpecToMapLibreStyle,
-  type MapCommand,
-  type MapSpec
 } from "@gis-engine/engine";
+import { describe, expect, it } from "vitest";
+import after from "../fixtures/commands/replay/style-update/after.map.json";
+import before from "../fixtures/commands/replay/style-update/before.map.json";
+import commands from "../fixtures/commands/replay/style-update/commands.json";
+import fillExtrusionLite from "../fixtures/specs/valid/fill-extrusion-lite.map.json";
 import { createAdapterContractSuite } from "./createAdapterContractSuite.js";
 
 createAdapterContractSuite("maplibre", () => new MapLibreAdapter());
@@ -48,7 +48,7 @@ describe("MapLibreAdapter MVP", () => {
     const adapter = new MapLibreAdapter();
     const runtime = await MapRuntime.create(before as MapSpec, {
       adapter,
-      container: {} as HTMLElement
+      container: {} as HTMLElement,
     });
     const committedSpec = adapter.exportSpec();
     const committedStyle = adapter.exportStyle();
@@ -70,7 +70,7 @@ describe("MapLibreAdapter MVP", () => {
     const unsupportedSpec = structuredClone(before) as MapSpec;
     unsupportedSpec.layers[0] = {
       ...unsupportedSpec.layers[0]!,
-      type: "fill-extrusion-lite"
+      type: "fill-extrusion-lite",
     };
 
     const preflight = transformMapSpecToMapLibreStyle(unsupportedSpec);
@@ -79,8 +79,8 @@ describe("MapLibreAdapter MVP", () => {
     expect(preflight.diagnostics.filter((diagnostic) => diagnostic.severity === "error")).toEqual([
       expect.objectContaining({
         code: "CAPABILITY.UNSUPPORTED",
-        path: "/layers/0/type"
-      })
+        path: "/layers/0/type",
+      }),
     ]);
     expect(adapter.exportSpec()).toEqual(committedSpec);
     expect(adapter.exportStyle()).toEqual(committedStyle);
@@ -97,17 +97,17 @@ describe("MapLibreAdapter MVP", () => {
         {
           op: "replace",
           path: "/layers/0/type",
-          value: "fill-extrusion-lite"
-        }
+          value: "fill-extrusion-lite",
+        },
       ],
-      { container: {} as HTMLElement }
+      { container: {} as HTMLElement },
     );
 
     expect(adapterResult.diagnostics.filter((diagnostic) => diagnostic.severity === "error")).toEqual([
       expect.objectContaining({
         code: "CAPABILITY.UNSUPPORTED",
-        path: "/layers/0/type"
-      })
+        path: "/layers/0/type",
+      }),
     ]);
     expect(adapter.exportSpec()).toEqual(committedSpec);
     expect(adapter.exportStyle()).toEqual(committedStyle);
@@ -121,7 +121,7 @@ describe("MapLibreAdapter MVP", () => {
 
     expect(snapshot.passed).toBe(true);
     expect(snapshot.dataUrl).toMatch(/^data:image\/png;base64,/);
-    expect(snapshot.dataUrl!.length).toBeGreaterThan("data:image/png;base64,".length);
+    expect(snapshot.dataUrl?.length).toBeGreaterThan("data:image/png;base64,".length);
   });
 
   it("loads gated fill-extrusion-lite specs and keeps style export stable", async () => {
@@ -132,7 +132,7 @@ describe("MapLibreAdapter MVP", () => {
 
     expect(adapter.exportStyle()?.layers[0]).toMatchObject({
       id: "district-extrusion",
-      type: "fill-extrusion"
+      type: "fill-extrusion",
     });
     expect(snapshot.passed).toBe(true);
   });

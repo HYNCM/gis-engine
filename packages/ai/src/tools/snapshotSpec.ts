@@ -1,20 +1,20 @@
-import { Ajv } from "ajv/dist/ajv.js";
-import { createHeadlessContainer } from "./shared.js";
 import {
+  type Diagnostic,
   DiagnosticCodes,
   MapLibreAdapter,
   MapRuntime,
+  type MapSpec,
   MapSpecSchema,
   MockAdapter,
-  validateSpec,
-  type Diagnostic,
-  type MapSpec,
   type RendererAdapter,
   type SnapshotOptions,
   type SnapshotResult,
-  type ValidationReport
+  type ValidationReport,
+  validateSpec,
 } from "@gis-engine/engine";
+import { Ajv } from "ajv/dist/ajv.js";
 import { toolInputErrorsToDiagnostics } from "./schemaDiagnostics.js";
+import { createHeadlessContainer } from "./shared.js";
 
 export const SnapshotSpecToolInputSchema = {
   type: "object",
@@ -28,13 +28,13 @@ export const SnapshotSpecToolInputSchema = {
         height: { type: "number" },
         pixelRatio: { type: "number" },
         format: { type: "string", enum: ["png", "jpeg", "data-url"] },
-        targetLayers: { type: "array", items: { type: "string" } }
+        targetLayers: { type: "array", items: { type: "string" } },
       },
-      additionalProperties: false
-    }
+      additionalProperties: false,
+    },
   },
   required: ["spec"],
-  additionalProperties: false
+  additionalProperties: false,
 } as const;
 
 export interface SnapshotSpecToolInput {
@@ -59,7 +59,7 @@ export async function snapshotSpecTool(input: unknown): Promise<SnapshotSpecTool
   if (!validateInput(input)) {
     return {
       ok: false,
-      diagnostics: toolInputErrorsToDiagnostics(validateInput.errors, "Invalid snapshot_spec tool input.")
+      diagnostics: toolInputErrorsToDiagnostics(validateInput.errors, "Invalid snapshot_spec tool input."),
     };
   }
 
@@ -74,9 +74,9 @@ export async function snapshotSpecTool(input: unknown): Promise<SnapshotSpecTool
         passed: false,
         diagnostics: validation.diagnostics,
         renderer,
-        validation
+        validation,
       },
-      diagnostics: []
+      diagnostics: [],
     };
   }
 
@@ -86,7 +86,7 @@ export async function snapshotSpecTool(input: unknown): Promise<SnapshotSpecTool
   try {
     runtime = await MapRuntime.create(typedInput.spec, {
       adapter,
-      container: createHeadlessContainer()
+      container: createHeadlessContainer(),
     });
     const snapshot = await runtime.snapshot(typedInput.snapshot ?? {});
     return {
@@ -95,9 +95,9 @@ export async function snapshotSpecTool(input: unknown): Promise<SnapshotSpecTool
         ...snapshot,
         diagnostics: [...validation.diagnostics, ...snapshot.diagnostics],
         renderer,
-        validation
+        validation,
       },
-      diagnostics: []
+      diagnostics: [],
     };
   } catch (error) {
     return {
@@ -106,9 +106,9 @@ export async function snapshotSpecTool(input: unknown): Promise<SnapshotSpecTool
         passed: false,
         diagnostics: [...validation.diagnostics, renderErrorDiagnostic(error)],
         renderer,
-        validation
+        validation,
       },
-      diagnostics: []
+      diagnostics: [],
     };
   } finally {
     if (runtime) {
@@ -127,6 +127,6 @@ function renderErrorDiagnostic(error: unknown): Diagnostic {
   return {
     severity: "error",
     code: DiagnosticCodes.RenderAdapterError,
-    message: error instanceof Error ? error.message : "Renderer adapter failed while creating a snapshot."
+    message: error instanceof Error ? error.message : "Renderer adapter failed while creating a snapshot.",
   };
 }

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 const rootDir = fileURLToPath(new URL("../..", import.meta.url));
@@ -64,16 +64,16 @@ describe("AI Map Studio bundle", () => {
     expect(appSource).toContain('fetch("/api/maps")');
     expect(appSource).toContain("buildLoadedWorkspaceEvidence(");
     expect(appSource).toContain("loadedEvidence");
-    expect(appSource).toContain('/api/maps/${mapId}/handoff');
-    expect(appSource).toContain('/api/maps/${mapId}/review-ledger');
-    expect(appSource).toContain('audit_status: auditStatus');
-    expect(appSource).toContain('review_outcome: reviewOutcome');
-    expect(appSource).toContain('/api/maps/${mapId}/review-export');
+    expect(appSource).toContain("/api/maps/${mapId}/handoff");
+    expect(appSource).toContain("/api/maps/${mapId}/review-ledger");
+    expect(appSource).toContain("audit_status: auditStatus");
+    expect(appSource).toContain("review_outcome: reviewOutcome");
+    expect(appSource).toContain("/api/maps/${mapId}/review-export");
     expect(appSource).toContain('const kind = query.kind ?? "all"');
     expect(appSource).toContain('const statusFilter = query.status ?? "all"');
-    expect(appSource).toContain('const limit = query.limit ?? 10');
+    expect(appSource).toContain("const limit = query.limit ?? 10");
     expect(appSource).toContain("new URLSearchParams({");
-    expect(appSource).toContain('/api/maps/${mapId}/load');
+    expect(appSource).toContain("/api/maps/${mapId}/load");
     expect(chatSource).toContain("Audit Records");
     expect(chatSource).toContain("Review Decisions");
     expect(chatSource).toContain("Raw Ledger");

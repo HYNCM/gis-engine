@@ -6,3 +6,24 @@ playwright-report/
 .worktrees/
 .DS_Store
 *.log
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Build artifacts
+*.tgz
+*.tsbuildinfo
+
+# pnpm store (should not be in repo)
+.pnpm-store/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+Thumbs.db

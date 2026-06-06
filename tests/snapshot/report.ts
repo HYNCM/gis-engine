@@ -57,7 +57,10 @@ export function assertSnapshotReport(report: unknown): asserts report is Snapsho
 
   if (report.status === "skipped") {
     assert(typeof report.reason === "string" && report.reason.length > 0, "Skipped SnapshotReport requires a reason.");
-    assert(typeof report.skipReason === "string" && report.skipReason.length > 0, "Skipped SnapshotReport requires a skipReason.");
+    assert(
+      typeof report.skipReason === "string" && report.skipReason.length > 0,
+      "Skipped SnapshotReport requires a skipReason.",
+    );
   }
 
   assert(isRecord(report.lifecycle), "SnapshotReport.lifecycle must be an object.");
@@ -70,23 +73,41 @@ export function assertSnapshotReport(report: unknown): asserts report is Snapsho
   if ("revision" in report.spec) {
     assert(typeof report.spec.revision === "string", "SnapshotReport.spec.revision must be string.");
   }
-  assert(Number.isInteger(report.spec.sourceCount) && report.spec.sourceCount >= 0, "SnapshotReport.spec.sourceCount is invalid.");
-  assert(Number.isInteger(report.spec.layerCount) && report.spec.layerCount >= 0, "SnapshotReport.spec.layerCount is invalid.");
+  assert(
+    Number.isInteger(report.spec.sourceCount) && report.spec.sourceCount >= 0,
+    "SnapshotReport.spec.sourceCount is invalid.",
+  );
+  assert(
+    Number.isInteger(report.spec.layerCount) && report.spec.layerCount >= 0,
+    "SnapshotReport.spec.layerCount is invalid.",
+  );
 
   if (report.snapshot !== undefined) {
     assert(isRecord(report.snapshot), "SnapshotReport.snapshot must be an object.");
     assert(typeof report.snapshot.passed === "boolean", "SnapshotReport.snapshot.passed must be boolean.");
     assert(
       report.snapshot.format === "png" || report.snapshot.format === "jpeg" || report.snapshot.format === "data-url",
-      "SnapshotReport.snapshot.format is invalid."
+      "SnapshotReport.snapshot.format is invalid.",
     );
-    assert(Number.isInteger(report.snapshot.width) && report.snapshot.width > 0, "SnapshotReport.snapshot.width is invalid.");
-    assert(Number.isInteger(report.snapshot.height) && report.snapshot.height > 0, "SnapshotReport.snapshot.height is invalid.");
+    assert(
+      Number.isInteger(report.snapshot.width) && report.snapshot.width > 0,
+      "SnapshotReport.snapshot.width is invalid.",
+    );
+    assert(
+      Number.isInteger(report.snapshot.height) && report.snapshot.height > 0,
+      "SnapshotReport.snapshot.height is invalid.",
+    );
     if ("dataUrlPrefix" in report.snapshot) {
-      assert(typeof report.snapshot.dataUrlPrefix === "string", "SnapshotReport.snapshot.dataUrlPrefix must be string.");
+      assert(
+        typeof report.snapshot.dataUrlPrefix === "string",
+        "SnapshotReport.snapshot.dataUrlPrefix must be string.",
+      );
     }
     if ("byteLength" in report.snapshot) {
-      assert(Number.isInteger(report.snapshot.byteLength) && report.snapshot.byteLength >= 0, "SnapshotReport.snapshot.byteLength is invalid.");
+      assert(
+        Number.isInteger(report.snapshot.byteLength) && report.snapshot.byteLength >= 0,
+        "SnapshotReport.snapshot.byteLength is invalid.",
+      );
     }
   }
 
@@ -95,10 +116,16 @@ export function assertSnapshotReport(report: unknown): asserts report is Snapsho
     assert(isRecord(diagnostic), "SnapshotReport diagnostic must be an object.");
     assert(
       diagnostic.severity === "error" || diagnostic.severity === "warning" || diagnostic.severity === "info",
-      "SnapshotReport diagnostic severity is invalid."
+      "SnapshotReport diagnostic severity is invalid.",
     );
-    assert(typeof diagnostic.code === "string" && diagnostic.code.length > 0, "SnapshotReport diagnostic code is required.");
-    assert(typeof diagnostic.message === "string" && diagnostic.message.length > 0, "SnapshotReport diagnostic message is required.");
+    assert(
+      typeof diagnostic.code === "string" && diagnostic.code.length > 0,
+      "SnapshotReport diagnostic code is required.",
+    );
+    assert(
+      typeof diagnostic.message === "string" && diagnostic.message.length > 0,
+      "SnapshotReport diagnostic message is required.",
+    );
   }
 
   assert(Array.isArray(report.consoleErrors), "SnapshotReport.consoleErrors must be an array.");
@@ -108,7 +135,8 @@ export function assertSnapshotReport(report: unknown): asserts report is Snapsho
 
   assert(isRecord(report.artifacts), "SnapshotReport.artifacts must be an object.");
   for (const key of ["actualImage", "diffImage", "reportJson", "consoleLog"] as const) {
-    if (key in report.artifacts) assert(typeof report.artifacts[key] === "string", `SnapshotReport.artifacts.${key} must be string.`);
+    if (key in report.artifacts)
+      assert(typeof report.artifacts[key] === "string", `SnapshotReport.artifacts.${key} must be string.`);
   }
 }
 
