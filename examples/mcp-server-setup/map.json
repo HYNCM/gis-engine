@@ -1,0 +1,26 @@
+{
+  "version": "0.1",
+  "id": "mcp-server-example",
+  "view": {
+    "mode": "map2d",
+    "center": [121.47, 31.23],
+    "zoom": 12
+  },
+  "sources": {
+    "districts": {
+      "type": "geojson",
+      "data": "./data/districts.geojson"
+    }
+  },
+  "layers": [
+    {
+      "id": "district-fill",
+      "type": "fill",
+      "source": "districts",
+      "paint": {
+        "fill-color": "#60a5fa",
+        "fill-opacity": 0.5
+      }
+    }
+  ]
+}

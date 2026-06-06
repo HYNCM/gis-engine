@@ -13,6 +13,7 @@ import { createInitialSpec as createAiMapWorkbenchSpec } from "../../examples/ai
 import basicGeojson from "../../examples/basic-geojson/map.json";
 import diagnosticsWalkthrough from "../../examples/diagnostics-walkthrough/map.json";
 import fillExtrusionLite from "../../examples/fill-extrusion-lite/map.json";
+import mcpServerSetup from "../../examples/mcp-server-setup/map.json";
 import pmtilesLocal from "../../examples/pmtiles-local/map.json";
 import rasterBasemap from "../../examples/raster-basemap/map.json";
 import snapshotTesting from "../../examples/snapshot-testing/map.json";
@@ -117,6 +118,11 @@ describe("examples gate", () => {
       spec: () => snapshotTesting as MapSpec,
       firstLayerId: "district-fill",
     },
+    {
+      id: "mcp-server-setup",
+      spec: () => mcpServerSetup as MapSpec,
+      firstLayerId: "district-fill",
+    },
   ];
 
   it("covers the bundled examples", () => {
@@ -130,6 +136,7 @@ describe("examples gate", () => {
       "vector-tile-url",
       "fill-extrusion-lite",
       "snapshot-testing",
+      "mcp-server-setup",
     ]);
   });
 
