@@ -1007,9 +1007,14 @@ describe("cli-templates", () => {
     expect(appFile.content).toContain("targetMap.addLayer");
     expect(appFile.content).toContain('fetch("./delivery-summary.json"');
     expect(appFile.content).toContain("type DeliveryLoadStatus");
+    expect(appFile.content).toContain("type DeliverySectionSummary");
     expect(appFile.content).toContain("formatDeliveryState");
+    expect(appFile.content).toContain("displayValue");
     expect(appFile.content).toContain('return "scaffold"');
     expect(appFile.content).toContain("deliverySummary?.preflight?.status");
+    expect(appFile.content).toContain("deliverySummary?.preflight?.sourceReadiness?.summary");
+    expect(appFile.content).toContain("deliverySummary?.preflight?.pmtiles?.summary");
+    expect(appFile.content).toContain("const [reviewDetailsOpen");
   });
 
   it("app template exposes loading, reload, and responsive control states", () => {
@@ -1021,6 +1026,7 @@ describe("cli-templates", () => {
     const legend = files.find((f) => f.path === "src/components/Legend.tsx")!;
     const searchBox = files.find((f) => f.path === "src/components/SearchBox.tsx")!;
     const basemapSwitcher = files.find((f) => f.path === "src/components/BasemapSwitcher.tsx")!;
+    const appCss = files.find((f) => f.path === "src/index.css")!;
 
     expect(appFile.content).toContain('type MapLoadStatus = "loading" | "ready" | "empty" | "error";');
     expect(appFile.content).toContain("Reload map.json");
@@ -1033,6 +1039,15 @@ describe("cli-templates", () => {
     expect(appFile.content).toContain("Sources");
     expect(appFile.content).toContain("Spatial");
     expect(appFile.content).toContain("Follow-ups");
+    expect(appFile.content).toContain("Review details");
+    expect(appFile.content).toContain("disabled={!canShowReviewDetails}");
+    expect(appFile.content).toContain("aria-expanded={reviewDetailsOpen}");
+    expect(appFile.content).toContain("DeliverySectionSummary");
+    expect(appFile.content).toContain("deliverySections.map");
+    expect(appFile.content).toContain("deliverySources.map");
+    expect(appFile.content).toContain("deliveryPromotions.map");
+    expect(appFile.content).toContain("deliveryConfirmations.map");
+    expect(appFile.content).toContain("deliveryFollowUps.map");
 
     expect(layerPanel.content).toContain("No layers in this spec yet.");
     expect(layerPanel.content).toContain("max-md:top-32");
@@ -1041,6 +1056,9 @@ describe("cli-templates", () => {
     expect(searchBox.content).toContain('type="button"');
     expect(basemapSwitcher.content).toContain("aria-pressed={active === b.id}");
     expect(basemapSwitcher.content).toContain("max-md:top-16");
+    expect(appCss.content.indexOf('@import "maplibre-gl/dist/maplibre-gl.css";')).toBeLessThan(
+      appCss.content.indexOf("@tailwind base;"),
+    );
   });
 });
 

@@ -23,6 +23,11 @@
   running without that optional file. The rail now includes the generated
   preflight status alongside source, spatial-query, and review follow-up
   signals.
+- Add an expandable review details panel to the generated `app` template so
+  `delivery-summary.json` sections, source entries, preflight counts,
+  confirmations, and follow-ups can be inspected without leaving the app, and
+  keep the generated MapLibre CSS import before Tailwind directives for a
+  build-clean app stylesheet.
 - Write `preflight.json` during `--generate` and include a compact preflight
   summary in `delivery-summary.json` so generated projects carry validation,
   source-readiness, PMTiles load-plan, and diagnostic handoff evidence by

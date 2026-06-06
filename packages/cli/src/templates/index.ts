@@ -807,11 +807,11 @@ export default {
       },
       {
         path: "src/index.css",
-        content: `@tailwind base;
+        content: `@import "maplibre-gl/dist/maplibre-gl.css";
+
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import "maplibre-gl/dist/maplibre-gl.css";
 
 html, body, #root {
   margin: 0;
@@ -856,24 +856,88 @@ type MapSpecShape = {
 type MapLoadStatus = "loading" | "ready" | "empty" | "error";
 type DeliveryLoadStatus = "loading" | "ready" | "missing" | "error";
 
+type DeliverySectionSummary = {
+  id?: string;
+  status?: string;
+  blockerCount?: number;
+  confirmationRequired?: boolean;
+  followUpCount?: number;
+};
+
+type DeliverySourceSummary = {
+  sourceId?: string;
+  type?: string;
+  state?: string;
+  queryReady?: boolean;
+  resourcePolicy?: string;
+};
+
+type DeliveryPromotionCandidate = {
+  candidateId?: string;
+  format?: string;
+  state?: string;
+  target?: string;
+  exitCondition?: string;
+};
+
+type DeliveryConfirmation = {
+  reason?: string;
+  required?: boolean;
+  target?: string;
+};
+
+type DeliveryFollowUp = {
+  id?: string;
+  owner?: string;
+  targetArtifact?: string;
+  reason?: string;
+};
+
 type DeliverySummaryShape = {
+  promptHash?: string;
+  traceId?: string;
+  generatedAt?: string;
   preflight?: {
     ok?: boolean;
     status?: string;
+    diagnostics?: {
+      error?: number;
+      warning?: number;
+      info?: number;
+    };
+    sourceReadiness?: {
+      status?: string;
+      summary?: {
+        supportedSourceCount?: number;
+        readinessOnlySourceCount?: number;
+        blockedSourceCount?: number;
+      };
+    };
+    pmtiles?: {
+      status?: string;
+      summary?: {
+        readySourceCount?: number;
+        metadataRequiredSourceCount?: number;
+        blockedSourceCount?: number;
+      };
+    };
   };
   delivery?: {
     status?: string;
     acceptance?: { state?: string };
+    sections?: DeliverySectionSummary[];
     sourceReadiness?: {
       total?: number;
       supported?: number;
       readinessOnly?: number;
       blocked?: number;
+      sources?: DeliverySourceSummary[];
     };
+    sourcePromotionCandidates?: DeliveryPromotionCandidate[];
     spatialQueryReadiness?: { state?: string; status?: string };
     confirmationRequired?: boolean;
-    confirmations?: Array<{ required?: boolean }>;
-    followUps?: Array<{ id?: string; reason?: string }>;
+    confirmations?: DeliveryConfirmation[];
+    followUps?: DeliveryFollowUp[];
   };
   evidenceStatus?: string;
   retainedRawPrompt?: boolean;
@@ -903,6 +967,18 @@ function deliveryBadgeTone(state: string, loadStatus: DeliveryLoadStatus): strin
   return "bg-slate-600 text-white";
 }
 
+function displayValue(value: string | number | undefined): string {
+  if (typeof value === "number") return String(value);
+  if (typeof value === "string" && value.trim().length > 0) return value;
+  return "--";
+}
+
+function flagValue(value: boolean | undefined): string {
+  if (value === true) return "yes";
+  if (value === false) return "no";
+  return "--";
+}
+
 export default function App() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -914,6 +990,7 @@ export default function App() {
   const [deliverySummary, setDeliverySummary] = useState<DeliverySummaryShape | null>(null);
   const [deliveryLoadStatus, setDeliveryLoadStatus] = useState<DeliveryLoadStatus>("loading");
   const [deliveryError, setDeliveryError] = useState<string | null>(null);
+  const [reviewDetailsOpen, setReviewDetailsOpen] = useState(false);
 
   const sourceCount = Object.keys(spec.sources ?? {}).length;
   const layerCount = (spec.layers ?? []).length;
@@ -932,6 +1009,7 @@ export default function App() {
           if (!cancelled) {
             setDeliverySummary(null);
             setDeliveryLoadStatus("missing");
+            setReviewDetailsOpen(false);
           }
           return;
         }
@@ -951,6 +1029,7 @@ export default function App() {
           setDeliverySummary(null);
           setDeliveryLoadStatus("error");
           setDeliveryError(error instanceof Error ? error.message : "Could not read delivery-summary.json.");
+          setReviewDetailsOpen(false);
         }
       }
     };
@@ -1085,6 +1164,15 @@ export default function App() {
   const deliveryPreflightState = deliverySummary?.preflight?.status ?? "--";
   const deliverySpatialState = delivery?.spatialQueryReadiness?.state ?? "--";
   const deliveryDetail = deliveryLoadStatus === "error" ? deliveryError : null;
+  const canShowReviewDetails = deliveryLoadStatus === "ready" && deliverySummary !== null;
+  const deliverySections = delivery?.sections ?? [];
+  const deliverySources = deliverySourceSummary?.sources ?? [];
+  const deliveryPromotions = delivery?.sourcePromotionCandidates ?? [];
+  const deliveryConfirmations = delivery?.confirmations ?? [];
+  const deliveryFollowUps = delivery?.followUps ?? [];
+  const preflightDiagnostics = deliverySummary?.preflight?.diagnostics;
+  const preflightSources = deliverySummary?.preflight?.sourceReadiness?.summary;
+  const preflightPmtiles = deliverySummary?.preflight?.pmtiles?.summary;
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-slate-950">
@@ -1133,6 +1221,131 @@ export default function App() {
           </dl>
           {deliveryDetail ? <p className="mt-2 truncate text-[11px] text-gray-500">{deliveryDetail}</p> : null}
         </div>
+        {reviewDetailsOpen && canShowReviewDetails ? (
+          <div className="mt-3 max-h-64 overflow-y-auto border-t border-gray-200 pt-3 text-[11px] text-gray-600">
+            <section>
+              <h2 className="text-[11px] font-semibold uppercase text-gray-500">Review details</h2>
+              <dl className="mt-2 grid grid-cols-2 gap-2">
+                <div>
+                  <dt className="text-gray-400">Evidence</dt>
+                  <dd className="truncate font-medium text-gray-900">{deliverySummary.evidenceStatus ?? "--"}</dd>
+                </div>
+                <div>
+                  <dt className="text-gray-400">Raw prompt</dt>
+                  <dd className="font-medium text-gray-900">
+                    {deliverySummary.retainedRawPrompt === true
+                      ? "retained"
+                      : deliverySummary.retainedRawPrompt === false
+                        ? "not retained"
+                        : "--"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-400">Preflight diagnostics</dt>
+                  <dd className="font-medium text-gray-900">
+                    {displayValue(preflightDiagnostics?.error)} / {displayValue(preflightDiagnostics?.warning)} / {displayValue(preflightDiagnostics?.info)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-400">PMTiles</dt>
+                  <dd className="truncate font-medium text-gray-900">
+                    {displayValue(preflightPmtiles?.readySourceCount)} ready, {displayValue(preflightPmtiles?.metadataRequiredSourceCount)} metadata, {displayValue(preflightPmtiles?.blockedSourceCount)} blocked
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-400">Preflight sources</dt>
+                  <dd className="font-medium text-gray-900">
+                    {displayValue(preflightSources?.supportedSourceCount)} / {displayValue(preflightSources?.readinessOnlySourceCount)} / {displayValue(preflightSources?.blockedSourceCount)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-400">Trace</dt>
+                  <dd className="truncate font-medium text-gray-900">{deliverySummary.traceId ?? "--"}</dd>
+                </div>
+              </dl>
+            </section>
+            <section className="mt-3 border-t border-gray-200 pt-3">
+              <h3 className="text-[11px] font-semibold uppercase text-gray-500">Sections</h3>
+              {deliverySections.length > 0 ? (
+                <ul className="mt-1 divide-y divide-gray-200">
+                  {deliverySections.map((section, index) => (
+                    <li key={(section.id ?? "section") + String(index)} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 py-1">
+                      <span className="truncate font-medium text-gray-900">{section.id ?? "section"}</span>
+                      <span className="font-medium text-gray-700">{section.status ?? "--"}</span>
+                      <span className="col-span-2 text-gray-400">
+                        blockers {displayValue(section.blockerCount)}, confirmation {flagValue(section.confirmationRequired)}, follow-ups {displayValue(section.followUpCount)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-1 text-gray-400">None</p>
+              )}
+            </section>
+            <section className="mt-3 border-t border-gray-200 pt-3">
+              <h3 className="text-[11px] font-semibold uppercase text-gray-500">Sources</h3>
+              {deliverySources.length > 0 ? (
+                <ul className="mt-1 divide-y divide-gray-200">
+                  {deliverySources.map((source, index) => (
+                    <li key={(source.sourceId ?? "source") + String(index)} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 py-1">
+                      <span className="truncate font-medium text-gray-900">{source.sourceId ?? "source"}</span>
+                      <span className="font-medium text-gray-700">{source.state ?? "--"}</span>
+                      <span className="col-span-2 text-gray-400">
+                        {source.type ?? "--"} source, query {flagValue(source.queryReady)}, policy {source.resourcePolicy ?? "--"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-1 text-gray-400">None</p>
+              )}
+            </section>
+            {deliveryPromotions.length > 0 ? (
+              <section className="mt-3 border-t border-gray-200 pt-3">
+                <h3 className="text-[11px] font-semibold uppercase text-gray-500">Promotion</h3>
+                <ul className="mt-1 divide-y divide-gray-200">
+                  {deliveryPromotions.map((candidate, index) => (
+                    <li key={(candidate.candidateId ?? "candidate") + String(index)} className="py-1">
+                      <p className="truncate font-medium text-gray-900">{candidate.candidateId ?? "candidate"}: {candidate.format ?? "--"} / {candidate.state ?? "--"}</p>
+                      <p className="text-gray-400">{candidate.target ?? "--"}; {candidate.exitCondition ?? "--"}</p>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+            <section className="mt-3 border-t border-gray-200 pt-3">
+              <h3 className="text-[11px] font-semibold uppercase text-gray-500">Confirmations</h3>
+              {deliveryConfirmations.length > 0 ? (
+                <ul className="mt-1 divide-y divide-gray-200">
+                  {deliveryConfirmations.map((confirmation, index) => (
+                    <li key={(confirmation.reason ?? "confirmation") + String(index)} className="py-1">
+                      <p className="truncate font-medium text-gray-900">{confirmation.reason ?? "confirmation"}: {flagValue(confirmation.required)}</p>
+                      <p className="text-gray-400">{confirmation.target ?? "--"}</p>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-1 text-gray-400">None</p>
+              )}
+            </section>
+            <section className="mt-3 border-t border-gray-200 pt-3">
+              <h3 className="text-[11px] font-semibold uppercase text-gray-500">Follow-ups</h3>
+              {deliveryFollowUps.length > 0 ? (
+                <ul className="mt-1 divide-y divide-gray-200">
+                  {deliveryFollowUps.map((followUp, index) => (
+                    <li key={(followUp.id ?? "follow-up") + String(index)} className="py-1">
+                      <p className="truncate font-medium text-gray-900">{followUp.id ?? "follow-up"}: {followUp.owner ?? "--"}</p>
+                      <p className="text-gray-400">{followUp.reason ?? "--"}</p>
+                      <p className="text-gray-400">{followUp.targetArtifact ?? "--"}</p>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-1 text-gray-400">None</p>
+              )}
+            </section>
+          </div>
+        ) : null}
         <div className="mt-3 flex flex-wrap gap-2">
           <button
             type="button"
@@ -1147,6 +1360,20 @@ export default function App() {
             className="rounded-full border border-blue-600 bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-500"
           >
             Load map.json
+          </button>
+          <button
+            type="button"
+            onClick={() => setReviewDetailsOpen((open) => !open)}
+            disabled={!canShowReviewDetails}
+            aria-expanded={reviewDetailsOpen}
+            className={
+              "rounded-full border px-3 py-1.5 text-xs font-medium " +
+              (canShowReviewDetails
+                ? "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                : "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400")
+            }
+          >
+            Review details
           </button>
         </div>
         <p className="mt-2 text-[11px] text-gray-500">
@@ -1220,9 +1447,11 @@ npm run dev
 When this app is produced through \`--generate --template app\`, it reads the
 generated \`delivery-summary.json\` at runtime and shows the delivery acceptance
 state, preflight status, source-readiness count, spatial-query readiness, and
-review follow-up count in the map status banner. Scaffold-only projects keep
-running when that file is absent. Generated projects also include \`REVIEW.md\`
-as the human-readable handoff for the same delivery evidence.
+review follow-up count in the map status banner. The review details panel also
+shows delivery sections, source entries, confirmations, and follow-ups from the
+same summary. Scaffold-only projects keep running when that file is absent.
+Generated projects also include \`REVIEW.md\` as the human-readable handoff for
+the same delivery evidence.
 
 ## Preflight
 

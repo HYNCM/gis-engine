@@ -301,7 +301,7 @@ Generated files:
 
 ### app
 
-Full interactive map application (Vite + React + Tailwind). Use this with `--generate -t app` to pair the generated MapSpec with a starter app shell that includes responsive controls, loading/empty/error states, local `map.json` reload/upload buttons, and an optional `delivery-summary.json` review rail with preflight status.
+Full interactive map application (Vite + React + Tailwind). Use this with `--generate -t app` to pair the generated MapSpec with a starter app shell that includes responsive controls, loading/empty/error states, local `map.json` reload/upload buttons, and optional `delivery-summary.json` review rail/details with preflight status, source readiness, and follow-up handoff.
 
 Generated files:
 
@@ -316,7 +316,7 @@ Generated files:
 | `src/index.css` | Tailwind entry plus MapLibre GL CSS import. |
 | `src/vite-env.d.ts` | Vite client typings for JSON, CSS, and asset imports. |
 | `src/main.tsx` | React root that renders the generated app. |
-| `src/App.tsx` | Map container, status banner, optional `delivery-summary.json` review status with preflight/source/query signals, and local `map.json` reload/upload flow that mounts the generated spec and UI components. |
+| `src/App.tsx` | Map container, status banner, optional `delivery-summary.json` review status/details with preflight/source/query/follow-up signals, and local `map.json` reload/upload flow that mounts the generated spec and UI components. |
 | `src/components/*.tsx` | LayerPanel, FeaturePopup, Legend, SearchBox, and BasemapSwitcher, emitted according to the app config. |
 | `map.json` | Starter MapSpec placeholder when scaffolding outside the AI pipeline. |
 | `README.md` | Project readme with app type, component list, and usage instructions. |
