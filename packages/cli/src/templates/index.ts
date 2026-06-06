@@ -857,6 +857,10 @@ type MapLoadStatus = "loading" | "ready" | "empty" | "error";
 type DeliveryLoadStatus = "loading" | "ready" | "missing" | "error";
 
 type DeliverySummaryShape = {
+  preflight?: {
+    ok?: boolean;
+    status?: string;
+  };
   delivery?: {
     status?: string;
     acceptance?: { state?: string };
@@ -1078,6 +1082,7 @@ export default function App() {
   const deliverySourceText = deliverySourceSummary
     ? String(deliverySourceSummary.supported ?? 0) + "/" + String(deliverySourceSummary.total ?? 0)
     : "--";
+  const deliveryPreflightState = deliverySummary?.preflight?.status ?? "--";
   const deliverySpatialState = delivery?.spatialQueryReadiness?.state ?? "--";
   const deliveryDetail = deliveryLoadStatus === "error" ? deliveryError : null;
 
@@ -1108,7 +1113,11 @@ export default function App() {
               {deliveryState}
             </span>
           </div>
-          <dl className="mt-2 grid grid-cols-3 gap-2 text-[11px] text-gray-600">
+          <dl className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-gray-600 sm:grid-cols-4">
+            <div>
+              <dt className="text-gray-400">Preflight</dt>
+              <dd className="truncate font-medium text-gray-900">{deliveryPreflightState}</dd>
+            </div>
             <div>
               <dt className="text-gray-400">Sources</dt>
               <dd className="font-medium text-gray-900">{deliverySourceText}</dd>
@@ -1210,9 +1219,9 @@ npm run dev
 
 When this app is produced through \`--generate --template app\`, it reads the
 generated \`delivery-summary.json\` at runtime and shows the delivery acceptance
-state, source-readiness count, spatial-query readiness, and review follow-up
-count in the map status banner. Scaffold-only projects keep running when that
-file is absent.
+state, preflight status, source-readiness count, spatial-query readiness, and
+review follow-up count in the map status banner. Scaffold-only projects keep
+running when that file is absent.
 
 ## Preflight
 

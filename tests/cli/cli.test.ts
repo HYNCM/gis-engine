@@ -1009,6 +1009,7 @@ describe("cli-templates", () => {
     expect(appFile.content).toContain("type DeliveryLoadStatus");
     expect(appFile.content).toContain("formatDeliveryState");
     expect(appFile.content).toContain('return "scaffold"');
+    expect(appFile.content).toContain("deliverySummary?.preflight?.status");
   });
 
   it("app template exposes loading, reload, and responsive control states", () => {
@@ -1028,6 +1029,7 @@ describe("cli-templates", () => {
     expect(appFile.content).toContain('aria-live="polite"');
     expect(appFile.content).toContain('accept=".json,application/json"');
     expect(appFile.content).toContain("Delivery");
+    expect(appFile.content).toContain("Preflight");
     expect(appFile.content).toContain("Sources");
     expect(appFile.content).toContain("Spatial");
     expect(appFile.content).toContain("Follow-ups");
