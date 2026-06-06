@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -7,6 +7,7 @@ import {
   CLI_API_KEY_ENVS,
   createProviderDiagnostics,
   formatPreflightText,
+  formatVerifyArtifactsText,
   generate,
   getTemplate,
   hashPrompt,
@@ -17,6 +18,7 @@ import {
   readProviderApiKey,
   resolveProviderProfile,
   TEMPLATES,
+  verifyArtifacts,
 } from "@gis-engine/cli";
 import type { MapSpec, PMTilesArchiveMetadata } from "@gis-engine/engine";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -132,6 +134,145 @@ describe("cli-bin-preflight-mode", () => {
   });
 });
 
+describe("cli-bin-artifact-verify-mode", () => {
+  it("runs JSON artifact verification without requiring a project name", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gis-engine-cli-main-artifacts-"));
+    const cwd = process.cwd();
+    const generateLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      process.chdir(dir);
+      await generate({
+        projectName: "reviewable-map",
+        provider: "mock",
+        prompt: "Create a map showing private verifier locations",
+        dryRun: false,
+      });
+      generateLogSpy.mockRestore();
+
+      const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+      try {
+        await main(["--verify-artifacts", join(dir, "reviewable-map"), "--json"]);
+
+        expect(logSpy).toHaveBeenCalledTimes(1);
+        const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+        expect(payload).toMatchObject({
+          ok: true,
+          mode: "artifact-manifest-verify",
+          status: "verified",
+          summary: {
+            requiredFileCount: 4,
+            missingFileCount: 0,
+            byteMismatchCount: 0,
+            hashMismatchCount: 0,
+          },
+        });
+        expect(payload.files.map((file: { path: string }) => file.path)).toContain("map.json");
+        expect(JSON.stringify(payload)).not.toContain("private verifier locations");
+      } finally {
+        logSpy.mockRestore();
+      }
+    } finally {
+      process.chdir(cwd);
+      generateLogSpy.mockRestore();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("exits non-zero when artifact verification finds a changed file", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gis-engine-cli-main-artifacts-"));
+    const cwd = process.cwd();
+    const generateLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const writeSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: string | number | null) => {
+      throw new Error(`process.exit:${code}`);
+    }) as never);
+    try {
+      process.chdir(dir);
+      await generate({
+        projectName: "reviewable-map",
+        provider: "mock",
+        prompt: "Create a map showing changed artifact locations",
+        dryRun: false,
+      });
+      writeFileSync(join(dir, "reviewable-map", "map.json"), "{}\n", "utf-8");
+
+      await expect(main(["--verify-artifacts", join(dir, "reviewable-map")])).rejects.toThrow("process.exit:1");
+
+      expect(exitSpy).toHaveBeenCalledWith(1);
+      expect(String(writeSpy.mock.calls[0]?.[0])).toContain("Status:     blocked");
+      expect(String(writeSpy.mock.calls[0]?.[0])).toContain("ARTIFACT_MANIFEST.BYTE_MISMATCH");
+    } finally {
+      process.chdir(cwd);
+      generateLogSpy.mockRestore();
+      writeSpy.mockRestore();
+      exitSpy.mockRestore();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("cli-artifact-manifest-verify", () => {
+  it("returns a structured diagnostic when artifact-manifest.json is missing", () => {
+    const dir = mkdtempSync(join(tmpdir(), "gis-engine-cli-artifacts-"));
+    try {
+      const result = verifyArtifacts({ projectDir: dir });
+      const text = formatVerifyArtifactsText(result);
+
+      expect(result.ok).toBe(false);
+      expect(result.status).toBe("blocked");
+      expect(result.diagnostics[0]).toMatchObject({
+        severity: "error",
+        code: "ARTIFACT_MANIFEST.READ_FAILED",
+        path: "artifact-manifest.json",
+      });
+      expect(text).toContain("Artifact manifest verification");
+      expect(text).toContain("Status:     blocked");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("returns structured diagnostics for malformed artifact manifest entries", () => {
+    const dir = mkdtempSync(join(tmpdir(), "gis-engine-cli-artifacts-"));
+    try {
+      mkdirSync(join(dir, "nested"));
+      writeFileSync(
+        join(dir, "artifact-manifest.json"),
+        `${JSON.stringify(
+          {
+            requiredReviewFiles: ["map.json", 42],
+            files: [
+              null,
+              { path: "../outside.txt", role: "mapspec", required: true, bytes: 0, sha256: `sha256:${"0".repeat(64)}` },
+              { path: "nested", role: "app", required: false, bytes: 0, sha256: `sha256:${"0".repeat(64)}` },
+            ],
+          },
+          null,
+          2,
+        )}\n`,
+        "utf-8",
+      );
+
+      const result = verifyArtifacts({ projectDir: dir });
+      const codes = result.diagnostics.map((diagnostic) => diagnostic.code);
+
+      expect(result.ok).toBe(false);
+      expect(result.status).toBe("blocked");
+      expect(codes).toEqual(
+        expect.arrayContaining([
+          "ARTIFACT_MANIFEST.INVALID_REQUIRED_REVIEW_FILE",
+          "ARTIFACT_MANIFEST.INVALID_ENTRY",
+          "ARTIFACT_MANIFEST.INVALID_PATH",
+          "ARTIFACT_MANIFEST.NOT_FILE",
+          "ARTIFACT_MANIFEST.REQUIRED_ENTRY_MISSING",
+        ]),
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
 // ---------------------------------------------------------------------------
 // config.ts — parseArgs
 // ---------------------------------------------------------------------------
@@ -181,6 +322,7 @@ describe("cli-config-parseArgs", () => {
     expect(config.apiKey).toBeUndefined();
     expect(config.timeout).toBeUndefined();
     expect(config.preflight).toBeUndefined();
+    expect(config.verifyArtifacts).toBeUndefined();
     expect(config.requireArchiveMetadata).toBe(false);
     expect(config.pmtilesMetadata).toEqual([]);
     expect(config.json).toBe(false);
@@ -226,6 +368,18 @@ describe("cli-config-parseArgs", () => {
   it("sets preflight via --preflight=value equals form", () => {
     const config = parseArgs(["--preflight=./map.json"]);
     expect(config.preflight).toBe("./map.json");
+  });
+
+  it("sets verifyArtifacts via --verify-artifacts with separate value", () => {
+    const config = parseArgs(["--verify-artifacts", "./generated-map", "--json"]);
+    expect(config.projectName).toBe("");
+    expect(config.verifyArtifacts).toBe("./generated-map");
+    expect(config.json).toBe(true);
+  });
+
+  it("sets verifyArtifacts via --verify-artifacts=value equals form", () => {
+    const config = parseArgs(["--verify-artifacts=./generated-map"]);
+    expect(config.verifyArtifacts).toBe("./generated-map");
   });
 
   it("sets PMTiles archive metadata preflight flags", () => {

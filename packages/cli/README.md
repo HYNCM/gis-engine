@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/HYNCM/gis-engine/blob/main/LICENSE)
 
-CLI for scaffolding and generating GIS Engine map projects. Provides three modes: **scaffold** (default) for creating projects from templates, **generate** (`--generate` flag) for running the full AI pipeline from a natural-language prompt to a validated MapSpec bundle, and **preflight** (`--preflight`) for validating a MapSpec JSON file before delivery.
+CLI for scaffolding and generating GIS Engine map projects. Provides four modes: **scaffold** (default) for creating projects from templates, **generate** (`--generate` flag) for running the full AI pipeline from a natural-language prompt to a validated MapSpec bundle, **preflight** (`--preflight`) for validating a MapSpec JSON file before delivery, and **artifact verification** (`--verify-artifacts`) for checking generated file hashes.
 
 - **Package**: `@gis-engine/cli`
 - **Version**: 1.0.0
@@ -19,6 +19,7 @@ CLI for scaffolding and generating GIS Engine map projects. Provides three modes
 - [Templates](#templates)
 - [Generate Pipeline](#generate-pipeline)
 - [Preflight Mode](#preflight-mode)
+- [Artifact Verification Mode](#artifact-verification-mode)
 - [SDK Minimal Use](#sdk-minimal-use)
 - [License](#license)
 
@@ -91,6 +92,18 @@ non-zero only when validation or PMTiles delivery blockers are present. With
 `--require-archive-metadata`, missing PMTiles archive metadata also exits
 non-zero.
 
+### 6. Verify generated artifacts
+
+```bash
+npm exec --package @gis-engine/cli@latest -- create-gis-map --verify-artifacts ./my-map
+npm exec --package @gis-engine/cli@latest -- create-gis-map --verify-artifacts ./my-map --json
+```
+
+Artifact verification reads `artifact-manifest.json` from the generated project
+directory and verifies listed file sizes and sha256 hashes. It exits non-zero
+when a required file is missing or a generated file no longer matches the
+manifest.
+
 ---
 
 ## CLI Reference
@@ -100,6 +113,7 @@ non-zero.
 ```
 create-gis-map <project-name> [options]
 create-gis-map --preflight <map.json> [--json]
+create-gis-map --verify-artifacts <project-dir> [--json]
 ```
 
 ### Options
@@ -113,9 +127,10 @@ create-gis-map --preflight <map.json> [--json]
 | `--generate` | `-g` | Run the AI generate pipeline instead of scaffolding | `false` |
 | `--prompt <text>` | | Prompt text for generate mode | (built-in default) |
 | `--preflight <path>` | | Validate a MapSpec JSON file plus source-readiness and PMTiles load plans without writing files | |
+| `--verify-artifacts <dir>` | | Verify `artifact-manifest.json` hashes in a generated project directory | |
 | `--require-archive-metadata` | | Require PMTiles archive metadata for preflight success | `false` |
 | `--pmtiles-metadata <source-id=path>` | | Provide PMTiles archive metadata JSON for a source. Repeatable. | |
-| `--json` | | Print preflight output as machine-readable JSON | `false` |
+| `--json` | | Print preflight or artifact verification output as machine-readable JSON | `false` |
 | `--api-key <key>` | | API key for OpenAI-compatible providers. Overrides provider-specific env vars (`DEEPSEEK_API_KEY`, `OPENAI_API_KEY`). | (from env) |
 | `--timeout <ms>` | | HTTP request timeout in milliseconds for provider API calls | `20000` |
 | `--yes` | `-y` | Skip directory-exists check (overwrite). Also accepts `--force`. | `false` |
@@ -576,6 +591,38 @@ have explicit follow-up work, such as PMTiles archive parsing or URL GeoJSON
 headless query. `status: "blocked"` exits with code `1`. `metadata-required`
 exits with code `1` only when `--require-archive-metadata` is set; otherwise it
 remains a readiness signal.
+
+---
+
+## Artifact Verification Mode
+
+Use `--verify-artifacts <project-dir>` when CI or a reviewer needs to confirm
+that generated files still match `artifact-manifest.json`.
+
+Artifact verification performs:
+
+| Check | Description |
+|---|---|
+| Manifest load | Reads `<project-dir>/artifact-manifest.json` and requires a `files` array. |
+| Path safety | Rejects absolute paths, path traversal, and manifest self-references. |
+| Required files | Confirms every `requiredReviewFiles` entry is listed in the manifest. |
+| File presence | Confirms every listed generated file still exists. |
+| Byte/hash match | Recomputes byte size and `sha256:<hex>` for each listed file. |
+
+Text output is intended for humans:
+
+```bash
+create-gis-map --verify-artifacts ./my-map
+```
+
+JSON output is intended for CI and release scripts:
+
+```bash
+create-gis-map --verify-artifacts ./my-map --json
+```
+
+The result includes `ok`, `status`, `summary`, `files`, and `diagnostics`.
+`status: "blocked"` exits with code `1`.
 
 ---
 

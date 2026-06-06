@@ -12,6 +12,7 @@
  *   npm exec --package @gis-engine/cli@latest -- create-gis-map <project-name> --generate [--provider mock] [--prompt "..."]
  *   npm exec --package @gis-engine/cli@latest -- create-gis-map <project-name> --generate -p deepseek --api-key sk-xxx --timeout 20000
  *   npm exec --package @gis-engine/cli@latest -- create-gis-map --preflight ./map.json [--json]
+ *   npm exec --package @gis-engine/cli@latest -- create-gis-map --verify-artifacts ./generated-map [--json]
  *
  * Options:
  *   --template, -t   Template to use: static-html | vite-ts | mapspec (default: static-html)
@@ -24,6 +25,8 @@
  *   --api-key        API key for provider (overrides env var)
  *   --timeout        Provider request timeout in ms (default: 20000)
  *   --preflight      Validate and preflight a MapSpec JSON file
+ *   --verify-artifacts
+ *                    Verify artifact-manifest.json file hashes in a generated project
  *   --require-archive-metadata
  *                    Require PMTiles archive metadata for preflight success
  *   --pmtiles-metadata
@@ -38,6 +41,7 @@ import { existsSync, mkdirSync, realpathSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { formatVerifyArtifactsText, verifyArtifacts } from "./artifacts.js";
 import { parseArgs } from "./config.js";
 import { generate } from "./generate.js";
 import { formatPreflightText, preflightMapSpec } from "./preflight.js";
@@ -67,6 +71,17 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
       console.log(JSON.stringify(result, null, 2));
     } else {
       process.stdout.write(formatPreflightText(result));
+    }
+    if (!result.ok) process.exit(1);
+    return;
+  }
+
+  if (config.verifyArtifacts) {
+    const result = verifyArtifacts({ projectDir: config.verifyArtifacts });
+    if (config.json) {
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      process.stdout.write(formatVerifyArtifactsText(result));
     }
     if (!result.ok) process.exit(1);
     return;
@@ -175,6 +190,7 @@ Modes:
   scaffold     Create a project from a template (default)
   generate     Run the AI generate pipeline (--generate flag)
   preflight    Validate a MapSpec JSON file and PMTiles runtime load plan
+  verify       Verify generated artifact-manifest.json hashes
 
 Templates (scaffold mode):
   static-html   Standalone HTML file with inline GIS Engine (default)
@@ -192,11 +208,13 @@ Options:
   -g, --generate   Run AI generate pipeline instead of scaffolding
       --prompt     Prompt text for generate mode
       --preflight  Validate/preflight a MapSpec JSON file without writing files
+      --verify-artifacts
+                   Verify artifact-manifest.json hashes in a generated project
       --require-archive-metadata
                    Require PMTiles archive metadata for preflight success
       --pmtiles-metadata
                    PMTiles archive metadata input: <source-id>=<metadata.json>
-      --json       Print preflight output as JSON
+      --json       Print preflight or artifact verification output as JSON
   -y, --yes        Skip directory-exists check (overwrite)
       --dry-run    Preview files without writing
   -h, --help       Show help
@@ -213,6 +231,7 @@ Examples:
   create-gis-map my-map --generate --prompt "A map of NYC parks"
   create-gis-map --preflight ./map.json --json       Validate and preflight a MapSpec
   create-gis-map --preflight ./map.json --require-archive-metadata --pmtiles-metadata parcels=./parcels.metadata.json
+  create-gis-map --verify-artifacts ./my-map --json  Verify generated artifact hashes
 `);
 }
 

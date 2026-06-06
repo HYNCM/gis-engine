@@ -21,6 +21,9 @@
 - Write `artifact-manifest.json` during `create-gis-map --generate` with
   generated file roles, required-review flags, byte sizes, and sha256 hashes for
   reproducible CI/reviewer handoff.
+- Add `create-gis-map --verify-artifacts <project-dir> [--json]` to verify
+  generated artifact-manifest file presence, path safety, byte sizes, and sha256
+  hashes before CI/reviewer handoff.
 - Surface generated delivery evidence in the `app` template status banner when
   `delivery-summary.json` is present, while scaffold-only app projects keep
   running without that optional file. The rail now includes the generated

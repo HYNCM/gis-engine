@@ -18,6 +18,7 @@ export interface CliConfig {
   timeout?: number;
   generate: boolean;
   preflight?: string;
+  verifyArtifacts?: string;
   requireArchiveMetadata: boolean;
   pmtilesMetadata: string[];
   prompt?: string;
@@ -73,6 +74,7 @@ export function parseArgs(argv: string[]): CliConfig {
   let timeout = fileConfig.timeout;
   let generate = DEFAULTS.generate;
   let preflight: string | undefined;
+  let verifyArtifacts: string | undefined;
   let requireArchiveMetadata = DEFAULTS.requireArchiveMetadata;
   const pmtilesMetadata = [...DEFAULTS.pmtilesMetadata];
   let prompt: string | undefined;
@@ -120,6 +122,12 @@ export function parseArgs(argv: string[]): CliConfig {
       i++;
     } else if (arg.startsWith("--preflight=")) {
       preflight = arg.slice("--preflight=".length);
+      i++;
+    } else if (arg === "--verify-artifacts") {
+      verifyArtifacts = nextValue("--verify-artifacts") || verifyArtifacts;
+      i++;
+    } else if (arg.startsWith("--verify-artifacts=")) {
+      verifyArtifacts = arg.slice("--verify-artifacts=".length);
       i++;
     } else if (arg === "--require-archive-metadata") {
       requireArchiveMetadata = true;
@@ -224,6 +232,7 @@ export function parseArgs(argv: string[]): CliConfig {
     ...(timeout !== undefined ? { timeout } : {}),
     generate,
     ...(preflight !== undefined ? { preflight } : {}),
+    ...(verifyArtifacts !== undefined ? { verifyArtifacts } : {}),
     requireArchiveMetadata,
     pmtilesMetadata,
     ...(prompt !== undefined ? { prompt } : {}),
