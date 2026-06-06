@@ -112,7 +112,8 @@ This writes the following files to `./my-project/`:
 | File | Content |
 |---|---|
 | `map.json` | The generated `MapSpec` |
-| `delivery-summary.json` | Pipeline summary without raw prompt |
+| `preflight.json` | IO-free MapSpec delivery preflight with validation, source readiness, PMTiles load-plan, and diagnostics |
+| `delivery-summary.json` | Pipeline, delivery, and preflight summary without raw prompt |
 | `evidence.json` | Full `GenerationEvidenceBundle` |
 | `diagnostics.json` | All diagnostics (only if non-empty) |
 

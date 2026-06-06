@@ -59,7 +59,7 @@ npm run dev
 npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --generate
 ```
 
-This runs the full generate pipeline with the `mock` provider. Mock mode requires **no API key** and produces deterministic output -- every run yields the same result. The output includes `map.json`, `delivery-summary.json`, `evidence.json`, and `diagnostics.json`.
+This runs the full generate pipeline with the `mock` provider. Mock mode requires **no API key** and produces deterministic output -- every run yields the same result. The output includes `map.json`, `preflight.json`, `delivery-summary.json`, `evidence.json`, and `diagnostics.json`.
 
 To use a real provider, set the provider-specific API key and pass a prompt:
 
@@ -354,7 +354,8 @@ After a successful generate run, the following files are written to the project 
 | File | Always written | Description |
 |---|---|---|
 | `map.json` | Yes | The generated and validated MapSpec document. |
-| `delivery-summary.json` | Yes | Pipeline metadata plus a review-ready delivery summary: acceptance state, delivery sections, source readiness, spatial-query readiness, confirmations, and follow-ups. Does not contain the raw prompt. |
+| `preflight.json` | Yes | IO-free MapSpec delivery preflight result with validation, source-readiness, PMTiles load-plan, and diagnostics. |
+| `delivery-summary.json` | Yes | Pipeline metadata plus review-ready delivery and preflight summaries: acceptance state, delivery sections, source readiness, spatial-query readiness, confirmations, follow-ups, and preflight status. Does not contain the raw prompt. |
 | `evidence.json` | Yes (when bundle succeeds) | Full evidence bundle with all pipeline artifacts for auditing and replay. |
 | `diagnostics.json` | Only when diagnostics exist | Aggregated diagnostics from the plan, skeleton, and validation steps. |
 | App scaffold files | Conditional | When the app scaffold is emitted, the Vite + React + Tailwind files listed in the `app` template section are written alongside `map.json`. |
@@ -388,6 +389,35 @@ The prompt hash allows you to correlate runs without exposing the original promp
     "layerCount": "number"
   },
   "evidenceStatus": "ok | diagnostics",
+  "preflight": {
+    "ok": "boolean",
+    "status": "ready | metadata-required | blocked",
+    "mode": "mapspec-preflight",
+    "validation": {
+      "valid": "boolean",
+      "sourceCount": "number",
+      "layerCount": "number",
+      "diagnosticCounts": {
+        "error": "number",
+        "warning": "number",
+        "info": "number"
+      }
+    },
+    "sourceReadiness": {
+      "status": "ready | follow-up-required | blocked",
+      "summary": "object"
+    },
+    "pmtiles": {
+      "status": "ready | metadata-required | blocked",
+      "summary": "object"
+    },
+    "diagnostics": {
+      "count": "number",
+      "error": "number",
+      "warning": "number",
+      "info": "number"
+    }
+  },
   "delivery": {
     "status": "ready | blocked | needs-confirmation | follow-up-required",
     "acceptance": {

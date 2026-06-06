@@ -1089,10 +1089,31 @@ describe("cli-generate-delivery-summary", () => {
 
       const summary = JSON.parse(readFileSync(join(dir, "reviewable-map", "delivery-summary.json"), "utf-8"));
       const evidence = JSON.parse(readFileSync(join(dir, "reviewable-map", "evidence.json"), "utf-8"));
+      const preflight = JSON.parse(readFileSync(join(dir, "reviewable-map", "preflight.json"), "utf-8"));
 
+      expect(result.files).toContain("preflight.json");
       expect(result.files).toContain("delivery-summary.json");
       expect(summary.retainedRawPrompt).toBe(false);
       expect(JSON.stringify(summary)).not.toContain("private customer locations");
+      expect(JSON.stringify(preflight)).not.toContain("private customer locations");
+      expect(summary.preflight).toMatchObject({
+        ok: preflight.ok,
+        status: preflight.status,
+        validation: {
+          valid: preflight.validation.valid,
+          sourceCount: preflight.validation.stats.sourceCount,
+          layerCount: preflight.validation.stats.layerCount,
+          diagnosticCounts: preflight.validation.diagnosticCounts,
+        },
+        sourceReadiness: {
+          status: preflight.sourceReadiness.status,
+          summary: preflight.sourceReadiness.summary,
+        },
+        pmtiles: {
+          status: preflight.pmtiles.status,
+          summary: preflight.pmtiles.summary,
+        },
+      });
       expect(summary.delivery).toMatchObject({
         status: evidence.delivery.status,
         acceptance: evidence.delivery.acceptance,

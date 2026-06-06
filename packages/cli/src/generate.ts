@@ -21,6 +21,7 @@ import {
   normalizeWorkbenchProviderPlan,
 } from "@gis-engine/ai";
 import { applyCommands, createMapGenerationCommandSkeleton, validateSpec } from "@gis-engine/engine";
+import { type PreflightResult, preflightMapSpec } from "./preflight.js";
 import { CLI_API_KEY_ENVS, createProviderDiagnostics, readProviderApiKey, resolveProviderProfile } from "./provider.js";
 import { callProvider, type ProviderConfidence } from "./provider-http.js";
 import { type AppConfig, type AppTemplateContext, getTemplate, normalizeAppConfig } from "./templates/index.js";
@@ -79,6 +80,32 @@ type DeliveryReviewSummary = {
   followUps: ExampleAppDeliverySummary["followUps"];
 };
 
+type PreflightReviewSummary = {
+  ok: boolean;
+  status: PreflightResult["status"];
+  mode: PreflightResult["mode"];
+  validation: {
+    valid: boolean;
+    sourceCount: number;
+    layerCount: number;
+    diagnosticCounts: PreflightResult["validation"]["diagnosticCounts"];
+  };
+  sourceReadiness: {
+    status: PreflightResult["sourceReadiness"]["status"];
+    summary: PreflightResult["sourceReadiness"]["summary"];
+  };
+  pmtiles: {
+    status: PreflightResult["pmtiles"]["status"];
+    summary: PreflightResult["pmtiles"]["summary"];
+  };
+  diagnostics: {
+    count: number;
+    error: number;
+    warning: number;
+    info: number;
+  };
+};
+
 function summarizeDeliveryForReview(delivery: ExampleAppDeliverySummary): DeliveryReviewSummary {
   return {
     status: delivery.status,
@@ -97,6 +124,43 @@ function summarizeDeliveryForReview(delivery: ExampleAppDeliverySummary): Delive
     confirmations: delivery.confirmations,
     followUps: delivery.followUps,
   };
+}
+
+function summarizePreflightForReview(preflight: PreflightResult): PreflightReviewSummary {
+  const diagnostics = countPreflightDiagnostics(preflight.diagnostics);
+
+  return {
+    ok: preflight.ok,
+    status: preflight.status,
+    mode: preflight.mode,
+    validation: {
+      valid: preflight.validation.valid,
+      sourceCount: preflight.validation.stats.sourceCount,
+      layerCount: preflight.validation.stats.layerCount,
+      diagnosticCounts: preflight.validation.diagnosticCounts,
+    },
+    sourceReadiness: {
+      status: preflight.sourceReadiness.status,
+      summary: preflight.sourceReadiness.summary,
+    },
+    pmtiles: {
+      status: preflight.pmtiles.status,
+      summary: preflight.pmtiles.summary,
+    },
+    diagnostics,
+  };
+}
+
+function countPreflightDiagnostics(diagnostics: PreflightResult["diagnostics"]): PreflightReviewSummary["diagnostics"] {
+  return diagnostics.reduce(
+    (counts, diagnostic) => ({
+      count: counts.count + 1,
+      error: counts.error + (diagnostic.severity === "error" ? 1 : 0),
+      warning: counts.warning + (diagnostic.severity === "warning" ? 1 : 0),
+      info: counts.info + (diagnostic.severity === "info" ? 1 : 0),
+    }),
+    { count: 0, error: 0, warning: 0, info: 0 },
+  );
 }
 
 /**
@@ -246,7 +310,7 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
     );
   }
 
-  const deliverySummary = {
+  const deliverySummaryBase = {
     promptHash,
     traceId,
     provider: opts.provider,
@@ -274,7 +338,18 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
     writeFileSync(mapPath, `${JSON.stringify(applied.spec, null, 2)}\n`, "utf-8");
     files.push("map.json");
 
+    // preflight.json — generated MapSpec delivery preflight without network, worker, or archive parser side effects
+    const preflightResult = preflightMapSpec({ filePath: mapPath });
+    const preflightPath = join(outDir, "preflight.json");
+    writeFileSync(preflightPath, `${JSON.stringify(preflightResult, null, 2)}\n`, "utf-8");
+    files.push("preflight.json");
+    console.log(`  ✓ Preflight: ${preflightResult.status}`);
+
     // delivery-summary.json — evidence without raw prompt
+    const deliverySummary = {
+      ...deliverySummaryBase,
+      preflight: summarizePreflightForReview(preflightResult),
+    };
     const summaryPath = join(outDir, "delivery-summary.json");
     writeFileSync(summaryPath, `${JSON.stringify(deliverySummary, null, 2)}\n`, "utf-8");
     files.push("delivery-summary.json");

@@ -18,6 +18,10 @@
 - Surface generated delivery evidence in the `app` template status banner when
   `delivery-summary.json` is present, while scaffold-only app projects keep
   running without that optional file.
+- Write `preflight.json` during `--generate` and include a compact preflight
+  summary in `delivery-summary.json` so generated projects carry validation,
+  source-readiness, PMTiles load-plan, and diagnostic handoff evidence by
+  default.
 
 ## 1.0.0
 
