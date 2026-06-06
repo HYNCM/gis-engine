@@ -82,4 +82,4 @@ input/output schemas—no guesswork, no natural-language-only interfaces.
 
 - ❌ Simple static maps (use Leaflet)
 - ❌ Full GIS analysis platforms (use QGIS/ArcGIS)
-- ❌ Real-time collaborative editing (planned for v1+)
+- ❌ Real-time collaborative editing (planned for v2+)

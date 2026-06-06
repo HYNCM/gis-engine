@@ -25,15 +25,22 @@ MapLibre re-renders with new style
 GIS Engine supports any OpenAI-compatible provider (DeepSeek, GPT, etc.):
 
 ```typescript
-import { callGisEngineTool } from "@gis-engine/ai/mcp";
+import { callGisEngineTool } from "@gis-engine/ai";
 
 // AI calls validate_spec to check the current state
-const validation = await callGisEngineTool("validate_spec", { spec });
+const validation = await callGisEngineTool({
+  params: { name: "validate_spec", arguments: { spec } },
+});
 
 // AI calls apply_commands to make edits
-const result = await callGisEngineTool("apply_commands", {
-  spec,
-  commands: [{ type: "setPaint", layerId: "points", paint: { "circle-color": "#ef4444" } }],
+const result = await callGisEngineTool({
+  params: {
+    name: "apply_commands",
+    arguments: {
+      spec,
+      commands: [{ type: "setPaint", layerId: "points", paint: { "circle-color": "#ef4444" } }],
+    },
+  },
 });
 ```
 
