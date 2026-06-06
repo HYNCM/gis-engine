@@ -33,6 +33,9 @@
 - Add a `Download map.json` action to the generated `app` template so the
   currently loaded MapSpec can be exported locally for review or handoff without
   refreshing the browser.
+- Validate the loaded MapSpec in the generated `app` template with
+  `@gis-engine/engine.validateSpec()` before rendering and surface structured
+  diagnostic code/path/message feedback when validation blocks the map.
 - Surface generated delivery evidence in the `app` template status banner when
   `delivery-summary.json` is present, while scaffold-only app projects keep
   running without that optional file. The rail now includes the generated

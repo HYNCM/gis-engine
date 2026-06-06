@@ -843,7 +843,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       },
       {
         path: "src/App.tsx",
-        content: `import { useEffect, useRef, useState, type ChangeEvent } from "react";
+        content: `import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { validateSpec, type Diagnostic } from "@gis-engine/engine";
 import maplibregl from "maplibre-gl";
 ${componentImports}
 import mapSpec from "../map.json";
@@ -1024,6 +1025,27 @@ function downloadJsonFile(filename: string, value: unknown): void {
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
+function countDiagnostics(diagnostics: Diagnostic[]): Record<Diagnostic["severity"], number> {
+  return diagnostics.reduce(
+    (counts, diagnostic) => {
+      counts[diagnostic.severity] += 1;
+      return counts;
+    },
+    { error: 0, warning: 0, info: 0 },
+  );
+}
+
+function formatDiagnosticLine(diagnostic: Diagnostic): string {
+  return diagnostic.code + " " + (diagnostic.path ?? "/") + ": " + diagnostic.message;
+}
+
+function formatDiagnosticDetail(diagnostics: Diagnostic[]): string | null {
+  if (diagnostics.length === 0) return null;
+  const detail = diagnostics.slice(0, 3).map(formatDiagnosticLine).join(" | ");
+  const remaining = diagnostics.length - 3;
+  return remaining > 0 ? detail + " | +" + String(remaining) + " more diagnostic(s)" : detail;
+}
+
 export default function App() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1040,6 +1062,21 @@ export default function App() {
   const [artifactManifestError, setArtifactManifestError] = useState<string | null>(null);
   const [reviewDetailsOpen, setReviewDetailsOpen] = useState(false);
 
+  const specValidation = useMemo(() => validateSpec(spec), [spec]);
+  const visibleSpecDiagnostics = useMemo(
+    () => specValidation.diagnostics.filter((diagnostic) => diagnostic.severity !== "info"),
+    [specValidation],
+  );
+  const blockingSpecDiagnostics = useMemo(
+    () => specValidation.diagnostics.filter((diagnostic) => diagnostic.severity === "error"),
+    [specValidation],
+  );
+  const specDiagnosticCounts = useMemo(() => countDiagnostics(specValidation.diagnostics), [specValidation]);
+  const specValidationState = specValidation.valid
+    ? visibleSpecDiagnostics.length > 0
+      ? "warnings"
+      : "valid"
+    : "blocked";
   const sourceCount = Object.keys(spec.sources ?? {}).length;
   const layerCount = (spec.layers ?? []).length;
   const hasContent = sourceCount > 0 && layerCount > 0;
@@ -1137,8 +1174,17 @@ export default function App() {
 
     setMap(null);
     setStatus("loading");
-    setStatusMessage("Rendering map...");
+    setStatusMessage("Validating map.json...");
     setStatusDetail(null);
+
+    if (blockingSpecDiagnostics.length > 0) {
+      setStatus("error");
+      setStatusMessage("MapSpec validation failed.");
+      setStatusDetail(formatDiagnosticDetail(blockingSpecDiagnostics));
+      return;
+    }
+
+    setStatusMessage("Rendering map...");
 
     const view = spec.view as { center?: [number, number]; zoom?: number } | undefined;
     const nextMap = new maplibregl.Map({
@@ -1194,7 +1240,7 @@ export default function App() {
     return () => {
       nextMap.remove();
     };
-  }, [hasContent, layerCount, sourceCount, spec]);
+  }, [blockingSpecDiagnostics, hasContent, layerCount, sourceCount, spec]);
 
   const reloadCurrentSpec = () => {
     setSpec((current) => structuredClone(current));
@@ -1334,9 +1380,27 @@ export default function App() {
               <dt className="text-gray-400">Artifacts</dt>
               <dd className="truncate font-medium text-gray-900">{artifactManifestState}</dd>
             </div>
+            <div>
+              <dt className="text-gray-400">Spec</dt>
+              <dd className="truncate font-medium text-gray-900">{specValidationState}</dd>
+            </div>
           </dl>
           {deliveryDetail ? <p className="mt-2 truncate text-[11px] text-gray-500">{deliveryDetail}</p> : null}
           {artifactManifestDetail ? <p className="mt-2 truncate text-[11px] text-gray-500">{artifactManifestDetail}</p> : null}
+          {visibleSpecDiagnostics.length > 0 ? (
+            <ul className="mt-2 space-y-1 text-[11px] text-gray-600">
+              {visibleSpecDiagnostics.slice(0, 3).map((diagnostic, index) => (
+                <li key={diagnostic.code + (diagnostic.path ?? "/") + String(index)} className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-2">
+                  <span className="font-medium text-gray-900">{diagnostic.code}</span>
+                  <span className="truncate">{diagnostic.path ?? "/"}</span>
+                  <span className="col-span-2 truncate text-gray-500">{diagnostic.message}</span>
+                </li>
+              ))}
+              {visibleSpecDiagnostics.length > 3 ? (
+                <li className="text-gray-400">+{visibleSpecDiagnostics.length - 3} more diagnostic(s)</li>
+              ) : null}
+            </ul>
+          ) : null}
         </div>
         {reviewDetailsOpen && canShowReviewDetails ? (
           <div className="mt-3 max-h-64 overflow-y-auto border-t border-gray-200 pt-3 text-[11px] text-gray-600">
@@ -1378,6 +1442,12 @@ export default function App() {
                 <div>
                   <dt className="text-gray-400">Trace</dt>
                   <dd className="truncate font-medium text-gray-900">{deliverySummary?.traceId ?? "--"}</dd>
+                </div>
+                <div>
+                  <dt className="text-gray-400">Spec diagnostics</dt>
+                  <dd className="font-medium text-gray-900">
+                    {displayValue(specDiagnosticCounts.error)} / {displayValue(specDiagnosticCounts.warning)} / {displayValue(specDiagnosticCounts.info)}
+                  </dd>
                 </div>
               </dl>
             </section>
@@ -1632,7 +1702,9 @@ listed artifacts in the review details panel. Scaffold-only projects keep
 running when those evidence files are absent. Generated projects also include
 \`REVIEW.md\` as the human-readable handoff for the same delivery evidence.
 The app can also download the currently loaded MapSpec as \`map.json\` for local
-review or handoff.
+review or handoff. The app validates the loaded MapSpec with
+\`@gis-engine/engine.validateSpec()\` before rendering and surfaces structured
+diagnostic code/path/message feedback when validation blocks the map.
 
 ## Preflight
 

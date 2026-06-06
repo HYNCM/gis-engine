@@ -1154,10 +1154,15 @@ describe("cli-templates", () => {
     expect(appFile.content).toContain('import FeaturePopup from "./components/FeaturePopup"');
     expect(appFile.content).toContain('import SearchBox from "./components/SearchBox"');
     expect(appFile.content).toContain('import BasemapSwitcher from "./components/BasemapSwitcher"');
+    expect(appFile.content).toContain('import { validateSpec, type Diagnostic } from "@gis-engine/engine";');
     expect(appFile.content).toContain("const syncSpecToMap =");
     expect(appFile.content).toContain('nextMap.on("load"');
     expect(appFile.content).toContain('nextMap.on("error"');
     expect(appFile.content).toContain('setStatus("loading")');
+    expect(appFile.content).toContain("const specValidation = useMemo(() => validateSpec(spec), [spec]);");
+    expect(appFile.content).toContain("const visibleSpecDiagnostics = useMemo(");
+    expect(appFile.content).toContain("const blockingSpecDiagnostics = useMemo(");
+    expect(appFile.content).toContain("MapSpec validation failed.");
     expect(appFile.content).toContain("targetMap.addSource");
     expect(appFile.content).toContain("targetMap.addLayer");
     expect(appFile.content).toContain('fetch("./delivery-summary.json"');
@@ -1202,6 +1207,11 @@ describe("cli-templates", () => {
     expect(appFile.content).toContain("downloadCurrentSpec");
     expect(appFile.content).toContain("Could not download map.json.");
     expect(appFile.content).toContain("Could not load the selected map.json file.");
+    expect(appFile.content).toContain("formatDiagnosticDetail");
+    expect(appFile.content).toContain("Spec diagnostics");
+    expect(appFile.content).toContain("diagnostic.code");
+    expect(appFile.content).toContain("diagnostic.path");
+    expect(appFile.content).toContain("diagnostic.message");
     expect(appFile.content).toContain('aria-live="polite"');
     expect(appFile.content).toContain('accept=".json,application/json"');
     expect(appFile.content).toContain("Delivery");

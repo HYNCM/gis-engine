@@ -316,7 +316,7 @@ Generated files:
 
 ### app
 
-Full interactive map application (Vite + React + Tailwind). Use this with `--generate -t app` to pair the generated MapSpec with a starter app shell that includes responsive controls, loading/empty/error states, local `map.json` reload/upload/download buttons, and optional `delivery-summary.json` plus `artifact-manifest.json` review rail/details with preflight status, source readiness, safe artifact file links, and follow-up handoff.
+Full interactive map application (Vite + React + Tailwind). Use this with `--generate -t app` to pair the generated MapSpec with a starter app shell that includes responsive controls, loading/empty/error states, local `map.json` reload/upload/download buttons, app-side `validateSpec()` feedback before rendering, and optional `delivery-summary.json` plus `artifact-manifest.json` review rail/details with preflight status, source readiness, safe artifact file links, and follow-up handoff.
 
 Generated files:
 
@@ -331,7 +331,7 @@ Generated files:
 | `src/index.css` | Tailwind entry plus MapLibre GL CSS import. |
 | `src/vite-env.d.ts` | Vite client typings for JSON, CSS, and asset imports. |
 | `src/main.tsx` | React root that renders the generated app. |
-| `src/App.tsx` | Map container, status banner, optional `delivery-summary.json` and `artifact-manifest.json` review status/details with preflight/source/query/follow-up signals, artifact file summary and safe relative artifact links, plus local `map.json` reload/upload/download flow that mounts or exports the generated spec and UI components. |
+| `src/App.tsx` | Map container, status banner, app-side `validateSpec()` gate with structured diagnostic code/path/message feedback, optional `delivery-summary.json` and `artifact-manifest.json` review status/details with preflight/source/query/follow-up signals, artifact file summary and safe relative artifact links, plus local `map.json` reload/upload/download flow that mounts or exports the generated spec and UI components. |
 | `src/components/*.tsx` | LayerPanel, FeaturePopup, Legend, SearchBox, and BasemapSwitcher, emitted according to the app config. |
 | `map.json` | Starter MapSpec placeholder when scaffolding outside the AI pipeline. |
 | `README.md` | Project readme with app type, component list, and usage instructions. |
@@ -340,7 +340,7 @@ Generated files:
 
 ## Generate Pipeline
 
-The `--generate` flag activates the full AI generate pipeline. It transforms a prompt into a validated MapSpec with a complete evidence trail. When the provider infers an app type from the prompt, the pipeline emits the interactive Vite + React + Tailwind scaffold around the generated MapSpec; `--template app` forces the same scaffold explicitly and includes the responsive status/load surface for empty, error, reload, and local file-import flows.
+The `--generate` flag activates the full AI generate pipeline. It transforms a prompt into a validated MapSpec with a complete evidence trail. When the provider infers an app type from the prompt, the pipeline emits the interactive Vite + React + Tailwind scaffold around the generated MapSpec; `--template app` forces the same scaffold explicitly and includes the responsive status/load surface for empty, error, reload, local file-import flows, and app-side `validateSpec()` diagnostics before rendering.
 
 ### Pipeline Steps
 
