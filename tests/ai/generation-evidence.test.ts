@@ -88,7 +88,7 @@ describe("generation evidence bundle", () => {
         type: "geojson",
         state: "supported",
         queryReady: true,
-        resourcePolicy: "passed",
+        resourcePolicy: "not-applicable",
       }),
     );
     expect(response.result.toolSequence).toEqual([

@@ -165,8 +165,9 @@ The chat API returns compact review evidence:
   metadata contract summaries, GeoParquet / FlatGeobuf schema contract
   summaries, resource-policy evidence, and future GeoTIFF / GeoZarr gates.
 - `generationEvidence.delivery.sourceReadiness`: the visible readiness rail in
-  the evidence sidebar, with query readiness, resource-policy status, and
-  archive contract snapshots when present.
+  the evidence sidebar, derived from the engine source-readiness report and
+  showing query readiness, resource-policy status, runtime load-plan summaries,
+  and archive contract snapshots when present.
 - `commandEvidence`: committed/rolled-back state and changed-path counts from
   the server-side command transaction.
 - `/api/audit`: the latest 50 payload-free session records with provider id,

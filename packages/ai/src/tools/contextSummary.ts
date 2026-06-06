@@ -1,13 +1,12 @@
 import {
   type CapabilityReport,
-  createPMTilesRuntimeLoadPlan,
+  createSourceReadinessReport,
   type Diagnostic,
-  DiagnosticCodes,
   type MapSpec,
-  type PMTilesRuntimeSourcePlan,
   type SceneLayer,
   type SceneResourcePolicy,
   type SceneView3DExtension,
+  type SourceRuntimeReadinessSummary,
   validateSpec,
 } from "@gis-engine/engine";
 import { getScene3DV1Capabilities, queryScene3DMock, snapshotScene3DMock } from "@gis-engine/scene3d";
@@ -32,7 +31,7 @@ type SourceRuntimeLoadPlanSummary = {
   status: "ready" | "metadata-required" | "blocked";
   sourceLayerIds: string[];
   diagnosticCounts: Record<Diagnostic["severity"], number>;
-  requirements: PMTilesRuntimeSourcePlan["requirements"];
+  requirements: SourceRuntimeReadinessSummary["requirements"];
 };
 
 const PMTILES_ARCHIVE_METADATA_FIELDS = [
@@ -391,67 +390,24 @@ function summarizeSourceContract(source: MapSpec["sources"][string]): SourceCont
 }
 
 function summarizeSourceReadiness(spec: MapSpec): ContextSummary["sourceReadiness"] {
-  const pmtilesLoadPlans = new Map(
-    createPMTilesRuntimeLoadPlan(spec).sources.map((sourcePlan) => [sourcePlan.sourceId, sourcePlan]),
-  );
-
-  return Object.entries(spec.sources).map(([sourceId, source]) => {
-    if (source.type === "geojson") {
-      const inline = typeof source.data !== "string";
-      return {
-        sourceId,
-        type: source.type,
-        state: inline ? "supported" : "readiness-only",
-        queryReady: inline,
-        resourcePolicy: "passed",
-      };
-    }
-
-    if (source.type === "pmtiles") {
-      const runtimeLoadPlan = pmtilesLoadPlans.get(sourceId);
-      const resourcePolicy = runtimeLoadPlan?.diagnostics.some(
-        (diagnostic) => diagnostic.code === DiagnosticCodes.SecurityUrlBlocked,
-      )
-        ? "blocked"
-        : "passed";
-
-      return {
-        sourceId,
-        type: source.type,
-        state: runtimeLoadPlan?.status === "blocked" ? "blocked" : "readiness-only",
-        queryReady: false,
-        resourcePolicy,
-        archiveContract: PMTILES_ARCHIVE_CONTRACT_SUMMARY,
-        ...(runtimeLoadPlan ? { runtimeLoadPlan: summarizeRuntimeLoadPlan(runtimeLoadPlan) } : {}),
-      };
-    }
-
-    if (source.type === "raster" || source.type === "vector") {
-      return {
-        sourceId,
-        type: source.type,
-        state: "supported",
-        queryReady: false,
-        resourcePolicy: "passed",
-      };
-    }
-
-    const unexpectedSource = source as { type: string };
+  return createSourceReadinessReport(spec).sources.map((source) => {
     return {
-      sourceId,
-      type: unexpectedSource.type,
-      state: "blocked",
-      queryReady: false,
-      resourcePolicy: "not-applicable",
+      sourceId: source.sourceId,
+      type: source.type,
+      state: source.state,
+      queryReady: source.queryReady,
+      resourcePolicy: source.resourcePolicy,
+      ...(source.type === "pmtiles" ? { archiveContract: PMTILES_ARCHIVE_CONTRACT_SUMMARY } : {}),
+      ...(source.runtimeLoadPlan ? { runtimeLoadPlan: summarizeRuntimeLoadPlan(source.runtimeLoadPlan) } : {}),
     };
   });
 }
 
-function summarizeRuntimeLoadPlan(plan: PMTilesRuntimeSourcePlan): SourceRuntimeLoadPlanSummary {
+function summarizeRuntimeLoadPlan(plan: SourceRuntimeReadinessSummary): SourceRuntimeLoadPlanSummary {
   return {
     status: plan.status,
     sourceLayerIds: plan.sourceLayerIds,
-    diagnosticCounts: countDiagnostics(plan.diagnostics),
+    diagnosticCounts: plan.diagnosticCounts,
     requirements: plan.requirements,
   };
 }

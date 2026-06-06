@@ -126,10 +126,12 @@ with three AI-facing domains:
   explicitly accepted; the summary exposes mock snapshot/query evidence without
   promoting stable runtime support.
 
-`get_context_summary` also includes a compact `sourceReadiness` array, and
-PMTiles sources carry an explicit archive contract snapshot so generation can
-see readiness, query status, and policy context before review-console evidence
-is built.
+`get_context_summary` also includes a compact `sourceReadiness` array derived
+from the engine `createSourceReadinessReport()` contract. PMTiles sources carry
+an explicit archive contract snapshot so generation can see readiness, query
+status, and policy context before review-console evidence is built; inline
+GeoJSON reports resource policy as `not-applicable` because no URL policy check
+is needed.
 
 ## MCP Server
 

@@ -279,16 +279,16 @@ const SOURCE_PROMOTION_CANDIDATE_DEFINITIONS = {
     note: "Promote only one format at a time; archive parsing stays blocked until the gate passes.",
   },
   geoparquet: {
-    target: "GeoParquet source schema gate",
+    target: "GeoParquet public source promotion gate",
     exitCondition:
-      "TypeBox schema, CRS and encoding diagnostics, range policy, and no-runtime-claim manifest tests must pass before runtime loading is promoted.",
-    note: "Runtime loading stays blocked until schema and diagnostics land.",
+      "Public MapSpec schema wiring, CRS and encoding diagnostics, range policy, and no-runtime-claim manifest tests must pass before runtime loading is promoted.",
+    note: "Runtime loading stays blocked until public source schema wiring and diagnostics land.",
   },
   flatgeobuf: {
-    target: "FlatGeobuf source schema gate",
+    target: "FlatGeobuf public source promotion gate",
     exitCondition:
-      "Stream and index schema, resource policy, and deterministic negative fixtures must pass before runtime loading is promoted.",
-    note: "Only file-list evidence is allowed before the schema gate.",
+      "Public MapSpec schema wiring, stream/index diagnostics, resource policy, and deterministic negative fixtures must pass before runtime loading is promoted.",
+    note: "Only file-list evidence is allowed before the public source promotion gate.",
   },
   geotiff: {
     target: "GeoTIFF raster source gate",

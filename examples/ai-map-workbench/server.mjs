@@ -294,7 +294,7 @@ export async function createWorkbenchServer(options = {}) {
         const status = failed ? "blocked" : "applied";
         lastCompactEvidence = failed
           ? null
-          : { delivery: { status: "ready", sourceReadiness: mockSourceReadiness(activeSpec) } };
+          : { delivery: { status: "ready", sourceReadiness: mockSourceReadiness(engine, activeSpec) } };
         appendAuditRecord(auditRecords, {
           sessionId,
           providerId: "mock-ai",
@@ -778,50 +778,35 @@ function countDiagnostics(diagnostics) {
   );
 }
 
-function mockSourceReadiness(spec) {
-  return Object.entries(spec.sources).map(([sourceId, source]) => ({
-    sourceId,
+function mockSourceReadiness(engine, spec) {
+  return engine.createSourceReadinessReport(spec).sources.map((source) => ({
+    sourceId: source.sourceId,
     type: source.type,
-    state:
-      source.type === "geojson" && typeof source.data !== "string"
-        ? "supported"
-        : source.type === "geojson" || source.type === "pmtiles"
-          ? "readiness-only"
-          : source.type === "raster" || source.type === "vector"
-            ? "supported"
-            : "blocked",
-    queryReady: source.type === "geojson" && typeof source.data !== "string",
-    resourcePolicy:
-      source.type === "geojson" || source.type === "pmtiles" || source.type === "raster" || source.type === "vector"
-        ? "passed"
-        : "not-applicable",
-    ...(source.type === "pmtiles"
-      ? {
-          archiveContract: {
-            state: "explicit",
-            metadataFields: [
-              "specVersion",
-              "archiveBytes",
-              "rootDirectoryOffset",
-              "rootDirectoryLength",
-              "hasVectorTiles",
-              "hasRasterTiles",
-              "tileType",
-              "minZoom",
-              "maxZoom",
-              "bounds",
-            ],
-            policyFields: [
-              "maxArchiveBytes",
-              "maxRootDirectoryBytes",
-              "allowRangeRequests",
-              "maxRangeSegments",
-              "timeoutMs",
-            ],
-          },
-        }
-      : {}),
+    state: source.state,
+    queryReady: source.queryReady,
+    resourcePolicy: source.resourcePolicy,
+    ...(source.type === "pmtiles" ? { archiveContract: pmtilesArchiveContract() } : {}),
+    ...(source.runtimeLoadPlan ? { runtimeLoadPlan: source.runtimeLoadPlan } : {}),
   }));
+}
+
+function pmtilesArchiveContract() {
+  return {
+    state: "explicit",
+    metadataFields: [
+      "specVersion",
+      "archiveBytes",
+      "rootDirectoryOffset",
+      "rootDirectoryLength",
+      "hasVectorTiles",
+      "hasRasterTiles",
+      "tileType",
+      "minZoom",
+      "maxZoom",
+      "bounds",
+    ],
+    policyFields: ["maxArchiveBytes", "maxRootDirectoryBytes", "allowRangeRequests", "maxRangeSegments", "timeoutMs"],
+  };
 }
 
 function firstPromptHash(commands) {

@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import {
   type CapabilityReport,
   CapabilityReportSchema,
-  createPMTilesRuntimeLoadPlan,
+  createSourceReadinessReport,
   type Diagnostic,
   DiagnosticCodes,
   DiagnosticSchema,
@@ -22,10 +22,11 @@ import {
   MapRuntime,
   type MapSpec,
   MockAdapter,
-  type PMTilesRuntimeSourcePlan,
   type QueryFeaturesOptions,
   type RendererAdapter,
   Scene3DStableRuntimeBlockerCodes,
+  type SourceReadinessEntry,
+  type SourceRuntimeReadinessSummary,
   type ValidationReport,
   validateSpec,
 } from "@gis-engine/engine";
@@ -1693,118 +1694,75 @@ function deliveryStatus(
 }
 
 function buildSourceReadiness(spec: MapSpec): ExampleAppDeliverySummary["sourceReadiness"] {
-  const pmtilesLoadPlans = new Map(
-    createPMTilesRuntimeLoadPlan(spec).sources.map((sourcePlan) => [sourcePlan.sourceId, sourcePlan]),
-  );
-
-  return Object.entries(spec.sources).map(([sourceId, source]) => {
+  const sourceMap = new Map(Object.entries(spec.sources));
+  return createSourceReadinessReport(spec).sources.map((readiness) => {
+    const source = sourceMap.get(readiness.sourceId);
     const confirmationReasons = sourceConfirmationReasons(source);
-    const resourcePolicy = sourceResourcePolicy(source);
     const archiveContract = sourceArchiveContract(source);
-    if (source.type === "geojson" && typeof source.data !== "string") {
-      return {
-        sourceId,
-        type: source.type,
-        state: "supported",
-        queryReady: true,
-        resourcePolicy,
-        confirmationReasons,
-        notes: [
-          "Inline GeoJSON is schema-valid, display-ready, and eligible for deterministic point/bbox query evidence.",
-        ],
-      };
-    }
-
-    if (source.type === "geojson") {
-      return {
-        sourceId,
-        type: source.type,
-        state: "readiness-only",
-        queryReady: false,
-        resourcePolicy,
-        confirmationReasons,
-        notes: [
-          "URL GeoJSON is display/export ready, but headless query evidence must not fetch it without a future loader contract.",
-        ],
-      };
-    }
-
-    if (source.type === "pmtiles") {
-      const runtimeLoadPlan = pmtilesLoadPlans.get(sourceId);
-      const runtimeBlocked = runtimeLoadPlan?.status === "blocked";
-      const runtimeResourcePolicy = runtimeLoadPlan?.diagnostics.some(
-        (diagnostic) => diagnostic.code === DiagnosticCodes.SecurityUrlBlocked,
-      )
-        ? "blocked"
-        : resourcePolicy;
-
-      return {
-        sourceId,
-        type: source.type,
-        state: runtimeBlocked ? "blocked" : "readiness-only",
-        queryReady: false,
-        resourcePolicy: runtimeResourcePolicy,
-        confirmationReasons,
-        ...(archiveContract ? { archiveContract } : {}),
-        ...(runtimeLoadPlan ? { runtimeLoadPlan: summarizePMTilesRuntimeLoadPlan(runtimeLoadPlan) } : {}),
-        notes: [
-          "PMTiles is URL-compatible for display/export evidence, while archive parsing and feature query support remain future contracts.",
-          ...(runtimeBlocked
-            ? [
-                "PMTiles runtime load-plan preflight is blocked; fix resource policy, source-layer metadata, or archive policy diagnostics before delivery.",
-              ]
-            : []),
-        ],
-      };
-    }
-
-    if (source.type === "raster") {
-      return {
-        sourceId,
-        type: source.type,
-        state: "supported",
-        queryReady: false,
-        resourcePolicy,
-        confirmationReasons,
-        notes: ["Raster tiles are display/export ready; feature query and raster sampling remain blocked future work."],
-      };
-    }
-
-    if (source.type === "vector") {
-      return {
-        sourceId,
-        type: source.type,
-        state: "supported",
-        queryReady: false,
-        resourcePolicy,
-        confirmationReasons,
-        notes: [
-          "Vector tile URLs are display/export ready; headless feature query support requires a future tile decode contract.",
-        ],
-      };
-    }
 
     return {
-      sourceId,
-      type: (source as { type: string }).type,
-      state: "blocked",
-      queryReady: false,
-      resourcePolicy,
+      sourceId: readiness.sourceId,
+      type: readiness.type,
+      state: readiness.state,
+      queryReady: readiness.queryReady,
+      resourcePolicy: readiness.resourcePolicy,
       confirmationReasons,
-      notes: ["This source type is outside the current public MapSpec source readiness matrix."],
+      ...(archiveContract ? { archiveContract } : {}),
+      ...(readiness.runtimeLoadPlan
+        ? { runtimeLoadPlan: summarizePMTilesRuntimeLoadPlan(readiness.runtimeLoadPlan) }
+        : {}),
+      notes: sourceReadinessNotes(readiness, source),
     };
   });
 }
 
 function summarizePMTilesRuntimeLoadPlan(
-  plan: PMTilesRuntimeSourcePlan,
+  plan: SourceRuntimeReadinessSummary,
 ): NonNullable<ExampleAppDeliverySummary["sourceReadiness"][number]["runtimeLoadPlan"]> {
   return {
     status: plan.status,
     sourceLayerIds: plan.sourceLayerIds,
-    diagnosticCounts: countDiagnostics(plan.diagnostics),
+    diagnosticCounts: plan.diagnosticCounts,
     requirements: plan.requirements,
   };
+}
+
+function sourceReadinessNotes(
+  readiness: SourceReadinessEntry,
+  source: MapSpec["sources"][string] | undefined,
+): ExampleAppDeliverySummary["sourceReadiness"][number]["notes"] {
+  if (source?.type === "geojson" && typeof source.data !== "string") {
+    return ["Inline GeoJSON is schema-valid, display-ready, and eligible for deterministic point/bbox query evidence."];
+  }
+
+  if (source?.type === "geojson") {
+    return [
+      "URL GeoJSON is display/export ready, but headless query evidence must not fetch it without a future loader contract.",
+    ];
+  }
+
+  if (source?.type === "pmtiles") {
+    return [
+      "PMTiles is URL-compatible for display/export evidence, while archive parsing and feature query support remain future contracts.",
+      ...(readiness.state === "blocked"
+        ? [
+            "PMTiles runtime load-plan preflight is blocked; fix resource policy, source-layer metadata, or archive policy diagnostics before delivery.",
+          ]
+        : []),
+    ];
+  }
+
+  if (source?.type === "raster") {
+    return ["Raster tiles are display/export ready; feature query and raster sampling remain blocked future work."];
+  }
+
+  if (source?.type === "vector") {
+    return [
+      "Vector tile URLs are display/export ready; headless feature query support requires a future tile decode contract.",
+    ];
+  }
+
+  return [...readiness.limitations, readiness.nextAction];
 }
 
 function buildSourcePromotionCandidates(
@@ -1844,17 +1802,17 @@ const sourcePromotionCandidateDefinitions = {
   },
   geoparquet: {
     format: "geoparquet",
-    target: "GeoParquet source schema gate",
+    target: "GeoParquet public source promotion gate",
     exitCondition:
-      "TypeBox schema, CRS and encoding diagnostics, range policy, and no-runtime-claim manifest tests must pass before runtime loading is promoted.",
-    note: "Runtime loading stays blocked until schema and diagnostics land.",
+      "Public MapSpec schema wiring, CRS and encoding diagnostics, range policy, and no-runtime-claim manifest tests must pass before runtime loading is promoted.",
+    note: "Runtime loading stays blocked until public source schema wiring and diagnostics land.",
   },
   flatgeobuf: {
     format: "flatgeobuf",
-    target: "FlatGeobuf source schema gate",
+    target: "FlatGeobuf public source promotion gate",
     exitCondition:
-      "Stream and index schema, resource policy, and deterministic negative fixtures must pass before runtime loading is promoted.",
-    note: "Only file-list evidence is allowed before the schema gate.",
+      "Public MapSpec schema wiring, stream/index diagnostics, resource policy, and deterministic negative fixtures must pass before runtime loading is promoted.",
+    note: "Only file-list evidence is allowed before the public source promotion gate.",
   },
   geotiff: {
     format: "geotiff",
@@ -1872,18 +1830,10 @@ const sourcePromotionCandidateDefinitions = {
   },
 } as const;
 
-function sourceResourcePolicy(
-  source: MapSpec["sources"][string],
-): NonNullable<ExampleAppDeliverySummary["sourceReadiness"][number]["resourcePolicy"]> {
-  return source.type === "geojson" || source.type === "pmtiles" || source.type === "raster" || source.type === "vector"
-    ? "passed"
-    : "not-applicable";
-}
-
 function sourceArchiveContract(
-  source: MapSpec["sources"][string],
+  source: MapSpec["sources"][string] | undefined,
 ): ExampleAppDeliverySummary["sourceReadiness"][number]["archiveContract"] | undefined {
-  if (source.type !== "pmtiles") return undefined;
+  if (source?.type !== "pmtiles") return undefined;
   return createPmtilesArchiveContract();
 }
 
@@ -1909,8 +1859,9 @@ function createPmtilesArchiveContract(): NonNullable<
 }
 
 function sourceConfirmationReasons(
-  source: MapSpec["sources"][string],
+  source: MapSpec["sources"][string] | undefined,
 ): ExampleAppDeliverySummary["sourceReadiness"][number]["confirmationReasons"] {
+  if (!source) return [];
   const urls = sourceUrls(source);
   const reasons = new Set<ExampleAppDeliverySummary["sourceReadiness"][number]["confirmationReasons"][number]>();
   if (urls.length > 0) reasons.add("external-resource");
