@@ -844,12 +844,14 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       {
         path: "src/App.tsx",
         content: `import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
-import { validateSpec, type Diagnostic } from "@gis-engine/engine";
+import { validateSpec, type Diagnostic, type ValidationReport } from "@gis-engine/engine";
 import maplibregl from "maplibre-gl";
 ${componentImports}
 import mapSpec from "../map.json";
 
 type MapSpecShape = {
+  version?: string;
+  revision?: string;
   view?: { center?: [number, number]; zoom?: number };
   sources?: Record<string, Record<string, unknown>>;
   layers?: Array<Record<string, unknown>>;
@@ -1048,6 +1050,22 @@ function formatDiagnosticDetail(diagnostics: Diagnostic[]): string | null {
   const detail = diagnostics.slice(0, 3).map(formatDiagnosticLine).join(" | ");
   const remaining = diagnostics.length - 3;
   return remaining > 0 ? detail + " | +" + String(remaining) + " more diagnostic(s)" : detail;
+}
+
+function buildValidationReport(spec: MapSpecShape, validation: ValidationReport) {
+  return {
+    schemaVersion: "gis-engine.generated-app.mapspec-validation-report.v1",
+    generatedAt: new Date().toISOString(),
+    source: "generated-app",
+    spec: {
+      version: typeof spec.version === "string" ? spec.version : undefined,
+      revision: typeof spec.revision === "string" ? spec.revision : undefined,
+    },
+    valid: validation.valid,
+    stats: validation.stats,
+    diagnosticCounts: countDiagnostics(validation.diagnostics),
+    diagnostics: validation.diagnostics,
+  };
 }
 
 export default function App() {
@@ -1273,6 +1291,16 @@ export default function App() {
       setStatus("error");
       setStatusMessage("Could not download map.json.");
       setStatusDetail(error instanceof Error ? error.message : "The current spec could not be serialized.");
+    }
+  };
+
+  const downloadValidationReport = () => {
+    try {
+      downloadJsonFile("mapspec-validation-report.json", buildValidationReport(spec, specValidation));
+    } catch (error) {
+      setStatus("error");
+      setStatusMessage("Could not download validation report.");
+      setStatusDetail(error instanceof Error ? error.message : "The validation report could not be serialized.");
     }
   };
 
@@ -1660,6 +1688,13 @@ export default function App() {
           </button>
           <button
             type="button"
+            onClick={downloadValidationReport}
+            className="rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Download validation report
+          </button>
+          <button
+            type="button"
             onClick={() => setReviewDetailsOpen((open) => !open)}
             disabled={!canShowReviewDetails}
             aria-expanded={reviewDetailsOpen}
@@ -1674,7 +1709,7 @@ export default function App() {
           </button>
         </div>
         <p className="mt-2 text-[11px] text-gray-500">
-          Load a local map.json file, reload the current spec, or download it without refreshing the browser.
+          Load a local map.json file, reload the current spec, or download the spec and validation report without refreshing the browser.
         </p>
         <input
           ref={fileInputRef}
@@ -1753,7 +1788,9 @@ running when those evidence files are absent. Generated projects also include
 The app can also download the currently loaded MapSpec as \`map.json\` for local
 review or handoff. The app validates the loaded MapSpec with
 \`@gis-engine/engine.validateSpec()\` before rendering and surfaces structured
-diagnostic code/path/message feedback when validation blocks the map.
+diagnostic code/path/message feedback when validation blocks the map. It can
+also download a local \`mapspec-validation-report.json\` with validity, stats,
+diagnostic counts, and structured diagnostics for handoff.
 
 ## Preflight
 

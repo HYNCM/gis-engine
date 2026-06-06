@@ -1154,13 +1154,18 @@ describe("cli-templates", () => {
     expect(appFile.content).toContain('import FeaturePopup from "./components/FeaturePopup"');
     expect(appFile.content).toContain('import SearchBox from "./components/SearchBox"');
     expect(appFile.content).toContain('import BasemapSwitcher from "./components/BasemapSwitcher"');
-    expect(appFile.content).toContain('import { validateSpec, type Diagnostic } from "@gis-engine/engine";');
+    expect(appFile.content).toContain(
+      'import { validateSpec, type Diagnostic, type ValidationReport } from "@gis-engine/engine";',
+    );
     expect(appFile.content).toContain("const syncSpecToMap =");
     expect(appFile.content).toContain('nextMap.on("load"');
     expect(appFile.content).toContain('nextMap.on("error"');
     expect(appFile.content).toContain('setStatus("loading")');
     expect(appFile.content).toContain("const specValidation = useMemo(() => validateSpec(spec), [spec]);");
     expect(appFile.content).toContain("mapSpec as unknown as MapSpecShape");
+    expect(appFile.content).toContain("buildValidationReport");
+    expect(appFile.content).toContain("gis-engine.generated-app.mapspec-validation-report.v1");
+    expect(appFile.content).toContain("diagnosticCounts: countDiagnostics(validation.diagnostics)");
     expect(appFile.content).toContain("const visibleSpecDiagnostics = useMemo(");
     expect(appFile.content).toContain("const blockingSpecDiagnostics = useMemo(");
     expect(appFile.content).toContain("MapSpec validation failed.");
@@ -1210,7 +1215,11 @@ describe("cli-templates", () => {
     expect(appFile.content).toContain("Reload map.json");
     expect(appFile.content).toContain("Load map.json");
     expect(appFile.content).toContain("Download map.json");
+    expect(appFile.content).toContain("Download validation report");
     expect(appFile.content).toContain("downloadCurrentSpec");
+    expect(appFile.content).toContain("downloadValidationReport");
+    expect(appFile.content).toContain("mapspec-validation-report.json");
+    expect(appFile.content).toContain("Could not download validation report.");
     expect(appFile.content).toContain("Could not download map.json.");
     expect(appFile.content).toContain("Could not load the selected map.json file.");
     expect(appFile.content).toContain("formatDiagnosticDetail");

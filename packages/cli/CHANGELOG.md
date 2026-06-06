@@ -46,6 +46,10 @@
   history fallback servers.
 - Keep scaffold-only `app` template builds clean when the starter `map.json`
   JSON import infers `view.center` as an array rather than a tuple.
+- Add a `Download validation report` action to the generated `app` template.
+  The downloaded `mapspec-validation-report.json` contains validity, stats,
+  diagnostic counts, and structured diagnostics from `validateSpec()` for local
+  review or handoff.
 - Surface generated delivery evidence in the `app` template status banner when
   `delivery-summary.json` is present, while scaffold-only app projects keep
   running without that optional file. The rail now includes the generated
