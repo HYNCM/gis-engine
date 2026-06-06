@@ -3,7 +3,7 @@ period: 2026-06-03
 generated_at: 2026-06-03T02:10:00Z
 repo_revision: "9ddea22"
 inputs:
-  - docs/planning/feature-specs/studio-local-handoff-envelope.md
+  - docs/archive/2026-06-06/feature-specs/studio-local-handoff-envelope.md
   - apps/studio/server/index.mjs
   - apps/studio/src/App.tsx
   - apps/studio/src/components/ChatPanel.tsx

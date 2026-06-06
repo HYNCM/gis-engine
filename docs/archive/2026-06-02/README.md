@@ -6,10 +6,10 @@ active reference window during the 2026-06-02 documentation cleanup.
 | Document | Reason Archived | Current Replacement |
 | --- | --- | --- |
 | [planning/sprint-2026-W22-maplibre-source-drift-audit.md](./planning/sprint-2026-W22-maplibre-source-drift-audit.md) | Completed W22 sprint; evidence absorbed into engineering docs. | [../../engineering/maplibre-version-drift-audit.md](../../engineering/maplibre-version-drift-audit.md) |
-| [research/competitor-updates-2026-W22.md](./research/competitor-updates-2026-W22.md) | Superseded by W23 competitor update. | [../../research/competitor-updates-2026-W23.md](../../research/competitor-updates-2026-W23.md) |
+| [research/competitor-updates-2026-W22.md](./research/competitor-updates-2026-W22.md) | Superseded by later competitor updates. | [../../research/competitor-updates-2026-W24.md](../../research/competitor-updates-2026-W24.md) |
 | [reviews/daily-audit-2026-05-28.md](./reviews/daily-audit-2026-05-28.md) | Aged past 7-day active window for daily audits. | Latest daily audits in [../../reviews/](../../reviews/) |
 | [reviews/quality-gate-2026-05-28.md](./reviews/quality-gate-2026-05-28.md) | Aged past 7-day active window for quality gates. | Latest quality gates in [../../reviews/](../../reviews/) |
-| [superpowers/](./superpowers/) | One-time implementation plans for ai-map-workbench; feature complete. | [../../planning/sprint-2026-W23-ai-map-workbench-product-implementation.md](../../planning/sprint-2026-W23-ai-map-workbench-product-implementation.md), [../../planning/feature-specs/ai-map-workbench-*.md](../../planning/feature-specs/) |
+| [superpowers/](./superpowers/) | One-time implementation plans for ai-map-workbench; feature complete. | [../2026-06-06/planning/sprint-2026-W23-ai-map-workbench-product-implementation.md](../2026-06-06/planning/sprint-2026-W23-ai-map-workbench-product-implementation.md), [../../planning/feature-specs/ai-map-workbench-*.md](../../planning/feature-specs/) |
 
 ## Deleted Files (2026-06-02 Cleanup)
 

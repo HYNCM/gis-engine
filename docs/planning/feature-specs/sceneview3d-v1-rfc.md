@@ -5,7 +5,7 @@ generated_at: 2026-05-18T09:00:00Z
 repo_revision: "e3e8427"
 inputs:
   - docs/planning/feature-specs/scene3d-boundary.md
-  - docs/research/competitive-analysis-ai-native-2d-3d.md
+  - docs/research/capability-scorecard.md
   - docs/spec/contracts-and-interfaces.md
   - tests/fixtures/specs/valid/scene3d-extension.map.json
 decision_level: rfc

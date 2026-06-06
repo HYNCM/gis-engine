@@ -8,7 +8,7 @@ inputs:
   - docs/planning/feature-specs/ai-map-workbench-product-boundary.md
   - docs/planning/feature-specs/ai-map-workbench-product-implementation.md
   - docs/planning/next-stage-goals-2026-06-06.md
-  - docs/planning/technical-debt-report.md
+  - ../../reviews/full-project-review-2026-06-05.md
 owner: "@product-strategist @orchestrator"
 decision_level: advisory
 ---

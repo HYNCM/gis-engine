@@ -48,6 +48,10 @@ decision_level: advisory
 
 # Dependency Graph
 
+> **Note (2026-06-06):** Some node references below point to documents archived
+> to `docs/archive/2026-06-06/` or deleted during the documentation audit. This
+> graph will be regenerated on the next planning cycle.
+
 ```mermaid
 flowchart LR
   A["TASK-2026W21-001 MCP tool contract failure path"] --> C["TASK-2026W21-003 v0.2 合同边界"]

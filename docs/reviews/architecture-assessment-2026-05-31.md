@@ -7,7 +7,7 @@ inputs:
   - docs/architecture/core-framework.md
   - docs/architecture/core-capabilities.md
   - docs/planning/monthly-roadmap.md
-  - docs/planning/technical-debt-report.md
+  - docs/reviews/full-project-review-2026-06-05.md
   - docs/planning/dependency-graph.md
   - docs/planning/task-burndown.md
   - docs/research/capability-scorecard.md

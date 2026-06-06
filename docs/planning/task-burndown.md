@@ -53,6 +53,11 @@ decision_level: advisory
 
 # Task Burndown
 
+> **Note (2026-06-06):** Some evidence links below reference documents that were
+> archived to `docs/archive/2026-06-06/` or deleted during the documentation
+> audit. Archived files remain accessible via git history. This snapshot will be
+> refreshed on the next planning cycle.
+
 ## 当前结论
 
 原 W21/W23 计划中的 v0.2 checkpoint 关键任务已经提前完成，原 sprint

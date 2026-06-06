@@ -8,7 +8,7 @@ inputs:
   - packages/cli/README.md
   - docs/README.md
   - docs/reviews/REPORT_INDEX.md
-  - docs/reviews/doc-link-audit.md
+  - docs/reviews/doc-link-audit.md (deleted — 5-line stub removed during 2026-06-06 audit)
   - docs/planning/AGENT_HEALTH_DASHBOARD.md
   - scripts/doc-generator.mjs
   - scripts/dashboard-generator.mjs
@@ -50,7 +50,7 @@ was refreshed to today's repo state.
 
 ### 3. Cross-reference integrity is clean
 
-- Evidence: `docs/reviews/doc-link-audit.md` reports that all document
+- Evidence: `docs/reviews/doc-link-audit.md` (deleted — 5-line stub removed during 2026-06-06 audit) previously reported that all document
   references are complete.
 - Impact: no broken-link cleanup is needed from this pass.
 - Action: keep the generated link audit as the current reference artifact.

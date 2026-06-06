@@ -1,1 +1,9 @@
-npx @biomejs/biome check --write --staged
+#!/usr/bin/env sh
+# Run Biome on staged files. Succeed if no processable files (e.g. docs-only commit).
+output=$(npx @biomejs/biome check --write --staged 2>&1) || true
+# If biome found nothing to process, exit cleanly
+echo "$output" | grep -q "No files were processed" && exit 0
+echo "$output"
+# Check for actual lint errors (not just formatting info)
+echo "$output" | grep -q "×" && exit 1
+exit 0

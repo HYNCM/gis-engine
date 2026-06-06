@@ -4,7 +4,7 @@ period: 2026-W23
 generated_at: 2026-06-03T06:10:00Z
 repo_revision: "367acd0"
 inputs:
-  - docs/planning/feature-specs/studio-local-review-ledger.md
+  - ../../archive/2026-06-06/feature-specs/studio-local-review-ledger.md
   - docs/planning/feature-specs/studio-local-review-export-timeline-ux.md
   - apps/studio/server/index.mjs
   - apps/studio/src/App.tsx

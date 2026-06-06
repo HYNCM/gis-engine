@@ -178,7 +178,7 @@ Advisory: `maxRangeSegments` and `maxFeatureCount` policy fields exist but are n
 
 | Area | Status |
 | --- | --- |
-| Trend cuts | PASS -- `docs/reviews/perf-trend-2026-W24.md` and `docs/reviews/perf-trend-2026-W23.md` are both present |
+| Trend cuts | PASS -- `docs/reviews/perf-trend-2026-W24.md` is present |
 | Comparative report | PASS -- `scripts/perf-trend.mjs` compares the latest cut with the prior weekly report |
 | Tests | PASS -- `tests/perf/perf-trend-ledger.test.ts` and `tests/perf/perf-trend-report.test.ts` |
 | Deterministic checks | PASS -- `pnpm check` |

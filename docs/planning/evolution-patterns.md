@@ -7,6 +7,10 @@ total_patterns: 55
 
 # Evolution Pattern Library
 
+> **Note (2026-06-06):** Some evidence references below point to review files
+> that were deleted during the documentation audit (completed feature reviews
+> sqh-*, nlq-*). Pattern content remains valid; only citation links are stale.
+
 此库记录从已完成任务和架构评估中自动提取的可复用设计模式。
 每个 pattern 包含已验证的方法及其证据来源。
 

@@ -6,7 +6,7 @@ repo_revision: "cef340d"
 inputs:
   - docs/archive/2026-05-30/planning/sprint-2026-W23-scene3d-promotion-readiness.md
   - docs/planning/monthly-roadmap.md
-  - docs/planning/technical-debt-report.md
+  - ../../reviews/full-project-review-2026-06-05.md
   - docs/planning/task-burndown.md
   - docs/spec/contracts-and-interfaces.md
   - packages/scene3d-three-adapter/README.md
@@ -74,7 +74,7 @@ explicitly approved.
 - `tests/adapter/scene3d-three-adapter.test.ts`
 - `tests/ai/mcp-integration.test.ts`
 - `docs/planning/monthly-roadmap.md`
-- `docs/planning/technical-debt-report.md`
+- `../../reviews/full-project-review-2026-06-05.md`
 - `docs/planning/task-burndown.md`
 
 ## Non-Goals

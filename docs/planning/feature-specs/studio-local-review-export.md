@@ -4,7 +4,7 @@ period: 2026-W23
 generated_at: 2026-06-03T03:05:00Z
 repo_revision: "5babfe9"
 inputs:
-  - docs/planning/feature-specs/studio-local-review-ledger.md
+  - ../../archive/2026-06-06/feature-specs/studio-local-review-ledger.md
   - apps/studio/server/index.mjs
   - apps/studio/src/App.tsx
   - apps/studio/src/components/ChatPanel.tsx

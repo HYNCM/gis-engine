@@ -9,7 +9,7 @@ inputs:
   - docs/planning/feature-specs/ai-map-workbench-provider-administration.md
   - docs/planning/feature-specs/ai-map-workbench-durable-audit.md
   - docs/planning/feature-specs/ai-map-workbench-review-actions.md
-  - docs/research/competitor-updates-2026-W23.md
+  - docs/research/competitor-updates-2026-W24.md
 owner: "@product-strategist @task-distributor"
 decision_level: advisory
 ---

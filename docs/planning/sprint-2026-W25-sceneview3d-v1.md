@@ -7,7 +7,7 @@ inputs:
   - docs/planning/feature-specs/sceneview3d-v1-rfc.md
   - docs/planning/feature-specs/scene3d-boundary.md
   - docs/planning/monthly-roadmap.md
-  - docs/planning/technical-debt-report.md
+  - docs/reviews/full-project-review-2026-06-05.md
   - docs/spec/contracts-and-interfaces.md
 decision_level: advisory
 ---

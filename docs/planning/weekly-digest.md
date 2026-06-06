@@ -9,7 +9,7 @@ inputs:
   - docs/planning/feature-specs/ai-map-workbench-promotion-scope.md
   - docs/research/competitor-updates-2026-W24.md
   - docs/research/capability-scorecard-w24-refresh.md
-  - docs/research/competitor-updates-2026-W23.md
+  - docs/research/competitor-updates-2026-W24.md
   - docs/reviews/quality-gate-2026-06-03.md
   - docs/reviews/quality-gate-2026-06-04.md
   - docs/reviews/documentation-audit-2026-06-04.md
@@ -30,6 +30,10 @@ decision_level: advisory
 ---
 
 # Weekly Digest: 2026-W24
+
+> **Note (2026-06-06):** Some references below point to documents archived to
+> `docs/archive/2026-06-06/` or deleted during the documentation audit. This
+> digest will be refreshed on the next planning cycle.
 
 ## 2026-06-05 W24 Planning Ledger Reconciliation
 

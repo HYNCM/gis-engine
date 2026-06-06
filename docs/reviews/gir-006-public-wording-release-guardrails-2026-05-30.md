@@ -9,7 +9,7 @@ inputs:
   - docs/README.md
   - docs/engineering/release-wording-guardrails.md
   - docs/engineering/supported-feature-matrix.md
-  - docs/planning/v0.2-release.md
+  - docs/archive/2026-06-06/planning/v0.2-release.md
   - docs/planning/feature-specs/generated-app-delivery-ux.md
   - docs/planning/feature-specs/cloud-native-source-readiness.md
   - docs/planning/feature-specs/spatial-analysis-promotion-criteria.md
@@ -31,7 +31,7 @@ copy surface for release-blocking capability claims.
 
 | Requirement | Evidence | Impact | Action | Confidence |
 | --- | --- | --- | --- | --- |
-| Stable SceneView3D runtime stays blocked | `README.md`, `packages/ai/README.md`, `packages/scene3d/README.md`, `packages/scene3d-three-adapter/README.md`, and `docs/planning/v0.2-release.md` keep scene browsing extension-only or no-go wording. | Generated-app scene browsing cannot be mistaken for stable `view.mode: "scene3d"` support. | Keep future 3D wording behind SRC-style promotion evidence. | high |
+| Stable SceneView3D runtime stays blocked | `README.md`, `packages/ai/README.md`, `packages/scene3d/README.md`, `packages/scene3d-three-adapter/README.md`, and `docs/archive/2026-06-06/planning/v0.2-release.md` keep scene browsing extension-only or no-go wording. | Generated-app scene browsing cannot be mistaken for stable `view.mode: "scene3d"` support. | Keep future 3D wording behind SRC-style promotion evidence. | high |
 | Generated-app export stays side-effect free | `docs/planning/feature-specs/generated-app-delivery-ux.md`, `docs/planning/feature-specs/cloud-native-source-readiness.md`, and `docs/engineering/release-wording-guardrails.md` state that export handoff is manifest/file metadata only and must not fetch, parse, or write files. | AI delivery remains reviewable without hidden local writes. | Design a separate file-output policy before adding write behavior. | high |
 | Unsupported source claims stay blocked | `docs/engineering/release-wording-guardrails.md` and `docs/planning/feature-specs/cloud-native-source-readiness.md` keep GeoParquet, FlatGeobuf, GeoTIFF, GeoZarr, PMTiles archive parsing, and PMTiles feature query behind readiness or blocked states. | Cloud-native roadmap pressure does not become unsupported runtime claims. | Promote each source only through schema, resource-policy, diagnostics, adapter, and test gates. | high |
 | Advanced spatial-analysis claims stay blocked | `docs/planning/feature-specs/spatial-analysis-promotion-criteria.md` keeps buffer, intersection, overlay, routing, aggregation, and richer geoprocessing behind future operation tasks. | Generated-app review copy can explain blocked analysis without implying execution support. | Harden point/bbox evidence separately before richer operations. | high |

@@ -39,6 +39,10 @@ decision_level: advisory
 
 # Monthly Roadmap: 2026-06
 
+> **Note (2026-06-06):** Some references below point to documents archived to
+> `docs/archive/2026-06-06/` or deleted during the documentation audit. This
+> roadmap will be refreshed on the next planning cycle.
+
 ## 2026-06-06 Next-Stage Priorities
 
 The June roadmap now consumes the accepted W24 evidence and the frozen AI Map

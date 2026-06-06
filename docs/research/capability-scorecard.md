@@ -7,13 +7,13 @@ inputs:
   - docs/research/competitor-updates-2026-W24.md
   - docs/research/capability-scorecard-w24-refresh.md
   - docs/research/competitor-updates-2026-W22.md
-  - docs/planning/sprint-2026-W23-ai-map-app-generation.md
+  - docs/archive/2026-06-06/planning/sprint-2026-W23-ai-map-app-generation.md
   - docs/reviews/nla-002-generation-command-contract-2026-05-29.md
   - docs/reviews/nla-003-mcp-orchestration-evidence-2026-05-29.md
   - docs/reviews/nla-006-prompt-evidence-scenarios-2026-05-29.md
   - docs/reviews/nla-008-serialized-planning-handoff-2026-05-29.md
   - docs/reviews/nlq-007-serialized-quality-hardening-planning-2026-05-29.md
-  - docs/planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md
+  - docs/archive/2026-06-06/planning/sceneview3d-src-006-stable-runtime-decision-2026-05-29.md
 owner: "@product"
 decision_level: advisory
 ---

@@ -4,7 +4,7 @@ period: 2026-W23
 generated_at: 2026-06-01T14:16:38Z
 repo_revision: "7f59f3ef6711a15dba844ee5277c3f397ef3f264"
 inputs:
-  - docs/research/competitor-updates-2026-W23.md
+  - docs/research/competitor-updates-2026-W24.md
   - docs/reviews/amw-004-promotion-gate-2026-05-31.md
   - docs/reviews/amw-005-provider-profiles-2026-05-31.md
   - docs/planning/feature-specs/ai-map-workbench-real-system-evolution.md

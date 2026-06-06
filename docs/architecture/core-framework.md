@@ -4,7 +4,7 @@
 
 GIS Engine 是一个 Web TypeScript first 的 AI 原生地图运行时。它的核心资产不是另一个大而全的地图 SDK，而是一个稳定、可验证、可回放、可由 AI 操作的声明式地图协议。
 
-2D/3D 架构边界、竞品软件工程对比和 AI 原生标准见 [../research/competitive-analysis-ai-native-2d-3d.md](../research/competitive-analysis-ai-native-2d-3d.md)。
+2D/3D 架构边界、竞品软件工程对比和 AI 原生标准见 [Capability Scorecard](../research/capability-scorecard.md)。
 
 v0.1 的可验收范围见 [core-capabilities.md](./core-capabilities.md)，具体接口契约见 [../spec/contracts-and-interfaces.md](../spec/contracts-and-interfaces.md)。
 

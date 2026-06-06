@@ -10,7 +10,7 @@ inputs:
   - docs/planning/weekly-digest.md
   - docs/planning/task-burndown.md
   - docs/planning/dependency-graph.md
-  - docs/planning/technical-debt-report.md
+  - docs/reviews/full-project-review-2026-06-05.md
   - docs/planning/feature-specs/ai-map-workbench-promotion-scope.md
   - docs/research/capability-scorecard-w24-refresh.md
   - docs/planning/feature-specs/ai-map-workbench-real-system-evolution.md
@@ -52,7 +52,7 @@ entry point.
 | Area | Status | Evidence | Impact | Action | Confidence |
 | --- | --- | --- | --- | --- | --- |
 | W24 review-console, cloud-native contracts, and strict visual evidence | accepted | W24 quality acceptance report; build, docs, resources, and strict visual tests | W24 can close cleanly without reopening earlier batches | Keep the accepted W24 evidence as the baseline for future planning | high |
-| AI Map Workbench real-system promotion | scope frozen; product/hosted movement still blocked | `AWP-007`, `ai-map-workbench-promotion-scope.md`, `ai-map-workbench-product-boundary.md`, `technical-debt-report.md` | Product or hosted movement still lacks runtime/service ownership and storage/auth/export scope | Keep the frozen scope as the required input for any future product-promotion task | high |
+| AI Map Workbench real-system promotion | scope frozen; product/hosted movement still blocked | `AWP-007`, `ai-map-workbench-promotion-scope.md`, `ai-map-workbench-product-boundary.md`, `../reviews/full-project-review-2026-06-05.md` | Product or hosted movement still lacks runtime/service ownership and storage/auth/export scope | Keep the frozen scope as the required input for any future product-promotion task | high |
 | Cloud-native source promotion | contract-ready, runtime blocked | `cloud-native-source-promotion-candidates.md`, `cloud-native-source-readiness.md`, W24 schema/resource-policy tests | PMTiles, GeoParquet, and FlatGeobuf pressure exists, but runtime parser claims remain blocked | Promote one format at a time and keep schema/policy evidence first | high |
 | Performance and visual evidence | accepted | `VPE-002` weekly trend cuts, strict visual maintenance tests, app-template visual tests | Release-quality claims now have repeated trend data | Keep weekly trend cuts current and release-capable scenes green | medium |
 | MapLibre and SceneView3D guardrails | blocked / no-go | `MLD-004`, `SRC-006`, bundle-size and performance docs | Prevents package movement or stable 3D overclaim | Keep blocked until new official evidence and approvals exist | high |

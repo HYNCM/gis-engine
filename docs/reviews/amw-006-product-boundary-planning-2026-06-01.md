@@ -4,10 +4,10 @@ period: 2026-W23
 generated_at: 2026-06-01T14:16:38Z
 repo_revision: "7f59f3ef6711a15dba844ee5277c3f397ef3f264"
 inputs:
-  - docs/research/competitor-updates-2026-W23.md
+  - docs/research/competitor-updates-2026-W24.md
   - docs/reviews/amw-004-promotion-gate-2026-05-31.md
   - docs/reviews/amw-005-provider-profiles-2026-05-31.md
-  - docs/reviews/mld-004-go-no-go-2026-06-01.md
+  - docs/reviews/mld-004-go-no-go-2026-06-01.md (archived)
   - docs/planning/feature-specs/ai-map-workbench-product-boundary.md
   - docs/planning/sprint-2026-W23-ai-map-workbench-product-boundary.md
 owner: "@coordinator @product-strategist @task-distributor"
@@ -36,10 +36,10 @@ evidence, and a quality-guardian/coordinator promotion gate are all complete.
 
 | Check | Result | Evidence | Impact | Action | Confidence |
 | --- | --- | --- | --- | --- | --- |
-| Current external signal | accepted | `docs/research/competitor-updates-2026-W23.md` records 2026-06-01 npm package evidence and official source inputs. | Planning can proceed from current dated evidence rather than the W23 template. | Keep package movement separate from AMW product-boundary tasks. | high |
+| Current external signal | accepted | `docs/research/competitor-updates-2026-W24.md` records 2026-06-01 npm package evidence and official source inputs. | Planning can proceed from current dated evidence rather than the W23 template. | Keep package movement separate from AMW product-boundary tasks. | high |
 | AMW product hold | accepted | `docs/reviews/amw-004-promotion-gate-2026-05-31.md` holds product promotion pending app boundary, credential/resource review, durable audit, visual evidence, and review actions. | The next task must design the missing product boundary before moving files or hosting. | Start with provider credential/resource administration. | high |
 | Provider profile safety | accepted | `docs/reviews/amw-005-provider-profiles-2026-05-31.md` accepts server-side provider profiles but keeps product promotion on hold. | Existing code can stay local/example-scoped while product requirements are planned. | Preserve server-only credential lookup and browser-safe metadata. | high |
-| MapLibre movement | blocked | `docs/reviews/mld-004-go-no-go-2026-06-01.md` records package movement No-go. | AMW planning must not smuggle dependency upgrades into this batch. | Open a separate future package-movement task only with strict visual evidence. | high |
+| MapLibre movement | blocked | `docs/reviews/mld-004-go-no-go-2026-06-01.md` (archived) records package movement No-go. | AMW planning must not smuggle dependency upgrades into this batch. | Open a separate future package-movement task only with strict visual evidence. | high |
 | Product-boundary DAG | accepted | `docs/planning/sprint-2026-W23-ai-map-workbench-product-boundary.md` creates AMW-006 through AMW-010 with disjoint evidence targets. | Execution owners have a bounded next path. | AMW-006 opened provider administration and durable audit design; after AMW-009 closure, queue `TASK-2026W23-AMW-010`. | high |
 
 ## Boundaries Preserved
