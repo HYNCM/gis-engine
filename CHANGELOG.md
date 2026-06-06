@@ -4,6 +4,7 @@
 
 ### Added
 - **CLI MapSpec preflight mode**: `create-gis-map --preflight <map.json> [--json]` validates a MapSpec and PMTiles runtime load plan without requiring a project name, writing files, fetching resources, or parsing PMTiles archives. Generated `mapspec` and `app` template READMEs include the preflight handoff command.
+- **PMTiles archive metadata handoff in CLI preflight**: `--require-archive-metadata` and repeatable `--pmtiles-metadata <source-id=path>` let CI require caller-supplied PMTiles archive metadata without hidden fetches or parser claims.
 - **PMTiles runtime load-plan preflight**: `PMTilesSourceLoader` and `createPMTilesRuntimeLoadPlan()` validate URL policy, MapLibre `metadata["source-layer"]` requirements, range-policy requirements, and optional archive metadata budgets without fetching or parsing PMTiles archives.
 - **Review-console contract** (`examples/ai-map-workbench/review-console.mjs`): pure computation module that derives 6 review sections (delivery-summary, files-and-export, map-edits, data-and-sources, spatial-analysis, scene-browsing) from `GenerationEvidenceBundle` without MCP tool names or `MapSpec` mutation.
 - **Review-console tests and fixtures**: 10 tests + 4 delivery-state fixtures (ready, blocked, needs-confirmation, follow-up-required) plus 24 cross-state QA matrix invariants and 11 workbench hardening tests (review actions, durable audit, credential safety).

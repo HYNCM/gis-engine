@@ -24,6 +24,10 @@
  *   --api-key        API key for provider (overrides env var)
  *   --timeout        Provider request timeout in ms (default: 20000)
  *   --preflight      Validate and preflight a MapSpec JSON file
+ *   --require-archive-metadata
+ *                    Require PMTiles archive metadata for preflight success
+ *   --pmtiles-metadata
+ *                    PMTiles archive metadata input: <source-id>=<metadata.json>
  *   --json           Print preflight output as JSON
  *   --dry-run        Preview files without writing
  *   --help, -h       Show this help message
@@ -54,7 +58,11 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
   }
 
   if (config.preflight) {
-    const result = preflightMapSpec({ filePath: config.preflight });
+    const result = preflightMapSpec({
+      filePath: config.preflight,
+      requireArchiveMetadata: config.requireArchiveMetadata,
+      pmtilesMetadata: config.pmtilesMetadata,
+    });
     if (config.json) {
       console.log(JSON.stringify(result, null, 2));
     } else {
@@ -184,6 +192,10 @@ Options:
   -g, --generate   Run AI generate pipeline instead of scaffolding
       --prompt     Prompt text for generate mode
       --preflight  Validate/preflight a MapSpec JSON file without writing files
+      --require-archive-metadata
+                   Require PMTiles archive metadata for preflight success
+      --pmtiles-metadata
+                   PMTiles archive metadata input: <source-id>=<metadata.json>
       --json       Print preflight output as JSON
   -y, --yes        Skip directory-exists check (overwrite)
       --dry-run    Preview files without writing
@@ -200,6 +212,7 @@ Examples:
   create-gis-map my-map --generate -t app -p deepseek  AI generate interactive app
   create-gis-map my-map --generate --prompt "A map of NYC parks"
   create-gis-map --preflight ./map.json --json       Validate and preflight a MapSpec
+  create-gis-map --preflight ./map.json --require-archive-metadata --pmtiles-metadata parcels=./parcels.metadata.json
 `);
 }
 

@@ -18,6 +18,8 @@ export interface CliConfig {
   timeout?: number;
   generate: boolean;
   preflight?: string;
+  requireArchiveMetadata: boolean;
+  pmtilesMetadata: string[];
   prompt?: string;
   yes: boolean;
   dryRun: boolean;
@@ -30,6 +32,8 @@ const DEFAULTS: Omit<CliConfig, "projectName" | "prompt" | "model" | "baseUrl" |
   template: "static-html",
   provider: "mock",
   generate: false,
+  requireArchiveMetadata: false,
+  pmtilesMetadata: [],
   yes: false,
   dryRun: false,
   json: false,
@@ -69,6 +73,8 @@ export function parseArgs(argv: string[]): CliConfig {
   let timeout = fileConfig.timeout;
   let generate = DEFAULTS.generate;
   let preflight: string | undefined;
+  let requireArchiveMetadata = DEFAULTS.requireArchiveMetadata;
+  const pmtilesMetadata = [...DEFAULTS.pmtilesMetadata];
   let prompt: string | undefined;
   let yes = DEFAULTS.yes;
   let dryRun = DEFAULTS.dryRun;
@@ -114,6 +120,16 @@ export function parseArgs(argv: string[]): CliConfig {
       i++;
     } else if (arg.startsWith("--preflight=")) {
       preflight = arg.slice("--preflight=".length);
+      i++;
+    } else if (arg === "--require-archive-metadata") {
+      requireArchiveMetadata = true;
+      i++;
+    } else if (arg === "--pmtiles-metadata") {
+      const value = nextValue("--pmtiles-metadata");
+      if (value) pmtilesMetadata.push(value);
+      i++;
+    } else if (arg.startsWith("--pmtiles-metadata=")) {
+      pmtilesMetadata.push(arg.slice("--pmtiles-metadata=".length));
       i++;
     } else if (arg === "--prompt") {
       prompt = nextValue("--prompt") || prompt;
@@ -208,6 +224,8 @@ export function parseArgs(argv: string[]): CliConfig {
     ...(timeout !== undefined ? { timeout } : {}),
     generate,
     ...(preflight !== undefined ? { preflight } : {}),
+    requireArchiveMetadata,
+    pmtilesMetadata,
     ...(prompt !== undefined ? { prompt } : {}),
     yes,
     dryRun,

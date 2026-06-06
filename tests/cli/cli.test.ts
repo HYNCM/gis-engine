@@ -16,7 +16,7 @@ import {
   resolveProviderProfile,
   TEMPLATES,
 } from "@gis-engine/cli";
-import type { MapSpec } from "@gis-engine/engine";
+import type { MapSpec, PMTilesArchiveMetadata } from "@gis-engine/engine";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { isDirectCliExecution } from "../../packages/cli/src/bin.ts";
 
@@ -103,6 +103,27 @@ describe("cli-bin-preflight-mode", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  it("exits non-zero when required PMTiles archive metadata is missing", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gis-engine-cli-main-preflight-"));
+    const writeSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: string | number | null) => {
+      throw new Error(`process.exit:${code}`);
+    }) as never);
+    try {
+      const mapPath = join(dir, "map.json");
+      writeFileSync(mapPath, `${JSON.stringify(pmtilesPreflightSpec(), null, 2)}\n`, "utf-8");
+
+      await expect(main(["--preflight", mapPath, "--require-archive-metadata"])).rejects.toThrow("process.exit:1");
+
+      expect(exitSpy).toHaveBeenCalledWith(1);
+      expect(String(writeSpy.mock.calls[0]?.[0])).toContain("Status:     metadata-required");
+    } finally {
+      writeSpy.mockRestore();
+      exitSpy.mockRestore();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -154,6 +175,8 @@ describe("cli-config-parseArgs", () => {
     expect(config.apiKey).toBeUndefined();
     expect(config.timeout).toBeUndefined();
     expect(config.preflight).toBeUndefined();
+    expect(config.requireArchiveMetadata).toBe(false);
+    expect(config.pmtilesMetadata).toEqual([]);
     expect(config.json).toBe(false);
   });
 
@@ -197,6 +220,19 @@ describe("cli-config-parseArgs", () => {
   it("sets preflight via --preflight=value equals form", () => {
     const config = parseArgs(["--preflight=./map.json"]);
     expect(config.preflight).toBe("./map.json");
+  });
+
+  it("sets PMTiles archive metadata preflight flags", () => {
+    const config = parseArgs([
+      "--preflight",
+      "./map.json",
+      "--require-archive-metadata",
+      "--pmtiles-metadata",
+      "parcels=./parcels.metadata.json",
+      "--pmtiles-metadata=buildings=./buildings.metadata.json",
+    ]);
+    expect(config.requireArchiveMetadata).toBe(true);
+    expect(config.pmtilesMetadata).toEqual(["parcels=./parcels.metadata.json", "buildings=./buildings.metadata.json"]);
   });
 
   it("sets help via --help", () => {
@@ -407,6 +443,7 @@ describe("cli-preflight-map-spec", () => {
 
       expect(result.ok).toBe(true);
       expect(result.mode).toBe("mapspec-preflight");
+      expect(result.inputs).toEqual({ requireArchiveMetadata: false, pmtilesMetadataSourceIds: [] });
       expect(result.status).toBe("ready");
       expect(result.validation.valid).toBe(true);
       expect(result.pmtiles.status).toBe("ready");
@@ -415,6 +452,76 @@ describe("cli-preflight-map-spec", () => {
       expect(result.diagnostics).toEqual([]);
       expect(text).toContain("Status:     ready");
       expect(text).toContain("PMTiles:    ready (1 sources)");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("returns ready with caller-supplied PMTiles archive metadata", () => {
+    const dir = mkdtempSync(join(tmpdir(), "gis-engine-cli-preflight-"));
+    try {
+      const mapPath = join(dir, "map.json");
+      const metadataPath = join(dir, "parcels.metadata.json");
+      writeFileSync(mapPath, `${JSON.stringify(pmtilesPreflightSpec(), null, 2)}\n`, "utf-8");
+      writeFileSync(metadataPath, `${JSON.stringify(validPMTilesArchiveMetadata(), null, 2)}\n`, "utf-8");
+
+      const result = preflightMapSpec({
+        filePath: mapPath,
+        requireArchiveMetadata: true,
+        pmtilesMetadata: [`parcels=${metadataPath}`],
+      });
+
+      expect(result.ok).toBe(true);
+      expect(result.status).toBe("ready");
+      expect(result.inputs).toEqual({ requireArchiveMetadata: true, pmtilesMetadataSourceIds: ["parcels"] });
+      expect(result.pmtiles.sources[0]?.metadata).toMatchObject({ specVersion: 3, tileType: "vector" });
+      expect(result.pmtiles.sources[0]?.requirements.archiveMetadata).toBe(true);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("marks required PMTiles archive metadata as not ok when absent", () => {
+    const dir = mkdtempSync(join(tmpdir(), "gis-engine-cli-preflight-"));
+    try {
+      const mapPath = join(dir, "map.json");
+      writeFileSync(mapPath, `${JSON.stringify(pmtilesPreflightSpec(), null, 2)}\n`, "utf-8");
+
+      const result = preflightMapSpec({ filePath: mapPath, requireArchiveMetadata: true });
+
+      expect(result.ok).toBe(false);
+      expect(result.status).toBe("metadata-required");
+      expect(result.pmtiles.status).toBe("metadata-required");
+      expect(result.diagnostics).toContainEqual(
+        expect.objectContaining({
+          code: "CAPABILITY.UNSUPPORTED",
+          path: "/sources/parcels/archiveMetadata",
+          severity: "warning",
+        }),
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("blocks malformed PMTiles archive metadata input", () => {
+    const dir = mkdtempSync(join(tmpdir(), "gis-engine-cli-preflight-"));
+    try {
+      const mapPath = join(dir, "map.json");
+      const metadataPath = join(dir, "parcels.metadata.json");
+      writeFileSync(mapPath, `${JSON.stringify(pmtilesPreflightSpec(), null, 2)}\n`, "utf-8");
+      writeFileSync(metadataPath, '{"specVersion":3}', "utf-8");
+
+      const result = preflightMapSpec({ filePath: mapPath, pmtilesMetadata: [`parcels=${metadataPath}`] });
+
+      expect(result.ok).toBe(false);
+      expect(result.status).toBe("blocked");
+      expect(result.diagnostics).toContainEqual(
+        expect.objectContaining({
+          code: "SCHEMA.INVALID",
+          path: "/pmtilesMetadata/parcels",
+        }),
+      );
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -488,6 +595,21 @@ function pmtilesPreflightSpec(): MapSpec {
         paint: { "fill-color": "#2f80ed", "fill-opacity": 0.55 },
       },
     ],
+  };
+}
+
+function validPMTilesArchiveMetadata(): PMTilesArchiveMetadata {
+  return {
+    specVersion: 3,
+    archiveBytes: 1_000_000,
+    rootDirectoryOffset: 0,
+    rootDirectoryLength: 1024,
+    hasVectorTiles: true,
+    hasRasterTiles: false,
+    tileType: "vector",
+    minZoom: 0,
+    maxZoom: 14,
+    bounds: [-74.1, 40.6, -73.7, 40.9],
   };
 }
 

@@ -81,12 +81,14 @@ The `--dry-run` flag prints what would be created without writing any files.
 ```bash
 npm exec --package @gis-engine/cli@latest -- create-gis-map --preflight ./map.json
 npm exec --package @gis-engine/cli@latest -- create-gis-map --preflight ./map.json --json
+npm exec --package @gis-engine/cli@latest -- create-gis-map --preflight ./map.json --require-archive-metadata --pmtiles-metadata parcels=./parcels.metadata.json
 ```
 
 Preflight mode validates `map.json`, reports structured diagnostics, and checks
 the PMTiles runtime load plan without writing files, fetching resources, or
 parsing PMTiles archives. It exits non-zero only when validation or PMTiles
-delivery blockers are present.
+delivery blockers are present. With `--require-archive-metadata`, missing
+PMTiles archive metadata also exits non-zero.
 
 ---
 
@@ -110,6 +112,8 @@ create-gis-map --preflight <map.json> [--json]
 | `--generate` | `-g` | Run the AI generate pipeline instead of scaffolding | `false` |
 | `--prompt <text>` | | Prompt text for generate mode | (built-in default) |
 | `--preflight <path>` | | Validate a MapSpec JSON file and PMTiles load plan without writing files | |
+| `--require-archive-metadata` | | Require PMTiles archive metadata for preflight success | `false` |
+| `--pmtiles-metadata <source-id=path>` | | Provide PMTiles archive metadata JSON for a source. Repeatable. | |
 | `--json` | | Print preflight output as machine-readable JSON | `false` |
 | `--api-key <key>` | | API key for OpenAI-compatible providers. Overrides provider-specific env vars (`DEEPSEEK_API_KEY`, `OPENAI_API_KEY`). | (from env) |
 | `--timeout <ms>` | | HTTP request timeout in milliseconds for provider API calls | `20000` |
@@ -159,6 +163,9 @@ npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --generate --
 
 # Preflight a generated MapSpec
 npm exec --package @gis-engine/cli@latest -- create-gis-map --preflight ./map.json --json
+
+# Require caller-supplied PMTiles archive metadata
+npm exec --package @gis-engine/cli@latest -- create-gis-map --preflight ./map.json --require-archive-metadata --pmtiles-metadata parcels=./parcels.metadata.json
 ```
 
 ---
@@ -397,7 +404,7 @@ Preflight mode performs:
 | Check | Description |
 |---|---|
 | MapSpec validation | Runs the engine validator and returns schema, semantic, and resource-policy diagnostics. |
-| PMTiles load plan | Runs `createPMTilesRuntimeLoadPlan()` for PMTiles sources, including URL policy, MapLibre `source-layer` metadata, range-policy requirements, and optional archive-metadata readiness state. |
+| PMTiles load plan | Runs `createPMTilesRuntimeLoadPlan()` for PMTiles sources, including URL policy, MapLibre `source-layer` metadata, range-policy requirements, and optional caller-supplied archive metadata. |
 | No IO side effects | Reads the supplied JSON file only. It does not create project files, fetch URLs, start workers, or parse PMTiles archives. |
 
 Text output is intended for humans:
@@ -412,9 +419,33 @@ JSON output is intended for CI and release scripts:
 create-gis-map --preflight ./map.json --json
 ```
 
-The result includes `ok`, `status`, `validation`, `pmtiles`, and `diagnostics`.
-`status: "blocked"` exits with code `1`; `ready`, `metadata-required`, and
-`not-applicable` PMTiles plans exit with code `0`.
+PMTiles archive metadata can be supplied per source:
+
+```bash
+create-gis-map --preflight ./map.json --require-archive-metadata --pmtiles-metadata parcels=./parcels.metadata.json --json
+```
+
+The metadata JSON uses the engine `PMTilesArchiveMetadata` contract:
+
+```json
+{
+  "specVersion": 3,
+  "archiveBytes": 1000000,
+  "rootDirectoryOffset": 0,
+  "rootDirectoryLength": 1024,
+  "hasVectorTiles": true,
+  "hasRasterTiles": false,
+  "tileType": "vector",
+  "minZoom": 0,
+  "maxZoom": 14,
+  "bounds": [-74.1, 40.6, -73.7, 40.9]
+}
+```
+
+The result includes `ok`, `status`, `inputs`, `validation`, `pmtiles`, and
+`diagnostics`. `status: "blocked"` exits with code `1`. `metadata-required`
+exits with code `1` only when `--require-archive-metadata` is set; otherwise it
+remains a readiness signal.
 
 ---
 

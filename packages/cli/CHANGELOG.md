@@ -8,6 +8,9 @@
   MapSpec validation and PMTiles runtime load-plan checks without scaffolding,
   file generation, network fetches, or archive parsing. Generated `mapspec`
   and `app` template READMEs now include the preflight handoff command.
+- Add `--require-archive-metadata` and repeatable `--pmtiles-metadata
+  <source-id=path>` so CI can enforce caller-supplied PMTiles archive metadata
+  without hidden fetches or parser claims.
 
 ## 1.0.0
 
