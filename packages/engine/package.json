@@ -1,6 +1,6 @@
 {
   "name": "@gis-engine/engine",
-  "version": "0.5.0",
+  "version": "1.0.0",
   "description": "AI-native MapSpec runtime, command system, diagnostics, snapshots, and renderer adapters.",
   "license": "Apache-2.0",
   "type": "module",
