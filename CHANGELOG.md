@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- **PMTiles runtime load-plan preflight**: `PMTilesSourceLoader` and `createPMTilesRuntimeLoadPlan()` validate URL policy, MapLibre `metadata["source-layer"]` requirements, range-policy requirements, and optional archive metadata budgets without fetching or parsing PMTiles archives.
 - **Review-console contract** (`examples/ai-map-workbench/review-console.mjs`): pure computation module that derives 6 review sections (delivery-summary, files-and-export, map-edits, data-and-sources, spatial-analysis, scene-browsing) from `GenerationEvidenceBundle` without MCP tool names or `MapSpec` mutation.
 - **Review-console tests and fixtures**: 10 tests + 4 delivery-state fixtures (ready, blocked, needs-confirmation, follow-up-required) plus 24 cross-state QA matrix invariants and 11 workbench hardening tests (review actions, durable audit, credential safety).
 - **Cloud-native schema/resource-policy contracts**: TypeBox schemas and validation functions for PMTiles archive metadata (`PMTilesArchiveMetadataSchema`, 500 MB limit), GeoParquet source spec (`GeoParquetSourceSchema`, 1 GB / 10 M rows), and FlatGeobuf source spec (`FlatGeobufSourceSchema`, 500 MB / 5 M features). All validation is IO-free and returns structured diagnostics. Accepted as schema/policy contracts only — no runtime parser support.

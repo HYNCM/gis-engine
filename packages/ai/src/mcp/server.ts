@@ -225,6 +225,39 @@ const SourceArchiveContractSchema = {
   additionalProperties: false,
 } as const;
 
+const SourceRuntimeLoadPlanSchema = {
+  type: "object",
+  properties: {
+    status: { type: "string", enum: ["ready", "metadata-required", "blocked"] },
+    sourceLayerIds: { type: "array", items: { type: "string" } },
+    diagnosticCounts: DiagnosticCountsSchema,
+    requirements: {
+      type: "object",
+      properties: {
+        mapLibreVectorSource: { type: "boolean", const: true },
+        sourceLayerMetadata: { type: "boolean", const: true },
+        rangeRequests: { type: "boolean", const: true },
+        worker: { type: "boolean", const: true },
+        archiveMetadata: { type: "boolean" },
+        archiveParsing: { type: "boolean", const: false },
+        featureQuery: { type: "boolean", const: false },
+      },
+      required: [
+        "mapLibreVectorSource",
+        "sourceLayerMetadata",
+        "rangeRequests",
+        "worker",
+        "archiveMetadata",
+        "archiveParsing",
+        "featureQuery",
+      ],
+      additionalProperties: false,
+    },
+  },
+  required: ["status", "sourceLayerIds", "diagnosticCounts", "requirements"],
+  additionalProperties: false,
+} as const;
+
 const SourceReadinessSchema = {
   type: "object",
   properties: {
@@ -234,6 +267,7 @@ const SourceReadinessSchema = {
     queryReady: { type: "boolean" },
     resourcePolicy: { type: "string", enum: ["passed", "blocked", "not-applicable", "not-checked"] },
     archiveContract: SourceArchiveContractSchema,
+    runtimeLoadPlan: SourceRuntimeLoadPlanSchema,
   },
   required: ["sourceId", "type", "state", "queryReady", "resourcePolicy"],
   additionalProperties: false,

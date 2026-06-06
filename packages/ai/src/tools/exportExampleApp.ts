@@ -1,4 +1,4 @@
-import { type Diagnostic, Scene3DStableRuntimeBlockerCodes } from "@gis-engine/engine";
+import { type Diagnostic, type PMTilesRuntimeSourcePlan, Scene3DStableRuntimeBlockerCodes } from "@gis-engine/engine";
 import { Ajv } from "ajv/dist/ajv.js";
 import { toolInputErrorsToDiagnostics } from "./schemaDiagnostics.js";
 import { DiagnosticCountsSchema } from "./shared.js";
@@ -71,6 +71,39 @@ const SourceContractSchema = {
     policyFields: { type: "array", items: { type: "string" } },
   },
   required: ["kind", "state", "metadataFields", "policyFields"],
+  additionalProperties: false,
+} as const;
+
+const SourceRuntimeLoadPlanSchema = {
+  type: "object",
+  properties: {
+    status: { type: "string", enum: ["ready", "metadata-required", "blocked"] },
+    sourceLayerIds: { type: "array", items: { type: "string" } },
+    diagnosticCounts: DiagnosticCountsSchema,
+    requirements: {
+      type: "object",
+      properties: {
+        mapLibreVectorSource: { type: "boolean", const: true },
+        sourceLayerMetadata: { type: "boolean", const: true },
+        rangeRequests: { type: "boolean", const: true },
+        worker: { type: "boolean", const: true },
+        archiveMetadata: { type: "boolean" },
+        archiveParsing: { type: "boolean", const: false },
+        featureQuery: { type: "boolean", const: false },
+      },
+      required: [
+        "mapLibreVectorSource",
+        "sourceLayerMetadata",
+        "rangeRequests",
+        "worker",
+        "archiveMetadata",
+        "archiveParsing",
+        "featureQuery",
+      ],
+      additionalProperties: false,
+    },
+  },
+  required: ["status", "sourceLayerIds", "diagnosticCounts", "requirements"],
   additionalProperties: false,
 } as const;
 
@@ -180,6 +213,7 @@ export const ExampleAppDeliverySummarySchema = {
           },
           archiveContract: SourceArchiveContractSchema,
           sourceContract: SourceContractSchema,
+          runtimeLoadPlan: SourceRuntimeLoadPlanSchema,
           confirmationReasons: {
             type: "array",
             items: DeliveryConfirmationReasonSchema,
@@ -573,6 +607,12 @@ export interface ExampleAppDeliverySummary {
       state: "explicit" | "not-applicable" | "not-checked";
       metadataFields: string[];
       policyFields: string[];
+    };
+    runtimeLoadPlan?: {
+      status: "ready" | "metadata-required" | "blocked";
+      sourceLayerIds: string[];
+      diagnosticCounts: Record<Diagnostic["severity"], number>;
+      requirements: PMTilesRuntimeSourcePlan["requirements"];
     };
     confirmationReasons: Array<
       "external-resource" | "network-fetch" | "archive-parsing" | "worker-use" | "file-write" | "stable-scene3d-runtime"

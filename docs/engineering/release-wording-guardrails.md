@@ -21,7 +21,7 @@ Apply these rules to:
 | --- | --- | --- |
 | SceneView3D runtime | Say `extensions.scene3d` is extension-only, mock/query evidence is readiness evidence, and stable `view.mode: "scene3d"` remains blocked until a future accepted promotion gate. | Do not claim stable SceneView3D runtime support, production 3D rendering, or stable renderer availability. |
 | Generated-app export | Say `export_example_app` returns manifest and file metadata, remains side-effect free, and does not fetch, parse, or write files. | Do not describe generated-app delivery as writing, saving, persisting, or packaging files on disk. |
-| Cloud-native sources | Say GeoJSON/raster/vector/PMTiles are bounded by the current source matrix, PMTiles archive parsing and feature query are readiness-only, and GeoParquet/FlatGeobuf/GeoTIFF/GeoZarr remain blocked. | Do not claim blocked formats have runtime loaders, parsers, workers, feature queries, or export mutation support. |
+| Cloud-native sources | Say GeoJSON/raster/vector/PMTiles are bounded by the current source matrix, PMTiles has IO-free load-plan preflight for URL-compatible MapLibre vector delivery, PMTiles archive parsing and feature query are readiness-only, and GeoParquet/FlatGeobuf/GeoTIFF/GeoZarr remain blocked. | Do not claim blocked formats have runtime loaders, parsers, workers, feature queries, or export mutation support. |
 | Spatial analysis | Say point/bbox query evidence is readiness evidence and buffer, intersection, overlay, routing, aggregation, and richer geoprocessing stay behind future promotion tasks. | Avoid any public copy that presents advanced geoprocessing as available capability. |
 
 ## Release Check
@@ -42,6 +42,8 @@ Before closing a release wording task:
 - "`export_example_app` is a side-effect-free manifest handoff."
 - "PMTiles is URL-compatible display/export evidence, while archive parsing and
   feature query stay readiness-only."
+- "PMTiles load-plan preflight checks URL policy, source-layer metadata, and
+  optional archive metadata budgets without fetching or parsing the archive."
 - "Buffer, overlay, routing, intersection, and aggregation are blocked until
   operation-specific schemas, diagnostics, fixtures, and MCP exposure review
   exist."

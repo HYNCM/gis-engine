@@ -29,6 +29,15 @@ export {
   type SourceValidationResult,
   type SourceValidationStatus,
 } from "./sources/contract.js";
+export {
+  type CreatePMTilesRuntimeLoadPlanOptions,
+  createPMTilesRuntimeLoadPlan,
+  type PMTilesRuntimeLoadPlan,
+  type PMTilesRuntimeLoadPlanStatus,
+  type PMTilesRuntimeSourcePlan,
+  type PMTilesRuntimeSourceStatus,
+  PMTilesSourceLoader,
+} from "./sources/pmtiles.js";
 export type {
   FlatGeobufPolicy,
   FlatGeobufSourceSpec,

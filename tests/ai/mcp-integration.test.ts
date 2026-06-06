@@ -300,6 +300,14 @@ describe("MCP Server Integration", () => {
           metadataFields: string[];
           policyFields: string[];
         };
+        runtimeLoadPlan?: {
+          status: string;
+          sourceLayerIds: string[];
+          requirements: {
+            archiveParsing: boolean;
+            featureQuery: boolean;
+          };
+        };
       }>;
     };
     expect(result.isError).toBeUndefined();
@@ -327,6 +335,14 @@ describe("MCP Server Integration", () => {
           state: "explicit",
           metadataFields: expect.arrayContaining(["specVersion", "archiveBytes", "rootDirectoryLength"]),
           policyFields: expect.arrayContaining(["maxArchiveBytes", "allowRangeRequests", "timeoutMs"]),
+        }),
+        runtimeLoadPlan: expect.objectContaining({
+          status: "ready",
+          sourceLayerIds: ["parcels"],
+          requirements: expect.objectContaining({
+            archiveParsing: false,
+            featureQuery: false,
+          }),
         }),
       }),
     );

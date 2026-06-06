@@ -70,6 +70,41 @@ const result = applyCommands(map.spec, commands, { collectTrace: true });
 const snapshot = await map.snapshot();
 ```
 
+## PMTiles Runtime Preflight
+
+PMTiles is the preferred lightweight vector delivery path for local and hosted
+large-map datasets. Before handing a PMTiles `MapSpec` to MapLibre, SDK callers
+can create an IO-free load plan that checks the URL policy, required
+`metadata["source-layer"]` values, optional archive metadata budgets, and known
+unsupported states.
+
+```typescript
+import { createPMTilesRuntimeLoadPlan } from "@gis-engine/engine";
+
+const plan = createPMTilesRuntimeLoadPlan(spec, {
+  requireArchiveMetadata: true,
+  archiveMetadata: {
+    parcels: {
+      specVersion: 3,
+      archiveBytes: 1_000_000,
+      rootDirectoryOffset: 0,
+      rootDirectoryLength: 1024,
+      hasVectorTiles: true,
+      hasRasterTiles: false,
+      tileType: "vector",
+    },
+  },
+});
+
+if (plan.status === "blocked") {
+  console.error(plan.diagnostics);
+}
+```
+
+This preflight does not fetch resources, parse PMTiles archives, or provide
+PMTiles feature-query semantics. It makes URL-compatible MapLibre vector
+delivery auditable before runtime.
+
 ## Next Steps
 
 - [CLI Quick Start](../cli/README.md) — scaffold or AI-generate a map project

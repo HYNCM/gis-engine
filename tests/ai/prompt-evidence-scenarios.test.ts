@@ -357,6 +357,7 @@ describe("prompt-level generation evidence scenarios", () => {
             id: "parcel-fills",
             type: "fill",
             source: "parcels",
+            metadata: { "source-layer": "parcels" },
           },
         ],
       },

@@ -17,10 +17,10 @@ decision_level: advisory
 # Cloud-Native Source Readiness Matrix
 
 This matrix is a readiness contract for generated map applications. It does not
-add new source types or runtime loaders. The goal is to make AI planning honest
-about which portable data sources are supported now, which are URL/schema
-ready only, and which must stay blocked until schemas, diagnostics, resource
-policy, and tests exist.
+add new source types or archive parsers. The goal is to make AI planning honest
+about which portable data sources are supported now, which have IO-free
+load-plan preflight, which are URL/schema ready only, and which must stay
+blocked until schemas, diagnostics, resource policy, and tests exist.
 
 ## Readiness States
 
@@ -38,7 +38,7 @@ policy, and tests exist.
 | URL GeoJSON | supported for display/export, readiness-only for headless query | `sources.*.type: "geojson"` with string `data` | relative, `pmtiles:`, localhost, or allowlisted `http(s)` via `/sources/{id}/data` | headless query returns `CAPABILITY.UNSUPPORTED` at `/sources/{id}/data` until data is inlined or a fetch/cache contract exists | manifests may list the URL-bearing spec but must not fetch the URL | future loader contract must define fetch, cache, size, CRS, and error diagnostics |
 | Raster tiles | supported for display/export | `sources.*.type: "raster"` with `tiles[]` | checked per tile at `/sources/{id}/tiles/{index}` | no feature query support | manifests may list raster examples without fetching tiles | analysis, sampling, GeoTIFF, and raster array operations remain blocked |
 | Vector tile URL | supported for display/export | `sources.*.type: "vector"` with `tiles[]` or `url` | checked at `/sources/{id}/tiles/{index}` or `/sources/{id}/url` | no feature query support in headless evidence | manifests may list vector URL examples; source-layer metadata remains layer metadata | future query support needs tile decode, source-layer, feature id, extent, and ordering semantics |
-| PMTiles | supported as URL-compatible vector source evidence, readiness-only for archive parsing | `sources.*.type: "pmtiles"` with `url` | relative, localhost, allowlisted `http(s)`, or `pmtiles:` via `/sources/{id}/url` | no PMTiles feature query or archive mutation support | `pmtiles-local` manifest stays file-list only; transformer warns that PMTiles maps to a MapLibre vector URL | future contract must define archive open/range behavior, metadata, tilejson, mutation/export handoff, and worker/resource budgets |
+| PMTiles | supported as URL-compatible vector source evidence with IO-free load-plan preflight; readiness-only for archive parsing | `sources.*.type: "pmtiles"` with `url`; MapLibre vector layers must declare `metadata["source-layer"]` | relative, localhost, allowlisted `http(s)`, or `pmtiles:` via `/sources/{id}/url`; `createPMTilesRuntimeLoadPlan()` also checks range-policy requirements and optional archive metadata budgets | no PMTiles feature query or archive mutation support | `pmtiles-local` manifest stays file-list only; context and delivery evidence may include `runtimeLoadPlan` summaries without fetching resources | future contract must define archive parsing/open behavior, tilejson, mutation/export handoff, and query semantics |
 | GeoParquet | blocked | no public `SourceSpec` type | no URL path is accepted until schema exists | no query/runtime support; `covering.bbox` may inform future planning only | manifests must not claim GeoParquet source support | add schema, CRS metadata, WKB/GeoArrow encoding diagnostics, bbox metadata validation, range/worker policy, and read-only query tests |
 | FlatGeobuf | blocked | no public `SourceSpec` type | no URL path is accepted until schema exists | no query/runtime support | manifests must not claim FlatGeobuf source support | add schema, magic/version checks, optional index/range semantics, streaming diagnostics, and deterministic fixture tests |
 | GeoTIFF | blocked | no public `SourceSpec` type | no URL path is accepted until schema exists | no raster query/sampling support | manifests must not claim GeoTIFF source support | add raster source schema, byte/range policy, band/CRS/no-data diagnostics, and snapshot tests |
@@ -49,11 +49,11 @@ policy, and tests exist.
 `docs/planning/feature-specs/generated-app-review-console.md` should surface
 the matrix above as `Data and sources` cards. The cards are review evidence
 only: they do not add MCP tool names, promote stable SceneView3D behavior, or
-introduce runtime loaders, parsers, decoders, archive readers, or workers.
+introduce resource fetches, parsers, decoders, archive readers, or workers.
 
 | Format | Card state in Generated App Review Console | Card details | Delivery impact |
 | --- | --- | --- | --- |
-| PMTiles | `supported` for URL-compatible display/export evidence; `readiness-only` for archive parsing, archive metadata, range access, mutation/export handoff, and feature query. | Show `sources.*.type: "pmtiles"`, `/sources/{id}/url` resource-policy evidence, transformer warning, and explicit "no archive parser/query runtime" evidence. | May pass the source section for display/export; PMTiles archive or query requests become `follow-up-required` or `needs-confirmation` and must not be accepted as implemented behavior. |
+| PMTiles | `supported` for URL-compatible display/export evidence and load-plan preflight; `readiness-only` for archive parsing, mutation/export handoff, and feature query. | Show `sources.*.type: "pmtiles"`, `/sources/{id}/url` resource-policy evidence, `runtimeLoadPlan` status, required `metadata["source-layer"]`, optional archive metadata budget checks, transformer warning, and explicit "no archive parser/query runtime" evidence. | May pass the source section for display/export when load-plan status is not `blocked`; PMTiles archive or query requests become `follow-up-required` or `needs-confirmation` and must not be accepted as implemented behavior. |
 | URL GeoJSON | `supported` for display/export; `readiness-only` for headless feature query when `data` is a URL string. | Show `sources.*.type: "geojson"`, `/sources/{id}/data` policy result, manifest note that export does not fetch, and `CAPABILITY.UNSUPPORTED` query evidence for URL-backed headless cases. | Display/export evidence can be accepted; URL-backed query requests require inline data or a future fetch/cache contract before the app can be fully ready. |
 | GeoParquet | `blocked`. | Show blocked source intent only, no generated `SourceSpec`, and follow-up requirements for schema, CRS metadata, WKB/GeoArrow diagnostics, bbox metadata, range/worker policy, and query tests. | Blocks delivery if requested as an implemented source. |
 | FlatGeobuf | `blocked`. | Show blocked source intent only, no generated `SourceSpec`, and follow-up requirements for schema, magic/version checks, index/range semantics, streaming diagnostics, and deterministic fixtures. | Blocks delivery if requested as an implemented source. |

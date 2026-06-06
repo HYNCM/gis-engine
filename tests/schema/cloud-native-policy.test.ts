@@ -1,8 +1,13 @@
 import {
+  createPMTilesRuntimeLoadPlan,
+  DiagnosticCodes,
   defaultFlatGeobufPolicy,
+  defaultResourcePolicy,
   type FlatGeobufSourceSpec,
   type GeoParquetSourceSpec,
+  type MapSpec,
   type PMTilesArchiveMetadata,
+  PMTilesSourceLoader,
   validateFlatGeobufPolicy,
   validateGeoParquetPolicy,
   validatePMTilesArchivePolicy,
@@ -76,6 +81,138 @@ describe("CNS-001: PMTiles archive policy validation", () => {
     };
     const diagnostics = validatePMTilesArchivePolicy(metadata);
     expect(diagnostics).toContainEqual(expect.objectContaining({ path: "/pmtiles/bounds", severity: "error" }));
+  });
+});
+
+describe("CNS-001 runtime load plan: PMTiles URL-compatible delivery", () => {
+  it("creates a ready PMTiles runtime load plan with source-layer metadata and archive budgets", () => {
+    const plan = createPMTilesRuntimeLoadPlan(pmtilesMapSpec(), {
+      archiveMetadata: { parcels: validPMTilesArchiveMetadata() },
+      requireArchiveMetadata: true,
+    });
+
+    expect(plan.status).toBe("ready");
+    expect(plan.summary).toEqual({
+      pmtilesSourceCount: 1,
+      readySourceCount: 1,
+      metadataRequiredSourceCount: 0,
+      blockedSourceCount: 0,
+    });
+    expect(plan.sources[0]).toMatchObject({
+      sourceId: "parcels",
+      status: "ready",
+      url: "./data/parcels.pmtiles",
+      layerIds: ["parcel-fill", "parcel-outline"],
+      sourceLayerIds: ["parcels"],
+      requirements: {
+        mapLibreVectorSource: true,
+        sourceLayerMetadata: true,
+        rangeRequests: true,
+        worker: true,
+        archiveMetadata: true,
+        archiveParsing: false,
+        featureQuery: false,
+      },
+      capabilities: {
+        sourceType: "pmtiles",
+        estimatedByteSize: 1_000_000,
+        metadata: expect.objectContaining({
+          delivery: "maplibre-vector-url",
+          archiveParsing: false,
+          featureQuery: false,
+          tileType: "vector",
+        }),
+      },
+    });
+    expect(plan.diagnostics).toEqual([]);
+  });
+
+  it("marks PMTiles plans as metadata-required when archive metadata is required but absent", () => {
+    const plan = createPMTilesRuntimeLoadPlan(pmtilesMapSpec(), { requireArchiveMetadata: true });
+
+    expect(plan.status).toBe("metadata-required");
+    expect(plan.summary.metadataRequiredSourceCount).toBe(1);
+    expect(plan.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: DiagnosticCodes.CapabilityUnsupported,
+        severity: "warning",
+        path: "/sources/parcels/archiveMetadata",
+      }),
+    );
+  });
+
+  it("blocks PMTiles vector delivery when layers omit source-layer metadata", () => {
+    const spec = pmtilesMapSpec();
+    const firstLayer = spec.layers[0];
+    if (!firstLayer) throw new Error("Expected PMTiles test fixture to include a layer.");
+    spec.layers[0] = { ...firstLayer, metadata: undefined };
+
+    const plan = createPMTilesRuntimeLoadPlan(spec);
+
+    expect(plan.status).toBe("blocked");
+    expect(plan.summary.blockedSourceCount).toBe(1);
+    expect(plan.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: DiagnosticCodes.LayerSourceIncompatible,
+        severity: "error",
+        path: "/layers/0/metadata/source-layer",
+      }),
+    );
+  });
+
+  it("blocks PMTiles plans before IO when the URL violates resource policy", () => {
+    const spec = pmtilesMapSpec();
+    spec.sources.parcels = { type: "pmtiles", url: "https://tiles.example.com/parcels.pmtiles" };
+
+    const plan = createPMTilesRuntimeLoadPlan(spec, {
+      resourcePolicy: {
+        ...defaultResourcePolicy,
+        allowedHosts: ["localhost"],
+      },
+    });
+
+    expect(plan.status).toBe("blocked");
+    expect(plan.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: DiagnosticCodes.SecurityUrlBlocked,
+        severity: "error",
+        path: "/sources/parcels/url",
+      }),
+    );
+  });
+
+  it("scopes archive metadata budget diagnostics to the PMTiles source id", () => {
+    const plan = createPMTilesRuntimeLoadPlan(pmtilesMapSpec(), {
+      archiveMetadata: {
+        parcels: {
+          ...validPMTilesArchiveMetadata(),
+          archiveBytes: 600_000_000,
+        },
+      },
+    });
+
+    expect(plan.status).toBe("blocked");
+    expect(plan.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: DiagnosticCodes.SecurityUrlBlocked,
+        severity: "error",
+        path: "/sources/parcels/archiveMetadata/archiveBytes",
+      }),
+    );
+  });
+
+  it("exposes a PMTilesSourceLoader for SDK callers that need source-only validation", () => {
+    const loader = new PMTilesSourceLoader("parcels");
+    const result = loader.validate({ type: "pmtiles", url: "./data/parcels.pmtiles" }, defaultResourcePolicy);
+
+    expect(result.status).toBe("ready");
+    expect(result.diagnostics).toEqual([]);
+    expect(result.capabilities).toMatchObject({
+      sourceType: "pmtiles",
+      supportsStreaming: true,
+      supportsRandomAccess: true,
+      requiresWorker: true,
+    });
   });
 });
 
@@ -158,6 +295,53 @@ describe("CNS-002: GeoParquet policy validation", () => {
     );
   });
 });
+
+function validPMTilesArchiveMetadata(): PMTilesArchiveMetadata {
+  return {
+    specVersion: 3,
+    archiveBytes: 1_000_000,
+    rootDirectoryOffset: 0,
+    rootDirectoryLength: 1024,
+    hasVectorTiles: true,
+    hasRasterTiles: false,
+    tileType: "vector",
+    minZoom: 0,
+    maxZoom: 14,
+    bounds: [120, 30, 121, 31],
+  };
+}
+
+function pmtilesMapSpec(): MapSpec {
+  return {
+    version: "0.1",
+    id: "pmtiles-runtime-plan",
+    view: { mode: "map2d", center: [120.15, 30.28], zoom: 12 },
+    sources: {
+      parcels: {
+        type: "pmtiles",
+        url: "./data/parcels.pmtiles",
+        minzoom: 0,
+        maxzoom: 14,
+      },
+    },
+    layers: [
+      {
+        id: "parcel-fill",
+        type: "fill",
+        source: "parcels",
+        metadata: { "source-layer": "parcels" },
+        paint: { "fill-color": "#22c55e" },
+      },
+      {
+        id: "parcel-outline",
+        type: "line",
+        source: "parcels",
+        metadata: { "source-layer": "parcels" },
+        paint: { "line-color": "#166534" },
+      },
+    ],
+  };
+}
 
 describe("CNS-003: FlatGeobuf policy validation", () => {
   it("accepts valid FlatGeobuf metadata and reports runtime-blocked", () => {

@@ -1192,6 +1192,7 @@ describe("generation evidence bundle", () => {
           id: "parcel-fills",
           type: "fill",
           source: "parcels",
+          metadata: { "source-layer": "parcels" },
         },
       ],
     });
@@ -1430,6 +1431,7 @@ describe("generation evidence bundle", () => {
           id: "parcel-fills",
           type: "fill",
           source: "parcels",
+          metadata: { "source-layer": "parcels" },
         },
       ],
     });

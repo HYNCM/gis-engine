@@ -1,5 +1,15 @@
 # @gis-engine/engine
 
+## Unreleased
+
+### Minor Changes
+
+- Add `PMTilesSourceLoader` and `createPMTilesRuntimeLoadPlan()` for IO-free
+  PMTiles preflight. The load plan checks resource policy, MapLibre
+  `metadata["source-layer"]` requirements, range-policy requirements, and
+  optional archive metadata budgets before runtime without fetching or parsing
+  PMTiles archives.
+
 ## 1.0.0
 
 ### Major Changes

@@ -85,6 +85,16 @@ breaking/non-breaking note in the PR summary.
   `export_spec`, `get_context_summary`, `snapshot_spec`, `explain_spec`,
   `export_example_app`. No `generate_map_app` or `spatial_query` alias.
 
+## Current v1 Source Preflight Additions
+
+- `PMTilesSourceLoader` and `createPMTilesRuntimeLoadPlan()` are additive SDK
+  APIs for IO-free PMTiles preflight. They validate PMTiles source URLs against
+  resource policy, require MapLibre vector layers to declare
+  `metadata["source-layer"]`, check optional archive metadata against
+  `PMTilesArchivePolicy`, and report structured diagnostics before runtime.
+- This does not add PMTiles archive parsing, resource fetching, feature query,
+  export mutation, or raster PMTiles delivery support.
+
 ## RFC-QC Fast Track
 
 Use an `RFC-QC-*` note for contract-quality-control changes that are narrow, urgent, and easy to review without reopening the full architecture process.

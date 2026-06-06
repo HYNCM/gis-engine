@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import {
   type CapabilityReport,
   CapabilityReportSchema,
+  createPMTilesRuntimeLoadPlan,
   type Diagnostic,
   DiagnosticCodes,
   DiagnosticSchema,
@@ -21,6 +22,7 @@ import {
   MapRuntime,
   type MapSpec,
   MockAdapter,
+  type PMTilesRuntimeSourcePlan,
   type QueryFeaturesOptions,
   type RendererAdapter,
   Scene3DStableRuntimeBlockerCodes,
@@ -1540,10 +1542,13 @@ function buildDeliverySummary(input: {
   const confirmations = buildDeliveryConfirmations(sourceReadiness);
   const confirmationRequired = confirmations.some((confirmation) => confirmation.required);
   const followUps = buildDeliveryFollowUps(input, sourceReadiness);
-  const status = deliveryStatus(input.status, confirmationRequired, followUps.length);
-  const dataAndAnalysisBlockerCount =
-    input.spatialQueryEvidence.diagnosticCounts.error +
-    sourceReadiness.filter((source) => source.state === "blocked").length;
+  const sourceBlockerCount = sourceReadiness.filter((source) => source.state === "blocked").length;
+  const status = deliveryStatus(
+    sourceBlockerCount > 0 ? "blocked" : input.status,
+    confirmationRequired,
+    followUps.length,
+  );
+  const dataAndAnalysisBlockerCount = input.spatialQueryEvidence.diagnosticCounts.error + sourceBlockerCount;
   const dataAndAnalysisFollowUpCount = dataSectionFollowUpCount(followUps);
   const sceneBrowsingBlockerCount =
     input.sceneBrowsing.status === "blocked"
@@ -1688,6 +1693,10 @@ function deliveryStatus(
 }
 
 function buildSourceReadiness(spec: MapSpec): ExampleAppDeliverySummary["sourceReadiness"] {
+  const pmtilesLoadPlans = new Map(
+    createPMTilesRuntimeLoadPlan(spec).sources.map((sourcePlan) => [sourcePlan.sourceId, sourcePlan]),
+  );
+
   return Object.entries(spec.sources).map(([sourceId, source]) => {
     const confirmationReasons = sourceConfirmationReasons(source);
     const resourcePolicy = sourceResourcePolicy(source);
@@ -1721,16 +1730,30 @@ function buildSourceReadiness(spec: MapSpec): ExampleAppDeliverySummary["sourceR
     }
 
     if (source.type === "pmtiles") {
+      const runtimeLoadPlan = pmtilesLoadPlans.get(sourceId);
+      const runtimeBlocked = runtimeLoadPlan?.status === "blocked";
+      const runtimeResourcePolicy = runtimeLoadPlan?.diagnostics.some(
+        (diagnostic) => diagnostic.code === DiagnosticCodes.SecurityUrlBlocked,
+      )
+        ? "blocked"
+        : resourcePolicy;
+
       return {
         sourceId,
         type: source.type,
-        state: "readiness-only",
+        state: runtimeBlocked ? "blocked" : "readiness-only",
         queryReady: false,
-        resourcePolicy,
+        resourcePolicy: runtimeResourcePolicy,
         confirmationReasons,
         ...(archiveContract ? { archiveContract } : {}),
+        ...(runtimeLoadPlan ? { runtimeLoadPlan: summarizePMTilesRuntimeLoadPlan(runtimeLoadPlan) } : {}),
         notes: [
           "PMTiles is URL-compatible for display/export evidence, while archive parsing and feature query support remain future contracts.",
+          ...(runtimeBlocked
+            ? [
+                "PMTiles runtime load-plan preflight is blocked; fix resource policy, source-layer metadata, or archive policy diagnostics before delivery.",
+              ]
+            : []),
         ],
       };
     }
@@ -1771,6 +1794,17 @@ function buildSourceReadiness(spec: MapSpec): ExampleAppDeliverySummary["sourceR
       notes: ["This source type is outside the current public MapSpec source readiness matrix."],
     };
   });
+}
+
+function summarizePMTilesRuntimeLoadPlan(
+  plan: PMTilesRuntimeSourcePlan,
+): NonNullable<ExampleAppDeliverySummary["sourceReadiness"][number]["runtimeLoadPlan"]> {
+  return {
+    status: plan.status,
+    sourceLayerIds: plan.sourceLayerIds,
+    diagnosticCounts: countDiagnostics(plan.diagnostics),
+    requirements: plan.requirements,
+  };
 }
 
 function buildSourcePromotionCandidates(
