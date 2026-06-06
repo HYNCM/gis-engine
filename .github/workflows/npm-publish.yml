@@ -5,9 +5,10 @@
 #   - Release tag push (v*)
 #
 # 发布策略：
-#   - engine、ai、cli、scene3d 同步 v0.2
-#   - scene3d 标注 experimental
-#   - scene3d-three-adapter 不进 GA publish workflow
+#   - engine、ai、cli、scene3d 同步 v1.0（linked group）
+#   - scene3d 使用 --tag next（experimental，不覆盖 latest）
+#   - engine、ai、cli 使用 --tag latest
+#   - scene3d-three-adapter 不进 GA publish workflow（独立 0.x 版本）
 
 name: NPM Publish
 
@@ -95,8 +96,8 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: 发布 @gis-engine/scene3d
-        run: cd packages/scene3d && pnpm publish --no-git-checks --provenance
+      - name: 发布 @gis-engine/scene3d (tag: next)
+        run: cd packages/scene3d && pnpm publish --no-git-checks --provenance --tag next
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
