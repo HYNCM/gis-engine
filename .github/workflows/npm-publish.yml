@@ -96,7 +96,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: 发布 @gis-engine/scene3d (tag: next)
+      - name: "发布 @gis-engine/scene3d (tag: next)"
         run: cd packages/scene3d && pnpm publish --no-git-checks --provenance --tag next
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
