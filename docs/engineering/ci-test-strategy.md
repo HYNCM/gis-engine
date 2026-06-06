@@ -43,12 +43,32 @@ fixtures -> schema validation -> command replay -> renderer adapter -> snapshot 
     "test:release:scene3d": "vitest run tests/snapshot/smoke/scene3d-release-visual-gate.test.ts",
     "test:release:rc": "pnpm build:schema && pnpm check && pnpm test:snapshot:visual",
     "test:release:strict": "pnpm build:schema && pnpm check && GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual",
-    "check": "pnpm build && pnpm test && pnpm test:studio"
+    "release:preflight": "node scripts/release-preflight.mjs",
+    "check": "pnpm build && pnpm test && pnpm test:studio",
+    "smoke:cli-install": "node scripts/cli-install-smoke.mjs"
   }
 }
 ```
 
 目录约定、fixture 规则和 snapshot baseline 管理策略见下文各章节。
+
+## Release Runner Preflight
+
+Release gates must start with `pnpm release:preflight` on a Node 22 runner. The
+script validates `.nvmrc`, `packageManager` (`pnpm@9.15.0`), Biome platform
+binary availability, localhost listener permission, and Playwright/Chromium
+launch capability before any release claim is made.
+
+For CLI/package usability, release candidates must also run
+`pnpm smoke:cli-install`. The smoke packs `@gis-engine/cli`, installs it in a
+fresh temporary consumer project, runs the installed
+`node_modules/.bin/create-gis-map` binary, builds a generated Vite project, and
+checks mock `--generate` output. This is the guardrail for the scoped package
+entrypoint:
+
+```bash
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map
+```
 
 ## Required Gates
 
@@ -56,6 +76,7 @@ CI 分为 PR、main-nightly、release 三档。PR 目标是稳定阻断确定性
 
 | Gate | PR | main-nightly | release |
 | --- | --- | --- | --- |
+| release preflight | 否 | 建议运行；失败告警 | `pnpm release:preflight` 必跑且阻断 |
 | schema sync | 必跑且阻断 | 必跑且阻断 | 必跑且阻断 |
 | schema fixtures | 必跑且阻断 | 必跑且阻断 | 必跑且阻断 |
 | command replay | 必跑且阻断 | 必跑且阻断 | 必跑且阻断 |
@@ -68,6 +89,7 @@ CI 分为 PR、main-nightly、release 三档。PR 目标是稳定阻断确定性
 | resource release | 必跑且阻断 | 必跑且阻断 | 必跑且阻断 |
 | perf smoke | 否 | `pnpm test:perf:nightly` 条件运行；失败告警 | `pnpm test:perf:nightly` 必跑且阻断 |
 | perf trend | 否 | `pnpm test:perf:trend` 周度运行并归档趋势报告 | `scripts/perf-trend.mjs` 生成的 `docs/reviews/perf-trend-*.md` 周度证据 |
+| CLI install smoke | 否 | 建议运行；失败告警 | `pnpm smoke:cli-install` 必跑且阻断 |
 | migration tests | 变更 schema 时必跑且阻断 | 变更 schema 时必跑且阻断 | 必跑且阻断 |
 
 `GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1` 会把 `snapshot:visual` 从可降级 gate 提升为强制 gate。该环境变量适用于 release、手动验收、baseline 更新和任何需要确认真实 MapLibre GL 渲染的 CI job。

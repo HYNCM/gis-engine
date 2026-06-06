@@ -107,7 +107,7 @@ const staticHtmlTemplate: Template = {
     import { createMap, applyCommands } from "https://unpkg.com/@gis-engine/engine";
 
     const spec = {
-      version: "0.2",
+      version: "0.1",
       sources: {
         points: {
           type: "geojson",
@@ -116,7 +116,8 @@ const staticHtmlTemplate: Template = {
       },
       layers: [
         { id: "points-layer", type: "circle", source: "points", paint: { "circle-radius": 6, "circle-color": "#3b82f6" } }
-      ]
+      ],
+      view: { center: [0, 0], zoom: 2 }
     };
 
     const container = document.getElementById("map");
@@ -215,7 +216,7 @@ const viteTsTemplate: Template = {
         content: `import { createMap } from "@gis-engine/engine";
 
 const spec = {
-  version: "0.2" as const,
+  version: "0.1" as const,
   sources: {
     points: {
       type: "geojson" as const,
@@ -230,11 +231,20 @@ const spec = {
       paint: { "circle-radius": 6, "circle-color": "#3b82f6" },
     },
   ],
+  view: { center: [0, 0] as [number, number], zoom: 2 },
 };
 
-const container = document.getElementById("map")!;
-const map = await createMap(container, spec, { renderer: "maplibre" });
-console.log("[${ctx.projectName}] map ready", map.exportSpec());
+async function main() {
+  const container = document.getElementById("map");
+  if (!container) throw new Error("Missing #map container");
+
+  const map = await createMap(container, spec, { renderer: "maplibre" });
+  console.log("[${ctx.projectName}] map ready", map.exportSpec());
+}
+
+main().catch((error) => {
+  console.error("[${ctx.projectName}] failed to initialize map", error);
+});
 `,
       },
       {
@@ -274,7 +284,7 @@ const mapspecTemplate: Template = {
         path: "map.json",
         content: `${JSON.stringify(
           {
-            version: "0.2",
+            version: "0.1",
             sources: {
               points: {
                 type: "geojson",
@@ -289,6 +299,7 @@ const mapspecTemplate: Template = {
                 paint: { "circle-radius": 6, "circle-color": "#3b82f6" },
               },
             ],
+            view: { center: [0, 0], zoom: 2 },
           },
           null,
           2,
@@ -1027,7 +1038,7 @@ ${componentRender}
         path: "map.json",
         content: `${JSON.stringify(
           {
-            version: "0.2",
+            version: "0.1",
             sources: {
               points: {
                 type: "geojson",
@@ -1042,6 +1053,7 @@ ${componentRender}
                 paint: { "circle-radius": 6, "circle-color": "#3b82f6" },
               },
             ],
+            view: { center: [0, 0], zoom: 2 },
           },
           null,
           2,
@@ -1075,7 +1087,7 @@ Current provider: \`${ctx.provider}\`
 Re-generate with a new prompt:
 
 \`\`\`bash
-npx create-gis-map . --generate --template app --prompt "Your description here" -y
+npm exec --package @gis-engine/cli@latest -- create-gis-map . --generate --template app --prompt "Your description here" -y
 \`\`\`
 `,
       },

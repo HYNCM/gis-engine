@@ -39,5 +39,5 @@ npm install @gis-engine/engine maplibre-gl
 ```
 
 ```bash
-npx create-gis-map my-map
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map
 ```

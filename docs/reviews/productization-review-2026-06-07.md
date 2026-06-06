@@ -157,6 +157,37 @@ The durable task snapshot is recorded in
 | `pnpm test:snapshot:smoke` | ENV-LIMITED | Chromium Mach port permission denied in local sandbox |
 | `pnpm publish:dry` | ENV-LIMITED | local build completed; npm dry-run phase failed on registry DNS/cache permission, and non-sandbox rerun could not be approved because the approval service returned 502 |
 
+## 2026-06-07 Execution Addendum
+
+Follow-up execution found a new P0 in the published-package path: the
+documented `npx create-gis-map` command targets an unpublished unscoped package,
+and the scoped package's installed bin could be inert when executed through an
+npm-style symlink. The implemented fix changes the CLI direct-execution guard
+to compare real filesystem paths, updates user-facing Quick Start commands to
+the scoped package form, and adds CLI tests for symlinked bin execution. The
+same install smoke also fixed generated `vite-ts` template drift: scaffolded
+specs now include the required `view`, use public `MapSpec.version: "0.1"`,
+and avoid top-level await so Vite's default production target can build.
+
+Release-runner reproducibility is now encoded as `pnpm release:preflight`,
+backed by `.nvmrc` (`22`) and checks for pnpm `9.15.0`, Biome, localhost
+listener capability, and Playwright/Chromium. SDK+CLI installability is encoded
+as `pnpm smoke:cli-install`, which packs `@gis-engine/cli`, installs it in a
+fresh temporary consumer project, runs the installed `create-gis-map` binary,
+builds a generated Vite project, and checks mock generate output.
+
+Workbench promotion intake remains No-go for hosted/product movement. The
+required future checklist is recorded in
+`docs/planning/feature-specs/ai-map-workbench-promotion-scope.md` and blocks on
+runtime owner, route/module boundary, auth/storage/export, release visual
+evidence, resource-policy evidence, MCP contract safety, and rollback plan.
+
+External package signals were refreshed at `2026-06-06T19:20:59Z`
+(`2026-06-07` Asia/Shanghai) and recorded in
+`docs/research/competitor-updates-2026-W24.md`. The refresh confirms the
+published GIS Engine `1.0.0` package line and does not change the existing
+roadmap gates.
+
 ## Non-Goals
 
 - Do not promote stable `view.mode: "scene3d"`.

@@ -4,7 +4,7 @@
 
 让一个新用户在 5 分钟内完成 "发现 → 安装 → 看到第一张地图 → 理解下一步" 的完整旅程。
 
-Phase A（SDK 硬化）和 Phase B（Provider HTTP 层）已让 `npx create-gis-map` 端到端可用。
+Phase A（SDK 硬化）和 Phase B（Provider HTTP 层）已让 `npm exec --package @gis-engine/cli@latest -- create-gis-map` 端到端可用。
 
 2026-06-04 状态校准：Phase C 的原始缺口大多已经关闭。根 README 已改成 Quick Start 入口，VitePress sidebar 页面已补齐，Playground 链接已替换为 Examples，getting-started 示例、fixture README、v0.2→v0.3 迁移指南和性能页面均已存在。当前 Phase C 不再按“11 个 404 + README 重写”的旧状态执行，下一步收敛到发布前 DX 验证和小缺陷修复。
 
@@ -49,7 +49,7 @@ Phase A（SDK 硬化）和 Phase B（Provider HTTP 层）已让 `npx create-gis-
 1. **重写顶部 30 行** — 用 "What is GIS Engine?" → "Quick Start" → "5-minute Tutorial" → "Learn More" 结构替换当前密集的项目状态段落。内部状态移到 `## Project Status` 子节。
 2. **修复 broken anchor** — `#quick-start` 链接指向不存在的 heading。添加 `## Quick Start` heading。
 3. **增加 package relationship 图** — 用 ASCII 或 Mermaid 说明 `@gis-engine/engine`（核心）、`@gis-engine/ai`（AI 工具）、`@gis-engine/cli`（CLI 入口）的关系。
-4. **增加 CLI prominence** — 在 Quick Start 区域突出 `npx create-gis-map` 作为推荐入口。
+4. **增加 CLI prominence** — 在 Quick Start 区域突出 `npm exec --package @gis-engine/cli@latest -- create-gis-map` 作为推荐入口。
 5. **移除或下移内部规划引用** — SceneView3D promotion readiness、W23 sprint references 等移到 Project Status 节或链接到内部文档。
 
 **文件**: `README.md` (root)

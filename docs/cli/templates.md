@@ -1,11 +1,11 @@
 # CLI Templates
 
-`create-gis-map` ships three scaffold templates. Select with `-t` / `--template`.
+`create-gis-map` ships four scaffold templates. Select with `-t` / `--template`.
 
 ## Usage
 
 ```bash
-npx create-gis-map <project-name> -t <template>
+npm exec --package @gis-engine/cli@latest -- create-gis-map <project-name> -t <template>
 ```
 
 ## static-html
@@ -15,7 +15,7 @@ Standalone HTML with inline CDN imports. No build step.
 Files: `index.html`, `README.md`.
 
 ```bash
-npx create-gis-map my-map -t static-html
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map -t static-html
 # open my-map/index.html
 ```
 
@@ -27,7 +27,7 @@ dependencies.
 Files: `package.json`, `tsconfig.json`, `index.html`, `src/main.ts`, `README.md`.
 
 ```bash
-npx create-gis-map my-map -t vite-ts
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map -t vite-ts
 cd my-map && npm install && npm run dev
 ```
 
@@ -38,13 +38,27 @@ Minimal MapSpec JSON file only. No application code.
 Files: `map.json`, `README.md`.
 
 ```bash
-npx create-gis-map my-map -t mapspec
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map -t mapspec
 # load map.json with createMap or validate_spec
+```
+
+## app
+
+Interactive Vite + React + Tailwind project with local `map.json` loading,
+responsive map controls, and optional generated UI components.
+
+Files: `package.json`, `vite.config.ts`, `tsconfig.json`, `index.html`,
+`map.json`, `src/main.tsx`, `src/App.tsx`, `src/index.css`, and component
+files under `src/components/`.
+
+```bash
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map -t app
+cd my-map && npm install && npm run build
 ```
 
 ## Template Defaults
 
-All templates generate a spec with `version: "0.2"`, one GeoJSON source
+All templates generate a spec with `version: "0.1"`, one GeoJSON source
 (`points`, empty FeatureCollection), and one circle layer. Provider defaults to
 `mock`.
 
@@ -52,7 +66,7 @@ All templates generate a spec with `version: "0.2"`, one GeoJSON source
 
 | Flag | Description |
 |---|---|
-| `-t` | Template: `static-html`, `vite-ts`, `mapspec` |
+| `-t` | Template: `static-html`, `vite-ts`, `mapspec`, `app` |
 | `-p` | Provider profile ID (default: `mock`) |
 | `--dry-run` | Preview without writing |
 | `-g` | Run AI generate pipeline instead of scaffold |

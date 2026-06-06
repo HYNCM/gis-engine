@@ -1,3 +1,7 @@
+import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import {
   CLI_API_KEY_ENVS,
   createProviderDiagnostics,
@@ -10,6 +14,41 @@ import {
   TEMPLATES,
 } from "@gis-engine/cli";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { isDirectCliExecution } from "../../packages/cli/src/bin.ts";
+
+// ---------------------------------------------------------------------------
+// bin.ts — direct execution guard
+// ---------------------------------------------------------------------------
+
+describe("cli-bin-direct-execution", () => {
+  it("detects direct execution through npm-style symlinked bin paths", () => {
+    const dir = mkdtempSync(join(tmpdir(), "gis-engine-cli-bin-"));
+    try {
+      const target = join(dir, "bin.js");
+      const symlink = join(dir, "create-gis-map");
+      writeFileSync(target, "#!/usr/bin/env node\n", "utf-8");
+      symlinkSync(target, symlink);
+
+      expect(isDirectCliExecution(pathToFileURL(target).href, symlink)).toBe(true);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("does not treat unrelated process entrypoints as direct CLI execution", () => {
+    const dir = mkdtempSync(join(tmpdir(), "gis-engine-cli-bin-"));
+    try {
+      const target = join(dir, "bin.js");
+      const runner = join(dir, "vitest.js");
+      writeFileSync(target, "#!/usr/bin/env node\n", "utf-8");
+      writeFileSync(runner, "#!/usr/bin/env node\n", "utf-8");
+
+      expect(isDirectCliExecution(pathToFileURL(target).href, runner)).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
 
 // ---------------------------------------------------------------------------
 // config.ts — parseArgs
@@ -424,6 +463,36 @@ describe("cli-templates", () => {
     const readme = files.find((f) => f.path === "README.md")!;
     expect(indexHtml.content).toContain("my-cool-map");
     expect(readme.content).toContain("my-cool-map");
+  });
+
+  it("scaffold templates include the required MapSpec view", () => {
+    const ctx = { projectName: "view-test", provider: "mock", cliVersion: "1.0.0" };
+
+    const staticHtml = getTemplate("static-html")!
+      .generate(ctx)
+      .find((f) => f.path === "index.html")!;
+    expect(staticHtml.content).toContain("view:");
+    expect(staticHtml.content).toContain('version: "0.1"');
+
+    const viteMain = getTemplate("vite-ts")!
+      .generate(ctx)
+      .find((f) => f.path === "src/main.ts")!;
+    expect(viteMain.content).toContain("view:");
+    expect(viteMain.content).toContain('version: "0.1"');
+    expect(viteMain.content).toContain("async function main()");
+    expect(viteMain.content).not.toMatch(/^const map = await createMap/m);
+
+    const mapspec = getTemplate("mapspec")!
+      .generate(ctx)
+      .find((f) => f.path === "map.json")!;
+    expect(JSON.parse(mapspec.content).version).toBe("0.1");
+    expect(JSON.parse(mapspec.content).view).toEqual({ center: [0, 0], zoom: 2 });
+
+    const appMap = getTemplate("app")!
+      .generate(ctx)
+      .find((f) => f.path === "map.json")!;
+    expect(JSON.parse(appMap.content).version).toBe("0.1");
+    expect(JSON.parse(appMap.content).view).toEqual({ center: [0, 0], zoom: 2 });
   });
 
   it("generated package.json is valid JSON", () => {

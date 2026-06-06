@@ -28,7 +28,7 @@ CLI for scaffolding and generating GIS Engine map projects. Provides two modes: 
 ### 1. Scaffold your first project
 
 ```bash
-npx create-gis-map my-map
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map
 ```
 
 This creates a `my-map/` directory using the `static-html` template (default). The output contains a standalone `index.html` with inline GIS Engine CDN imports -- no build step required.
@@ -41,7 +41,7 @@ open index.html
 ### 2. Use a different template
 
 ```bash
-npx create-gis-map my-map -t vite-ts
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map -t vite-ts
 ```
 
 This scaffolds a Vite + TypeScript project. Install dependencies and start the dev server:
@@ -55,7 +55,7 @@ npm run dev
 ### 3. Run the AI generate pipeline
 
 ```bash
-npx create-gis-map my-map --generate
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --generate
 ```
 
 This runs the full generate pipeline with the `mock` provider. Mock mode requires **no API key** and produces deterministic output -- every run yields the same result. The output includes `map.json`, `delivery-summary.json`, `evidence.json`, and `diagnostics.json`.
@@ -63,14 +63,14 @@ This runs the full generate pipeline with the `mock` provider. Mock mode require
 To use a real provider, set the provider-specific API key and pass a prompt:
 
 ```bash
-DEEPSEEK_API_KEY=sk-xxx npx create-gis-map my-map --generate -p deepseek --prompt "显示北京地铁站"
+DEEPSEEK_API_KEY=sk-xxx npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --generate -p deepseek --prompt "显示北京地铁站"
 ```
 
 ### 4. Preview without writing
 
 ```bash
-npx create-gis-map my-map --dry-run
-npx create-gis-map my-map --generate --dry-run
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --dry-run
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --generate --dry-run
 ```
 
 The `--dry-run` flag prints what would be created without writing any files.
@@ -106,40 +106,40 @@ create-gis-map <project-name> [options]
 
 ```bash
 # Scaffold with default static-html template
-npx create-gis-map my-map
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map
 
 # Scaffold with Vite + TypeScript
-npx create-gis-map my-map -t vite-ts
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map -t vite-ts
 
 # Scaffold with minimal MapSpec JSON only
-npx create-gis-map my-map -t mapspec
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map -t mapspec
 
 # Scaffold with overwrite if directory exists
-npx create-gis-map my-map -y
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map -y
 
 # AI generate with mock provider (default)
-npx create-gis-map my-map --generate
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --generate
 
 # AI generate with deepseek provider
-npx create-gis-map my-map --generate -p deepseek
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --generate -p deepseek
 
 # AI generate with deepseek provider and API key inline
-DEEPSEEK_API_KEY=sk-xxx npx create-gis-map my-map --generate -p deepseek --prompt "显示北京地铁站"
+DEEPSEEK_API_KEY=sk-xxx npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --generate -p deepseek --prompt "显示北京地铁站"
 
 # AI generate with custom model and base URL
-npx create-gis-map my-map --generate -p deepseek --model deepseek-chat --base-url https://api.deepseek.com/v1
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --generate -p deepseek --model deepseek-chat --base-url https://api.deepseek.com/v1
 
 # AI generate with custom prompt
-npx create-gis-map my-map --generate --prompt "A map of NYC parks"
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --generate --prompt "A map of NYC parks"
 
 # AI generate with the interactive app scaffold
-npx create-gis-map my-map --generate -t app -p deepseek --prompt "Build an earthquake explorer"
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --generate -t app -p deepseek --prompt "Build an earthquake explorer"
 
 # AI generate with explicit API key and timeout
-npx create-gis-map my-map --generate -p openai --api-key sk-xxx --timeout 60000
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --generate -p openai --api-key sk-xxx --timeout 60000
 
 # Dry-run: preview output without writing
-npx create-gis-map my-map --generate --dry-run
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --generate --dry-run
 ```
 
 ---
@@ -210,7 +210,7 @@ Example:
 ```bash
 export GIS_ENGINE_PROVIDER=deepseek
 export DEEPSEEK_API_KEY=sk-xxx
-npx create-gis-map my-map --generate
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --generate
 ```
 
 ### Configuration File

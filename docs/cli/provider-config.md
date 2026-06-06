@@ -9,9 +9,9 @@ Flags > env vars > `~/.gis-engine/config.json` > defaults.
 
 ```bash
 # Flag
-npx create-gis-map my-map --generate --provider deepseek
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --generate --provider deepseek
 # Env var
-GIS_ENGINE_PROVIDER=deepseek npx create-gis-map my-map --generate
+GIS_ENGINE_PROVIDER=deepseek npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --generate
 # Config file (~/.gis-engine/config.json)
 { "provider": "deepseek", "template": "vite-ts" }
 ```
@@ -41,7 +41,7 @@ Unconfigured providers return: `PROVIDER.CONFIG_REQUIRED`,
 Use `--dry-run` to inspect status without executing:
 
 ```bash
-npx create-gis-map my-map --generate -p deepseek --dry-run
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --generate -p deepseek --dry-run
 ```
 
 Output shows provider ID, status (`ready` | `mock` | `unconfigured`), and mode

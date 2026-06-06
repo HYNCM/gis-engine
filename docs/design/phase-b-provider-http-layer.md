@@ -2,7 +2,7 @@
 
 ### 1. Goal
 
-Make `npx create-gis-map my-map --generate -p deepseek --prompt '显示北京地铁站'` perform a real end-to-end AI generation pipeline: call an OpenAI-compatible provider over HTTP, receive structured intent, feed it through the engine's plan → skeleton → apply → validate → evidence pipeline, and write the resulting map artifacts.
+Make `npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --generate -p deepseek --prompt '显示北京地铁站'` perform a real end-to-end AI generation pipeline: call an OpenAI-compatible provider over HTTP, receive structured intent, feed it through the engine's plan → skeleton → apply → validate → evidence pipeline, and write the resulting map artifacts.
 
 Currently, `generate.ts` hardcodes `intent: { targetDomains: ["feature-display"] }` and never makes an HTTP call. The provider module (`provider.ts`) is diagnostics-only. This design adapts the production-grade `callOpenAiCompatibleProvider` pattern from `examples/ai-map-workbench/openai-compatible-provider.mjs` into the CLI package.
 

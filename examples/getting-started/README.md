@@ -186,7 +186,7 @@ Validation catches problems like:
 
 ## Next Steps
 
-- **CLI tool** -- Use `npx create-gis-map my-map --template vite-ts` to
+- **CLI tool** -- Use `npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --template vite-ts` to
   scaffold a new project with GIS Engine pre-configured. See
   [packages/cli](../../packages/cli/README.md) for details.
 - **More examples** -- Explore the other examples in this directory:

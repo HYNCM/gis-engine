@@ -5,7 +5,7 @@
 ```bash
 npm install @gis-engine/engine @gis-engine/ai
 # Or scaffold a project:
-npx create-gis-map my-map --template vite-ts
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --template vite-ts
 ```
 
 `maplibre-gl` (^5.0.0 || ^6.0.0) is an optional peerDependency -- install it
@@ -54,7 +54,7 @@ Also available via jsDelivr and esm.sh. See [CDN distribution](./engineering/cdn
 ## Vite + TypeScript
 
 ```bash
-npx create-gis-map my-map --template vite-ts
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --template vite-ts
 cd my-map && npm install && npm run dev
 ```
 

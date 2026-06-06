@@ -10,14 +10,14 @@ GIS Engine is a schema-first map rendering SDK with AI-powered generation.
 **Scaffold a new project:**
 
 ```bash
-npx create-gis-map my-map
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map
 cd my-map && open index.html
 ```
 
 **Generate a map with AI:**
 
 ```bash
-npx create-gis-map my-map --generate -p mock
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --generate -p mock
 ```
 
 **Install the SDK directly:**

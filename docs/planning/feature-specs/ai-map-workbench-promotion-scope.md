@@ -82,3 +82,25 @@ ownership, durable storage/auth/export scope, and release-grade visual
 evidence. The current workbench now surfaces source promotion candidates in
 the evidence rail so the frozen scope is visible in product UI, not just in
 planning docs.
+
+## 2026-06-07 Productization Checklist
+
+This checklist is the intake contract for `TASK-2026W24-PROD-006`. It does not
+approve product movement; it defines what a future promotion request must bring
+before @quality can issue a Go decision.
+
+| Check | Required Evidence | Blocking If Missing |
+| --- | --- | --- |
+| Runtime and service owner | Named owner for app runtime, deploy target, incident response, and follow-up maintenance | Yes |
+| Product route and module boundary | Approved route such as `/review-console/workbench/:projectId` plus module ownership; no file movement before approval | Yes |
+| Auth and access control | User/project access model, denied-state behavior, and no browser-visible provider credentials or base URLs | Yes |
+| Durable audit storage | Retention, deletion receipt, export limits, compact record schema, and raw-payload rejection tests | Yes |
+| Export workflow | Explicit export endpoint or artifact boundary with size caps and no raw prompt/provider body leakage | Yes |
+| Review decisions | Append-only accept/block/follow-up semantics tied to compact audit evidence; no direct MapSpec mutation path | Yes |
+| Visual release evidence | Repeatable browser smoke plus release-grade visual snapshot or explicit quality waiver for non-rendering scope | Yes |
+| Resource policy | URL, worker, tile, and external asset behavior checked against resource-policy implementation/tests/docs | Yes |
+| MCP contract | No new tool names; any public AI behavior keeps inputSchema/outputSchema and structured diagnostics | Yes |
+| Rollback plan | Clear rollback or de-promotion path if hosted/product rollout exposes credential, storage, or rendering defects | Yes |
+
+Until every blocking row has current evidence, AI Map Workbench remains
+local/example-scoped under `examples/ai-map-workbench`.

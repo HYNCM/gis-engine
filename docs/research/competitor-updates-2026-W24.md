@@ -73,6 +73,41 @@ Observed package versions from `npm view` on 2026-06-05:
 `three` `0.184.0`, `3d-tiles-renderer` `0.4.27`, `deck.gl` `9.3.3`,
 and `echarts` `6.1.0`.
 
+## 2026-06-07 Productization Refresh
+
+Checked at `2026-06-06T19:20:59Z` (`2026-06-07` Asia/Shanghai) with current
+network access. This refresh closes the earlier environment-limited npm signal
+gap but does not change the W24 roadmap priority.
+
+| Project | Current npm signal | Delta From 2026-06-05 | GIS Engine Action |
+| --- | --- | --- | --- |
+| GIS Engine GA packages | `@gis-engine/engine`, `@gis-engine/ai`, `@gis-engine/cli`, and `@gis-engine/scene3d` are `1.0.0` on `latest`; `@gis-engine/scene3d` also has `next: 1.0.0` | Confirms GA publish state | Keep SDK+CLI installability and CLI bin smoke as P0 productization gates |
+| MapLibre GL JS | `maplibre-gl` `5.24.0`, `next: 6.0.0-11` | No change | Keep current dependency range; no v6 package movement without strict visual evidence |
+| Mapbox GL JS | `mapbox-gl` `3.24.0`, `next: 3.25.0-rc.1` | No change | Keep PMTiles/vector-source pressure as source-readiness work, not hidden IO |
+| MCP TypeScript SDK | `@modelcontextprotocol/sdk` `1.29.0` | No change | Keep seven documented snake_case tool names frozen |
+| ArcGIS Maps SDK / AI components | `@arcgis/core` `5.0.19`, `next: 5.2.0-next.10`; `@arcgis/ai-components` `5.0.19`, `next: 5.2.0-next.9` | `next` tags advanced slightly | Keep Workbench promotion intake blocked on ownership/auth/storage/export and visual evidence |
+| Cloud-native data | `pmtiles` `4.4.1`, `flatgeobuf` `4.4.0`, `ol` `10.9.0`, `dev: 10.9.1-dev.1780767961894` | OpenLayers dev tag advanced | Promote one runtime source only through caller-controlled loader/resource-policy evidence |
+| 3D / visualization | `cesium` `1.142.0`, `three` `0.184.0`, `3d-tiles-renderer` `0.4.27`, `deck.gl` `9.3.3`, `echarts` `6.1.0` | No release-gate-changing latest movement | Keep SceneView3D adapter-local and stable `view.mode: "scene3d"` blocked |
+
+Commands used:
+`npm view maplibre-gl version dist-tags --json`,
+`npm view mapbox-gl version dist-tags --json`,
+`npm view @modelcontextprotocol/sdk version dist-tags --json`,
+`npm view @arcgis/core version dist-tags --json`,
+`npm view @arcgis/ai-components version dist-tags --json`,
+`npm view pmtiles version dist-tags --json`,
+`npm view flatgeobuf version dist-tags --json`,
+`npm view ol version dist-tags --json`,
+`npm view cesium version dist-tags --json`,
+`npm view three version dist-tags --json`,
+`npm view 3d-tiles-renderer version dist-tags --json`,
+`npm view deck.gl version dist-tags --json`,
+`npm view echarts version dist-tags --json`,
+`npm view @gis-engine/engine version dist-tags --json`,
+`npm view @gis-engine/ai version dist-tags --json`,
+`npm view @gis-engine/cli version dist-tags --json`, and
+`npm view @gis-engine/scene3d version dist-tags --json`.
+
 ## Product Impact
 
 | Signal | Evidence | Impact | Action | Confidence |

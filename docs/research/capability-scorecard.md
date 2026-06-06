@@ -24,6 +24,12 @@ Scores are advisory product signals, not release approvals. The current
 external benchmark was refreshed on 2026-06-05 from npm metadata and official
 sources recorded in `competitor-updates-2026-W24.md`.
 
+2026-06-07 productization refresh: npm package signals were rechecked at
+`2026-06-06T19:20:59Z` (`2026-06-07` Asia/Shanghai) and recorded in
+`competitor-updates-2026-W24.md`. Scores stay unchanged because the refresh
+confirmed current launch assumptions instead of adding accepted runtime
+support, new public AI contracts, or release-grade renderer evidence.
+
 | Dimension | GIS Engine Score | Current External Benchmark | Evidence Note | Confidence |
 | --- | ---: | --- | --- | --- |
 | AI operability | 9.6/10 | ArcGIS AI components; MCP tools and structured-output schema contracts | GIS Engine now has prompt planning schemas, planner provenance, explicit point/bbox query capability gates, invalid/source diagnostics, result caps, generated-app manifest evidence, `delivery.spatialQueryReadiness`, scene-browsing blocker visibility, release wording guardrails, `capabilitySummary`, command-only generation, MCP output schemas, diagnostics, prompt QA scenarios, and a structured review-console state contract. The open gap is future source/geoprocessing promotion, not the evidence spine. | high |

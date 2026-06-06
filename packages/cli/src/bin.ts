@@ -7,10 +7,10 @@
  * or run the full AI generate pipeline.
  *
  * Usage:
- *   npx create-gis-map <project-name> [options]
- *   npx create-gis-map <project-name> --template vite-ts
- *   npx create-gis-map <project-name> --generate [--provider mock] [--prompt "..."]
- *   npx create-gis-map <project-name> --generate -p deepseek --api-key sk-xxx --timeout 20000
+ *   npm exec --package @gis-engine/cli@latest -- create-gis-map <project-name> [options]
+ *   npm exec --package @gis-engine/cli@latest -- create-gis-map <project-name> --template vite-ts
+ *   npm exec --package @gis-engine/cli@latest -- create-gis-map <project-name> --generate [--provider mock] [--prompt "..."]
+ *   npm exec --package @gis-engine/cli@latest -- create-gis-map <project-name> --generate -p deepseek --api-key sk-xxx --timeout 20000
  *
  * Options:
  *   --template, -t   Template to use: static-html | vite-ts | mapspec (default: static-html)
@@ -27,7 +27,7 @@
  *   --version, -v    Print CLI version
  */
 
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, realpathSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -189,10 +189,34 @@ function getVersion(): string {
   return (require("../package.json") as { version: string }).version;
 }
 
+export function isDirectCliExecution(entrypointUrl: string, argvPath: string | undefined): boolean {
+  if (!argvPath) return false;
+
+  let entrypointPath: string;
+  try {
+    entrypointPath = fileURLToPath(entrypointUrl);
+  } catch {
+    return false;
+  }
+
+  return normalizePath(resolveRealPath(entrypointPath)) === normalizePath(resolveRealPath(argvPath));
+}
+
+function resolveRealPath(path: string): string {
+  try {
+    return realpathSync(path);
+  } catch {
+    return resolve(path);
+  }
+}
+
+function normalizePath(path: string): string {
+  return path.replace(/\\/g, "/");
+}
+
 // CLI entry — only run main() when executed directly (not when imported).
-// Detect direct execution via import.meta.url matching process.argv[1].
-const isDirectExecution =
-  typeof process !== "undefined" && process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, "/"));
+// npm/pnpm bin shims may execute a symlink, so compare real filesystem paths.
+const isDirectExecution = typeof process !== "undefined" && isDirectCliExecution(import.meta.url, process.argv[1]);
 
 if (isDirectExecution) {
   main().catch((err) => {
