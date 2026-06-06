@@ -29,16 +29,16 @@ Applies `MapCommand` objects to a `MapSpec`, returning the updated spec with per
 ### Request
 ```json
 {
-  "spec": { "version": "0.2", "view": { "mode": "map2d" }, "sources": {}, "layers": [] },
+  "spec": { "version": "0.1", "view": { "mode": "map2d" }, "sources": {}, "layers": [] },
   "commands": [{ "commandId": "c1", "type": "set", "path": "/sources/parks", "value": { "type": "geojson", "data": {} } }]
 }
 ```
 
 ### Response
 ```json
-{ "spec": { "version": "0.2", "view": { "mode": "map2d" }, "sources": { "parks": { "type": "geojson", "data": {} } }, "layers": [] },
+{ "spec": { "version": "0.1", "view": { "mode": "map2d" }, "sources": { "parks": { "type": "geojson", "data": {} } }, "layers": [] },
   "results": [{ "commandId": "c1", "sequenceId": 0, "status": "applied", "changedPaths": ["/sources/parks"], "diagnostics": [] }],
-  "transaction": "atomic", "dryRun": false, "committed": true, "rolledBack": false, "traceId": "c1:v0.2" }
+  "transaction": "atomic", "dryRun": false, "committed": true, "rolledBack": false, "traceId": "c1:v0.1" }
 ```
 
 ## Usage

@@ -24,7 +24,7 @@ Validates a MapSpec against the JSON schema and semantic rules, returning a `Val
 ```json
 {
   "spec": {
-    "version": "0.2",
+    "version": "0.1",
     "view": { "mode": "map2d", "center": [0, 0], "zoom": 2 },
     "sources": { "points": { "type": "geojson", "data": {} } },
     "layers": [{ "id": "dots", "type": "circle", "source": "points" }]

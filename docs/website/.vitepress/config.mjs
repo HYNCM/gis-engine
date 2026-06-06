@@ -19,6 +19,7 @@ export default defineConfig({
       { text: "Guide", link: "/guide/what-is-gis-engine" },
       { text: "API", link: "/api/engine" },
       { text: "MCP", link: "/mcp/overview" },
+      { text: "Release Notes", link: "/release-notes" },
       { text: "Examples", link: "https://github.com/HYNCM/gis-engine/tree/main/examples" },
     ],
 

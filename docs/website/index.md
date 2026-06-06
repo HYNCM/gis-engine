@@ -39,3 +39,12 @@ features:
     title: Deterministic Snapshots
     description: Smoke snapshots verify every change is non-breaking. Visual snapshots catch pixel regressions. CI-friendly and headless.
 ---
+
+<div style="text-align:center;padding:2rem 0 1rem;">
+  <p style="font-size:1.1rem;font-weight:600;color:var(--vp-c-brand-1);">
+    🎉 v1.0.0 Released
+  </p>
+  <p style="color:var(--vp-c-text-2);">
+    First stable release — <a href="/release-notes">Read the Release Notes →</a>
+  </p>
+</div>

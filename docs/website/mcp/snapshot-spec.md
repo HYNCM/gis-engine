@@ -28,7 +28,7 @@ Validates a MapSpec and produces a deterministic headless snapshot without real 
 ### Request
 ```json
 {
-  "spec": { "version": "0.2", "view": { "mode": "map2d" }, "sources": { "s": { "type": "geojson", "data": {} } }, "layers": [{ "id": "l", "type": "circle", "source": "s" }] },
+  "spec": { "version": "0.1", "view": { "mode": "map2d" }, "sources": { "s": { "type": "geojson", "data": {} } }, "layers": [{ "id": "l", "type": "circle", "source": "s" }] },
   "renderer": "mock",
   "snapshot": { "width": 800, "height": 600, "format": "data-url" }
 }

@@ -18,7 +18,7 @@ On success the output is a clean `MapSpec` object. On failure the output is a `D
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `version` | `string` | MapSpec version (e.g. `"0.2"`). |
+| `version` | `string` | MapSpec version (e.g. `"0.1"`). |
 | `view` | `object` | View configuration (`mode`, `center`, `zoom`, etc.). |
 | `sources` | `Record<string, SourceSpec>` | Declared data sources. |
 | `layers` | `LayerSpec[]` | Declared map layers. |
@@ -27,12 +27,12 @@ On success the output is a clean `MapSpec` object. On failure the output is a `D
 
 ### Request
 ```json
-{ "spec": { "version": "0.2", "view": { "mode": "map2d", "center": [0, 0], "zoom": 2 }, "sources": { "cities": { "type": "geojson", "data": {} } }, "layers": [{ "id": "dots", "type": "circle", "source": "cities" }] } }
+{ "spec": { "version": "0.1", "view": { "mode": "map2d", "center": [0, 0], "zoom": 2 }, "sources": { "cities": { "type": "geojson", "data": {} } }, "layers": [{ "id": "dots", "type": "circle", "source": "cities" }] } }
 ```
 
 ### Response
 ```json
-{ "version": "0.2", "view": { "mode": "map2d", "center": [0, 0], "zoom": 2 }, "sources": { "cities": { "type": "geojson", "data": {} } }, "layers": [{ "id": "dots", "type": "circle", "source": "cities" }] }
+{ "version": "0.1", "view": { "mode": "map2d", "center": [0, 0], "zoom": 2 }, "sources": { "cities": { "type": "geojson", "data": {} } }, "layers": [{ "id": "dots", "type": "circle", "source": "cities" }] }
 ```
 
 ## Usage
