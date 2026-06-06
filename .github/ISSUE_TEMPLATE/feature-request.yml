@@ -1,0 +1,59 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for gis-engine
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! Please fill out the form below.
+  - type: input
+    id: package
+    attributes:
+      label: Target Package
+      description: Which package would this feature belong to?
+      placeholder: "@gis-engine/engine"
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem are you trying to solve? What use case is currently not supported?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Solution
+      description: Describe the feature you'd like. Include API sketches or code examples if possible.
+      placeholder: |
+        I'd like to be able to...
+
+        ```ts
+        const result = applyCommands(spec, [
+          { type: "addSource", source: "heatmap", ... },
+          { type: "addLayer", layer: { type: "heatmap", ... } },
+        ]);
+        ```
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: What other approaches have you considered? Why didn't they work?
+  - type: dropdown
+    id: breaking
+    attributes:
+      label: Would this be a breaking change?
+      options:
+        - "No — purely additive"
+        - "Possibly — may affect existing behavior"
+        - "Yes — changes existing API"
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Any other context, links, or references that help explain the feature request.
