@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -1111,20 +1112,56 @@ describe("cli-generate-delivery-summary", () => {
       const evidence = JSON.parse(readFileSync(join(dir, "reviewable-map", "evidence.json"), "utf-8"));
       const preflight = JSON.parse(readFileSync(join(dir, "reviewable-map", "preflight.json"), "utf-8"));
       const review = readFileSync(join(dir, "reviewable-map", "REVIEW.md"), "utf-8");
+      const manifest = JSON.parse(readFileSync(join(dir, "reviewable-map", "artifact-manifest.json"), "utf-8"));
+      const mapBytes = readFileSync(join(dir, "reviewable-map", "map.json"));
 
       expect(result.files).toContain("preflight.json");
       expect(result.files).toContain("delivery-summary.json");
       expect(result.files).toContain("REVIEW.md");
+      expect(result.files).toContain("artifact-manifest.json");
       expect(summary.retainedRawPrompt).toBe(false);
       expect(JSON.stringify(summary)).not.toContain("private customer locations");
       expect(JSON.stringify(preflight)).not.toContain("private customer locations");
       expect(review).not.toContain("private customer locations");
+      expect(JSON.stringify(manifest)).not.toContain("private customer locations");
       expect(review).toContain("# Generated Map Review");
       expect(review).toContain(`Prompt hash: ${summary.promptHash}`);
       expect(review).toContain("Raw prompt retained: no");
       expect(review).toContain(`Delivery state: ${summary.delivery.acceptance.state}`);
       expect(review).toContain(`Preflight status: ${preflight.status}`);
       expect(review).toContain("`delivery-summary.json`: compact delivery and preflight summary");
+      expect(review).toContain("`artifact-manifest.json`: generated file list");
+      expect(manifest).toMatchObject({
+        schemaVersion: "gis-engine.generate-artifact-manifest.v1",
+        projectName: "reviewable-map",
+        provider: "mock",
+        promptHash: summary.promptHash,
+        traceId: summary.traceId,
+        retainedRawPrompt: false,
+      });
+      expect(manifest.requiredReviewFiles).toEqual([
+        "map.json",
+        "preflight.json",
+        "delivery-summary.json",
+        "REVIEW.md",
+      ]);
+      expect(manifest.files.map((file: { path: string }) => file.path)).toEqual(
+        result.files.filter((file) => file !== "artifact-manifest.json"),
+      );
+      expect(manifest.artifactCount).toBe(manifest.files.length);
+      expect(manifest.files.find((file: { path: string }) => file.path === "artifact-manifest.json")).toBeUndefined();
+      expect(manifest.files.find((file: { path: string }) => file.path === "map.json")).toMatchObject({
+        path: "map.json",
+        role: "mapspec",
+        required: true,
+        bytes: mapBytes.byteLength,
+        sha256: `sha256:${createHash("sha256").update(mapBytes).digest("hex")}`,
+      });
+      expect(manifest.files.find((file: { path: string }) => file.path === "evidence.json")).toMatchObject({
+        path: "evidence.json",
+        role: "evidence",
+        required: false,
+      });
       expect(summary.preflight).toMatchObject({
         ok: preflight.ok,
         status: preflight.status,

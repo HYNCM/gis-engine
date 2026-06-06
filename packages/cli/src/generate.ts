@@ -11,7 +11,7 @@
  */
 
 import { createHash } from "node:crypto";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -181,6 +181,85 @@ type DeliverySummaryReviewInput = {
   delivery?: DeliveryReviewSummary;
 };
 
+type GeneratedArtifactRole =
+  | "mapspec"
+  | "preflight"
+  | "delivery-summary"
+  | "review"
+  | "evidence"
+  | "diagnostics"
+  | "app";
+
+type GeneratedArtifactManifestEntry = {
+  path: string;
+  role: GeneratedArtifactRole;
+  required: boolean;
+  bytes: number;
+  sha256: string;
+};
+
+type GeneratedArtifactManifest = {
+  schemaVersion: "gis-engine.generate-artifact-manifest.v1";
+  generatedAt: string;
+  projectName: string;
+  provider: string;
+  promptHash: string;
+  traceId: string;
+  retainedRawPrompt: false;
+  artifactCount: number;
+  requiredReviewFiles: string[];
+  files: GeneratedArtifactManifestEntry[];
+};
+
+const REQUIRED_REVIEW_FILES = ["map.json", "preflight.json", "delivery-summary.json", "REVIEW.md"] as const;
+
+function classifyGeneratedArtifact(path: string): GeneratedArtifactRole {
+  if (path === "map.json") return "mapspec";
+  if (path === "preflight.json") return "preflight";
+  if (path === "delivery-summary.json") return "delivery-summary";
+  if (path === "REVIEW.md") return "review";
+  if (path === "evidence.json") return "evidence";
+  if (path === "diagnostics.json") return "diagnostics";
+  return "app";
+}
+
+function hashFileSha256(filePath: string): string {
+  return `sha256:${createHash("sha256").update(readFileSync(filePath)).digest("hex")}`;
+}
+
+function createArtifactManifest(input: {
+  outDir: string;
+  files: string[];
+  projectName: string;
+  provider: string;
+  promptHash: string;
+  traceId: string;
+}): GeneratedArtifactManifest {
+  const entries = input.files.map<GeneratedArtifactManifestEntry>((path) => {
+    const filePath = join(input.outDir, path);
+    return {
+      path,
+      role: classifyGeneratedArtifact(path),
+      required: REQUIRED_REVIEW_FILES.includes(path as (typeof REQUIRED_REVIEW_FILES)[number]),
+      bytes: statSync(filePath).size,
+      sha256: hashFileSha256(filePath),
+    };
+  });
+
+  return {
+    schemaVersion: "gis-engine.generate-artifact-manifest.v1",
+    generatedAt: new Date().toISOString(),
+    projectName: input.projectName,
+    provider: input.provider,
+    promptHash: input.promptHash,
+    traceId: input.traceId,
+    retainedRawPrompt: false,
+    artifactCount: entries.length,
+    requiredReviewFiles: [...REQUIRED_REVIEW_FILES],
+    files: entries,
+  };
+}
+
 function markdownCell(value: unknown): string {
   return String(value ?? "--")
     .replace(/\|/g, "\\|")
@@ -328,6 +407,7 @@ ${renderFollowUps(delivery)}
 - \`map.json\`: generated MapSpec.
 - \`preflight.json\`: full preflight diagnostics and source-readiness details.
 - \`delivery-summary.json\`: compact delivery and preflight summary for CI and reviewers.
+- \`artifact-manifest.json\`: generated file list with roles, sizes, and sha256 hashes.
 - \`evidence.json\`: full generation evidence bundle when evidence creation succeeds.
 - \`diagnostics.json\`: written only when pipeline diagnostics are present.
 `;
@@ -567,6 +647,19 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
         console.log(`  ✓ App template: ${templateName} (${templateFiles.length} files)`);
       }
     }
+
+    // artifact-manifest.json - hashes and roles for all generated files written before the manifest itself
+    const artifactManifest = createArtifactManifest({
+      outDir,
+      files,
+      projectName: opts.projectName,
+      provider: opts.provider,
+      promptHash,
+      traceId,
+    });
+    const artifactManifestPath = join(outDir, "artifact-manifest.json");
+    writeFileSync(artifactManifestPath, `${JSON.stringify(artifactManifest, null, 2)}\n`, "utf-8");
+    files.push("artifact-manifest.json");
 
     console.log(`\n📁 Output files written to ${outDir}:`);
     for (const f of files) {
