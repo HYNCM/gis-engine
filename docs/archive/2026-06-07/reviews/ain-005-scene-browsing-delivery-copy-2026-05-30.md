@@ -7,7 +7,7 @@ inputs:
   - README.md
   - packages/ai/README.md
   - docs/planning/feature-specs/generated-app-delivery-ux.md
-  - docs/reviews/ain-001-002-generated-app-delivery-acceptance-2026-05-30.md
+  - docs/archive/2026-06-07/reviews/ain-001-002-generated-app-delivery-acceptance-2026-05-30.md
   - packages/ai/src/tools/generationEvidence.ts
   - packages/ai/src/tools/contextSummary.ts
   - tests/ai/generation-evidence.test.ts

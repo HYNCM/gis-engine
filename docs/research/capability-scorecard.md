@@ -5,7 +5,7 @@ generated_at: 2026-06-05T13:05:41Z
 repo_revision: "4012f51"
 inputs:
   - docs/research/competitor-updates-2026-W24.md
-  - docs/research/capability-scorecard-w24-refresh.md
+  - docs/archive/2026-06-07/research/capability-scorecard-w24-refresh.md
   - docs/research/competitor-updates-2026-W22.md
   - docs/archive/2026-06-06/planning/sprint-2026-W23-ai-map-app-generation.md
   - docs/reviews/nla-002-generation-command-contract-2026-05-29.md
@@ -268,3 +268,13 @@ support, new public AI contracts, or release-grade renderer evidence.
   metadata, GeoParquet schema, and FlatGeobuf policy validation are now
   explicit contracts with tests. Runtime parsers, range IO, workers, hidden
   fetches, and cloud-native feature queries remain blocked.
+
+## Current Guardrails
+
+- Do not use this scorecard as release approval.
+- Do not mark `VPE-002` complete until trend data exists beyond the local
+  harness.
+- Do not claim GeoParquet or FlatGeobuf runtime source support.
+- Do not claim PMTiles archive parsing, hidden range requests, or PMTiles
+  feature query runtime.
+- Do not promote stable `view.mode: "scene3d"`.

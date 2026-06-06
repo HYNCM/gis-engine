@@ -9,7 +9,6 @@ inputs:
   - docs/planning/weekly-digest.md
   - docs/planning/monthly-roadmap.md
   - docs/research/competitor-updates-2026-W24.md
-  - docs/research/capability-scorecard-w24-refresh.md
   - docs/archive/2026-05-30/planning/sprint-2026-W22-competitive-signal-response.md
   - docs/research/competitor-updates-2026-W22.md
   - docs/research/capability-scorecard.md
@@ -100,7 +99,7 @@ guardrails.
 | TASK-2026W24-EVO-002 | Start D3 quality trend tracking | P2 | `@orchestrator`, `@quality` | done | `docs/planning/evolution-ledger.md` | W24 gate pass rate and rework count are recorded after current gates | quality gate evidence; evolution ledger update |
 | TASK-2026W24-EVO-003 | Start D4 pattern/pitfall extraction | P2 | `@orchestrator`, `@docs` | done | `docs/planning/evolution-ledger.md` | at least two patterns and one pitfall are extracted for the sprint | pattern/pitfall generator or manual ledger review |
 | TASK-2026W24-PRD-001 | Publish W24 competitor update | P1 | `@product` | done / consumed | `docs/research/competitor-updates-2026-W24.md` | official/npm/source checks are refreshed with checked dates | current source URLs recorded; no stale-current claims |
-| TASK-2026W24-PRD-002 | Refresh capability scorecard | P1 | `@product`, `@orchestrator` | done / consumed | `docs/research/capability-scorecard.md`; `docs/research/capability-scorecard-w24-refresh.md` | five-dimension scores reflect W24 evidence and preserve blocked SceneView3D/source claims | scorecard diff review; planning digest update |
+| TASK-2026W24-PRD-002 | Refresh capability scorecard | P1 | `@product`, `@orchestrator` | done / consumed | `docs/research/capability-scorecard.md` | five-dimension scores reflect W24 evidence and preserve blocked SceneView3D/source claims; W24 refresh movement is absorbed into the canonical scorecard | scorecard diff review; planning digest update |
 
 ## 2026-05-25 W22 competitive signal response
 
@@ -261,11 +260,11 @@ promotion criteria for future implementation batches.
 
 | id | title | priority | owner | status | evidence target | acceptance | finish gates |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| TASK-2026W22-AIN-001 | Design generated-app delivery UX contract | P0 | `@product-strategist`, `@ai-agent`, `@docs-agent` | done | `docs/reviews/ain-001-002-generated-app-delivery-acceptance-2026-05-30.md`; `generationEvidence.delivery.sections` | manifest sections map to evidence fields and blocker diagnostics | docs review; `pnpm test:ai`; `pnpm check` |
+| TASK-2026W22-AIN-001 | Design generated-app delivery UX contract | P0 | `@product-strategist`, `@ai-agent`, `@docs-agent` | done | `docs/archive/2026-06-07/reviews/ain-001-002-generated-app-delivery-acceptance-2026-05-30.md`; `generationEvidence.delivery.sections` | manifest sections map to evidence fields and blocker diagnostics | docs review; `pnpm test:ai`; `pnpm check` |
 | TASK-2026W22-AIN-002 | Define generated-app acceptance and confirmation states | P0 | `@ai-agent`, `@qa-agent` | done | `ExampleAppDeliverySummarySchema`; `GenerationEvidenceBundle.delivery` | readiness, blocked, needs-confirmation, and follow-up-required states are schema-testable without MCP aliases | AI contract tests; schema-sync; `pnpm check` |
-| TASK-2026W22-AIN-003 | Split cloud-native source promotion candidates | P1 | `@engine-agent`, `@docs-agent` | done | `docs/planning/feature-specs/cloud-native-source-promotion-candidates.md`; `docs/reviews/ain-003-004-promotion-criteria-2026-05-30.md` | schema/resource-policy/query/export gates are separated before implementation | resource-policy doc audit; `pnpm check` |
-| TASK-2026W22-AIN-004 | Draft spatial-analysis promotion criteria | P1 | `@engine-agent`, `@ai-agent`, `@qa-agent` | done | `docs/planning/feature-specs/spatial-analysis-promotion-criteria.md`; `docs/reviews/ain-003-004-promotion-criteria-2026-05-30.md` | each future operation names schema, command semantics, diagnostics, fixtures, and MCP exposure assessment | planning diff review; `pnpm check` |
-| TASK-2026W22-AIN-005 | Keep scene browsing copy extension-only | P1 | `@adapter-agent`, `@qa-agent`, `@docs-agent` | done | `docs/reviews/ain-005-scene-browsing-delivery-copy-2026-05-30.md` | user-facing copy preserves extension-only context and blocker codes without stable renderer claims | `pnpm test:ai`; `pnpm test:release:scene3d`; docs review; `pnpm check` |
+| TASK-2026W22-AIN-003 | Split cloud-native source promotion candidates | P1 | `@engine-agent`, `@docs-agent` | done | `docs/planning/feature-specs/cloud-native-source-promotion-candidates.md`; `docs/archive/2026-06-07/reviews/ain-003-004-promotion-criteria-2026-05-30.md` | schema/resource-policy/query/export gates are separated before implementation | resource-policy doc audit; `pnpm check` |
+| TASK-2026W22-AIN-004 | Draft spatial-analysis promotion criteria | P1 | `@engine-agent`, `@ai-agent`, `@qa-agent` | done | `docs/planning/feature-specs/spatial-analysis-promotion-criteria.md`; `docs/archive/2026-06-07/reviews/ain-003-004-promotion-criteria-2026-05-30.md` | each future operation names schema, command semantics, diagnostics, fixtures, and MCP exposure assessment | planning diff review; `pnpm check` |
+| TASK-2026W22-AIN-005 | Keep scene browsing copy extension-only | P1 | `@adapter-agent`, `@qa-agent`, `@docs-agent` | done | `docs/archive/2026-06-07/reviews/ain-005-scene-browsing-delivery-copy-2026-05-30.md` | user-facing copy preserves extension-only context and blocker codes without stable renderer claims | `pnpm test:ai`; `pnpm test:release:scene3d`; docs review; `pnpm check` |
 
 2026-05-30 AIN execution update: `@ai-agent` landed the delivery acceptance
 contract for `AIN-001` and `AIN-002`. Compact generated-app manifests now carry
@@ -298,9 +297,9 @@ tasks remain queued.
 | TASK-2026W22-GIR-001 | Freeze generated-app review console PRD | P0 | `@product-strategist`, `@docs-agent` | done | `docs/planning/feature-specs/generated-app-review-console.md` | review sections map to delivery evidence, diagnostics, source readiness, spatial readiness, and scene browsing blockers | docs review; `pnpm check`; `git diff --check` |
 | TASK-2026W22-GIR-002 | Add delivery-review acceptance fixtures | P0 | `@ai-agent`, `@qa-agent` | done | AI contract tests and delivery review scenarios | ready, blocked, needs-confirmation, and follow-up-required are schema-testable without MCP aliases | `pnpm vitest run tests/ai/generation-evidence.test.ts`; `pnpm check`; `pnpm test:schema-sync` |
 | TASK-2026W22-GIR-003 | Map source readiness into review sections | P1 | `@engine-agent`, `@docs-agent` | done | source readiness cards and diagnostics mapping | PMTiles and future source candidates keep readiness/promotion boundaries before runtime implementation | docs audit; `pnpm check`; `git diff --check` |
-| TASK-2026W22-GIR-004 | Map spatial-analysis readiness into review sections | P1 | `@engine-agent`, `@ai-agent`, `@qa-agent` | done | `docs/reviews/gir-004-spatial-analysis-review-section-mapping-2026-05-30.md`; spatial-analysis review cards | point/bbox remain read-only; blocked operations keep stable diagnostic codes and paths | `pnpm test:commands`; `pnpm test:ai`; `pnpm build:schema` when schemas change; `pnpm check` |
-| TASK-2026W22-GIR-005 | Add prompt-to-delivery QA scenarios | P1 | `@qa-agent` | done | `docs/reviews/gir-005-prompt-to-delivery-qa-scenarios-2026-05-30.md`; prompt-to-delivery fixtures | successful 2D app, external resource confirmation, spatial blocked, and scene3d extension-only scenarios are covered | `pnpm test:ai`; `pnpm test:examples`; `pnpm check`; visual gate only for rendering changes |
-| TASK-2026W22-GIR-006 | Audit public wording and release guardrails | P2 | `@docs-agent`, `@quality-guardian` | done | `docs/reviews/gir-006-public-wording-release-guardrails-2026-05-30.md`; `docs/engineering/release-wording-guardrails.md`; `tests/docs/release-wording-guardrails.test.ts` | public docs avoid stable scene3d, side-effect export, unsupported source, or advanced spatial-analysis claims | docs audit; `pnpm test:docs`; `pnpm check`; scene3d release gate only if scene evidence changes |
+| TASK-2026W22-GIR-004 | Map spatial-analysis readiness into review sections | P1 | `@engine-agent`, `@ai-agent`, `@qa-agent` | done | `docs/archive/2026-06-07/reviews/gir-004-spatial-analysis-review-section-mapping-2026-05-30.md`; spatial-analysis review cards | point/bbox remain read-only; blocked operations keep stable diagnostic codes and paths | `pnpm test:commands`; `pnpm test:ai`; `pnpm build:schema` when schemas change; `pnpm check` |
+| TASK-2026W22-GIR-005 | Add prompt-to-delivery QA scenarios | P1 | `@qa-agent` | done | `docs/archive/2026-06-07/reviews/gir-005-prompt-to-delivery-qa-scenarios-2026-05-30.md`; prompt-to-delivery fixtures | successful 2D app, external resource confirmation, spatial blocked, and scene3d extension-only scenarios are covered | `pnpm test:ai`; `pnpm test:examples`; `pnpm check`; visual gate only for rendering changes |
+| TASK-2026W22-GIR-006 | Audit public wording and release guardrails | P2 | `@docs-agent`, `@quality-guardian` | done | `docs/archive/2026-06-07/reviews/gir-006-public-wording-release-guardrails-2026-05-30.md`; `docs/engineering/release-wording-guardrails.md`; `tests/docs/release-wording-guardrails.test.ts` | public docs avoid stable scene3d, side-effect export, unsupported source, or advanced spatial-analysis claims | docs audit; `pnpm test:docs`; `pnpm check`; scene3d release gate only if scene evidence changes |
 
 2026-05-30 GIR-002 execution update: the delivery-review acceptance fixtures
 landed in `tests/ai/generation-evidence.test.ts` and the P0 queue advances to
@@ -312,15 +311,15 @@ landed in `docs/planning/feature-specs/generated-app-review-console.md` and
 queued task is `GIR-005`.
 
 2026-05-30 GIR-004 execution update: spatial-analysis review-section mapping
-is covered by `docs/reviews/gir-004-spatial-analysis-review-section-mapping-2026-05-30.md`,
+is covered by `docs/archive/2026-06-07/reviews/gir-004-spatial-analysis-review-section-mapping-2026-05-30.md`,
 so the next queued task is `GIR-005`.
 
 2026-05-30 GIR-005 execution update: prompt-to-delivery QA scenarios are
-covered by `docs/reviews/gir-005-prompt-to-delivery-qa-scenarios-2026-05-30.md`,
+covered by `docs/archive/2026-06-07/reviews/gir-005-prompt-to-delivery-qa-scenarios-2026-05-30.md`,
 so the next queued task is `GIR-006`.
 
 2026-05-30 GIR-006 execution update: public wording and release guardrails are
-covered by `docs/reviews/gir-006-public-wording-release-guardrails-2026-05-30.md`,
+covered by `docs/archive/2026-06-07/reviews/gir-006-public-wording-release-guardrails-2026-05-30.md`,
 `docs/engineering/release-wording-guardrails.md`, and
 `tests/docs/release-wording-guardrails.test.ts`. The Generated App Review
 Console batch is complete; the orchestrator returns to planning state.
@@ -805,7 +804,7 @@ task-distributor 按 owner registry 分配。
 | TASK-2026W23-005 | done | deterministic `setPaint` / `setLayout` / `reorderLayer` command coverage |
 | TASK-2026W23-006 | done | missing `beforeLayerId` returns `LAYER.NOT_FOUND` at `/beforeLayerId` |
 | TASK-2026W23-007 | done | `pnpm test:snapshot:visual` includes GeoJSON and generated vector tile scenes |
-| TASK-2026W23-008 | done | `fill-extrusion-lite-beta.md`, `scene3d-boundary.md`, validation boundary diagnostics |
+| TASK-2026W23-008 | done | `docs/archive/2026-06-07/feature-specs/fill-extrusion-lite-beta.md`, `scene3d-boundary.md`, validation boundary diagnostics |
 | TASK-2026W23-009 | done | checkpoint audit, release note draft, `pnpm build:schema`, `pnpm check`, strict visual gate evidence |
 | POST-2026W21-011 | done | `fill-extrusion-lite` MapLibre beta mapping, capability report, example/schema fixture, snapshot smoke |
 | POST-2026W21-013 | done | `pnpm test:perf:nightly` synthetic 1k/10k/100k lifecycle evidence |

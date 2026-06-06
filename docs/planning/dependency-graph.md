@@ -10,7 +10,6 @@ inputs:
   - docs/planning/task-burndown.md
   - docs/planning/feature-specs/ai-map-workbench-promotion-scope.md
   - docs/research/competitor-updates-2026-W24.md
-  - docs/research/capability-scorecard-w24-refresh.md
   - docs/archive/2026-05-18/planning/sprint-2026-W21.md
   - docs/planning/sprint-2026-W25-sceneview3d-v1.md
   - docs/archive/2026-05-30/reviews/quality-gate-2026-05-24.md
@@ -94,7 +93,7 @@ W21 sprint 计划已归档，当前活跃关键路径从 W23 promotion readiness
 | Chain | Status | Evidence |
 | --- | --- | --- |
 | MCP / command schema P1 修复 -> v0.2 合同边界 | done | strict command schema、Diagnostic failure path、MCP output schema |
-| expression contract -> validator -> MCP v0.2 coverage | done | `expression-v0.2.md`、schema tests、MCP vector/expression tests |
+| expression contract -> validator -> MCP v0.2 coverage | done | `docs/archive/2026-06-07/feature-specs/expression-v0.2.md`、schema tests、MCP vector/expression tests |
 | vector source schema -> transformer -> example/snapshot -> MCP coverage | done | vector source schema、MapLibre transformer、`examples/vector-tile-url`、snapshot smoke/visual |
 | style diff/layer order -> diagnostics -> checkpoint audit | done | command tests、missing `beforeLayerId` diagnostic、checkpoint audit |
 | command conflict/replay/audit | done | `collectTrace` API、MCP trace output、conflict audit fixture、AI edit audit example |
@@ -131,7 +130,7 @@ W21 sprint 计划已归档，当前活跃关键路径从 W23 promotion readiness
 | NLA-007 docs and release wording | done | `docs/reviews/nla-007-docs-release-wording-2026-05-29.md`; README, AI package docs, contracts, feature matrix, changelog, and ai-map-edit example docs describe evidence-first generation without stable 3D overclaim |
 | NLA-008 serialized planning handoff | done | `docs/reviews/nla-008-serialized-planning-handoff-2026-05-29.md`; sprint, burndown, and dependency graph now agree that the W23 NLA slice is complete and ready for the next planning cycle |
 | Generation quality hardening | done | `docs/reviews/nlq-007-serialized-quality-hardening-planning-2026-05-29.md`; NLQ-001 through NLQ-007 are serialized as a closed W23 batch |
-| AI-native next loop | done | `TASK-2026W22-AIN-001` through `TASK-2026W22-AIN-005` are done via `docs/reviews/ain-001-002-generated-app-delivery-acceptance-2026-05-30.md`, `docs/reviews/ain-003-004-promotion-criteria-2026-05-30.md`, and `docs/reviews/ain-005-scene-browsing-delivery-copy-2026-05-30.md`; next loop should refresh competitive/product/task planning |
+| AI-native next loop | done | `TASK-2026W22-AIN-001` through `TASK-2026W22-AIN-005` are done via `docs/archive/2026-06-07/reviews/ain-001-002-generated-app-delivery-acceptance-2026-05-30.md`, `docs/archive/2026-06-07/reviews/ain-003-004-promotion-criteria-2026-05-30.md`, and `docs/archive/2026-06-07/reviews/ain-005-scene-browsing-delivery-copy-2026-05-30.md`; next loop should refresh competitive/product/task planning |
 | NLQ-001 typed prompt planner boundary | done | `docs/reviews/nlq-001-prompt-planner-boundary-2026-05-29.md`; `planMapGenerationRequest()` accepts prompt hash plus structured intent, emits `MapGenerationRequest`-compatible handoff data, and rejects raw prompt retention by default |
 | NLQ-002 planner provenance evidence | done | `docs/reviews/nlq-002-planner-provenance-evidence-2026-05-29.md`; `GenerationEvidenceBundleSchema` now exposes planner confidence, trace provenance, source prompt hashes, unsupported intent fields, and planner diagnostics |
 | NLQ-003 spatial query evidence | done | `docs/reviews/nlq-003-spatial-query-evidence-2026-05-29.md`; `analysisEvidence` and `spatialQueryEvidence` expose deterministic point/bbox query readiness while keeping geoprocessing operations blocked |
@@ -194,7 +193,7 @@ flowchart LR
 | TASK-2026W24-EVO-002 | quality gate reports | D3 first-pass/rework entries in `evolution-ledger.md` | quality evidence; evolution ledger update | ledger populated / pending evidence audit |
 | TASK-2026W24-EVO-003 | sprint closure evidence | D4 pattern/pitfall entries in `evolution-ledger.md` | pattern/pitfall generator or manual ledger review | ledger populated / pending evidence audit |
 | TASK-2026W24-PRD-001 | W24 product refresh | `docs/research/competitor-updates-2026-W24.md` | current source URLs and checked dates recorded | done / consumed |
-| TASK-2026W24-PRD-002 | PRD-001 | `docs/research/capability-scorecard.md`; W24 refresh file | scorecard diff review; planning digest update | done / consumed |
+| TASK-2026W24-PRD-002 | PRD-001 | `docs/research/capability-scorecard.md`; W24 refresh addendum | scorecard diff review; planning digest update | done / consumed |
 
 ## 关键路径
 

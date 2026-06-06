@@ -8,7 +8,7 @@ inputs:
   - docs/planning/next-stage-goals-2026-06-06.md
   - docs/planning/feature-specs/ai-map-workbench-promotion-scope.md
   - docs/research/competitor-updates-2026-W24.md
-  - docs/research/capability-scorecard-w24-refresh.md
+  - docs/research/capability-scorecard.md
   - docs/research/competitor-updates-2026-W24.md
   - docs/reviews/quality-gate-2026-06-03.md
   - docs/reviews/quality-gate-2026-06-04.md
@@ -267,15 +267,15 @@ move to `TASK-2026W23-SQH-003`.
 | TASK-2026W23-NLQ-005 | done | `docs/planning/feature-specs/cloud-native-source-readiness.md` |
 | TASK-2026W23-NLQ-006 | done | `docs/reviews/nlq-006-scene-browsing-blocker-visibility-2026-05-29.md` |
 | TASK-2026W23-NLQ-007 | done | `docs/reviews/nlq-007-serialized-quality-hardening-planning-2026-05-29.md` |
-| TASK-2026W22-AIN-001 through AIN-002 | done | `docs/reviews/ain-001-002-generated-app-delivery-acceptance-2026-05-30.md`; `generationEvidence.delivery` contract |
-| TASK-2026W22-AIN-003 through AIN-004 | done | `docs/reviews/ain-003-004-promotion-criteria-2026-05-30.md`; source and spatial-analysis promotion criteria |
-| TASK-2026W22-AIN-005 | done | `docs/reviews/ain-005-scene-browsing-delivery-copy-2026-05-30.md`; extension-only scene browsing delivery copy |
+| TASK-2026W22-AIN-001 through AIN-002 | done | `docs/archive/2026-06-07/reviews/ain-001-002-generated-app-delivery-acceptance-2026-05-30.md`; `generationEvidence.delivery` contract |
+| TASK-2026W22-AIN-003 through AIN-004 | done | `docs/archive/2026-06-07/reviews/ain-003-004-promotion-criteria-2026-05-30.md`; source and spatial-analysis promotion criteria |
+| TASK-2026W22-AIN-005 | done | `docs/archive/2026-06-07/reviews/ain-005-scene-browsing-delivery-copy-2026-05-30.md`; extension-only scene browsing delivery copy |
 | TASK-2026W22-GIR-001 | done | `docs/planning/feature-specs/generated-app-review-console.md`; review-console PRD/spec |
 | TASK-2026W22-GIR-002 | done | `tests/ai/generation-evidence.test.ts`; delivery-review acceptance fixtures |
 | TASK-2026W22-GIR-003 | done | `docs/planning/feature-specs/generated-app-review-console.md`, `docs/planning/feature-specs/cloud-native-source-readiness.md`; source readiness review cards |
-| TASK-2026W22-GIR-004 | done | `docs/reviews/gir-004-spatial-analysis-review-section-mapping-2026-05-30.md`; spatial-analysis review cards mapped into delivery evidence |
-| TASK-2026W22-GIR-005 | done | `docs/reviews/gir-005-prompt-to-delivery-qa-scenarios-2026-05-30.md`; prompt-to-delivery QA scenarios |
-| TASK-2026W22-GIR-006 | done | `docs/reviews/gir-006-public-wording-release-guardrails-2026-05-30.md`; release wording guardrail docs and tests |
+| TASK-2026W22-GIR-004 | done | `docs/archive/2026-06-07/reviews/gir-004-spatial-analysis-review-section-mapping-2026-05-30.md`; spatial-analysis review cards mapped into delivery evidence |
+| TASK-2026W22-GIR-005 | done | `docs/archive/2026-06-07/reviews/gir-005-prompt-to-delivery-qa-scenarios-2026-05-30.md`; prompt-to-delivery QA scenarios |
+| TASK-2026W22-GIR-006 | done | `docs/archive/2026-06-07/reviews/gir-006-public-wording-release-guardrails-2026-05-30.md`; release wording guardrail docs and tests |
 | TASK-2026W23-SQH-001 | done | `docs/planning/feature-specs/spatial-query-evidence-hardening.md`; `docs/planning/sprint-2026-W23-spatial-query-hardening.md`; `docs/reviews/sqh-001-spatial-query-hardening-boundary-2026-05-30.md` |
 | TASK-2026W23-SQH-002 | done | `docs/reviews/sqh-002-query-capability-gate-2026-05-30.md`; `spatialQueryEvidence.capabilityGate` |
 | TASK-2026W23-SQH-003 | done | `docs/reviews/sqh-003-invalid-source-diagnostics-2026-05-30.md`; invalid/source diagnostic matrix |

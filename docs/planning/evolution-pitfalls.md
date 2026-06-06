@@ -10,9 +10,9 @@ total_pitfalls: 8
 此库记录从代码审查、架构评估和 Residual Risk 分析中提取的常见陷阱。
 每个 pitfall 包含风险描述、来源和避免建议。
 
-## PIT-001: Residual Risk: docs/reviews/ain-001-002-generated-app-delivery-acceptance-2026-05-30.md
+## PIT-001: Residual Risk: docs/archive/2026-06-07/reviews/ain-001-002-generated-app-delivery-acceptance-2026-05-30.md
 
-**遇见于**: `docs/reviews/ain-001-002-generated-app-delivery-acceptance-2026-05-30.md`
+**遇见于**: `docs/archive/2026-06-07/reviews/ain-001-002-generated-app-delivery-acceptance-2026-05-30.md`
 
 - This slice does not add a file-writing tool and does not make
   `export_example_app` create artifacts. That is intentional.
@@ -21,9 +21,9 @@ total_pitfalls: 8
   until future schemas exist.
 - Scene browsing delivery is `follow-up-req
 
-## PIT-002: Residual Risk: docs/reviews/ain-003-004-promotion-criteria-2026-05-30.md
+## PIT-002: Residual Risk: docs/archive/2026-06-07/reviews/ain-003-004-promotion-criteria-2026-05-30.md
 
-**遇见于**: `docs/reviews/ain-003-004-promotion-criteria-2026-05-30.md`
+**遇见于**: `docs/archive/2026-06-07/reviews/ain-003-004-promotion-criteria-2026-05-30.md`
 
 - These are promotion criteria, not implementation evidence. They intentionally
   leave GeoParquet, FlatGeobuf, GeoTIFF, GeoZarr, buffer, overlay,
@@ -31,9 +31,9 @@ total_pitfalls: 8
 - PMTiles remains readiness-only for archive parsing and feature query until a
   parser/resource/query gate lands.
 
-## PIT-003: Residual Risk: docs/reviews/ain-005-scene-browsing-delivery-copy-2026-05-30.md
+## PIT-003: Residual Risk: docs/archive/2026-06-07/reviews/ain-005-scene-browsing-delivery-copy-2026-05-30.md
 
-**遇见于**: `docs/reviews/ain-005-scene-browsing-delivery-copy-2026-05-30.md`
+**遇见于**: `docs/archive/2026-06-07/reviews/ain-005-scene-browsing-delivery-copy-2026-05-30.md`
 
 - This task does not make SceneView3D stable. It closes the delivery wording and
   evidence handoff only.

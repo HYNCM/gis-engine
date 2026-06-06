@@ -6,7 +6,7 @@ repo_revision: "2412c662bfc8"
 inputs:
   - docs/engineering/supported-feature-matrix.md
   - docs/spec/contracts-and-interfaces.md
-  - docs/planning/feature-specs/style-diff-layer-order.md
+  - docs/archive/2026-06-07/feature-specs/style-diff-layer-order.md
   - apps/studio/server/provider.mjs
   - apps/studio/server/index.mjs
   - apps/studio/src/components/MapStage.tsx

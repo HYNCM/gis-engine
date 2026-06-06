@@ -9,9 +9,9 @@ inputs:
   - docs/planning/feature-specs/generated-app-delivery-ux.md
   - docs/planning/feature-specs/cloud-native-source-promotion-candidates.md
   - docs/planning/feature-specs/spatial-analysis-promotion-criteria.md
-  - docs/reviews/ain-001-002-generated-app-delivery-acceptance-2026-05-30.md
-  - docs/reviews/ain-003-004-promotion-criteria-2026-05-30.md
-  - docs/reviews/ain-005-scene-browsing-delivery-copy-2026-05-30.md
+  - docs/archive/2026-06-07/reviews/ain-001-002-generated-app-delivery-acceptance-2026-05-30.md
+  - docs/archive/2026-06-07/reviews/ain-003-004-promotion-criteria-2026-05-30.md
+  - docs/archive/2026-06-07/reviews/ain-005-scene-browsing-delivery-copy-2026-05-30.md
 owner: "@product-strategist"
 decision_level: advisory
 ---

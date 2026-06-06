@@ -12,7 +12,7 @@ inputs:
   - docs/planning/dependency-graph.md
   - docs/reviews/full-project-review-2026-06-05.md
   - docs/planning/feature-specs/ai-map-workbench-promotion-scope.md
-  - docs/research/capability-scorecard-w24-refresh.md
+  - docs/research/capability-scorecard.md
   - docs/planning/feature-specs/ai-map-workbench-real-system-evolution.md
   - docs/planning/feature-specs/ai-map-workbench-product-boundary.md
   - docs/planning/feature-specs/ai-map-workbench-product-implementation.md

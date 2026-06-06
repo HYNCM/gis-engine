@@ -16,73 +16,73 @@ total_patterns: 55
 
 ## PAT-001: Keep future UI work bound to `generationEvidence.delivery.sections`.
 
-**提取自**: `docs/reviews/ain-001-002-generated-app-delivery-acceptance-2026-05-30.md`
+**提取自**: `docs/archive/2026-06-07/reviews/ain-001-002-generated-app-delivery-acceptance-2026-05-30.md`
 
 Keep future UI work bound to `generationEvidence.delivery.sections`. — high
 
 ## PAT-002: Reuse these states rather than adding MCP aliases.
 
-**提取自**: `docs/reviews/ain-001-002-generated-app-delivery-acceptance-2026-05-30.md`
+**提取自**: `docs/archive/2026-06-07/reviews/ain-001-002-generated-app-delivery-acceptance-2026-05-30.md`
 
 Reuse these states rather than adding MCP aliases. — high
 
 ## PAT-003: Future file-writing or loader tools must consume this boundary before mutation o
 
-**提取自**: `docs/reviews/ain-001-002-generated-app-delivery-acceptance-2026-05-30.md`
+**提取自**: `docs/archive/2026-06-07/reviews/ain-001-002-generated-app-delivery-acceptance-2026-05-30.md`
 
 Future file-writing or loader tools must consume this boundary before mutation or IO. — high
 
 ## PAT-004: AIN-005 should continue this wording without enabling stable `scene3d`.
 
-**提取自**: `docs/reviews/ain-001-002-generated-app-delivery-acceptance-2026-05-30.md`
+**提取自**: `docs/archive/2026-06-07/reviews/ain-001-002-generated-app-delivery-acceptance-2026-05-30.md`
 
 AIN-005 should continue this wording without enabling stable `scene3d`. — high
 
 ## PAT-005: Assign AIN-003A through AIN-003F only when owner capacity and fixture strategy a
 
-**提取自**: `docs/reviews/ain-003-004-promotion-criteria-2026-05-30.md`
+**提取自**: `docs/archive/2026-06-07/reviews/ain-003-004-promotion-criteria-2026-05-30.md`
 
 Assign AIN-003A through AIN-003F only when owner capacity and fixture strategy are available. — high
 
 ## PAT-006: Keep `delivery.confirmations` aligned with any future source state promotion.
 
-**提取自**: `docs/reviews/ain-003-004-promotion-criteria-2026-05-30.md`
+**提取自**: `docs/archive/2026-06-07/reviews/ain-003-004-promotion-criteria-2026-05-30.md`
 
 Keep `delivery.confirmations` aligned with any future source state promotion. — high
 
 ## PAT-007: Implement AIN-004A before any richer operation; use schema/command/diagnostic ga
 
-**提取自**: `docs/reviews/ain-003-004-promotion-criteria-2026-05-30.md`
+**提取自**: `docs/archive/2026-06-07/reviews/ain-003-004-promotion-criteria-2026-05-30.md`
 
 Implement AIN-004A before any richer operation; use schema/command/diagnostic gates for later operations. — high
 
 ## PAT-008: Do not add `spatial_query`, `generate_map_app`, or source-specific tool aliases 
 
-**提取自**: `docs/reviews/ain-003-004-promotion-criteria-2026-05-30.md`
+**提取自**: `docs/archive/2026-06-07/reviews/ain-003-004-promotion-criteria-2026-05-30.md`
 
 Do not add `spatial_query`, `generate_map_app`, or source-specific tool aliases without a separate approved contract. — high
 
 ## PAT-009: Keep future copy bound to these fields.
 
-**提取自**: `docs/reviews/ain-005-scene-browsing-delivery-copy-2026-05-30.md`
+**提取自**: `docs/archive/2026-06-07/reviews/ain-005-scene-browsing-delivery-copy-2026-05-30.md`
 
 Keep future copy bound to these fields. — high
 
 ## PAT-010: Keep this wording aligned with schema fields.
 
-**提取自**: `docs/reviews/ain-005-scene-browsing-delivery-copy-2026-05-30.md`
+**提取自**: `docs/archive/2026-06-07/reviews/ain-005-scene-browsing-delivery-copy-2026-05-30.md`
 
 Keep this wording aligned with schema fields. — high
 
 ## PAT-011: Do not move SceneView3D from scaffold/handoff to stable without a new Go decisio
 
-**提取自**: `docs/reviews/ain-005-scene-browsing-delivery-copy-2026-05-30.md`
+**提取自**: `docs/archive/2026-06-07/reviews/ain-005-scene-browsing-delivery-copy-2026-05-30.md`
 
 Do not move SceneView3D from scaffold/handoff to stable without a new Go decision. — high
 
 ## PAT-012: Continue using adapter-local release evidence outside public MCP summaries.
 
-**提取自**: `docs/reviews/ain-005-scene-browsing-delivery-copy-2026-05-30.md`
+**提取自**: `docs/archive/2026-06-07/reviews/ain-005-scene-browsing-delivery-copy-2026-05-30.md`
 
 Continue using adapter-local release evidence outside public MCP summaries. — high
 
@@ -160,91 +160,91 @@ Use durable storage only after security/resource-policy review. — high
 
 ## PAT-025: Keep the section wording aligned with the delivery UX and source-readiness matri
 
-**提取自**: `docs/reviews/gir-004-spatial-analysis-review-section-mapping-2026-05-30.md`
+**提取自**: `docs/archive/2026-06-07/reviews/gir-004-spatial-analysis-review-section-mapping-2026-05-30.md`
 
 Keep the section wording aligned with the delivery UX and source-readiness matrices. — high
 
 ## PAT-026: Reuse the current `generationEvidence.delivery.sections` shape.
 
-**提取自**: `docs/reviews/gir-004-spatial-analysis-review-section-mapping-2026-05-30.md`
+**提取自**: `docs/archive/2026-06-07/reviews/gir-004-spatial-analysis-review-section-mapping-2026-05-30.md`
 
 Reuse the current `generationEvidence.delivery.sections` shape. — high
 
 ## PAT-027: No additional MCP tool or runtime loader is needed for this mapping.
 
-**提取自**: `docs/reviews/gir-004-spatial-analysis-review-section-mapping-2026-05-30.md`
+**提取自**: `docs/archive/2026-06-07/reviews/gir-004-spatial-analysis-review-section-mapping-2026-05-30.md`
 
 No additional MCP tool or runtime loader is needed for this mapping. — high
 
 ## PAT-028: Keep future spatial-analysis changes aligned with these section assertions.
 
-**提取自**: `docs/reviews/gir-004-spatial-analysis-review-section-mapping-2026-05-30.md`
+**提取自**: `docs/archive/2026-06-07/reviews/gir-004-spatial-analysis-review-section-mapping-2026-05-30.md`
 
 Keep future spatial-analysis changes aligned with these section assertions. — high
 
 ## PAT-029: Preserve the current blocked-operation and readiness-only boundaries.
 
-**提取自**: `docs/reviews/gir-004-spatial-analysis-review-section-mapping-2026-05-30.md`
+**提取自**: `docs/archive/2026-06-07/reviews/gir-004-spatial-analysis-review-section-mapping-2026-05-30.md`
 
 Preserve the current blocked-operation and readiness-only boundaries. — high
 
 ## PAT-030: Keep the section mapping aligned with the review-console contract.
 
-**提取自**: `docs/reviews/gir-005-prompt-to-delivery-qa-scenarios-2026-05-30.md`
+**提取自**: `docs/archive/2026-06-07/reviews/gir-005-prompt-to-delivery-qa-scenarios-2026-05-30.md`
 
 Keep the section mapping aligned with the review-console contract. — high
 
 ## PAT-031: Preserve the `data-and-analysis` section semantics in future evidence work.
 
-**提取自**: `docs/reviews/gir-005-prompt-to-delivery-qa-scenarios-2026-05-30.md`
+**提取自**: `docs/archive/2026-06-07/reviews/gir-005-prompt-to-delivery-qa-scenarios-2026-05-30.md`
 
 Preserve the `data-and-analysis` section semantics in future evidence work. — high
 
 ## PAT-032: Keep archive parsing and external-resource prompts behind the same boundary.
 
-**提取自**: `docs/reviews/gir-005-prompt-to-delivery-qa-scenarios-2026-05-30.md`
+**提取自**: `docs/archive/2026-06-07/reviews/gir-005-prompt-to-delivery-qa-scenarios-2026-05-30.md`
 
 Keep archive parsing and external-resource prompts behind the same boundary. — high
 
 ## PAT-033: Preserve the follow-up and blocker sections in the delivery summary.
 
-**提取自**: `docs/reviews/gir-005-prompt-to-delivery-qa-scenarios-2026-05-30.md`
+**提取自**: `docs/archive/2026-06-07/reviews/gir-005-prompt-to-delivery-qa-scenarios-2026-05-30.md`
 
 Preserve the follow-up and blocker sections in the delivery summary. — high
 
 ## PAT-034: Treat future prompt-console changes as contract changes, not ad hoc UI tweaks.
 
-**提取自**: `docs/reviews/gir-005-prompt-to-delivery-qa-scenarios-2026-05-30.md`
+**提取自**: `docs/archive/2026-06-07/reviews/gir-005-prompt-to-delivery-qa-scenarios-2026-05-30.md`
 
 Treat future prompt-console changes as contract changes, not ad hoc UI tweaks. — high
 
 ## PAT-035: Keep future 3D wording behind SRC-style promotion evidence.
 
-**提取自**: `docs/reviews/gir-006-public-wording-release-guardrails-2026-05-30.md`
+**提取自**: `docs/archive/2026-06-07/reviews/gir-006-public-wording-release-guardrails-2026-05-30.md`
 
 Keep future 3D wording behind SRC-style promotion evidence. — high
 
 ## PAT-036: Design a separate file-output policy before adding write behavior.
 
-**提取自**: `docs/reviews/gir-006-public-wording-release-guardrails-2026-05-30.md`
+**提取自**: `docs/archive/2026-06-07/reviews/gir-006-public-wording-release-guardrails-2026-05-30.md`
 
 Design a separate file-output policy before adding write behavior. — high
 
 ## PAT-037: Promote each source only through schema, resource-policy, diagnostics, adapter, 
 
-**提取自**: `docs/reviews/gir-006-public-wording-release-guardrails-2026-05-30.md`
+**提取自**: `docs/archive/2026-06-07/reviews/gir-006-public-wording-release-guardrails-2026-05-30.md`
 
 Promote each source only through schema, resource-policy, diagnostics, adapter, and test gates. — high
 
 ## PAT-038: Harden point/bbox evidence separately before richer operations.
 
-**提取自**: `docs/reviews/gir-006-public-wording-release-guardrails-2026-05-30.md`
+**提取自**: `docs/archive/2026-06-07/reviews/gir-006-public-wording-release-guardrails-2026-05-30.md`
 
 Harden point/bbox evidence separately before richer operations. — high
 
 ## PAT-039: Keep `pnpm test:docs` inside `pnpm check`.
 
-**提取自**: `docs/reviews/gir-006-public-wording-release-guardrails-2026-05-30.md`
+**提取自**: `docs/archive/2026-06-07/reviews/gir-006-public-wording-release-guardrails-2026-05-30.md`
 
 Keep `pnpm test:docs` inside `pnpm check`. — high
 

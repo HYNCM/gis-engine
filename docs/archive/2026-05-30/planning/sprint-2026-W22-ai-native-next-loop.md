@@ -59,7 +59,7 @@ flowchart LR
 
 `TASK-2026W22-AIN-001` and `TASK-2026W22-AIN-002` landed as a generated-app
 delivery contract slice. Evidence is recorded in
-`docs/reviews/ain-001-002-generated-app-delivery-acceptance-2026-05-30.md`.
+`docs/archive/2026-06-07/reviews/ain-001-002-generated-app-delivery-acceptance-2026-05-30.md`.
 The implementation keeps the existing MCP tool surface and adds
 `generationEvidence.delivery` to compact manifests and
 `GenerationEvidenceBundle.delivery` to full evidence bundles.
@@ -69,6 +69,6 @@ promotion gate specs:
 `docs/planning/feature-specs/cloud-native-source-promotion-candidates.md` and
 `docs/planning/feature-specs/spatial-analysis-promotion-criteria.md`.
 `AIN-005` is closed by
-`docs/reviews/ain-005-scene-browsing-delivery-copy-2026-05-30.md`, which keeps
+`docs/archive/2026-06-07/reviews/ain-005-scene-browsing-delivery-copy-2026-05-30.md`, which keeps
 scene browsing delivery copy extension-only. The AIN batch is now closed;
 stable `view.mode: "scene3d"` remains blocked.

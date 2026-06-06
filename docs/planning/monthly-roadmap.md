@@ -8,7 +8,6 @@ inputs:
   - docs/planning/weekly-digest.md
   - docs/planning/AGENT_HEALTH_DASHBOARD.md
   - docs/research/competitor-updates-2026-W24.md
-  - docs/research/capability-scorecard-w24-refresh.md
   - README.md
   - AGENTS.md
   - docs/research/competitor-updates-2026-W22.md
@@ -325,7 +324,7 @@ auth/database、browser-visible provider URL/credential 或新 MCP tool name。
 | --- | --- |
 | MCP tool contract hardening | `outputSchema`、Diagnostic failure path、MCP integration tests |
 | Command schema strictness | strict command schema、unknown field 回归测试 |
-| 表达式合同收敛与扩展 | `expression-v0.2.md`、expression validator tests、MCP vector/expression test |
+| 表达式合同收敛与扩展 | `docs/archive/2026-06-07/feature-specs/expression-v0.2.md`、expression validator tests、MCP vector/expression test |
 | style diff 与 layer order 稳定化 | command matrix、buildPatch、runtime/adapter tests |
 | PMTiles/vector tile URL template | vector source schema、resource policy、MapLibre transformer、examples、snapshot smoke/visual |
 | Package dry-run and file review | package metadata, public access, package READMEs, dry-run evidence |
@@ -429,14 +428,14 @@ Completed the full SDK + CLI productization plan (Phase 1a-1g, Phase 2-4) per `d
 
 | 建议文件 | 阶段 | 关键内容 |
 | --- | --- | --- |
-| `docs/planning/feature-specs/expression-v0.2.md` | done | 支持矩阵、类型推导、诊断、fixtures |
-| `docs/planning/feature-specs/style-diff-layer-order.md` | done | reorder、patch、exportSpec 一致性、视觉预期 |
-| `docs/planning/feature-specs/vector-tile-url-template.md` | done | vector tile source、PMTiles parity、安全策略 |
-| `docs/planning/feature-specs/fill-extrusion-lite-beta.md` | beta done / visual evidence done | experimental gate、MapLibre beta mapping、snapshot smoke、fallback diagnostics |
+| `docs/archive/2026-06-07/feature-specs/expression-v0.2.md` | archived / done | 支持矩阵、类型推导、诊断、fixtures |
+| `docs/archive/2026-06-07/feature-specs/style-diff-layer-order.md` | archived / done | reorder、patch、exportSpec 一致性、视觉预期 |
+| `docs/archive/2026-06-07/feature-specs/vector-tile-url-template.md` | archived / done | vector tile source、PMTiles parity、安全策略 |
+| `docs/archive/2026-06-07/feature-specs/fill-extrusion-lite-beta.md` | archived / beta done | experimental gate、MapLibre beta mapping、snapshot smoke、fallback diagnostics |
 | `docs/planning/feature-specs/scene3d-boundary.md` | boundary deepening done | SceneView3D、terrain、glTF、3D Tiles 边界与 snapshot 规则 |
 | `docs/planning/feature-specs/sceneview3d-v1-rfc.md` | RFC drafted / sprint split done | camera、sources、layers、resource policy、snapshot、query、commands |
 | `docs/planning/feature-specs/sceneview3d-promotion-readiness.md` | active rubric | W23 promotion evidence matrix、owner split、blockers、readiness states |
-| `docs/planning/feature-specs/command-conflict-replay-audit.md` | done | `baseRevision`、`traceId`、`author`、`reason`、`sourcePromptHash`、`SuggestedFix` |
+| `docs/archive/2026-06-07/feature-specs/command-conflict-replay-audit.md` | archived / done | `baseRevision`、`traceId`、`author`、`reason`、`sourcePromptHash`、`SuggestedFix` |
 | `docs/planning/feature-specs/natural-language-map-app-generation.md` | W23 active | prompt、capabilitySummary、MapSpec、commands、diagnostics、snapshot/export evidence |
 | `docs/planning/feature-specs/ai-map-workbench-product-boundary.md` | W23 active | provider administration、durable audit、review actions、visual evidence、product promotion gate |
 | `docs/planning/feature-specs/ai-map-workbench-provider-administration.md` | W23 active | provider lifecycle、browser-safe metadata、base URL policy、timeout/size diagnostics、leak hardening |
