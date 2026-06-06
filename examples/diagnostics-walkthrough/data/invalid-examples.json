@@ -1,0 +1,47 @@
+[
+  {
+    "description": "Layer references a source that does not exist",
+    "spec": {
+      "version": "0.1",
+      "id": "missing-source-example",
+      "view": { "mode": "map2d", "center": [0, 0], "zoom": 2 },
+      "sources": {},
+      "layers": [
+        {
+          "id": "orphan-layer",
+          "type": "circle",
+          "source": "nonexistent",
+          "paint": { "circle-radius": 5 }
+        }
+      ]
+    }
+  },
+  {
+    "description": "Layer type is not recognized by the engine",
+    "spec": {
+      "version": "0.1",
+      "id": "unknown-layer-type",
+      "view": { "mode": "map2d", "center": [0, 0], "zoom": 2 },
+      "sources": {
+        "data": { "type": "geojson", "data": "./data/points.geojson" }
+      },
+      "layers": [
+        {
+          "id": "bad-type-layer",
+          "type": "heatmap3d",
+          "source": "data"
+        }
+      ]
+    }
+  },
+  {
+    "description": "MapSpec version field is invalid",
+    "spec": {
+      "version": "99.0",
+      "id": "bad-version",
+      "view": { "mode": "map2d", "center": [0, 0], "zoom": 2 },
+      "sources": {},
+      "layers": []
+    }
+  }
+]

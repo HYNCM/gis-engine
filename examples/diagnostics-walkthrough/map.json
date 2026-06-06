@@ -1,0 +1,26 @@
+{
+  "version": "0.1",
+  "id": "diagnostics-walkthrough",
+  "view": {
+    "mode": "map2d",
+    "center": [120.15, 30.28],
+    "zoom": 11
+  },
+  "sources": {
+    "pois": {
+      "type": "geojson",
+      "data": "./data/points.geojson"
+    }
+  },
+  "layers": [
+    {
+      "id": "poi-circles",
+      "type": "circle",
+      "source": "pois",
+      "paint": {
+        "circle-radius": ["step", ["get", "score"], 4, 60, 8, 90, 12],
+        "circle-color": ["step", ["get", "score"], "#dbeafe", 60, "#60a5fa", 90, "#1d4ed8"]
+      }
+    }
+  ]
+}

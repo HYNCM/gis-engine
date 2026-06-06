@@ -11,6 +11,7 @@ import aiBefore from "../../examples/ai-map-edit/before.map.json";
 import aiCommands from "../../examples/ai-map-edit/commands.json";
 import { createInitialSpec as createAiMapWorkbenchSpec } from "../../examples/ai-map-workbench/initial-map.mjs";
 import basicGeojson from "../../examples/basic-geojson/map.json";
+import diagnosticsWalkthrough from "../../examples/diagnostics-walkthrough/map.json";
 import fillExtrusionLite from "../../examples/fill-extrusion-lite/map.json";
 import pmtilesLocal from "../../examples/pmtiles-local/map.json";
 import rasterBasemap from "../../examples/raster-basemap/map.json";
@@ -27,6 +28,11 @@ describe("examples gate", () => {
     {
       id: "basic-geojson",
       spec: () => basicGeojson as MapSpec,
+      firstLayerId: "poi-circles",
+    },
+    {
+      id: "diagnostics-walkthrough",
+      spec: () => diagnosticsWalkthrough as MapSpec,
       firstLayerId: "poi-circles",
     },
     {
@@ -110,6 +116,7 @@ describe("examples gate", () => {
   it("covers the bundled examples", () => {
     expect(examples.map((example) => example.id)).toEqual([
       "basic-geojson",
+      "diagnostics-walkthrough",
       "ai-map-edit",
       "ai-map-workbench",
       "raster-basemap",
