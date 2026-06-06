@@ -972,6 +972,10 @@ function isArtifactManifestShape(value: unknown): value is ArtifactManifestShape
   return typeof value === "object" && value !== null;
 }
 
+function isHtmlFallbackResponse(response: Response): boolean {
+  return (response.headers.get("content-type") ?? "").toLowerCase().includes("text/html");
+}
+
 function formatDeliveryState(delivery: DeliverySummaryShape["delivery"], loadStatus: DeliveryLoadStatus): string {
   if (delivery?.acceptance?.state) return delivery.acceptance.state;
   if (delivery?.status) return delivery.status;
@@ -1050,7 +1054,7 @@ export default function App() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [map, setMap] = useState<maplibregl.Map | null>(null);
-  const [spec, setSpec] = useState<MapSpecShape>(() => mapSpec as MapSpecShape);
+  const [spec, setSpec] = useState<MapSpecShape>(() => mapSpec as unknown as MapSpecShape);
   const [status, setStatus] = useState<MapLoadStatus>("loading");
   const [statusMessage, setStatusMessage] = useState("Loading map.json...");
   const [statusDetail, setStatusDetail] = useState<string | null>(null);
@@ -1094,12 +1098,18 @@ export default function App() {
           if (!cancelled) {
             setDeliverySummary(null);
             setDeliveryLoadStatus("missing");
-            setReviewDetailsOpen(false);
           }
           return;
         }
         if (!response.ok) {
           throw new Error("HTTP " + response.status);
+        }
+        if (isHtmlFallbackResponse(response)) {
+          if (!cancelled) {
+            setDeliverySummary(null);
+            setDeliveryLoadStatus("missing");
+          }
+          return;
         }
         const parsed = (await response.json()) as unknown;
         if (!isDeliverySummaryShape(parsed)) {
@@ -1114,7 +1124,6 @@ export default function App() {
           setDeliverySummary(null);
           setDeliveryLoadStatus("error");
           setDeliveryError(error instanceof Error ? error.message : "Could not read delivery-summary.json.");
-          setReviewDetailsOpen(false);
         }
       }
     };
@@ -1144,6 +1153,13 @@ export default function App() {
         }
         if (!response.ok) {
           throw new Error("HTTP " + response.status);
+        }
+        if (isHtmlFallbackResponse(response)) {
+          if (!cancelled) {
+            setArtifactManifest(null);
+            setArtifactManifestLoadStatus("missing");
+          }
+          return;
         }
         const parsed = (await response.json()) as unknown;
         if (!isArtifactManifestShape(parsed)) {
@@ -1321,6 +1337,8 @@ export default function App() {
   const artifactManifestState = artifactManifestLoadStatus === "ready" ? "available" : artifactManifestLoadStatus;
   const artifactManifestDetail = artifactManifestLoadStatus === "error" ? artifactManifestError : null;
   const canShowReviewDetails =
+    specValidation.valid ||
+    specValidation.diagnostics.length > 0 ||
     (deliveryLoadStatus === "ready" && deliverySummary !== null) ||
     (artifactManifestLoadStatus === "ready" && artifactManifest !== null);
   const deliverySections = delivery?.sections ?? [];
@@ -1408,6 +1426,43 @@ export default function App() {
               <h2 className="text-[11px] font-semibold uppercase text-gray-500">Review details</h2>
               <dl className="mt-2 grid grid-cols-2 gap-2">
                 <div>
+                  <dt className="text-gray-400">Spec</dt>
+                  <dd className="truncate font-medium text-gray-900">{specValidationState}</dd>
+                </div>
+                <div>
+                  <dt className="text-gray-400">Spec diagnostics</dt>
+                  <dd className="font-medium text-gray-900">
+                    {displayValue(specDiagnosticCounts.error)} / {displayValue(specDiagnosticCounts.warning)} / {displayValue(specDiagnosticCounts.info)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-400">Spec sources</dt>
+                  <dd className="font-medium text-gray-900">{displayValue(specValidation.stats.sourceCount)}</dd>
+                </div>
+                <div>
+                  <dt className="text-gray-400">Spec layers</dt>
+                  <dd className="font-medium text-gray-900">
+                    {displayValue(specValidation.stats.visibleLayerCount)} visible / {displayValue(specValidation.stats.layerCount)} total
+                  </dd>
+                </div>
+              </dl>
+              {visibleSpecDiagnostics.length > 0 ? (
+                <ul className="mt-2 divide-y divide-gray-200">
+                  {visibleSpecDiagnostics.map((diagnostic, index) => (
+                    <li key={diagnostic.code + (diagnostic.path ?? "/") + String(index)} className="py-1">
+                      <p className="truncate font-medium text-gray-900">{diagnostic.code}: {diagnostic.path ?? "/"}</p>
+                      <p className="text-gray-400">{diagnostic.message}</p>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-2 text-gray-400">No schema, semantic, or resource-policy diagnostics.</p>
+              )}
+            </section>
+            <section className="mt-3 border-t border-gray-200 pt-3">
+              <h3 className="text-[11px] font-semibold uppercase text-gray-500">Delivery</h3>
+              <dl className="mt-2 grid grid-cols-2 gap-2">
+                <div>
                   <dt className="text-gray-400">Evidence</dt>
                   <dd className="truncate font-medium text-gray-900">{deliverySummary?.evidenceStatus ?? "--"}</dd>
                 </div>
@@ -1442,12 +1497,6 @@ export default function App() {
                 <div>
                   <dt className="text-gray-400">Trace</dt>
                   <dd className="truncate font-medium text-gray-900">{deliverySummary?.traceId ?? "--"}</dd>
-                </div>
-                <div>
-                  <dt className="text-gray-400">Spec diagnostics</dt>
-                  <dd className="font-medium text-gray-900">
-                    {displayValue(specDiagnosticCounts.error)} / {displayValue(specDiagnosticCounts.warning)} / {displayValue(specDiagnosticCounts.info)}
-                  </dd>
                 </div>
               </dl>
             </section>

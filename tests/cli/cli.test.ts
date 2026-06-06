@@ -1160,6 +1160,7 @@ describe("cli-templates", () => {
     expect(appFile.content).toContain('nextMap.on("error"');
     expect(appFile.content).toContain('setStatus("loading")');
     expect(appFile.content).toContain("const specValidation = useMemo(() => validateSpec(spec), [spec]);");
+    expect(appFile.content).toContain("mapSpec as unknown as MapSpecShape");
     expect(appFile.content).toContain("const visibleSpecDiagnostics = useMemo(");
     expect(appFile.content).toContain("const blockingSpecDiagnostics = useMemo(");
     expect(appFile.content).toContain("MapSpec validation failed.");
@@ -1171,6 +1172,8 @@ describe("cli-templates", () => {
     expect(appFile.content).toContain("type DeliverySectionSummary");
     expect(appFile.content).toContain("type ArtifactManifestShape");
     expect(appFile.content).toContain("isArtifactManifestShape");
+    expect(appFile.content).toContain("isHtmlFallbackResponse");
+    expect(appFile.content).toContain('"content-type"');
     expect(appFile.content).toContain("formatDeliveryState");
     expect(appFile.content).toContain("displayValue");
     expect(appFile.content).toContain("shortHash");
@@ -1184,9 +1187,12 @@ describe("cli-templates", () => {
     expect(appFile.content).toContain("deliverySummary?.preflight?.status");
     expect(appFile.content).toContain("deliverySummary?.preflight?.sourceReadiness?.summary");
     expect(appFile.content).toContain("deliverySummary?.preflight?.pmtiles?.summary");
+    expect(appFile.content).toContain('setDeliveryLoadStatus("missing")');
     expect(appFile.content).toContain('setArtifactManifestLoadStatus("missing")');
     expect(appFile.content).toContain("artifactManifestState");
     expect(appFile.content).toContain("const [reviewDetailsOpen");
+    expect(appFile.content).toContain("specValidation.valid ||");
+    expect(appFile.content).not.toContain("setReviewDetailsOpen(false)");
   });
 
   it("app template exposes loading, reload, and responsive control states", () => {
@@ -1209,6 +1215,11 @@ describe("cli-templates", () => {
     expect(appFile.content).toContain("Could not load the selected map.json file.");
     expect(appFile.content).toContain("formatDiagnosticDetail");
     expect(appFile.content).toContain("Spec diagnostics");
+    expect(appFile.content).toContain("Spec sources");
+    expect(appFile.content).toContain("Spec layers");
+    expect(appFile.content).toContain("specValidation.stats.visibleLayerCount");
+    expect(appFile.content).toContain("visibleSpecDiagnostics.map");
+    expect(appFile.content).toContain("No schema, semantic, or resource-policy diagnostics.");
     expect(appFile.content).toContain("diagnostic.code");
     expect(appFile.content).toContain("diagnostic.path");
     expect(appFile.content).toContain("diagnostic.message");

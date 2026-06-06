@@ -36,6 +36,16 @@
 - Validate the loaded MapSpec in the generated `app` template with
   `@gis-engine/engine.validateSpec()` before rendering and surface structured
   diagnostic code/path/message feedback when validation blocks the map.
+- Keep the generated `app` template review details panel available for
+  scaffold-only projects by rendering MapSpec validity, diagnostic counts,
+  source/layer counts, and full visible diagnostic entries even when optional
+  delivery artifacts are absent.
+- Treat HTML fallback responses for missing optional `delivery-summary.json` and
+  `artifact-manifest.json` files as missing evidence instead of JSON errors, so
+  scaffold-only app projects keep a clean review surface under Vite-style
+  history fallback servers.
+- Keep scaffold-only `app` template builds clean when the starter `map.json`
+  JSON import infers `view.center` as an array rather than a tuple.
 - Surface generated delivery evidence in the `app` template status banner when
   `delivery-summary.json` is present, while scaffold-only app projects keep
   running without that optional file. The rail now includes the generated
