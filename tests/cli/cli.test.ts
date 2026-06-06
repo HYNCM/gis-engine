@@ -5,14 +5,18 @@ import { pathToFileURL } from "node:url";
 import {
   CLI_API_KEY_ENVS,
   createProviderDiagnostics,
+  formatPreflightText,
   getTemplate,
   hashPrompt,
+  main,
   normalizeAppConfig,
   parseArgs,
+  preflightMapSpec,
   readProviderApiKey,
   resolveProviderProfile,
   TEMPLATES,
 } from "@gis-engine/cli";
+import type { MapSpec } from "@gis-engine/engine";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { isDirectCliExecution } from "../../packages/cli/src/bin.ts";
 
@@ -45,6 +49,57 @@ describe("cli-bin-direct-execution", () => {
 
       expect(isDirectCliExecution(pathToFileURL(target).href, runner)).toBe(false);
     } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("cli-bin-preflight-mode", () => {
+  it("runs JSON preflight without requiring a project name", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gis-engine-cli-main-preflight-"));
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      const mapPath = join(dir, "map.json");
+      writeFileSync(mapPath, `${JSON.stringify(pmtilesPreflightSpec(), null, 2)}\n`, "utf-8");
+
+      await main(["--preflight", mapPath, "--json"]);
+
+      expect(logSpy).toHaveBeenCalledTimes(1);
+      const payload = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+      expect(payload).toMatchObject({
+        ok: true,
+        mode: "mapspec-preflight",
+        status: "ready",
+        validation: { valid: true },
+        pmtiles: { status: "ready" },
+      });
+    } finally {
+      logSpy.mockRestore();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("exits non-zero when preflight reports blockers", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gis-engine-cli-main-preflight-"));
+    const writeSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: string | number | null) => {
+      throw new Error(`process.exit:${code}`);
+    }) as never);
+    try {
+      const spec = pmtilesPreflightSpec();
+      const firstLayer = spec.layers[0];
+      if (!firstLayer) throw new Error("Expected PMTiles fixture layer.");
+      spec.layers[0] = { ...firstLayer, metadata: undefined };
+      const mapPath = join(dir, "map.json");
+      writeFileSync(mapPath, `${JSON.stringify(spec, null, 2)}\n`, "utf-8");
+
+      await expect(main(["--preflight", mapPath])).rejects.toThrow("process.exit:1");
+
+      expect(exitSpy).toHaveBeenCalledWith(1);
+      expect(String(writeSpy.mock.calls[0]?.[0])).toContain("Status:     blocked");
+    } finally {
+      writeSpy.mockRestore();
+      exitSpy.mockRestore();
       rmSync(dir, { recursive: true, force: true });
     }
   });
@@ -98,6 +153,8 @@ describe("cli-config-parseArgs", () => {
     expect(config.baseUrl).toBeUndefined();
     expect(config.apiKey).toBeUndefined();
     expect(config.timeout).toBeUndefined();
+    expect(config.preflight).toBeUndefined();
+    expect(config.json).toBe(false);
   });
 
   it("sets template via --template flag", () => {
@@ -123,6 +180,23 @@ describe("cli-config-parseArgs", () => {
   it("sets dryRun via --dry-run", () => {
     const config = parseArgs(["--dry-run"]);
     expect(config.dryRun).toBe(true);
+  });
+
+  it("sets json via --json", () => {
+    const config = parseArgs(["--json"]);
+    expect(config.json).toBe(true);
+  });
+
+  it("sets preflight via --preflight with separate value", () => {
+    const config = parseArgs(["--preflight", "./map.json", "--json"]);
+    expect(config.projectName).toBe("");
+    expect(config.preflight).toBe("./map.json");
+    expect(config.json).toBe(true);
+  });
+
+  it("sets preflight via --preflight=value equals form", () => {
+    const config = parseArgs(["--preflight=./map.json"]);
+    expect(config.preflight).toBe("./map.json");
   });
 
   it("sets help via --help", () => {
@@ -318,6 +392,106 @@ describe("cli-config-parseArgs", () => {
 });
 
 // ---------------------------------------------------------------------------
+// preflight.ts — preflightMapSpec
+// ---------------------------------------------------------------------------
+
+describe("cli-preflight-map-spec", () => {
+  it("returns ready for a valid PMTiles MapSpec with source-layer metadata", () => {
+    const dir = mkdtempSync(join(tmpdir(), "gis-engine-cli-preflight-"));
+    try {
+      const mapPath = join(dir, "map.json");
+      writeFileSync(mapPath, `${JSON.stringify(pmtilesPreflightSpec(), null, 2)}\n`, "utf-8");
+
+      const result = preflightMapSpec({ filePath: mapPath });
+      const text = formatPreflightText(result);
+
+      expect(result.ok).toBe(true);
+      expect(result.mode).toBe("mapspec-preflight");
+      expect(result.status).toBe("ready");
+      expect(result.validation.valid).toBe(true);
+      expect(result.pmtiles.status).toBe("ready");
+      expect(result.pmtiles.summary.pmtilesSourceCount).toBe(1);
+      expect(result.pmtiles.sources[0]?.sourceLayerIds).toEqual(["parcels"]);
+      expect(result.diagnostics).toEqual([]);
+      expect(text).toContain("Status:     ready");
+      expect(text).toContain("PMTiles:    ready (1 sources)");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("blocks PMTiles preflight when vector layers omit source-layer metadata", () => {
+    const dir = mkdtempSync(join(tmpdir(), "gis-engine-cli-preflight-"));
+    try {
+      const spec = pmtilesPreflightSpec();
+      const firstLayer = spec.layers[0];
+      if (!firstLayer) throw new Error("Expected PMTiles fixture layer.");
+      spec.layers[0] = { ...firstLayer, metadata: undefined };
+      const mapPath = join(dir, "map.json");
+      writeFileSync(mapPath, `${JSON.stringify(spec, null, 2)}\n`, "utf-8");
+
+      const result = preflightMapSpec({ filePath: mapPath });
+
+      expect(result.ok).toBe(false);
+      expect(result.status).toBe("blocked");
+      expect(result.pmtiles.status).toBe("blocked");
+      expect(result.diagnostics).toContainEqual(
+        expect.objectContaining({
+          code: "LAYER.SOURCE_INCOMPATIBLE",
+          path: "/layers/0/metadata/source-layer",
+        }),
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("blocks malformed JSON with a structured diagnostic", () => {
+    const dir = mkdtempSync(join(tmpdir(), "gis-engine-cli-preflight-"));
+    try {
+      const mapPath = join(dir, "map.json");
+      writeFileSync(mapPath, "{not-json", "utf-8");
+
+      const result = preflightMapSpec({ filePath: mapPath });
+
+      expect(result.ok).toBe(false);
+      expect(result.status).toBe("blocked");
+      expect(result.validation.valid).toBe(false);
+      expect(result.diagnostics).toContainEqual(
+        expect.objectContaining({
+          code: "SPEC.INVALID_TYPE",
+          path: "/",
+        }),
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+function pmtilesPreflightSpec(): MapSpec {
+  return {
+    version: "0.1",
+    view: { center: [-73.98, 40.75], zoom: 11 },
+    sources: {
+      parcels: {
+        type: "pmtiles",
+        url: "pmtiles://local/parcels.pmtiles",
+      },
+    },
+    layers: [
+      {
+        id: "parcels-fill",
+        type: "fill",
+        source: "parcels",
+        metadata: { "source-layer": "parcels" },
+        paint: { "fill-color": "#2f80ed", "fill-opacity": 0.55 },
+      },
+    ],
+  };
+}
+
+// ---------------------------------------------------------------------------
 // provider.ts — createProviderDiagnostics
 // ---------------------------------------------------------------------------
 
@@ -453,6 +627,8 @@ describe("cli-templates", () => {
     const paths = files.map((f) => f.path);
     expect(paths).toContain("map.json");
     expect(paths).toContain("README.md");
+    const readme = files.find((f) => f.path === "README.md")!;
+    expect(readme.content).toContain("create-gis-map --preflight ./map.json --json");
   });
 
   it("generated files contain the project name", () => {
@@ -528,6 +704,8 @@ describe("cli-templates", () => {
     expect(paths).toContain("src/vite-env.d.ts");
     expect(paths).toContain("map.json");
     expect(paths).toContain("README.md");
+    const readme = files.find((f) => f.path === "README.md")!;
+    expect(readme.content).toContain("create-gis-map --preflight ./map.json --json");
   });
 
   it("app template includes React and Tailwind dependencies", () => {

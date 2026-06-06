@@ -321,6 +321,14 @@ const spec = JSON.parse(await fetch("./map.json").then(r => r.text()));
 const map = await createMap(container, spec, { renderer: "maplibre" });
 \`\`\`
 
+## Preflight
+
+Validate the generated spec before handing it to an app or CI pipeline:
+
+\`\`\`bash
+npm exec --package @gis-engine/cli@latest -- create-gis-map --preflight ./map.json --json
+\`\`\`
+
 ## Provider
 
 Current provider: \`${ctx.provider}\`
@@ -1076,6 +1084,14 @@ Components: ${cfg.components.join(", ")}
 \`\`\`bash
 npm install
 npm run dev
+\`\`\`
+
+## Preflight
+
+Validate the generated spec before deployment or CI handoff:
+
+\`\`\`bash
+npm exec --package @gis-engine/cli@latest -- create-gis-map --preflight ./map.json --json
 \`\`\`
 
 ## Provider

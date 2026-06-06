@@ -17,9 +17,11 @@ export interface CliConfig {
   apiKey?: string;
   timeout?: number;
   generate: boolean;
+  preflight?: string;
   prompt?: string;
   yes: boolean;
   dryRun: boolean;
+  json: boolean;
   help: boolean;
   version: boolean;
 }
@@ -30,6 +32,7 @@ const DEFAULTS: Omit<CliConfig, "projectName" | "prompt" | "model" | "baseUrl" |
   generate: false,
   yes: false,
   dryRun: false,
+  json: false,
   help: false,
   version: false,
 };
@@ -65,9 +68,11 @@ export function parseArgs(argv: string[]): CliConfig {
   let apiKey = fileConfig.apiKey;
   let timeout = fileConfig.timeout;
   let generate = DEFAULTS.generate;
+  let preflight: string | undefined;
   let prompt: string | undefined;
   let yes = DEFAULTS.yes;
   let dryRun = DEFAULTS.dryRun;
+  let json = DEFAULTS.json;
   let help = DEFAULTS.help;
   let version = DEFAULTS.version;
 
@@ -95,11 +100,20 @@ export function parseArgs(argv: string[]): CliConfig {
     } else if (arg === "--dry-run") {
       dryRun = true;
       i++;
+    } else if (arg === "--json") {
+      json = true;
+      i++;
     } else if (arg === "--yes" || arg === "--force" || arg === "-y") {
       yes = true;
       i++;
     } else if (arg === "--generate" || arg === "-g") {
       generate = true;
+      i++;
+    } else if (arg === "--preflight") {
+      preflight = nextValue("--preflight") || preflight;
+      i++;
+    } else if (arg.startsWith("--preflight=")) {
+      preflight = arg.slice("--preflight=".length);
       i++;
     } else if (arg === "--prompt") {
       prompt = nextValue("--prompt") || prompt;
@@ -193,9 +207,11 @@ export function parseArgs(argv: string[]): CliConfig {
     ...(apiKey !== undefined ? { apiKey } : {}),
     ...(timeout !== undefined ? { timeout } : {}),
     generate,
+    ...(preflight !== undefined ? { preflight } : {}),
     ...(prompt !== undefined ? { prompt } : {}),
     yes,
     dryRun,
+    json,
     help,
     version,
   };

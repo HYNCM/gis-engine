@@ -2,6 +2,13 @@ export { main } from "./bin.js";
 export { type CliConfig, parseArgs } from "./config.js";
 export { type GenerateOptions, type GenerateResult, generate, hashPrompt } from "./generate.js";
 export {
+  formatPreflightText,
+  type PreflightDiagnosticCounts,
+  type PreflightOptions,
+  type PreflightResult,
+  preflightMapSpec,
+} from "./preflight.js";
+export {
   CLI_API_KEY_ENVS,
   createProviderDiagnostics,
   type ProviderDiagnostic,

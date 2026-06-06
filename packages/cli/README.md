@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/HYNCM/gis-engine/blob/main/LICENSE)
 
-CLI for scaffolding and generating GIS Engine map projects. Provides two modes: **scaffold** (default) for creating projects from templates, and **generate** (`--generate` flag) for running the full AI pipeline from a natural-language prompt to a validated MapSpec bundle.
+CLI for scaffolding and generating GIS Engine map projects. Provides three modes: **scaffold** (default) for creating projects from templates, **generate** (`--generate` flag) for running the full AI pipeline from a natural-language prompt to a validated MapSpec bundle, and **preflight** (`--preflight`) for validating a MapSpec JSON file before delivery.
 
 - **Package**: `@gis-engine/cli`
 - **Version**: 1.0.0
@@ -18,6 +18,7 @@ CLI for scaffolding and generating GIS Engine map projects. Provides two modes: 
 - [Provider Configuration](#provider-configuration)
 - [Templates](#templates)
 - [Generate Pipeline](#generate-pipeline)
+- [Preflight Mode](#preflight-mode)
 - [SDK Minimal Use](#sdk-minimal-use)
 - [License](#license)
 
@@ -75,6 +76,18 @@ npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --generate --
 
 The `--dry-run` flag prints what would be created without writing any files.
 
+### 5. Preflight a generated MapSpec
+
+```bash
+npm exec --package @gis-engine/cli@latest -- create-gis-map --preflight ./map.json
+npm exec --package @gis-engine/cli@latest -- create-gis-map --preflight ./map.json --json
+```
+
+Preflight mode validates `map.json`, reports structured diagnostics, and checks
+the PMTiles runtime load plan without writing files, fetching resources, or
+parsing PMTiles archives. It exits non-zero only when validation or PMTiles
+delivery blockers are present.
+
 ---
 
 ## CLI Reference
@@ -83,6 +96,7 @@ The `--dry-run` flag prints what would be created without writing any files.
 
 ```
 create-gis-map <project-name> [options]
+create-gis-map --preflight <map.json> [--json]
 ```
 
 ### Options
@@ -95,6 +109,8 @@ create-gis-map <project-name> [options]
 | `--base-url <url>` | | API base URL for OpenAI-compatible provider | per-provider default |
 | `--generate` | `-g` | Run the AI generate pipeline instead of scaffolding | `false` |
 | `--prompt <text>` | | Prompt text for generate mode | (built-in default) |
+| `--preflight <path>` | | Validate a MapSpec JSON file and PMTiles load plan without writing files | |
+| `--json` | | Print preflight output as machine-readable JSON | `false` |
 | `--api-key <key>` | | API key for OpenAI-compatible providers. Overrides provider-specific env vars (`DEEPSEEK_API_KEY`, `OPENAI_API_KEY`). | (from env) |
 | `--timeout <ms>` | | HTTP request timeout in milliseconds for provider API calls | `20000` |
 | `--yes` | `-y` | Skip directory-exists check (overwrite). Also accepts `--force`. | `false` |
@@ -140,6 +156,9 @@ npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --generate -p
 
 # Dry-run: preview output without writing
 npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --generate --dry-run
+
+# Preflight a generated MapSpec
+npm exec --package @gis-engine/cli@latest -- create-gis-map --preflight ./map.json --json
 ```
 
 ---
@@ -365,6 +384,37 @@ The prompt hash allows you to correlate runs without exposing the original promp
   "generatedAt": "string (ISO 8601)"
 }
 ```
+
+---
+
+## Preflight Mode
+
+Use `--preflight <map.json>` when a generated or hand-authored MapSpec needs a
+CI-friendly delivery check before it reaches an application runtime.
+
+Preflight mode performs:
+
+| Check | Description |
+|---|---|
+| MapSpec validation | Runs the engine validator and returns schema, semantic, and resource-policy diagnostics. |
+| PMTiles load plan | Runs `createPMTilesRuntimeLoadPlan()` for PMTiles sources, including URL policy, MapLibre `source-layer` metadata, range-policy requirements, and optional archive-metadata readiness state. |
+| No IO side effects | Reads the supplied JSON file only. It does not create project files, fetch URLs, start workers, or parse PMTiles archives. |
+
+Text output is intended for humans:
+
+```bash
+create-gis-map --preflight ./map.json
+```
+
+JSON output is intended for CI and release scripts:
+
+```bash
+create-gis-map --preflight ./map.json --json
+```
+
+The result includes `ok`, `status`, `validation`, `pmtiles`, and `diagnostics`.
+`status: "blocked"` exits with code `1`; `ready`, `metadata-required`, and
+`not-applicable` PMTiles plans exit with code `0`.
 
 ---
 

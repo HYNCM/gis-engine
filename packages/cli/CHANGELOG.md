@@ -1,5 +1,14 @@
 # @gis-engine/cli
 
+## Unreleased
+
+### Minor Changes
+
+- Add `create-gis-map --preflight <map.json> [--json]` for CI-friendly
+  MapSpec validation and PMTiles runtime load-plan checks without scaffolding,
+  file generation, network fetches, or archive parsing. Generated `mapspec`
+  and `app` template READMEs now include the preflight handoff command.
+
 ## 1.0.0
 
 ### Patch Changes

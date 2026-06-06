@@ -11,6 +11,7 @@
  *   npm exec --package @gis-engine/cli@latest -- create-gis-map <project-name> --template vite-ts
  *   npm exec --package @gis-engine/cli@latest -- create-gis-map <project-name> --generate [--provider mock] [--prompt "..."]
  *   npm exec --package @gis-engine/cli@latest -- create-gis-map <project-name> --generate -p deepseek --api-key sk-xxx --timeout 20000
+ *   npm exec --package @gis-engine/cli@latest -- create-gis-map --preflight ./map.json [--json]
  *
  * Options:
  *   --template, -t   Template to use: static-html | vite-ts | mapspec (default: static-html)
@@ -22,6 +23,8 @@
  *   --yes, -y        Skip directory-exists confirmation (overwrite)
  *   --api-key        API key for provider (overrides env var)
  *   --timeout        Provider request timeout in ms (default: 20000)
+ *   --preflight      Validate and preflight a MapSpec JSON file
+ *   --json           Print preflight output as JSON
  *   --dry-run        Preview files without writing
  *   --help, -h       Show this help message
  *   --version, -v    Print CLI version
@@ -33,6 +36,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "./config.js";
 import { generate } from "./generate.js";
+import { formatPreflightText, preflightMapSpec } from "./preflight.js";
 import { createProviderDiagnostics } from "./provider.js";
 import { getTemplate, TEMPLATES } from "./templates/index.js";
 
@@ -46,6 +50,17 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
 
   if (config.version) {
     console.log(`create-gis-map v${getVersion()}`);
+    return;
+  }
+
+  if (config.preflight) {
+    const result = preflightMapSpec({ filePath: config.preflight });
+    if (config.json) {
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      process.stdout.write(formatPreflightText(result));
+    }
+    if (!result.ok) process.exit(1);
     return;
   }
 
@@ -151,6 +166,7 @@ Usage: create-gis-map <project-name> [options]
 Modes:
   scaffold     Create a project from a template (default)
   generate     Run the AI generate pipeline (--generate flag)
+  preflight    Validate a MapSpec JSON file and PMTiles runtime load plan
 
 Templates (scaffold mode):
   static-html   Standalone HTML file with inline GIS Engine (default)
@@ -167,6 +183,8 @@ Options:
       --timeout    Provider request timeout in ms (default: 20000)
   -g, --generate   Run AI generate pipeline instead of scaffolding
       --prompt     Prompt text for generate mode
+      --preflight  Validate/preflight a MapSpec JSON file without writing files
+      --json       Print preflight output as JSON
   -y, --yes        Skip directory-exists check (overwrite)
       --dry-run    Preview files without writing
   -h, --help       Show help
@@ -181,6 +199,7 @@ Examples:
   create-gis-map my-map --generate -p deepseek       AI generate with deepseek
   create-gis-map my-map --generate -t app -p deepseek  AI generate interactive app
   create-gis-map my-map --generate --prompt "A map of NYC parks"
+  create-gis-map --preflight ./map.json --json       Validate and preflight a MapSpec
 `);
 }
 
