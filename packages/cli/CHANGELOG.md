@@ -11,6 +11,10 @@
 - Add `--require-archive-metadata` and repeatable `--pmtiles-metadata
   <source-id=path>` so CI can enforce caller-supplied PMTiles archive metadata
   without hidden fetches or parser claims.
+- Include review-ready delivery evidence in generated `delivery-summary.json`:
+  acceptance state, delivery sections, source-readiness counts and entries,
+  spatial-query readiness, confirmations, and follow-ups are now available
+  without parsing the full `evidence.json` bundle.
 
 ## 1.0.0
 

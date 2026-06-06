@@ -4,6 +4,7 @@
 
 ### Added
 - **CLI MapSpec preflight mode**: `create-gis-map --preflight <map.json> [--json]` validates a MapSpec and PMTiles runtime load plan without requiring a project name, writing files, fetching resources, or parsing PMTiles archives. Generated `mapspec` and `app` template READMEs include the preflight handoff command.
+- **CLI generated delivery review summary**: generated `delivery-summary.json` now includes acceptance state, delivery sections, source-readiness counts and entries, spatial-query readiness, confirmations, and follow-ups so CI and reviewers can inspect delivery status without parsing the full `evidence.json`.
 - **PMTiles archive metadata handoff in CLI preflight**: `--require-archive-metadata` and repeatable `--pmtiles-metadata <source-id=path>` let CI require caller-supplied PMTiles archive metadata without hidden fetches or parser claims.
 - **Source-readiness preflight report**: `createSourceReadinessReport()` and CLI `sourceReadiness` output summarize supported, readiness-only, and blocked source states for CI/release handoff without fetching resources, parsing archives, or starting workers.
 - **PMTiles runtime load-plan preflight**: `PMTilesSourceLoader` and `createPMTilesRuntimeLoadPlan()` validate URL policy, MapLibre `metadata["source-layer"]` requirements, range-policy requirements, and optional archive metadata budgets without fetching or parsing PMTiles archives.

@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -6,6 +6,7 @@ import {
   CLI_API_KEY_ENVS,
   createProviderDiagnostics,
   formatPreflightText,
+  generate,
   getTemplate,
   hashPrompt,
   main,
@@ -1060,6 +1061,56 @@ describe("cli-generate-hashPrompt", () => {
     const hash = hashPrompt("test prompt");
     // normalizeWorkbenchProviderPlan validates: /^sha256:[A-Za-z0-9._:-]{1,96}$/
     expect(hash).toMatch(/^sha256:[A-Za-z0-9._:-]{1,96}$/);
+  });
+});
+
+describe("cli-generate-delivery-summary", () => {
+  it("writes review-ready delivery evidence without raw prompt retention", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gis-engine-cli-generate-"));
+    const cwd = process.cwd();
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      process.chdir(dir);
+
+      const result = await generate({
+        projectName: "reviewable-map",
+        provider: "mock",
+        prompt: "Create a map showing private customer locations in Berlin",
+        dryRun: false,
+      });
+
+      const summary = JSON.parse(readFileSync(join(dir, "reviewable-map", "delivery-summary.json"), "utf-8"));
+      const evidence = JSON.parse(readFileSync(join(dir, "reviewable-map", "evidence.json"), "utf-8"));
+
+      expect(result.files).toContain("delivery-summary.json");
+      expect(summary.retainedRawPrompt).toBe(false);
+      expect(JSON.stringify(summary)).not.toContain("private customer locations");
+      expect(summary.delivery).toMatchObject({
+        status: evidence.delivery.status,
+        acceptance: evidence.delivery.acceptance,
+        confirmationRequired: evidence.delivery.confirmationRequired,
+      });
+      expect(summary.delivery.sections).toEqual(evidence.delivery.sections);
+      expect(summary.delivery.sourceReadiness).toMatchObject({
+        total: evidence.delivery.sourceReadiness.length,
+        supported: evidence.delivery.sourceReadiness.filter((source: { state: string }) => source.state === "supported")
+          .length,
+        readinessOnly: evidence.delivery.sourceReadiness.filter(
+          (source: { state: string }) => source.state === "readiness-only",
+        ).length,
+        blocked: evidence.delivery.sourceReadiness.filter((source: { state: string }) => source.state === "blocked")
+          .length,
+        sources: evidence.delivery.sourceReadiness,
+      });
+      expect(summary.delivery.spatialQueryReadiness).toEqual(evidence.delivery.spatialQueryReadiness);
+      expect(summary.delivery.sourcePromotionCandidates).toEqual(evidence.delivery.sourcePromotionCandidates ?? []);
+      expect(summary.delivery.confirmations).toEqual(evidence.delivery.confirmations);
+      expect(summary.delivery.followUps).toEqual(evidence.delivery.followUps);
+    } finally {
+      process.chdir(cwd);
+      logSpy.mockRestore();
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 

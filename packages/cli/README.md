@@ -354,7 +354,7 @@ After a successful generate run, the following files are written to the project 
 | File | Always written | Description |
 |---|---|---|
 | `map.json` | Yes | The generated and validated MapSpec document. |
-| `delivery-summary.json` | Yes | Pipeline metadata: prompt hash, trace ID, provider, plan status, command count, validation results. Does not contain the raw prompt. |
+| `delivery-summary.json` | Yes | Pipeline metadata plus a review-ready delivery summary: acceptance state, delivery sections, source readiness, spatial-query readiness, confirmations, and follow-ups. Does not contain the raw prompt. |
 | `evidence.json` | Yes (when bundle succeeds) | Full evidence bundle with all pipeline artifacts for auditing and replay. |
 | `diagnostics.json` | Only when diagnostics exist | Aggregated diagnostics from the plan, skeleton, and validation steps. |
 | App scaffold files | Conditional | When the app scaffold is emitted, the Vite + React + Tailwind files listed in the `app` template section are written alongside `map.json`. |
@@ -388,6 +388,71 @@ The prompt hash allows you to correlate runs without exposing the original promp
     "layerCount": "number"
   },
   "evidenceStatus": "ok | diagnostics",
+  "delivery": {
+    "status": "ready | blocked | needs-confirmation | follow-up-required",
+    "acceptance": {
+      "state": "ready | blocked | needs-confirmation | follow-up-required",
+      "ready": "boolean",
+      "blocked": "boolean",
+      "needsConfirmation": "boolean",
+      "followUpRequired": "boolean"
+    },
+    "sections": [
+      {
+        "id": "readiness | files | map-edits | data-and-analysis | scene-browsing",
+        "status": "ready | blocked | needs-confirmation | follow-up-required",
+        "blockerCount": "number",
+        "confirmationRequired": "boolean",
+        "followUpCount": "number"
+      }
+    ],
+    "sourceReadiness": {
+      "total": "number",
+      "supported": "number",
+      "readinessOnly": "number",
+      "blocked": "number",
+      "sources": [
+        {
+          "sourceId": "string",
+          "type": "string",
+          "state": "supported | readiness-only | blocked",
+          "queryReady": "boolean",
+          "resourcePolicy": "passed | blocked | not-applicable | not-checked"
+        }
+      ]
+    },
+    "sourcePromotionCandidates": [
+      {
+        "candidateId": "string",
+        "format": "pmtiles | geoparquet | flatgeobuf | geotiff | geozarr",
+        "state": "supported | readiness-only | blocked",
+        "target": "string",
+        "exitCondition": "string",
+        "sourceIds": ["string"]
+      }
+    ],
+    "spatialQueryReadiness": {
+      "requested": "boolean",
+      "state": "not-requested | ready | blocked | follow-up-required",
+      "status": "ready | blocked | not-requested"
+    },
+    "confirmationRequired": "boolean",
+    "confirmations": [
+      {
+        "reason": "external-resource | network-fetch | archive-parsing | worker-use | file-write | stable-scene3d-runtime",
+        "required": "boolean",
+        "target": "string"
+      }
+    ],
+    "followUps": [
+      {
+        "id": "string",
+        "owner": "string",
+        "targetArtifact": "string",
+        "reason": "string"
+      }
+    ]
+  },
   "retainedRawPrompt": false,
   "generatedAt": "string (ISO 8601)"
 }

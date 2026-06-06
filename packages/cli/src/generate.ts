@@ -15,7 +15,11 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createGenerationEvidenceBundle, normalizeWorkbenchProviderPlan } from "@gis-engine/ai";
+import {
+  createGenerationEvidenceBundle,
+  type ExampleAppDeliverySummary,
+  normalizeWorkbenchProviderPlan,
+} from "@gis-engine/ai";
 import { applyCommands, createMapGenerationCommandSkeleton, validateSpec } from "@gis-engine/engine";
 import { CLI_API_KEY_ENVS, createProviderDiagnostics, readProviderApiKey, resolveProviderProfile } from "./provider.js";
 import { callProvider, type ProviderConfidence } from "./provider-http.js";
@@ -55,6 +59,44 @@ export function hashPrompt(prompt: string): string {
 function getCliVersion(): string {
   const require = createRequire(fileURLToPath(import.meta.url));
   return (require("../package.json") as { version: string }).version;
+}
+
+type DeliveryReviewSummary = {
+  status: ExampleAppDeliverySummary["status"];
+  acceptance: ExampleAppDeliverySummary["acceptance"];
+  sections: ExampleAppDeliverySummary["sections"];
+  sourceReadiness: {
+    total: number;
+    supported: number;
+    readinessOnly: number;
+    blocked: number;
+    sources: ExampleAppDeliverySummary["sourceReadiness"];
+  };
+  sourcePromotionCandidates: NonNullable<ExampleAppDeliverySummary["sourcePromotionCandidates"]>;
+  spatialQueryReadiness: ExampleAppDeliverySummary["spatialQueryReadiness"];
+  confirmationRequired: boolean;
+  confirmations: ExampleAppDeliverySummary["confirmations"];
+  followUps: ExampleAppDeliverySummary["followUps"];
+};
+
+function summarizeDeliveryForReview(delivery: ExampleAppDeliverySummary): DeliveryReviewSummary {
+  return {
+    status: delivery.status,
+    acceptance: delivery.acceptance,
+    sections: delivery.sections,
+    sourceReadiness: {
+      total: delivery.sourceReadiness.length,
+      supported: delivery.sourceReadiness.filter((source) => source.state === "supported").length,
+      readinessOnly: delivery.sourceReadiness.filter((source) => source.state === "readiness-only").length,
+      blocked: delivery.sourceReadiness.filter((source) => source.state === "blocked").length,
+      sources: delivery.sourceReadiness,
+    },
+    sourcePromotionCandidates: delivery.sourcePromotionCandidates ?? [],
+    spatialQueryReadiness: delivery.spatialQueryReadiness,
+    confirmationRequired: delivery.confirmationRequired,
+    confirmations: delivery.confirmations,
+    followUps: delivery.followUps,
+  };
 }
 
 /**
@@ -217,6 +259,7 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
       layerCount: validation.stats.layerCount,
     },
     evidenceStatus: evidenceResult.ok ? "ok" : "diagnostics",
+    ...(evidenceResult.ok ? { delivery: summarizeDeliveryForReview(evidenceResult.result.delivery) } : {}),
     ...(providerConfidence ? { confidence: providerConfidence } : {}),
     ...(appConfig ? { appConfig } : {}),
     retainedRawPrompt: false,
