@@ -64,15 +64,19 @@ describe("AI Map Studio bundle", () => {
     expect(appSource).toContain('fetch("/api/maps")');
     expect(appSource).toContain("buildLoadedWorkspaceEvidence(");
     expect(appSource).toContain("loadedEvidence");
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: checking literal template pattern in source
     expect(appSource).toContain("/api/maps/${mapId}/handoff");
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: checking literal template pattern in source
     expect(appSource).toContain("/api/maps/${mapId}/review-ledger");
     expect(appSource).toContain("audit_status: auditStatus");
     expect(appSource).toContain("review_outcome: reviewOutcome");
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: checking literal template pattern in source
     expect(appSource).toContain("/api/maps/${mapId}/review-export");
     expect(appSource).toContain('const kind = query.kind ?? "all"');
     expect(appSource).toContain('const statusFilter = query.status ?? "all"');
     expect(appSource).toContain("const limit = query.limit ?? 10");
     expect(appSource).toContain("new URLSearchParams({");
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: checking literal template pattern in source
     expect(appSource).toContain("/api/maps/${mapId}/load");
     expect(chatSource).toContain("Audit Records");
     expect(chatSource).toContain("Review Decisions");
