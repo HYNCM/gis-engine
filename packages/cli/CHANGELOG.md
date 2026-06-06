@@ -27,6 +27,9 @@
 - Read optional `artifact-manifest.json` in the generated `app` template and
   surface generated file roles, required-review flags, byte counts, and hash
   references in the review details panel.
+- Render safe relative `artifact-manifest.json` entries as `Open` links in the
+  generated `app` template review details panel so reviewers can inspect
+  generated evidence files directly from the app shell.
 - Surface generated delivery evidence in the `app` template status banner when
   `delivery-summary.json` is present, while scaffold-only app projects keep
   running without that optional file. The rail now includes the generated

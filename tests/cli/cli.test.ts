@@ -1169,6 +1169,9 @@ describe("cli-templates", () => {
     expect(appFile.content).toContain("formatDeliveryState");
     expect(appFile.content).toContain("displayValue");
     expect(appFile.content).toContain("shortHash");
+    expect(appFile.content).toContain("artifactFileHref");
+    expect(appFile.content).toContain('trimmed.startsWith("/")');
+    expect(appFile.content).toContain('part === ".."');
     expect(appFile.content).toContain('return "scaffold"');
     expect(appFile.content).toContain("deliverySummary?.preflight?.status");
     expect(appFile.content).toContain("deliverySummary?.preflight?.sourceReadiness?.summary");
@@ -1206,6 +1209,9 @@ describe("cli-templates", () => {
     expect(appFile.content).toContain("aria-expanded={reviewDetailsOpen}");
     expect(appFile.content).toContain("DeliverySectionSummary");
     expect(appFile.content).toContain("artifactManifestFiles.map");
+    expect(appFile.content).toContain("artifactFileHref(file.path)");
+    expect(appFile.content).toContain('aria-label={"Open " + (file.path ?? "artifact")}');
+    expect(appFile.content).toContain('rel="noreferrer"');
     expect(appFile.content).toContain("deliverySections.map");
     expect(appFile.content).toContain("deliverySources.map");
     expect(appFile.content).toContain("deliveryPromotions.map");

@@ -1004,6 +1004,14 @@ function shortHash(value: string | undefined): string {
   return value.length > 22 ? value.slice(0, 19) + "..." : value;
 }
 
+function artifactFileHref(path: string | undefined): string | undefined {
+  const trimmed = path?.trim();
+  if (!trimmed || trimmed.startsWith("/") || trimmed.startsWith("\\\\") || trimmed.includes("://")) return undefined;
+  const parts = trimmed.split(/[\\\\/]+/);
+  if (parts.some((part) => !part || part === "." || part === "..")) return undefined;
+  return "./" + parts.map((part) => encodeURIComponent(part)).join("/");
+}
+
 export default function App() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1375,15 +1383,31 @@ export default function App() {
               </dl>
               {artifactManifestFiles.length > 0 ? (
                 <ul className="mt-1 divide-y divide-gray-200">
-                  {artifactManifestFiles.map((file, index) => (
-                    <li key={(file.path ?? "artifact") + String(index)} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 py-1">
-                      <span className="truncate font-medium text-gray-900">{file.path ?? "artifact"}</span>
-                      <span className="font-medium text-gray-700">{file.role ?? "--"}</span>
-                      <span className="col-span-2 text-gray-400">
-                        required {flagValue(file.required)}, bytes {displayValue(file.bytes)}, {shortHash(file.sha256)}
-                      </span>
-                    </li>
-                  ))}
+                  {artifactManifestFiles.map((file, index) => {
+                    const href = artifactFileHref(file.path);
+                    return (
+                      <li key={(file.path ?? "artifact") + String(index)} className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-2 py-1">
+                        <span className="truncate font-medium text-gray-900">{file.path ?? "artifact"}</span>
+                        <span className="font-medium text-gray-700">{file.role ?? "--"}</span>
+                        {href ? (
+                          <a
+                            href={href}
+                            target="_blank"
+                            rel="noreferrer"
+                            aria-label={"Open " + (file.path ?? "artifact")}
+                            className="font-medium text-blue-700 hover:text-blue-500"
+                          >
+                            Open
+                          </a>
+                        ) : (
+                          <span className="font-medium text-gray-400">--</span>
+                        )}
+                        <span className="col-span-3 text-gray-400">
+                          required {flagValue(file.required)}, bytes {displayValue(file.bytes)}, {shortHash(file.sha256)}
+                        </span>
+                      </li>
+                    );
+                  })}
                 </ul>
               ) : (
                 <p className="mt-1 text-gray-400">None</p>
@@ -1574,10 +1598,10 @@ generated \`delivery-summary.json\` at runtime and shows the delivery acceptance
 state, preflight status, source-readiness count, spatial-query readiness, and
 review follow-up count in the map status banner. It also reads
 \`artifact-manifest.json\` when present and shows generated file roles, required
-review flags, byte counts, and hash references in the review details panel.
-Scaffold-only projects keep running when those evidence files are absent.
-Generated projects also include \`REVIEW.md\` as the human-readable handoff for
-the same delivery evidence.
+review flags, byte counts, hash references, and safe relative links for opening
+listed artifacts in the review details panel. Scaffold-only projects keep
+running when those evidence files are absent. Generated projects also include
+\`REVIEW.md\` as the human-readable handoff for the same delivery evidence.
 
 ## Preflight
 
