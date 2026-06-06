@@ -1012,6 +1012,18 @@ function artifactFileHref(path: string | undefined): string | undefined {
   return "./" + parts.map((part) => encodeURIComponent(part)).join("/");
 }
 
+function downloadJsonFile(filename: string, value: unknown): void {
+  const blob = new Blob([JSON.stringify(value, null, 2) + "\\n"], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
 export default function App() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1190,6 +1202,16 @@ export default function App() {
 
   const openSpecFile = () => {
     fileInputRef.current?.click();
+  };
+
+  const downloadCurrentSpec = () => {
+    try {
+      downloadJsonFile("map.json", spec);
+    } catch (error) {
+      setStatus("error");
+      setStatusMessage("Could not download map.json.");
+      setStatusDetail(error instanceof Error ? error.message : "The current spec could not be serialized.");
+    }
   };
 
   const handleSpecFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -1512,6 +1534,13 @@ export default function App() {
           </button>
           <button
             type="button"
+            onClick={downloadCurrentSpec}
+            className="rounded-full border border-emerald-600 bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-500"
+          >
+            Download map.json
+          </button>
+          <button
+            type="button"
             onClick={() => setReviewDetailsOpen((open) => !open)}
             disabled={!canShowReviewDetails}
             aria-expanded={reviewDetailsOpen}
@@ -1526,7 +1555,7 @@ export default function App() {
           </button>
         </div>
         <p className="mt-2 text-[11px] text-gray-500">
-          Load a local map.json file or reload the current spec without refreshing the browser.
+          Load a local map.json file, reload the current spec, or download it without refreshing the browser.
         </p>
         <input
           ref={fileInputRef}
@@ -1602,6 +1631,8 @@ review flags, byte counts, hash references, and safe relative links for opening
 listed artifacts in the review details panel. Scaffold-only projects keep
 running when those evidence files are absent. Generated projects also include
 \`REVIEW.md\` as the human-readable handoff for the same delivery evidence.
+The app can also download the currently loaded MapSpec as \`map.json\` for local
+review or handoff.
 
 ## Preflight
 

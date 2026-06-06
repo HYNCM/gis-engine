@@ -1170,6 +1170,9 @@ describe("cli-templates", () => {
     expect(appFile.content).toContain("displayValue");
     expect(appFile.content).toContain("shortHash");
     expect(appFile.content).toContain("artifactFileHref");
+    expect(appFile.content).toContain("downloadJsonFile");
+    expect(appFile.content).toContain("URL.createObjectURL");
+    expect(appFile.content).toContain("link.download = filename");
     expect(appFile.content).toContain('trimmed.startsWith("/")');
     expect(appFile.content).toContain('part === ".."');
     expect(appFile.content).toContain('return "scaffold"');
@@ -1195,6 +1198,9 @@ describe("cli-templates", () => {
     expect(appFile.content).toContain('type MapLoadStatus = "loading" | "ready" | "empty" | "error";');
     expect(appFile.content).toContain("Reload map.json");
     expect(appFile.content).toContain("Load map.json");
+    expect(appFile.content).toContain("Download map.json");
+    expect(appFile.content).toContain("downloadCurrentSpec");
+    expect(appFile.content).toContain("Could not download map.json.");
     expect(appFile.content).toContain("Could not load the selected map.json file.");
     expect(appFile.content).toContain('aria-live="polite"');
     expect(appFile.content).toContain('accept=".json,application/json"');
