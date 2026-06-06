@@ -1,12 +1,12 @@
 ---
-generated_at: 2026-06-05T13:14:09.295Z
-repo_revision: "4012f51"
-period: 2026-06-05
+generated_at: 2026-06-06T01:51:29.833Z
+repo_revision: "e2a1219"
+period: 2026-06-06
 agent: orchestrator
 decision_level: info
 ---
 
-# Agent Health Dashboard (as of 2026-06-05)
+# Agent Health Dashboard (as of 2026-06-06)
 
 > ⚠️ 本 Dashboard 由 `scripts/dashboard-generator.mjs` 自动生成。
 > 状态为自动化推断，需 orchestrator 审查后确认。
@@ -16,10 +16,10 @@ decision_level: info
 | Agent | Cadence | Last Report | Last Run | Status | Age |
 | --- | --- | --- | --- | --- | --- |
 | @orchestrator | weekly | docs/planning/weekly-digest.md | 2026-06-05 | 🟢 fresh | 0d |
-| @product | weekly | docs/research/competitor-updates-2026-W24.md | 2026-06-05 | 🟢 fresh | 0d |
-| @quality | daily | docs/reviews/quality-gate-2026-06-04.md | 2026-06-04 | 🟢 ok | 1d |
+| @product | weekly | docs/research/competitor-updates-2026-W24.md | 2026-06-05 | 🟢 fresh | 1d |
+| @quality | daily | docs/reviews/quality-gate-2026-06-04.md | 2026-06-04 | 🟢 ok | 2d |
 | @builder | ad-hoc | — | — | 🟢 ok | — |
-| @docs | daily | docs/reviews/documentation-audit-2026-06-04.md | 2026-06-04 | 🟢 ok | 1d |
+| @docs | daily | docs/reviews/documentation-audit-2026-06-04.md | 2026-06-04 | 🟢 ok | 2d |
 
 ## Data Flow Health
 
@@ -30,9 +30,9 @@ decision_level: info
 | Agent | SLA | Max Latency | Current | Status |
 | --- | --- | --- | --- | --- |
 | @orchestrator | 周一 00:00 UTC | 2d | 0d | ✅ compliant |
-| @product | 周一 00:00 UTC | 2d | 0d | ✅ compliant |
-| @quality | 每日 00:00 UTC | 1d | 1d | ✅ compliant |
-| @docs | 每日 00:00 UTC | 2d | 1d | ✅ compliant |
+| @product | 周一 00:00 UTC | 2d | 1d | ✅ compliant |
+| @quality | 每日 00:00 UTC | 1d | 2d | ❌ breach |
+| @docs | 每日 00:00 UTC | 2d | 2d | ✅ compliant |
 
 > ℹ️ ad-hoc agent (builder) 无固定 SLA。
 
@@ -45,4 +45,4 @@ decision_level: info
 - **健康 agent**: 5/5
 - **问题 agent**: 0/5
 - **数据流异常**: 0
-- **生成时间**: 2026-06-05T13:14:09.304Z
+- **生成时间**: 2026-06-06T01:51:29.837Z
