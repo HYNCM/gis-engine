@@ -1,4 +1,4 @@
-import { MapRuntime, MockAdapter, type MapSpec, type SnapshotOptions } from "@gis-engine/engine";
+import { MapRuntime, type MapSpec, MockAdapter, type SnapshotOptions } from "@gis-engine/engine";
 import mapSpec from "./map.json" with { type: "json" };
 
 async function runSnapshotLifecycle() {
