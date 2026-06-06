@@ -796,6 +796,7 @@ export default {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="data:," />
   <title>${cfg.title}</title>
 </head>
 <body class="m-0">
@@ -943,11 +944,30 @@ type DeliverySummaryShape = {
   retainedRawPrompt?: boolean;
 };
 
+type ArtifactManifestFile = {
+  path?: string;
+  role?: string;
+  required?: boolean;
+  bytes?: number;
+  sha256?: string;
+};
+
+type ArtifactManifestShape = {
+  schemaVersion?: string;
+  artifactCount?: number;
+  requiredReviewFiles?: string[];
+  files?: ArtifactManifestFile[];
+};
+
 function isMapSpecShape(value: unknown): value is MapSpecShape {
   return typeof value === "object" && value !== null;
 }
 
 function isDeliverySummaryShape(value: unknown): value is DeliverySummaryShape {
+  return typeof value === "object" && value !== null;
+}
+
+function isArtifactManifestShape(value: unknown): value is ArtifactManifestShape {
   return typeof value === "object" && value !== null;
 }
 
@@ -979,6 +999,11 @@ function flagValue(value: boolean | undefined): string {
   return "--";
 }
 
+function shortHash(value: string | undefined): string {
+  if (!value) return "--";
+  return value.length > 22 ? value.slice(0, 19) + "..." : value;
+}
+
 export default function App() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -990,6 +1015,9 @@ export default function App() {
   const [deliverySummary, setDeliverySummary] = useState<DeliverySummaryShape | null>(null);
   const [deliveryLoadStatus, setDeliveryLoadStatus] = useState<DeliveryLoadStatus>("loading");
   const [deliveryError, setDeliveryError] = useState<string | null>(null);
+  const [artifactManifest, setArtifactManifest] = useState<ArtifactManifestShape | null>(null);
+  const [artifactManifestLoadStatus, setArtifactManifestLoadStatus] = useState<DeliveryLoadStatus>("loading");
+  const [artifactManifestError, setArtifactManifestError] = useState<string | null>(null);
   const [reviewDetailsOpen, setReviewDetailsOpen] = useState(false);
 
   const sourceCount = Object.keys(spec.sources ?? {}).length;
@@ -1035,6 +1063,49 @@ export default function App() {
     };
 
     void loadDeliverySummary();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadArtifactManifest = async () => {
+      setArtifactManifestLoadStatus("loading");
+      setArtifactManifestError(null);
+
+      try {
+        const response = await fetch("./artifact-manifest.json", { cache: "no-store" });
+        if (response.status === 404) {
+          if (!cancelled) {
+            setArtifactManifest(null);
+            setArtifactManifestLoadStatus("missing");
+          }
+          return;
+        }
+        if (!response.ok) {
+          throw new Error("HTTP " + response.status);
+        }
+        const parsed = (await response.json()) as unknown;
+        if (!isArtifactManifestShape(parsed)) {
+          throw new Error("artifact-manifest.json must contain a JSON object.");
+        }
+        if (!cancelled) {
+          setArtifactManifest(parsed);
+          setArtifactManifestLoadStatus("ready");
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setArtifactManifest(null);
+          setArtifactManifestLoadStatus("error");
+          setArtifactManifestError(error instanceof Error ? error.message : "Could not read artifact-manifest.json.");
+        }
+      }
+    };
+
+    void loadArtifactManifest();
 
     return () => {
       cancelled = true;
@@ -1164,7 +1235,18 @@ export default function App() {
   const deliveryPreflightState = deliverySummary?.preflight?.status ?? "--";
   const deliverySpatialState = delivery?.spatialQueryReadiness?.state ?? "--";
   const deliveryDetail = deliveryLoadStatus === "error" ? deliveryError : null;
-  const canShowReviewDetails = deliveryLoadStatus === "ready" && deliverySummary !== null;
+  const artifactManifestFiles = artifactManifest?.files ?? [];
+  const artifactManifestRequiredCount =
+    artifactManifest?.requiredReviewFiles?.length ?? artifactManifestFiles.filter((file) => file.required === true).length;
+  const artifactManifestBytes = artifactManifestFiles.reduce(
+    (total, file) => total + (typeof file.bytes === "number" ? file.bytes : 0),
+    0,
+  );
+  const artifactManifestState = artifactManifestLoadStatus === "ready" ? "available" : artifactManifestLoadStatus;
+  const artifactManifestDetail = artifactManifestLoadStatus === "error" ? artifactManifestError : null;
+  const canShowReviewDetails =
+    (deliveryLoadStatus === "ready" && deliverySummary !== null) ||
+    (artifactManifestLoadStatus === "ready" && artifactManifest !== null);
   const deliverySections = delivery?.sections ?? [];
   const deliverySources = deliverySourceSummary?.sources ?? [];
   const deliveryPromotions = delivery?.sourcePromotionCandidates ?? [];
@@ -1218,8 +1300,13 @@ export default function App() {
               <dt className="text-gray-400">Follow-ups</dt>
               <dd className="font-medium text-gray-900">{deliveryFollowUpCount + deliveryConfirmationCount}</dd>
             </div>
+            <div>
+              <dt className="text-gray-400">Artifacts</dt>
+              <dd className="truncate font-medium text-gray-900">{artifactManifestState}</dd>
+            </div>
           </dl>
           {deliveryDetail ? <p className="mt-2 truncate text-[11px] text-gray-500">{deliveryDetail}</p> : null}
+          {artifactManifestDetail ? <p className="mt-2 truncate text-[11px] text-gray-500">{artifactManifestDetail}</p> : null}
         </div>
         {reviewDetailsOpen && canShowReviewDetails ? (
           <div className="mt-3 max-h-64 overflow-y-auto border-t border-gray-200 pt-3 text-[11px] text-gray-600">
@@ -1228,14 +1315,14 @@ export default function App() {
               <dl className="mt-2 grid grid-cols-2 gap-2">
                 <div>
                   <dt className="text-gray-400">Evidence</dt>
-                  <dd className="truncate font-medium text-gray-900">{deliverySummary.evidenceStatus ?? "--"}</dd>
+                  <dd className="truncate font-medium text-gray-900">{deliverySummary?.evidenceStatus ?? "--"}</dd>
                 </div>
                 <div>
                   <dt className="text-gray-400">Raw prompt</dt>
                   <dd className="font-medium text-gray-900">
-                    {deliverySummary.retainedRawPrompt === true
+                    {deliverySummary?.retainedRawPrompt === true
                       ? "retained"
-                      : deliverySummary.retainedRawPrompt === false
+                      : deliverySummary?.retainedRawPrompt === false
                         ? "not retained"
                         : "--"}
                   </dd>
@@ -1260,9 +1347,47 @@ export default function App() {
                 </div>
                 <div>
                   <dt className="text-gray-400">Trace</dt>
-                  <dd className="truncate font-medium text-gray-900">{deliverySummary.traceId ?? "--"}</dd>
+                  <dd className="truncate font-medium text-gray-900">{deliverySummary?.traceId ?? "--"}</dd>
                 </div>
               </dl>
+            </section>
+            <section className="mt-3 border-t border-gray-200 pt-3">
+              <h3 className="text-[11px] font-semibold uppercase text-gray-500">Artifacts</h3>
+              <dl className="mt-2 grid grid-cols-2 gap-2">
+                <div>
+                  <dt className="text-gray-400">Manifest</dt>
+                  <dd className="truncate font-medium text-gray-900">{artifactManifestState}</dd>
+                </div>
+                <div>
+                  <dt className="text-gray-400">Schema</dt>
+                  <dd className="truncate font-medium text-gray-900">{artifactManifest?.schemaVersion ?? "--"}</dd>
+                </div>
+                <div>
+                  <dt className="text-gray-400">Files</dt>
+                  <dd className="font-medium text-gray-900">
+                    {displayValue(artifactManifest?.artifactCount ?? artifactManifestFiles.length)} total, {displayValue(artifactManifestRequiredCount)} required
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-400">Bytes</dt>
+                  <dd className="font-medium text-gray-900">{displayValue(artifactManifestBytes)}</dd>
+                </div>
+              </dl>
+              {artifactManifestFiles.length > 0 ? (
+                <ul className="mt-1 divide-y divide-gray-200">
+                  {artifactManifestFiles.map((file, index) => (
+                    <li key={(file.path ?? "artifact") + String(index)} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 py-1">
+                      <span className="truncate font-medium text-gray-900">{file.path ?? "artifact"}</span>
+                      <span className="font-medium text-gray-700">{file.role ?? "--"}</span>
+                      <span className="col-span-2 text-gray-400">
+                        required {flagValue(file.required)}, bytes {displayValue(file.bytes)}, {shortHash(file.sha256)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-1 text-gray-400">None</p>
+              )}
             </section>
             <section className="mt-3 border-t border-gray-200 pt-3">
               <h3 className="text-[11px] font-semibold uppercase text-gray-500">Sections</h3>
@@ -1447,9 +1572,10 @@ npm run dev
 When this app is produced through \`--generate --template app\`, it reads the
 generated \`delivery-summary.json\` at runtime and shows the delivery acceptance
 state, preflight status, source-readiness count, spatial-query readiness, and
-review follow-up count in the map status banner. The review details panel also
-shows delivery sections, source entries, confirmations, and follow-ups from the
-same summary. Scaffold-only projects keep running when that file is absent.
+review follow-up count in the map status banner. It also reads
+\`artifact-manifest.json\` when present and shows generated file roles, required
+review flags, byte counts, and hash references in the review details panel.
+Scaffold-only projects keep running when those evidence files are absent.
 Generated projects also include \`REVIEW.md\` as the human-readable handoff for
 the same delivery evidence.
 
@@ -1459,6 +1585,12 @@ Validate the generated spec before deployment or CI handoff:
 
 \`\`\`bash
 npm exec --package @gis-engine/cli@latest -- create-gis-map --preflight ./map.json --json
+\`\`\`
+
+Verify generated file integrity before CI or reviewer handoff:
+
+\`\`\`bash
+npm exec --package @gis-engine/cli@latest -- create-gis-map --verify-artifacts . --json
 \`\`\`
 
 ## Provider

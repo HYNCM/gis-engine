@@ -24,6 +24,9 @@
 - Add `create-gis-map --verify-artifacts <project-dir> [--json]` to verify
   generated artifact-manifest file presence, path safety, byte sizes, and sha256
   hashes before CI/reviewer handoff.
+- Read optional `artifact-manifest.json` in the generated `app` template and
+  surface generated file roles, required-review flags, byte counts, and hash
+  references in the review details panel.
 - Surface generated delivery evidence in the `app` template status banner when
   `delivery-summary.json` is present, while scaffold-only app projects keep
   running without that optional file. The rail now includes the generated

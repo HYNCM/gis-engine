@@ -31,7 +31,7 @@
  *                    Require PMTiles archive metadata for preflight success
  *   --pmtiles-metadata
  *                    PMTiles archive metadata input: <source-id>=<metadata.json>
- *   --json           Print preflight output as JSON
+ *   --json           Print preflight or artifact verification output as JSON
  *   --dry-run        Preview files without writing
  *   --help, -h       Show this help message
  *   --version, -v    Print CLI version

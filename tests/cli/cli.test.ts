@@ -1161,14 +1161,20 @@ describe("cli-templates", () => {
     expect(appFile.content).toContain("targetMap.addSource");
     expect(appFile.content).toContain("targetMap.addLayer");
     expect(appFile.content).toContain('fetch("./delivery-summary.json"');
+    expect(appFile.content).toContain('fetch("./artifact-manifest.json"');
     expect(appFile.content).toContain("type DeliveryLoadStatus");
     expect(appFile.content).toContain("type DeliverySectionSummary");
+    expect(appFile.content).toContain("type ArtifactManifestShape");
+    expect(appFile.content).toContain("isArtifactManifestShape");
     expect(appFile.content).toContain("formatDeliveryState");
     expect(appFile.content).toContain("displayValue");
+    expect(appFile.content).toContain("shortHash");
     expect(appFile.content).toContain('return "scaffold"');
     expect(appFile.content).toContain("deliverySummary?.preflight?.status");
     expect(appFile.content).toContain("deliverySummary?.preflight?.sourceReadiness?.summary");
     expect(appFile.content).toContain("deliverySummary?.preflight?.pmtiles?.summary");
+    expect(appFile.content).toContain('setArtifactManifestLoadStatus("missing")');
+    expect(appFile.content).toContain("artifactManifestState");
     expect(appFile.content).toContain("const [reviewDetailsOpen");
   });
 
@@ -1194,10 +1200,12 @@ describe("cli-templates", () => {
     expect(appFile.content).toContain("Sources");
     expect(appFile.content).toContain("Spatial");
     expect(appFile.content).toContain("Follow-ups");
+    expect(appFile.content).toContain("Artifacts");
     expect(appFile.content).toContain("Review details");
     expect(appFile.content).toContain("disabled={!canShowReviewDetails}");
     expect(appFile.content).toContain("aria-expanded={reviewDetailsOpen}");
     expect(appFile.content).toContain("DeliverySectionSummary");
+    expect(appFile.content).toContain("artifactManifestFiles.map");
     expect(appFile.content).toContain("deliverySections.map");
     expect(appFile.content).toContain("deliverySources.map");
     expect(appFile.content).toContain("deliveryPromotions.map");
@@ -1414,11 +1422,14 @@ describe("cli-app-template-earthquake-demo", () => {
     const files = tpl.generate(ctx);
     const indexHtml = files.find((f) => f.path === "index.html")!;
     expect(indexHtml.content).toContain("2024 Global Earthquakes (M5+)");
+    expect(indexHtml.content).toContain('<link rel="icon" href="data:," />');
     const readme = files.find((f) => f.path === "README.md")!;
     expect(readme.content).toContain("explorer");
     expect(readme.content).toContain("deepseek");
     expect(readme.content).toContain("delivery-summary.json");
+    expect(readme.content).toContain("artifact-manifest.json");
     expect(readme.content).toContain("REVIEW.md");
+    expect(readme.content).toContain("create-gis-map --verify-artifacts . --json");
   });
 });
 
