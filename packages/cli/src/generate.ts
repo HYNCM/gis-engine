@@ -12,7 +12,9 @@
 
 import { createHash } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createGenerationEvidenceBundle, normalizeWorkbenchProviderPlan } from "@gis-engine/ai";
 import { applyCommands, createMapGenerationCommandSkeleton, validateSpec } from "@gis-engine/engine";
 import { CLI_API_KEY_ENVS, createProviderDiagnostics, readProviderApiKey, resolveProviderProfile } from "./provider.js";
@@ -48,6 +50,11 @@ export interface GenerateResult {
  */
 export function hashPrompt(prompt: string): string {
   return `sha256:${createHash("sha256").update(prompt).digest("hex")}`;
+}
+
+function getCliVersion(): string {
+  const require = createRequire(fileURLToPath(import.meta.url));
+  return (require("../package.json") as { version: string }).version;
 }
 
 /**
@@ -252,7 +259,7 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
         const templateCtx: AppTemplateContext = {
           projectName: opts.projectName,
           provider: opts.provider,
-          cliVersion: "0.4.0",
+          cliVersion: getCliVersion(),
           ...(appConfig ? { appConfig } : {}),
         };
         const templateFiles = template.generate(templateCtx);

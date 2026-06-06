@@ -165,8 +165,8 @@ const viteTsTemplate: Template = {
               preview: "vite preview",
             },
             dependencies: {
-              "@gis-engine/engine": "^0.2.0",
-              "@gis-engine/ai": "^0.2.0",
+              "@gis-engine/engine": "^1.0.0",
+              "@gis-engine/ai": "^1.0.0",
             },
             devDependencies: {
               typescript: "^5.7.0",
@@ -698,7 +698,7 @@ export default function BasemapSwitcher({ map }: Props) {
               preview: "vite preview",
             },
             dependencies: {
-              "@gis-engine/engine": "^0.2.0",
+              "@gis-engine/engine": "^1.0.0",
               "maplibre-gl": "^5.0.0",
               react: "^18.3.0",
               "react-dom": "^18.3.0",

@@ -210,7 +210,7 @@ prompt -> capabilitySummary -> MapGenerationCommandSkeleton -> apply_commands ->
 ```
 
 Sprint handoff:
-[sprint-2026-W23-ai-map-app-generation.md](./sprint-2026-W23-ai-map-app-generation.md).
+[sprint-2026-W23-ai-map-app-generation.md](../archive/2026-06-06/planning/sprint-2026-W23-ai-map-app-generation.md).
 Product specs:
 [natural-language-map-app-generation.md](./feature-specs/natural-language-map-app-generation.md)
 and [spatial-analysis-readiness.md](./feature-specs/spatial-analysis-readiness.md).
@@ -233,7 +233,7 @@ browsing may appear only as `extensions.scene3d` planning/evidence.
 
 The NLA generation skeleton is complete. The generation quality hardening batch
 is closed through
-[sprint-2026-W23-generation-quality-hardening.md](./sprint-2026-W23-generation-quality-hardening.md)
+[sprint-2026-W23-generation-quality-hardening.md](../archive/2026-06-06/planning/sprint-2026-W23-generation-quality-hardening.md)
 and covers planner quality, provenance, query evidence, export packaging,
 cloud-native source readiness, SceneView3D blocker transparency, and serialized
 planning closure.
@@ -328,7 +328,7 @@ Console batch is complete; the orchestrator returns to planning state.
 ## 2026-05-30 Spatial Query Evidence Hardening
 
 Post-GIR planning refreshed competitor/package evidence and opened the
-[Spatial Query Evidence Hardening](./sprint-2026-W23-spatial-query-hardening.md)
+[Spatial Query Evidence Hardening](../archive/2026-06-06/planning/sprint-2026-W23-spatial-query-hardening.md)
 sprint. This batch hardens point/bbox evidence only; it does not add a public
 `spatial_query` MCP tool, geoprocessing execution, new source loaders, hidden
 IO, or stable SceneView3D runtime support.

@@ -5,7 +5,7 @@
 CLI for scaffolding and generating GIS Engine map projects. Provides two modes: **scaffold** (default) for creating projects from templates, and **generate** (`--generate` flag) for running the full AI pipeline from a natural-language prompt to a validated MapSpec bundle.
 
 - **Package**: `@gis-engine/cli`
-- **Version**: 0.4.0
+- **Version**: 1.0.0
 - **Binary**: `create-gis-map`
 - **Repository**: [github.com/HYNCM/gis-engine](https://github.com/HYNCM/gis-engine)
 

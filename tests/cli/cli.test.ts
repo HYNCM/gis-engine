@@ -401,6 +401,10 @@ describe("cli-templates", () => {
     expect(paths).toContain("index.html");
     expect(paths).toContain("src/main.ts");
     expect(paths).toContain("README.md");
+    const pkgFile = files.find((f) => f.path === "package.json")!;
+    const pkg = JSON.parse(pkgFile.content);
+    expect(pkg.dependencies["@gis-engine/engine"]).toBe("^1.0.0");
+    expect(pkg.dependencies["@gis-engine/ai"]).toBe("^1.0.0");
   });
 
   it("mapspec template generates map.json and README.md", () => {
@@ -440,7 +444,7 @@ describe("cli-templates", () => {
 
   it("app template generates full interactive application files", () => {
     const tpl = getTemplate("app")!;
-    const ctx = { projectName: "quake-app", provider: "deepseek", cliVersion: "0.4.0" };
+    const ctx = { projectName: "quake-app", provider: "deepseek", cliVersion: "1.0.0" };
     const files = tpl.generate(ctx);
     const paths = files.map((f) => f.path);
     expect(paths).toContain("package.json");
@@ -459,10 +463,11 @@ describe("cli-templates", () => {
 
   it("app template includes React and Tailwind dependencies", () => {
     const tpl = getTemplate("app")!;
-    const ctx = { projectName: "test-app", provider: "mock", cliVersion: "0.4.0" };
+    const ctx = { projectName: "test-app", provider: "mock", cliVersion: "1.0.0" };
     const files = tpl.generate(ctx);
     const pkgFile = files.find((f) => f.path === "package.json")!;
     const pkg = JSON.parse(pkgFile.content);
+    expect(pkg.dependencies["@gis-engine/engine"]).toBe("^1.0.0");
     expect(pkg.dependencies.react).toBeDefined();
     expect(pkg.dependencies["react-dom"]).toBeDefined();
     expect(pkg.dependencies["maplibre-gl"]).toBeDefined();
@@ -472,7 +477,7 @@ describe("cli-templates", () => {
 
   it("app template generates all 5 UI components by default", () => {
     const tpl = getTemplate("app")!;
-    const ctx = { projectName: "full-app", provider: "mock", cliVersion: "0.4.0" };
+    const ctx = { projectName: "full-app", provider: "mock", cliVersion: "1.0.0" };
     const files = tpl.generate(ctx);
     const paths = files.map((f) => f.path);
     expect(paths).toContain("src/components/LayerPanel.tsx");
@@ -484,7 +489,7 @@ describe("cli-templates", () => {
 
   it("app template imports maplibre-gl in each generated component", () => {
     const tpl = getTemplate("app")!;
-    const ctx = { projectName: "import-test", provider: "mock", cliVersion: "0.4.0" };
+    const ctx = { projectName: "import-test", provider: "mock", cliVersion: "1.0.0" };
     const files = tpl.generate(ctx);
     for (const path of [
       "src/components/LayerPanel.tsx",
@@ -504,7 +509,7 @@ describe("cli-templates", () => {
     const ctx = {
       projectName: "locator-app",
       provider: "mock",
-      cliVersion: "0.4.0",
+      cliVersion: "1.0.0",
       appConfig: {
         appType: "locator" as const,
         title: "My Locator",
@@ -552,7 +557,7 @@ describe("cli-templates", () => {
 
   it("app template App.tsx imports all configured components", () => {
     const tpl = getTemplate("app")!;
-    const ctx = { projectName: "test-app", provider: "mock", cliVersion: "0.4.0" };
+    const ctx = { projectName: "test-app", provider: "mock", cliVersion: "1.0.0" };
     const files = tpl.generate(ctx);
     const appFile = files.find((f) => f.path === "src/App.tsx")!;
     expect(appFile.content).toContain('import LayerPanel from "./components/LayerPanel"');
@@ -570,7 +575,7 @@ describe("cli-templates", () => {
 
   it("app template exposes loading, reload, and responsive control states", () => {
     const tpl = getTemplate("app")!;
-    const ctx = { projectName: "test-app", provider: "mock", cliVersion: "0.4.0" };
+    const ctx = { projectName: "test-app", provider: "mock", cliVersion: "1.0.0" };
     const files = tpl.generate(ctx);
     const appFile = files.find((f) => f.path === "src/App.tsx")!;
     const layerPanel = files.find((f) => f.path === "src/components/LayerPanel.tsx")!;
@@ -665,7 +670,7 @@ describe("cli-app-template-earthquake-demo", () => {
     const ctx = {
       projectName: "earthquake-explorer",
       provider: "deepseek",
-      cliVersion: "0.4.0",
+      cliVersion: "1.0.0",
       appConfig: {
         appType: "explorer" as const,
         title: "2024 Global Earthquakes (M5+)",

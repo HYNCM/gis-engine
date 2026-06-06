@@ -365,37 +365,37 @@ auth/database、browser-visible provider URL/credential 或新 MCP tool name。
 6. 面向自然语言生成地图应用的竞品分析、产品设计和 sprint DAG 已开启：
    [natural-language-map-app-generation.md](./feature-specs/natural-language-map-app-generation.md)、
    [spatial-analysis-readiness.md](./feature-specs/spatial-analysis-readiness.md)
-   和 [sprint-2026-W23-ai-map-app-generation.md](./sprint-2026-W23-ai-map-app-generation.md)。
+   和 [sprint-2026-W23-ai-map-app-generation.md](../archive/2026-06-06/planning/sprint-2026-W23-ai-map-app-generation.md)。
 7. W23 NLA-001 through NLA-008 已完成；下一批任务改由
-   [sprint-2026-W23-generation-quality-hardening.md](./sprint-2026-W23-generation-quality-hardening.md)
+   [sprint-2026-W23-generation-quality-hardening.md](../archive/2026-06-06/planning/sprint-2026-W23-generation-quality-hardening.md)
    承接，不重开已完成的生成骨架任务。
 8. AIN-001 through AIN-005 已完成；下一批任务已由
    [sprint-2026-W22-generated-app-review-console.md](../archive/2026-05-30/planning/sprint-2026-W22-generated-app-review-console.md)
    承接，并且 `GIR-001` through `GIR-006` 已完成。当前不再追加实现任务，先回到
    planning state 刷新竞品、产品设计和任务 DAG。
 9. Post-GIR planning 已打开
-   [sprint-2026-W23-spatial-query-hardening.md](./sprint-2026-W23-spatial-query-hardening.md)。
+   [sprint-2026-W23-spatial-query-hardening.md](../archive/2026-06-06/planning/sprint-2026-W23-spatial-query-hardening.md)。
    `TASK-2026W23-SQH-001`、`TASK-2026W23-SQH-002` 与
    `TASK-2026W23-SQH-003`、`TASK-2026W23-SQH-004` 与
    `TASK-2026W23-SQH-005` 与 `TASK-2026W23-SQH-006` 已完成。当前应回到
    planning state 刷新竞品、产品设计和任务 DAG。
 10. MapLibre Source Drift Audit 已打开：
-   [maplibre-source-drift-audit.md](./feature-specs/maplibre-source-drift-audit.md)
+   [maplibre-source-drift-audit.md](../archive/2026-06-06/feature-specs/maplibre-source-drift-audit.md)
    与 [sprint-2026-W22-maplibre-source-drift-audit.md](../archive/2026-06-02/planning/sprint-2026-W22-maplibre-source-drift-audit.md)。
    `TASK-2026W22-MLD-002` through `TASK-2026W22-MLD-004` 已关闭；package
    movement 当前为 No-go，下一步应回到 planning state。
 11. W23 planning refresh 已打开 AI Map Workbench Product Boundary：
    [ai-map-workbench-product-boundary.md](./feature-specs/ai-map-workbench-product-boundary.md)
-   与 [sprint-2026-W23-ai-map-workbench-product-boundary.md](./sprint-2026-W23-ai-map-workbench-product-boundary.md)。
+   与 [sprint-2026-W23-ai-map-workbench-product-boundary.md](../archive/2026-06-06/planning/sprint-2026-W23-ai-map-workbench-product-boundary.md)。
    `TASK-2026W23-AMW-006` through `TASK-2026W23-AMW-010` 已关闭；product
    promotion 当前为 No-go，后续产品化必须从 fresh planning loop 开始。
 12. Fresh planning loop 已打开 AI Map Workbench Product Implementation：
    [ai-map-workbench-product-implementation.md](./feature-specs/ai-map-workbench-product-implementation.md)
-   与 [sprint-2026-W23-ai-map-workbench-product-implementation.md](./sprint-2026-W23-ai-map-workbench-product-implementation.md)。
+   与 [sprint-2026-W23-ai-map-workbench-product-implementation.md](../archive/2026-06-06/planning/sprint-2026-W23-ai-map-workbench-product-implementation.md)。
    `TASK-2026W23-AWP-001` 至 `TASK-2026W23-AWP-007` 已关闭；local example
    hardening Go，product/hosted promotion 仍 No-go。
 13. SDK + CLI First Release Productization 已完成：
-   [sdk-cli-first-release.md](./feature-specs/sdk-cli-first-release.md)。
+   [sdk-cli-first-release.md](../archive/2026-06-06/feature-specs/sdk-cli-first-release.md)。
    Phase 1a-1g SDK hardening 和 Phase 2-4 CLI and first release 全部关闭；
    所有验证门禁已通过。
 14. 2026-06-06 下阶段目标已记录在
@@ -406,7 +406,7 @@ auth/database、browser-visible provider URL/credential 或新 MCP tool name。
 
 ## 2026-06-03 SDK + CLI First Release Productization
 
-Completed the full SDK + CLI productization plan (Phase 1a-1g, Phase 2-4) per `docs/planning/feature-specs/sdk-cli-first-release.md`.
+Completed the full SDK + CLI productization plan (Phase 1a-1g, Phase 2-4) per `docs/archive/2026-06-06/feature-specs/sdk-cli-first-release.md`.
 
 ### Phase 1: SDK hardening (7 sub-tasks)
 - 1a: MapLibre v6 peerDependency gate — v6 prerelease, GA stays on ^5.24.0

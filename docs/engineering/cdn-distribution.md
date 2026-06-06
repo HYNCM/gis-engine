@@ -10,7 +10,8 @@ GIS Engine packages are published to npm and available through CDN providers.
 | `@gis-engine/ai` | MCP tools, generation evidence |
 | `@gis-engine/scene3d` | Experimental 3D boundary |
 
-`@gis-engine/scene3d-three-adapter` is internal only.
+`@gis-engine/scene3d-three-adapter` is an independent experimental 0.x package
+and is not part of the GA CDN bundle workflow.
 
 ## CDN Providers
 
@@ -37,8 +38,8 @@ JS entry. `createMap` is a named export of `@gis-engine/engine`.
 ## Version Pinning
 
 ```
-https://unpkg.com/@gis-engine/engine@0.2.0
-https://esm.sh/@gis-engine/engine@^0.2.0
+https://unpkg.com/@gis-engine/engine@1.0.0
+https://esm.sh/@gis-engine/engine@^1.0.0
 ```
 
 Unpinned imports resolve to the `latest` dist-tag.
