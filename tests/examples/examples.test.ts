@@ -15,6 +15,7 @@ import diagnosticsWalkthrough from "../../examples/diagnostics-walkthrough/map.j
 import fillExtrusionLite from "../../examples/fill-extrusion-lite/map.json";
 import pmtilesLocal from "../../examples/pmtiles-local/map.json";
 import rasterBasemap from "../../examples/raster-basemap/map.json";
+import snapshotTesting from "../../examples/snapshot-testing/map.json";
 import vectorTileUrl from "../../examples/vector-tile-url/map.json";
 
 describe("examples gate", () => {
@@ -111,6 +112,11 @@ describe("examples gate", () => {
         });
       },
     },
+    {
+      id: "snapshot-testing",
+      spec: () => snapshotTesting as MapSpec,
+      firstLayerId: "district-fill",
+    },
   ];
 
   it("covers the bundled examples", () => {
@@ -123,6 +129,7 @@ describe("examples gate", () => {
       "pmtiles-local",
       "vector-tile-url",
       "fill-extrusion-lite",
+      "snapshot-testing",
     ]);
   });
 

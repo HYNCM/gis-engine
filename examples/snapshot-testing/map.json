@@ -1,0 +1,35 @@
+{
+  "version": "0.1",
+  "id": "snapshot-testing-example",
+  "view": {
+    "mode": "map2d",
+    "center": [116.39, 39.91],
+    "zoom": 10
+  },
+  "sources": {
+    "districts": {
+      "type": "geojson",
+      "data": "./data/districts.geojson"
+    }
+  },
+  "layers": [
+    {
+      "id": "district-fill",
+      "type": "fill",
+      "source": "districts",
+      "paint": {
+        "fill-color": ["step", ["get", "score"], "#dbeafe", 60, "#60a5fa", 90, "#1d4ed8"],
+        "fill-opacity": 0.7
+      }
+    },
+    {
+      "id": "district-outline",
+      "type": "line",
+      "source": "districts",
+      "paint": {
+        "line-color": "#1e40af",
+        "line-width": 1
+      }
+    }
+  ]
+}
