@@ -163,6 +163,176 @@ function countPreflightDiagnostics(diagnostics: PreflightResult["diagnostics"]):
   );
 }
 
+type DeliverySummaryReviewInput = {
+  promptHash: string;
+  traceId: string;
+  provider: string;
+  planStatus: string;
+  commandCount: number;
+  validation: {
+    valid: boolean;
+    sourceCount: number;
+    layerCount: number;
+  };
+  evidenceStatus: string;
+  retainedRawPrompt: boolean;
+  generatedAt: string;
+  preflight: PreflightReviewSummary;
+  delivery?: DeliveryReviewSummary;
+};
+
+function markdownCell(value: unknown): string {
+  return String(value ?? "--")
+    .replace(/\|/g, "\\|")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function boolLabel(value: boolean): string {
+  return value ? "yes" : "no";
+}
+
+function renderDeliverySections(delivery?: DeliveryReviewSummary): string {
+  if (!delivery) return "- Delivery evidence bundle was not available. See `delivery-summary.json`.\n";
+
+  const rows = delivery.sections.map(
+    (section) =>
+      `| ${markdownCell(section.id)} | ${markdownCell(section.status)} | ${section.blockerCount} | ${boolLabel(section.confirmationRequired)} | ${section.followUpCount} |`,
+  );
+
+  return ["| Section | Status | Blockers | Confirmation | Follow-ups |", "|---|---:|---:|---:|---:|", ...rows, ""].join(
+    "\n",
+  );
+}
+
+function renderSourceReadiness(delivery?: DeliveryReviewSummary): string {
+  if (!delivery) return "- Delivery source-readiness evidence was not available.\n";
+
+  const summary = delivery.sourceReadiness;
+  const lines = [
+    `- Total: ${summary.total}`,
+    `- Supported: ${summary.supported}`,
+    `- Readiness-only: ${summary.readinessOnly}`,
+    `- Blocked: ${summary.blocked}`,
+  ];
+
+  if (summary.sources.length === 0) {
+    lines.push("- Sources: none");
+    return `${lines.join("\n")}\n`;
+  }
+
+  lines.push("");
+  lines.push("| Source | Type | State | Query ready | Resource policy |");
+  lines.push("|---|---|---|---:|---|");
+  for (const source of summary.sources) {
+    lines.push(
+      `| ${markdownCell(source.sourceId)} | ${markdownCell(source.type)} | ${markdownCell(source.state)} | ${boolLabel(source.queryReady)} | ${markdownCell(source.resourcePolicy)} |`,
+    );
+  }
+
+  return `${lines.join("\n")}\n`;
+}
+
+function renderSourcePromotionCandidates(delivery?: DeliveryReviewSummary): string {
+  if (!delivery || delivery.sourcePromotionCandidates.length === 0) return "- None\n";
+
+  return `${delivery.sourcePromotionCandidates
+    .map(
+      (candidate) =>
+        `- ${candidate.candidateId}: ${candidate.format} is ${candidate.state}; target ${candidate.target}; exit condition: ${candidate.exitCondition}; sources: ${candidate.sourceIds.join(", ")}`,
+    )
+    .join("\n")}\n`;
+}
+
+function renderConfirmations(delivery?: DeliveryReviewSummary): string {
+  if (!delivery || delivery.confirmations.length === 0) return "- None\n";
+
+  return `${delivery.confirmations
+    .map(
+      (confirmation) =>
+        `- ${confirmation.reason}: ${confirmation.required ? "required" : "not required"} for ${confirmation.target}`,
+    )
+    .join("\n")}\n`;
+}
+
+function renderFollowUps(delivery?: DeliveryReviewSummary): string {
+  if (!delivery || delivery.followUps.length === 0) return "- None\n";
+
+  return `${delivery.followUps
+    .map(
+      (followUp) =>
+        `- ${followUp.id} (${followUp.owner}): ${followUp.reason}; target artifact: ${followUp.targetArtifact}`,
+    )
+    .join("\n")}\n`;
+}
+
+function renderReviewMarkdown(summary: DeliverySummaryReviewInput): string {
+  const delivery = summary.delivery;
+  const acceptanceState = delivery?.acceptance.state ?? delivery?.status ?? "unavailable";
+  const preflightDiagnostics = summary.preflight.diagnostics;
+  const preflightSourceSummary = summary.preflight.sourceReadiness.summary;
+  const pmtilesSummary = summary.preflight.pmtiles.summary;
+  const spatial = delivery?.spatialQueryReadiness;
+
+  return `# Generated Map Review
+
+## Acceptance
+
+- Generated at: ${summary.generatedAt}
+- Provider: ${summary.provider}
+- Trace: ${summary.traceId}
+- Prompt hash: ${summary.promptHash}
+- Raw prompt retained: ${boolLabel(summary.retainedRawPrompt)}
+- Delivery state: ${acceptanceState}
+- Evidence status: ${summary.evidenceStatus}
+- Preflight status: ${summary.preflight.status}
+- Preflight ok: ${boolLabel(summary.preflight.ok)}
+- Validation: ${summary.validation.valid ? "valid" : "invalid"} (${summary.validation.sourceCount} source(s), ${summary.validation.layerCount} layer(s))
+- Commands applied: ${summary.commandCount}
+- Plan status: ${summary.planStatus}
+- Diagnostics: ${preflightDiagnostics.error} error(s), ${preflightDiagnostics.warning} warning(s), ${preflightDiagnostics.info} info item(s)
+
+## Delivery Sections
+
+${renderDeliverySections(delivery)}
+
+## Source Readiness
+
+${renderSourceReadiness(delivery)}
+
+## Preflight Details
+
+- Source readiness: ${summary.preflight.sourceReadiness.status} (${preflightSourceSummary.supportedSourceCount} supported, ${preflightSourceSummary.readinessOnlySourceCount} readiness-only, ${preflightSourceSummary.blockedSourceCount} blocked)
+- PMTiles load plan: ${summary.preflight.pmtiles.status} (${pmtilesSummary.readySourceCount} ready, ${pmtilesSummary.metadataRequiredSourceCount} metadata-required, ${pmtilesSummary.blockedSourceCount} blocked)
+
+## Spatial Query
+
+- Requested: ${boolLabel(spatial?.requested ?? false)}
+- State: ${spatial?.state ?? "unavailable"}
+- Status: ${spatial?.status ?? "unavailable"}
+
+## Source Promotion Candidates
+
+${renderSourcePromotionCandidates(delivery)}
+
+## Required Confirmations
+
+${renderConfirmations(delivery)}
+
+## Follow-ups
+
+${renderFollowUps(delivery)}
+
+## Review Files
+
+- \`map.json\`: generated MapSpec.
+- \`preflight.json\`: full preflight diagnostics and source-readiness details.
+- \`delivery-summary.json\`: compact delivery and preflight summary for CI and reviewers.
+- \`evidence.json\`: full generation evidence bundle when evidence creation succeeds.
+- \`diagnostics.json\`: written only when pipeline diagnostics are present.
+`;
+}
+
 /**
  * Run the full generate pipeline.
  */
@@ -353,6 +523,11 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
     const summaryPath = join(outDir, "delivery-summary.json");
     writeFileSync(summaryPath, `${JSON.stringify(deliverySummary, null, 2)}\n`, "utf-8");
     files.push("delivery-summary.json");
+
+    // REVIEW.md - human-readable handoff derived from delivery-summary.json fields
+    const reviewPath = join(outDir, "REVIEW.md");
+    writeFileSync(reviewPath, renderReviewMarkdown(deliverySummary), "utf-8");
+    files.push("REVIEW.md");
 
     // evidence.json — full evidence bundle
     if (evidenceResult.ok) {

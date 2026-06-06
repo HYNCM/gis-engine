@@ -1221,7 +1221,8 @@ When this app is produced through \`--generate --template app\`, it reads the
 generated \`delivery-summary.json\` at runtime and shows the delivery acceptance
 state, preflight status, source-readiness count, spatial-query readiness, and
 review follow-up count in the map status banner. Scaffold-only projects keep
-running when that file is absent.
+running when that file is absent. Generated projects also include \`REVIEW.md\`
+as the human-readable handoff for the same delivery evidence.
 
 ## Preflight
 

@@ -59,7 +59,7 @@ npm run dev
 npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --generate
 ```
 
-This runs the full generate pipeline with the `mock` provider. Mock mode requires **no API key** and produces deterministic output -- every run yields the same result. The output includes `map.json`, `preflight.json`, `delivery-summary.json`, `evidence.json`, and `diagnostics.json`.
+This runs the full generate pipeline with the `mock` provider. Mock mode requires **no API key** and produces deterministic output -- every run yields the same result. The output includes `map.json`, `preflight.json`, `delivery-summary.json`, `REVIEW.md`, `evidence.json`, and `diagnostics.json`.
 
 To use a real provider, set the provider-specific API key and pass a prompt:
 
@@ -354,11 +354,16 @@ After a successful generate run, the following files are written to the project 
 | File | Always written | Description |
 |---|---|---|
 | `map.json` | Yes | The generated and validated MapSpec document. |
-| `preflight.json` | Yes | IO-free MapSpec delivery preflight result with validation, source-readiness, PMTiles load-plan, and diagnostics. |
+| `preflight.json` | Yes | Local MapSpec delivery preflight result with validation, source-readiness, PMTiles load-plan, and diagnostics, without network, worker, or archive parser side effects. |
 | `delivery-summary.json` | Yes | Pipeline metadata plus review-ready delivery and preflight summaries: acceptance state, delivery sections, source readiness, spatial-query readiness, confirmations, follow-ups, and preflight status. Does not contain the raw prompt. |
+| `REVIEW.md` | Yes | Human-readable review handoff generated from `delivery-summary.json` and `preflight.json`: acceptance, preflight, source readiness, spatial-query readiness, confirmations, follow-ups, and file checklist. Does not contain the raw prompt. |
 | `evidence.json` | Yes (when bundle succeeds) | Full evidence bundle with all pipeline artifacts for auditing and replay. |
 | `diagnostics.json` | Only when diagnostics exist | Aggregated diagnostics from the plan, skeleton, and validation steps. |
 | App scaffold files | Conditional | When the app scaffold is emitted, the Vite + React + Tailwind files listed in the `app` template section are written alongside `map.json`. |
+
+`REVIEW.md` is intended as the first file for a human reviewer to open. It is a
+Markdown view over the existing generated evidence, not a separate readiness
+engine; use the JSON files for automation and exact field-level evidence.
 
 ### No Raw Prompt Retention
 

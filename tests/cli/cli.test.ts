@@ -1092,12 +1092,21 @@ describe("cli-generate-delivery-summary", () => {
       const summary = JSON.parse(readFileSync(join(dir, "reviewable-map", "delivery-summary.json"), "utf-8"));
       const evidence = JSON.parse(readFileSync(join(dir, "reviewable-map", "evidence.json"), "utf-8"));
       const preflight = JSON.parse(readFileSync(join(dir, "reviewable-map", "preflight.json"), "utf-8"));
+      const review = readFileSync(join(dir, "reviewable-map", "REVIEW.md"), "utf-8");
 
       expect(result.files).toContain("preflight.json");
       expect(result.files).toContain("delivery-summary.json");
+      expect(result.files).toContain("REVIEW.md");
       expect(summary.retainedRawPrompt).toBe(false);
       expect(JSON.stringify(summary)).not.toContain("private customer locations");
       expect(JSON.stringify(preflight)).not.toContain("private customer locations");
+      expect(review).not.toContain("private customer locations");
+      expect(review).toContain("# Generated Map Review");
+      expect(review).toContain(`Prompt hash: ${summary.promptHash}`);
+      expect(review).toContain("Raw prompt retained: no");
+      expect(review).toContain(`Delivery state: ${summary.delivery.acceptance.state}`);
+      expect(review).toContain(`Preflight status: ${preflight.status}`);
+      expect(review).toContain("`delivery-summary.json`: compact delivery and preflight summary");
       expect(summary.preflight).toMatchObject({
         ok: preflight.ok,
         status: preflight.status,
@@ -1200,6 +1209,7 @@ describe("cli-app-template-earthquake-demo", () => {
     expect(readme.content).toContain("explorer");
     expect(readme.content).toContain("deepseek");
     expect(readme.content).toContain("delivery-summary.json");
+    expect(readme.content).toContain("REVIEW.md");
   });
 });
 

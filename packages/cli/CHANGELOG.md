@@ -15,6 +15,9 @@
   acceptance state, delivery sections, source-readiness counts and entries,
   spatial-query readiness, confirmations, and follow-ups are now available
   without parsing the full `evidence.json` bundle.
+- Write `REVIEW.md` during `create-gis-map --generate` as a human-readable
+  handoff derived from `delivery-summary.json` and `preflight.json` without
+  retaining the raw prompt.
 - Surface generated delivery evidence in the `app` template status banner when
   `delivery-summary.json` is present, while scaffold-only app projects keep
   running without that optional file. The rail now includes the generated
