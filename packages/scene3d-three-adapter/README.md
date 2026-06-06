@@ -1,6 +1,6 @@
 # @gis-engine/scene3d-three-adapter
 
-`@gis-engine/scene3d-three-adapter` is the isolated W28 spike boundary for a
+`@gis-engine/scene3d-three-adapter` is the isolated spike boundary for a
 future SceneView3D renderer based on Three.js and 3DTilesRendererJS.
 
 Current status:
@@ -45,8 +45,7 @@ remote asset dependencies.
 ## Stable Renderer Handoff Contract
 
 `getScene3DThreeAdapterStableRendererContract()` returns an auditable summary for
-the adapter-side part of `TASK-2026W23-SRC-001`, `TASK-2026W23-SRC-002`, and
-`TASK-2026W23-SRC-003`. It is a contract and evidence checklist, not a runtime
+the adapter-side stable renderer obligations. It is a contract and evidence checklist, not a runtime
 promotion; stable
 `view.mode: "scene3d"` remains blocked until the future promotion decision gate
 accepts the complete renderer package.
@@ -73,7 +72,7 @@ policy enforcement, and adapter boundary preservation.
 
 `getScene3DThreeAdapterLifecycleSemantics()` returns the adapter-local matrix for
 load, reload, resize, snapshot, query, failure, cancel, destroy, and resource
-cleanup behavior. The matrix is explicit evidence for `TASK-2026W23-SRC-003`;
+cleanup behavior. The matrix documents adapter-local lifecycle semantics;
 it does not promote stable runtime support.
 
 Current runtime semantics:
@@ -142,14 +141,14 @@ Current evidence API:
   renderer evidence. It fails when capture metrics are missing, blank, invalid,
   or when resource policy diagnostics contain errors.
 - `createScene3DThreeAdapterPromotionEvidenceSummary(spikeReport, options)`
-  creates the adapter-side promotion summary for W23 readiness review. It is
+  creates the adapter-side promotion summary for release readiness review. It is
   decision evidence only; it does not enable stable `view.mode: "scene3d"`.
 - `getScene3DThreeAdapterStableRendererContract()` returns the stable renderer
   handoff obligations, dependency boundary, guardrails, and stable-runtime
-  blocker diagnostics for the adapter-side SRC-001/SRC-002/SRC-003 slice.
+  blocker diagnostics for the adapter-side stable renderer contract obligations.
 - `getScene3DThreeAdapterLifecycleSemantics()` returns the adapter-local
   lifecycle/failure matrix with stable diagnostic codes and paths.
 - `auditScene3DThreeAdapterDependencyBoundary({ manifests, sourceImports })`
-  returns dependency-boundary evidence for SRC-002, including renderer-free
+  returns dependency-boundary evidence, including renderer-free
   package checks for `@gis-engine/engine`, `@gis-engine/scene3d`, and
   `@gis-engine/ai`.
