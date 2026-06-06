@@ -8,7 +8,6 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const publicWordingFiles = [
   "README.md",
   "CHANGELOG.md",
-  "docs/planning/v0.2-release.md",
   "docs/engineering/supported-feature-matrix.md",
   "docs/engineering/release-wording-guardrails.md",
   "docs/planning/feature-specs/generated-app-delivery-ux.md",
