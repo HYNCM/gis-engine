@@ -1005,6 +1005,10 @@ describe("cli-templates", () => {
     expect(appFile.content).toContain('setStatus("loading")');
     expect(appFile.content).toContain("targetMap.addSource");
     expect(appFile.content).toContain("targetMap.addLayer");
+    expect(appFile.content).toContain('fetch("./delivery-summary.json"');
+    expect(appFile.content).toContain("type DeliveryLoadStatus");
+    expect(appFile.content).toContain("formatDeliveryState");
+    expect(appFile.content).toContain('return "scaffold"');
   });
 
   it("app template exposes loading, reload, and responsive control states", () => {
@@ -1023,6 +1027,10 @@ describe("cli-templates", () => {
     expect(appFile.content).toContain("Could not load the selected map.json file.");
     expect(appFile.content).toContain('aria-live="polite"');
     expect(appFile.content).toContain('accept=".json,application/json"');
+    expect(appFile.content).toContain("Delivery");
+    expect(appFile.content).toContain("Sources");
+    expect(appFile.content).toContain("Spatial");
+    expect(appFile.content).toContain("Follow-ups");
 
     expect(layerPanel.content).toContain("No layers in this spec yet.");
     expect(layerPanel.content).toContain("max-md:top-32");
@@ -1168,6 +1176,7 @@ describe("cli-app-template-earthquake-demo", () => {
     const readme = files.find((f) => f.path === "README.md")!;
     expect(readme.content).toContain("explorer");
     expect(readme.content).toContain("deepseek");
+    expect(readme.content).toContain("delivery-summary.json");
   });
 });
 

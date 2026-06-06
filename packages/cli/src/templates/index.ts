@@ -854,9 +854,49 @@ type MapSpecShape = {
 };
 
 type MapLoadStatus = "loading" | "ready" | "empty" | "error";
+type DeliveryLoadStatus = "loading" | "ready" | "missing" | "error";
+
+type DeliverySummaryShape = {
+  delivery?: {
+    status?: string;
+    acceptance?: { state?: string };
+    sourceReadiness?: {
+      total?: number;
+      supported?: number;
+      readinessOnly?: number;
+      blocked?: number;
+    };
+    spatialQueryReadiness?: { state?: string; status?: string };
+    confirmationRequired?: boolean;
+    confirmations?: Array<{ required?: boolean }>;
+    followUps?: Array<{ id?: string; reason?: string }>;
+  };
+  evidenceStatus?: string;
+  retainedRawPrompt?: boolean;
+};
 
 function isMapSpecShape(value: unknown): value is MapSpecShape {
   return typeof value === "object" && value !== null;
+}
+
+function isDeliverySummaryShape(value: unknown): value is DeliverySummaryShape {
+  return typeof value === "object" && value !== null;
+}
+
+function formatDeliveryState(delivery: DeliverySummaryShape["delivery"], loadStatus: DeliveryLoadStatus): string {
+  if (delivery?.acceptance?.state) return delivery.acceptance.state;
+  if (delivery?.status) return delivery.status;
+  if (loadStatus === "missing") return "scaffold";
+  if (loadStatus === "error") return "unavailable";
+  return "loading";
+}
+
+function deliveryBadgeTone(state: string, loadStatus: DeliveryLoadStatus): string {
+  if (state === "blocked" || loadStatus === "error") return "bg-red-600 text-white";
+  if (state === "needs-confirmation") return "bg-amber-500 text-white";
+  if (state === "follow-up-required") return "bg-blue-600 text-white";
+  if (state === "ready") return "bg-emerald-600 text-white";
+  return "bg-slate-600 text-white";
 }
 
 export default function App() {
@@ -867,10 +907,56 @@ export default function App() {
   const [status, setStatus] = useState<MapLoadStatus>("loading");
   const [statusMessage, setStatusMessage] = useState("Loading map.json...");
   const [statusDetail, setStatusDetail] = useState<string | null>(null);
+  const [deliverySummary, setDeliverySummary] = useState<DeliverySummaryShape | null>(null);
+  const [deliveryLoadStatus, setDeliveryLoadStatus] = useState<DeliveryLoadStatus>("loading");
+  const [deliveryError, setDeliveryError] = useState<string | null>(null);
 
   const sourceCount = Object.keys(spec.sources ?? {}).length;
   const layerCount = (spec.layers ?? []).length;
   const hasContent = sourceCount > 0 && layerCount > 0;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadDeliverySummary = async () => {
+      setDeliveryLoadStatus("loading");
+      setDeliveryError(null);
+
+      try {
+        const response = await fetch("./delivery-summary.json", { cache: "no-store" });
+        if (response.status === 404) {
+          if (!cancelled) {
+            setDeliverySummary(null);
+            setDeliveryLoadStatus("missing");
+          }
+          return;
+        }
+        if (!response.ok) {
+          throw new Error("HTTP " + response.status);
+        }
+        const parsed = (await response.json()) as unknown;
+        if (!isDeliverySummaryShape(parsed)) {
+          throw new Error("delivery-summary.json must contain a JSON object.");
+        }
+        if (!cancelled) {
+          setDeliverySummary(parsed);
+          setDeliveryLoadStatus("ready");
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setDeliverySummary(null);
+          setDeliveryLoadStatus("error");
+          setDeliveryError(error instanceof Error ? error.message : "Could not read delivery-summary.json.");
+        }
+      }
+    };
+
+    void loadDeliverySummary();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -983,6 +1069,17 @@ export default function App() {
       : status === "ready"
         ? "bg-emerald-600 text-white"
         : "bg-slate-900 text-white";
+  const delivery = deliverySummary?.delivery;
+  const deliveryState = formatDeliveryState(delivery, deliveryLoadStatus);
+  const deliveryTone = deliveryBadgeTone(deliveryState, deliveryLoadStatus);
+  const deliverySourceSummary = delivery?.sourceReadiness;
+  const deliveryFollowUpCount = delivery?.followUps?.length ?? 0;
+  const deliveryConfirmationCount = delivery?.confirmations?.filter((confirmation) => confirmation.required).length ?? 0;
+  const deliverySourceText = deliverySourceSummary
+    ? String(deliverySourceSummary.supported ?? 0) + "/" + String(deliverySourceSummary.total ?? 0)
+    : "--";
+  const deliverySpatialState = delivery?.spatialQueryReadiness?.state ?? "--";
+  const deliveryDetail = deliveryLoadStatus === "error" ? deliveryError : null;
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-slate-950">
@@ -1004,6 +1101,29 @@ export default function App() {
         </div>
         <p className="mt-2 text-xs text-gray-700">{statusMessage}</p>
         {statusDetail ? <p className="mt-1 text-xs text-gray-500">{statusDetail}</p> : null}
+        <div className="mt-3 border-t border-gray-200 pt-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11px] font-semibold uppercase text-gray-500">Delivery</span>
+            <span className={"shrink-0 rounded-full px-2 py-1 text-[10px] font-medium " + deliveryTone}>
+              {deliveryState}
+            </span>
+          </div>
+          <dl className="mt-2 grid grid-cols-3 gap-2 text-[11px] text-gray-600">
+            <div>
+              <dt className="text-gray-400">Sources</dt>
+              <dd className="font-medium text-gray-900">{deliverySourceText}</dd>
+            </div>
+            <div>
+              <dt className="text-gray-400">Spatial</dt>
+              <dd className="truncate font-medium text-gray-900">{deliverySpatialState}</dd>
+            </div>
+            <div>
+              <dt className="text-gray-400">Follow-ups</dt>
+              <dd className="font-medium text-gray-900">{deliveryFollowUpCount + deliveryConfirmationCount}</dd>
+            </div>
+          </dl>
+          {deliveryDetail ? <p className="mt-2 truncate text-[11px] text-gray-500">{deliveryDetail}</p> : null}
+        </div>
         <div className="mt-3 flex flex-wrap gap-2">
           <button
             type="button"
@@ -1085,6 +1205,14 @@ Components: ${cfg.components.join(", ")}
 npm install
 npm run dev
 \`\`\`
+
+## Delivery Evidence
+
+When this app is produced through \`--generate --template app\`, it reads the
+generated \`delivery-summary.json\` at runtime and shows the delivery acceptance
+state, source-readiness count, spatial-query readiness, and review follow-up
+count in the map status banner. Scaffold-only projects keep running when that
+file is absent.
 
 ## Preflight
 

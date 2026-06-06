@@ -15,6 +15,9 @@
   acceptance state, delivery sections, source-readiness counts and entries,
   spatial-query readiness, confirmations, and follow-ups are now available
   without parsing the full `evidence.json` bundle.
+- Surface generated delivery evidence in the `app` template status banner when
+  `delivery-summary.json` is present, while scaffold-only app projects keep
+  running without that optional file.
 
 ## 1.0.0
 
