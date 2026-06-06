@@ -71,6 +71,10 @@ describe("cli-bin-preflight-mode", () => {
         mode: "mapspec-preflight",
         status: "ready",
         validation: { valid: true },
+        sourceReadiness: {
+          status: "follow-up-required",
+          summary: { readinessOnlySourceCount: 1, blockedSourceCount: 0 },
+        },
         pmtiles: { status: "ready" },
       });
     } finally {
@@ -449,9 +453,20 @@ describe("cli-preflight-map-spec", () => {
       expect(result.pmtiles.status).toBe("ready");
       expect(result.pmtiles.summary.pmtilesSourceCount).toBe(1);
       expect(result.pmtiles.sources[0]?.sourceLayerIds).toEqual(["parcels"]);
+      expect(result.sourceReadiness.status).toBe("follow-up-required");
+      expect(result.sourceReadiness.sources[0]).toMatchObject({
+        sourceId: "parcels",
+        type: "pmtiles",
+        state: "readiness-only",
+        displayReady: true,
+        queryReady: false,
+        resourcePolicy: "passed",
+      });
       expect(result.diagnostics).toEqual([]);
       expect(text).toContain("Status:     ready");
+      expect(text).toContain("Readiness:  follow-up-required (0 supported, 1 readiness-only, 0 blocked)");
       expect(text).toContain("PMTiles:    ready (1 sources)");
+      expect(text).toContain("Source parcels: pmtiles / readiness-only / display yes / query no / policy passed");
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -492,6 +507,11 @@ describe("cli-preflight-map-spec", () => {
       expect(result.ok).toBe(false);
       expect(result.status).toBe("metadata-required");
       expect(result.pmtiles.status).toBe("metadata-required");
+      expect(result.sourceReadiness.sources[0]).toMatchObject({
+        sourceId: "parcels",
+        state: "readiness-only",
+        displayReady: false,
+      });
       expect(result.diagnostics).toContainEqual(
         expect.objectContaining({
           code: "CAPABILITY.UNSUPPORTED",
@@ -542,12 +562,56 @@ describe("cli-preflight-map-spec", () => {
       expect(result.ok).toBe(false);
       expect(result.status).toBe("blocked");
       expect(result.pmtiles.status).toBe("blocked");
+      expect(result.sourceReadiness.status).toBe("blocked");
+      expect(result.sourceReadiness.sources[0]).toMatchObject({
+        sourceId: "parcels",
+        state: "blocked",
+        displayReady: false,
+      });
       expect(result.diagnostics).toContainEqual(
         expect.objectContaining({
           code: "LAYER.SOURCE_INCOMPATIBLE",
           path: "/layers/0/metadata/source-layer",
         }),
       );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps unsupported cloud-native source types blocked in source readiness", () => {
+    const dir = mkdtempSync(join(tmpdir(), "gis-engine-cli-preflight-"));
+    try {
+      const mapPath = join(dir, "map.json");
+      writeFileSync(
+        mapPath,
+        `${JSON.stringify(
+          {
+            version: "0.1",
+            view: { center: [0, 0], zoom: 2 },
+            sources: { parquet: { type: "geoparquet", url: "./data/parcels.parquet" } },
+            layers: [],
+          },
+          null,
+          2,
+        )}\n`,
+        "utf-8",
+      );
+
+      const result = preflightMapSpec({ filePath: mapPath });
+
+      expect(result.ok).toBe(false);
+      expect(result.status).toBe("blocked");
+      expect(result.validation.valid).toBe(false);
+      expect(result.sourceReadiness.status).toBe("blocked");
+      expect(result.sourceReadiness.sources).toEqual([
+        expect.objectContaining({
+          sourceId: "parquet",
+          type: "geoparquet",
+          state: "blocked",
+          resourcePolicy: "not-applicable",
+        }),
+      ]);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

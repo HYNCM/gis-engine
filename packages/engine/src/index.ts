@@ -38,6 +38,16 @@ export {
   type PMTilesRuntimeSourceStatus,
   PMTilesSourceLoader,
 } from "./sources/pmtiles.js";
+export {
+  type CreateSourceReadinessReportOptions,
+  createSourceReadinessReport,
+  type SourceReadinessEntry,
+  type SourceReadinessReport,
+  type SourceReadinessReportStatus,
+  type SourceReadinessState,
+  type SourceResourcePolicyStatus,
+  type SourceRuntimeReadinessSummary,
+} from "./sources/readiness.js";
 export type {
   FlatGeobufPolicy,
   FlatGeobufSourceSpec,

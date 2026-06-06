@@ -2,11 +2,13 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
   createPMTilesRuntimeLoadPlan,
+  createSourceReadinessReport,
   type Diagnostic,
   DiagnosticCodes,
   type MapSpec,
   type PMTilesArchiveMetadata,
   type PMTilesRuntimeLoadPlan,
+  type SourceReadinessReport,
   type ValidationReport,
   validateSpec,
 } from "@gis-engine/engine";
@@ -37,6 +39,7 @@ export interface PreflightResult {
     stats: ValidationReport["stats"];
     diagnosticCounts: PreflightDiagnosticCounts;
   };
+  sourceReadiness: SourceReadinessReport;
   pmtiles: PMTilesRuntimeLoadPlan;
   diagnostics: Diagnostic[];
 }
@@ -68,6 +71,9 @@ export function preflightMapSpec(options: PreflightOptions): PreflightResult {
         requireArchiveMetadata: options.requireArchiveMetadata === true,
       })
     : emptyPMTilesRuntimeLoadPlan();
+  const sourceReadiness = isMapSpecLike(parsed.value)
+    ? createSourceReadinessReport(parsed.value, { pmtilesLoadPlan: pmtiles })
+    : emptySourceReadinessReport();
   const diagnostics = [...validation.diagnostics, ...pmtiles.diagnostics];
   const blocked = !validation.valid || pmtiles.status === "blocked";
   const metadataRequired = options.requireArchiveMetadata === true && pmtiles.status === "metadata-required";
@@ -87,6 +93,7 @@ export function preflightMapSpec(options: PreflightOptions): PreflightResult {
       stats: validation.stats,
       diagnosticCounts: countDiagnostics(validation.diagnostics),
     },
+    sourceReadiness,
     pmtiles,
     diagnostics,
   };
@@ -100,6 +107,7 @@ export function formatPreflightText(result: PreflightResult): string {
     `  Valid:      ${result.validation.valid}`,
     `  Sources:    ${result.validation.stats.sourceCount}`,
     `  Layers:     ${result.validation.stats.layerCount}`,
+    `  Readiness:  ${result.sourceReadiness.status} (${result.sourceReadiness.summary.supportedSourceCount} supported, ${result.sourceReadiness.summary.readinessOnlySourceCount} readiness-only, ${result.sourceReadiness.summary.blockedSourceCount} blocked)`,
     `  PMTiles:    ${result.pmtiles.status} (${result.pmtiles.summary.pmtilesSourceCount} sources)`,
     `  Metadata:   ${result.inputs.requireArchiveMetadata ? "required" : "optional"} (${result.inputs.pmtilesMetadataSourceIds.length} provided)`,
   ];
@@ -109,6 +117,12 @@ export function formatPreflightText(result: PreflightResult): string {
 
   for (const diagnostic of result.diagnostics) {
     lines.push(`  - [${diagnostic.severity}] ${diagnostic.code} ${diagnostic.path ?? "/"}: ${diagnostic.message}`);
+  }
+
+  for (const source of result.sourceReadiness.sources) {
+    lines.push(
+      `  Source ${source.sourceId}: ${source.type} / ${source.state} / display ${source.displayReady ? "yes" : "no"} / query ${source.queryReady ? "yes" : "no"} / policy ${source.resourcePolicy}`,
+    );
   }
 
   return `${lines.join("\n")}\n`;
@@ -147,6 +161,7 @@ function blockedResult(
       stats: { sourceCount: 0, layerCount: 0, visibleLayerCount: 0 },
       diagnosticCounts: countDiagnostics(diagnostics),
     },
+    sourceReadiness: emptySourceReadinessReport(),
     pmtiles: emptyPMTilesRuntimeLoadPlan(),
     diagnostics,
   };
@@ -275,6 +290,22 @@ function emptyPMTilesRuntimeLoadPlan(): PMTilesRuntimeLoadPlan {
       readySourceCount: 0,
       metadataRequiredSourceCount: 0,
       blockedSourceCount: 0,
+    },
+  };
+}
+
+function emptySourceReadinessReport(): SourceReadinessReport {
+  return {
+    status: "ready",
+    sources: [],
+    diagnostics: [],
+    summary: {
+      sourceCount: 0,
+      supportedSourceCount: 0,
+      readinessOnlySourceCount: 0,
+      blockedSourceCount: 0,
+      displayReadySourceCount: 0,
+      queryReadySourceCount: 0,
     },
   };
 }

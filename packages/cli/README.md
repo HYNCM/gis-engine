@@ -85,10 +85,11 @@ npm exec --package @gis-engine/cli@latest -- create-gis-map --preflight ./map.js
 ```
 
 Preflight mode validates `map.json`, reports structured diagnostics, and checks
-the PMTiles runtime load plan without writing files, fetching resources, or
-parsing PMTiles archives. It exits non-zero only when validation or PMTiles
-delivery blockers are present. With `--require-archive-metadata`, missing
-PMTiles archive metadata also exits non-zero.
+the source-readiness and PMTiles runtime load plans without writing files,
+fetching resources, starting workers, or parsing PMTiles archives. It exits
+non-zero only when validation or PMTiles delivery blockers are present. With
+`--require-archive-metadata`, missing PMTiles archive metadata also exits
+non-zero.
 
 ---
 
@@ -111,7 +112,7 @@ create-gis-map --preflight <map.json> [--json]
 | `--base-url <url>` | | API base URL for OpenAI-compatible provider | per-provider default |
 | `--generate` | `-g` | Run the AI generate pipeline instead of scaffolding | `false` |
 | `--prompt <text>` | | Prompt text for generate mode | (built-in default) |
-| `--preflight <path>` | | Validate a MapSpec JSON file and PMTiles load plan without writing files | |
+| `--preflight <path>` | | Validate a MapSpec JSON file plus source-readiness and PMTiles load plans without writing files | |
 | `--require-archive-metadata` | | Require PMTiles archive metadata for preflight success | `false` |
 | `--pmtiles-metadata <source-id=path>` | | Provide PMTiles archive metadata JSON for a source. Repeatable. | |
 | `--json` | | Print preflight output as machine-readable JSON | `false` |
@@ -404,6 +405,7 @@ Preflight mode performs:
 | Check | Description |
 |---|---|
 | MapSpec validation | Runs the engine validator and returns schema, semantic, and resource-policy diagnostics. |
+| Source readiness | Runs `createSourceReadinessReport()` for every declared source, showing supported, readiness-only, and blocked states plus display/query readiness. |
 | PMTiles load plan | Runs `createPMTilesRuntimeLoadPlan()` for PMTiles sources, including URL policy, MapLibre `source-layer` metadata, range-policy requirements, and optional caller-supplied archive metadata. |
 | No IO side effects | Reads the supplied JSON file only. It does not create project files, fetch URLs, start workers, or parse PMTiles archives. |
 
@@ -442,8 +444,11 @@ The metadata JSON uses the engine `PMTilesArchiveMetadata` contract:
 }
 ```
 
-The result includes `ok`, `status`, `inputs`, `validation`, `pmtiles`, and
-`diagnostics`. `status: "blocked"` exits with code `1`. `metadata-required`
+The result includes `ok`, `status`, `inputs`, `validation`, `sourceReadiness`,
+`pmtiles`, and `diagnostics`. `sourceReadiness.status: "follow-up-required"`
+can still appear with `ok: true` when sources are valid for display/export but
+have explicit follow-up work, such as PMTiles archive parsing or URL GeoJSON
+headless query. `status: "blocked"` exits with code `1`. `metadata-required`
 exits with code `1` only when `--require-archive-metadata` is set; otherwise it
 remains a readiness signal.
 
