@@ -1217,6 +1217,12 @@ describe("cli-templates", () => {
     expect(appFile.content).toContain("Download map.json");
     expect(appFile.content).toContain("Download validation report");
     expect(appFile.content).toContain("downloadCurrentSpec");
+    expect(appFile.content).toContain("const reloadCurrentSpec = async () =>");
+    expect(appFile.content).toContain('fetch("./map.json", { cache: "no-store" })');
+    expect(appFile.content).toContain("Reloading map.json...");
+    expect(appFile.content).toContain("Could not reload map.json.");
+    expect(appFile.content).toContain("map.json must be available as a JSON file.");
+    expect(appFile.content).toContain("!Array.isArray(value)");
     expect(appFile.content).toContain("downloadValidationReport");
     expect(appFile.content).toContain("mapspec-validation-report.json");
     expect(appFile.content).toContain("Could not download validation report.");

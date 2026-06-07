@@ -16,6 +16,7 @@
 - **Generated app optional evidence fallback**: the `app` template treats HTML fallback responses for missing optional delivery or artifact evidence files as missing evidence instead of JSON errors.
 - **Generated app scaffold build cleanup**: the `app` template now keeps the starter `map.json` JSON import build-clean when TypeScript infers tuple-like coordinates as arrays.
 - **Generated app validation report download**: the `app` template now downloads `mapspec-validation-report.json` with validity, stats, diagnostic counts, and structured diagnostics from `validateSpec()`.
+- **Generated app map reload**: the `app` template now reloads `./map.json` from disk without a browser refresh instead of only re-rendering the in-memory spec.
 - **Generated app artifact manifest panel**: the `app` template now reads optional `artifact-manifest.json` evidence and shows generated file roles, required-review flags, byte counts, and hash references in the review details panel.
 - **Generated app review details**: the `app` template now lets generated apps expand `delivery-summary.json` details in-app, including delivery sections, source entries, preflight counts, confirmations, and follow-ups, while keeping the generated MapLibre CSS import order build-clean.
 - **Generated app delivery rail**: the `app` template reads optional `delivery-summary.json` evidence at runtime and shows delivery acceptance, preflight, source-readiness, spatial-query, and follow-up signals in the map status banner.

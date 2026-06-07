@@ -50,6 +50,9 @@
   The downloaded `mapspec-validation-report.json` contains validity, stats,
   diagnostic counts, and structured diagnostics from `validateSpec()` for local
   review or handoff.
+- Make `Reload map.json` in the generated `app` template re-read `./map.json`
+  from disk with no-store fetch semantics instead of only re-rendering the
+  in-memory spec.
 - Surface generated delivery evidence in the `app` template status banner when
   `delivery-summary.json` is present, while scaffold-only app projects keep
   running without that optional file. The rail now includes the generated

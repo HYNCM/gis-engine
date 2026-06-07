@@ -963,7 +963,7 @@ type ArtifactManifestShape = {
 };
 
 function isMapSpecShape(value: unknown): value is MapSpecShape {
-  return typeof value === "object" && value !== null;
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function isDeliverySummaryShape(value: unknown): value is DeliverySummaryShape {
@@ -1276,8 +1276,29 @@ export default function App() {
     };
   }, [blockingSpecDiagnostics, hasContent, layerCount, sourceCount, spec]);
 
-  const reloadCurrentSpec = () => {
-    setSpec((current) => structuredClone(current));
+  const reloadCurrentSpec = async () => {
+    setStatus("loading");
+    setStatusMessage("Reloading map.json...");
+    setStatusDetail(null);
+
+    try {
+      const response = await fetch("./map.json", { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error("HTTP " + response.status);
+      }
+      if (isHtmlFallbackResponse(response)) {
+        throw new Error("map.json must be available as a JSON file.");
+      }
+      const parsed = (await response.json()) as unknown;
+      if (!isMapSpecShape(parsed)) {
+        throw new Error("map.json must contain a JSON object.");
+      }
+      setSpec(parsed);
+    } catch (error) {
+      setStatus("error");
+      setStatusMessage("Could not reload map.json.");
+      setStatusDetail(error instanceof Error ? error.message : "The current map.json file could not be loaded.");
+    }
   };
 
   const openSpecFile = () => {
@@ -1667,7 +1688,9 @@ export default function App() {
         <div className="mt-3 flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={reloadCurrentSpec}
+            onClick={() => {
+              void reloadCurrentSpec();
+            }}
             className="rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
           >
             Reload map.json
@@ -1709,7 +1732,7 @@ export default function App() {
           </button>
         </div>
         <p className="mt-2 text-[11px] text-gray-500">
-          Load a local map.json file, reload the current spec, or download the spec and validation report without refreshing the browser.
+          Load a local map.json file, reload ./map.json from disk, or download the spec and validation report without refreshing the browser.
         </p>
         <input
           ref={fileInputRef}
@@ -1785,8 +1808,9 @@ review flags, byte counts, hash references, and safe relative links for opening
 listed artifacts in the review details panel. Scaffold-only projects keep
 running when those evidence files are absent. Generated projects also include
 \`REVIEW.md\` as the human-readable handoff for the same delivery evidence.
-The app can also download the currently loaded MapSpec as \`map.json\` for local
-review or handoff. The app validates the loaded MapSpec with
+The app can also reload \`./map.json\` from disk without a page refresh and
+download the currently loaded MapSpec as \`map.json\` for local review or
+handoff. The app validates the loaded MapSpec with
 \`@gis-engine/engine.validateSpec()\` before rendering and surfaces structured
 diagnostic code/path/message feedback when validation blocks the map. It can
 also download a local \`mapspec-validation-report.json\` with validity, stats,
