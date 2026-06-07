@@ -7,15 +7,18 @@
 name: Bundle Size
 
 on:
+  workflow_dispatch:
   pull_request:
     paths:
       - "packages/**/src/**"
       - "packages/**/package.json"
+      - ".github/workflows/bundle-size.yml"
   push:
     branches: [main]
     paths:
       - "packages/**/src/**"
       - "packages/**/package.json"
+      - ".github/workflows/bundle-size.yml"
 
 permissions:
   contents: read
