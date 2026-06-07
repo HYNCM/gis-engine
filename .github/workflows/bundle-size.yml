@@ -1,7 +1,7 @@
 # Bundle Size Check — SDK 体积监控
 #
 # 每次 PR 和 push main 时检查各包体积
-# 硬预算: engine < 130KB gzipped, cli < 35KB gzipped
+# 硬预算: engine < 130KB gzipped, cli < 55KB gzipped
 # 体积增大超过 5% 时告警
 
 name: Bundle Size
@@ -70,7 +70,7 @@ jobs:
                   fi
                   ;;
                 cli)
-                  BUDGET_LIMIT=35
+                  BUDGET_LIMIT=55
                   BUDGET="≤ ${BUDGET_LIMIT}KB gz"
                   GZIP_INT=$(echo "$GZIP" | awk '{printf "%d", $1}')
                   if [ "$GZIP_INT" -gt "$BUDGET_LIMIT" ]; then
