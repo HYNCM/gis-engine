@@ -1,4 +1,5 @@
-import { Ajv, type ErrorObject } from "ajv/dist/ajv.js";
+import type { ErrorObject } from "ajv";
+import { Ajv } from "ajv";
 import {
   DiagnosticCodes,
   type Scene3DStableRuntimeBlockerCode,
@@ -15,7 +16,7 @@ import {
 } from "./resource-policy.js";
 import { MapSpecSchema, SceneView3DExtensionSchema } from "./schemas/index.js";
 
-const ajv = new Ajv({ allErrors: true, strict: false });
+const ajv = new Ajv({ allErrors: true, strict: true });
 const validateMapSpecSchema = ajv.compile(MapSpecSchema);
 const validateSceneView3DExtensionSchema = ajv.compile(SceneView3DExtensionSchema);
 

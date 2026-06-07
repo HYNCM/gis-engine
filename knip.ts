@@ -8,15 +8,13 @@ const config: KnipConfig = {
         "vite", // used by studio + examples
         "tsx", // used in example scripts and CI workflows
       ],
-      ignoreBinaries: ["du", "gh"],
+      ignoreBinaries: ["du", "gh", "tsx"],
     },
     "packages/engine": {
-      entry: ["src/index.ts", "scripts/build-schema.ts"],
+      entry: ["scripts/build-schema.ts"],
       ignore: ["src/spec/schema-type-assertions.ts"],
     },
-    "packages/ai": {
-      entry: ["src/index.ts", "src/mcp/server.ts", "scripts/build-schema.mjs"],
-    },
+    "packages/ai": {},
     "packages/cli": {},
     "packages/scene3d": {},
     "packages/scene3d-three-adapter": {},
@@ -27,9 +25,7 @@ const config: KnipConfig = {
       ],
     },
     "docs/website": {},
-    "examples/getting-started": {
-      ignore: ["src/**", "vite.config.ts"],
-    },
+    "examples/getting-started": {},
   },
   ignoreExportsUsedInFile: true,
 };

@@ -30,14 +30,35 @@ export function applyCommands(
   const transaction = options.transaction ?? "atomic";
   const dryRun = options.dryRun ?? false;
   const traceId = options.traceId ?? createTraceId(spec, commandList);
-  let currentSpec = structuredClone(spec);
+  // No pre-clone needed: applyJsonPatch always clones its input before mutating.
+  // On the first successful non-dryRun command, currentSpec becomes a clone via nextSpec.
+  // If all commands fail/skip/dryRun, the original spec is returned untouched.
+  let currentSpec: MapSpec = spec;
   const results: CommandResult[] = [];
   const traces: CommandTrace[] | undefined = options.collectTrace ? [] : undefined;
   let committed = false;
 
+  /**
+   * Records a failed command result. In atomic mode, rolls back the entire
+   * batch and returns the finish result; in best-effort mode, returns null
+   * so the caller continues to the next command.
+   */
+  function failAndMaybeRollback(
+    command: MapCommand,
+    sequenceId: number,
+    diagnostics: Diagnostic[],
+  ): ApplyCommandsResult | null {
+    const failed = failedResult(command, sequenceId, traceId, diagnostics);
+    appendResult(results, traces, command, failed);
+    if (transaction === "atomic") {
+      return finish(spec, results, { transaction, dryRun, traceId, committed: false, rolledBack: true }, traces);
+    }
+    return null;
+  }
+
   for (const [sequenceId, command] of commandList.entries()) {
     if (command.baseRevision && command.baseRevision !== currentSpec.revision) {
-      const failed = failedResult(command, sequenceId, traceId, [
+      const rollback = failAndMaybeRollback(command, sequenceId, [
         {
           severity: "error",
           code: DiagnosticCodes.ConflictBaseRevision,
@@ -50,9 +71,7 @@ export function applyCommands(
           },
         },
       ]);
-      appendResult(results, traces, command, failed);
-      if (transaction === "atomic")
-        return finish(spec, results, { transaction, dryRun, traceId, committed: false, rolledBack: true }, traces);
+      if (rollback) return rollback;
       continue;
     }
 
@@ -75,10 +94,8 @@ export function applyCommands(
     }
 
     if (hasErrors(build.diagnostics)) {
-      const failed = failedResult(command, sequenceId, traceId, build.diagnostics);
-      appendResult(results, traces, command, failed);
-      if (transaction === "atomic")
-        return finish(spec, results, { transaction, dryRun, traceId, committed: false, rolledBack: true }, traces);
+      const rollback = failAndMaybeRollback(command, sequenceId, build.diagnostics);
+      if (rollback) return rollback;
       continue;
     }
 
@@ -87,10 +104,8 @@ export function applyCommands(
     const patch = [...basePatch, buildRevisionPatch(currentSpec, nextSpec)];
     const patchDiagnostics = validatePatch(patch);
     if (hasErrors(patchDiagnostics)) {
-      const failed = failedResult(command, sequenceId, traceId, patchDiagnostics);
-      appendResult(results, traces, command, failed);
-      if (transaction === "atomic")
-        return finish(spec, results, { transaction, dryRun, traceId, committed: false, rolledBack: true }, traces);
+      const rollback = failAndMaybeRollback(command, sequenceId, patchDiagnostics);
+      if (rollback) return rollback;
       continue;
     }
 
@@ -98,10 +113,8 @@ export function applyCommands(
     const validation = validateSpec(nextSpec);
 
     if (!validation.valid) {
-      const failed = failedResult(command, sequenceId, traceId, validation.diagnostics);
-      appendResult(results, traces, command, failed);
-      if (transaction === "atomic")
-        return finish(spec, results, { transaction, dryRun, traceId, committed: false, rolledBack: true }, traces);
+      const rollback = failAndMaybeRollback(command, sequenceId, validation.diagnostics);
+      if (rollback) return rollback;
       continue;
     }
 
