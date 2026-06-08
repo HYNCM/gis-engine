@@ -3,6 +3,10 @@
 ## Unreleased
 
 ### Added
+- **PMTiles vector display/load-plan promotion evidence**: added a valid PMTiles
+  vector fixture plus schema, MapLibre transformer/adapter, and snapshot-smoke
+  coverage for URL-compatible display while feature query and archive parsing
+  remain blocked.
 - **CLI MapSpec preflight mode**: `create-gis-map --preflight <map.json> [--json]` validates a MapSpec and PMTiles runtime load plan without requiring a project name, writing files, fetching resources, or parsing PMTiles archives. Generated `mapspec` and `app` template READMEs include the preflight handoff command.
 - **CLI generated delivery review summary**: generated `delivery-summary.json` now includes acceptance state, delivery sections, source-readiness counts and entries, spatial-query readiness, confirmations, and follow-ups so CI and reviewers can inspect delivery status without parsing the full `evidence.json`.
 - **CLI generated preflight artifact**: `create-gis-map --generate` now writes `preflight.json` and embeds a compact preflight summary in `delivery-summary.json`, giving generated projects validation, source-readiness, PMTiles load-plan, and diagnostic handoff evidence by default.
@@ -33,6 +37,10 @@
 - **`SchemaInvalid` diagnostic code** (`SCHEMA.INVALID`) for cloud-native schema validation failures.
 
 ### Changed
+- CLI install smoke now packs the local linked GA package group
+  (`engine`, `scene3d`, `ai`, and `cli`), installs those tarballs together,
+  and pins generated temporary project dependencies to the same tarballs before
+  install/build.
 - Linked GA package manifests now align with the `1.0.0` SDK+CLI release
   identity, and Biome lint blockers from non-null assertions / explicit `any`
   test code were removed.

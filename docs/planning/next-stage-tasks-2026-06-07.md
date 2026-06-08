@@ -44,6 +44,29 @@ expectations remain at `^1.0.0`, and the default Biome lint gate passes. Parent
 `TASK-2026W24-PROD-001` remains open for a real release runner because the
 current local environment is Node 26 and blocks `127.0.0.1` listeners.
 
+## 2026-06-08 Completion Addendum
+
+The remaining release-productization queue was closed or explicitly held at
+No-go in a Node 22 runner using:
+
+```bash
+npx -y -p node@22 -p pnpm@9.15.0 sh -c '<gate>'
+```
+
+| ID | Outcome | Evidence |
+| --- | --- | --- |
+| `TASK-2026W24-PROD-001` | closed for local release-runner reproducibility | `docs/reviews/prod-001-release-runner-publish-chain-2026-06-08.md`; `pnpm release:preflight`; `pnpm check` |
+| `TASK-2026W24-PROD-002` | closed for generated-project version hygiene | linked package manifests at `1.0.0`; CLI templates and getting-started dependencies at `^1.0.0`; `pnpm smoke:cli-install` with local packed tarballs |
+| `TASK-2026W24-PROD-003` | closed for active docs/link hygiene in this run | `node scripts/doc-generator.mjs links`; `pnpm test:docs`; `git diff --check` |
+| `TASK-2026W24-PROD-004` | closed for PMTiles/vector display/load-plan promotion only | `docs/reviews/prod-004-pmtiles-runtime-promotion-2026-06-08.md`; PMTiles schema fixture, MapLibre adapter, resources, and snapshot-smoke tests |
+| `TASK-2026W24-PROD-005` | closed for local packed SDK+CLI installability smoke | `pnpm smoke:cli-install`; `pnpm publish:dry`; `pnpm build:cdn -- --dry-run` |
+| `TASK-2026W24-PROD-006` | remains No-go for hosted/product movement | `docs/planning/feature-specs/ai-map-workbench-promotion-scope.md` keeps owner/auth/storage/export/visual gates blocking |
+| `TASK-2026W24-PROD-007` | refreshed for 2026-06-08 external signals | `docs/research/competitor-updates-2026-W24.md`; `docs/research/capability-scorecard.md` |
+
+The current local shell still defaults to Node `26.0.0`, so release evidence
+must cite the explicit Node 22 wrapper or a CI runner configured with
+`actions/setup-node@v6` and `node-version: "22"`.
+
 ## Phase Order
 
 1. Close release-runner reproducibility.

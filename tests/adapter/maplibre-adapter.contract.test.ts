@@ -13,6 +13,7 @@ import after from "../fixtures/commands/replay/style-update/after.map.json";
 import before from "../fixtures/commands/replay/style-update/before.map.json";
 import commands from "../fixtures/commands/replay/style-update/commands.json";
 import fillExtrusionLite from "../fixtures/specs/valid/fill-extrusion-lite.map.json";
+import pmtilesVector from "../fixtures/specs/valid/pmtiles-vector.map.json";
 import { createAdapterContractSuite } from "./createAdapterContractSuite.js";
 
 createAdapterContractSuite("maplibre", () => new MapLibreAdapter());
@@ -135,6 +136,27 @@ describe("MapLibreAdapter MVP", () => {
       type: "fill-extrusion",
     });
     expect(snapshot.passed).toBe(true);
+  });
+
+  it("loads PMTiles as display-ready vector URL evidence while keeping feature query blocked", async () => {
+    const adapter = new MapLibreAdapter();
+    await adapter.load(pmtilesVector as MapSpec, { container: {} as HTMLElement });
+
+    const query = await adapter.queryFeatures({ point: [120.15, 30.28], layers: ["parcel-fill"] });
+
+    expect(adapter.exportStyle()?.sources["local-parcels"]).toEqual({
+      type: "vector",
+      url: "./tiles/parcels.pmtiles",
+    });
+    expect(adapter.exportStyle()?.layers.map((layer) => layer["source-layer"])).toEqual(["parcels", "parcels"]);
+    expect(query.features).toEqual([]);
+    expect(query.diagnostics).toEqual([
+      expect.objectContaining({
+        severity: "error",
+        code: "CAPABILITY.UNSUPPORTED",
+        path: "/sources/local-parcels/url",
+      }),
+    ]);
   });
 });
 

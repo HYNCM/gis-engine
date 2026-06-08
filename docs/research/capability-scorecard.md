@@ -30,6 +30,13 @@ sources recorded in `competitor-updates-2026-W24.md`.
 confirmed current launch assumptions instead of adding accepted runtime
 support, new public AI contracts, or release-grade renderer evidence.
 
+2026-06-08 productization closure refresh: GitHub PR/Actions, npm GA package
+state, and MapLibre/Mapbox/PMTiles dependency signals were rechecked at
+`2026-06-08T13:48:14Z` and recorded in
+`competitor-updates-2026-W24.md`. Scores stay unchanged. The PMTiles
+display/load-plan slice is now accepted release evidence, but archive parsing,
+hidden range IO, worker execution, and feature query remain blocked.
+
 | Dimension | GIS Engine Score | Current External Benchmark | Evidence Note | Confidence |
 | --- | ---: | --- | --- | --- |
 | AI operability | 9.6/10 | ArcGIS AI components; MCP tools and structured-output schema contracts | GIS Engine now has prompt planning schemas, planner provenance, explicit point/bbox query capability gates, invalid/source diagnostics, result caps, generated-app manifest evidence, `delivery.spatialQueryReadiness`, scene-browsing blocker visibility, release wording guardrails, `capabilitySummary`, command-only generation, MCP output schemas, diagnostics, prompt QA scenarios, and a structured review-console state contract. The open gap is future source/geoprocessing promotion, not the evidence spine. | high |

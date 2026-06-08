@@ -2,6 +2,7 @@ import { type MapSpec, transformMapSpecToMapLibreStyle } from "@gis-engine/engin
 import { describe, expect, it } from "vitest";
 import before from "../fixtures/commands/replay/style-update/before.map.json";
 import fillExtrusionLite from "../fixtures/specs/valid/fill-extrusion-lite.map.json";
+import pmtilesVector from "../fixtures/specs/valid/pmtiles-vector.map.json";
 
 describe("MapSpecToMapLibreStyleTransformer", () => {
   it("transforms a supported MapSpec into a MapLibre style", () => {
@@ -59,6 +60,23 @@ describe("MapSpecToMapLibreStyleTransformer", () => {
       attribution: "Local test tiles",
     });
     expect(result.style?.layers[0]?.["source-layer"]).toBe("districts");
+  });
+
+  it("maps PMTiles vector sources to MapLibre URL-compatible display style without parser claims", () => {
+    const result = transformMapSpecToMapLibreStyle(pmtilesVector as MapSpec);
+
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({
+        severity: "warning",
+        code: "CAPABILITY.UNSUPPORTED",
+        path: "/sources/local-parcels",
+      }),
+    ]);
+    expect(result.style?.sources["local-parcels"]).toEqual({
+      type: "vector",
+      url: "./tiles/parcels.pmtiles",
+    });
+    expect(result.style?.layers.map((layer) => layer["source-layer"])).toEqual(["parcels", "parcels"]);
   });
 
   it("forwards layer filters and zoom ranges to MapLibre style layers", () => {

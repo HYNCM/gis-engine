@@ -58,6 +58,21 @@ state through `delivery.sourceReadiness`.
 | TASK-2026W22-AIN-003E | GeoTIFF raster source gate | AIN-003 | Raster schema, band/CRS/no-data diagnostics, resource policy, and snapshot strategy. |
 | TASK-2026W22-AIN-003F | GeoZarr array source gate | AIN-003 | Array-store schema, chunk policy, worker budget, and blocked query/sampling diagnostics. |
 
+## 2026-06-08 PMTiles Display/Load-Plan Closure
+
+`TASK-2026W24-PROD-004` closes the first PMTiles promotion slice for
+URL-compatible vector display and IO-free runtime load-plan evidence. This
+absorbs the display/load-plan portion of `TASK-2026W22-AIN-003A` into current
+release evidence.
+
+Remaining PMTiles follow-ups stay separate:
+
+- archive parsing/open behavior;
+- vector tile decoding;
+- worker and range-request execution;
+- feature query fixtures and result semantics;
+- mutation/export handoff beyond manifest/source-readiness summaries.
+
 ## Non-Goals
 
 - No new source type is implemented by this split plan.

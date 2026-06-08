@@ -77,6 +77,34 @@ introduce resource fetches, parsers, decoders, archive readers, or workers.
 - `export_example_app` may summarize source readiness in manifest notes, but it
   must not fetch resources, parse archives, or write files.
 
+## 2026-06-08 PMTiles Runtime Promotion Addendum
+
+`TASK-2026W24-PROD-004` promotes the PMTiles/vector display and load-plan path
+from planning-only pressure to accepted release evidence. The promotion is
+bounded to URL-compatible MapLibre vector display and IO-free readiness
+preflight.
+
+Accepted evidence:
+
+- `tests/fixtures/specs/valid/pmtiles-vector.map.json` is a valid MapSpec
+  fixture with `sources.*.type: "pmtiles"` and layer
+  `metadata["source-layer"]`.
+- `createPMTilesRuntimeLoadPlan()` reports ready, metadata-required, or blocked
+  states before IO.
+- `createSourceReadinessReport()` keeps PMTiles `displayReady: true` only when
+  the load plan is not blocked or metadata-required, and always keeps
+  `queryReady: false`.
+- MapLibre transformer/adapter tests map PMTiles to a vector URL source and
+  forward source-layer metadata.
+- Headless query still returns `CAPABILITY.UNSUPPORTED` at
+  `/sources/{id}/url`.
+- Snapshot smoke now loads, snapshots, exports, and destroys the PMTiles
+  fixture.
+
+The following remain blocked follow-ups: PMTiles archive parsing, vector tile
+decoding, feature query, hidden range requests, worker startup, and
+mutation/export handoff.
+
 ## Follow-Up Contract Checklist
 
 Before promoting any blocked format, the owning task must add:

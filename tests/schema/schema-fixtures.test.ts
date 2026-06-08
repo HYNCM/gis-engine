@@ -8,6 +8,7 @@ import expectedScene3dUnknownFieldDiagnostics from "../fixtures/specs/invalid/sc
 import invalidScene3dUnknownField from "../fixtures/specs/invalid/scene3d-extension-unknown-field.map.json";
 import basicGeoJson from "../fixtures/specs/valid/basic-geojson.map.json";
 import fillExtrusionLite from "../fixtures/specs/valid/fill-extrusion-lite.map.json";
+import pmtilesVector from "../fixtures/specs/valid/pmtiles-vector.map.json";
 import scene3dExtension from "../fixtures/specs/valid/scene3d-extension.map.json";
 import vectorTileUrl from "../fixtures/specs/valid/vector-tile-url.map.json";
 
@@ -15,6 +16,7 @@ describe("MapSpec fixtures", () => {
   it.each([
     ["basic-geojson", basicGeoJson],
     ["vector-tile-url", vectorTileUrl],
+    ["pmtiles-vector", pmtilesVector],
     ["fill-extrusion-lite", fillExtrusionLite],
     ["scene3d-extension", scene3dExtension],
   ])("accepts valid fixture %s", (_name, spec) => {

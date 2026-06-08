@@ -104,3 +104,11 @@ before @quality can issue a Go decision.
 
 Until every blocking row has current evidence, AI Map Workbench remains
 local/example-scoped under `examples/ai-map-workbench`.
+
+## 2026-06-08 No-Go Reaffirmation
+
+The SDK+CLI release runner, packed install smoke, and PMTiles display/load-plan
+promotion do not change AI Map Workbench scope. `TASK-2026W24-PROD-006`
+remains No-go for hosted/product movement until the productization checklist
+above has current evidence for runtime/service ownership, auth, durable
+storage, export scope, release-grade visual evidence, and rollback.

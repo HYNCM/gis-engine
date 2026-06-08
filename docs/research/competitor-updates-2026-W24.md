@@ -131,3 +131,40 @@ Commands used:
    commit.
 5. Do not convert any cloud-native policy contract into a runtime parser,
    hidden fetch, worker, or source loader claim in public docs.
+
+## 2026-06-08 Productization Closure Refresh
+
+Checked at `2026-06-08T13:48:14Z` with current network access.
+
+| Area | Current signal | Delta From 2026-06-07 | GIS Engine Action |
+| --- | --- | --- | --- |
+| GitHub PRs | `gh pr list --repo HYNCM/gis-engine --state open` returned `[]` | No open PRs | Direct `main` release-productization work can use local gates plus pushed CI status |
+| GitHub Actions | Latest 10 runs were `success`; current `5ddec91` runs include CI, Agent Daily Cadence, Bundle Size, Deploy Docs, and Agent Failure Recovery | Removes the prior unknown Actions-state caveat for the pushed `001A` commit | Continue checking Actions before release claims for any new pushed commit |
+| GIS Engine GA packages | `@gis-engine/engine`, `@gis-engine/ai`, `@gis-engine/cli`, and `@gis-engine/scene3d` are `1.0.0` on `latest`; scene3d also has `next: 1.0.0` | Confirms the local `1.0.0` identity matches npm latest | Keep linked-group install smoke and publish dry-run as release gates |
+| MapLibre GL JS | `maplibre-gl` `5.24.0`, `next: 6.0.0-12` | `next` advanced from `6.0.0-11` | Still no package movement; future v6 task needs visual evidence |
+| Mapbox GL JS | `mapbox-gl` `3.24.0`, `next: 3.25.0-rc.1` | No stable change | Keep PMTiles/vector-source pressure as source-readiness work |
+| MCP TypeScript SDK | `@modelcontextprotocol/sdk` `1.29.0` | No change | Keep documented snake_case tool names and schemas frozen |
+| ArcGIS Maps SDK / AI components | `@arcgis/core` `5.0.19`, `next: 5.2.0-next.12`; `@arcgis/ai-components` `5.0.19`, `next: 5.2.0-next.9` | Core `next` advanced; AI stable unchanged | Keep Workbench product movement blocked on owner/auth/storage/export/visual gates |
+| Cloud-native data | `pmtiles` `4.4.1`, `flatgeobuf` `4.4.0`, `ol` `10.9.0`, `dev: 10.9.1-dev.1780925129923` | OpenLayers dev tag advanced | Accept PMTiles display/load-plan only; keep parsers/query blocked |
+| 3D / visualization | `cesium` `1.142.0`, `three` `0.184.0`, `3d-tiles-renderer` `0.4.27`, `deck.gl` `9.3.3`, `echarts` `6.1.0` | No release-gate-changing stable movement | Keep SceneView3D adapter-local and stable `view.mode: "scene3d"` blocked |
+
+Commands used:
+`gh pr list --repo HYNCM/gis-engine --state open --limit 10 --json number,title,state,headRefName,updatedAt,url`,
+`gh run list --repo HYNCM/gis-engine --limit 10 --json databaseId,workflowName,status,conclusion,createdAt,headBranch,headSha,url`,
+`npm view @gis-engine/engine version dist-tags --json`,
+`npm view @gis-engine/ai version dist-tags --json`,
+`npm view @gis-engine/cli version dist-tags --json`,
+`npm view @gis-engine/scene3d version dist-tags --json`,
+`npm view maplibre-gl version dist-tags --json`,
+`npm view mapbox-gl version dist-tags --json`,
+`npm view @modelcontextprotocol/sdk version dist-tags --json`,
+`npm view @arcgis/core version dist-tags --json`,
+`npm view @arcgis/ai-components version dist-tags --json`,
+`npm view pmtiles version dist-tags --json`,
+`npm view flatgeobuf version dist-tags --json`,
+`npm view ol version dist-tags --json`,
+`npm view cesium version dist-tags --json`,
+`npm view three version dist-tags --json`,
+`npm view 3d-tiles-renderer version dist-tags --json`,
+`npm view deck.gl version dist-tags --json`, and
+`npm view echarts version dist-tags --json`.

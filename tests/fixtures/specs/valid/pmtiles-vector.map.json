@@ -1,0 +1,44 @@
+{
+  "version": "0.1",
+  "id": "pmtiles-vector-fixture",
+  "view": {
+    "mode": "map2d",
+    "center": [120.15, 30.28],
+    "zoom": 12
+  },
+  "sources": {
+    "local-parcels": {
+      "type": "pmtiles",
+      "url": "./tiles/parcels.pmtiles",
+      "minzoom": 0,
+      "maxzoom": 14,
+      "attribution": "Local PMTiles vector archive"
+    }
+  },
+  "layers": [
+    {
+      "id": "parcel-fill",
+      "type": "fill",
+      "source": "local-parcels",
+      "metadata": {
+        "source-layer": "parcels"
+      },
+      "paint": {
+        "fill-color": ["match", ["to-string", ["get", "class"]], "park", "#22c55e", "water", "#38bdf8", "#f97316"],
+        "fill-opacity": ["case", true, 0.42, false, 0.24, 0.32]
+      }
+    },
+    {
+      "id": "parcel-outline",
+      "type": "line",
+      "source": "local-parcels",
+      "metadata": {
+        "source-layer": "parcels"
+      },
+      "paint": {
+        "line-color": "#14532d",
+        "line-width": ["step", ["zoom"], 0.5, 12, ["to-number", ["get", "stroke_width"], 1], 14, 2]
+      }
+    }
+  ]
+}
