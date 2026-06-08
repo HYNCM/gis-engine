@@ -86,6 +86,7 @@ export const AGENT_REGISTRY = {
     role: "self-evolving ecosystem metrics collector (orchestrator subset)",
     period: "weekly",
     cadence: "weekly",
+    hidden: true,
     reportAgent: "orchestrator",
     owner: "@orchestrator (evolution-guardian)",
     modelPolicy: {
@@ -143,7 +144,13 @@ export const HANDOFF_FLOWS = [
 ];
 
 export function listAgentNames() {
-  return Object.keys(AGENT_REGISTRY);
+  return Object.entries(AGENT_REGISTRY)
+    .filter(([, agentDef]) => !agentDef.hidden)
+    .map(([name]) => name);
+}
+
+export function listAgentEntries() {
+  return Object.entries(AGENT_REGISTRY).filter(([, agentDef]) => !agentDef.hidden);
 }
 
 export function resolveAgentName(name) {

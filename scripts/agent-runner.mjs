@@ -20,8 +20,15 @@
 import { execSync } from "node:child_process";
 import { closeSync, mkdirSync, openSync, readFileSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { AGENT_REGISTRY, getAgentOutput, listAgentNames, resolveAgentName } from "./agent-registry.mjs";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { extractTaskIds, validateAutomationReportContent, validatePlanningConsistency } from "./agent-framework.mjs";
+import {
+  AGENT_REGISTRY,
+  getAgentOutput,
+  listAgentEntries,
+  listAgentNames,
+  resolveAgentName,
+} from "./agent-registry.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
@@ -169,73 +176,29 @@ class PlanningStateManager {
     this.fileLocks.delete(relativeFilePath);
   }
 
-  /** 从 Markdown 文件中提取任务 ID 和所有者 */
-  extractTaskOwners(filePath) {
+  /** 从 Markdown 文件中提取任务 ID */
+  extractTaskIdsFromFile(filePath) {
     try {
       const content = readFileSync(filePath, "utf-8");
-      const tasks = [];
-
-      // 匹配 TASK-YYYY-NAME-NNN 模式，并尝试找到所有者信息
-      const taskPattern = /TASK-\d{4}[A-Z]+-\d{3}/g;
-      const _ownerPattern = /owner[:\s]+`?@([\w-]+)`?/gi;
-
-      let match;
-      while ((match = taskPattern.exec(content)) !== null) {
-        const taskId = match[0];
-        // 简化：假设任务周围有所有者标记（实际应该用AST解析）
-        tasks.push({
-          id: taskId,
-          position: match.index,
-        });
-      }
-
-      return tasks;
+      return extractTaskIds(content);
     } catch (err) {
       console.warn(`  ⚠️ 无法解析文件 ${filePath}:`, err.message);
-      return [];
+      return { taskIds: [], parseError: err.message };
     }
   }
 
   /**
    * 验证规划状态的一致性
-   * 检查：
-   * 1. task-burndown.md 和 dependency-graph.md 中的任务 ID 集合是否匹配
-   * 2. 同一任务在不同文件中的所有者是否一致
-   * 3. 依赖图中的所有任务是否在 burndown 中有定义
+   * 检查 task-burndown.md 和 dependency-graph.md 中的任务 ID 集合是否匹配。
    */
   validateConsistency(dryRun = false) {
-    const issues = [];
     const burndownPath = join(this.root, "docs/planning/task-burndown.md");
     const depGraphPath = join(this.root, "docs/planning/dependency-graph.md");
 
     try {
-      // 提取任务 ID
-      const burndownTasks = this.extractTaskOwners(burndownPath);
-      const depGraphTasks = this.extractTaskOwners(depGraphPath);
-
-      const burndownIds = new Set(burndownTasks.map((t) => t.id));
-      const depGraphIds = new Set(depGraphTasks.map((t) => t.id));
-
-      // 检查任务 ID 的一致性
-      for (const taskId of depGraphIds) {
-        if (!burndownIds.has(taskId)) {
-          issues.push({
-            severity: "error",
-            code: "TASK_IN_DEP_BUT_NOT_BURNDOWN",
-            message: `任务 ${taskId} 在 dependency-graph.md 中出现但未在 task-burndown.md 中定义`,
-          });
-        }
-      }
-
-      for (const taskId of burndownIds) {
-        if (!depGraphIds.has(taskId)) {
-          issues.push({
-            severity: "warning",
-            code: "TASK_IN_BURNDOWN_BUT_NOT_DEP",
-            message: `任务 ${taskId} 在 task-burndown.md 中但未在 dependency-graph.md 中出现`,
-          });
-        }
-      }
+      const burndownContent = readFileSync(burndownPath, "utf-8");
+      const depGraphContent = readFileSync(depGraphPath, "utf-8");
+      const { valid, issues } = validatePlanningConsistency(burndownContent, depGraphContent);
 
       if (issues.length > 0) {
         if (!dryRun) {
@@ -247,10 +210,13 @@ class PlanningStateManager {
         }
       }
 
-      return { valid: issues.every((i) => i.severity !== "error"), issues };
+      return { valid, issues };
     } catch (err) {
       console.warn(`  ⚠️ 一致性检查失败: ${err.message}`);
-      return { valid: true, issues: [] }; // 失败时不阻断
+      return {
+        valid: false,
+        issues: [{ severity: "error", code: "PLANNING_CONSISTENCY_CHECK_FAILED", message: err.message }],
+      };
     }
   }
 }
@@ -269,7 +235,8 @@ class HealthCheck {
    */
   validateInputs(agentName) {
     const missing = [];
-    const agentDef = AGENT_REGISTRY[resolveAgentName(agentName)];
+    const resolvedName = resolveAgentName(agentName);
+    const agentDef = AGENT_REGISTRY[resolvedName];
     if (!agentDef) return { ok: true, missing: [] };
 
     const requiredInputs = {
@@ -280,7 +247,7 @@ class HealthCheck {
       docs: ["docs", "README.md", "CHANGELOG.md"],
     };
 
-    const paths = requiredInputs[agentName] || [];
+    const paths = requiredInputs[resolvedName] || [];
     for (const p of paths) {
       const fullPath = join(this.root, p);
       try {
@@ -296,31 +263,10 @@ class HealthCheck {
    * 检查报告输出格式是否符合标准
    */
   validateReportFormat(reportPath) {
-    const issues = [];
     try {
       const content = readFileSync(reportPath, "utf-8");
-
-      // 必须有 YAML front matter
-      if (!/^---[\s\S]*?---/.test(content)) {
-        issues.push("缺少 YAML front matter");
-      }
-
-      // 必须有 agent 字段
-      if (!/agent:/.test(content)) {
-        issues.push("缺少 agent 字段");
-      }
-
-      // 必须有 decision_level
-      if (!/decision_level:/.test(content)) {
-        issues.push("缺少 decision_level 字段");
-      }
-
-      // 必须有机生成标识
-      if (!content.includes("automation-generated") && !content.includes("Automation Notice")) {
-        issues.push("缺少自动化生成标识");
-      }
-
-      return { valid: issues.length === 0, issues };
+      const { valid, issues } = validateAutomationReportContent(content);
+      return { valid, issues };
     } catch {
       return { valid: false, issues: ["无法读取报告文件"] };
     }
@@ -335,7 +281,7 @@ class HealthCheck {
     const now = new Date();
     const todayStr = now.toISOString().slice(0, 10);
 
-    for (const [name, def] of Object.entries(AGENT_REGISTRY)) {
+    for (const [name, def] of listAgentEntries()) {
       if (def.healthRequired === false) continue;
       let expectedFile;
       if (def.period === "daily") {
@@ -446,7 +392,7 @@ function runGates(gates) {
 }
 
 /** 生成报告内容 */
-function generateReport(agentName, agentDef, period, gateResults) {
+export function generateReport(agentName, agentDef, period, gateResults) {
   const lines = [generateFrontMatter(agentName, agentDef, period, gateResults)];
 
   lines.push(`# ${agentDef.role}: ${period}`);
@@ -573,7 +519,7 @@ Agent Runner — GIS Engine 多智能体调用脚本
     // 按当前周期筛选
     if (options.daily) periodType = "daily";
     else if (options.weekly) periodType = "weekly";
-    agentsToRun = Object.entries(AGENT_REGISTRY).filter(([, def]) => {
+    agentsToRun = listAgentEntries().filter(([, def]) => {
       if (periodType === "all") return true;
       return def.period === periodType || def.cadences?.includes(periodType);
     });
@@ -671,6 +617,10 @@ Agent Runner — GIS Engine 多智能体调用脚本
         console.log(`   📄 (dry-run) 将生成报告: ${outputPath}`);
       } else {
         const report = generateReport(name, def, period, gateResults);
+        const reportValidation = validateAutomationReportContent(report);
+        if (!reportValidation.valid) {
+          throw new Error(`Generated report failed validation for ${name}: ${reportValidation.issues.join("; ")}`);
+        }
         mkdirSync(dirname(outputPath), { recursive: true });
         writeFileSync(outputPath, report, "utf-8");
         console.log(`   📄 报告已生成: ${outputPath}`);
@@ -693,7 +643,9 @@ Agent Runner — GIS Engine 多智能体调用脚本
   process.exit(0);
 }
 
-main().catch((err) => {
-  console.error("❌ Agent Runner 异常:", err.message);
-  process.exit(1);
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((err) => {
+    console.error("❌ Agent Runner 异常:", err.message);
+    process.exit(1);
+  });
+}

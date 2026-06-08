@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { extractFrontMatter, reportReferencesArtifact } from "./agent-framework.mjs";
 import { AGENT_REGISTRY, HANDOFF_FLOWS } from "./agent-registry.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -23,11 +24,9 @@ function getRepoRevision(root = ROOT) {
 }
 
 function extractGeneratedAt(content) {
-  const match = content.match(/^---\n([\s\S]*?)\n---/);
-  if (!match) return null;
-  const generated = match[1].match(/^generated_at:\s*(.+)$/m);
-  if (!generated) return null;
-  const date = new Date(generated[1].trim().replace(/^"|"$/g, ""));
+  const frontMatter = extractFrontMatter(content);
+  if (!frontMatter?.generated_at) return null;
+  const date = new Date(String(frontMatter.generated_at).replace(/^"|"$/g, ""));
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
@@ -45,6 +44,7 @@ export function findLatestReport(agentName, root = ROOT) {
       const fullPath = join(dir, file);
       const stats = statSync(fullPath);
       const content = readFileSync(fullPath, "utf-8");
+      const frontMatter = extractFrontMatter(content);
       const generatedAt = extractGeneratedAt(content) ?? stats.mtime;
       const item = {
         agent: agentName,
@@ -52,6 +52,8 @@ export function findLatestReport(agentName, root = ROOT) {
         generatedAt,
         mtime: stats.mtime,
         sha256: createHash("sha256").update(content).digest("hex"),
+        content,
+        inputs: Array.isArray(frontMatter?.inputs) ? frontMatter.inputs : [],
       };
       if (!latest || item.generatedAt > latest.generatedAt) {
         latest = item;
@@ -62,7 +64,7 @@ export function findLatestReport(agentName, root = ROOT) {
   return latest;
 }
 
-function classifyFlow(flow, upstream, downstream) {
+export function classifyFlow(flow, upstream, downstream) {
   if (!upstream) {
     return flow.required
       ? {
@@ -93,10 +95,19 @@ function classifyFlow(flow, upstream, downstream) {
     };
   }
 
+  const reference = reportReferencesArtifact(downstream, upstream);
+  if (!reference.matched) {
+    return {
+      status: "pending",
+      severity: flow.required ? "error" : "warning",
+      note: `${flow.to} report does not cite ${upstream.path}`,
+    };
+  }
+
   return {
     status: "consumed",
     severity: "info",
-    note: `${flow.to} report is newer than or equal to ${flow.from} report`,
+    note: `${flow.to} report cites ${reference.matched}`,
   };
 }
 

@@ -1,0 +1,113 @@
+import { describe, expect, it } from "vitest";
+import {
+  classifyChangedFiles,
+  validateAutomationReportContent,
+  validatePlanningConsistency,
+} from "../../scripts/agent-framework.mjs";
+import { AGENT_REGISTRY, listAgentNames } from "../../scripts/agent-registry.mjs";
+import { generateReport } from "../../scripts/agent-runner.mjs";
+import { buildPlan } from "../../scripts/gate-plan.mjs";
+import { classifyFlow } from "../../scripts/handoff-ledger.mjs";
+
+describe("agent coordination framework", () => {
+  it("separates docs-only changes from framework changes", () => {
+    const docsOnly = classifyChangedFiles(["docs/README.md"]);
+    expect(docsOnly.docsOnly).toBe(true);
+    expect(docsOnly.requiresFrameworkChecks).toBe(false);
+
+    const workflowChange = classifyChangedFiles([".github/workflows/agent-weekly.yml"]);
+    expect(workflowChange.docsOnly).toBe(false);
+    expect(workflowChange.requiresFrameworkChecks).toBe(true);
+
+    const coordinationChange = classifyChangedFiles(["docs/planning/weekly-digest.md"]);
+    expect(coordinationChange.docsOnly).toBe(false);
+    expect(coordinationChange.coordinationTouched).toBe(true);
+    expect(coordinationChange.requiresFrameworkChecks).toBe(true);
+  });
+
+  it("routes workflow and coordination changes to deterministic gates", () => {
+    const workflowPlan = [...buildPlan([".github/workflows/agent-weekly.yml"]).keys()];
+    expect(workflowPlan).toContain("pnpm test:agent-framework");
+    expect(workflowPlan).toContain("pnpm build:schema");
+    expect(workflowPlan).toContain("pnpm check");
+    expect(workflowPlan).not.toContain("pnpm test:docs");
+
+    const coordinationPlan = [...buildPlan(["docs/planning/weekly-digest.md"]).keys()];
+    expect(coordinationPlan).toContain("pnpm test:agent-framework");
+    expect(coordinationPlan).toContain("pnpm build:schema");
+    expect(coordinationPlan).toContain("pnpm check");
+    expect(coordinationPlan).toContain("node scripts/doc-generator.mjs links");
+  });
+
+  it("fails closed on malformed task ids and keeps valid ids in sync", () => {
+    const valid = validatePlanningConsistency(
+      "| TASK-2026W24-RCU-001 | item |\n| TASK-2026W24-PRD-001 | item |\n",
+      "| TASK-2026W24-RCU-001 | item |\n| TASK-2026W24-PRD-001 | item |\n",
+    );
+    expect(valid.valid).toBe(true);
+    expect(valid.issues).toHaveLength(0);
+
+    const invalid = validatePlanningConsistency("| TASK-2026ABC-001 | item |\n", "| TASK-2026ABC-001 | item |\n");
+    expect(invalid.valid).toBe(false);
+    expect(invalid.issues[0]?.code).toBe("TASK_PARSE_BURNDOWN_FAIL");
+
+    const mixed = validatePlanningConsistency(
+      "| TASK-2026W24-RCU-001 | item |\n| TASK-2026ABC-001 | item |\n",
+      "| TASK-2026W24-RCU-001 | item |\n| TASK-2026ABC-001 | item |\n",
+    );
+    expect(mixed.valid).toBe(false);
+    expect(mixed.issues.some((issue) => issue.code === "TASK_PARSE_BURNDOWN_FAIL")).toBe(true);
+  });
+
+  it("keeps the public agent list free of the hidden evolution guardian", () => {
+    expect(listAgentNames()).not.toContain("evolution-guardian");
+    expect(AGENT_REGISTRY["evolution-guardian"]?.hidden).toBe(true);
+  });
+
+  it("validates generated automation reports", () => {
+    const report = generateReport("orchestrator", AGENT_REGISTRY.orchestrator, "2026-W24", []);
+    const validation = validateAutomationReportContent(report);
+    expect(validation.valid).toBe(true);
+    expect(validation.frontMatter?.agent).toBe("orchestrator");
+    expect(validation.frontMatter?.decision_level).toBe("info");
+    expect(validation.frontMatter?.inputs).toEqual(["AGENTS.md", "README.md"]);
+  });
+
+  it("requires explicit upstream citation before a handoff counts as consumed", () => {
+    const flow = {
+      id: "HOC-N1",
+      from: "product",
+      to: "orchestrator",
+      required: true,
+      description: "competitor signals and priority recommendations",
+    };
+    const upstream = {
+      path: "docs/research/competitor-updates-2026-W24.md",
+      generatedAt: new Date("2026-06-05T13:05:41Z"),
+      sha256: "51d2e000931efdb5a5a985dc815402dc10a035f87b15d456b3f5ca2cdd32689b",
+    };
+    const downstreamWithoutReference = {
+      path: "docs/planning/weekly-digest.md",
+      generatedAt: new Date("2026-06-05T16:36:16Z"),
+      content: "# Weekly Digest\n",
+      inputs: ["AGENTS.md"],
+    };
+
+    expect(classifyFlow(flow, upstream, downstreamWithoutReference).status).toBe("pending");
+
+    const downstreamWithReference = {
+      ...downstreamWithoutReference,
+      content: `---\ninputs:\n  - docs/research/competitor-updates-2026-W24.md\n---\n# Weekly Digest\n`,
+      inputs: ["docs/research/competitor-updates-2026-W24.md"],
+    };
+    const consumed = classifyFlow(flow, upstream, downstreamWithReference);
+    expect(consumed.status).toBe("consumed");
+    expect(consumed.note).toContain("docs/research/competitor-updates-2026-W24.md");
+
+    const downstreamWithOnlyTimestamp = {
+      ...downstreamWithoutReference,
+      content: `---\nnotes: ${upstream.generatedAt.toISOString()}\n---\n# Weekly Digest\n`,
+    };
+    expect(classifyFlow(flow, upstream, downstreamWithOnlyTimestamp).status).toBe("pending");
+  });
+});

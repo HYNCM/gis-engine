@@ -2,6 +2,8 @@
 
 import { execFileSync, execSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
+import { pathToFileURL } from "node:url";
+import { classifyChangedFiles } from "./agent-framework.mjs";
 
 const args = process.argv.slice(2);
 
@@ -64,24 +66,30 @@ function fileMatches(file, patterns) {
   return patterns.some((pattern) => pattern.test(file));
 }
 
-function buildPlan(files) {
+export function buildPlan(files) {
   const gates = new Map();
-  const docsPatterns = [/^docs\//, /^README\.md$/, /^CHANGELOG\.md$/, /^AGENTS\.md$/, /^\.github\/agent-templates\//];
-  const docsOnly =
-    files.length > 0 && files.every((file) => fileMatches(file, docsPatterns) || /^\.github\//.test(file));
+  const classification = classifyChangedFiles(files);
 
   addGate(gates, "git diff --check", "whitespace and patch hygiene");
 
-  if (files.length === 0) {
+  if (classification.files.length === 0) {
     addGate(gates, "pnpm build:schema", "no diff detected; use conservative schema gate");
     addGate(gates, "pnpm check", "no diff detected; use conservative deterministic gate");
     return gates;
   }
 
-  if (docsOnly) {
+  if (classification.docsOnly) {
     addGate(gates, "pnpm test:docs", "documentation-only change");
     addGate(gates, "node scripts/doc-generator.mjs links", "documentation link audit");
     return gates;
+  }
+
+  if (classification.docsTouched) {
+    addGate(gates, "node scripts/doc-generator.mjs links", "documentation or coordination reference audit");
+  }
+
+  if (classification.requiresFrameworkChecks) {
+    addGate(gates, "pnpm test:agent-framework", "agent coordination framework change");
   }
 
   addGate(gates, "pnpm build:schema", "non-doc change");
@@ -178,20 +186,26 @@ function runGates(plan) {
   return failed ? 1 : 0;
 }
 
-const files = gitChangedFiles();
-const gates = buildPlan(files);
-const plan = serializePlan(files, gates);
+function main() {
+  const files = gitChangedFiles();
+  const gates = buildPlan(files);
+  const plan = serializePlan(files, gates);
 
-if (options.summary) {
-  writeFileSync(options.summary, `${renderMarkdown(plan)}\n`, "utf-8");
+  if (options.summary) {
+    writeFileSync(options.summary, `${renderMarkdown(plan)}\n`, "utf-8");
+  }
+
+  if (options.json) {
+    console.log(JSON.stringify(plan, null, 2));
+  } else {
+    console.log(renderMarkdown(plan));
+  }
+
+  if (options.run) {
+    process.exit(runGates(plan));
+  }
 }
 
-if (options.json) {
-  console.log(JSON.stringify(plan, null, 2));
-} else {
-  console.log(renderMarkdown(plan));
-}
-
-if (options.run) {
-  process.exit(runGates(plan));
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main();
 }

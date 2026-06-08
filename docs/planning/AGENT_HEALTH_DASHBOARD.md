@@ -1,6 +1,6 @@
 ---
-generated_at: 2026-06-08T03:50:21.155Z
-repo_revision: "871aeda"
+generated_at: 2026-06-08T14:35:41.272Z
+repo_revision: "8265da3"
 period: 2026-06-08
 agent: orchestrator
 decision_level: info
@@ -15,11 +15,11 @@ decision_level: info
 
 | Agent | Cadence | Last Report | Last Run | Status | Age |
 | --- | --- | --- | --- | --- | --- |
-| @orchestrator | weekly | docs/planning/weekly-digest.md | 2026-06-05 | 🟢 ok | 2d |
+| @orchestrator | weekly | docs/planning/weekly-digest.md | 2026-06-05 | 🟢 ok | 3d |
 | @product | weekly | docs/research/competitor-updates-2026-W24.md | 2026-06-05 | 🟢 ok | 3d |
-| @quality | daily | docs/reviews/quality-gate-2026-06-04.md | 2026-06-04 | 🔴 overdue | 4d |
+| @quality | daily | docs/reviews/quality-gate-2026-06-04.md | 2026-06-04 | 🔴 overdue | 5d |
 | @builder | ad-hoc | — | — | 🟢 ok | — |
-| @docs | daily | docs/reviews/documentation-audit-2026-06-04.md | 2026-06-04 | 🔴 overdue | 4d |
+| @docs | daily | docs/reviews/documentation-audit-2026-06-04.md | 2026-06-04 | 🔴 overdue | 5d |
 
 ## Data Flow Health
 
@@ -29,21 +29,21 @@ decision_level: info
 
 | Agent | SLA | Max Latency | Current | Status |
 | --- | --- | --- | --- | --- |
-| @orchestrator | 周一 00:00 UTC | 2d | 2d | ✅ compliant |
+| @orchestrator | 周一 00:00 UTC | 2d | 3d | ❌ breach |
 | @product | 周一 00:00 UTC | 2d | 3d | ❌ breach |
-| @quality | 每日 00:00 UTC | 1d | 4d | ❌ breach |
-| @docs | 每日 00:00 UTC | 2d | 4d | ❌ breach |
+| @quality | 每日 00:00 UTC | 1d | 5d | ❌ breach |
+| @docs | 每日 00:00 UTC | 2d | 5d | ❌ breach |
 
 > ℹ️ ad-hoc agent (builder) 无固定 SLA。
 
 ## Action Items
 
-- [ ] **@quality**: 报告逾期 4 天 → 手动触发或检查 cron
-- [ ] **@docs**: 报告逾期 4 天 → 手动触发或检查 cron
+- [ ] **@quality**: 报告逾期 5 天 → 手动触发或检查 cron
+- [ ] **@docs**: 报告逾期 5 天 → 手动触发或检查 cron
 
 ## Summary
 
 - **健康 agent**: 3/5
 - **问题 agent**: 2/5
 - **数据流异常**: 0
-- **生成时间**: 2026-06-08T03:50:21.158Z
+- **生成时间**: 2026-06-08T14:35:41.281Z

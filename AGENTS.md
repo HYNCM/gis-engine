@@ -48,6 +48,9 @@ All agents must respect the existing GIS Engine architecture:
   `docs/engineering/ci-test-strategy.md`. If a dedicated
   `docs/security/resource-policy.md` is added later, it becomes the human-facing
   policy entry point and must stay aligned with the implementation and tests.
+- Coordination surfaces: `scripts/**`, `.github/workflows/**`, `AGENTS.md`, and
+  the planning/handoff/evolution ledgers are framework changes, not docs-only
+  edits. Path-aware gating must run the agent-framework test suite for them.
 
 Use the current repo scripts unless a task explicitly changes them:
 

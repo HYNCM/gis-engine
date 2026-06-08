@@ -23,6 +23,9 @@ Every agent-to-agent data flow must be covered by a contract. Violations of cont
 > and `idle | pending | consumed | missing-upstream` status. The ledger is
 > machine evidence for handoff consumption; a specialist or orchestrator still
 > owns advisory/blocking decisions.
+> **Consumption rule**: a flow only counts as consumed when the downstream
+> report cites the upstream artifact path, basename, or checksum in its body or
+> front matter.
 
 ---
 
@@ -55,7 +58,7 @@ status: ready-for-planning | requires-escalation
 
 **Gate condition**: All claims must have dated source URLs from approved default sources.
 
-**Pass condition**: Scorecard refreshed within 7 days; competitor report has ≥1 verified external signal.
+**Pass condition**: Scorecard refreshed within 7 days; competitor report has ≥1 verified external signal; downstream report cites the upstream artifact path or checksum when the handoff is accepted as consumed.
 
 **Fail condition** (blocks planning): Report contains unsourced claims; scorecard stale >14 days.
 
@@ -158,7 +161,7 @@ gate_result: pass | conditional-pass | block | waiver
 
 All applicable gates from the required gates table in AGENTS.md.
 
-**Pass condition**: All required gates pass; all checklist areas pass.
+**Pass condition**: All required gates pass; all checklist areas pass; downstream orchestrator report cites the upstream quality artifact path or checksum.
 
 **Block condition**: Any required gate fails; blocking checklist violation.
 
