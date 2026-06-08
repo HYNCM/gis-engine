@@ -12,6 +12,36 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
 
+function isNumber(value) {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function formatFixed(value, digits = 2) {
+  return isNumber(value) ? value.toFixed(digits) : "N/A";
+}
+
+function formatPercent(value) {
+  return isNumber(value) ? `${value.toFixed(1)}%` : "N/A";
+}
+
+function formatValue(value) {
+  return value ?? "N/A";
+}
+
+function estimationStatus(value, noFeedbackStatus = "🔴 (Needs improvement)") {
+  if (!isNumber(value)) return noFeedbackStatus;
+  if (value <= 0.5) return "✓ (Good)";
+  if (value <= 1.0) return "🟡 (Acceptable)";
+  return "🔴 (Needs improvement)";
+}
+
+function compactStatus(value, noFeedbackStatus = "⚪ N/A") {
+  if (!isNumber(value)) return noFeedbackStatus;
+  if (value <= 0.5) return "✓";
+  if (value <= 1.0) return "🟡";
+  return "🔴";
+}
+
 /**
  * 生成evolution-snapshot markdown文件
  * @param {string} period - ISO周期如 "2026-W23"
@@ -53,18 +83,18 @@ decision_level: info
 |--------|-------|--------|
 | Total tasks | ${d1.summary.count} | ✓ |
 | Known actual hours | ${d1.summary.knownActualCount} | ${d1.summary.knownActualCount > 0 ? "✓" : "⚠️ (no feedback)"} |
-| Average deviation | ${d1.summary.avgDeviation !== null ? d1.summary.avgDeviation.toFixed(2) : "N/A"} | ${d1.summary.avgDeviation !== null && d1.summary.avgDeviation <= 0.5 ? "✓ (Good)" : d1.summary.avgDeviation > 0.5 && d1.summary.avgDeviation <= 1.0 ? "🟡 (Acceptable)" : "🔴 (Needs improvement)"} |
+| Average deviation | ${formatFixed(d1.summary.avgDeviation)} | ${estimationStatus(d1.summary.avgDeviation, "⚠️ (no feedback)")} |
 
 ### By Complexity
 
 `;
 
   for (const [complexity, data] of Object.entries(d1.byComplexity || {})) {
-    const status = data.avgDeviation <= 0.5 ? "✓" : data.avgDeviation <= 1.0 ? "🟡" : "🔴";
+    const status = compactStatus(data.avgDeviation);
     content += `
 | Complexity | Count | Avg Deviation | Status |
 |---|---|---|---|
-| ${complexity} | ${data.count} | ${data.avgDeviation.toFixed(2)} | ${status} |
+| ${complexity} | ${data.count} | ${formatFixed(data.avgDeviation)} | ${status} |
 `;
   }
 
@@ -92,8 +122,8 @@ decision_level: info
 
 | Metric | Value |
 |--------|-------|
-| Critical path ratio | ${d2.criticalPathRatio ? `${d2.criticalPathRatio.toFixed(1)}%` : "N/A"} |
-| Max wait time (hours) | ${d2.maxWaitTime || "N/A"} |
+| Critical path ratio | ${formatPercent(d2.criticalPathRatio)} |
+| Max wait time (hours) | ${formatValue(d2.maxWaitTime)} |
 | Bottleneck tasks | ${d2.bottleneckCount || 0} |
 
 ### Detected Bottlenecks
@@ -132,7 +162,7 @@ decision_level: info
 
 - Tasks reviewed once: ${d3.reworkStats?.reviewed1x || 0}
 - Tasks requiring rework (2+ reviews): ${d3.reworkStats?.reworkNeeded || 0}
-- Rework percentage: ${d3.reworkStats?.reworkPercentage || "N/A"}
+- Rework percentage: ${formatValue(d3.reworkStats?.reworkPercentage)}
 
 ### Anomalies Detected
 
@@ -262,7 +292,7 @@ ${
 
 | Dimension | Status | Recommendation |
 |-----------|--------|-----------------|
-| D1 Estimation | ${d1.summary.avgDeviation <= 0.5 ? "✅ Good" : d1.summary.avgDeviation <= 1.0 ? "🟡 Needs monitoring" : "🔴 Action required"} | ${d1.actionItem || "None"} |
+| D1 Estimation | ${estimationStatus(d1.summary.avgDeviation, "⚠️ No feedback")} | ${d1.actionItem || "None"} |
 | D2 Bottlenecks | ${d2.bottleneckCount === 0 ? "✅ None" : d2.bottleneckCount <= 1 ? "🟡 1 critical" : "🔴 Multiple"} | ${d2.actionItem || "Monitor"} |
 | D3 Quality | ${d3.firstPassRate && parseFloat(d3.firstPassRate) >= 80 ? "✅ High" : d3.firstPassRate && parseFloat(d3.firstPassRate) >= 70 ? "🟡 Acceptable" : "🔴 Low"} | ${d3.actionItem || "Improve test reliability"} |
 | D4 Knowledge | ${d4.patterns && d4.patterns.length > 0 ? "✅ Growing" : "🟡 Stagnant"} | ${d4.actionItem || "Continue extraction"} |

@@ -184,9 +184,10 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Refresh handoff ledger and dashboard
+      - name: Refresh issue snapshot, handoff ledger, and dashboard
         run: |
           PERIOD="$(date -u +%Y-%m-%d)"
+          node scripts/issues-snapshot.mjs
           node scripts/dashboard-generator.mjs --period "${PERIOD}"
 
       - name: Commit weekly artifacts
