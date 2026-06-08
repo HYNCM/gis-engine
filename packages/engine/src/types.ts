@@ -104,6 +104,27 @@ export interface GeoParquetSourceSpec {
   parquetVersion?: 1 | 2;
 }
 
+export interface GeoTiffSourceSpec {
+  type: "geotiff";
+  url: string;
+  crs?: {
+    authority?: string;
+    code?: string;
+    wkt?: string;
+  };
+  bbox?: [number, number, number, number];
+  width?: number;
+  height?: number;
+  bandCount?: number;
+  bands?: Array<{
+    index: number;
+    name?: string;
+    dataType?: "uint8" | "uint16" | "uint32" | "int8" | "int16" | "int32" | "float32" | "float64";
+    noData?: number;
+  }>;
+  fileBytes?: number;
+}
+
 export interface VectorTileSourceSpec {
   type: "vector";
   tiles: string[];
@@ -128,6 +149,7 @@ export type SourceSpec =
   | PmtilesSourceSpec
   | FlatGeobufSourceSpec
   | GeoParquetSourceSpec
+  | GeoTiffSourceSpec
   | VectorSourceSpec;
 
 export interface LayerSpec {

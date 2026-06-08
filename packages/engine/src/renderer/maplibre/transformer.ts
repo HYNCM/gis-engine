@@ -124,6 +124,15 @@ function transformSource(sourceId: string, source: SourceSpec, diagnostics: Diag
     });
     return { type: "geojson", data: null };
   }
+  if (source.type === "geotiff") {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.CapabilityUnsupported,
+      message: `GeoTIFF source "${sourceId}" is accepted by MapSpec but remains runtime-blocked in the MapLibre MVP.`,
+      path: `/sources/${sourceId}/url`,
+    });
+    return { type: "geojson", data: null };
+  }
   if (source.type === "vector") {
     const vectorSource: MapLibreSource = { type: "vector" };
     if ("tiles" in source) vectorSource.tiles = source.tiles;

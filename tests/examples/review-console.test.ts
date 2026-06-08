@@ -176,6 +176,63 @@ describe("review-console contract", () => {
     );
   });
 
+  it("computes GeoTIFF readiness-only source contract and promotion candidate evidence", () => {
+    const evidence = structuredClone(followUpFixture);
+    evidence.delivery.sourceReadiness = [
+      {
+        id: "orthophoto",
+        format: "geotiff",
+        state: "readiness-only",
+        queryReady: false,
+        resourcePolicy: "passed",
+      },
+    ];
+    evidence.delivery.followUps = [];
+
+    const result = computeReviewConsoleState(evidence);
+
+    expect(result.acceptance).toBe("follow-up-required");
+    expect(result.deliveryStatus).toBe("follow-up-required");
+    expect(result.sourceReadiness).toContainEqual(
+      expect.objectContaining({
+        sourceId: "orthophoto",
+        format: "geotiff",
+        state: "readiness-only",
+        resourcePolicy: "passed",
+        sourceContract: expect.objectContaining({
+          kind: "schema",
+          state: "explicit",
+          metadataFields: expect.arrayContaining(["type", "url", "crs", "bandCount", "bands"]),
+          policyFields: expect.arrayContaining(["maxFileBytes", "maxPixels", "maxBandCount", "workerBudget"]),
+        }),
+      }),
+    );
+    expect(result.sourcePromotionCandidates).toContainEqual(
+      expect.objectContaining({
+        candidateId: "source-promotion.geotiff.orthophoto",
+        format: "geotiff",
+        state: "readiness-only",
+        resourcePolicy: "passed",
+        sourceContract: expect.objectContaining({
+          kind: "schema",
+          state: "explicit",
+        }),
+        target: "GeoTIFF runtime/query promotion gate",
+      }),
+    );
+    const dataSection = result.sections.find((s) => s.id === "data-and-sources");
+    expect(dataSection?.state).toBe("follow-up-required");
+    expect(dataSection?.sources?.[0]).toMatchObject({
+      format: "geotiff",
+      state: "readiness-only",
+      resourcePolicy: "passed",
+      sourceContract: expect.objectContaining({
+        kind: "schema",
+        state: "explicit",
+      }),
+    });
+  });
+
   it("computes needs-confirmation when confirmations exist", () => {
     const result = computeReviewConsoleState(confirmFixture);
     expect(result.acceptance).toBe("needs-confirmation");

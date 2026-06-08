@@ -123,6 +123,31 @@ describe("MapSpecToMapLibreStyleTransformer", () => {
     );
   });
 
+  it("rejects GeoTIFF sources at the MapLibre transform boundary", () => {
+    const spec = structuredClone(before) as MapSpec;
+    spec.sources = {
+      districts: {
+        type: "geotiff",
+        url: "./data/districts.tif",
+        crs: { authority: "EPSG", code: "4326" },
+        bandCount: 1,
+        bands: [{ index: 1, name: "elevation", dataType: "float32" }],
+      },
+    };
+    spec.layers = [];
+
+    const result = transformMapSpecToMapLibreStyle(spec);
+
+    expect(result.style).toBeUndefined();
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: "CAPABILITY.UNSUPPORTED",
+        path: "/sources/districts/url",
+      }),
+    );
+  });
+
   it("forwards layer filters and zoom ranges to MapLibre style layers", () => {
     const spec = structuredClone(before) as MapSpec;
     spec.layers[0] = {

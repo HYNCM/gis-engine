@@ -1762,6 +1762,14 @@ function sourceReadinessNotes(
     ];
   }
 
+  if (source?.type === "geotiff") {
+    return [
+      "GeoTIFF is schema-valid metadata-only evidence; runtime loading, decoding, sampling, display, and query remain blocked.",
+      ...readiness.limitations,
+      readiness.nextAction,
+    ];
+  }
+
   return [...readiness.limitations, readiness.nextAction];
 }
 
@@ -1874,6 +1882,7 @@ function sourceUrls(source: MapSpec["sources"][string]): string[] {
   if (source.type === "geojson" && typeof source.data === "string") return [source.data];
   if (source.type === "raster") return source.tiles;
   if (source.type === "pmtiles") return [source.url];
+  if (source.type === "geotiff") return [source.url];
   if (source.type === "vector") return "url" in source ? [source.url] : source.tiles;
   return [];
 }

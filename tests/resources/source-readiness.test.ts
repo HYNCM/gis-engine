@@ -164,4 +164,58 @@ describe("source readiness report", () => {
       }),
     );
   });
+
+  it("reports GeoTIFF as readiness-only now that it is a public source contract", () => {
+    const spec = {
+      version: "0.1",
+      view: { center: [0, 0], zoom: 2 },
+      sources: {
+        orthophoto: {
+          type: "geotiff",
+          url: "./data/orthophoto.tif",
+          crs: { authority: "EPSG", code: "4326" },
+          bbox: [-123, 37, -122, 38],
+          width: 1024,
+          height: 512,
+          bandCount: 3,
+          bands: [
+            { index: 1, name: "red", dataType: "uint16", noData: 0 },
+            { index: 2, name: "green", dataType: "uint16", noData: 0 },
+            { index: 3, name: "blue", dataType: "uint16", noData: 0 },
+          ],
+          fileBytes: 1_000_000,
+        },
+      },
+      layers: [],
+    } as unknown as MapSpec;
+
+    const report = createSourceReadinessReport(spec);
+
+    expect(report.status).toBe("follow-up-required");
+    expect(report.summary).toMatchObject({
+      sourceCount: 1,
+      supportedSourceCount: 0,
+      readinessOnlySourceCount: 1,
+      blockedSourceCount: 0,
+      displayReadySourceCount: 0,
+      queryReadySourceCount: 0,
+    });
+    expect(report.sources).toEqual([
+      expect.objectContaining({
+        sourceId: "orthophoto",
+        type: "geotiff",
+        state: "readiness-only",
+        displayReady: false,
+        queryReady: false,
+        resourcePolicy: "passed",
+      }),
+    ]);
+    expect(report.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: "CAPABILITY.UNSUPPORTED",
+        path: "/sources/orthophoto/runtime",
+        severity: "warning",
+      }),
+    );
+  });
 });

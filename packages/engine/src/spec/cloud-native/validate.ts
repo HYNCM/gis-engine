@@ -5,6 +5,8 @@ import type { FlatGeobufPolicy, FlatGeobufSourceSpec } from "./flatgeobuf-source
 import { defaultFlatGeobufPolicy } from "./flatgeobuf-source.js";
 import type { GeoParquetPolicy, GeoParquetSourceSpec } from "./geoparquet-source.js";
 import { defaultGeoParquetPolicy } from "./geoparquet-source.js";
+import type { GeoTiffPolicy, GeoTiffSourceSpec } from "./geotiff-source.js";
+import { defaultGeoTiffPolicy } from "./geotiff-source.js";
 import type { PMTilesArchiveMetadata, PMTilesArchivePolicy } from "./pmtiles-archive.js";
 import { defaultPMTilesArchivePolicy } from "./pmtiles-archive.js";
 
@@ -12,6 +14,9 @@ const DEFAULT_MAX_PMTILES_ARCHIVE_BYTES = 524_288_000;
 const DEFAULT_MAX_PMTILES_ROOT_DIRECTORY_BYTES = 16_777_216;
 const DEFAULT_MAX_GEOPARQUET_FILE_BYTES = 1_073_741_824;
 const DEFAULT_MAX_GEOPARQUET_ROW_COUNT = 10_000_000;
+const DEFAULT_MAX_GEOTIFF_FILE_BYTES = 536_870_912;
+const DEFAULT_MAX_GEOTIFF_PIXELS = 100_000_000;
+const DEFAULT_MAX_GEOTIFF_BAND_COUNT = 16;
 const DEFAULT_MAX_FLATGEOBUF_FILE_BYTES = 500 * 1024 * 1024;
 
 /**
@@ -160,6 +165,165 @@ export function validateGeoParquetPolicy(
         path: `${sourcePath}/crs/authority`,
       });
     }
+  }
+
+  return diagnostics;
+}
+
+/**
+ * Validate GeoTIFF source metadata against policy.
+ * Returns diagnostics without performing any IO.
+ * Runtime loading/query remains blocked -- this validates metadata only.
+ */
+export function validateGeoTiffPolicy(
+  source: GeoTiffSourceSpec,
+  policy: GeoTiffPolicy = defaultGeoTiffPolicy,
+  sourceId = "geotiff",
+): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+  const sourcePath = `/sources/${escapePathSegment(sourceId)}`;
+
+  diagnostics.push({
+    severity: "warning",
+    code: DiagnosticCodes.CapabilityUnsupported,
+    message:
+      "GeoTIFF runtime loading, decoding, sampling, and query are not implemented. This is a metadata-only contract.",
+    path: `${sourcePath}/runtime`,
+  });
+
+  if (!source.url || source.url.trim().length === 0) {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.SchemaInvalid,
+      message: "GeoTIFF source URL must not be empty.",
+      path: `${sourcePath}/url`,
+    });
+  }
+
+  if (source.bbox) {
+    const [w, s, e, n] = source.bbox;
+    if (w < -180 || w > 180 || e < -180 || e > 180 || s < -90 || s > 90 || n < -90 || n > 90) {
+      diagnostics.push({
+        severity: "error",
+        code: DiagnosticCodes.SchemaInvalid,
+        message: "GeoTIFF bbox must be within [-180, -90, 180, 90].",
+        path: `${sourcePath}/bbox`,
+      });
+    }
+    if (w > e) {
+      diagnostics.push({
+        severity: "error",
+        code: DiagnosticCodes.SchemaInvalid,
+        message: "GeoTIFF bbox west must be <= east.",
+        path: `${sourcePath}/bbox`,
+      });
+    }
+    if (s > n) {
+      diagnostics.push({
+        severity: "error",
+        code: DiagnosticCodes.SchemaInvalid,
+        message: "GeoTIFF bbox south must be <= north.",
+        path: `${sourcePath}/bbox`,
+      });
+    }
+  }
+
+  if (source.fileBytes !== undefined) {
+    const maxBytes = policy.maxFileBytes ?? DEFAULT_MAX_GEOTIFF_FILE_BYTES;
+    if (source.fileBytes > maxBytes) {
+      diagnostics.push({
+        severity: "error",
+        code: DiagnosticCodes.SecurityUrlBlocked,
+        message: `GeoTIFF file size ${source.fileBytes} exceeds policy limit ${maxBytes}.`,
+        path: `${sourcePath}/fileBytes`,
+      });
+    }
+  }
+
+  if (source.width !== undefined && source.height !== undefined) {
+    const pixelCount = source.width * source.height;
+    const maxPixels = policy.maxPixels ?? DEFAULT_MAX_GEOTIFF_PIXELS;
+    if (pixelCount > maxPixels) {
+      diagnostics.push({
+        severity: "error",
+        code: DiagnosticCodes.SecurityResourceTooLarge,
+        message: `GeoTIFF pixel count ${pixelCount} exceeds policy limit ${maxPixels}.`,
+        path: `${sourcePath}/width`,
+      });
+    }
+  }
+
+  if (source.bandCount !== undefined) {
+    const maxBandCount = policy.maxBandCount ?? DEFAULT_MAX_GEOTIFF_BAND_COUNT;
+    if (source.bandCount > maxBandCount) {
+      diagnostics.push({
+        severity: "error",
+        code: DiagnosticCodes.SecurityResourceTooLarge,
+        message: `GeoTIFF band count ${source.bandCount} exceeds policy limit ${maxBandCount}.`,
+        path: `${sourcePath}/bandCount`,
+      });
+    }
+  }
+
+  if (source.bandCount !== undefined && source.bands && source.bands.length !== source.bandCount) {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.SchemaInvalid,
+      message: `GeoTIFF bands length ${source.bands.length} must match bandCount ${source.bandCount}.`,
+      path: `${sourcePath}/bands`,
+    });
+  }
+
+  if (source.bands) {
+    const seenBandIndexes = new Set<number>();
+    for (const [index, band] of source.bands.entries()) {
+      const bandPath = `${sourcePath}/bands/${index}`;
+      if (seenBandIndexes.has(band.index)) {
+        diagnostics.push({
+          severity: "error",
+          code: DiagnosticCodes.SchemaInvalid,
+          message: `GeoTIFF band index ${band.index} must be unique.`,
+          path: `${bandPath}/index`,
+        });
+      }
+      seenBandIndexes.add(band.index);
+
+      if (source.bandCount !== undefined && band.index > source.bandCount) {
+        diagnostics.push({
+          severity: "error",
+          code: DiagnosticCodes.SchemaInvalid,
+          message: `GeoTIFF band index ${band.index} exceeds bandCount ${source.bandCount}.`,
+          path: `${bandPath}/index`,
+        });
+      }
+
+      if (policy.requireNoData && band.noData === undefined) {
+        diagnostics.push({
+          severity: "error",
+          code: DiagnosticCodes.SchemaInvalid,
+          message: "GeoTIFF noData metadata is required by policy for each declared band.",
+          path: `${bandPath}/noData`,
+        });
+      }
+    }
+  }
+
+  if (policy.requireCrs !== false && !source.crs?.authority && !source.crs?.code && !source.crs?.wkt) {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.SchemaInvalid,
+      message: "GeoTIFF CRS metadata is required by policy.",
+      path: `${sourcePath}/crs`,
+    });
+  }
+
+  if (source.crs?.authority && source.crs?.code && source.crs.authority.toUpperCase() !== "EPSG") {
+    diagnostics.push({
+      severity: "warning",
+      code: DiagnosticCodes.CapabilityUnsupported,
+      message: `GeoTIFF CRS authority "${source.crs.authority}" may not be supported. EPSG is recommended.`,
+      path: `${sourcePath}/crs/authority`,
+    });
   }
 
   return diagnostics;

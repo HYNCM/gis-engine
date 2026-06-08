@@ -2,6 +2,7 @@ import { type Static, Type } from "@sinclair/typebox";
 import type { Expression } from "../../types.js";
 import { FlatGeobufSourceSchemaForMapSpec } from "../cloud-native/flatgeobuf-source.js";
 import { GeoParquetSourceSchemaForMapSpec } from "../cloud-native/geoparquet-source.js";
+import { GeoTiffSourceSchemaForMapSpec } from "../cloud-native/geotiff-source.js";
 
 const JsonValueSchema = Type.Unknown();
 export const LayerFilterSchema = Type.Unsafe<Expression>({ type: "array", minItems: 1 });
@@ -113,6 +114,7 @@ export const SourceSpecSchema = Type.Union([
   PmtilesSourceSchema,
   FlatGeobufSourceSchemaForMapSpec,
   GeoParquetSourceSchemaForMapSpec,
+  GeoTiffSourceSchemaForMapSpec,
   VectorTileSourceSchema,
   VectorUrlSourceSchema,
 ]);

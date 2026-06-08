@@ -47,6 +47,21 @@ const SOURCE_CONTRACT_DEFINITIONS = {
     metadataFields: ["type", "url", "hasIndex", "featureCount", "bbox", "geometryType", "fileBytes"],
     policyFields: ["maxFileBytes", "maxFeatureCount", "allowRangeRequests", "indexRequired", "timeoutMs"],
   },
+  geotiff: {
+    kind: "schema",
+    state: "explicit",
+    metadataFields: ["type", "url", "crs", "bbox", "width", "height", "bandCount", "bands", "fileBytes"],
+    policyFields: [
+      "maxFileBytes",
+      "maxPixels",
+      "maxBandCount",
+      "requireCrs",
+      "requireNoData",
+      "allowRemoteUrls",
+      "timeoutMs",
+      "workerBudget",
+    ],
+  },
 };
 
 /**
@@ -291,10 +306,10 @@ const SOURCE_PROMOTION_CANDIDATE_DEFINITIONS = {
     note: "Public MapSpec schema is wired; runtime loading remains blocked until read-only evidence lands.",
   },
   geotiff: {
-    target: "GeoTIFF raster source gate",
+    target: "GeoTIFF runtime/query promotion gate",
     exitCondition:
-      "Raster schema, band/CRS/no-data diagnostics, resource policy, and snapshot strategy must land before display/export is promoted.",
-    note: "Raster sampling stays blocked until display evidence exists.",
+      "Public MapSpec schema wiring is already in place; runtime loading, raster sampling/query, and display snapshots must remain blocked until resource-policy and deterministic raster evidence land.",
+    note: "Public MapSpec schema is wired; runtime loading, sampling, and display remain blocked until raster evidence lands.",
   },
   geozarr: {
     target: "GeoZarr array source gate",

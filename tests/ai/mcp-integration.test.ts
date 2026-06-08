@@ -491,6 +491,85 @@ describe("MCP Server Integration", () => {
     );
   });
 
+  it("surfaces GeoTIFF source contract and readiness-only state in context summaries", async () => {
+    const geoTiffSpec: MapSpec = {
+      version: "0.1",
+      id: "geotiff-review",
+      revision: "1",
+      view: { center: [0, 0], zoom: 4 },
+      sources: {
+        orthophoto: {
+          type: "geotiff",
+          url: "./data/orthophoto.tif",
+          crs: { authority: "EPSG", code: "4326" },
+          bbox: [-123, 37, -122, 38],
+          width: 1024,
+          height: 512,
+          bandCount: 3,
+          bands: [
+            { index: 1, name: "red", dataType: "uint16", noData: 0 },
+            { index: 2, name: "green", dataType: "uint16", noData: 0 },
+            { index: 3, name: "blue", dataType: "uint16", noData: 0 },
+          ],
+          fileBytes: 1_000_000,
+        },
+      },
+      layers: [],
+    };
+
+    const result = await callGisEngineTool({
+      params: {
+        name: "get_context_summary",
+        arguments: { spec: geoTiffSpec },
+      },
+    });
+
+    const summary = JSON.parse(result.content[0]?.text) as {
+      validation: { valid: boolean };
+      sources: Array<{
+        id: string;
+        type: string;
+        sourceContract?: {
+          kind: string;
+          state: string;
+          metadataFields: string[];
+          policyFields: string[];
+        };
+      }>;
+      sourceReadiness: Array<{
+        sourceId: string;
+        type: string;
+        state: string;
+        queryReady: boolean;
+        resourcePolicy: string;
+      }>;
+    };
+
+    expect(result.isError).toBeUndefined();
+    expect(summary.validation.valid).toBe(true);
+    expect(summary.sources).toContainEqual(
+      expect.objectContaining({
+        id: "orthophoto",
+        type: "geotiff",
+        sourceContract: expect.objectContaining({
+          kind: "schema",
+          state: "explicit",
+          metadataFields: expect.arrayContaining(["type", "url", "crs", "bandCount", "bands"]),
+          policyFields: expect.arrayContaining(["maxFileBytes", "maxPixels", "maxBandCount", "workerBudget"]),
+        }),
+      }),
+    );
+    expect(summary.sourceReadiness).toContainEqual(
+      expect.objectContaining({
+        sourceId: "orthophoto",
+        type: "geotiff",
+        state: "readiness-only",
+        queryReady: false,
+        resourcePolicy: "passed",
+      }),
+    );
+  });
+
   it("exposes gated SceneView3D context without enabling stable 3D runtime", async () => {
     const result = await callGisEngineTool({
       params: {

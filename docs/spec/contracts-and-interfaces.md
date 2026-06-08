@@ -288,13 +288,14 @@ runtime mutation path.
   include raw prompts, include full feature payloads, include camera/resource
   payloads, or include snapshot data URLs.
 - Cloud-native data source readiness is documented before implementation:
-  `geojson`, `raster`, `pmtiles`, `vector`, `geoparquet`, and `flatgeobuf`
-  are public `SourceSpec` types. GeoParquet and FlatGeobuf have schema/policy
-  contracts and public `MapSpec` wiring, but runtime loading and query remain
-  blocked until promotion gates add read-only fixtures, structured diagnostics,
-  adapter boundaries, and tests. GeoTIFF and GeoZarr remain blocked planning
-  items until their own TypeBox schemas, resource-policy paths, structured
-  diagnostics, adapter boundaries, and tests are added.
+  `geojson`, `raster`, `pmtiles`, `vector`, `geoparquet`, `flatgeobuf`, and
+  `geotiff` are public `SourceSpec` types. GeoParquet, FlatGeobuf, and GeoTIFF
+  have schema/policy contracts and public `MapSpec` wiring, but runtime loading
+  and query remain blocked until promotion gates add read-only fixtures,
+  structured diagnostics, adapter boundaries, and tests. GeoTIFF display and
+  sampling are also blocked until raster evidence and snapshots land. GeoZarr
+  remains a blocked planning item until its own TypeBox schema, resource-policy
+  paths, structured diagnostics, adapter boundaries, and tests are added.
 - The bundle may return `status: "blocked"` even when the underlying `MapSpec`
   is schema-valid. Generation boundary diagnostics, capability blockers, failed
   planner evidence, failed command replay, failed spatial query evidence, or

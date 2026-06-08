@@ -68,6 +68,22 @@ const GEOPARQUET_SOURCE_CONTRACT_SUMMARY: SourceContractSummary = {
   policyFields: ["maxFileBytes", "maxRowCount", "allowRemoteUrls", "timeoutMs", "workerBudget"],
 };
 
+const GEOTIFF_SOURCE_CONTRACT_SUMMARY: SourceContractSummary = {
+  kind: "schema",
+  state: "explicit",
+  metadataFields: ["type", "url", "crs", "bbox", "width", "height", "bandCount", "bands", "fileBytes"],
+  policyFields: [
+    "maxFileBytes",
+    "maxPixels",
+    "maxBandCount",
+    "requireCrs",
+    "requireNoData",
+    "allowRemoteUrls",
+    "timeoutMs",
+    "workerBudget",
+  ],
+};
+
 const FLATGEOBUF_SOURCE_CONTRACT_SUMMARY: SourceContractSummary = {
   kind: "schema",
   state: "explicit",
@@ -404,6 +420,7 @@ function summarizeSourceContract(source: MapSpec["sources"][string]): SourceCont
 
   if (source.type === "flatgeobuf") return FLATGEOBUF_SOURCE_CONTRACT_SUMMARY;
   if (source.type === "geoparquet") return GEOPARQUET_SOURCE_CONTRACT_SUMMARY;
+  if (source.type === "geotiff") return GEOTIFF_SOURCE_CONTRACT_SUMMARY;
 
   return undefined;
 }

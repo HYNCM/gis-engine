@@ -5,11 +5,13 @@ import {
   defaultResourcePolicy,
   type FlatGeobufSourceSpec,
   type GeoParquetSourceSpec,
+  type GeoTiffSourceSpec,
   type MapSpec,
   type PMTilesArchiveMetadata,
   PMTilesSourceLoader,
   validateFlatGeobufPolicy,
   validateGeoParquetPolicy,
+  validateGeoTiffPolicy,
   validatePMTilesArchivePolicy,
 } from "@gis-engine/engine";
 import { describe, expect, it } from "vitest";
@@ -405,5 +407,57 @@ describe("CNS-003: FlatGeobuf policy validation", () => {
     expect(diagnostics).toContainEqual(
       expect.objectContaining({ path: "/sources/flatgeobuf/bbox", severity: "error" }),
     );
+  });
+});
+
+describe("CNS-004: GeoTIFF policy validation", () => {
+  it("accepts valid GeoTIFF metadata and reports runtime-blocked", () => {
+    const source: GeoTiffSourceSpec = {
+      type: "geotiff",
+      url: "https://localhost/data.tif",
+      bbox: [-180, -90, 180, 90],
+      crs: { authority: "EPSG", code: "4326" },
+      width: 1024,
+      height: 512,
+      bandCount: 3,
+      bands: [
+        { index: 1, name: "red", dataType: "uint16", noData: 0 },
+        { index: 2, name: "green", dataType: "uint16", noData: 0 },
+        { index: 3, name: "blue", dataType: "uint16", noData: 0 },
+      ],
+      fileBytes: 1_000_000,
+    };
+
+    const diagnostics = validateGeoTiffPolicy(source);
+
+    expect(diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: "CAPABILITY.UNSUPPORTED",
+        path: "/sources/geotiff/runtime",
+      }),
+    );
+    expect(diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+  });
+
+  it("rejects missing CRS metadata by default", () => {
+    const source: GeoTiffSourceSpec = { type: "geotiff", url: "data.tif" };
+
+    const diagnostics = validateGeoTiffPolicy(source);
+
+    expect(diagnostics).toContainEqual(expect.objectContaining({ path: "/sources/geotiff/crs", severity: "error" }));
+  });
+
+  it("rejects band metadata that does not match bandCount", () => {
+    const source: GeoTiffSourceSpec = {
+      type: "geotiff",
+      url: "data.tif",
+      crs: { authority: "EPSG", code: "4326" },
+      bandCount: 2,
+      bands: [{ index: 1, name: "red", dataType: "uint16" }],
+    };
+
+    const diagnostics = validateGeoTiffPolicy(source);
+
+    expect(diagnostics).toContainEqual(expect.objectContaining({ path: "/sources/geotiff/bands", severity: "error" }));
   });
 });

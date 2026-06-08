@@ -221,7 +221,10 @@ function unsupportedSourceDiagnostic(
   }
 
   const path =
-    source.type === "pmtiles" || source.type === "flatgeobuf" || source.type === "geoparquet"
+    source.type === "pmtiles" ||
+    source.type === "flatgeobuf" ||
+    source.type === "geoparquet" ||
+    source.type === "geotiff"
       ? `${sourcePath}/url`
       : sourcePath;
   return {

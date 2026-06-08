@@ -27,20 +27,20 @@ describe("QA Matrix: Prompt-to-Delivery scenarios", () => {
     });
   });
 
-  describe("Card 2: Blocked — unsupported GeoTIFF source request", () => {
+  describe("Card 2: Blocked — unsupported GeoZarr source request", () => {
     it("produces blocked delivery for blocked source format", () => {
       const result = computeReviewConsoleState(blockedFixture);
 
       expect(result.acceptance).toBe("blocked");
       expect(result.deliveryStatus).toBe("blocked");
-      expect(result.sourceReadiness[0].format).toBe("geotiff");
+      expect(result.sourceReadiness[0].format).toBe("geozarr");
       expect(result.sourceReadiness[0].state).toBe("blocked");
       expect(result.sourceReadiness[0].sourceContract).toBeUndefined();
       expect(
         result.sourcePromotionCandidates.some(
           (candidate: { format: string; target?: string; sourceContract?: { kind: string } }) =>
-            candidate.format === "geotiff" &&
-            candidate.target === "GeoTIFF raster source gate" &&
+            candidate.format === "geozarr" &&
+            candidate.target === "GeoZarr array source gate" &&
             candidate.sourceContract === undefined,
         ),
       ).toBe(true);
@@ -51,18 +51,59 @@ describe("QA Matrix: Prompt-to-Delivery scenarios", () => {
       expect(
         dataSection?.sources?.some(
           (s: { format: string; sourceContract?: { kind: string } }) =>
-            s.format === "geotiff" && s.sourceContract === undefined,
+            s.format === "geozarr" && s.sourceContract === undefined,
         ),
       ).toBe(true);
       expect(
         dataSection?.promotionCandidates?.some(
           (candidate: { format: string; target?: string; sourceContract?: { kind: string } }) =>
-            candidate.format === "geotiff" &&
-            candidate.target === "GeoTIFF raster source gate" &&
+            candidate.format === "geozarr" &&
+            candidate.target === "GeoZarr array source gate" &&
             candidate.sourceContract === undefined,
         ),
       ).toBe(true);
       expect(result.diagnosticCounts.errors).toBeGreaterThan(0);
+    });
+  });
+
+  describe("Card 2b: Follow-up — GeoTIFF public contract with runtime blocked", () => {
+    it("produces follow-up delivery with explicit source contract evidence", () => {
+      const evidence = structuredClone(followUpFixture);
+      evidence.delivery.sourceReadiness = [
+        {
+          id: "orthophoto",
+          format: "geotiff",
+          state: "readiness-only",
+          queryReady: false,
+          resourcePolicy: "passed",
+        },
+      ];
+      evidence.delivery.followUps = [];
+
+      const result = computeReviewConsoleState(evidence);
+
+      expect(result.acceptance).toBe("follow-up-required");
+      expect(result.sourceReadiness[0]).toMatchObject({
+        sourceId: "orthophoto",
+        format: "geotiff",
+        state: "readiness-only",
+        resourcePolicy: "passed",
+        sourceContract: expect.objectContaining({
+          kind: "schema",
+          state: "explicit",
+          metadataFields: expect.arrayContaining(["type", "url", "crs", "bandCount", "bands"]),
+          policyFields: expect.arrayContaining(["maxFileBytes", "maxPixels", "maxBandCount", "workerBudget"]),
+        }),
+      });
+      expect(result.sourcePromotionCandidates).toContainEqual(
+        expect.objectContaining({
+          candidateId: "source-promotion.geotiff.orthophoto",
+          format: "geotiff",
+          state: "readiness-only",
+          target: "GeoTIFF runtime/query promotion gate",
+          sourceContract: expect.objectContaining({ kind: "schema", state: "explicit" }),
+        }),
+      );
     });
   });
 

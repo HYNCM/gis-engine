@@ -67,6 +67,7 @@ describe("ResourcePolicy validation", () => {
     const raster = validateSpec(withRasterTile("file:///tmp/{z}/{x}/{y}.png"));
     const pmtiles = validateSpec(withPmtilesUrl("file:///tmp/parcels.pmtiles"));
     const flatgeobuf = validateSpec(withFlatGeobufUrl("file:///tmp/parcels.fgb"));
+    const geotiff = validateSpec(withGeoTiffUrl("file:///tmp/orthophoto.tif"));
     const vector = validateSpec(withVectorTile("file:///tmp/vector/{z}/{x}/{y}.pbf"));
 
     expect(raster.diagnostics).toContainEqual(
@@ -85,6 +86,12 @@ describe("ResourcePolicy validation", () => {
       expect.objectContaining({
         code: DiagnosticCodes.SecurityUrlBlocked,
         path: "/sources/parcels/url",
+      }),
+    );
+    expect(geotiff.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: DiagnosticCodes.SecurityUrlBlocked,
+        path: "/sources/orthophoto/url",
       }),
     );
     expect(vector.diagnostics).toContainEqual(
@@ -307,6 +314,30 @@ function withFlatGeobufUrl(url: string): MapSpec {
         type: "circle",
         source: "parcels",
         paint: { "circle-color": "#2563eb" },
+      },
+    ],
+  };
+}
+
+function withGeoTiffUrl(url: string): MapSpec {
+  return {
+    version: "0.1",
+    id: "resource-policy-geotiff",
+    view: { center: [120, 30], zoom: 10 },
+    sources: {
+      orthophoto: {
+        type: "geotiff",
+        url,
+        crs: { authority: "EPSG", code: "4326" },
+        bandCount: 1,
+        bands: [{ index: 1, name: "gray", dataType: "uint16" }],
+      },
+    },
+    layers: [
+      {
+        id: "orthophoto-layer",
+        type: "raster",
+        source: "orthophoto",
       },
     ],
   };

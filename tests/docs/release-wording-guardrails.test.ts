@@ -57,7 +57,7 @@ const requiredGuardrails: Array<{
     patterns: [
       /stable `view\.mode: "scene3d"` remains blocked/,
       /`export_example_app` returns manifest and file metadata/,
-      /GeoParquet and FlatGeobuf are public `MapSpec` source contracts with runtime blocked/,
+      /GeoParquet, FlatGeobuf, and GeoTIFF are public `MapSpec` source contracts with runtime blocked/,
       /advanced geoprocessing as available capability/,
     ],
   },
@@ -81,9 +81,14 @@ const forbiddenClaims: Array<{ name: string; pattern: RegExp }> = [
     pattern: /generated[- ]app.{0,120}\b(?:writes|creates|saves|persists)\b.{0,80}\b(?:file|files|disk|workspace)\b/i,
   },
   {
-    name: "blocked cloud-native source support",
+    name: "runtime-blocked cloud-native source support",
     pattern:
       /(?:GeoParquet|FlatGeobuf|GeoTIFF|GeoZarr).{0,80}\b(?:is|are|now)\s+(?:supported|implemented|available|ready)\b/i,
+  },
+  {
+    name: "geotiff runtime capability claim",
+    pattern:
+      /GeoTIFF.{0,120}\b(?:runtime|loader|loading|display|sampling|query|decoder|worker).{0,80}\b(?:is|are|now)\s+(?:supported|implemented|available|ready|promoted)\b/i,
   },
   {
     name: "advanced spatial analysis support",

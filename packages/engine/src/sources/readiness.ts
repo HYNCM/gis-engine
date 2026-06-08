@@ -1,7 +1,12 @@
 import { DiagnosticCodes } from "../diagnostics/codes.js";
 import type { FlatGeobufSourceSpec } from "../spec/cloud-native/flatgeobuf-source.js";
 import type { GeoParquetSourceSpec } from "../spec/cloud-native/geoparquet-source.js";
-import { validateFlatGeobufPolicy, validateGeoParquetPolicy } from "../spec/cloud-native/validate.js";
+import type { GeoTiffSourceSpec } from "../spec/cloud-native/geotiff-source.js";
+import {
+  validateFlatGeobufPolicy,
+  validateGeoParquetPolicy,
+  validateGeoTiffPolicy,
+} from "../spec/cloud-native/validate.js";
 import { escapePathSegment } from "../spec/patch/path.js";
 import { defaultResourcePolicy, type ResourcePolicy, validateResourcePolicy } from "../spec/resource-policy.js";
 import type { Diagnostic, MapSpec, SourceSpec } from "../types.js";
@@ -97,6 +102,8 @@ function createSourceReadinessEntry(
     sourceType === "flatgeobuf" ? validateFlatGeobufSourceDiagnostics(sourceId, source as FlatGeobufSourceSpec) : [];
   const geoParquetDiagnostics =
     sourceType === "geoparquet" ? validateGeoParquetSourceDiagnostics(sourceId, source as GeoParquetSourceSpec) : [];
+  const geoTiffDiagnostics =
+    sourceType === "geotiff" ? validateGeoTiffSourceDiagnostics(sourceId, source as GeoTiffSourceSpec) : [];
   const sourceDiagnostics =
     sourceType === "pmtiles"
       ? (pmtilesPlan?.diagnostics ?? sourceDiagnosticsFor(sourceId, resourceDiagnostics))
@@ -104,7 +111,9 @@ function createSourceReadinessEntry(
         ? [...sourceDiagnosticsFor(sourceId, resourceDiagnostics), ...flatGeobufDiagnostics]
         : sourceType === "geoparquet"
           ? [...sourceDiagnosticsFor(sourceId, resourceDiagnostics), ...geoParquetDiagnostics]
-          : sourceDiagnosticsFor(sourceId, resourceDiagnostics);
+          : sourceType === "geotiff"
+            ? [...sourceDiagnosticsFor(sourceId, resourceDiagnostics), ...geoTiffDiagnostics]
+            : sourceDiagnosticsFor(sourceId, resourceDiagnostics);
   const resourcePolicy = resourcePolicyStatus(sourceType, source, sourceDiagnostics);
   const resourceBlocked = resourcePolicy === "blocked";
 
@@ -214,6 +223,25 @@ function createSourceReadinessEntry(
     };
   }
 
+  if (sourceType === "geotiff") {
+    const sourceBlocked = resourceBlocked || sourceDiagnostics.some((diagnostic) => diagnostic.severity === "error");
+    return {
+      sourceId,
+      type: sourceType,
+      state: sourceBlocked ? "blocked" : "readiness-only",
+      displayReady: false,
+      queryReady: false,
+      resourcePolicy,
+      diagnostics: sourceDiagnostics,
+      limitations: [
+        "GeoTIFF runtime loading, decoding, sampling, and query remain blocked until a promotion gate lands.",
+      ],
+      nextAction: sourceBlocked
+        ? "Fix GeoTIFF URL, CRS, band, no-data, or policy blockers before delivery."
+        : "Keep GeoTIFF as readiness-only evidence until public runtime loading, sampling, or query promotion is approved.",
+    };
+  }
+
   const unsupportedDiagnostic = unsupportedSourceDiagnostic(sourceId, sourceType);
   return {
     sourceId,
@@ -252,7 +280,13 @@ function resourcePolicyStatus(
     return typeof (source as { data?: unknown }).data === "string" ? "passed" : "not-applicable";
   }
 
-  if (sourceType === "raster" || sourceType === "vector" || sourceType === "pmtiles" || sourceType === "geoparquet")
+  if (
+    sourceType === "raster" ||
+    sourceType === "vector" ||
+    sourceType === "pmtiles" ||
+    sourceType === "geoparquet" ||
+    sourceType === "geotiff"
+  )
     return "passed";
 
   if (sourceType === "flatgeobuf") return "passed";
@@ -297,6 +331,10 @@ function unsupportedSourceDiagnostic(sourceId: string, sourceType: string): Diag
 
 function validateGeoParquetSourceDiagnostics(sourceId: string, source: GeoParquetSourceSpec): Diagnostic[] {
   return validateGeoParquetPolicy(source, undefined, sourceId);
+}
+
+function validateGeoTiffSourceDiagnostics(sourceId: string, source: GeoTiffSourceSpec): Diagnostic[] {
+  return validateGeoTiffPolicy(source, undefined, sourceId);
 }
 
 function validateFlatGeobufSourceDiagnostics(sourceId: string, source: FlatGeobufSourceSpec): Diagnostic[] {

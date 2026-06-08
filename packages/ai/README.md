@@ -114,9 +114,9 @@ with three AI-facing domains:
 - `feature-display`: supported 2D MapSpec sources/layers, experimental 2.5D
   `fill-extrusion-lite` gates, and the tools to validate, command-edit, export,
   snapshot, or discover bundled examples. The public source surface remains
-  limited to `geojson`, `raster`, `pmtiles`, and `vector` at runtime; GeoParquet
-  and FlatGeobuf are public MapSpec source contracts with runtime blocked, and
-  GeoTIFF/GeoZarr must stay blocked until TypeBox schemas, resource-policy
+  limited to `geojson`, `raster`, `pmtiles`, and `vector` at runtime; GeoParquet,
+  FlatGeobuf, and GeoTIFF are public MapSpec source contracts with runtime
+  blocked, and GeoZarr remains blocked until TypeBox schemas, resource-policy
   paths, diagnostics, adapter boundaries, and tests exist.
 - `spatial-analysis`: current point/bbox query readiness is discoverable
   through capability metadata, but there is no dedicated public MCP query,

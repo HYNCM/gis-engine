@@ -13,6 +13,13 @@ export {
   type GeoParquetSourceSpec,
 } from "./geoparquet-source.js";
 export {
+  defaultGeoTiffPolicy,
+  type GeoTiffPolicy,
+  GeoTiffPolicySchema,
+  GeoTiffSourceSchema,
+  type GeoTiffSourceSpec,
+} from "./geotiff-source.js";
+export {
   defaultPMTilesArchivePolicy,
   type PMTilesArchiveMetadata,
   PMTilesArchiveMetadataSchema,

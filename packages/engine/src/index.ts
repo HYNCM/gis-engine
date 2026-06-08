@@ -53,17 +53,21 @@ export type {
   FlatGeobufSourceSpec,
   GeoParquetPolicy,
   GeoParquetSourceSpec,
+  GeoTiffPolicy,
+  GeoTiffSourceSpec,
   PMTilesArchiveMetadata,
   PMTilesArchivePolicy,
 } from "./spec/cloud-native/index.js";
 export {
   defaultFlatGeobufPolicy,
   defaultGeoParquetPolicy,
+  defaultGeoTiffPolicy,
   defaultPMTilesArchivePolicy,
 } from "./spec/cloud-native/index.js";
 export {
   validateFlatGeobufPolicy,
   validateGeoParquetPolicy,
+  validateGeoTiffPolicy,
   validatePMTilesArchivePolicy,
 } from "./spec/cloud-native/validate.js";
 export * from "./spec/patch/index.js";
