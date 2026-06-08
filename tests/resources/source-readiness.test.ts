@@ -75,7 +75,7 @@ describe("source readiness report", () => {
     );
   });
 
-  it("blocks unknown source types instead of promoting blocked cloud-native formats", () => {
+  it("reports GeoParquet as readiness-only now that it is a public source contract", () => {
     const spec = {
       version: "0.1",
       view: { center: [0, 0], zoom: 2 },
@@ -90,21 +90,21 @@ describe("source readiness report", () => {
 
     const report = createSourceReadinessReport(spec);
 
-    expect(report.status).toBe("blocked");
+    expect(report.status).toBe("follow-up-required");
     expect(report.sources).toEqual([
       expect.objectContaining({
         sourceId: "parquet",
         type: "geoparquet",
-        state: "blocked",
+        state: "readiness-only",
         displayReady: false,
         queryReady: false,
-        resourcePolicy: "not-applicable",
+        resourcePolicy: "passed",
       }),
     ]);
     expect(report.diagnostics).toContainEqual(
       expect.objectContaining({
         code: "CAPABILITY.UNSUPPORTED",
-        path: "/sources/parquet/type",
+        path: "/sources/parquet/runtime",
       }),
     );
   });

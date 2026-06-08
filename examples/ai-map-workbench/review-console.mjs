@@ -279,10 +279,10 @@ const SOURCE_PROMOTION_CANDIDATE_DEFINITIONS = {
     note: "Promote only one format at a time; archive parsing stays blocked until the gate passes.",
   },
   geoparquet: {
-    target: "GeoParquet public source promotion gate",
+    target: "GeoParquet runtime/query promotion gate",
     exitCondition:
-      "Public MapSpec schema wiring, CRS and encoding diagnostics, range policy, and no-runtime-claim manifest tests must pass before runtime loading is promoted.",
-    note: "Runtime loading stays blocked until public source schema wiring and diagnostics land.",
+      "Public MapSpec schema wiring is already in place; read-only query fixtures, resource policy, and runtime-blocker diagnostics must pass before display or query support is promoted.",
+    note: "Public MapSpec schema is wired; runtime loading remains blocked until read-only evidence lands.",
   },
   flatgeobuf: {
     target: "FlatGeobuf public source promotion gate",

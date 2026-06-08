@@ -738,7 +738,7 @@ describe("cli-preflight-map-spec", () => {
     }
   });
 
-  it("keeps unsupported cloud-native source types blocked in source readiness", () => {
+  it("keeps GeoParquet in follow-up-required source readiness without blocking validation", () => {
     const dir = mkdtempSync(join(tmpdir(), "gis-engine-cli-preflight-"));
     try {
       const mapPath = join(dir, "map.json");
@@ -759,16 +759,16 @@ describe("cli-preflight-map-spec", () => {
 
       const result = preflightMapSpec({ filePath: mapPath });
 
-      expect(result.ok).toBe(false);
-      expect(result.status).toBe("blocked");
-      expect(result.validation.valid).toBe(false);
-      expect(result.sourceReadiness.status).toBe("blocked");
+      expect(result.ok).toBe(true);
+      expect(result.status).toBe("ready");
+      expect(result.validation.valid).toBe(true);
+      expect(result.sourceReadiness.status).toBe("follow-up-required");
       expect(result.sourceReadiness.sources).toEqual([
         expect.objectContaining({
           sourceId: "parquet",
           type: "geoparquet",
-          state: "blocked",
-          resourcePolicy: "not-applicable",
+          state: "readiness-only",
+          resourcePolicy: "passed",
         }),
       ]);
     } finally {

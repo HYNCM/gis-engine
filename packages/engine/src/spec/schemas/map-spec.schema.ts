@@ -1,5 +1,6 @@
 import { type Static, Type } from "@sinclair/typebox";
 import type { Expression } from "../../types.js";
+import { GeoParquetSourceSchemaForMapSpec } from "../cloud-native/geoparquet-source.js";
 
 const JsonValueSchema = Type.Unknown();
 export const LayerFilterSchema = Type.Unsafe<Expression>({ type: "array", minItems: 1 });
@@ -109,6 +110,7 @@ export const SourceSpecSchema = Type.Union([
   GeoJsonSourceSchema,
   RasterSourceSchema,
   PmtilesSourceSchema,
+  GeoParquetSourceSchemaForMapSpec,
   VectorTileSourceSchema,
   VectorUrlSourceSchema,
 ]);

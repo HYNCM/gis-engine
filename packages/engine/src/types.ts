@@ -71,6 +71,29 @@ export interface PmtilesSourceSpec {
   attribution?: string;
 }
 
+export interface GeoParquetSourceSpec {
+  type: "geoparquet";
+  url: string;
+  crs?: {
+    authority?: string;
+    code?: string;
+    wkt?: string;
+  };
+  encoding?:
+    | "WKB"
+    | "WKT"
+    | "geoarrow-point"
+    | "geoarrow-linestring"
+    | "geoarrow-polygon"
+    | "geoarrow-multipoint"
+    | "geoarrow-multilinestring"
+    | "geoarrow-multipolygon";
+  bbox?: [number, number, number, number];
+  rowCount?: number;
+  fileBytes?: number;
+  parquetVersion?: 1 | 2;
+}
+
 export interface VectorTileSourceSpec {
   type: "vector";
   tiles: string[];
@@ -89,7 +112,12 @@ export interface VectorUrlSourceSpec {
 
 export type VectorSourceSpec = VectorTileSourceSpec | VectorUrlSourceSpec;
 
-export type SourceSpec = GeoJsonSourceSpec | RasterSourceSpec | PmtilesSourceSpec | VectorSourceSpec;
+export type SourceSpec =
+  | GeoJsonSourceSpec
+  | RasterSourceSpec
+  | PmtilesSourceSpec
+  | GeoParquetSourceSpec
+  | VectorSourceSpec;
 
 export interface LayerSpec {
   id: string;

@@ -61,6 +61,13 @@ const PMTILES_ARCHIVE_CONTRACT_SUMMARY: SourceArchiveContractSummary = {
   policyFields: [...PMTILES_ARCHIVE_POLICY_FIELDS],
 };
 
+const GEOPARQUET_SOURCE_CONTRACT_SUMMARY: SourceContractSummary = {
+  kind: "schema",
+  state: "explicit",
+  metadataFields: ["type", "url", "crs", "encoding", "bbox", "rowCount", "fileBytes", "parquetVersion"],
+  policyFields: ["maxFileBytes", "maxRowCount", "allowRemoteUrls", "timeoutMs", "workerBudget"],
+};
+
 export interface ContextSummaryInput {
   spec: MapSpec;
   capabilities?: CapabilityReport;
@@ -381,12 +388,16 @@ function isPickableSceneLayer(layer: SceneLayer): boolean {
 }
 
 function summarizeSourceContract(source: MapSpec["sources"][string]): SourceContractSummary | undefined {
-  if (source.type !== "pmtiles") return undefined;
+  if (source.type === "pmtiles") {
+    return {
+      kind: "archive",
+      ...PMTILES_ARCHIVE_CONTRACT_SUMMARY,
+    };
+  }
 
-  return {
-    kind: "archive",
-    ...PMTILES_ARCHIVE_CONTRACT_SUMMARY,
-  };
+  if (source.type === "geoparquet") return GEOPARQUET_SOURCE_CONTRACT_SUMMARY;
+
+  return undefined;
 }
 
 function summarizeSourceReadiness(spec: MapSpec): ContextSummary["sourceReadiness"] {

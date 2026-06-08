@@ -220,7 +220,7 @@ function unsupportedSourceDiagnostic(
     };
   }
 
-  const path = source.type === "pmtiles" ? `${sourcePath}/url` : sourcePath;
+  const path = source.type === "pmtiles" || source.type === "geoparquet" ? `${sourcePath}/url` : sourcePath;
   return {
     severity: "error",
     code: DiagnosticCodes.CapabilityUnsupported,

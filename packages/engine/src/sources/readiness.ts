@@ -1,4 +1,6 @@
 import { DiagnosticCodes } from "../diagnostics/codes.js";
+import type { GeoParquetSourceSpec } from "../spec/cloud-native/geoparquet-source.js";
+import { validateGeoParquetPolicy } from "../spec/cloud-native/validate.js";
 import { escapePathSegment } from "../spec/patch/path.js";
 import { defaultResourcePolicy, type ResourcePolicy, validateResourcePolicy } from "../spec/resource-policy.js";
 import type { Diagnostic, MapSpec, SourceSpec } from "../types.js";
@@ -90,10 +92,14 @@ function createSourceReadinessEntry(
   pmtilesPlan?: PMTilesRuntimeSourcePlan,
 ): SourceReadinessEntry {
   const sourceType = getSourceType(source);
+  const geoParquetDiagnostics =
+    sourceType === "geoparquet" ? validateGeoParquetSourceDiagnostics(sourceId, source as GeoParquetSourceSpec) : [];
   const sourceDiagnostics =
     sourceType === "pmtiles"
       ? (pmtilesPlan?.diagnostics ?? sourceDiagnosticsFor(sourceId, resourceDiagnostics))
-      : sourceDiagnosticsFor(sourceId, resourceDiagnostics);
+      : sourceType === "geoparquet"
+        ? [...sourceDiagnosticsFor(sourceId, resourceDiagnostics), ...geoParquetDiagnostics]
+        : sourceDiagnosticsFor(sourceId, resourceDiagnostics);
   const resourcePolicy = resourcePolicyStatus(sourceType, source, sourceDiagnostics);
   const resourceBlocked = resourcePolicy === "blocked";
 
@@ -167,6 +173,24 @@ function createSourceReadinessEntry(
     };
   }
 
+  if (sourceType === "geoparquet") {
+    return {
+      sourceId,
+      type: sourceType,
+      state: resourceBlocked ? "blocked" : "readiness-only",
+      displayReady: false,
+      queryReady: false,
+      resourcePolicy,
+      diagnostics: sourceDiagnostics,
+      limitations: [
+        "GeoParquet runtime loading, query, and export handoff remain blocked until a promotion gate lands.",
+      ],
+      nextAction: resourceBlocked
+        ? "Fix GeoParquet URL or policy blockers before delivery."
+        : "Keep GeoParquet as readiness-only evidence until public runtime loading or query promotion is approved.",
+    };
+  }
+
   const unsupportedDiagnostic = unsupportedSourceDiagnostic(sourceId, sourceType);
   return {
     sourceId,
@@ -205,7 +229,8 @@ function resourcePolicyStatus(
     return typeof (source as { data?: unknown }).data === "string" ? "passed" : "not-applicable";
   }
 
-  if (sourceType === "raster" || sourceType === "vector" || sourceType === "pmtiles") return "passed";
+  if (sourceType === "raster" || sourceType === "vector" || sourceType === "pmtiles" || sourceType === "geoparquet")
+    return "passed";
 
   return "not-applicable";
 }
@@ -243,4 +268,8 @@ function unsupportedSourceDiagnostic(sourceId: string, sourceType: string): Diag
         "Keep unsupported cloud-native formats as planning evidence until their schema/resource-policy gate lands.",
     },
   };
+}
+
+function validateGeoParquetSourceDiagnostics(sourceId: string, source: GeoParquetSourceSpec): Diagnostic[] {
+  return validateGeoParquetPolicy(source, undefined, sourceId);
 }
