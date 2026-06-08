@@ -181,6 +181,35 @@ it("reports unsupported diagnostics for FlatGeobuf URL sources in headless query
   ]);
 });
 
+it("reports unsupported diagnostics for GeoParquet URL sources in headless query", async () => {
+  const adapter = new MockAdapter();
+  const spec: MapSpec = {
+    version: "0.1",
+    view: { center: [0, 0], zoom: 2 },
+    sources: {
+      geoparquet: {
+        type: "geoparquet",
+        url: "./data/geoparquet.parquet",
+        crs: { authority: "EPSG", code: "4326" },
+        encoding: "WKB",
+      },
+    },
+    layers: [{ id: "geoparquet-layer", type: "circle", source: "geoparquet" }],
+  };
+  await adapter.load(spec, { container: {} as HTMLElement });
+
+  const result = await adapter.queryFeatures({ point: [0, 0], layers: ["geoparquet-layer"] });
+
+  expect(result.features).toEqual([]);
+  expect(result.diagnostics).toEqual([
+    expect.objectContaining({
+      severity: "error",
+      code: "CAPABILITY.UNSUPPORTED",
+      path: "/sources/geoparquet/url",
+    }),
+  ]);
+});
+
 function featureIds(result: FeatureQueryResult): string[] {
   return result.features
     .map((feature) => (feature as { properties?: { id?: string } }).properties?.id)

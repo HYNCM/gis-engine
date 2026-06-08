@@ -419,6 +419,78 @@ describe("MCP Server Integration", () => {
     );
   });
 
+  it("surfaces GeoParquet source contract and readiness-only state in context summaries", async () => {
+    const geoParquetSpec: MapSpec = {
+      version: "0.1",
+      id: "geoparquet-review",
+      revision: "1",
+      view: { center: [0, 0], zoom: 4 },
+      sources: {
+        parcels: {
+          type: "geoparquet",
+          url: "./data/parcels.parquet",
+          crs: { authority: "EPSG", code: "4326" },
+          encoding: "WKB",
+          rowCount: 42,
+          bbox: [-123, 37, -122, 38],
+        },
+      },
+      layers: [],
+    };
+
+    const result = await callGisEngineTool({
+      params: {
+        name: "get_context_summary",
+        arguments: { spec: geoParquetSpec },
+      },
+    });
+
+    const summary = JSON.parse(result.content[0]?.text) as {
+      validation: { valid: boolean };
+      sources: Array<{
+        id: string;
+        type: string;
+        sourceContract?: {
+          kind: string;
+          state: string;
+          metadataFields: string[];
+          policyFields: string[];
+        };
+      }>;
+      sourceReadiness: Array<{
+        sourceId: string;
+        type: string;
+        state: string;
+        queryReady: boolean;
+        resourcePolicy: string;
+      }>;
+    };
+
+    expect(result.isError).toBeUndefined();
+    expect(summary.validation.valid).toBe(true);
+    expect(summary.sources).toContainEqual(
+      expect.objectContaining({
+        id: "parcels",
+        type: "geoparquet",
+        sourceContract: expect.objectContaining({
+          kind: "schema",
+          state: "explicit",
+          metadataFields: expect.arrayContaining(["type", "url", "crs", "encoding", "rowCount"]),
+          policyFields: expect.arrayContaining(["maxFileBytes", "maxRowCount", "workerBudget"]),
+        }),
+      }),
+    );
+    expect(summary.sourceReadiness).toContainEqual(
+      expect.objectContaining({
+        sourceId: "parcels",
+        type: "geoparquet",
+        state: "readiness-only",
+        queryReady: false,
+        resourcePolicy: "passed",
+      }),
+    );
+  });
+
   it("exposes gated SceneView3D context without enabling stable 3D runtime", async () => {
     const result = await callGisEngineTool({
       params: {

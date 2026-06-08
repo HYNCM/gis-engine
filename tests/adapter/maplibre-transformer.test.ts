@@ -100,6 +100,29 @@ describe("MapSpecToMapLibreStyleTransformer", () => {
     );
   });
 
+  it("rejects GeoParquet sources at the MapLibre transform boundary", () => {
+    const spec = structuredClone(before) as MapSpec;
+    spec.sources = {
+      districts: {
+        type: "geoparquet",
+        url: "./data/districts.parquet",
+        crs: { authority: "EPSG", code: "4326" },
+        encoding: "WKB",
+      },
+    };
+
+    const result = transformMapSpecToMapLibreStyle(spec);
+
+    expect(result.style).toBeUndefined();
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: "CAPABILITY.UNSUPPORTED",
+        path: "/sources/districts/url",
+      }),
+    );
+  });
+
   it("forwards layer filters and zoom ranges to MapLibre style layers", () => {
     const spec = structuredClone(before) as MapSpec;
     spec.layers[0] = {

@@ -27,17 +27,21 @@ describe("QA Matrix: Prompt-to-Delivery scenarios", () => {
     });
   });
 
-  describe("Card 2: Blocked — unsupported GeoParquet source request", () => {
+  describe("Card 2: Blocked — unsupported GeoTIFF source request", () => {
     it("produces blocked delivery for blocked source format", () => {
       const result = computeReviewConsoleState(blockedFixture);
 
       expect(result.acceptance).toBe("blocked");
       expect(result.deliveryStatus).toBe("blocked");
-      expect(result.sourceReadiness[0].sourceContract?.kind).toBe("schema");
+      expect(result.sourceReadiness[0].format).toBe("geotiff");
+      expect(result.sourceReadiness[0].state).toBe("blocked");
+      expect(result.sourceReadiness[0].sourceContract).toBeUndefined();
       expect(
         result.sourcePromotionCandidates.some(
-          (candidate: { format: string; sourceContract?: { kind: string } }) =>
-            candidate.format === "geoparquet" && candidate.sourceContract?.kind === "schema",
+          (candidate: { format: string; target?: string; sourceContract?: { kind: string } }) =>
+            candidate.format === "geotiff" &&
+            candidate.target === "GeoTIFF raster source gate" &&
+            candidate.sourceContract === undefined,
         ),
       ).toBe(true);
 
@@ -47,13 +51,15 @@ describe("QA Matrix: Prompt-to-Delivery scenarios", () => {
       expect(
         dataSection?.sources?.some(
           (s: { format: string; sourceContract?: { kind: string } }) =>
-            s.format === "geoparquet" && s.sourceContract?.kind === "schema",
+            s.format === "geotiff" && s.sourceContract === undefined,
         ),
       ).toBe(true);
       expect(
         dataSection?.promotionCandidates?.some(
-          (candidate: { format: string; sourceContract?: { kind: string } }) =>
-            candidate.format === "geoparquet" && candidate.sourceContract?.kind === "schema",
+          (candidate: { format: string; target?: string; sourceContract?: { kind: string } }) =>
+            candidate.format === "geotiff" &&
+            candidate.target === "GeoTIFF raster source gate" &&
+            candidate.sourceContract === undefined,
         ),
       ).toBe(true);
       expect(result.diagnosticCounts.errors).toBeGreaterThan(0);

@@ -20,8 +20,8 @@
     "followUps": [],
     "sourceReadiness": [
       {
-        "id": "parquet-data",
-        "format": "geoparquet",
+        "id": "raster-data",
+        "format": "geotiff",
         "state": "blocked",
         "queryReady": false,
         "resourcePolicy": "not-applicable"
@@ -31,7 +31,7 @@
   },
   "validation": {
     "valid": false,
-    "diagnostics": [{ "severity": "error", "code": "SCHEMA.INVALID", "message": "Unsupported source type" }]
+    "diagnostics": [{ "severity": "error", "code": "SCHEMA.INVALID", "message": "Unsupported GeoTIFF source type" }]
   },
   "commandEvidence": { "count": 0, "committed": 0, "rolledBack": 0 },
   "exportEvidence": { "ready": false, "sourceCount": 0, "layerCount": 0 },
@@ -39,8 +39,8 @@
     {
       "severity": "error",
       "code": "SCHEMA.INVALID",
-      "message": "Unsupported source type",
-      "path": "/sources/parquet-data"
+      "message": "Unsupported GeoTIFF source type",
+      "path": "/sources/raster-data"
     }
   ],
   "spatialQueryEvidence": {

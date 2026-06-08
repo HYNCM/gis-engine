@@ -98,6 +98,84 @@ describe("review-console contract", () => {
     );
   });
 
+  it("computes GeoParquet readiness-only source contract and promotion candidate evidence", () => {
+    const evidence = structuredClone(followUpFixture);
+    evidence.delivery.sourceReadiness = [
+      {
+        id: "coastal-parquet",
+        format: "geoparquet",
+        state: "readiness-only",
+        queryReady: false,
+        resourcePolicy: "passed",
+        sourceContract: {
+          kind: "schema",
+          state: "explicit",
+          metadataFields: ["type", "url", "crs", "encoding", "bbox", "rowCount", "fileBytes", "parquetVersion"],
+          policyFields: ["maxFileBytes", "maxRowCount", "allowRemoteUrls", "timeoutMs", "workerBudget"],
+        },
+      },
+    ];
+    evidence.delivery.followUps = [];
+
+    const result = computeReviewConsoleState(evidence);
+
+    expect(result.acceptance).toBe("follow-up-required");
+    expect(result.deliveryStatus).toBe("follow-up-required");
+    expect(result.sourceReadiness).toContainEqual(
+      expect.objectContaining({
+        sourceId: "coastal-parquet",
+        format: "geoparquet",
+        state: "readiness-only",
+        resourcePolicy: "passed",
+        sourceContract: expect.objectContaining({
+          kind: "schema",
+          state: "explicit",
+          metadataFields: expect.arrayContaining(["type", "url", "crs", "encoding", "rowCount"]),
+          policyFields: expect.arrayContaining(["maxFileBytes", "maxRowCount", "workerBudget"]),
+        }),
+      }),
+    );
+    expect(result.sourcePromotionCandidates).toContainEqual(
+      expect.objectContaining({
+        candidateId: "source-promotion.geoparquet.coastal-parquet",
+        format: "geoparquet",
+        state: "readiness-only",
+        resourcePolicy: "passed",
+        sourceContract: expect.objectContaining({
+          kind: "schema",
+          state: "explicit",
+        }),
+        target: "GeoParquet runtime/query promotion gate",
+      }),
+    );
+    const dataSection = result.sections.find((s) => s.id === "data-and-sources");
+    expect(dataSection?.state).toBe("follow-up-required");
+    expect(dataSection?.sources?.[0]).toMatchObject({
+      format: "geoparquet",
+      state: "readiness-only",
+      resourcePolicy: "passed",
+    });
+    expect(dataSection?.sources?.[0].sourceContract).toMatchObject({
+      kind: "schema",
+      state: "explicit",
+      metadataFields: expect.arrayContaining(["type", "url", "crs", "encoding", "rowCount"]),
+      policyFields: expect.arrayContaining(["maxFileBytes", "maxRowCount", "workerBudget"]),
+    });
+    expect(dataSection?.promotionCandidates).toContainEqual(
+      expect.objectContaining({
+        id: "source-promotion.geoparquet.coastal-parquet",
+        format: "geoparquet",
+        state: "readiness-only",
+        resourcePolicy: "passed",
+        sourceContract: expect.objectContaining({
+          kind: "schema",
+          state: "explicit",
+        }),
+        target: "GeoParquet runtime/query promotion gate",
+      }),
+    );
+  });
+
   it("computes needs-confirmation when confirmations exist", () => {
     const result = computeReviewConsoleState(confirmFixture);
     expect(result.acceptance).toBe("needs-confirmation");

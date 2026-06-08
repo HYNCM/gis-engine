@@ -17,8 +17,8 @@ total_pitfalls: 8
 - This slice does not add a file-writing tool and does not make
   `export_example_app` create artifacts. That is intentional.
 - `delivery.sourceReadiness` summarizes only current `MapSpec.sources`.
-  GeoParquet, FlatGeobuf, GeoTIFF, and GeoZarr remain blocked planning intents
-  until future schemas exist.
+  GeoParquet and FlatGeobuf are public contracts with runtime blocked; GeoTIFF
+  and GeoZarr remain blocked planning intents until future schemas exist.
 - Scene browsing delivery is `follow-up-req
 
 ## PIT-002: Residual Risk: docs/archive/2026-06-07/reviews/ain-003-004-promotion-criteria-2026-05-30.md
