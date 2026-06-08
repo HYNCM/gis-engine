@@ -79,12 +79,12 @@ describe("MapSpecToMapLibreStyleTransformer", () => {
     expect(result.style?.layers.map((layer) => layer["source-layer"])).toEqual(["parcels", "parcels"]);
   });
 
-  it("rejects GeoParquet sources at the MapLibre transform boundary", () => {
+  it("rejects FlatGeobuf sources at the MapLibre transform boundary", () => {
     const spec = structuredClone(before) as MapSpec;
     spec.sources = {
       districts: {
-        type: "geoparquet",
-        url: "./data/districts.parquet",
+        type: "flatgeobuf",
+        url: "./data/districts.fgb",
       },
     };
 

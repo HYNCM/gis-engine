@@ -57,7 +57,7 @@ const requiredGuardrails: Array<{
     patterns: [
       /stable `view\.mode: "scene3d"` remains blocked/,
       /`export_example_app` returns manifest and file metadata/,
-      /GeoParquet\/FlatGeobuf\/GeoTIFF\/GeoZarr remain blocked/,
+      /GeoParquet and FlatGeobuf are public `MapSpec` source contracts with runtime blocked/,
       /advanced geoprocessing as available capability/,
     ],
   },

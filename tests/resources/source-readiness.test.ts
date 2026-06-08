@@ -75,14 +75,14 @@ describe("source readiness report", () => {
     );
   });
 
-  it("reports GeoParquet as readiness-only now that it is a public source contract", () => {
+  it("reports FlatGeobuf as readiness-only now that it is a public source contract", () => {
     const spec = {
       version: "0.1",
       view: { center: [0, 0], zoom: 2 },
       sources: {
-        parquet: {
-          type: "geoparquet",
-          url: "./data/parcels.parquet",
+        parcels: {
+          type: "flatgeobuf",
+          url: "./data/parcels.fgb",
         },
       },
       layers: [],
@@ -91,10 +91,18 @@ describe("source readiness report", () => {
     const report = createSourceReadinessReport(spec);
 
     expect(report.status).toBe("follow-up-required");
+    expect(report.summary).toMatchObject({
+      sourceCount: 1,
+      supportedSourceCount: 0,
+      readinessOnlySourceCount: 1,
+      blockedSourceCount: 0,
+      displayReadySourceCount: 0,
+      queryReadySourceCount: 0,
+    });
     expect(report.sources).toEqual([
       expect.objectContaining({
-        sourceId: "parquet",
-        type: "geoparquet",
+        sourceId: "parcels",
+        type: "flatgeobuf",
         state: "readiness-only",
         displayReady: false,
         queryReady: false,
@@ -104,7 +112,8 @@ describe("source readiness report", () => {
     expect(report.diagnostics).toContainEqual(
       expect.objectContaining({
         code: "CAPABILITY.UNSUPPORTED",
-        path: "/sources/parquet/runtime",
+        path: "/sources/parcels/runtime",
+        severity: "warning",
       }),
     );
   });

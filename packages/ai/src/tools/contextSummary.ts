@@ -68,6 +68,13 @@ const GEOPARQUET_SOURCE_CONTRACT_SUMMARY: SourceContractSummary = {
   policyFields: ["maxFileBytes", "maxRowCount", "allowRemoteUrls", "timeoutMs", "workerBudget"],
 };
 
+const FLATGEOBUF_SOURCE_CONTRACT_SUMMARY: SourceContractSummary = {
+  kind: "schema",
+  state: "explicit",
+  metadataFields: ["type", "url", "hasIndex", "featureCount", "bbox", "geometryType", "fileBytes"],
+  policyFields: ["maxFileBytes", "maxFeatureCount", "allowRangeRequests", "indexRequired", "timeoutMs"],
+};
+
 export interface ContextSummaryInput {
   spec: MapSpec;
   capabilities?: CapabilityReport;
@@ -395,6 +402,7 @@ function summarizeSourceContract(source: MapSpec["sources"][string]): SourceCont
     };
   }
 
+  if (source.type === "flatgeobuf") return FLATGEOBUF_SOURCE_CONTRACT_SUMMARY;
   if (source.type === "geoparquet") return GEOPARQUET_SOURCE_CONTRACT_SUMMARY;
 
   return undefined;

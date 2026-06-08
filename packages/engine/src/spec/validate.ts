@@ -377,7 +377,11 @@ function isLayerSourceCompatible(layerType: string, sourceType: string): boolean
     layerType === "fill-extrusion-lite"
   ) {
     return (
-      sourceType === "geojson" || sourceType === "pmtiles" || sourceType === "geoparquet" || sourceType === "vector"
+      sourceType === "geojson" ||
+      sourceType === "pmtiles" ||
+      sourceType === "flatgeobuf" ||
+      sourceType === "geoparquet" ||
+      sourceType === "vector"
     );
   }
   return false;

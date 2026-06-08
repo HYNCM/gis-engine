@@ -377,6 +377,7 @@ export const ContextSummaryToolResultSchema = {
         properties: {
           id: { type: "string" },
           type: { type: "string" },
+          sourceContract: SourceContractSchema,
         },
         required: ["id", "type"],
         additionalProperties: false,

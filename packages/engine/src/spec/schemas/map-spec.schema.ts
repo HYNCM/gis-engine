@@ -1,5 +1,6 @@
 import { type Static, Type } from "@sinclair/typebox";
 import type { Expression } from "../../types.js";
+import { FlatGeobufSourceSchemaForMapSpec } from "../cloud-native/flatgeobuf-source.js";
 import { GeoParquetSourceSchemaForMapSpec } from "../cloud-native/geoparquet-source.js";
 
 const JsonValueSchema = Type.Unknown();
@@ -110,6 +111,7 @@ export const SourceSpecSchema = Type.Union([
   GeoJsonSourceSchema,
   RasterSourceSchema,
   PmtilesSourceSchema,
+  FlatGeobufSourceSchemaForMapSpec,
   GeoParquetSourceSchemaForMapSpec,
   VectorTileSourceSchema,
   VectorUrlSourceSchema,

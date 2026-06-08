@@ -20,42 +20,80 @@ describe("review-console contract", () => {
     expect(result.sourceReadiness[0].state).toBe("supported");
   });
 
-  it("computes blocked state when source is blocked", () => {
-    const result = computeReviewConsoleState(blockedFixture);
-    expect(result.acceptance).toBe("blocked");
-    expect(result.deliveryStatus).toBe("blocked");
-    expect(result.sourceReadiness[0].sourceContract).toMatchObject({
-      kind: "schema",
-      state: "explicit",
-    });
-    expect(result.sourcePromotionCandidates).toContainEqual(
+  it("computes FlatGeobuf readiness-only source contract and promotion candidate evidence", () => {
+    const evidence = structuredClone(followUpFixture);
+    evidence.delivery.sourceReadiness = [
+      {
+        id: "coastal-fgb",
+        format: "flatgeobuf",
+        state: "readiness-only",
+        queryReady: false,
+        resourcePolicy: "passed",
+        sourceContract: {
+          kind: "schema",
+          state: "explicit",
+          metadataFields: ["type", "url", "hasIndex", "featureCount", "bbox", "geometryType", "fileBytes"],
+          policyFields: ["maxFileBytes", "maxFeatureCount", "allowRangeRequests", "indexRequired", "timeoutMs"],
+        },
+      },
+    ];
+    evidence.delivery.followUps = [];
+
+    const result = computeReviewConsoleState(evidence);
+
+    expect(result.acceptance).toBe("follow-up-required");
+    expect(result.deliveryStatus).toBe("follow-up-required");
+    expect(result.sourceReadiness).toContainEqual(
       expect.objectContaining({
-        candidateId: "source-promotion.geoparquet.parquet-data",
-        format: "geoparquet",
+        sourceId: "coastal-fgb",
+        format: "flatgeobuf",
+        state: "readiness-only",
+        resourcePolicy: "passed",
         sourceContract: expect.objectContaining({
           kind: "schema",
           state: "explicit",
+          metadataFields: expect.arrayContaining(["type", "url", "hasIndex", "featureCount"]),
+          policyFields: expect.arrayContaining(["maxFileBytes", "maxFeatureCount", "indexRequired"]),
         }),
       }),
     );
-    const dataSection = result.sections.find((s) => s.id === "data-and-sources");
-    expect(dataSection?.state).toBe("blocked");
-    expect(dataSection?.sources?.[0].format).toBe("geoparquet");
-    expect(dataSection?.sources?.[0].sourceContract).toMatchObject({
-      kind: "schema",
-      state: "explicit",
-      metadataFields: expect.arrayContaining(["type", "url", "crs", "encoding"]),
-      policyFields: expect.arrayContaining(["maxFileBytes", "timeoutMs"]),
-    });
-    expect(dataSection?.promotionCandidates).toContainEqual(
+    expect(result.sourcePromotionCandidates).toContainEqual(
       expect.objectContaining({
-        id: "source-promotion.geoparquet.parquet-data",
-        format: "geoparquet",
-        state: "blocked",
+        candidateId: "source-promotion.flatgeobuf.coastal-fgb",
+        format: "flatgeobuf",
+        state: "readiness-only",
+        resourcePolicy: "passed",
         sourceContract: expect.objectContaining({
           kind: "schema",
           state: "explicit",
         }),
+        target: "FlatGeobuf runtime/query promotion gate",
+      }),
+    );
+    const dataSection = result.sections.find((s) => s.id === "data-and-sources");
+    expect(dataSection?.state).toBe("follow-up-required");
+    expect(dataSection?.sources?.[0]).toMatchObject({
+      format: "flatgeobuf",
+      state: "readiness-only",
+      resourcePolicy: "passed",
+    });
+    expect(dataSection?.sources?.[0].sourceContract).toMatchObject({
+      kind: "schema",
+      state: "explicit",
+      metadataFields: expect.arrayContaining(["type", "url", "hasIndex", "featureCount"]),
+      policyFields: expect.arrayContaining(["maxFileBytes", "maxFeatureCount", "indexRequired"]),
+    });
+    expect(dataSection?.promotionCandidates).toContainEqual(
+      expect.objectContaining({
+        id: "source-promotion.flatgeobuf.coastal-fgb",
+        format: "flatgeobuf",
+        state: "readiness-only",
+        resourcePolicy: "passed",
+        sourceContract: expect.objectContaining({
+          kind: "schema",
+          state: "explicit",
+        }),
+        target: "FlatGeobuf runtime/query promotion gate",
       }),
     );
   });

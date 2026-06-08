@@ -1,6 +1,7 @@
 import { DiagnosticCodes } from "../diagnostics/codes.js";
+import type { FlatGeobufSourceSpec } from "../spec/cloud-native/flatgeobuf-source.js";
 import type { GeoParquetSourceSpec } from "../spec/cloud-native/geoparquet-source.js";
-import { validateGeoParquetPolicy } from "../spec/cloud-native/validate.js";
+import { validateFlatGeobufPolicy, validateGeoParquetPolicy } from "../spec/cloud-native/validate.js";
 import { escapePathSegment } from "../spec/patch/path.js";
 import { defaultResourcePolicy, type ResourcePolicy, validateResourcePolicy } from "../spec/resource-policy.js";
 import type { Diagnostic, MapSpec, SourceSpec } from "../types.js";
@@ -92,14 +93,18 @@ function createSourceReadinessEntry(
   pmtilesPlan?: PMTilesRuntimeSourcePlan,
 ): SourceReadinessEntry {
   const sourceType = getSourceType(source);
+  const flatGeobufDiagnostics =
+    sourceType === "flatgeobuf" ? validateFlatGeobufSourceDiagnostics(sourceId, source as FlatGeobufSourceSpec) : [];
   const geoParquetDiagnostics =
     sourceType === "geoparquet" ? validateGeoParquetSourceDiagnostics(sourceId, source as GeoParquetSourceSpec) : [];
   const sourceDiagnostics =
     sourceType === "pmtiles"
       ? (pmtilesPlan?.diagnostics ?? sourceDiagnosticsFor(sourceId, resourceDiagnostics))
-      : sourceType === "geoparquet"
-        ? [...sourceDiagnosticsFor(sourceId, resourceDiagnostics), ...geoParquetDiagnostics]
-        : sourceDiagnosticsFor(sourceId, resourceDiagnostics);
+      : sourceType === "flatgeobuf"
+        ? [...sourceDiagnosticsFor(sourceId, resourceDiagnostics), ...flatGeobufDiagnostics]
+        : sourceType === "geoparquet"
+          ? [...sourceDiagnosticsFor(sourceId, resourceDiagnostics), ...geoParquetDiagnostics]
+          : sourceDiagnosticsFor(sourceId, resourceDiagnostics);
   const resourcePolicy = resourcePolicyStatus(sourceType, source, sourceDiagnostics);
   const resourceBlocked = resourcePolicy === "blocked";
 
@@ -173,6 +178,24 @@ function createSourceReadinessEntry(
     };
   }
 
+  if (sourceType === "flatgeobuf") {
+    return {
+      sourceId,
+      type: sourceType,
+      state: resourceBlocked ? "blocked" : "readiness-only",
+      displayReady: false,
+      queryReady: false,
+      resourcePolicy,
+      diagnostics: sourceDiagnostics,
+      limitations: [
+        "FlatGeobuf runtime loading, query, and export handoff remain blocked until a promotion gate lands.",
+      ],
+      nextAction: resourceBlocked
+        ? "Fix FlatGeobuf URL or policy blockers before delivery."
+        : "Keep FlatGeobuf as readiness-only evidence until public runtime loading or query promotion is approved.",
+    };
+  }
+
   if (sourceType === "geoparquet") {
     return {
       sourceId,
@@ -232,6 +255,8 @@ function resourcePolicyStatus(
   if (sourceType === "raster" || sourceType === "vector" || sourceType === "pmtiles" || sourceType === "geoparquet")
     return "passed";
 
+  if (sourceType === "flatgeobuf") return "passed";
+
   return "not-applicable";
 }
 
@@ -272,4 +297,8 @@ function unsupportedSourceDiagnostic(sourceId: string, sourceType: string): Diag
 
 function validateGeoParquetSourceDiagnostics(sourceId: string, source: GeoParquetSourceSpec): Diagnostic[] {
   return validateGeoParquetPolicy(source, undefined, sourceId);
+}
+
+function validateFlatGeobufSourceDiagnostics(sourceId: string, source: FlatGeobufSourceSpec): Diagnostic[] {
+  return validateFlatGeobufPolicy(source, undefined, sourceId);
 }

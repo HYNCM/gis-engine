@@ -41,6 +41,10 @@ export function validateResourcePolicy(spec: MapSpec, policy: ResourcePolicy = d
       diagnostics.push(...validateResourceUrl(source.url, `${sourcePath}/url`, policy));
     }
 
+    if (source.type === "flatgeobuf" && typeof source.url === "string") {
+      diagnostics.push(...validateResourceUrl(source.url, `${sourcePath}/url`, policy));
+    }
+
     if (source.type === "geoparquet" && typeof source.url === "string") {
       diagnostics.push(...validateResourceUrl(source.url, `${sourcePath}/url`, policy));
     }

@@ -71,6 +71,16 @@ export interface PmtilesSourceSpec {
   attribution?: string;
 }
 
+export interface FlatGeobufSourceSpec {
+  type: "flatgeobuf";
+  url: string;
+  hasIndex?: boolean;
+  featureCount?: number;
+  bbox?: [number, number, number, number];
+  geometryType?: "Point" | "LineString" | "Polygon" | "MultiPoint" | "MultiLineString" | "MultiPolygon";
+  fileBytes?: number;
+}
+
 export interface GeoParquetSourceSpec {
   type: "geoparquet";
   url: string;
@@ -116,6 +126,7 @@ export type SourceSpec =
   | GeoJsonSourceSpec
   | RasterSourceSpec
   | PmtilesSourceSpec
+  | FlatGeobufSourceSpec
   | GeoParquetSourceSpec
   | VectorSourceSpec;
 

@@ -738,7 +738,7 @@ describe("cli-preflight-map-spec", () => {
     }
   });
 
-  it("keeps GeoParquet in follow-up-required source readiness without blocking validation", () => {
+  it("keeps FlatGeobuf in follow-up-required source readiness without blocking validation", () => {
     const dir = mkdtempSync(join(tmpdir(), "gis-engine-cli-preflight-"));
     try {
       const mapPath = join(dir, "map.json");
@@ -748,7 +748,7 @@ describe("cli-preflight-map-spec", () => {
           {
             version: "0.1",
             view: { center: [0, 0], zoom: 2 },
-            sources: { parquet: { type: "geoparquet", url: "./data/parcels.parquet" } },
+            sources: { parcels: { type: "flatgeobuf", url: "./data/parcels.fgb" } },
             layers: [],
           },
           null,
@@ -758,6 +758,7 @@ describe("cli-preflight-map-spec", () => {
       );
 
       const result = preflightMapSpec({ filePath: mapPath });
+      const text = formatPreflightText(result);
 
       expect(result.ok).toBe(true);
       expect(result.status).toBe("ready");
@@ -765,12 +766,16 @@ describe("cli-preflight-map-spec", () => {
       expect(result.sourceReadiness.status).toBe("follow-up-required");
       expect(result.sourceReadiness.sources).toEqual([
         expect.objectContaining({
-          sourceId: "parquet",
-          type: "geoparquet",
+          sourceId: "parcels",
+          type: "flatgeobuf",
           state: "readiness-only",
+          displayReady: false,
+          queryReady: false,
           resourcePolicy: "passed",
         }),
       ]);
+      expect(text).toContain("Readiness:  follow-up-required (0 supported, 1 readiness-only, 0 blocked)");
+      expect(text).toContain("Source parcels: flatgeobuf / readiness-only / display no / query no / policy passed");
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

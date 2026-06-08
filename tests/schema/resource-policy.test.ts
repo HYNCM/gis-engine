@@ -66,6 +66,7 @@ describe("ResourcePolicy validation", () => {
   it("points diagnostics at raster tile, PMTiles URL, and vector tile fields", () => {
     const raster = validateSpec(withRasterTile("file:///tmp/{z}/{x}/{y}.png"));
     const pmtiles = validateSpec(withPmtilesUrl("file:///tmp/parcels.pmtiles"));
+    const flatgeobuf = validateSpec(withFlatGeobufUrl("file:///tmp/parcels.fgb"));
     const vector = validateSpec(withVectorTile("file:///tmp/vector/{z}/{x}/{y}.pbf"));
 
     expect(raster.diagnostics).toContainEqual(
@@ -75,6 +76,12 @@ describe("ResourcePolicy validation", () => {
       }),
     );
     expect(pmtiles.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: DiagnosticCodes.SecurityUrlBlocked,
+        path: "/sources/parcels/url",
+      }),
+    );
+    expect(flatgeobuf.diagnostics).toContainEqual(
       expect.objectContaining({
         code: DiagnosticCodes.SecurityUrlBlocked,
         path: "/sources/parcels/url",
@@ -278,6 +285,28 @@ function withPmtilesUrl(url: string): MapSpec {
         source: "parcels",
         metadata: { "source-layer": "parcels" },
         paint: { "fill-color": "#22c55e" },
+      },
+    ],
+  };
+}
+
+function withFlatGeobufUrl(url: string): MapSpec {
+  return {
+    version: "0.1",
+    id: "resource-policy-flatgeobuf",
+    view: { center: [120, 30], zoom: 10 },
+    sources: {
+      parcels: {
+        type: "flatgeobuf",
+        url,
+      },
+    },
+    layers: [
+      {
+        id: "parcels",
+        type: "circle",
+        source: "parcels",
+        paint: { "circle-color": "#2563eb" },
       },
     ],
   };

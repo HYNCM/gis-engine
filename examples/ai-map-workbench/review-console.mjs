@@ -285,10 +285,10 @@ const SOURCE_PROMOTION_CANDIDATE_DEFINITIONS = {
     note: "Public MapSpec schema is wired; runtime loading remains blocked until read-only evidence lands.",
   },
   flatgeobuf: {
-    target: "FlatGeobuf public source promotion gate",
+    target: "FlatGeobuf runtime/query promotion gate",
     exitCondition:
-      "Public MapSpec schema wiring, stream/index diagnostics, resource policy, and deterministic negative fixtures must pass before runtime loading is promoted.",
-    note: "Only file-list evidence is allowed before the public source promotion gate.",
+      "Public MapSpec schema wiring is already in place; read-only query fixtures, stream/index diagnostics, resource policy, and deterministic negative fixtures must pass before runtime loading is promoted.",
+    note: "Public MapSpec schema is wired; runtime loading remains blocked until read-only evidence lands.",
   },
   geotiff: {
     target: "GeoTIFF raster source gate",

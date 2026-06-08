@@ -154,6 +154,33 @@ describe.each(adapters)("queryFeatures MVP in $name", ({ create }) => {
   });
 });
 
+it("reports unsupported diagnostics for FlatGeobuf URL sources in headless query", async () => {
+  const adapter = new MockAdapter();
+  const spec: MapSpec = {
+    version: "0.1",
+    view: { center: [0, 0], zoom: 2 },
+    sources: {
+      flatgeobuf: {
+        type: "flatgeobuf",
+        url: "./data/flatgeobuf.fgb",
+      },
+    },
+    layers: [{ id: "flatgeobuf-layer", type: "circle", source: "flatgeobuf" }],
+  };
+  await adapter.load(spec, { container: {} as HTMLElement });
+
+  const result = await adapter.queryFeatures({ point: [0, 0], layers: ["flatgeobuf-layer"] });
+
+  expect(result.features).toEqual([]);
+  expect(result.diagnostics).toEqual([
+    expect.objectContaining({
+      severity: "error",
+      code: "CAPABILITY.UNSUPPORTED",
+      path: "/sources/flatgeobuf/url",
+    }),
+  ]);
+});
+
 function featureIds(result: FeatureQueryResult): string[] {
   return result.features
     .map((feature) => (feature as { properties?: { id?: string } }).properties?.id)

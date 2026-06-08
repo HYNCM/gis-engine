@@ -77,6 +77,6 @@ work instead of silently upgrading capability claims.
 ## Non-Goals
 
 - No free-form prompt parser expansion in this spec.
-- No GeoParquet, FlatGeobuf, GeoTIFF, or GeoZarr source implementation.
+- No GeoParquet or FlatGeobuf runtime implementation, and no GeoTIFF or GeoZarr source implementation.
 - No real SceneView3D renderer promotion.
 - No changes to the frozen public MCP tool names.

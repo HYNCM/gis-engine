@@ -106,6 +106,15 @@ function transformSource(sourceId: string, source: SourceSpec, diagnostics: Diag
     });
     return { type: "vector", url: source.url };
   }
+  if (source.type === "flatgeobuf") {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.CapabilityUnsupported,
+      message: `FlatGeobuf source "${sourceId}" is accepted by MapSpec but remains runtime-blocked in the MapLibre MVP.`,
+      path: `/sources/${sourceId}/url`,
+    });
+    return { type: "geojson", data: null };
+  }
   if (source.type === "geoparquet") {
     diagnostics.push({
       severity: "error",

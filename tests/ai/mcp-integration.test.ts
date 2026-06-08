@@ -348,6 +348,77 @@ describe("MCP Server Integration", () => {
     );
   });
 
+  it("surfaces FlatGeobuf source contract and readiness-only state in context summaries", async () => {
+    const flatGeobufSpec: MapSpec = {
+      version: "0.1",
+      id: "flatgeobuf-review",
+      revision: "1",
+      view: { center: [0, 0], zoom: 4 },
+      sources: {
+        parcels: {
+          type: "flatgeobuf",
+          url: "./data/parcels.fgb",
+          hasIndex: true,
+          featureCount: 42,
+          geometryType: "Polygon",
+        },
+      },
+      layers: [],
+    };
+
+    const result = await callGisEngineTool({
+      params: {
+        name: "get_context_summary",
+        arguments: { spec: flatGeobufSpec },
+      },
+    });
+
+    const summary = JSON.parse(result.content[0]?.text) as {
+      validation: { valid: boolean };
+      sources: Array<{
+        id: string;
+        type: string;
+        sourceContract?: {
+          kind: string;
+          state: string;
+          metadataFields: string[];
+          policyFields: string[];
+        };
+      }>;
+      sourceReadiness: Array<{
+        sourceId: string;
+        type: string;
+        state: string;
+        queryReady: boolean;
+        resourcePolicy: string;
+      }>;
+    };
+
+    expect(result.isError).toBeUndefined();
+    expect(summary.validation.valid).toBe(true);
+    expect(summary.sources).toContainEqual(
+      expect.objectContaining({
+        id: "parcels",
+        type: "flatgeobuf",
+        sourceContract: expect.objectContaining({
+          kind: "schema",
+          state: "explicit",
+          metadataFields: expect.arrayContaining(["type", "url", "hasIndex", "featureCount"]),
+          policyFields: expect.arrayContaining(["maxFileBytes", "maxFeatureCount", "indexRequired"]),
+        }),
+      }),
+    );
+    expect(summary.sourceReadiness).toContainEqual(
+      expect.objectContaining({
+        sourceId: "parcels",
+        type: "flatgeobuf",
+        state: "readiness-only",
+        queryReady: false,
+        resourcePolicy: "passed",
+      }),
+    );
+  });
+
   it("exposes gated SceneView3D context without enabling stable 3D runtime", async () => {
     const result = await callGisEngineTool({
       params: {

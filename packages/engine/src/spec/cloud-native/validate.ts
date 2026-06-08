@@ -172,15 +172,17 @@ export function validateGeoParquetPolicy(
 export function validateFlatGeobufPolicy(
   source: FlatGeobufSourceSpec,
   policy: FlatGeobufPolicy = defaultFlatGeobufPolicy,
+  sourceId = "flatgeobuf",
 ): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
+  const sourcePath = `/sources/${escapePathSegment(sourceId)}`;
 
   // Runtime is always blocked
   diagnostics.push({
     severity: "warning",
     code: DiagnosticCodes.CapabilityUnsupported,
     message: "FlatGeobuf runtime loading and query are not implemented. This is a metadata-only contract.",
-    path: "/sources/flatgeobuf/runtime",
+    path: `${sourcePath}/runtime`,
   });
 
   if (!source.url || source.url.trim().length === 0) {
@@ -188,7 +190,7 @@ export function validateFlatGeobufPolicy(
       severity: "error",
       code: DiagnosticCodes.SchemaInvalid,
       message: "FlatGeobuf source URL must not be empty.",
-      path: "/sources/flatgeobuf/url",
+      path: `${sourcePath}/url`,
     });
   }
 
@@ -199,7 +201,7 @@ export function validateFlatGeobufPolicy(
         severity: "error",
         code: DiagnosticCodes.SecurityUrlBlocked,
         message: `FlatGeobuf file size ${source.fileBytes} exceeds policy limit ${maxBytes}.`,
-        path: "/sources/flatgeobuf/fileBytes",
+        path: `${sourcePath}/fileBytes`,
       });
     }
   }
@@ -209,7 +211,7 @@ export function validateFlatGeobufPolicy(
       severity: "error",
       code: DiagnosticCodes.CapabilityUnsupported,
       message: "FlatGeobuf spatial index is required by policy but not present.",
-      path: "/sources/flatgeobuf/hasIndex",
+      path: `${sourcePath}/hasIndex`,
     });
   }
 
@@ -220,7 +222,7 @@ export function validateFlatGeobufPolicy(
         severity: "error",
         code: DiagnosticCodes.SchemaInvalid,
         message: "FlatGeobuf bbox must be within [-180, -90, 180, 90].",
-        path: "/sources/flatgeobuf/bbox",
+        path: `${sourcePath}/bbox`,
       });
     }
   }
