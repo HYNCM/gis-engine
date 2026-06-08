@@ -24,6 +24,9 @@ import type { MapSpec, PMTilesArchiveMetadata } from "@gis-engine/engine";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { isDirectCliExecution } from "../../packages/cli/src/bin.ts";
 
+type Template = NonNullable<ReturnType<typeof getTemplate>>;
+type TemplateFile = ReturnType<Template["generate"]>[number];
+
 // ---------------------------------------------------------------------------
 // bin.ts — direct execution guard
 // ---------------------------------------------------------------------------
@@ -938,7 +941,7 @@ describe("cli-templates", () => {
   });
 
   it("static-html template generates index.html and README.md", () => {
-    const tpl = getTemplate("static-html")!;
+    const tpl = mustGetTemplate("static-html");
     const ctx = { projectName: "test-project", provider: "mock", cliVersion: "0.0.0" };
     const files = tpl.generate(ctx);
     const paths = files.map((f) => f.path);
@@ -947,7 +950,7 @@ describe("cli-templates", () => {
   });
 
   it("vite-ts template generates package.json, tsconfig.json, index.html, src/main.ts, README.md", () => {
-    const tpl = getTemplate("vite-ts")!;
+    const tpl = mustGetTemplate("vite-ts");
     const ctx = { projectName: "test-project", provider: "mock", cliVersion: "0.0.0" };
     const files = tpl.generate(ctx);
     const paths = files.map((f) => f.path);
@@ -956,29 +959,29 @@ describe("cli-templates", () => {
     expect(paths).toContain("index.html");
     expect(paths).toContain("src/main.ts");
     expect(paths).toContain("README.md");
-    const pkgFile = files.find((f) => f.path === "package.json")!;
+    const pkgFile = mustFindFile(files, "package.json");
     const pkg = JSON.parse(pkgFile.content);
     expect(pkg.dependencies["@gis-engine/engine"]).toBe("^1.0.0");
     expect(pkg.dependencies["@gis-engine/ai"]).toBe("^1.0.0");
   });
 
   it("mapspec template generates map.json and README.md", () => {
-    const tpl = getTemplate("mapspec")!;
+    const tpl = mustGetTemplate("mapspec");
     const ctx = { projectName: "test-project", provider: "mock", cliVersion: "0.0.0" };
     const files = tpl.generate(ctx);
     const paths = files.map((f) => f.path);
     expect(paths).toContain("map.json");
     expect(paths).toContain("README.md");
-    const readme = files.find((f) => f.path === "README.md")!;
+    const readme = mustFindFile(files, "README.md");
     expect(readme.content).toContain("create-gis-map --preflight ./map.json --json");
   });
 
   it("generated files contain the project name", () => {
-    const tpl = getTemplate("static-html")!;
+    const tpl = mustGetTemplate("static-html");
     const ctx = { projectName: "my-cool-map", provider: "mock", cliVersion: "0.0.0" };
     const files = tpl.generate(ctx);
-    const indexHtml = files.find((f) => f.path === "index.html")!;
-    const readme = files.find((f) => f.path === "README.md")!;
+    const indexHtml = mustFindFile(files, "index.html");
+    const readme = mustFindFile(files, "README.md");
     expect(indexHtml.content).toContain("my-cool-map");
     expect(readme.content).toContain("my-cool-map");
   });
@@ -986,38 +989,30 @@ describe("cli-templates", () => {
   it("scaffold templates include the required MapSpec view", () => {
     const ctx = { projectName: "view-test", provider: "mock", cliVersion: "1.0.0" };
 
-    const staticHtml = getTemplate("static-html")!
-      .generate(ctx)
-      .find((f) => f.path === "index.html")!;
+    const staticHtml = mustFindFile(mustGetTemplate("static-html").generate(ctx), "index.html");
     expect(staticHtml.content).toContain("view:");
     expect(staticHtml.content).toContain('version: "0.1"');
 
-    const viteMain = getTemplate("vite-ts")!
-      .generate(ctx)
-      .find((f) => f.path === "src/main.ts")!;
+    const viteMain = mustFindFile(mustGetTemplate("vite-ts").generate(ctx), "src/main.ts");
     expect(viteMain.content).toContain("view:");
     expect(viteMain.content).toContain('version: "0.1"');
     expect(viteMain.content).toContain("async function main()");
     expect(viteMain.content).not.toMatch(/^const map = await createMap/m);
 
-    const mapspec = getTemplate("mapspec")!
-      .generate(ctx)
-      .find((f) => f.path === "map.json")!;
+    const mapspec = mustFindFile(mustGetTemplate("mapspec").generate(ctx), "map.json");
     expect(JSON.parse(mapspec.content).version).toBe("0.1");
     expect(JSON.parse(mapspec.content).view).toEqual({ center: [0, 0], zoom: 2 });
 
-    const appMap = getTemplate("app")!
-      .generate(ctx)
-      .find((f) => f.path === "map.json")!;
+    const appMap = mustFindFile(mustGetTemplate("app").generate(ctx), "map.json");
     expect(JSON.parse(appMap.content).version).toBe("0.1");
     expect(JSON.parse(appMap.content).view).toEqual({ center: [0, 0], zoom: 2 });
   });
 
   it("generated package.json is valid JSON", () => {
-    const tpl = getTemplate("vite-ts")!;
+    const tpl = mustGetTemplate("vite-ts");
     const ctx = { projectName: "json-test", provider: "mock", cliVersion: "0.0.0" };
     const files = tpl.generate(ctx);
-    const pkgFile = files.find((f) => f.path === "package.json")!;
+    const pkgFile = mustFindFile(files, "package.json");
     expect(() => JSON.parse(pkgFile.content)).not.toThrow();
     const pkg = JSON.parse(pkgFile.content);
     expect(pkg.name).toBe("json-test");
@@ -1030,7 +1025,7 @@ describe("cli-templates", () => {
   });
 
   it("app template generates full interactive application files", () => {
-    const tpl = getTemplate("app")!;
+    const tpl = mustGetTemplate("app");
     const ctx = { projectName: "quake-app", provider: "deepseek", cliVersion: "1.0.0" };
     const files = tpl.generate(ctx);
     const paths = files.map((f) => f.path);
@@ -1046,15 +1041,15 @@ describe("cli-templates", () => {
     expect(paths).toContain("src/vite-env.d.ts");
     expect(paths).toContain("map.json");
     expect(paths).toContain("README.md");
-    const readme = files.find((f) => f.path === "README.md")!;
+    const readme = mustFindFile(files, "README.md");
     expect(readme.content).toContain("create-gis-map --preflight ./map.json --json");
   });
 
   it("app template includes React and Tailwind dependencies", () => {
-    const tpl = getTemplate("app")!;
+    const tpl = mustGetTemplate("app");
     const ctx = { projectName: "test-app", provider: "mock", cliVersion: "1.0.0" };
     const files = tpl.generate(ctx);
-    const pkgFile = files.find((f) => f.path === "package.json")!;
+    const pkgFile = mustFindFile(files, "package.json");
     const pkg = JSON.parse(pkgFile.content);
     expect(pkg.dependencies["@gis-engine/engine"]).toBe("^1.0.0");
     expect(pkg.dependencies.react).toBeDefined();
@@ -1065,7 +1060,7 @@ describe("cli-templates", () => {
   });
 
   it("app template generates all 5 UI components by default", () => {
-    const tpl = getTemplate("app")!;
+    const tpl = mustGetTemplate("app");
     const ctx = { projectName: "full-app", provider: "mock", cliVersion: "1.0.0" };
     const files = tpl.generate(ctx);
     const paths = files.map((f) => f.path);
@@ -1077,7 +1072,7 @@ describe("cli-templates", () => {
   });
 
   it("app template imports maplibre-gl in each generated component", () => {
-    const tpl = getTemplate("app")!;
+    const tpl = mustGetTemplate("app");
     const ctx = { projectName: "import-test", provider: "mock", cliVersion: "1.0.0" };
     const files = tpl.generate(ctx);
     for (const path of [
@@ -1094,7 +1089,7 @@ describe("cli-templates", () => {
   });
 
   it("app template respects custom appConfig with fewer components", () => {
-    const tpl = getTemplate("app")!;
+    const tpl = mustGetTemplate("app");
     const ctx = {
       projectName: "locator-app",
       provider: "mock",
@@ -1145,10 +1140,10 @@ describe("cli-templates", () => {
   });
 
   it("app template App.tsx imports all configured components", () => {
-    const tpl = getTemplate("app")!;
+    const tpl = mustGetTemplate("app");
     const ctx = { projectName: "test-app", provider: "mock", cliVersion: "1.0.0" };
     const files = tpl.generate(ctx);
-    const appFile = files.find((f) => f.path === "src/App.tsx")!;
+    const appFile = mustFindFile(files, "src/App.tsx");
     expect(appFile.content).toContain('import LayerPanel from "./components/LayerPanel"');
     expect(appFile.content).toContain('import Legend from "./components/Legend"');
     expect(appFile.content).toContain('import FeaturePopup from "./components/FeaturePopup"');
@@ -1207,15 +1202,15 @@ describe("cli-templates", () => {
   });
 
   it("app template exposes loading, reload, and responsive control states", () => {
-    const tpl = getTemplate("app")!;
+    const tpl = mustGetTemplate("app");
     const ctx = { projectName: "test-app", provider: "mock", cliVersion: "1.0.0" };
     const files = tpl.generate(ctx);
-    const appFile = files.find((f) => f.path === "src/App.tsx")!;
-    const layerPanel = files.find((f) => f.path === "src/components/LayerPanel.tsx")!;
-    const legend = files.find((f) => f.path === "src/components/Legend.tsx")!;
-    const searchBox = files.find((f) => f.path === "src/components/SearchBox.tsx")!;
-    const basemapSwitcher = files.find((f) => f.path === "src/components/BasemapSwitcher.tsx")!;
-    const appCss = files.find((f) => f.path === "src/index.css")!;
+    const appFile = mustFindFile(files, "src/App.tsx");
+    const layerPanel = mustFindFile(files, "src/components/LayerPanel.tsx");
+    const legend = mustFindFile(files, "src/components/Legend.tsx");
+    const searchBox = mustFindFile(files, "src/components/SearchBox.tsx");
+    const basemapSwitcher = mustFindFile(files, "src/components/BasemapSwitcher.tsx");
+    const appCss = mustFindFile(files, "src/index.css");
 
     expect(appFile.content).toContain('type MapLoadStatus = "loading" | "ready" | "empty" | "error";');
     expect(appFile.content).toContain("Reload map.json");
@@ -1465,7 +1460,7 @@ describe("cli-app-template-earthquake-demo", () => {
   });
 
   it("app template can generate earthquake explorer project", () => {
-    const tpl = getTemplate("app")!;
+    const tpl = mustGetTemplate("app");
     const ctx = {
       projectName: "earthquake-explorer",
       provider: "deepseek",
@@ -1478,10 +1473,10 @@ describe("cli-app-template-earthquake-demo", () => {
       },
     };
     const files = tpl.generate(ctx);
-    const indexHtml = files.find((f) => f.path === "index.html")!;
+    const indexHtml = mustFindFile(files, "index.html");
     expect(indexHtml.content).toContain("2024 Global Earthquakes (M5+)");
     expect(indexHtml.content).toContain('<link rel="icon" href="data:," />');
-    const readme = files.find((f) => f.path === "README.md")!;
+    const readme = mustFindFile(files, "README.md");
     expect(readme.content).toContain("explorer");
     expect(readme.content).toContain("deepseek");
     expect(readme.content).toContain("delivery-summary.json");
@@ -1621,3 +1616,15 @@ describe("cli-provider-profile", () => {
     expect(readProviderApiKey("unknown")).toBeUndefined();
   });
 });
+
+function mustGetTemplate(name: Parameters<typeof getTemplate>[0]): Template {
+  const template = getTemplate(name);
+  if (!template) throw new Error(`Expected ${name} template.`);
+  return template;
+}
+
+function mustFindFile(files: TemplateFile[], path: string): TemplateFile {
+  const file = files.find((entry) => entry.path === path);
+  if (!file) throw new Error(`Expected generated file ${path}.`);
+  return file;
+}

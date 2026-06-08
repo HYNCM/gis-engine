@@ -1,6 +1,6 @@
 {
   "name": "@gis-engine/ai",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "AI and MCP tools for validating, editing, explaining, snapshotting, and exporting GIS Engine MapSpec documents.",
   "license": "Apache-2.0",
   "type": "module",

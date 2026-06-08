@@ -30,13 +30,13 @@ describe("CNS-001: PMTiles archive policy validation", () => {
 
   it("rejects non-v3 spec version", () => {
     const metadata = {
-      specVersion: 2 as any,
+      specVersion: 2,
       archiveBytes: 1000,
       rootDirectoryOffset: 0,
       rootDirectoryLength: 100,
       hasVectorTiles: false,
       hasRasterTiles: false,
-    };
+    } as unknown as PMTilesArchiveMetadata;
     const diagnostics = validatePMTilesArchivePolicy(metadata);
     expect(diagnostics).toContainEqual(expect.objectContaining({ path: "/pmtiles/specVersion", severity: "error" }));
   });

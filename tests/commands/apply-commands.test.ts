@@ -7,6 +7,8 @@ import after from "../fixtures/commands/replay/style-update/after.map.json";
 import before from "../fixtures/commands/replay/style-update/before.map.json";
 import commands from "../fixtures/commands/replay/style-update/commands.json";
 
+const styleUpdateCommands = commands as MapCommand[];
+
 describe("applyCommands", () => {
   it("applies a style update and returns patch metadata", () => {
     const result = applyCommands(before as MapSpec, commands as MapCommand[]);
@@ -41,7 +43,7 @@ describe("applyCommands", () => {
   });
 
   it("rolls back the returned spec when an atomic batch fails", () => {
-    const styleCommand = (commands as MapCommand[])[0]!;
+    const styleCommand = firstStyleCommand();
     const failingCommand: MapCommand = {
       id: "cmd-remove-missing-layer",
       version: "0.1",
@@ -61,7 +63,7 @@ describe("applyCommands", () => {
   });
 
   it("keeps successful commands in best-effort mode", () => {
-    const styleCommand = (commands as MapCommand[])[0]!;
+    const styleCommand = firstStyleCommand();
     const failingCommand: MapCommand = {
       id: "cmd-remove-missing-layer",
       version: "0.1",
@@ -101,7 +103,7 @@ describe("applyCommands", () => {
 
   it("collects deterministic audit traces when requested", () => {
     const command: MapCommand = {
-      ...(commands as MapCommand[])[0]!,
+      ...firstStyleCommand(),
       author: {
         type: "agent",
         id: "agent-product-strategist",
@@ -138,7 +140,7 @@ describe("applyCommands", () => {
 
   it("records conflict diagnostics in audit traces", () => {
     const staleCommand: MapCommand = {
-      ...(commands as MapCommand[])[0]!,
+      ...firstStyleCommand(),
       baseRevision: "stale",
       author: {
         type: "agent",
@@ -183,3 +185,9 @@ describe("applyCommands", () => {
     expect(result.traces).toEqual(expectedConflictAuditTraces);
   });
 });
+
+function firstStyleCommand(): MapCommand {
+  const command = styleUpdateCommands[0];
+  if (!command) throw new Error("Expected style-update command fixture.");
+  return command;
+}

@@ -20,7 +20,7 @@ describe("MapSpecToMapLibreStyleTransformer", () => {
   it("returns diagnostics for invalid expressions", () => {
     const spec = structuredClone(before) as MapSpec;
     spec.layers[0] = {
-      ...spec.layers[0]!,
+      ...firstLayer(spec),
       paint: {
         "fill-color": ["coalesce", ["get", "kind"], "#fff"],
       },
@@ -44,7 +44,7 @@ describe("MapSpecToMapLibreStyleTransformer", () => {
       },
     };
     spec.layers[0] = {
-      ...spec.layers[0]!,
+      ...firstLayer(spec),
       metadata: { "source-layer": "districts" },
     };
 
@@ -64,7 +64,7 @@ describe("MapSpecToMapLibreStyleTransformer", () => {
   it("forwards layer filters and zoom ranges to MapLibre style layers", () => {
     const spec = structuredClone(before) as MapSpec;
     spec.layers[0] = {
-      ...spec.layers[0]!,
+      ...firstLayer(spec),
       filter: ["==", ["get", "category"], "landmark"],
       minzoom: 9,
       maxzoom: 17,
@@ -83,7 +83,7 @@ describe("MapSpecToMapLibreStyleTransformer", () => {
   it("returns capability-only diagnostics for schema-valid unsupported layers", () => {
     const spec = structuredClone(before) as MapSpec;
     spec.layers[0] = {
-      ...spec.layers[0]!,
+      ...firstLayer(spec),
       type: "fill-extrusion-lite",
     };
 
@@ -116,3 +116,9 @@ describe("MapSpecToMapLibreStyleTransformer", () => {
     });
   });
 });
+
+function firstLayer(spec: MapSpec): MapSpec["layers"][number] {
+  const layer = spec.layers[0];
+  if (!layer) throw new Error("Expected first layer fixture.");
+  return layer;
+}

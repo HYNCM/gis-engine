@@ -517,7 +517,7 @@ describe("MCP Server Integration", () => {
   it("returns stable expression diagnostics for invalid v0.2 expressions through MCP", async () => {
     const invalidSpec = structuredClone(vectorTileUrl) as MapSpec;
     invalidSpec.layers[0] = {
-      ...invalidSpec.layers[0]!,
+      ...firstLayer(invalidSpec),
       paint: {
         "fill-color": ["match", ["get", "class"], { bad: "label" }, "#22c55e", "#f97316"],
         "fill-opacity": ["case", "not-boolean", 0.4, 0.2],
@@ -880,3 +880,9 @@ describe("MCP Server Integration", () => {
     });
   });
 });
+
+function firstLayer(spec: MapSpec): MapSpec["layers"][number] {
+  const layer = spec.layers[0];
+  if (!layer) throw new Error("Expected first layer fixture.");
+  return layer;
+}

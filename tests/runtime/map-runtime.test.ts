@@ -21,6 +21,8 @@ import { describe, expect, it } from "vitest";
 import before from "../fixtures/commands/replay/style-update/before.map.json";
 import commands from "../fixtures/commands/replay/style-update/commands.json";
 
+const styleUpdateCommands = commands as MapCommand[];
+
 class RuntimeMockAdapter implements RendererAdapter {
   readonly id = "runtime-mock";
   readonly version = "0.1.0";
@@ -98,7 +100,7 @@ describe("MapRuntime", () => {
   it("rejects invalid specs before loading the adapter", async () => {
     const adapter = new RuntimeMockAdapter();
     const invalidSpec = structuredClone(before) as MapSpec;
-    invalidSpec.layers = [{ ...invalidSpec.layers[0]!, source: "missing-source" }];
+    invalidSpec.layers = [{ ...firstLayer(invalidSpec), source: "missing-source" }];
 
     await expect(
       MapRuntime.create(invalidSpec, {
@@ -124,7 +126,7 @@ describe("MapRuntime", () => {
       adapter,
       container: {} as HTMLElement,
     });
-    const styleCommand = (commands as MapCommand[])[0]!;
+    const styleCommand = firstStyleCommand();
     const failingCommand: MapCommand = {
       id: "cmd-remove-missing-layer",
       version: "0.1",
@@ -146,7 +148,7 @@ describe("MapRuntime", () => {
       adapter,
       container: {} as HTMLElement,
     });
-    const styleCommand = (commands as MapCommand[])[0]!;
+    const styleCommand = firstStyleCommand();
     const failingCommand: MapCommand = {
       id: "cmd-remove-missing-layer",
       version: "0.1",
@@ -168,7 +170,7 @@ describe("MapRuntime", () => {
       adapter,
       container: {} as HTMLElement,
     });
-    const previewCommand: MapCommand = { ...(commands as MapCommand[])[0]!, id: "cmd-preview-style", dryRun: true };
+    const previewCommand: MapCommand = { ...firstStyleCommand(), id: "cmd-preview-style", dryRun: true };
 
     const results = await runtime.apply(previewCommand);
 
@@ -199,7 +201,7 @@ describe("MapRuntime", () => {
       adapter,
       container: {} as HTMLElement,
     });
-    const previewCommand: MapCommand = { ...(commands as MapCommand[])[0]!, id: "cmd-preview-style", dryRun: true };
+    const previewCommand: MapCommand = { ...firstStyleCommand(), id: "cmd-preview-style", dryRun: true };
     const viewCommand: MapCommand = {
       id: "cmd-commit-view",
       version: "0.1",
@@ -226,7 +228,7 @@ describe("MapRuntime", () => {
       adapter,
       container: {} as HTMLElement,
     });
-    const styleCommand = (commands as MapCommand[])[0]!;
+    const styleCommand = firstStyleCommand();
     const staleViewCommand: MapCommand = {
       id: "cmd-stale-view",
       version: "0.1",
@@ -322,6 +324,18 @@ describe("MapRuntime", () => {
     ]);
   });
 });
+
+function firstStyleCommand(): MapCommand {
+  const command = styleUpdateCommands[0];
+  if (!command) throw new Error("Expected style-update command fixture.");
+  return command;
+}
+
+function firstLayer(spec: MapSpec): MapSpec["layers"][number] {
+  const layer = spec.layers[0];
+  if (!layer) throw new Error("Expected first layer fixture.");
+  return layer;
+}
 
 function runtimeQuerySpec(): MapSpec {
   return {

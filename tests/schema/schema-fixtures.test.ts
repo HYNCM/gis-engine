@@ -44,7 +44,7 @@ describe("MapSpec fixtures", () => {
   it("gates fill-extrusion-lite behind an explicit 2.5D experimental request", () => {
     const spec = structuredClone(basicGeoJson) as MapSpec;
     spec.layers[1] = {
-      ...spec.layers[1]!,
+      ...layerAt(spec, 1),
       type: "fill-extrusion-lite",
     };
 
@@ -100,3 +100,9 @@ describe("MapSpec fixtures", () => {
     );
   });
 });
+
+function layerAt(spec: MapSpec, index: number): MapSpec["layers"][number] {
+  const layer = spec.layers[index];
+  if (!layer) throw new Error(`Expected layer fixture at index ${index}.`);
+  return layer;
+}

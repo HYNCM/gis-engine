@@ -116,9 +116,11 @@ describe("SceneView3D loader resource policy", () => {
 
   it("requires external renderer asset URLs to pass SceneView3D resource policy before loader evidence is accepted", () => {
     const spec = scene3dSpec();
-    const scene = spec.extensions?.scene3d!;
-    scene.sources!["city-tiles"]!.url = "https://cdn.example.com/city/tileset.json";
-    scene.sources!["station-model"]!.url = "https://assets.example.com/models/station.glb";
+    const scene = requiredScene3D(spec);
+    const cityTiles = requiredSceneSource(scene, "city-tiles");
+    const stationModel = requiredSceneSource(scene, "station-model");
+    cityTiles.url = "https://cdn.example.com/city/tileset.json";
+    stationModel.url = "https://assets.example.com/models/station.glb";
 
     const blocked = validateSpec(spec);
 
@@ -136,7 +138,10 @@ describe("SceneView3D loader resource policy", () => {
       ]),
     );
 
-    scene.resourcePolicy!.allowedHosts = ["cdn.example.com", "assets.example.com"];
+    scene.resourcePolicy = {
+      ...scene.resourcePolicy,
+      allowedHosts: ["cdn.example.com", "assets.example.com"],
+    };
     const allowlisted = validateSpec(spec);
 
     expect(allowlisted.diagnostics).not.toContainEqual(
@@ -160,4 +165,16 @@ function scene3dExtension(): SceneView3DExtension {
 
 function scene3dSpec(): MapSpec {
   return structuredClone(scene3dExtensionSpec) as MapSpec;
+}
+
+function requiredScene3D(spec: MapSpec): SceneView3DExtension {
+  const scene = spec.extensions?.scene3d;
+  if (!scene) throw new Error("Expected SceneView3D extension fixture.");
+  return scene;
+}
+
+function requiredSceneSource(scene: SceneView3DExtension, sourceId: string): { url: string } {
+  const source = scene.sources?.[sourceId];
+  if (!source) throw new Error(`Expected SceneView3D source fixture ${sourceId}.`);
+  return source;
 }

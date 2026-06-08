@@ -86,7 +86,7 @@ export class WorkbenchNodeHarness {
   private readonly providers: ProviderProfile[];
   private readonly auditRecords: AuditRecord[] = [];
   private readonly reviewDecisions: ReviewDecision[] = [];
-  private lastGenerationEvidence: any = null;
+  private lastGenerationEvidence: unknown = null;
   private readonly context: Record<string, unknown>;
   private revision = 1;
   private providerFetchCount = 0;

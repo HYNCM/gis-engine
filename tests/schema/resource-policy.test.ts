@@ -105,8 +105,10 @@ describe("ResourcePolicy validation", () => {
       sources: Record<string, { url: string }>;
       resourcePolicy: { allowedHosts: string[] };
     };
+    const cityTiles = scene.sources["city-tiles"];
+    if (!cityTiles) throw new Error("Expected city-tiles fixture source.");
 
-    scene.sources["city-tiles"]!.url = "https://tiles.example.com/city/tileset.json";
+    cityTiles.url = "https://tiles.example.com/city/tileset.json";
     scene.resourcePolicy.allowedHosts = ["tiles.example.com"];
 
     const report = validateSpec(spec);
@@ -306,7 +308,9 @@ function withVectorTile(tileUrl: string): MapSpec {
 function withSceneSourceUrl(sourceId: string, url: string) {
   const spec = structuredClone(scene3dExtensionSpec) as MapSpec;
   const scene = spec.extensions?.scene3d as { sources: Record<string, { url: string }> };
-  scene.sources[sourceId]!.url = url;
+  const source = scene.sources[sourceId];
+  if (!source) throw new Error(`Expected SceneView3D fixture source ${sourceId}.`);
+  source.url = url;
   return validateSpec(spec);
 }
 

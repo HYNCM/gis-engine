@@ -69,7 +69,7 @@ describe("MapLibreAdapter MVP", () => {
     const committedStyle = adapter.exportStyle();
     const unsupportedSpec = structuredClone(before) as MapSpec;
     unsupportedSpec.layers[0] = {
-      ...unsupportedSpec.layers[0]!,
+      ...firstLayer(unsupportedSpec),
       type: "fill-extrusion-lite",
     };
 
@@ -137,3 +137,9 @@ describe("MapLibreAdapter MVP", () => {
     expect(snapshot.passed).toBe(true);
   });
 });
+
+function firstLayer(spec: MapSpec): MapSpec["layers"][number] {
+  const layer = spec.layers[0];
+  if (!layer) throw new Error("Expected first layer fixture.");
+  return layer;
+}

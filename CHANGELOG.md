@@ -33,6 +33,9 @@
 - **`SchemaInvalid` diagnostic code** (`SCHEMA.INVALID`) for cloud-native schema validation failures.
 
 ### Changed
+- Linked GA package manifests now align with the `1.0.0` SDK+CLI release
+  identity, and Biome lint blockers from non-null assertions / explicit `any`
+  test code were removed.
 - `@gis-engine/engine` now exports cloud-native validation functions (`validatePMTilesArchivePolicy`, `validateGeoParquetPolicy`, `validateFlatGeobufPolicy`), source-readiness report helpers, default policies, and types from the public barrel.
 - `@gis-engine/ai` generation evidence, `get_context_summary`, and AI Map Workbench mock fallback now derive source-readiness states from the engine report instead of maintaining parallel PMTiles/GeoJSON/vector/raster readiness logic.
 - Workbench server gains `/api/review-console` endpoint returning computed review-console state from the last compact evidence.

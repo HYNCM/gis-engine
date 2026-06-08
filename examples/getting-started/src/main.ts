@@ -143,7 +143,8 @@ async function main(): Promise<void> {
   // The "maplibre" renderer uses MapLibre GL JS under the hood.
   // ---------------------------------------------------------------------------
 
-  const container = document.getElementById("map")!;
+  const container = document.getElementById("map");
+  if (!container) throw new Error("Missing #map container.");
 
   const runtime = await createMap(container, spec, {
     renderer: "maplibre",

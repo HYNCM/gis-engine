@@ -7,6 +7,12 @@ import { defaultGeoParquetPolicy } from "./geoparquet-source.js";
 import type { PMTilesArchiveMetadata, PMTilesArchivePolicy } from "./pmtiles-archive.js";
 import { defaultPMTilesArchivePolicy } from "./pmtiles-archive.js";
 
+const DEFAULT_MAX_PMTILES_ARCHIVE_BYTES = 524_288_000;
+const DEFAULT_MAX_PMTILES_ROOT_DIRECTORY_BYTES = 16_777_216;
+const DEFAULT_MAX_GEOPARQUET_FILE_BYTES = 1_073_741_824;
+const DEFAULT_MAX_GEOPARQUET_ROW_COUNT = 10_000_000;
+const DEFAULT_MAX_FLATGEOBUF_FILE_BYTES = 500 * 1024 * 1024;
+
 /**
  * Validate PMTiles archive metadata against policy.
  * Returns diagnostics without performing any IO.
@@ -26,7 +32,7 @@ export function validatePMTilesArchivePolicy(
     });
   }
 
-  const maxBytes = policy.maxArchiveBytes ?? defaultPMTilesArchivePolicy.maxArchiveBytes!;
+  const maxBytes = policy.maxArchiveBytes ?? DEFAULT_MAX_PMTILES_ARCHIVE_BYTES;
   if (metadata.archiveBytes > maxBytes) {
     diagnostics.push({
       severity: "error",
@@ -36,7 +42,7 @@ export function validatePMTilesArchivePolicy(
     });
   }
 
-  const maxRootDir = policy.maxRootDirectoryBytes ?? defaultPMTilesArchivePolicy.maxRootDirectoryBytes!;
+  const maxRootDir = policy.maxRootDirectoryBytes ?? DEFAULT_MAX_PMTILES_ROOT_DIRECTORY_BYTES;
   if (metadata.rootDirectoryLength > maxRootDir) {
     diagnostics.push({
       severity: "error",
@@ -118,7 +124,7 @@ export function validateGeoParquetPolicy(
   }
 
   if (source.fileBytes !== undefined) {
-    const maxBytes = policy.maxFileBytes ?? defaultGeoParquetPolicy.maxFileBytes!;
+    const maxBytes = policy.maxFileBytes ?? DEFAULT_MAX_GEOPARQUET_FILE_BYTES;
     if (source.fileBytes > maxBytes) {
       diagnostics.push({
         severity: "error",
@@ -130,7 +136,7 @@ export function validateGeoParquetPolicy(
   }
 
   if (source.rowCount !== undefined) {
-    const maxRows = policy.maxRowCount ?? defaultGeoParquetPolicy.maxRowCount!;
+    const maxRows = policy.maxRowCount ?? DEFAULT_MAX_GEOPARQUET_ROW_COUNT;
     if (source.rowCount > maxRows) {
       diagnostics.push({
         severity: "error",
@@ -184,7 +190,7 @@ export function validateFlatGeobufPolicy(
   }
 
   if (source.fileBytes !== undefined) {
-    const maxBytes = policy.maxFileBytes ?? defaultFlatGeobufPolicy.maxFileBytes!;
+    const maxBytes = policy.maxFileBytes ?? DEFAULT_MAX_FLATGEOBUF_FILE_BYTES;
     if (source.fileBytes > maxBytes) {
       diagnostics.push({
         severity: "error",
