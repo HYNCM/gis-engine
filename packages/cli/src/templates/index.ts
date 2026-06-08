@@ -962,6 +962,28 @@ type ArtifactManifestShape = {
   files?: ArtifactManifestFile[];
 };
 
+type ArtifactVerificationStatus = "idle" | "loading" | "ready" | "error";
+
+type ArtifactVerificationFileStatus =
+  | "verified"
+  | "missing"
+  | "byte-mismatch"
+  | "hash-mismatch"
+  | "invalid"
+  | "error";
+
+type ArtifactVerificationFile = {
+  path: string;
+  role?: string;
+  required?: boolean;
+  status: ArtifactVerificationFileStatus;
+  expectedBytes?: number;
+  actualBytes?: number;
+  expectedSha256?: string;
+  actualSha256?: string;
+  detail?: string;
+};
+
 function isMapSpecShape(value: unknown): value is MapSpecShape {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -1017,6 +1039,81 @@ function artifactFileHref(path: string | undefined): string | undefined {
   const parts = trimmed.split(/[\\\\/]+/);
   if (parts.some((part) => !part || part === "." || part === "..")) return undefined;
   return "./" + parts.map((part) => encodeURIComponent(part)).join("/");
+}
+
+function isRequiredReviewArtifact(file: ArtifactManifestFile, requiredReviewFiles: string[] | undefined): boolean {
+  if (file.required === true) return true;
+  return typeof file.path === "string" && (requiredReviewFiles ?? []).includes(file.path);
+}
+
+function normalizeSha256(value: string | undefined): string | undefined {
+  if (!value || !/^sha256:[a-f0-9]{64}$/i.test(value)) return undefined;
+  return value.toLowerCase();
+}
+
+function arrayBufferToHex(buffer: ArrayBuffer): string {
+  return Array.from(new Uint8Array(buffer))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function digestSha256(buffer: ArrayBuffer): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", buffer);
+  return "sha256:" + arrayBufferToHex(digest);
+}
+
+async function verifyArtifactFile(file: ArtifactManifestFile): Promise<ArtifactVerificationFile> {
+  const path = file.path ?? "<invalid>";
+  const href = artifactFileHref(file.path);
+  const expectedBytes =
+    typeof file.bytes === "number" && Number.isInteger(file.bytes) && file.bytes >= 0 ? file.bytes : undefined;
+  const expectedSha256 = normalizeSha256(file.sha256);
+  const base = {
+    path,
+    ...(file.role !== undefined ? { role: file.role } : {}),
+    ...(file.required !== undefined ? { required: file.required } : {}),
+    ...(expectedBytes !== undefined ? { expectedBytes } : {}),
+    ...(expectedSha256 !== undefined ? { expectedSha256 } : {}),
+  };
+
+  if (!href) {
+    return { ...base, status: "invalid", detail: "Artifact path is missing or unsafe." };
+  }
+  if (expectedBytes === undefined) {
+    return { ...base, status: "invalid", detail: "Artifact manifest entry is missing a valid byte count." };
+  }
+  if (!expectedSha256) {
+    return { ...base, status: "invalid", detail: "Artifact manifest entry is missing a sha256:<hex> hash." };
+  }
+  if (!crypto.subtle) {
+    return { ...base, status: "error", detail: "Browser SHA-256 verification is unavailable." };
+  }
+
+  try {
+    const response = await fetch(href, { cache: "no-store" });
+    if (!response.ok) {
+      return { ...base, status: "missing", detail: "HTTP " + response.status };
+    }
+    if (isHtmlFallbackResponse(response)) {
+      return { ...base, status: "missing", detail: "Artifact response looked like an HTML fallback." };
+    }
+    const buffer = await response.arrayBuffer();
+    const actualBytes = buffer.byteLength;
+    const actualSha256 = await digestSha256(buffer);
+    if (actualBytes !== expectedBytes) {
+      return { ...base, status: "byte-mismatch", actualBytes, actualSha256 };
+    }
+    if (actualSha256 !== expectedSha256) {
+      return { ...base, status: "hash-mismatch", actualBytes, actualSha256 };
+    }
+    return { ...base, status: "verified", actualBytes, actualSha256 };
+  } catch (error) {
+    return {
+      ...base,
+      status: "error",
+      detail: error instanceof Error ? error.message : "Could not verify artifact.",
+    };
+  }
 }
 
 function downloadJsonFile(filename: string, value: unknown): void {
@@ -1082,8 +1179,19 @@ export default function App() {
   const [artifactManifest, setArtifactManifest] = useState<ArtifactManifestShape | null>(null);
   const [artifactManifestLoadStatus, setArtifactManifestLoadStatus] = useState<DeliveryLoadStatus>("loading");
   const [artifactManifestError, setArtifactManifestError] = useState<string | null>(null);
+  const [artifactVerificationFiles, setArtifactVerificationFiles] = useState<ArtifactVerificationFile[]>([]);
+  const [artifactVerificationStatus, setArtifactVerificationStatus] = useState<ArtifactVerificationStatus>("idle");
+  const [artifactVerificationError, setArtifactVerificationError] = useState<string | null>(null);
   const [reviewDetailsOpen, setReviewDetailsOpen] = useState(false);
 
+  const artifactManifestFiles = useMemo(() => artifactManifest?.files ?? [], [artifactManifest]);
+  const artifactVerificationTargets = useMemo(
+    () =>
+      artifactManifestFiles.filter((file) =>
+        isRequiredReviewArtifact(file, artifactManifest?.requiredReviewFiles),
+      ),
+    [artifactManifest?.requiredReviewFiles, artifactManifestFiles],
+  );
   const specValidation = useMemo(() => validateSpec(spec), [spec]);
   const visibleSpecDiagnostics = useMemo(
     () => specValidation.diagnostics.filter((diagnostic) => diagnostic.severity !== "info"),
@@ -1202,6 +1310,45 @@ export default function App() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const verifyRequiredArtifacts = async () => {
+      setArtifactVerificationFiles([]);
+      setArtifactVerificationError(null);
+
+      if (artifactManifestLoadStatus !== "ready" || artifactVerificationTargets.length === 0) {
+        setArtifactVerificationStatus("idle");
+        return;
+      }
+
+      setArtifactVerificationStatus("loading");
+
+      try {
+        const results: ArtifactVerificationFile[] = [];
+        for (const file of artifactVerificationTargets) {
+          results.push(await verifyArtifactFile(file));
+        }
+        if (!cancelled) {
+          setArtifactVerificationFiles(results);
+          setArtifactVerificationStatus("ready");
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setArtifactVerificationFiles([]);
+          setArtifactVerificationStatus("error");
+          setArtifactVerificationError(error instanceof Error ? error.message : "Could not verify review artifacts.");
+        }
+      }
+    };
+
+    void verifyRequiredArtifacts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [artifactManifestLoadStatus, artifactVerificationTargets]);
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -1376,7 +1523,6 @@ export default function App() {
   const deliveryPreflightState = deliverySummary?.preflight?.status ?? "--";
   const deliverySpatialState = delivery?.spatialQueryReadiness?.state ?? "--";
   const deliveryDetail = deliveryLoadStatus === "error" ? deliveryError : null;
-  const artifactManifestFiles = artifactManifest?.files ?? [];
   const artifactManifestRequiredCount =
     artifactManifest?.requiredReviewFiles?.length ?? artifactManifestFiles.filter((file) => file.required === true).length;
   const artifactManifestBytes = artifactManifestFiles.reduce(
@@ -1385,6 +1531,27 @@ export default function App() {
   );
   const artifactManifestState = artifactManifestLoadStatus === "ready" ? "available" : artifactManifestLoadStatus;
   const artifactManifestDetail = artifactManifestLoadStatus === "error" ? artifactManifestError : null;
+  const artifactVerificationSummary = {
+    total: artifactVerificationFiles.length,
+    verified: artifactVerificationFiles.filter((file) => file.status === "verified").length,
+    missing: artifactVerificationFiles.filter((file) => file.status === "missing").length,
+    byteMismatch: artifactVerificationFiles.filter((file) => file.status === "byte-mismatch").length,
+    hashMismatch: artifactVerificationFiles.filter((file) => file.status === "hash-mismatch").length,
+    invalid: artifactVerificationFiles.filter((file) => file.status === "invalid" || file.status === "error").length,
+  };
+  const artifactIntegrityState =
+    artifactManifestLoadStatus !== "ready"
+      ? artifactManifestState
+      : artifactVerificationStatus === "loading"
+        ? "checking"
+        : artifactVerificationStatus === "error"
+          ? "unavailable"
+          : artifactVerificationSummary.total === 0
+            ? "none"
+            : artifactVerificationSummary.verified === artifactVerificationSummary.total
+              ? "verified"
+              : "blocked";
+  const artifactVerificationDetail = artifactVerificationStatus === "error" ? artifactVerificationError : null;
   const canShowReviewDetails =
     specValidation.valid ||
     specValidation.diagnostics.length > 0 ||
@@ -1448,12 +1615,17 @@ export default function App() {
               <dd className="truncate font-medium text-gray-900">{artifactManifestState}</dd>
             </div>
             <div>
+              <dt className="text-gray-400">Integrity</dt>
+              <dd className="truncate font-medium text-gray-900">{artifactIntegrityState}</dd>
+            </div>
+            <div>
               <dt className="text-gray-400">Spec</dt>
               <dd className="truncate font-medium text-gray-900">{specValidationState}</dd>
             </div>
           </dl>
           {deliveryDetail ? <p className="mt-2 truncate text-[11px] text-gray-500">{deliveryDetail}</p> : null}
           {artifactManifestDetail ? <p className="mt-2 truncate text-[11px] text-gray-500">{artifactManifestDetail}</p> : null}
+          {artifactVerificationDetail ? <p className="mt-2 truncate text-[11px] text-gray-500">{artifactVerificationDetail}</p> : null}
           {visibleSpecDiagnostics.length > 0 ? (
             <ul className="mt-2 space-y-1 text-[11px] text-gray-600">
               {visibleSpecDiagnostics.slice(0, 3).map((diagnostic, index) => (
@@ -1570,7 +1742,50 @@ export default function App() {
                   <dt className="text-gray-400">Bytes</dt>
                   <dd className="font-medium text-gray-900">{displayValue(artifactManifestBytes)}</dd>
                 </div>
+                <div>
+                  <dt className="text-gray-400">Artifact integrity</dt>
+                  <dd className="truncate font-medium text-gray-900">{artifactIntegrityState}</dd>
+                </div>
+                <div>
+                  <dt className="text-gray-400">Verified review files</dt>
+                  <dd className="font-medium text-gray-900">
+                    {displayValue(artifactVerificationSummary.verified)} / {displayValue(artifactVerificationSummary.total)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-400">Missing</dt>
+                  <dd className="font-medium text-gray-900">{displayValue(artifactVerificationSummary.missing)}</dd>
+                </div>
+                <div>
+                  <dt className="text-gray-400">Mismatches</dt>
+                  <dd className="font-medium text-gray-900">
+                    {displayValue(artifactVerificationSummary.byteMismatch + artifactVerificationSummary.hashMismatch + artifactVerificationSummary.invalid)}
+                  </dd>
+                </div>
               </dl>
+              {artifactVerificationStatus === "loading" ? (
+                <p className="mt-2 text-gray-400">Checking required review artifacts...</p>
+              ) : artifactVerificationFiles.length > 0 ? (
+                <div className="mt-2 rounded border border-gray-200 bg-white/70 p-2">
+                  <h4 className="text-[10px] font-semibold uppercase text-gray-500">Required review file integrity</h4>
+                  <ul className="mt-1 divide-y divide-gray-200">
+                    {artifactVerificationFiles.map((file) => (
+                      <li key={file.path} className="py-1">
+                        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+                          <span className="truncate font-medium text-gray-900">{file.path}</span>
+                          <span className="font-medium text-gray-700">{file.status}</span>
+                        </div>
+                        <p className="truncate text-gray-400">
+                          bytes {displayValue(file.actualBytes)} / {displayValue(file.expectedBytes)}, hash {shortHash(file.actualSha256)} / {shortHash(file.expectedSha256)}
+                        </p>
+                        {file.detail ? <p className="truncate text-gray-400">{file.detail}</p> : null}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : artifactManifestLoadStatus === "ready" ? (
+                <p className="mt-2 text-gray-400">No required review artifacts to verify in the browser.</p>
+              ) : null}
               {artifactManifestFiles.length > 0 ? (
                 <ul className="mt-1 divide-y divide-gray-200">
                   {artifactManifestFiles.map((file, index) => {

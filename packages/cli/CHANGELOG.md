@@ -53,6 +53,10 @@
 - Make `Reload map.json` in the generated `app` template re-read `./map.json`
   from disk with no-store fetch semantics instead of only re-rendering the
   in-memory spec.
+- Verify required review artifacts from `artifact-manifest.json` inside the
+  generated `app` template, including browser-side byte and `sha256:<hex>`
+  checks for review handoff files. Full all-file manifest verification remains
+  available through `--verify-artifacts`.
 - Surface generated delivery evidence in the `app` template status banner when
   `delivery-summary.json` is present, while scaffold-only app projects keep
   running without that optional file. The rail now includes the generated

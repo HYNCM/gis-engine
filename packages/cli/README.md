@@ -316,7 +316,7 @@ Generated files:
 
 ### app
 
-Full interactive map application (Vite + React + Tailwind). Use this with `--generate -t app` to pair the generated MapSpec with a starter app shell that includes responsive controls, loading/empty/error states, local `map.json` reload/upload/download buttons, app-side `validateSpec()` feedback before rendering, a downloadable `mapspec-validation-report.json`, always-available MapSpec review details, and optional `delivery-summary.json` plus `artifact-manifest.json` review rail/details with preflight status, source readiness, safe artifact file links, and follow-up handoff. `Reload map.json` re-reads `./map.json` from disk without a browser refresh. Missing optional evidence files remain a clean scaffold-only state even when a dev server responds with an HTML fallback.
+Full interactive map application (Vite + React + Tailwind). Use this with `--generate -t app` to pair the generated MapSpec with a starter app shell that includes responsive controls, loading/empty/error states, local `map.json` reload/upload/download buttons, app-side `validateSpec()` feedback before rendering, a downloadable `mapspec-validation-report.json`, always-available MapSpec review details, and optional `delivery-summary.json` plus `artifact-manifest.json` review rail/details with preflight status, source readiness, required review artifact byte/hash integrity, safe artifact file links, and follow-up handoff. `Reload map.json` re-reads `./map.json` from disk without a browser refresh. Missing optional evidence files remain a clean scaffold-only state even when a dev server responds with an HTML fallback.
 
 Generated files:
 
@@ -331,7 +331,7 @@ Generated files:
 | `src/index.css` | Tailwind entry plus MapLibre GL CSS import. |
 | `src/vite-env.d.ts` | Vite client typings for JSON, CSS, and asset imports. |
 | `src/main.tsx` | React root that renders the generated app. |
-| `src/App.tsx` | Map container, status banner, app-side `validateSpec()` gate with structured diagnostic code/path/message feedback, always-available MapSpec review details with source/layer/visible-layer counts, downloadable validation report JSON, optional `delivery-summary.json` and `artifact-manifest.json` review status/details with preflight/source/query/follow-up signals, artifact file summary and safe relative artifact links, HTML fallback handling for missing optional evidence files, plus local `map.json` reload/upload/download flow that reloads `./map.json` from disk, mounts imported files, or exports the generated spec and UI components. |
+| `src/App.tsx` | Map container, status banner, app-side `validateSpec()` gate with structured diagnostic code/path/message feedback, always-available MapSpec review details with source/layer/visible-layer counts, downloadable validation report JSON, optional `delivery-summary.json` and `artifact-manifest.json` review status/details with preflight/source/query/follow-up signals, required review artifact byte/hash integrity, artifact file summary and safe relative artifact links, HTML fallback handling for missing optional evidence files, plus local `map.json` reload/upload/download flow that reloads `./map.json` from disk, mounts imported files, or exports the generated spec and UI components. |
 | `src/components/*.tsx` | LayerPanel, FeaturePopup, Legend, SearchBox, and BasemapSwitcher, emitted according to the app config. |
 | `map.json` | Starter MapSpec placeholder when scaffolding outside the AI pipeline. |
 | `README.md` | Project readme with app type, component list, and usage instructions. |
@@ -382,7 +382,11 @@ Markdown view over the existing generated evidence, not a separate readiness
 engine; use the JSON files for automation and exact field-level evidence.
 
 `artifact-manifest.json` is intended for CI and reproducibility checks. It
-records hashes for the files generated before the manifest itself:
+records hashes for the files generated before the manifest itself. The
+generated `app` template verifies required review files from this manifest in
+the browser; use `--verify-artifacts` for the full all-file disk verification,
+including app scaffold source files that dev servers may transform before
+serving.
 
 ```json
 {

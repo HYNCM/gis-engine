@@ -1183,6 +1183,12 @@ describe("cli-templates", () => {
     expect(appFile.content).toContain("displayValue");
     expect(appFile.content).toContain("shortHash");
     expect(appFile.content).toContain("artifactFileHref");
+    expect(appFile.content).toContain("type ArtifactVerificationFile");
+    expect(appFile.content).toContain("isRequiredReviewArtifact");
+    expect(appFile.content).toContain("normalizeSha256");
+    expect(appFile.content).toContain('crypto.subtle.digest("SHA-256"');
+    expect(appFile.content).toContain("verifyArtifactFile");
+    expect(appFile.content).toContain("setArtifactVerificationStatus");
     expect(appFile.content).toContain("downloadJsonFile");
     expect(appFile.content).toContain("URL.createObjectURL");
     expect(appFile.content).toContain("link.download = filename");
@@ -1246,6 +1252,10 @@ describe("cli-templates", () => {
     expect(appFile.content).toContain("Spatial");
     expect(appFile.content).toContain("Follow-ups");
     expect(appFile.content).toContain("Artifacts");
+    expect(appFile.content).toContain("Integrity");
+    expect(appFile.content).toContain("Artifact integrity");
+    expect(appFile.content).toContain("Required review file integrity");
+    expect(appFile.content).toContain("Checking required review artifacts...");
     expect(appFile.content).toContain("Review details");
     expect(appFile.content).toContain("disabled={!canShowReviewDetails}");
     expect(appFile.content).toContain("aria-expanded={reviewDetailsOpen}");
