@@ -1,8 +1,8 @@
 ---
 agent: product
 period: 2026-W24
-generated_at: 2026-06-05T13:05:41Z
-repo_revision: "4012f51"
+generated_at: 2026-06-09T16:48:15Z
+repo_revision: "7ca08513bada13b127bf22cee101546329c266e7"
 inputs:
   - command: npm view maplibre-gl version dist-tags --json
   - command: npm view mapbox-gl version dist-tags --json
@@ -17,13 +17,21 @@ inputs:
   - command: npm view 3d-tiles-renderer version dist-tags --json
   - command: npm view deck.gl version dist-tags --json
   - command: npm view echarts version dist-tags --json
+  - command: npm view geotiff version dist-tags --json
+  - command: npm view geozarr version dist-tags --json
+  - command: gh api repos/maplibre/maplibre-gl-js/releases/latest
+  - command: gh api repos/mapbox/mapbox-gl-js/releases/latest
   - https://github.com/maplibre/maplibre-gl-js/releases
   - https://docs.mapbox.com/mapbox-gl-js/example/pmtiles-vector-source/
   - https://developers.arcgis.com/javascript/latest/release-notes/
   - https://developers.arcgis.com/javascript/latest/agentic-apps/ai-introduction/
   - https://modelcontextprotocol.io/specification/
+  - https://modelcontextprotocol.io/specification/2025-06-18/server/tools
   - https://docs.protomaps.com/pmtiles/
   - https://geoparquet.org/releases/v1.1.0/
+  - https://flatgeobuf.org/
+  - https://docs.ogc.org/is/19-008r4/19-008r4.html
+  - https://github.com/zarr-developers/geozarr-spec
 owner: "@product"
 decision_level: advisory
 ---
@@ -168,3 +176,74 @@ Commands used:
 `npm view 3d-tiles-renderer version dist-tags --json`,
 `npm view deck.gl version dist-tags --json`, and
 `npm view echarts version dist-tags --json`.
+
+## 2026-06-10 W25 Planning External Signal Refresh
+
+Checked at `2026-06-09T16:48:15Z` (`2026-06-10` Asia/Shanghai) using npm
+metadata, GitHub release API, and official-source URL reachability checks. This
+refresh closes `TASK-2026W24-PROD-011` / GitHub issue
+[#6](https://github.com/HYNCM/gis-engine/issues/6) for W25 planning input only.
+
+### Package and Release Signals
+
+| Area | Current Signal | Delta From 2026-06-08 | GIS Engine Action | Confidence |
+| --- | --- | --- | --- | --- |
+| MapLibre GL JS | npm `maplibre-gl` `5.24.0`, `next: 6.0.0-13`; GitHub latest release `v5.24.0` published `2026-04-23T06:30:43Z` | `next` advanced from `6.0.0-12`; stable unchanged | No package movement. Future v6 work still needs lockfile diff, example load, smoke snapshot, and strict visual evidence. | high |
+| Mapbox GL JS | npm `mapbox-gl` `3.24.0`, `next: 3.25.0-rc.1`; GitHub latest release `v3.24.0` published `2026-05-18T12:28:39Z`; PMTiles vector-source example reachable | No stable change | Keep PMTiles/vector-source pressure as source-readiness and fixture evidence, not hidden IO or parser promotion. | high |
+| MCP TypeScript SDK and spec | npm `@modelcontextprotocol/sdk` `1.29.0`; official 2025-06-18 server tools page reachable and includes tool `inputSchema` / `outputSchema` contract terms | No package change | Keep the seven documented GIS Engine snake_case tools frozen with input and output schemas. | high |
+| ArcGIS Maps SDK / AI components | npm `@arcgis/core` `5.0.19`, `next: 5.2.0-next.13`; npm `@arcgis/ai-components` `5.0.19`, `next: 5.2.0-next.10`; ArcGIS release notes and agentic-app docs reachable | `next` tags advanced slightly | Keep AI Map Workbench product movement blocked until the promotion intake owners/auth/storage/export/visual gates are consumed by a future Go issue. | high |
+| PMTiles | npm `pmtiles` `4.4.1`; Protomaps PMTiles concepts and Mapbox PMTiles vector example reachable | No package change | Keep accepted runtime scope to URL-compatible display/load-plan plus deterministic fixture query evidence; no archive parsing or hidden range IO. | high |
+| FlatGeobuf / OpenLayers | npm `flatgeobuf` `4.4.0`; npm `ol` `10.9.0`, `dev: 10.9.1-dev.1780937436158`; FlatGeobuf official site reachable | OpenLayers dev tag advanced | Keep FlatGeobuf as policy/schema readiness only; no runtime parser or feature-query claim. | high |
+| GeoParquet | Official GeoParquet `v1.1.0` page reachable | No new accepted runtime signal | Keep schema/metadata readiness; no runtime source support claim. | high |
+| GeoTIFF | npm `geotiff` `3.0.5`, `beta: 3.1.0-beta.0`; OGC GeoTIFF Standard 1.1 page reachable | First explicit W25 GeoTIFF package/spec row | Treat as source-roadmap input only; runtime support needs resource-policy and fixture gates. | medium |
+| GeoZarr | npm `geozarr` returned 404; the probed zarr.dev GeoZarr landing path returned 404; `zarr-developers/geozarr-spec` GitHub page reachable; `zarr-developers/geozarr-toolkit` shows active ecosystem work | First explicit W25 GeoZarr weak-signal row | Do not score as stable runtime pressure. Track as standards/ecosystem watch item only. | medium |
+| 3D / visualization | npm `cesium` `1.142.0`, `three` `0.184.0`, `3d-tiles-renderer` `0.4.28`, `deck.gl` `9.3.3`, `echarts` `6.1.0` | `3d-tiles-renderer` advanced from `0.4.27` to `0.4.28`; others unchanged | Continue adapter-local SceneView3D evidence; no stable `view.mode: "scene3d"` promotion. | high |
+
+Commands used:
+`npm view maplibre-gl version dist-tags --json`,
+`npm view mapbox-gl version dist-tags --json`,
+`npm view @modelcontextprotocol/sdk version dist-tags --json`,
+`npm view @arcgis/core version dist-tags --json`,
+`npm view @arcgis/ai-components version dist-tags --json`,
+`npm view pmtiles version dist-tags --json`,
+`npm view flatgeobuf version dist-tags --json`,
+`npm view ol version dist-tags --json`,
+`npm view geotiff version dist-tags --json`,
+`npm view geozarr version dist-tags --json`,
+`npm view cesium version dist-tags --json`,
+`npm view three version dist-tags --json`,
+`npm view 3d-tiles-renderer version dist-tags --json`,
+`npm view deck.gl version dist-tags --json`,
+`npm view echarts version dist-tags --json`,
+`gh api repos/maplibre/maplibre-gl-js/releases/latest --jq '{tag_name,name,published_at,html_url}'`,
+and `gh api repos/mapbox/mapbox-gl-js/releases/latest --jq '{tag_name,name,published_at,html_url}'`.
+
+Official-source URL checks returned HTTP 200 for
+`https://github.com/maplibre/maplibre-gl-js/releases/tag/v5.24.0`,
+`https://github.com/mapbox/mapbox-gl-js/releases/tag/v3.24.0`,
+`https://docs.mapbox.com/mapbox-gl-js/example/pmtiles-vector-source/`,
+`https://modelcontextprotocol.io/specification/2025-06-18/server/tools`,
+`https://docs.protomaps.com/pmtiles/`,
+`https://geoparquet.org/releases/v1.1.0/`,
+`https://flatgeobuf.org/`,
+`https://docs.ogc.org/is/19-008r4/19-008r4.html`,
+`https://github.com/zarr-developers/geozarr-spec`,
+`https://developers.arcgis.com/javascript/latest/release-notes/`, and
+`https://developers.arcgis.com/javascript/latest/agentic-apps/ai-introduction/`.
+
+### W25 Roadmap Outcome
+
+No W25 priority changes are recommended from this refresh.
+
+- SDK+CLI-first remains the launch surface. Studio and AI Map Workbench remain
+  reference/example or intake surfaces unless a future product Go issue passes
+  ownership, auth, storage, export, resource-policy, MCP, and visual gates.
+- The bounded source-promotion plan stands. PMTiles now has accepted
+  display/load-plan and deterministic fixture query evidence, but not archive
+  parsing, vector tile decoding, workers, hidden range IO, or runtime
+  cloud-native feature queries.
+- MapLibre v6 remains a future package-movement task, not W25 automatic work.
+- GeoTIFF and GeoZarr are watch items for source-roadmap planning. The current
+  evidence does not justify a runtime parser or query implementation.
+- `3d-tiles-renderer` patch movement is not enough to change SceneView3D
+  priority; stable `view.mode: "scene3d"` stays blocked.

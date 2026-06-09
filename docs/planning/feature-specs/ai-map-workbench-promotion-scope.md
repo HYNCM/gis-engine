@@ -1,16 +1,19 @@
 ---
-agent: product-strategist
+agent: product
 period: 2026-W24
-generated_at: 2026-06-05T16:36:16Z
-repo_revision: "8a59577"
+generated_at: 2026-06-09T16:46:38Z
+repo_revision: "7ca08513bada13b127bf22cee101546329c266e7"
 inputs:
   - docs/planning/feature-specs/ai-map-workbench-real-system-evolution.md
   - docs/planning/feature-specs/ai-map-workbench-product-boundary.md
   - docs/planning/feature-specs/ai-map-workbench-product-implementation.md
   - docs/planning/next-stage-goals-2026-06-06.md
   - ../../reviews/full-project-review-2026-06-05.md
-owner: "@product-strategist @orchestrator"
-decision_level: advisory
+  - docs/reviews/awp-007-product-implementation-go-no-go-2026-06-02.md
+  - docs/planning/active-execution-queue-2026-06-09.md
+  - https://github.com/HYNCM/gis-engine/issues/4
+owner: "@product @orchestrator @quality"
+decision_level: blocking
 ---
 
 # AI Map Workbench Promotion Scope
@@ -112,3 +115,126 @@ promotion do not change AI Map Workbench scope. `TASK-2026W24-PROD-006`
 remains No-go for hosted/product movement until the productization checklist
 above has current evidence for runtime/service ownership, auth, durable
 storage, export scope, release-grade visual evidence, and rollback.
+
+## 2026-06-10 Product-Promotion Intake Closure
+
+Checked at `2026-06-09T16:46:38Z` (`2026-06-10` Asia/Shanghai) for
+`TASK-2026W24-PROD-010` / GitHub issue
+[#4](https://github.com/HYNCM/gis-engine/issues/4).
+
+Decision: the product-promotion intake is complete as a planning artifact.
+Product app movement, hosted deployment, durable storage implementation, auth
+implementation, and file movement remain No-go until a future Go issue consumes
+this intake and passes @quality.
+
+### Named Owners
+
+| Responsibility | Owner | Scope Before Promotion | Status |
+| --- | --- | --- | --- |
+| Product owner | `@product` | Owns product requirements, route value, access model, audit/export policy, and W25 priority recommendation. | Named |
+| Runtime/service owner | `@builder` | Owns future service implementation, deploy target, incident response hooks, rollback mechanics, and follow-up maintenance for any product route. | Named |
+| Release gate owner | `@quality` | Owns future Go/No-go, visual evidence acceptance, resource-policy review, MCP contract review, and waiver approval. | Named |
+| Planning/state owner | `@orchestrator` | Serializes accepted promotion state into planning docs or GitHub Issues; no execution agent writes planning state directly. | Named |
+
+### Route and Module Boundary
+
+The approved future boundary for a separate promotion request is a
+product-owned review surface at `/review-console/workbench/:projectId`, backed
+by a future module under `apps/review-console/workbench` or an equivalent
+product app boundary approved by @orchestrator before file movement.
+
+`examples/ai-map-workbench` remains the local reference implementation. No file
+may be moved from the example into a product app during intake closure. A
+future movement task must name the owning package, route, server module,
+browser bundle, storage migration boundary, and rollback target before the
+first code move.
+
+### Auth, Access Control, and Secret Policy
+
+Any future product route must use authenticated user identity plus
+project-scoped membership. The minimum roles are:
+
+| Role | Allowed Actions |
+| --- | --- |
+| Viewer | Read compact review evidence and exported non-sensitive manifests for authorized projects. |
+| Reviewer | Create append-only review decisions for authorized projects. |
+| Admin | Manage project membership, retention settings, export caps, and deletion requests. |
+
+Denied and unauthenticated states must be explicit UI/API states. Provider
+base URLs, API keys, session secrets, and service credentials must stay
+server-only. Browser metadata may expose provider id, display label, timeout
+class, and resource-policy status, but not credentials or raw endpoint details.
+
+### Durable Audit, Retention, Deletion, and Export
+
+Future durable storage must be append-only and compact. The minimum record
+shape is:
+
+| Field | Purpose | Raw Payload Rule |
+| --- | --- | --- |
+| `record_id` | Stable audit id | Generated id only |
+| `project_id` | Access-control scope | No project secret |
+| `review_session_id` | Groups prompt-to-review evidence | Id only |
+| `created_at` | Audit ordering | Timestamp only |
+| `actor_ref` | Reviewer/user reference | Stable reference or hash; no personal free text |
+| `decision_type` | `accept`, `block`, or `follow_up_required` | Enum only |
+| `evidence_refs` | Links to compact manifest/audit ids | References only |
+| `command_refs` | Links to command evidence ids | References only; no command body |
+| `diagnostic_codes` | Structured blocker/status codes | Codes only |
+| `map_spec_hash` | MapSpec identity under review | Hash only; no full `MapSpec` |
+
+Retention defaults to 90 days for review records unless a product issue records
+a shorter legal/security requirement. Increasing retention beyond 180 days
+requires a separate @quality review. Deletion requests must return a deletion
+receipt with receipt id, project id, requester reference, requested/completed
+timestamps, deleted record count, retained tombstone hash, and policy version.
+
+Export is capped to compact records only: default maximum `10_000` records or
+10 MB per request, paginated JSONL plus a manifest hash. Exports must reject
+raw prompt text, provider raw response bodies, credentials, screenshots, full
+`MapSpec` payloads, command bodies, patches, and feature payload dumps.
+
+### Review Decision Semantics
+
+Review decisions stay append-only. `accept`, `block`, and
+`follow_up_required` records may reference compact evidence and command ids,
+but they must not mutate `MapSpec` directly. Any future map change triggered
+after a review decision must still be expressed as `MapCommand` input and
+applied through `applyCommands` with the existing validation and diagnostics
+path.
+
+### Visual Evidence and Quality Waiver
+
+Waiver `QUALITY-WAIVER-AMW-P2-INTAKE-2026-06-10` applies only to this
+planning-only intake closure and is recorded in
+`docs/reviews/quality-waiver-amw-p2-intake-2026-06-10.md`. The scope changes
+docs and issue evidence only; it does not touch renderer adapters, examples,
+browser routes, resources, styles, snapshot fixtures, or UI code, so visual
+output cannot change.
+
+The waiver expires before any product route, file movement, auth/storage/export
+implementation, external resource behavior, or visual presentation change.
+That future movement must provide release-grade visual evidence or a fresh
+@quality waiver.
+
+### Resource Policy, MCP, and Rollback
+
+- Resource policy: any future URL, tile, worker, provider, example asset, or
+  external resource behavior must be checked against
+  `packages/engine/src/spec/resource-policy.ts`,
+  `tests/schema/resource-policy.test.ts`, and
+  `docs/engineering/ci-test-strategy.md`.
+- MCP contract: no new tool names are approved. Any future public AI behavior
+  must keep the documented snake_case tool names and expose both
+  `inputSchema` and `outputSchema`.
+- Browser secret safety: no browser-side provider secrets, base URLs, raw
+  provider responses, or raw prompts.
+- Rollback/de-promotion: disable the product route feature flag, remove route
+  navigation, freeze durable writes, export/delete compact records according to
+  policy, revoke provider profiles, and keep
+  `examples/ai-map-workbench` as the fallback reference surface.
+
+Exit state: issue #4 may close for intake completion only. A future product Go
+requires a new issue with implementation scope, owners, storage/auth/export
+design, resource-policy evidence, MCP contract evidence, and release-grade
+visual evidence.

@@ -1,8 +1,8 @@
 ---
 agent: orchestrator
 period: 2026-06-09
-generated_at: 2026-06-09T16:00:58Z
-repo_revision: "48dbe6a129aefa3e5f4b72e0400d9581c64f275a"
+generated_at: 2026-06-09T16:58:00Z
+repo_revision: "7ca08513bada13b127bf22cee101546329c266e7"
 inputs:
   - docs/planning/next-stage-tasks-2026-06-07.md
   - docs/planning/v1.0-release-sprint.md
@@ -13,6 +13,9 @@ inputs:
   - docs/reviews/quality-gate-2026-06-04.md
   - docs/planning/feature-specs/ai-map-workbench-promotion-scope.md
   - docs/research/competitor-updates-2026-W24.md
+  - docs/reviews/prod-010-ai-map-workbench-promotion-intake-2026-06-10.md
+  - docs/reviews/prod-011-external-signal-refresh-2026-06-10.md
+  - docs/reviews/quality-waiver-amw-p2-intake-2026-06-10.md
   - command: gh issue list --state all --limit 50
 owner: "@orchestrator"
 decision_level: advisory
@@ -24,9 +27,10 @@ decision_level: advisory
 
 The 2026-06-07 productization queue is closed for release-runner
 reproducibility, generated-project version hygiene, active docs/link hygiene,
-PMTiles display/load-plan promotion, SDK+CLI installability smoke, and W24
-external signal refresh. AI Map Workbench product/hosted movement remains
-No-go.
+PMTiles display/load-plan promotion, SDK+CLI installability smoke, PMTiles
+fixture-query promotion, post-release consumer regression, AI Map Workbench
+promotion intake, and W25 external signal refresh. AI Map Workbench
+product/hosted movement remains No-go.
 
 The active task state now moves to GitHub Issues. Markdown planning files are
 evidence snapshots and entry points; GitHub Issues are the canonical open task
@@ -36,8 +40,8 @@ state for execution and prioritization.
 
 | Area | Current State | Evidence | Impact | Action | Confidence |
 | --- | --- | --- | --- | --- | --- |
-| Repository state | `main` is aligned with `origin/main` at `48dbe6a129aefa3e5f4b72e0400d9581c64f275a` | `git status --short --branch`; `git rev-parse HEAD` | Planning can start from a clean synced baseline | Keep future execution on branches or serialized commits | high |
-| Remote gates | Latest `CI`, `Agent Daily Cadence`, and `Agent Failure Recovery` runs on `main` are green | GitHub Actions runs for `48dbe6a` on 2026-06-09 | No current remote CI fire to triage before planning | Use remote runs as the release health baseline | high |
+| Repository state | `main` is aligned with `origin/main` at `7ca08513bada13b127bf22cee101546329c266e7` before the P2 closure edits | `git status --short --branch`; `git rev-parse HEAD` | Planning can start from a clean synced baseline | Keep future execution on serialized commits | high |
+| Remote gates | Latest `CI` and `Agent Daily Cadence` runs on `main` are green for `7ca08513bada13b127bf22cee101546329c266e7` | GitHub Actions runs `27221302108` and `27221302293` on 2026-06-09 | No current remote CI fire to triage before P2 closure | Use remote runs as the release health baseline and recheck after push | high |
 | SDK+CLI release spine | GA packages are aligned at `1.0.0`; `scene3d-three-adapter` remains independent `0.2.1` | package manifests; release-runner and install-smoke reviews | v1.0 identity is coherent enough for post-release hardening | Treat older 0.x release-plan rows as historical | high |
 | Release verification | Node 22/pnpm 9.15.0 release runner, `pnpm check`, `pnpm publish:dry`, CDN dry-run, and packed CLI smoke have passing evidence | `prod-001-release-runner-publish-chain-2026-06-08.md`; `prod-005-cli-install-artifact-acceptance-2026-06-09.md` | Primary release-runner blockers are closed | Keep `pnpm release:verify` and install smoke in recurring release checks | high |
 | PMTiles display/load-plan | URL-compatible MapLibre vector display and IO-free runtime load plan are accepted | `prod-004-pmtiles-runtime-promotion-2026-06-08.md` | First cloud-native runtime slice is closed without parser/query overclaim | Open the next PMTiles query slice separately | high |
@@ -56,6 +60,21 @@ stable local identifiers in reports and commits.
 | 3 | `TASK-2026W24-PROD-010` | [#4](https://github.com/HYNCM/gis-engine/issues/4) | P2 | `@product`, `@orchestrator`, `@quality` | AI Map Workbench product-promotion intake | Promotion request has named runtime/service owner, route/module boundary, auth/storage/export scope, release-grade visual evidence, resource policy evidence, MCP safety, and rollback plan before any file movement or hosted route | product-promotion checklist; `pnpm test:examples`; visual evidence or quality waiver; no browser-side secrets |
 | 4 | `TASK-2026W24-PROD-011` | [#6](https://github.com/HYNCM/gis-engine/issues/6) | P2 | `@product`, `@orchestrator` | External signal refresh for W25 planning | Official/npm evidence is refreshed with checked dates for MapLibre, Mapbox, PMTiles, GeoParquet, FlatGeobuf, GeoTIFF/GeoZarr, MCP contracts, and relevant AI map tooling | dated research report; capability scorecard update; no stale-current claims |
 
+## 2026-06-10 P2 Closure Update
+
+This update closes the remaining P2 queue items as planning/research evidence.
+It does not create new product runtime, source parser, hosted workbench, or
+renderer promotion scope.
+
+| Task ID | GitHub Issue | Outcome | Evidence | Remaining Boundary |
+| --- | --- | --- | --- | --- |
+| `TASK-2026W24-PROD-010` | [#4](https://github.com/HYNCM/gis-engine/issues/4) | Closed for product-promotion intake | `docs/planning/feature-specs/ai-map-workbench-promotion-scope.md`; `docs/reviews/prod-010-ai-map-workbench-promotion-intake-2026-06-10.md`; `docs/reviews/quality-waiver-amw-p2-intake-2026-06-10.md` | Product/hosted movement remains No-go until a future Go issue passes owners, auth, durable storage, export, resource-policy, MCP, and release-grade visual gates |
+| `TASK-2026W24-PROD-011` | [#6](https://github.com/HYNCM/gis-engine/issues/6) | Closed for W25 external signal refresh | `docs/research/competitor-updates-2026-W24.md`; `docs/research/capability-scorecard.md`; `docs/reviews/prod-011-external-signal-refresh-2026-06-10.md` | No W25 roadmap change; SDK+CLI-first and bounded source-promotion plan stand |
+
+After these issues are closed and `docs/planning/issues-snapshot.md` is
+regenerated, the canonical issue queue has no open P0/P1/P2 productization
+items.
+
 ## Closed Productization Items
 
 | Previous Task | Outcome | Evidence |
@@ -68,6 +87,10 @@ stable local identifiers in reports and commits.
 | `TASK-2026W24-PROD-005` | closed | packed SDK+CLI installability smoke verifies scaffold, generate, preflight, artifact integrity, and prompt leak safety |
 | `TASK-2026W24-PROD-006` | No-go, intake remains open as future issue | hosted/product movement still lacks current owner/auth/storage/export/visual/rollback evidence |
 | `TASK-2026W24-PROD-007` | closed for W24 | external signals refreshed on 2026-06-08; W25 needs a fresh dated refresh before changing priorities |
+| `TASK-2026W24-PROD-008` | closed | deterministic PMTiles fixture-query evidence covers point/bbox source-layer, caps, unsupported source, missing source, missing layer, and empty result without hidden IO |
+| `TASK-2026W24-PROD-009` | closed | post-release consumer regression verifies packed install, generated-app build, prompt leak safety, artifact integrity, docs links, and CDN dry-run |
+| `TASK-2026W24-PROD-010` | closed for intake only | product-promotion intake names owners, route/module, auth/storage/export, append-only review semantics, waiver, resource/MCP safety, and rollback; hosted/product movement remains No-go |
+| `TASK-2026W24-PROD-011` | closed for W25 planning refresh | external signals refreshed on 2026-06-10; no priority change from current evidence |
 
 ## Guardrails
 

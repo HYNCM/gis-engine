@@ -1,8 +1,8 @@
 ---
 agent: product
 period: 2026-W24
-generated_at: 2026-06-05T13:05:41Z
-repo_revision: "4012f51"
+generated_at: 2026-06-09T16:48:15Z
+repo_revision: "7ca08513bada13b127bf22cee101546329c266e7"
 inputs:
   - docs/research/competitor-updates-2026-W24.md
   - docs/archive/2026-06-07/research/capability-scorecard-w24-refresh.md
@@ -36,6 +36,15 @@ state, and MapLibre/Mapbox/PMTiles dependency signals were rechecked at
 `competitor-updates-2026-W24.md`. Scores stay unchanged. The PMTiles
 display/load-plan slice is now accepted release evidence, but archive parsing,
 hidden range IO, worker execution, and feature query remain blocked.
+
+2026-06-10 W25 planning refresh: npm package signals, GitHub release data, and
+official source URLs were rechecked at `2026-06-09T16:48:15Z` and recorded in
+`competitor-updates-2026-W24.md`. Scores stay unchanged because the refresh
+confirms current priorities instead of accepting new runtime parsers, hidden
+IO, stable SceneView3D runtime, MapLibre package movement, hosted Workbench
+promotion, or new MCP tools. P1 PMTiles fixture-query evidence reduces query
+boundary risk, but it is still deterministic fixture evidence, not archive
+parsing or cloud-native runtime query support.
 
 | Dimension | GIS Engine Score | Current External Benchmark | Evidence Note | Confidence |
 | --- | ---: | --- | --- | --- |
@@ -275,6 +284,24 @@ hidden range IO, worker execution, and feature query remain blocked.
   metadata, GeoParquet schema, and FlatGeobuf policy validation are now
   explicit contracts with tests. Runtime parsers, range IO, workers, hidden
   fetches, and cloud-native feature queries remain blocked.
+
+## 2026-06-10 W25 Planning Refresh Addendum
+
+- AI operability stays at 9.6. MCP SDK/package and official tool-schema
+  signals were refreshed, but no new public tool name, schema, or AI mutation
+  path is accepted.
+- 2D performance stays at 6.6. MapLibre stable remains `5.24.0`, Mapbox stable
+  remains `3.24.0`, and MapLibre `next` movement is only future package
+  movement pressure.
+- 3D readiness stays at 5.4. `3d-tiles-renderer` advanced to `0.4.28`, but
+  stable SceneView3D runtime still lacks a @quality/@orchestrator Go.
+- Developer experience stays at 8.2. AI Map Workbench now has a complete
+  product-promotion intake, but product route movement, durable storage, auth,
+  export, and release-grade visual evidence remain future gates.
+- Ecosystem/data readiness stays at 7.2. PMTiles fixture-query evidence and
+  GeoTIFF/GeoZarr refreshed signals are useful W25 inputs, but no parser,
+  hidden range IO, worker execution, or runtime cloud-native feature query is
+  accepted.
 
 ## Current Guardrails
 
