@@ -44,6 +44,7 @@ fixtures -> schema validation -> command replay -> renderer adapter -> snapshot 
     "test:release:rc": "pnpm build:schema && pnpm check && pnpm test:snapshot:visual",
     "test:release:strict": "pnpm build:schema && pnpm check && GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual",
     "release:preflight": "node scripts/release-preflight.mjs",
+    "release:verify": "pnpm release:preflight && pnpm smoke:cli-install && pnpm build:cdn -- --dry-run && pnpm publish:dry && pnpm docs:links",
     "check": "pnpm build && pnpm test && pnpm test:studio",
     "smoke:cli-install": "node scripts/cli-install-smoke.mjs"
   }
@@ -63,8 +64,16 @@ For CLI/package usability, release candidates must also run
 `pnpm smoke:cli-install`. The smoke packs `@gis-engine/cli`, installs it in a
 fresh temporary consumer project, runs the installed
 `node_modules/.bin/create-gis-map` binary, builds a generated Vite project, and
-checks mock `--generate` output. This is the guardrail for the scoped package
-entrypoint:
+checks mock `--generate` output with the installed CLI's `--preflight` and
+`--verify-artifacts` modes. The smoke fails if the generated MapSpec is not
+ready, required review files are missing from `artifact-manifest.json`, artifact
+hashes drift, or generated files retain the raw prompt. This is the guardrail
+for the scoped package entrypoint:
+
+For operators who want a single local release-verification command, run
+`pnpm release:verify`. It chains the preflight, install smoke, CDN dry-run,
+publish dry-run, and docs link audit in the same order the release wrapper
+expects.
 
 ```bash
 npm exec --package @gis-engine/cli@latest -- create-gis-map my-map
