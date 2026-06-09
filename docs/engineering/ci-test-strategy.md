@@ -64,8 +64,11 @@ For CLI/package usability, release candidates must also run
 `pnpm smoke:cli-install`. The smoke packs `@gis-engine/cli`, installs it in a
 fresh temporary consumer project, runs the installed
 `node_modules/.bin/create-gis-map` binary, builds a generated Vite project, and
-checks mock `--generate` output. This is the guardrail for the scoped package
-entrypoint:
+checks mock `--generate` output with the installed CLI's `--preflight` and
+`--verify-artifacts` modes. The smoke fails if the generated MapSpec is not
+ready, required review files are missing from `artifact-manifest.json`, artifact
+hashes drift, or generated files retain the raw prompt. This is the guardrail
+for the scoped package entrypoint:
 
 For operators who want a single local release-verification command, run
 `pnpm release:verify`. It chains the preflight, install smoke, CDN dry-run,

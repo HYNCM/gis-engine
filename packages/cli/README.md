@@ -62,6 +62,13 @@ npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --generate
 
 This runs the full generate pipeline with the `mock` provider. Mock mode requires **no API key** and produces deterministic output -- every run yields the same result. The output includes `map.json`, `preflight.json`, `delivery-summary.json`, `REVIEW.md`, `artifact-manifest.json`, `evidence.json`, and `diagnostics.json`.
 
+Check the generated bundle before handing it to a reviewer or CI:
+
+```bash
+npm exec --package @gis-engine/cli@latest -- create-gis-map --preflight ./my-map/map.json --json
+npm exec --package @gis-engine/cli@latest -- create-gis-map --verify-artifacts ./my-map --json
+```
+
 To use a real provider, set the provider-specific API key and pass a prompt:
 
 ```bash

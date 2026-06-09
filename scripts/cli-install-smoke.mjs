@@ -12,6 +12,7 @@ const tmp = mkdtempSync(join(tmpdir(), "gis-engine-cli-install-"));
 const consumerDir = join(tmp, "consumer");
 const scaffoldName = "smoke-vite";
 const generateName = "smoke-generate";
+const generatePrompt = "Create a map showing private smoke verifier locations";
 const packTargets = [
   { name: "@gis-engine/engine", dir: "packages/engine" },
   { name: "@gis-engine/scene3d", dir: "packages/scene3d" },
@@ -32,7 +33,16 @@ try {
   run("npm", ["run", "build"], join(consumerDir, scaffoldName));
   run(
     "node",
-    ["node_modules/.bin/create-gis-map", generateName, "--generate", "--provider", "mock", "--yes"],
+    [
+      "node_modules/.bin/create-gis-map",
+      generateName,
+      "--generate",
+      "--provider",
+      "mock",
+      "--prompt",
+      generatePrompt,
+      "--yes",
+    ],
     consumerDir,
   );
 
@@ -40,6 +50,31 @@ try {
   if (!existsSync(generatedMap)) {
     throw new Error(`Generate smoke did not write ${generatedMap}`);
   }
+
+  const preflight = runJson(
+    "node",
+    ["node_modules/.bin/create-gis-map", "--preflight", join(generateName, "map.json"), "--json"],
+    consumerDir,
+  );
+  assertSmokeResult(preflight.ok === true, "Generated map preflight did not pass.");
+  assertSmokeResult(preflight.status === "ready", `Generated map preflight returned status ${preflight.status}.`);
+
+  const artifactVerification = runJson(
+    "node",
+    ["node_modules/.bin/create-gis-map", "--verify-artifacts", generateName, "--json"],
+    consumerDir,
+  );
+  assertSmokeResult(artifactVerification.ok === true, "Generated artifact verification did not pass.");
+  assertSmokeResult(
+    artifactVerification.summary?.missingFileCount === 0,
+    "Generated artifact verification reported missing files.",
+  );
+  assertSmokeResult(
+    artifactVerification.summary?.hashMismatchCount === 0,
+    "Generated artifact verification reported hash mismatches.",
+  );
+  assertRequiredReviewFiles(join(consumerDir, generateName));
+  assertNoRawPromptRetention(join(consumerDir, generateName), generatePrompt);
 
   console.log(`CLI install smoke passed in ${consumerDir}`);
 } finally {
@@ -94,4 +129,34 @@ function runText(command, args, cwd) {
   });
   process.stdout.write(output);
   return output;
+}
+
+function runJson(command, args, cwd) {
+  const output = runText(command, args, cwd);
+  return JSON.parse(output);
+}
+
+function assertSmokeResult(condition, message) {
+  if (!condition) throw new Error(message);
+}
+
+function assertRequiredReviewFiles(projectDir) {
+  const manifest = JSON.parse(readFileSync(join(projectDir, "artifact-manifest.json"), "utf-8"));
+  const manifestPaths = new Set(manifest.files.map((file) => file.path));
+  for (const requiredFile of manifest.requiredReviewFiles) {
+    assertSmokeResult(manifestPaths.has(requiredFile), `Required review file is not listed: ${requiredFile}`);
+  }
+}
+
+function assertNoRawPromptRetention(projectDir, prompt) {
+  const manifest = JSON.parse(readFileSync(join(projectDir, "artifact-manifest.json"), "utf-8"));
+  const generatedFiles = [...manifest.files.map((file) => file.path), "artifact-manifest.json"];
+  const retainedPromptFiles = generatedFiles.filter((path) =>
+    readFileSync(join(projectDir, path), "utf-8").includes(prompt),
+  );
+
+  assertSmokeResult(
+    retainedPromptFiles.length === 0,
+    `Generated files retained the raw prompt: ${retainedPromptFiles.join(", ")}`,
+  );
 }
