@@ -30,6 +30,7 @@ export const DiagnosticCodes = {
   SecurityUnsupportedAssetType: "SECURITY.UNSUPPORTED_ASSET_TYPE",
   GeoInvalidCoordinates: "GEO.INVALID_COORDINATES",
   GeoEmptyBbox: "GEO.EMPTY_BBOX",
+  QueryEmptyResult: "QUERY.EMPTY_RESULT",
   SchemaInvalid: "SCHEMA.INVALID",
 } as const;
 

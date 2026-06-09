@@ -62,8 +62,10 @@ launch capability before any release claim is made.
 
 For CLI/package usability, release candidates must also run
 `pnpm smoke:cli-install`. The smoke packs `@gis-engine/cli`, installs it in a
-fresh temporary consumer project, runs the installed
-`node_modules/.bin/create-gis-map` binary, builds a generated Vite project, and
+fresh temporary consumer project, asserts the installed linked package group is
+the workspace `1.0.0` set, runs the installed
+`node_modules/.bin/create-gis-map` binary, pins generated scaffold
+dependencies to the same packed tarballs, builds a generated Vite project, and
 checks mock `--generate` output with the installed CLI's `--preflight` and
 `--verify-artifacts` modes. The smoke fails if the generated MapSpec is not
 ready, required review files are missing from `artifact-manifest.json`, artifact

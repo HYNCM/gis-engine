@@ -3,6 +3,12 @@
 ## Unreleased
 
 ### Added
+- **PMTiles fixture query evidence**: `createPMTilesQueryEvidence()` records
+  caller-supplied decoded PMTiles fixture point/bbox evidence with source-layer
+  checks, result caps, empty-result semantics, hidden/missing layer diagnostics,
+  missing/unsupported source diagnostics, generated-app source-readiness
+  summaries, and no archive parsing, hidden fetches, workers, adapter runtime
+  query support, or feature payload retention.
 - **PMTiles vector display/load-plan promotion evidence**: added a valid PMTiles
   vector fixture plus schema, MapLibre transformer/adapter, and snapshot-smoke
   coverage for URL-compatible display while feature query and archive parsing

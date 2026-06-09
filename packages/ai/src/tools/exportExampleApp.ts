@@ -1,4 +1,9 @@
-import { type Diagnostic, type PMTilesRuntimeSourcePlan, Scene3DStableRuntimeBlockerCodes } from "@gis-engine/engine";
+import {
+  type Diagnostic,
+  type PMTilesRuntimeSourcePlan,
+  Scene3DStableRuntimeBlockerCodes,
+  type SourcePMTilesQueryReadinessSummary,
+} from "@gis-engine/engine";
 import { Ajv } from "ajv/dist/ajv.js";
 import { toolInputErrorsToDiagnostics } from "./schemaDiagnostics.js";
 import { DiagnosticCountsSchema } from "./shared.js";
@@ -104,6 +109,60 @@ const SourceRuntimeLoadPlanSchema = {
     },
   },
   required: ["status", "sourceLayerIds", "diagnosticCounts", "requirements"],
+  additionalProperties: false,
+} as const;
+
+const SourcePMTilesQueryEvidenceSchema = {
+  type: "object",
+  properties: {
+    status: { type: "string", enum: ["ready", "empty", "blocked"] },
+    sourceLayerIds: { type: "array", items: { type: "string" } },
+    layerIds: { type: "array", items: { type: "string" } },
+    diagnosticCounts: DiagnosticCountsSchema,
+    requirements: {
+      type: "object",
+      properties: {
+        callerSuppliedDecodedFeatures: { type: "boolean", const: true },
+        archiveParsing: { type: "boolean", const: false },
+        hiddenFetch: { type: "boolean", const: false },
+        rangeRequests: { type: "boolean", const: false },
+        worker: { type: "boolean", const: false },
+        featurePayloadReturned: { type: "boolean", const: false },
+      },
+      required: [
+        "callerSuppliedDecodedFeatures",
+        "archiveParsing",
+        "hiddenFetch",
+        "rangeRequests",
+        "worker",
+        "featurePayloadReturned",
+      ],
+      additionalProperties: false,
+    },
+    summary: {
+      type: "object",
+      properties: {
+        caseCount: { type: "number" },
+        readyCaseCount: { type: "number" },
+        emptyCaseCount: { type: "number" },
+        blockedCaseCount: { type: "number" },
+        matchedFeatureCount: { type: "number" },
+        returnedFeatureCount: { type: "number" },
+        resultTruncated: { type: "boolean" },
+      },
+      required: [
+        "caseCount",
+        "readyCaseCount",
+        "emptyCaseCount",
+        "blockedCaseCount",
+        "matchedFeatureCount",
+        "returnedFeatureCount",
+        "resultTruncated",
+      ],
+      additionalProperties: false,
+    },
+  },
+  required: ["status", "sourceLayerIds", "layerIds", "diagnosticCounts", "requirements", "summary"],
   additionalProperties: false,
 } as const;
 
@@ -214,6 +273,7 @@ export const ExampleAppDeliverySummarySchema = {
           archiveContract: SourceArchiveContractSchema,
           sourceContract: SourceContractSchema,
           runtimeLoadPlan: SourceRuntimeLoadPlanSchema,
+          queryEvidence: SourcePMTilesQueryEvidenceSchema,
           confirmationReasons: {
             type: "array",
             items: DeliveryConfirmationReasonSchema,
@@ -614,6 +674,7 @@ export interface ExampleAppDeliverySummary {
       diagnosticCounts: Record<Diagnostic["severity"], number>;
       requirements: PMTilesRuntimeSourcePlan["requirements"];
     };
+    queryEvidence?: SourcePMTilesQueryReadinessSummary;
     confirmationReasons: Array<
       "external-resource" | "network-fetch" | "archive-parsing" | "worker-use" | "file-write" | "stable-scene3d-runtime"
     >;

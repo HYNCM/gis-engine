@@ -97,6 +97,10 @@ For lightweight PMTiles delivery, `createPMTilesRuntimeLoadPlan(spec)` provides
 an IO-free preflight for MapLibre vector URL handoff. It checks resource policy,
 required `metadata["source-layer"]` values, range-policy requirements, and
 optional PMTiles archive metadata budgets before the map reaches runtime.
+`createPMTilesQueryEvidence(spec, options)` can also record fixture-only
+point/bbox query evidence from caller-supplied decoded features without fetching
+resources, parsing PMTiles archives, starting workers, or returning feature
+payloads.
 
 ## Documentation
 
@@ -124,9 +128,10 @@ For review and audit flows, callers can pass `collectTrace: true` to `applyComma
 
 The current `MapLibreAdapter` is still an MVP renderer binding. It transforms supported `MapSpec` sources/layers, passes adapter contract tests, and is exercised by real-browser visual snapshots, but it is not a complete replacement for MapLibre GL JS.
 
-PMTiles support is URL-compatible vector delivery plus SDK load-plan preflight.
-The engine does not fetch PMTiles resources, parse PMTiles archives, or provide
-PMTiles feature-query runtime semantics.
+PMTiles support is URL-compatible vector delivery plus SDK load-plan preflight
+and caller-supplied fixture query evidence. The engine does not fetch PMTiles
+resources, parse PMTiles archives, start PMTiles workers, or provide PMTiles
+feature-query runtime semantics.
 
 `fill-extrusion-lite` is an experimental 2.5D contract gated by `capabilities.experimental` and beta-mapped to MapLibre `fill-extrusion`. `@gis-engine/scene3d`, `@gis-engine/scene3d-three-adapter`, `SceneView3DExtensionSchema`, SceneView3D preparation commands, `validateSceneResourceLoadPlan`, `snapshotScene3DMock`, `queryScene3DMock`, and `evaluateScene3DReleaseVisualGate` now exist as the v1 3D contract scaffold, but `view.mode: "scene3d"` is still reserved and returns structured unsupported diagnostics; terrain, glTF, and 3D Tiles are not implemented renderers yet. Note that stable `view.mode: "scene3d"` remains blocked until the future promotion decision gate accepts the complete renderer package.
 

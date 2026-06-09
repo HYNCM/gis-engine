@@ -11,6 +11,13 @@ import { escapePathSegment } from "../spec/patch/path.js";
 import { defaultResourcePolicy, type ResourcePolicy, validateResourcePolicy } from "../spec/resource-policy.js";
 import type { Diagnostic, MapSpec, SourceSpec } from "../types.js";
 import { createPMTilesRuntimeLoadPlan, type PMTilesRuntimeLoadPlan, type PMTilesRuntimeSourcePlan } from "./pmtiles.js";
+import type { PMTilesQueryEvidence } from "./pmtiles-query.js";
+
+type DiagnosticCounts = {
+  error: number;
+  warning: number;
+  info: number;
+};
 
 export type SourceReadinessState = "supported" | "readiness-only" | "blocked";
 export type SourceReadinessReportStatus = "ready" | "follow-up-required" | "blocked";
@@ -19,17 +26,23 @@ export type SourceResourcePolicyStatus = "passed" | "blocked" | "not-applicable"
 export interface CreateSourceReadinessReportOptions {
   resourcePolicy?: ResourcePolicy;
   pmtilesLoadPlan?: PMTilesRuntimeLoadPlan;
+  pmtilesQueryEvidence?: Record<string, PMTilesQueryEvidence | undefined>;
 }
 
 export interface SourceRuntimeReadinessSummary {
   status: PMTilesRuntimeSourcePlan["status"];
   sourceLayerIds: string[];
-  diagnosticCounts: {
-    error: number;
-    warning: number;
-    info: number;
-  };
+  diagnosticCounts: DiagnosticCounts;
   requirements: PMTilesRuntimeSourcePlan["requirements"];
+}
+
+export interface SourcePMTilesQueryReadinessSummary {
+  status: PMTilesQueryEvidence["status"];
+  sourceLayerIds: string[];
+  layerIds: string[];
+  diagnosticCounts: DiagnosticCounts;
+  requirements: PMTilesQueryEvidence["requirements"];
+  summary: PMTilesQueryEvidence["summary"];
 }
 
 export interface SourceReadinessEntry {
@@ -43,6 +56,7 @@ export interface SourceReadinessEntry {
   limitations: string[];
   nextAction: string;
   runtimeLoadPlan?: SourceRuntimeReadinessSummary;
+  queryEvidence?: SourcePMTilesQueryReadinessSummary;
 }
 
 export interface SourceReadinessReport {
@@ -69,7 +83,13 @@ export function createSourceReadinessReport(
   const pmtilesPlans = new Map(pmtilesLoadPlan.sources.map((sourcePlan) => [sourcePlan.sourceId, sourcePlan]));
 
   const sources = Object.entries(spec.sources).map(([sourceId, source]) =>
-    createSourceReadinessEntry(sourceId, source, resourceDiagnostics, pmtilesPlans.get(sourceId)),
+    createSourceReadinessEntry(
+      sourceId,
+      source,
+      resourceDiagnostics,
+      pmtilesPlans.get(sourceId),
+      options.pmtilesQueryEvidence?.[sourceId],
+    ),
   );
   const diagnostics = sources.flatMap((source) => source.diagnostics);
   const supportedSourceCount = sources.filter((source) => source.state === "supported").length;
@@ -96,6 +116,7 @@ function createSourceReadinessEntry(
   source: SourceSpec,
   resourceDiagnostics: Diagnostic[],
   pmtilesPlan?: PMTilesRuntimeSourcePlan,
+  pmtilesQueryEvidence?: PMTilesQueryEvidence,
 ): SourceReadinessEntry {
   const sourceType = getSourceType(source);
   const flatGeobufDiagnostics =
@@ -167,23 +188,37 @@ function createSourceReadinessEntry(
   }
 
   if (sourceType === "pmtiles") {
-    const blocked = pmtilesPlan?.status === "blocked" || resourceBlocked;
+    const queryEvidenceBlocked = pmtilesQueryEvidence?.status === "blocked";
+    const blocked = pmtilesPlan?.status === "blocked" || resourceBlocked || queryEvidenceBlocked;
     const metadataRequired = pmtilesPlan?.status === "metadata-required";
+    const queryReady = Boolean(
+      pmtilesQueryEvidence && pmtilesQueryEvidence.status !== "blocked" && pmtilesQueryEvidence.summary.caseCount > 0,
+    );
+    const pmtilesDiagnostics = [...sourceDiagnostics, ...(pmtilesQueryEvidence?.diagnostics ?? [])];
     return {
       sourceId,
       type: sourceType,
       state: blocked ? "blocked" : "readiness-only",
       displayReady: !blocked && !metadataRequired,
-      queryReady: false,
+      queryReady,
       resourcePolicy,
-      diagnostics: sourceDiagnostics,
-      limitations: ["PMTiles archive parsing, mutation/export handoff, and feature query are not implemented."],
+      diagnostics: pmtilesDiagnostics,
+      limitations: queryReady
+        ? [
+            "PMTiles point/bbox query evidence is fixture-only with caller-supplied decoded features; archive parsing, hidden range IO, workers, and mutation/export handoff are not implemented.",
+          ]
+        : ["PMTiles archive parsing, mutation/export handoff, and runtime feature query are not implemented."],
       nextAction: blocked
-        ? "Fix PMTiles load-plan blockers before delivery."
+        ? queryEvidenceBlocked
+          ? "Fix PMTiles fixture query evidence blockers before claiming query readiness."
+          : "Fix PMTiles load-plan blockers before delivery."
         : metadataRequired
           ? "Provide caller-supplied PMTiles archive metadata for the requested preflight gate."
-          : "Use URL-compatible display/export evidence; keep archive parsing and feature query as follow-up contracts.",
+          : queryReady
+            ? "Use caller-supplied PMTiles fixture query evidence for review; keep archive parsing, hidden IO, and runtime query as follow-up contracts."
+            : "Use URL-compatible display/export evidence; keep archive parsing and feature query as follow-up contracts.",
       ...(pmtilesPlan ? { runtimeLoadPlan: summarizePMTilesRuntimeLoadPlan(pmtilesPlan) } : {}),
+      ...(pmtilesQueryEvidence ? { queryEvidence: summarizePMTilesQueryEvidence(pmtilesQueryEvidence) } : {}),
     };
   }
 
@@ -303,8 +338,19 @@ function summarizePMTilesRuntimeLoadPlan(plan: PMTilesRuntimeSourcePlan): Source
   };
 }
 
-function countDiagnostics(diagnostics: Diagnostic[]): SourceRuntimeReadinessSummary["diagnosticCounts"] {
-  return diagnostics.reduce<SourceRuntimeReadinessSummary["diagnosticCounts"]>(
+function summarizePMTilesQueryEvidence(evidence: PMTilesQueryEvidence): SourcePMTilesQueryReadinessSummary {
+  return {
+    status: evidence.status,
+    sourceLayerIds: evidence.sourceLayerIds,
+    layerIds: evidence.layerIds,
+    diagnosticCounts: evidence.diagnosticCounts,
+    requirements: evidence.requirements,
+    summary: evidence.summary,
+  };
+}
+
+function countDiagnostics(diagnostics: Diagnostic[]): DiagnosticCounts {
+  return diagnostics.reduce<DiagnosticCounts>(
     (counts, diagnostic) => {
       counts[diagnostic.severity] += 1;
       return counts;

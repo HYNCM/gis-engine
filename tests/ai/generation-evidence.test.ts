@@ -1639,6 +1639,88 @@ describe("generation evidence bundle", () => {
     });
   });
 
+  it("maps explicit PMTiles fixture query evidence into generated-app source readiness", async () => {
+    const skeleton = createMapGenerationCommandSkeleton({
+      mapId: "pmtiles-query-evidence",
+      promptHash: "sha256:pmtiles-query-evidence",
+      traceId: "trace-pmtiles-query-evidence",
+      targetDomains: ["feature-display", "spatial-analysis"],
+      sources: {
+        parcels: {
+          type: "pmtiles",
+          url: "./tiles/parcels.pmtiles",
+        },
+      },
+      layers: [
+        {
+          id: "parcel-fill",
+          type: "fill",
+          source: "parcels",
+          metadata: { "source-layer": "parcels" },
+        },
+      ],
+    });
+
+    const response = await createGenerationEvidenceBundle({
+      promptHash: "sha256:pmtiles-query-evidence",
+      skeleton,
+      pmtilesQueryEvidence: {
+        parcels: {
+          resultLimit: 1,
+          features: [
+            {
+              id: "parcel-a",
+              sourceLayer: "parcels",
+              bbox: [0, 0, 1, 1],
+              properties: { privateName: "do not retain fixture payload" },
+            },
+            {
+              id: "parcel-b",
+              sourceLayer: "parcels",
+              bbox: [0.25, 0.25, 2, 2],
+              properties: { privateName: "do not retain second payload" },
+            },
+          ],
+          cases: [{ id: "bbox-hit", bbox: [-1, -1, 3, 3], layers: ["parcel-fill"] }],
+        },
+      },
+    });
+
+    expect(response.ok).toBe(true);
+    if (!response.ok) throw new Error("Expected PMTiles fixture query evidence to return generated-app delivery.");
+    expect(response.result.status).toBe("ready");
+    expect(response.result.delivery.sourceReadiness).toContainEqual(
+      expect.objectContaining({
+        sourceId: "parcels",
+        type: "pmtiles",
+        state: "readiness-only",
+        queryReady: true,
+        queryEvidence: expect.objectContaining({
+          status: "ready",
+          sourceLayerIds: ["parcels"],
+          layerIds: ["parcel-fill"],
+          requirements: expect.objectContaining({
+            callerSuppliedDecodedFeatures: true,
+            archiveParsing: false,
+            hiddenFetch: false,
+            rangeRequests: false,
+            worker: false,
+            featurePayloadReturned: false,
+          }),
+          summary: expect.objectContaining({
+            caseCount: 1,
+            readyCaseCount: 1,
+            matchedFeatureCount: 2,
+            returnedFeatureCount: 1,
+            resultTruncated: true,
+          }),
+        }),
+      }),
+    );
+    expect(response.result.delivery.sourceReadiness[0]?.notes.join(" ")).toContain("caller-supplied decoded fixtures");
+    expect(JSON.stringify(response.result.delivery)).not.toContain("do not retain");
+  });
+
   it("keeps generation evidence schemas strict and Ajv-compilable", async () => {
     const ajv = new Ajv({ allErrors: true, strict: false });
     const validateInput = ajv.compile(GenerationEvidenceBundleInputSchema);

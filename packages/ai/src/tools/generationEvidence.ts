@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import {
   type CapabilityReport,
   CapabilityReportSchema,
+  createPMTilesQueryEvidence,
   createSourceReadinessReport,
   type Diagnostic,
   DiagnosticCodes,
@@ -22,6 +23,9 @@ import {
   MapRuntime,
   type MapSpec,
   MockAdapter,
+  type PMTilesQueryEvidence,
+  type PMTilesQueryEvidenceCaseInput,
+  type PMTilesQueryFixtureFeature,
   type QueryFeaturesOptions,
   type RendererAdapter,
   Scene3DStableRuntimeBlockerCodes,
@@ -141,6 +145,44 @@ const SpatialQueryCapabilityGateSchema = {
   additionalProperties: false,
 } as const;
 
+const PMTilesQueryFixtureFeatureSchema = {
+  type: "object",
+  properties: {
+    id: { anyOf: [{ type: "string" }, { type: "number" }] },
+    sourceLayer: { type: "string", minLength: 1 },
+    bbox: { type: "array", items: { type: "number" }, minItems: 4, maxItems: 4 },
+    geometry: {},
+    properties: { type: "object", additionalProperties: true },
+  },
+  required: ["sourceLayer"],
+  additionalProperties: false,
+} as const;
+
+const PMTilesQueryEvidenceCaseInputSchema = {
+  type: "object",
+  properties: {
+    id: { type: "string", minLength: 1 },
+    layers: { type: "array", items: { type: "string" } },
+    point: { type: "array", items: { type: "number" }, minItems: 2, maxItems: 2 },
+    bbox: { type: "array", items: { type: "number" }, minItems: 4, maxItems: 4 },
+    resultLimit: { type: "number", minimum: 1 },
+  },
+  required: ["id"],
+  anyOf: [{ required: ["point"] }, { required: ["bbox"] }],
+  additionalProperties: false,
+} as const;
+
+const PMTilesQueryEvidenceInputSchema = {
+  type: "object",
+  properties: {
+    features: { type: "array", items: PMTilesQueryFixtureFeatureSchema },
+    cases: { type: "array", items: PMTilesQueryEvidenceCaseInputSchema, minItems: 1 },
+    resultLimit: { type: "number", minimum: 1 },
+  },
+  required: ["features", "cases"],
+  additionalProperties: false,
+} as const;
+
 const SpatialQueryCaseEvidenceSchema = {
   type: "object",
   properties: {
@@ -202,6 +244,10 @@ export const GenerationEvidenceBundleInputSchema = {
       },
       required: ["cases"],
       additionalProperties: false,
+    },
+    pmtilesQueryEvidence: {
+      type: "object",
+      additionalProperties: PMTilesQueryEvidenceInputSchema,
     },
     exampleId: ExportExampleAppToolInputSchema.properties.exampleId,
   },
@@ -405,6 +451,14 @@ export interface GenerationEvidenceBundleInput {
     cases: SpatialQueryCaseInput[];
     capabilityWaiver?: SpatialQueryCapabilityWaiver;
   };
+  pmtilesQueryEvidence?: Record<
+    string,
+    {
+      features: PMTilesQueryFixtureFeature[];
+      cases: PMTilesQueryEvidenceCaseInput[];
+      resultLimit?: number;
+    }
+  >;
   exampleId?: ExampleId;
 }
 
@@ -499,6 +553,12 @@ export interface GenerationSpatialQueryEvidence {
   diagnosticCounts: Record<Diagnostic["severity"], number>;
 }
 
+interface GenerationPMTilesQueryEvidence {
+  bySource: Record<string, PMTilesQueryEvidence>;
+  diagnostics: Diagnostic[];
+  diagnosticCounts: Record<Diagnostic["severity"], number>;
+}
+
 export interface GenerationSnapshotEvidence {
   requested: boolean;
   renderer: "maplibre" | "mock";
@@ -565,6 +625,7 @@ export async function createGenerationEvidenceBundle(input: unknown): Promise<Ge
   const commandEvidence = buildCommandEvidence(typedInput.skeleton);
   const plannerEvidence = buildPlannerEvidence(typedInput, commandEvidence);
   const spatialQueryEvidence = await buildSpatialQueryEvidence(typedInput);
+  const pmtilesQueryEvidence = buildPMTilesQueryEvidence(typedInput);
   const snapshotEvidence = await buildSnapshotEvidence(typedInput);
   const exportEvidence = buildExportEvidence(typedInput.skeleton, validation);
   const diagnosticsBeforeExample = [
@@ -573,6 +634,7 @@ export async function createGenerationEvidenceBundle(input: unknown): Promise<Ge
     ...validation.diagnostics,
     ...commandEvidenceDiagnostics(typedInput.skeleton, commandEvidence),
     ...spatialQueryEvidence.diagnostics,
+    ...pmtilesQueryEvidence.diagnostics,
     ...snapshotEvidenceDiagnostics(snapshotEvidence),
   ];
   const visibleDiagnosticsBeforeExample = diagnosticsBeforeExample.filter(
@@ -584,6 +646,7 @@ export async function createGenerationEvidenceBundle(input: unknown): Promise<Ge
     plannerEvidence.diagnosticCounts.error > 0 ||
     commandEvidence.diagnosticCounts.error > 0 ||
     spatialQueryEvidence.diagnosticCounts.error > 0 ||
+    pmtilesQueryEvidence.diagnosticCounts.error > 0 ||
     snapshotEvidence.diagnosticCounts.error > 0
       ? "blocked"
       : "ready";
@@ -593,6 +656,7 @@ export async function createGenerationEvidenceBundle(input: unknown): Promise<Ge
     commandEvidence,
     plannerEvidence,
     spatialQueryEvidence,
+    pmtilesQueryEvidence,
     snapshotEvidence,
     exportEvidence,
     status: statusBeforeExample,
@@ -1409,12 +1473,32 @@ function buildExportEvidence(
   };
 }
 
+function buildPMTilesQueryEvidence(input: GenerationEvidenceBundleInput): GenerationPMTilesQueryEvidence {
+  const bySource: Record<string, PMTilesQueryEvidence> = {};
+  for (const [sourceId, evidenceInput] of Object.entries(input.pmtilesQueryEvidence ?? {})) {
+    bySource[sourceId] = createPMTilesQueryEvidence(input.skeleton.spec, {
+      sourceId,
+      features: evidenceInput.features,
+      cases: evidenceInput.cases,
+      ...(evidenceInput.resultLimit ? { resultLimit: evidenceInput.resultLimit } : {}),
+    });
+  }
+
+  const diagnostics = Object.values(bySource).flatMap((evidence) => evidence.diagnostics);
+  return {
+    bySource,
+    diagnostics,
+    diagnosticCounts: countDiagnostics(diagnostics),
+  };
+}
+
 function buildExampleManifestGenerationEvidenceSummary(input: {
   input: GenerationEvidenceBundleInput;
   summary: ContextSummary;
   commandEvidence: GenerationCommandEvidence;
   plannerEvidence: GenerationPlannerEvidence;
   spatialQueryEvidence: GenerationSpatialQueryEvidence;
+  pmtilesQueryEvidence: GenerationPMTilesQueryEvidence;
   snapshotEvidence: GenerationSnapshotEvidence;
   exportEvidence: GenerationExportEvidence;
   status: "ready" | "blocked";
@@ -1427,6 +1511,7 @@ function buildExampleManifestGenerationEvidenceSummary(input: {
     commandEvidence: input.commandEvidence,
     plannerEvidence: input.plannerEvidence,
     spatialQueryEvidence: input.spatialQueryEvidence,
+    pmtilesQueryEvidence: input.pmtilesQueryEvidence,
     snapshotEvidence: input.snapshotEvidence,
     exportEvidence: input.exportEvidence,
     sceneBrowsing,
@@ -1532,12 +1617,13 @@ function buildDeliverySummary(input: {
   commandEvidence: GenerationCommandEvidence;
   plannerEvidence: GenerationPlannerEvidence;
   spatialQueryEvidence: GenerationSpatialQueryEvidence;
+  pmtilesQueryEvidence: GenerationPMTilesQueryEvidence;
   snapshotEvidence: GenerationSnapshotEvidence;
   exportEvidence: GenerationExportEvidence;
   sceneBrowsing: ExampleAppGenerationEvidenceSummary["sceneBrowsing"];
   diagnostics: Diagnostic[];
 }): ExampleAppDeliverySummary {
-  const sourceReadiness = buildSourceReadiness(input.input.skeleton.spec);
+  const sourceReadiness = buildSourceReadiness(input.input.skeleton.spec, input.pmtilesQueryEvidence.bySource);
   const sourcePromotionCandidates = buildSourcePromotionCandidates(sourceReadiness);
   const spatialQueryReadiness = buildSpatialQueryDeliveryReadiness(input.spatialQueryEvidence);
   const confirmations = buildDeliveryConfirmations(sourceReadiness);
@@ -1693,27 +1779,33 @@ function deliveryStatus(
   return "ready";
 }
 
-function buildSourceReadiness(spec: MapSpec): ExampleAppDeliverySummary["sourceReadiness"] {
+function buildSourceReadiness(
+  spec: MapSpec,
+  pmtilesQueryEvidence?: Record<string, PMTilesQueryEvidence>,
+): ExampleAppDeliverySummary["sourceReadiness"] {
   const sourceMap = new Map(Object.entries(spec.sources));
-  return createSourceReadinessReport(spec).sources.map((readiness) => {
-    const source = sourceMap.get(readiness.sourceId);
-    const confirmationReasons = sourceConfirmationReasons(source);
-    const archiveContract = sourceArchiveContract(source);
+  return createSourceReadinessReport(spec, pmtilesQueryEvidence ? { pmtilesQueryEvidence } : {}).sources.map(
+    (readiness) => {
+      const source = sourceMap.get(readiness.sourceId);
+      const confirmationReasons = sourceConfirmationReasons(source);
+      const archiveContract = sourceArchiveContract(source);
 
-    return {
-      sourceId: readiness.sourceId,
-      type: readiness.type,
-      state: readiness.state,
-      queryReady: readiness.queryReady,
-      resourcePolicy: readiness.resourcePolicy,
-      confirmationReasons,
-      ...(archiveContract ? { archiveContract } : {}),
-      ...(readiness.runtimeLoadPlan
-        ? { runtimeLoadPlan: summarizePMTilesRuntimeLoadPlan(readiness.runtimeLoadPlan) }
-        : {}),
-      notes: sourceReadinessNotes(readiness, source),
-    };
-  });
+      return {
+        sourceId: readiness.sourceId,
+        type: readiness.type,
+        state: readiness.state,
+        queryReady: readiness.queryReady,
+        resourcePolicy: readiness.resourcePolicy,
+        confirmationReasons,
+        ...(archiveContract ? { archiveContract } : {}),
+        ...(readiness.runtimeLoadPlan
+          ? { runtimeLoadPlan: summarizePMTilesRuntimeLoadPlan(readiness.runtimeLoadPlan) }
+          : {}),
+        ...(readiness.queryEvidence ? { queryEvidence: readiness.queryEvidence } : {}),
+        notes: sourceReadinessNotes(readiness, source),
+      };
+    },
+  );
 }
 
 function summarizePMTilesRuntimeLoadPlan(
@@ -1743,7 +1835,9 @@ function sourceReadinessNotes(
 
   if (source?.type === "pmtiles") {
     return [
-      "PMTiles is URL-compatible for display/export evidence, while archive parsing and feature query support remain future contracts.",
+      readiness.queryReady
+        ? "PMTiles point/bbox query evidence uses caller-supplied decoded fixtures only; runtime archive parsing, hidden range IO, and worker-backed feature query remain future contracts."
+        : "PMTiles is URL-compatible for display/export evidence, while archive parsing and feature query support remain future contracts.",
       ...(readiness.state === "blocked"
         ? [
             "PMTiles runtime load-plan preflight is blocked; fix resource policy, source-layer metadata, or archive policy diagnostics before delivery.",

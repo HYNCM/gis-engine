@@ -41,7 +41,7 @@ state through `delivery.sourceReadiness`.
 | Candidate | Current State | Promotion Target | Schema Gate | Resource-Policy Gate | Query / Export Gate | Tests | Owner |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | PMTiles archive metadata | readiness-only | supported display/export with explicit archive-metadata evidence; query still blocked unless decoded | keep `sources.*.type: "pmtiles"` stable; add optional metadata only after schema review | `/sources/{id}/url`, byte/range budget, archive open timeout, worker budget | manifest may show metadata counts only after deterministic parser evidence; feature query remains blocked | schema sync, resource policy, transformer, manifest evidence, no-fetch negative tests | `@engine-agent`, `@docs-agent` |
-| PMTiles feature query | readiness-only | point/bbox query over decoded vector tiles | source-layer and feature-id contract before query output | tile range allowlist, max tile bytes, timeout, worker cancellation | deterministic fixture with tile order, source-layer, extent, duplicate id handling | query fixtures, large-result cap, hidden/missing layer diagnostics, AI evidence tests | `@engine-agent`, `@qa-agent` |
+| PMTiles feature query | fixture evidence accepted; runtime query follow-up | point/bbox query evidence over caller-supplied decoded vector features | source-layer and feature-id contract before query output | no hidden fetch/range/worker in the fixture gate; runtime tile range allowlist, max tile bytes, timeout, and worker cancellation stay future work | deterministic fixture evidence with source-layer, point/bbox, result caps, empty results, hidden/missing layer/source diagnostics, unsupported source diagnostics, and no feature payload retention | `createPMTilesQueryEvidence()` tests, source-readiness tests, AI generated-app evidence tests, adapter negative query coverage | `@engine-agent`, `@qa-agent` |
 | GeoParquet | public `MapSpec` source contract-ready; runtime blocked | read-only vector source readiness, then query if metadata is sufficient | public `SourceSpecSchema` wiring is already present; keep runtime/query blocked until read-only evidence and negative fixtures land | URL/range paths, max bytes, worker budget, optional metadata sidecar | query requires WKB/GeoArrow fixture semantics; export remains file-list only | invalid schema, blocked host, missing CRS, unsupported encoding, bbox metadata, query fixture | `@engine-agent`, `@qa-agent` |
 | FlatGeobuf | public `MapSpec` source contract-ready; runtime blocked | streaming vector source readiness | public `SourceSpecSchema` wiring is already present; keep runtime/query blocked until read-only evidence and negative fixtures land | URL/range paths, stream timeout, max bytes | query requires deterministic index/window semantics; export remains file-list only | magic/version checks, missing index, range policy, point/bbox fixtures | `@engine-agent`, `@qa-agent` |
 | GeoTIFF | public `MapSpec` source contract-ready; runtime blocked | raster display/export, later sampling | public `SourceSpecSchema` wiring is already present; keep runtime/display/query blocked until raster evidence and negative fixtures land | byte/range paths, tile/window budget, worker budget | sampling/query stays blocked until raster evidence exists; snapshots required for display promotion | no-data diagnostics, CRS/band errors, resource policy, MapLibre rejection, headless query rejection, smoke snapshot before display | `@engine-agent`, `@qa-agent` |
@@ -70,8 +70,24 @@ Remaining PMTiles follow-ups stay separate:
 - archive parsing/open behavior;
 - vector tile decoding;
 - worker and range-request execution;
-- feature query fixtures and result semantics;
+- runtime feature query beyond caller-supplied decoded fixture evidence;
 - mutation/export handoff beyond manifest/source-readiness summaries.
+
+## 2026-06-10 PMTiles Fixture Query Evidence Closure
+
+`TASK-2026W24-PROD-008` closes the narrow PMTiles point/bbox fixture-query
+evidence slice. `createPMTilesQueryEvidence()` records caller-supplied decoded
+features only, covers source-layer selection, point/bbox cases, result caps,
+empty-result semantics, hidden/missing layer diagnostics, missing/unsupported
+source diagnostics, and generated-app source-readiness query summaries.
+
+The closure is intentionally not a runtime parser/query promotion:
+
+- no PMTiles archive parsing;
+- no hidden fetch, range request, or worker execution;
+- no feature payloads returned from generated-app evidence;
+- no adapter `queryFeatures()` support for PMTiles;
+- no mutation/export handoff beyond review summaries.
 
 ## Non-Goals
 

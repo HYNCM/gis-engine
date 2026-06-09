@@ -1,4 +1,9 @@
-import { createPMTilesRuntimeLoadPlan, createSourceReadinessReport, type MapSpec } from "@gis-engine/engine";
+import {
+  createPMTilesQueryEvidence,
+  createPMTilesRuntimeLoadPlan,
+  createSourceReadinessReport,
+  type MapSpec,
+} from "@gis-engine/engine";
 import { describe, expect, it } from "vitest";
 
 describe("source readiness report", () => {
@@ -73,6 +78,65 @@ describe("source readiness report", () => {
         runtimeLoadPlan: expect.objectContaining({ status: "ready", sourceLayerIds: ["parcels"] }),
       }),
     );
+  });
+
+  it("maps PMTiles fixture query evidence into query-ready readiness without archive parser claims", () => {
+    const spec: MapSpec = {
+      version: "0.1",
+      view: { center: [0, 0], zoom: 2 },
+      sources: {
+        parcels: {
+          type: "pmtiles",
+          url: "./tiles/parcels.pmtiles",
+        },
+      },
+      layers: [
+        {
+          id: "parcels-fill",
+          type: "fill",
+          source: "parcels",
+          metadata: { "source-layer": "parcels" },
+        },
+      ],
+    };
+    const queryEvidence = createPMTilesQueryEvidence(spec, {
+      sourceId: "parcels",
+      features: [{ id: "parcel-1", sourceLayer: "parcels", bbox: [0, 0, 1, 1] }],
+      cases: [{ id: "point-hit", point: [0.5, 0.5], layers: ["parcels-fill"] }],
+    });
+
+    const report = createSourceReadinessReport(spec, {
+      pmtilesQueryEvidence: { parcels: queryEvidence },
+    });
+
+    expect(report.status).toBe("follow-up-required");
+    expect(report.summary).toMatchObject({
+      sourceCount: 1,
+      readinessOnlySourceCount: 1,
+      blockedSourceCount: 0,
+      displayReadySourceCount: 1,
+      queryReadySourceCount: 1,
+    });
+    expect(report.sources).toEqual([
+      expect.objectContaining({
+        sourceId: "parcels",
+        type: "pmtiles",
+        state: "readiness-only",
+        displayReady: true,
+        queryReady: true,
+        queryEvidence: expect.objectContaining({
+          status: "ready",
+          requirements: expect.objectContaining({
+            callerSuppliedDecodedFeatures: true,
+            archiveParsing: false,
+            hiddenFetch: false,
+            rangeRequests: false,
+            worker: false,
+          }),
+        }),
+      }),
+    ]);
+    expect(report.sources[0]?.limitations.join(" ")).toContain("fixture-only");
   });
 
   it("reports FlatGeobuf as readiness-only now that it is a public source contract", () => {

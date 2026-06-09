@@ -39,8 +39,19 @@ export {
   PMTilesSourceLoader,
 } from "./sources/pmtiles.js";
 export {
+  type CreatePMTilesQueryEvidenceOptions,
+  createPMTilesQueryEvidence,
+  type PMTilesQueryEvidence,
+  type PMTilesQueryEvidenceCase,
+  type PMTilesQueryEvidenceCaseInput,
+  type PMTilesQueryEvidenceStatus,
+  type PMTilesQueryFixtureFeature,
+  type PMTilesQueryOperation,
+} from "./sources/pmtiles-query.js";
+export {
   type CreateSourceReadinessReportOptions,
   createSourceReadinessReport,
+  type SourcePMTilesQueryReadinessSummary,
   type SourceReadinessEntry,
   type SourceReadinessReport,
   type SourceReadinessReportStatus,

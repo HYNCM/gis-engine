@@ -27,8 +27,11 @@ try {
 
   run("npm", ["init", "-y"], consumerDir);
   run("npm", ["install", "--ignore-scripts", ...packTargets.map(({ name }) => tarballs[name])], consumerDir);
+  assertInstalledPackageVersions(consumerDir);
+  assertInstalledCliBinary(consumerDir);
   run("node", ["node_modules/.bin/create-gis-map", scaffoldName, "--template", "vite-ts", "--yes"], consumerDir);
   pinGeneratedPackageDependencies(join(consumerDir, scaffoldName, "package.json"), tarballs);
+  assertPinnedPackageDependencies(join(consumerDir, scaffoldName, "package.json"), tarballs);
   run("npm", ["install", "--ignore-scripts"], join(consumerDir, scaffoldName));
   run("npm", ["run", "build"], join(consumerDir, scaffoldName));
   run(
@@ -99,6 +102,26 @@ function packLocalPackages(destination) {
   return tarballs;
 }
 
+function assertInstalledPackageVersions(projectDir) {
+  for (const target of packTargets) {
+    const workspacePackage = readPackageJson(join(root, target.dir, "package.json"));
+    const installedPackage = readPackageJson(join(projectDir, "node_modules", target.name, "package.json"));
+    assertSmokeResult(
+      installedPackage.version === workspacePackage.version,
+      `${target.name} installed version ${installedPackage.version} did not match workspace version ${workspacePackage.version}.`,
+    );
+    assertSmokeResult(
+      installedPackage.version === "1.0.0",
+      `${target.name} install smoke must verify 1.0.0 artifacts; found ${installedPackage.version}.`,
+    );
+  }
+}
+
+function assertInstalledCliBinary(projectDir) {
+  const cliBin = join(projectDir, "node_modules/.bin/create-gis-map");
+  assertSmokeResult(existsSync(cliBin), "Installed @gis-engine/cli did not expose node_modules/.bin/create-gis-map.");
+}
+
 function pinGeneratedPackageDependencies(packageJsonPath, tarballs) {
   const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
   for (const section of ["dependencies", "devDependencies", "peerDependencies"]) {
@@ -110,6 +133,26 @@ function pinGeneratedPackageDependencies(packageJsonPath, tarballs) {
     }
   }
   writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`, "utf-8");
+}
+
+function assertPinnedPackageDependencies(packageJsonPath, tarballs) {
+  const packageJson = readPackageJson(packageJsonPath);
+  for (const section of ["dependencies", "devDependencies", "peerDependencies"]) {
+    const dependencies = packageJson[section];
+    if (!dependencies || typeof dependencies !== "object") continue;
+
+    for (const target of packTargets) {
+      if (!dependencies[target.name]) continue;
+      assertSmokeResult(
+        dependencies[target.name] === `file:${tarballs[target.name]}`,
+        `${target.name} in generated ${section} was not pinned to the packed tarball.`,
+      );
+    }
+  }
+}
+
+function readPackageJson(packageJsonPath) {
+  return JSON.parse(readFileSync(packageJsonPath, "utf-8"));
 }
 
 function run(command, args, cwd) {
