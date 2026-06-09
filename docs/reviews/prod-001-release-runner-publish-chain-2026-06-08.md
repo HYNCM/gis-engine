@@ -4,7 +4,7 @@ period: 2026-06-08
 generated_at: 2026-06-08T13:48:14Z
 repo_revision: "5ddec91"
 inputs:
-  - docs/planning/next-stage-tasks-2026-06-07.md
+  - docs/archive/2026-06-10/planning/next-stage-tasks-2026-06-07.md
   - scripts/release-preflight.mjs
   - scripts/cli-install-smoke.mjs
   - command: npx -y -p node@22 -p pnpm@9.15.0 sh -c 'pnpm release:preflight'

@@ -88,73 +88,73 @@ Continue using adapter-local release evidence outside public MCP summaries. — 
 
 ## PAT-013: Keep this example as the thin review surface for the next generated-app UX itera
 
-**提取自**: `docs/reviews/amw-001-product-evolution-2026-05-31.md`
+**提取自**: `docs/archive/2026-06-10/reviews/amw-001-product-evolution-2026-05-31.md`
 
 Keep this example as the thin review surface for the next generated-app UX iteration. — high
 
 ## PAT-014: Future provider work must emit structured commands or command skeletons, never f
 
-**提取自**: `docs/reviews/amw-001-product-evolution-2026-05-31.md`
+**提取自**: `docs/archive/2026-06-10/reviews/amw-001-product-evolution-2026-05-31.md`
 
 Future provider work must emit structured commands or command skeletons, never free-form browser mutations. — high
 
 ## PAT-015: Reuse the right-panel evidence pattern for generated-app review cards.
 
-**提取自**: `docs/reviews/amw-001-product-evolution-2026-05-31.md`
+**提取自**: `docs/archive/2026-06-10/reviews/amw-001-product-evolution-2026-05-31.md`
 
 Reuse the right-panel evidence pattern for generated-app review cards. — high
 
 ## PAT-016: Open a separate provider-boundary task before wiring any real model.
 
-**提取自**: `docs/reviews/amw-001-product-evolution-2026-05-31.md`
+**提取自**: `docs/archive/2026-06-10/reviews/amw-001-product-evolution-2026-05-31.md`
 
 Open a separate provider-boundary task before wiring any real model. — high
 
 ## PAT-017: Keep later AMW tasks aligned to this architecture document.
 
-**提取自**: `docs/reviews/amw-002-provider-boundary-2026-05-31.md`
+**提取自**: `docs/archive/2026-06-10/reviews/amw-002-provider-boundary-2026-05-31.md`
 
 Keep later AMW tasks aligned to this architecture document. — high
 
 ## PAT-018: Use this normalizer when adding server provider mode in `AMW-003`.
 
-**提取自**: `docs/reviews/amw-002-provider-boundary-2026-05-31.md`
+**提取自**: `docs/archive/2026-06-10/reviews/amw-002-provider-boundary-2026-05-31.md`
 
 Use this normalizer when adding server provider mode in `AMW-003`. — high
 
 ## PAT-019: Preserve this diagnostic path when adding provider adapters.
 
-**提取自**: `docs/reviews/amw-002-provider-boundary-2026-05-31.md`
+**提取自**: `docs/archive/2026-06-10/reviews/amw-002-provider-boundary-2026-05-31.md`
 
 Preserve this diagnostic path when adding provider adapters. — high
 
 ## PAT-020: Keep the API small until server and UI evidence land.
 
-**提取自**: `docs/reviews/amw-002-provider-boundary-2026-05-31.md`
+**提取自**: `docs/archive/2026-06-10/reviews/amw-002-provider-boundary-2026-05-31.md`
 
 Keep the API small until server and UI evidence land. — high
 
 ## PAT-021: Keep any future real provider behind this injected boundary until credential/res
 
-**提取自**: `docs/reviews/amw-003-provider-workbench-evidence-2026-05-31.md`
+**提取自**: `docs/archive/2026-06-10/reviews/amw-003-provider-workbench-evidence-2026-05-31.md`
 
 Keep any future real provider behind this injected boundary until credential/resource review lands. — high
 
 ## PAT-022: Preserve `/providerOutput` as the stable diagnostic path.
 
-**提取自**: `docs/reviews/amw-003-provider-workbench-evidence-2026-05-31.md`
+**提取自**: `docs/archive/2026-06-10/reviews/amw-003-provider-workbench-evidence-2026-05-31.md`
 
 Preserve `/providerOutput` as the stable diagnostic path. — high
 
 ## PAT-023: Expand UI scenarios only after AMW promotion gate decides whether this stays und
 
-**提取自**: `docs/reviews/amw-003-provider-workbench-evidence-2026-05-31.md`
+**提取自**: `docs/archive/2026-06-10/reviews/amw-003-provider-workbench-evidence-2026-05-31.md`
 
 Expand UI scenarios only after AMW promotion gate decides whether this stays under `examples/`. — high
 
 ## PAT-024: Use durable storage only after security/resource-policy review.
 
-**提取自**: `docs/reviews/amw-003-provider-workbench-evidence-2026-05-31.md`
+**提取自**: `docs/archive/2026-06-10/reviews/amw-003-provider-workbench-evidence-2026-05-31.md`
 
 Use durable storage only after security/resource-policy review. — high
 

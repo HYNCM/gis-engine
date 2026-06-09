@@ -461,7 +461,7 @@ git commit -m "feat: add workbench session audit"
 **Files:**
 - Modify: `examples/ai-map-workbench/README.md`
 - Modify: `docs/planning/task-burndown.md`
-- Create: `docs/reviews/amw-002-provider-boundary-2026-05-31.md`
+- Create: `docs/archive/2026-06-10/reviews/amw-002-provider-boundary-2026-05-31.md`
 
 - [ ] **Step 1: Update README and review report**
 
@@ -503,7 +503,7 @@ Expected: full build and deterministic test suite pass.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add examples/ai-map-workbench/README.md docs/planning/task-burndown.md docs/reviews/amw-002-provider-boundary-2026-05-31.md
+git add examples/ai-map-workbench/README.md docs/planning/task-burndown.md docs/archive/2026-06-10/reviews/amw-002-provider-boundary-2026-05-31.md
 git commit -m "docs: close workbench provider boundary plan"
 ```
 

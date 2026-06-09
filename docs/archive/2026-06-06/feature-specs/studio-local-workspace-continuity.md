@@ -7,7 +7,7 @@ inputs:
   - apps/studio/server/index.mjs
   - apps/studio/src/App.tsx
   - apps/studio/src/components/ChatPanel.tsx
-  - docs/reviews/ser-001-studio-review-evidence-2026-06-03.md
+  - docs/archive/2026-06-10/reviews/ser-001-studio-review-evidence-2026-06-03.md
 owner: "@product"
 decision_level: advisory
 ---

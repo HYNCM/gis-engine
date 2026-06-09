@@ -4,8 +4,8 @@ period: 2026-06-09
 generated_at: 2026-06-09T16:58:00Z
 repo_revision: "7ca08513bada13b127bf22cee101546329c266e7"
 inputs:
-  - docs/planning/next-stage-tasks-2026-06-07.md
-  - docs/planning/v1.0-release-sprint.md
+  - docs/archive/2026-06-10/planning/next-stage-tasks-2026-06-07.md
+  - docs/archive/2026-06-10/planning/v1.0-release-sprint.md
   - docs/planning/monthly-roadmap.md
   - docs/reviews/prod-001-release-runner-publish-chain-2026-06-08.md
   - docs/reviews/prod-004-pmtiles-runtime-promotion-2026-06-08.md
@@ -46,7 +46,7 @@ state for execution and prioritization.
 | Release verification | Node 22/pnpm 9.15.0 release runner, `pnpm check`, `pnpm publish:dry`, CDN dry-run, and packed CLI smoke have passing evidence | `prod-001-release-runner-publish-chain-2026-06-08.md`; `prod-005-cli-install-artifact-acceptance-2026-06-09.md` | Primary release-runner blockers are closed | Keep `pnpm release:verify` and install smoke in recurring release checks | high |
 | PMTiles display/load-plan | URL-compatible MapLibre vector display and IO-free runtime load plan are accepted | `prod-004-pmtiles-runtime-promotion-2026-06-08.md` | First cloud-native runtime slice is closed without parser/query overclaim | Open the next PMTiles query slice separately | high |
 | AI Map Workbench | Local/example hardening is accepted; hosted/product promotion remains No-go | `ai-map-workbench-promotion-scope.md` | Reference surface can support SDK+CLI, but is not the first product promise | Keep promotion intake as an issue, not implementation movement | high |
-| GitHub Issues | `gh issue list` returned no issues before this P0 pass | GitHub Issues API via `gh` | Canonical task state was not yet enabled | Create the active issue queue and regenerate issue snapshot | high |
+| GitHub Issues | `gh issue list --state open` returned `[]` after P2 closure | GitHub Issues API via `gh`; `docs/planning/issues-snapshot.md` | Canonical task state has no open P0/P1/P2 productization issues | Keep future execution in GitHub Issues and regenerate issue snapshot after changes | high |
 
 ## Canonical Issue Queue
 
@@ -85,7 +85,7 @@ items.
 | `TASK-2026W24-PROD-003` | closed | active docs/link hygiene passed docs link audit, docs tests, and diff check |
 | `TASK-2026W24-PROD-004` | closed for PMTiles display/load-plan only | URL-compatible MapLibre display and IO-free load plan accepted; archive parsing and query remain separate |
 | `TASK-2026W24-PROD-005` | closed | packed SDK+CLI installability smoke verifies scaffold, generate, preflight, artifact integrity, and prompt leak safety |
-| `TASK-2026W24-PROD-006` | No-go, intake remains open as future issue | hosted/product movement still lacks current owner/auth/storage/export/visual/rollback evidence |
+| `TASK-2026W24-PROD-006` | No-go, intake superseded by `TASK-2026W24-PROD-010` closure | hosted/product movement still lacks future Go implementation evidence despite completed intake |
 | `TASK-2026W24-PROD-007` | closed for W24 | external signals refreshed on 2026-06-08; W25 needs a fresh dated refresh before changing priorities |
 | `TASK-2026W24-PROD-008` | closed | deterministic PMTiles fixture-query evidence covers point/bbox source-layer, caps, unsupported source, missing source, missing layer, and empty result without hidden IO |
 | `TASK-2026W24-PROD-009` | closed | post-release consumer regression verifies packed install, generated-app build, prompt leak safety, artifact integrity, docs links, and CDN dry-run |

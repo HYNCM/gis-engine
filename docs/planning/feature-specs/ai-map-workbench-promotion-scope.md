@@ -4,12 +4,12 @@ period: 2026-W24
 generated_at: 2026-06-09T16:46:38Z
 repo_revision: "7ca08513bada13b127bf22cee101546329c266e7"
 inputs:
-  - docs/planning/feature-specs/ai-map-workbench-real-system-evolution.md
-  - docs/planning/feature-specs/ai-map-workbench-product-boundary.md
-  - docs/planning/feature-specs/ai-map-workbench-product-implementation.md
-  - docs/planning/next-stage-goals-2026-06-06.md
+  - docs/archive/2026-06-10/feature-specs/ai-map-workbench-real-system-evolution.md
+  - docs/archive/2026-06-10/feature-specs/ai-map-workbench-product-boundary.md
+  - docs/archive/2026-06-10/feature-specs/ai-map-workbench-product-implementation.md
+  - docs/archive/2026-06-10/planning/next-stage-goals-2026-06-06.md
   - ../../reviews/full-project-review-2026-06-05.md
-  - docs/reviews/awp-007-product-implementation-go-no-go-2026-06-02.md
+  - docs/archive/2026-06-10/reviews/awp-007-product-implementation-go-no-go-2026-06-02.md
   - docs/planning/active-execution-queue-2026-06-09.md
   - https://github.com/HYNCM/gis-engine/issues/4
 owner: "@product @orchestrator @quality"

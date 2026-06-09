@@ -1,7 +1,7 @@
 ---
 title: Review Report Guide
-description: Current review streams, rolling reports, and retention rules
-generated_at: 2026-06-03T10:00:00Z
+description: Current review streams, rolling reports, archive pointers, and retention rules
+generated_at: 2026-06-10T01:20:00+08:00
 scope: "Current active review tree"
 auto_generated: false
 ---
@@ -17,8 +17,9 @@ templates, and where to look for the real evidence.
 - `daily-audit-*`, `quality-gate-*`, and `documentation-audit-*` are rolling
   machine-generated templates plus local follow-up notes. They are freshness
   signals, not the final source of truth by themselves.
-- Named streams such as `SQH`, `MLD`, `AMW`, `AWP`, and `SL*` are dated review
-  artifacts for a bounded workstream.
+- Named streams are dated review artifacts for bounded workstreams. Completed
+  AMW/AWP and Studio local streams now live in
+  [../archive/2026-06-10/reviews/](../archive/2026-06-10/reviews/).
 - If you need the current operating rules, read `AGENTS.md` and
   `docs/README.md` first, then come back to the dated reports for evidence.
 
@@ -32,8 +33,9 @@ templates, and where to look for the real evidence.
 | Spatial query hardening | Query readiness, diagnostics, and closure evidence | `sqh-*` |
 | MapLibre drift audit | Dependency drift, resource, and go/no-go evidence | `mld-*`, `mlc-*` |
 | AI generation / NL planning | Generation contracts, planner provenance, delivery wording | `nla-*`, `nlq-*`, `ain-*`, `gir-*` |
-| AI Map Workbench | Product boundary, provider/resource controls, durable audit, implementation gate | `amw-*`, `awp-*` |
-| Studio local | Review/export/local continuity workstreams | `ser-*`, `slh-*`, `sll-*`, `slr-*`, `slw-*`, `slx-*` |
+| Productization closure | Release runner, PMTiles promotion, SDK+CLI regression, Workbench intake, external signal refresh | `prod-*`, `quality-waiver-*` |
+| AI Map Workbench archive | Product boundary, provider/resource controls, durable audit, implementation gate | [archive/2026-06-10/reviews/](../archive/2026-06-10/reviews/) |
+| Studio local archive | Review/export/local continuity workstreams | [archive/2026-06-10/reviews/](../archive/2026-06-10/reviews/) |
 | Cross-cutting reviews | Architecture or capability-wide conclusions | `architecture-assessment-*`, `ai-orchestration-capability-summary-*`, `main-provider-evidence-hardening-*` |
 
 ## Rolling Report Rules
@@ -75,3 +77,9 @@ Archive a review batch when:
 
 Do not rewrite dated reports to match newer terminology unless the change is
 limited to a clearly marked follow-up note.
+
+## Latest Archive Batch
+
+The 2026-06-10 cleanup moved completed AMW/AWP, Studio local, project review,
+and earlier productization review evidence out of this active directory. Use
+[../archive/2026-06-10/](../archive/2026-06-10/) for the detailed archive map.

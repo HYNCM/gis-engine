@@ -20,7 +20,7 @@
 - Modify `examples/ai-map-workbench/public/styles.css`: style the provider selector using the existing compact control language.
 - Modify `examples/ai-map-workbench/README.md`: document env configuration, supported provider profile scope, and credential boundaries.
 - Modify `docs/planning/task-burndown.md`: add or advance an AMW provider-profile task only after code/test evidence exists.
-- Create or modify `docs/reviews/amw-005-provider-profiles-2026-05-31.md`: record implementation evidence, resource/credential boundary, verification commands, and the remaining product-promotion hold.
+- Create or modify `docs/archive/2026-06-10/reviews/amw-005-provider-profiles-2026-05-31.md`: record implementation evidence, resource/credential boundary, verification commands, and the remaining product-promotion hold.
 - Test `tests/examples/ai-map-workbench.test.ts`: add profile discovery, provider route, adapter success, adapter failure, and audit privacy coverage.
 
 ## Task 1: Provider Profile Registry
@@ -999,7 +999,7 @@ git commit -m "feat: add workbench provider selector"
 **Files:**
 - Modify: `examples/ai-map-workbench/README.md`
 - Modify: `docs/planning/task-burndown.md`
-- Create: `docs/reviews/amw-005-provider-profiles-2026-05-31.md`
+- Create: `docs/archive/2026-06-10/reviews/amw-005-provider-profiles-2026-05-31.md`
 
 - [ ] **Step 1: Update the workbench README**
 
@@ -1059,7 +1059,7 @@ date -u +"%Y-%m-%dT%H:%M:%SZ"
 git rev-parse --short HEAD
 ```
 
-Create `docs/reviews/amw-005-provider-profiles-2026-05-31.md` and refresh
+Create `docs/archive/2026-06-10/reviews/amw-005-provider-profiles-2026-05-31.md` and refresh
 `generated_at` plus `repo_revision` with the command values captured above:
 
 ````md
@@ -1131,7 +1131,7 @@ focused provider/workbench evidence intact.
 Run:
 
 ```bash
-git add examples/ai-map-workbench/README.md docs/planning/task-burndown.md docs/reviews/amw-005-provider-profiles-2026-05-31.md
+git add examples/ai-map-workbench/README.md docs/planning/task-burndown.md docs/archive/2026-06-10/reviews/amw-005-provider-profiles-2026-05-31.md
 git commit -m "docs: record workbench provider profile evidence"
 ```
 

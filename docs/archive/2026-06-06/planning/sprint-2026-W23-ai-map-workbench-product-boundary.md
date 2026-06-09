@@ -5,10 +5,10 @@ generated_at: 2026-06-01T14:16:38Z
 repo_revision: "7f59f3ef6711a15dba844ee5277c3f397ef3f264"
 inputs:
   - docs/research/competitor-updates-2026-W23.md
-  - docs/planning/feature-specs/ai-map-workbench-product-boundary.md
-  - docs/planning/feature-specs/ai-map-workbench-real-system-evolution.md
-  - docs/reviews/amw-004-promotion-gate-2026-05-31.md
-  - docs/reviews/amw-005-provider-profiles-2026-05-31.md
+  - docs/archive/2026-06-10/feature-specs/ai-map-workbench-product-boundary.md
+  - docs/archive/2026-06-10/feature-specs/ai-map-workbench-real-system-evolution.md
+  - docs/archive/2026-06-10/reviews/amw-004-promotion-gate-2026-05-31.md
+  - docs/archive/2026-06-10/reviews/amw-005-provider-profiles-2026-05-31.md
 owner: "@task-distributor"
 decision_level: advisory
 ---
@@ -39,11 +39,11 @@ must precede those decisions.
 
 | id | title | priority | complexity | owner | status | depends on | acceptance | finish gates |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| TASK-2026W23-AMW-006 | Freeze AI Map Workbench product boundary | P0 | S | `@coordinator`, `@product-strategist`, `@task-distributor` | done | AMW-005, MLD-004 | `docs/planning/feature-specs/ai-map-workbench-product-boundary.md` and this sprint DAG define app ownership, provider administration, durable audit, review actions, visual evidence, and promotion gates without implementation creep. | planning review; `pnpm test:docs`; `pnpm check`; `git diff --check` |
-| TASK-2026W23-AMW-007 | Design provider credential and resource administration | P0 | M | `@ai-agent`, `@engine-agent`, `@docs-agent` | done | AMW-006 | `docs/planning/feature-specs/ai-map-workbench-provider-administration.md` and `docs/reviews/amw-007-provider-resource-admin-2026-06-01.md` specify provider lifecycle, browser-safe metadata, resource policy, timeout/size follow-ups, leak-hardening, and diagnostic paths before hosted or product use. | provider/workbench tests or design review; `pnpm test:examples`; `pnpm test:docs`; `pnpm check` |
-| TASK-2026W23-AMW-008 | Design durable audit retention and export | P1 | M | `@engine-agent`, `@ai-agent`, `@docs-agent` | done | AMW-006 | `docs/planning/feature-specs/ai-map-workbench-durable-audit.md` and `docs/reviews/amw-008-durable-audit-retention-export-2026-06-01.md` specify retention, privacy, access control, export shape, payload caps, deletion behavior, and no-raw-payload persistence rules before storage implementation. | schema/design review if public; `pnpm test:docs`; `pnpm check`; `git diff --check` |
-| TASK-2026W23-AMW-009 | Define command-safe review actions | P1 | M | `@engine-agent`, `@ai-agent`, `@qa-agent` | done | AMW-006, AMW-008 | `docs/planning/feature-specs/ai-map-workbench-review-actions.md` and `docs/reviews/amw-009-command-safe-review-actions-2026-06-02.md` define accept, block, and follow-up-required review decisions without direct `MapSpec` mutation, browser file writes, or raw provider payload retention. | design review; `pnpm test:docs`; `pnpm check`; `git diff --check` |
-| TASK-2026W23-AMW-010 | Run product-promotion Go-No-go gate | P1 | S | `@quality-guardian`, `@coordinator`, `@qa-agent` | done / no-go | AMW-007, AMW-008, AMW-009 | `docs/reviews/amw-010-product-promotion-go-no-go-2026-06-02.md` keeps the provider-gated local example Go under `examples/ai-map-workbench` and records product app movement plus hosted promotion as No-go. | `pnpm test:docs`; `pnpm check`; browser smoke; `git diff --check` |
+| TASK-2026W23-AMW-006 | Freeze AI Map Workbench product boundary | P0 | S | `@coordinator`, `@product-strategist`, `@task-distributor` | done | AMW-005, MLD-004 | `docs/archive/2026-06-10/feature-specs/ai-map-workbench-product-boundary.md` and this sprint DAG define app ownership, provider administration, durable audit, review actions, visual evidence, and promotion gates without implementation creep. | planning review; `pnpm test:docs`; `pnpm check`; `git diff --check` |
+| TASK-2026W23-AMW-007 | Design provider credential and resource administration | P0 | M | `@ai-agent`, `@engine-agent`, `@docs-agent` | done | AMW-006 | `docs/archive/2026-06-10/feature-specs/ai-map-workbench-provider-administration.md` and `docs/archive/2026-06-10/reviews/amw-007-provider-resource-admin-2026-06-01.md` specify provider lifecycle, browser-safe metadata, resource policy, timeout/size follow-ups, leak-hardening, and diagnostic paths before hosted or product use. | provider/workbench tests or design review; `pnpm test:examples`; `pnpm test:docs`; `pnpm check` |
+| TASK-2026W23-AMW-008 | Design durable audit retention and export | P1 | M | `@engine-agent`, `@ai-agent`, `@docs-agent` | done | AMW-006 | `docs/archive/2026-06-10/feature-specs/ai-map-workbench-durable-audit.md` and `docs/archive/2026-06-10/reviews/amw-008-durable-audit-retention-export-2026-06-01.md` specify retention, privacy, access control, export shape, payload caps, deletion behavior, and no-raw-payload persistence rules before storage implementation. | schema/design review if public; `pnpm test:docs`; `pnpm check`; `git diff --check` |
+| TASK-2026W23-AMW-009 | Define command-safe review actions | P1 | M | `@engine-agent`, `@ai-agent`, `@qa-agent` | done | AMW-006, AMW-008 | `docs/archive/2026-06-10/feature-specs/ai-map-workbench-review-actions.md` and `docs/archive/2026-06-10/reviews/amw-009-command-safe-review-actions-2026-06-02.md` define accept, block, and follow-up-required review decisions without direct `MapSpec` mutation, browser file writes, or raw provider payload retention. | design review; `pnpm test:docs`; `pnpm check`; `git diff --check` |
+| TASK-2026W23-AMW-010 | Run product-promotion Go-No-go gate | P1 | S | `@quality-guardian`, `@coordinator`, `@qa-agent` | done / no-go | AMW-007, AMW-008, AMW-009 | `docs/archive/2026-06-10/reviews/amw-010-product-promotion-go-no-go-2026-06-02.md` keeps the provider-gated local example Go under `examples/ai-map-workbench` and records product app movement plus hosted promotion as No-go. | `pnpm test:docs`; `pnpm check`; browser smoke; `git diff --check` |
 
 ```mermaid
 flowchart LR

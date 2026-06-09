@@ -5,7 +5,7 @@ generated_at: 2026-06-09T16:46:38Z
 repo_revision: "7ca08513bada13b127bf22cee101546329c266e7"
 inputs:
   - docs/planning/feature-specs/ai-map-workbench-promotion-scope.md
-  - docs/reviews/awp-007-product-implementation-go-no-go-2026-06-02.md
+  - docs/archive/2026-06-10/reviews/awp-007-product-implementation-go-no-go-2026-06-02.md
   - docs/planning/active-execution-queue-2026-06-09.md
   - https://github.com/HYNCM/gis-engine/issues/4
 owner: "@product @orchestrator @quality"
