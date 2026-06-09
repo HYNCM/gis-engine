@@ -15,6 +15,12 @@ decision_level: advisory
 
 # Next-Stage Tasks: 2026-06-07
 
+> **Superseded (2026-06-09):** This file is retained as the execution evidence
+> snapshot for `TASK-2026W24-PROD-001` through `PROD-007`. The current
+> canonical open queue is
+> [active-execution-queue-2026-06-09.md](./active-execution-queue-2026-06-09.md),
+> with GitHub Issues as the task state once issue numbers are backfilled.
+
 ## Decision
 
 The next phase is product usability hardening for the SDK+CLI launch surface.

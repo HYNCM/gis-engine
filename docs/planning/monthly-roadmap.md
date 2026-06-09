@@ -38,6 +38,11 @@ decision_level: advisory
 
 # Monthly Roadmap: 2026-06
 
+> **Current entry point (2026-06-09):** The active post-release execution queue
+> is [active-execution-queue-2026-06-09.md](./active-execution-queue-2026-06-09.md).
+> It closes the 2026-06-07 productization queue where evidence exists and moves
+> open execution state into GitHub Issues.
+
 > **Note (2026-06-06):** Some references below point to documents archived to
 > `docs/archive/2026-06-06/` or deleted during the documentation audit. This
 > roadmap will be refreshed on the next planning cycle.

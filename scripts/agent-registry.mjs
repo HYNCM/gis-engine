@@ -13,7 +13,10 @@ export const AGENT_REGISTRY = {
     },
     outputDir: "docs/planning",
     outputFile: "weekly-digest.md",
-    reportSearch: [{ dir: "docs/planning", pattern: /^weekly-digest\.md$/ }],
+    reportSearch: [
+      { dir: "docs/planning", pattern: /^weekly-digest\.md$/ },
+      { dir: "docs/planning", pattern: /^active-execution-queue-.*\.md$/ },
+    ],
     gates: [],
     gateDecisionLevel: "advisory",
     slaMaxHours: 48,

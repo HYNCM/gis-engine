@@ -31,6 +31,10 @@ decision_level: advisory
 
 # Weekly Digest: 2026-W24
 
+> **Current entry point (2026-06-09):** Open execution state now lives in
+> [active-execution-queue-2026-06-09.md](./active-execution-queue-2026-06-09.md)
+> and GitHub Issues. This digest remains the W24 evidence narrative.
+
 > **Note (2026-06-06):** Some references below point to documents archived to
 > `docs/archive/2026-06-06/` or deleted during the documentation audit. This
 > digest will be refreshed on the next planning cycle.

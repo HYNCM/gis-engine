@@ -52,6 +52,10 @@ decision_level: advisory
 
 # Task Burndown
 
+> **Current entry point (2026-06-09):** Open execution state now lives in
+> [active-execution-queue-2026-06-09.md](./active-execution-queue-2026-06-09.md)
+> and GitHub Issues. This burndown remains a historical evidence snapshot.
+
 > **Note (2026-06-06):** Some evidence links below reference documents that were
 > archived to `docs/archive/2026-06-06/` or deleted during the documentation
 > audit. Archived files remain accessible via git history. This snapshot will be

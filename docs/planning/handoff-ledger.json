@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-06-09T01:47:33.858Z",
-  "repo_revision": "8b56476",
+  "generated_at": "2026-06-09T16:01:15.705Z",
+  "repo_revision": "48dbe6a",
   "source": "scripts/handoff-ledger.mjs",
   "flows": [
     {
@@ -18,9 +18,9 @@
         "sha256": "222d492b2b65aa5c8470b3e34e4b79b84fd328a77d90d9b8cc4f63d51e15a12a"
       },
       "downstream": {
-        "path": "docs/planning/weekly-digest.md",
-        "generated_at": "2026-06-05T16:36:16.000Z",
-        "sha256": "a34c2cce3f0fb89f9988aab7216cf51f6f29711b128924250c26b5e4ef8befdf"
+        "path": "docs/planning/active-execution-queue-2026-06-09.md",
+        "generated_at": "2026-06-09T16:00:58.000Z",
+        "sha256": "6035557bc215d09c7bae497a6be4a200b6306005a75f1bb7e6dd19ac115a02c2"
       }
     },
     {
@@ -54,9 +54,9 @@
         "sha256": "4af5bc25f79d3c6768e0c1baa6c87afa2839ca37d9b7a9cc61f5aff484b8c57b"
       },
       "downstream": {
-        "path": "docs/planning/weekly-digest.md",
-        "generated_at": "2026-06-05T16:36:16.000Z",
-        "sha256": "a34c2cce3f0fb89f9988aab7216cf51f6f29711b128924250c26b5e4ef8befdf"
+        "path": "docs/planning/active-execution-queue-2026-06-09.md",
+        "generated_at": "2026-06-09T16:00:58.000Z",
+        "sha256": "6035557bc215d09c7bae497a6be4a200b6306005a75f1bb7e6dd19ac115a02c2"
       }
     }
   ]
