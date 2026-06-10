@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-06-09T16:01:15.705Z",
-  "repo_revision": "48dbe6a",
+  "generated_at": "2026-06-10T01:57:52.422Z",
+  "repo_revision": "0bfcb2e",
   "source": "scripts/handoff-ledger.mjs",
   "flows": [
     {
@@ -11,16 +11,16 @@
       "required": true,
       "status": "consumed",
       "severity": "info",
-      "note": "orchestrator report cites docs/research/competitor-updates-2026-W24.md",
+      "note": "orchestrator report cites competitor-updates-2026-W24.md",
       "upstream": {
         "path": "docs/research/competitor-updates-2026-W24.md",
-        "generated_at": "2026-06-05T13:05:41.000Z",
-        "sha256": "222d492b2b65aa5c8470b3e34e4b79b84fd328a77d90d9b8cc4f63d51e15a12a"
+        "generated_at": "2026-06-09T16:48:15.000Z",
+        "sha256": "f29e25c38432c5b949f23a07b85199c40d99407f562199a02ab2aef14049790b"
       },
       "downstream": {
-        "path": "docs/planning/active-execution-queue-2026-06-09.md",
-        "generated_at": "2026-06-09T16:00:58.000Z",
-        "sha256": "6035557bc215d09c7bae497a6be4a200b6306005a75f1bb7e6dd19ac115a02c2"
+        "path": "docs/planning/weekly-digest.md",
+        "generated_at": "2026-06-09T17:20:00.000Z",
+        "sha256": "0e78be8bda53d33f2f45d655ee15381d7caa4c2d5af51316d621e508f734a5c7"
       }
     },
     {
@@ -45,18 +45,18 @@
       "to": "orchestrator",
       "description": "gate pass/block and release readiness",
       "required": true,
-      "status": "consumed",
-      "severity": "info",
-      "note": "orchestrator report cites docs/reviews/quality-gate-2026-06-04.md",
+      "status": "pending",
+      "severity": "error",
+      "note": "orchestrator report does not cite docs/reviews/quality-gate-2026-06-04.md",
       "upstream": {
         "path": "docs/reviews/quality-gate-2026-06-04.md",
         "generated_at": "2026-06-04T02:15:13.000Z",
         "sha256": "4af5bc25f79d3c6768e0c1baa6c87afa2839ca37d9b7a9cc61f5aff484b8c57b"
       },
       "downstream": {
-        "path": "docs/planning/active-execution-queue-2026-06-09.md",
-        "generated_at": "2026-06-09T16:00:58.000Z",
-        "sha256": "6035557bc215d09c7bae497a6be4a200b6306005a75f1bb7e6dd19ac115a02c2"
+        "path": "docs/planning/weekly-digest.md",
+        "generated_at": "2026-06-09T17:20:00.000Z",
+        "sha256": "0e78be8bda53d33f2f45d655ee15381d7caa4c2d5af51316d621e508f734a5c7"
       }
     }
   ]
