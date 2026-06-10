@@ -88,7 +88,9 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
   }
 
   if (!config.projectName) {
-    console.error("Error: <project-name> is required. Start with `create-gis-map my-map` or use --preflight / --verify-artifacts.\n");
+    console.error(
+      "Error: <project-name> is required. Start with `create-gis-map my-map` or use --preflight / --verify-artifacts.\n",
+    );
     printHelp();
     process.exit(1);
   }

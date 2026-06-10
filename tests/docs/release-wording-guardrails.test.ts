@@ -41,15 +41,24 @@ const requiredGuardrails: Array<{
   },
   {
     file: "docs/website/release-notes.md",
-    patterns: [/`view\.mode: "scene3d"` is reserved and not a stable runtime mode/, /runtime-blocked cloud-native loaders remain explicitly\s+blocked/],
+    patterns: [
+      /`view\.mode: "scene3d"` is reserved and not a stable runtime mode/,
+      /runtime-blocked cloud-native loaders remain explicitly\s+blocked/,
+    ],
   },
   {
     file: "docs/migration/v0.x-to-v1.0.md",
-    patterns: [/The public MCP tool list remains/, /does not mean archive parsing, hidden fetches, worker-backed\s+runtime queries/],
+    patterns: [
+      /The public MCP tool list remains/,
+      /does not mean archive parsing, hidden fetches, worker-backed\s+runtime queries/,
+    ],
   },
   {
     file: "docs/website/api/scene3d.md",
-    patterns: [/Stable `view\.mode: "scene3d"` runtime: blocked/, /Do not read API presence here as evidence of stable 3D runtime support/],
+    patterns: [
+      /Stable `view\.mode: "scene3d"` runtime: blocked/,
+      /Do not read API presence here as evidence of stable 3D runtime support/,
+    ],
   },
   {
     file: "packages/ai/README.md",
