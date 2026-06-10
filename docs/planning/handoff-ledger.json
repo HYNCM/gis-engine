@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-06-10T01:57:52.422Z",
-  "repo_revision": "0bfcb2e",
+  "generated_at": "2026-06-10T04:57:30.684Z",
+  "repo_revision": "5ecf3c1",
   "source": "scripts/handoff-ledger.mjs",
   "flows": [
     {
@@ -19,8 +19,8 @@
       },
       "downstream": {
         "path": "docs/planning/weekly-digest.md",
-        "generated_at": "2026-06-09T17:20:00.000Z",
-        "sha256": "0e78be8bda53d33f2f45d655ee15381d7caa4c2d5af51316d621e508f734a5c7"
+        "generated_at": "2026-06-10T04:52:03.000Z",
+        "sha256": "5bb9c3bbc7e1af79bfc83beabc49eabfd0745a84caade6291ee3d9a3f266d78e"
       }
     },
     {
@@ -34,9 +34,9 @@
       "note": "builder is ad-hoc and has no active handoff",
       "upstream": null,
       "downstream": {
-        "path": "docs/reviews/quality-gate-2026-06-04.md",
-        "generated_at": "2026-06-04T02:15:13.000Z",
-        "sha256": "4af5bc25f79d3c6768e0c1baa6c87afa2839ca37d9b7a9cc61f5aff484b8c57b"
+        "path": "docs/reviews/quality-gate-2026-06-10.md",
+        "generated_at": "2026-06-10T04:51:24.000Z",
+        "sha256": "2b631a1c313bec264a04a8f9172a504b42bfd613b614a573df5c8d57d98dcd65"
       }
     },
     {
@@ -45,18 +45,18 @@
       "to": "orchestrator",
       "description": "gate pass/block and release readiness",
       "required": true,
-      "status": "pending",
-      "severity": "error",
-      "note": "orchestrator report does not cite docs/reviews/quality-gate-2026-06-04.md",
+      "status": "consumed",
+      "severity": "info",
+      "note": "orchestrator report cites docs/reviews/quality-gate-2026-06-10.md",
       "upstream": {
-        "path": "docs/reviews/quality-gate-2026-06-04.md",
-        "generated_at": "2026-06-04T02:15:13.000Z",
-        "sha256": "4af5bc25f79d3c6768e0c1baa6c87afa2839ca37d9b7a9cc61f5aff484b8c57b"
+        "path": "docs/reviews/quality-gate-2026-06-10.md",
+        "generated_at": "2026-06-10T04:51:24.000Z",
+        "sha256": "2b631a1c313bec264a04a8f9172a504b42bfd613b614a573df5c8d57d98dcd65"
       },
       "downstream": {
         "path": "docs/planning/weekly-digest.md",
-        "generated_at": "2026-06-09T17:20:00.000Z",
-        "sha256": "0e78be8bda53d33f2f45d655ee15381d7caa4c2d5af51316d621e508f734a5c7"
+        "generated_at": "2026-06-10T04:52:03.000Z",
+        "sha256": "5bb9c3bbc7e1af79bfc83beabc49eabfd0745a84caade6291ee3d9a3f266d78e"
       }
     }
   ]

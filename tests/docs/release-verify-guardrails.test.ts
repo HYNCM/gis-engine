@@ -50,4 +50,16 @@ describe("release verify guardrails", () => {
     expect(smokeScript).toContain("assertRequiredReviewFiles");
     expect(smokeScript).toContain("assertNoRawPromptRetention");
   });
+
+  it("keeps first-run acceptance tied to the CLI install smoke", () => {
+    const packageJson = readJson("package.json");
+    const scripts = packageJson.scripts as Record<string, string>;
+    const firstRunScript = readText("scripts/first-run-acceptance.mjs");
+
+    expect(scripts["smoke:first-run"]).toBe("node scripts/first-run-acceptance.mjs");
+    expect(firstRunScript).toContain("scripts/cli-install-smoke.mjs");
+    expect(firstRunScript).toContain("maxMinutes: 30");
+    expect(firstRunScript).toContain("First-run acceptance");
+    expect(firstRunScript).toContain("asserts raw prompt text is not retained");
+  });
 });

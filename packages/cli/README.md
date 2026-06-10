@@ -69,6 +69,10 @@ npm exec --package @gis-engine/cli@latest -- create-gis-map --preflight ./my-map
 npm exec --package @gis-engine/cli@latest -- create-gis-map --verify-artifacts ./my-map --json
 ```
 
+The repository first-run acceptance gate is `pnpm smoke:first-run`. It wraps the
+packed-package CLI install smoke, keeps the 30-minute first-run budget explicit,
+and writes a dated review artifact under `docs/reviews/`.
+
 To use a real provider, set the provider-specific API key and pass a prompt:
 
 ```bash
