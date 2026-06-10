@@ -11,6 +11,7 @@ import aiBefore from "../../examples/ai-map-edit/before.map.json";
 import aiCommands from "../../examples/ai-map-edit/commands.json";
 import { createInitialSpec as createAiMapWorkbenchSpec } from "../../examples/ai-map-workbench/initial-map.mjs";
 import basicGeojson from "../../examples/basic-geojson/map.json";
+import consumerHandoffMinimal from "../../examples/consumer-handoff-minimal/map.json";
 import diagnosticsWalkthrough from "../../examples/diagnostics-walkthrough/map.json";
 import fillExtrusionLite from "../../examples/fill-extrusion-lite/map.json";
 import mcpServerSetup from "../../examples/mcp-server-setup/map.json";
@@ -31,6 +32,11 @@ describe("examples gate", () => {
       id: "basic-geojson",
       spec: () => basicGeojson as MapSpec,
       firstLayerId: "poi-circles",
+    },
+    {
+      id: "consumer-handoff-minimal",
+      spec: () => consumerHandoffMinimal as MapSpec,
+      firstLayerId: "points-layer",
     },
     {
       id: "diagnostics-walkthrough",
@@ -128,6 +134,7 @@ describe("examples gate", () => {
   it("covers the bundled examples", () => {
     expect(examples.map((example) => example.id)).toEqual([
       "basic-geojson",
+      "consumer-handoff-minimal",
       "diagnostics-walkthrough",
       "ai-map-edit",
       "ai-map-workbench",

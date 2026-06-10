@@ -1,0 +1,23 @@
+{
+  "name": "consumer-handoff-minimal",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "handoff:preflight": "create-gis-map --preflight ./map.json --json > ./handoff/preflight.json",
+    "handoff:report": "node ./ci-handoff.mjs --preflight ./handoff/preflight.json --output ./handoff/consumer-review.md",
+    "handoff": "npm run handoff:preflight && npm run handoff:report"
+  },
+  "dependencies": {
+    "@gis-engine/engine": "^1.0.0",
+    "maplibre-gl": "^5.0.0 || ^6.0.0"
+  },
+  "devDependencies": {
+    "@gis-engine/cli": "^1.0.0",
+    "typescript": "^5.7.0",
+    "vite": "^5.4.0"
+  }
+}

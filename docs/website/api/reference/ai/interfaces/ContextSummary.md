@@ -66,6 +66,10 @@
 
 > **resourcePolicy**: `SourceResourcePolicyState`
 
+#### sourceContract?
+
+> `optional` **sourceContract?**: `SourceContractSummary`
+
 #### archiveContract?
 
 > `optional` **archiveContract?**: `SourceArchiveContractSummary`

@@ -1,0 +1,46 @@
+{
+  "version": "0.1",
+  "id": "consumer-handoff-minimal",
+  "sources": {
+    "points": {
+      "type": "geojson",
+      "data": {
+        "type": "FeatureCollection",
+        "features": [
+          {
+            "type": "Feature",
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                120.15,
+                30.28
+              ]
+            },
+            "properties": {
+              "name": "Hangzhou"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "layers": [
+    {
+      "id": "points-layer",
+      "type": "circle",
+      "source": "points",
+      "paint": {
+        "circle-radius": 8,
+        "circle-color": "#2563eb"
+      }
+    }
+  ],
+  "view": {
+    "mode": "map2d",
+    "center": [
+      120.15,
+      30.28
+    ],
+    "zoom": 11
+  }
+}

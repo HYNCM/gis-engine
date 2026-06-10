@@ -1,0 +1,30 @@
+name: Consumer Review Handoff
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  verify-and-handoff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - run: npm install
+      - run: npm run build
+      - run: npm run handoff
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: consumer-review-handoff
+          path: |
+            map.json
+            handoff/preflight.json
+            handoff/consumer-review.md

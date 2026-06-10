@@ -224,6 +224,82 @@
 
 > `readonly` **enum**: readonly \[`"passed"`, `"blocked"`, `"not-applicable"`, `"not-checked"`\]
 
+#### properties.sourceReadiness.items.properties.sourceContract
+
+> `readonly` **sourceContract**: `object` = `SourceContractSchema`
+
+#### properties.sourceReadiness.items.properties.sourceContract.type
+
+> `readonly` **type**: `"object"` = `"object"`
+
+#### properties.sourceReadiness.items.properties.sourceContract.properties
+
+> `readonly` **properties**: `object`
+
+#### properties.sourceReadiness.items.properties.sourceContract.properties.kind
+
+> `readonly` **kind**: `object`
+
+#### properties.sourceReadiness.items.properties.sourceContract.properties.kind.type
+
+> `readonly` **type**: `"string"` = `"string"`
+
+#### properties.sourceReadiness.items.properties.sourceContract.properties.kind.enum
+
+> `readonly` **enum**: readonly \[`"archive"`, `"schema"`\]
+
+#### properties.sourceReadiness.items.properties.sourceContract.properties.state
+
+> `readonly` **state**: `object`
+
+#### properties.sourceReadiness.items.properties.sourceContract.properties.state.type
+
+> `readonly` **type**: `"string"` = `"string"`
+
+#### properties.sourceReadiness.items.properties.sourceContract.properties.state.enum
+
+> `readonly` **enum**: readonly \[`"explicit"`, `"not-applicable"`, `"not-checked"`\]
+
+#### properties.sourceReadiness.items.properties.sourceContract.properties.metadataFields
+
+> `readonly` **metadataFields**: `object`
+
+#### properties.sourceReadiness.items.properties.sourceContract.properties.metadataFields.type
+
+> `readonly` **type**: `"array"` = `"array"`
+
+#### properties.sourceReadiness.items.properties.sourceContract.properties.metadataFields.items
+
+> `readonly` **items**: `object`
+
+#### properties.sourceReadiness.items.properties.sourceContract.properties.metadataFields.items.type
+
+> `readonly` **type**: `"string"` = `"string"`
+
+#### properties.sourceReadiness.items.properties.sourceContract.properties.policyFields
+
+> `readonly` **policyFields**: `object`
+
+#### properties.sourceReadiness.items.properties.sourceContract.properties.policyFields.type
+
+> `readonly` **type**: `"array"` = `"array"`
+
+#### properties.sourceReadiness.items.properties.sourceContract.properties.policyFields.items
+
+> `readonly` **items**: `object`
+
+#### properties.sourceReadiness.items.properties.sourceContract.properties.policyFields.items.type
+
+> `readonly` **type**: `"string"` = `"string"`
+
+#### properties.sourceReadiness.items.properties.sourceContract.required
+
+> `readonly` **required**: readonly \[`"kind"`, `"state"`, `"metadataFields"`, `"policyFields"`\]
+
+#### properties.sourceReadiness.items.properties.sourceContract.additionalProperties
+
+> `readonly` **additionalProperties**: `false` = `false`
+
 #### properties.sourceReadiness.items.properties.archiveContract
 
 > `readonly` **archiveContract**: `object` = `SourceArchiveContractSchema`
