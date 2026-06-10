@@ -1,8 +1,8 @@
 ---
 agent: orchestrator
 period: 2026-W25
-generated_at: 2026-06-10T04:50:04Z
-repo_revision: "5ecf3c14947ceb3fcfe204eb5e5e9c9e02c3fdc3"
+generated_at: 2026-06-10T05:47:12Z
+repo_revision: "0254a8576bfe54b764e68966235b4dc7f84b4aca"
 inputs:
   - docs/planning/AGENT_HEALTH_DASHBOARD.md
   - docs/planning/handoff-ledger.json
@@ -10,8 +10,16 @@ inputs:
   - docs/reviews/quality-gate-2026-06-10.md
   - docs/reviews/documentation-audit-2026-06-10.md
   - docs/reviews/first-run-acceptance-2026-06-10.md
+  - docs/reviews/provider-smoke-2026-06-10.md
+  - docs/reviews/generated-project-audit-regression-2026-06-10.md
+  - docs/reviews/pmtiles-runtime-query-promotion-boundary-2026-06-10.md
+  - docs/reviews/studio-workbench-product-go-no-go-2026-06-10.md
   - docs/research/competitor-updates-2026-W24.md
   - command: gh issue create
+  - command: gh issue close 10
+  - command: gh issue close 11
+  - command: gh issue close 12
+  - command: gh issue close 13
 owner: "@orchestrator"
 decision_level: advisory
 ---
@@ -20,12 +28,14 @@ decision_level: advisory
 
 ## Decision
 
-W25 moves GIS Engine from release-hardening closure into adoption evidence.
-The product surface remains SDK+CLI first. Studio and AI Map Workbench stay
-reference/example surfaces unless a future product Go issue passes its gates.
+W25 moved GIS Engine from release-hardening closure into adoption evidence and
+closed the full #8-#13 issue queue. The product surface remains SDK+CLI first.
+Studio and AI Map Workbench stay reference/example surfaces unless a future
+product Go issue passes its gates.
 
-Before new product work, restore governance evidence because the current health
-dashboard reports stale quality/docs reports and a pending HOC-N3 handoff.
+The governance refresh, first-run acceptance, provider smoke, generated-project
+audit regression, PMTiles runtime-query boundary, and Studio/Workbench No-go
+decision are complete.
 
 ## Issue Queue
 
@@ -42,12 +52,12 @@ dashboard reports stale quality/docs reports and a pending HOC-N3 handoff.
 
 | Task ID | Status | Evidence | Next |
 | --- | --- | --- | --- |
-| `TASK-2026W25-GOV-001` | complete, issue closed | [quality gate](../reviews/quality-gate-2026-06-10.md), [docs audit](../reviews/documentation-audit-2026-06-10.md), [dashboard](./AGENT_HEALTH_DASHBOARD.md), [handoff ledger](./handoff-ledger.json) | Continue with #10 |
-| `TASK-2026W25-ADOPT-001` | complete, issue closed | [first-run acceptance](../reviews/first-run-acceptance-2026-06-10.md), `pnpm smoke:first-run` | Continue with #10 |
-| `TASK-2026W25-ADOPT-002` | next | [#10](https://github.com/HYNCM/gis-engine/issues/10) | Implement OpenAI-compatible provider smoke |
-| `TASK-2026W25-ADOPT-003` | queued | [#11](https://github.com/HYNCM/gis-engine/issues/11) | Follow after provider smoke |
-| `TASK-2026W25-DATA-001` | queued | [#12](https://github.com/HYNCM/gis-engine/issues/12) | P2 design only |
-| `TASK-2026W25-STUDIO-001` | queued | [#13](https://github.com/HYNCM/gis-engine/issues/13) | P2 Go/No-go evidence only |
+| `TASK-2026W25-GOV-001` | complete, issue closed | [quality gate](../reviews/quality-gate-2026-06-10.md), [docs audit](../reviews/documentation-audit-2026-06-10.md), [dashboard](./AGENT_HEALTH_DASHBOARD.md), [handoff ledger](./handoff-ledger.json) | None |
+| `TASK-2026W25-ADOPT-001` | complete, issue closed | [first-run acceptance](../reviews/first-run-acceptance-2026-06-10.md), `pnpm smoke:first-run` | None |
+| `TASK-2026W25-ADOPT-002` | complete, issue closed | [provider smoke](../reviews/provider-smoke-2026-06-10.md), `pnpm smoke:provider` | None |
+| `TASK-2026W25-ADOPT-003` | complete, issue closed | [audit regression](../reviews/generated-project-audit-regression-2026-06-10.md), `pnpm smoke:cli-install`, `pnpm test:cli` | None |
+| `TASK-2026W25-DATA-001` | complete, issue closed | [PMTiles boundary](./feature-specs/pmtiles-runtime-query-promotion-boundary.md), [review](../reviews/pmtiles-runtime-query-promotion-boundary-2026-06-10.md) | Future W26 loader/query gate only |
+| `TASK-2026W25-STUDIO-001` | complete, issue closed | [Studio/Workbench No-go](./feature-specs/studio-workbench-product-go-no-go.md), [review](../reviews/studio-workbench-product-go-no-go-2026-06-10.md) | Future product Go issue only |
 
 ## Guardrails
 
@@ -62,9 +72,9 @@ dashboard reports stale quality/docs reports and a pending HOC-N3 handoff.
 
 ## Current Implementation Order
 
-1. `TASK-2026W25-ADOPT-002`: add OpenAI-compatible provider smoke without
-   requiring CI secrets.
-2. `TASK-2026W25-ADOPT-003`: harden generated-project auditability regression.
+The W25 #8-#13 queue is closed. Do not open implementation work from the P2
+boundary pages until a new issue names the owner, target artifact, and quality
+gate.
 
 ## Validation Policy
 

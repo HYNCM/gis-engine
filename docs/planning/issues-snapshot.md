@@ -1,8 +1,8 @@
 ---
 agent: orchestrator
 period: issue-snapshot
-generated_at: 2026-06-10T04:56:56.434Z
-repo_revision: "5ecf3c1"
+generated_at: 2026-06-10T05:47:05.061Z
+repo_revision: "0254a85"
 inputs:
   - GitHub Issues API
 owner: "@orchestrator"
@@ -15,18 +15,18 @@ decision_level: info
 
 ## Summary
 
-- Open issues: 4
-- Closed issues in snapshot: 6
+- Open issues: 0
+- Closed issues in snapshot: 10
 - Total returned: 10
 
 ## Issues
 
 | Issue | State | Title | Labels | Assignees | Milestone | Updated |
 | --- | --- | --- | --- | --- | --- | --- |
-| #13 | OPEN | [TASK-2026W25-STUDIO-001: Studio and Workbench product Go/No-go evidence](https://github.com/HYNCM/gis-engine/issues/13) | documentation, agent:product, priority:p2, track:productization, agent:quality | - | - | 2026-06-10T04:49:56Z |
-| #12 | OPEN | [TASK-2026W25-DATA-001: bounded PMTiles runtime query promotion design](https://github.com/HYNCM/gis-engine/issues/12) | enhancement, agent:product, priority:p2, track:productization, agent:quality | - | - | 2026-06-10T04:49:47Z |
-| #11 | OPEN | [TASK-2026W25-ADOPT-003: generated project auditability regression](https://github.com/HYNCM/gis-engine/issues/11) | enhancement, track:productization, agent:quality, agent:builder, priority:p1 | - | - | 2026-06-10T04:49:36Z |
-| #10 | OPEN | [TASK-2026W25-ADOPT-002: OpenAI-compatible provider end-to-end smoke](https://github.com/HYNCM/gis-engine/issues/10) | enhancement, track:productization, agent:quality, agent:builder, priority:p1 | - | - | 2026-06-10T04:49:27Z |
+| #13 | CLOSED | [TASK-2026W25-STUDIO-001: Studio and Workbench product Go/No-go evidence](https://github.com/HYNCM/gis-engine/issues/13) | documentation, agent:product, priority:p2, track:productization, agent:quality | - | - | 2026-06-10T05:46:52Z |
+| #12 | CLOSED | [TASK-2026W25-DATA-001: bounded PMTiles runtime query promotion design](https://github.com/HYNCM/gis-engine/issues/12) | enhancement, agent:product, priority:p2, track:productization, agent:quality | - | - | 2026-06-10T05:46:52Z |
+| #11 | CLOSED | [TASK-2026W25-ADOPT-003: generated project auditability regression](https://github.com/HYNCM/gis-engine/issues/11) | enhancement, track:productization, agent:quality, agent:builder, priority:p1 | - | - | 2026-06-10T05:46:52Z |
+| #10 | CLOSED | [TASK-2026W25-ADOPT-002: OpenAI-compatible provider end-to-end smoke](https://github.com/HYNCM/gis-engine/issues/10) | enhancement, track:productization, agent:quality, agent:builder, priority:p1 | - | - | 2026-06-10T05:46:52Z |
 | #9 | CLOSED | [TASK-2026W25-ADOPT-001: SDK+CLI 30-minute first-run acceptance](https://github.com/HYNCM/gis-engine/issues/9) | enhancement, track:productization, agent:quality, agent:builder, priority:p1 | - | - | 2026-06-10T04:56:48Z |
 | #8 | CLOSED | [TASK-2026W25-GOV-001: restore quality/docs cadence and HOC-N3 handoff](https://github.com/HYNCM/gis-engine/issues/8) | documentation, track:productization, agent:quality, priority:p1 | - | - | 2026-06-10T04:56:48Z |
 | #7 | CLOSED | [TASK-2026W24-PROD-009: post-release SDK+CLI consumer regression](https://github.com/HYNCM/gis-engine/issues/7) | enhancement, track:productization, agent:quality, agent:builder, priority:p1 | - | - | 2026-06-09T16:39:46Z |

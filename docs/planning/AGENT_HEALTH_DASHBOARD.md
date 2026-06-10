@@ -1,6 +1,6 @@
 ---
-generated_at: 2026-06-10T04:57:30.702Z
-repo_revision: "5ecf3c1"
+generated_at: 2026-06-10T05:47:03.607Z
+repo_revision: "0254a85"
 period: 2026-W25
 agent: orchestrator
 decision_level: info
@@ -45,4 +45,4 @@ decision_level: info
 - **健康 agent**: 5/5
 - **问题 agent**: 0/5
 - **数据流异常**: 0
-- **生成时间**: 2026-06-10T04:57:30.717Z
+- **生成时间**: 2026-06-10T05:47:03.621Z

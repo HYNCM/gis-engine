@@ -1427,6 +1427,118 @@ describe("cli-generate-delivery-summary", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  it("keeps generated project audit artifacts schema-stable and tamper-evident", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gis-engine-cli-generate-audit-"));
+    const cwd = process.cwd();
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      process.chdir(dir);
+
+      const prompt = "Create an auditable map for private delivery review";
+      const result = await generate({
+        projectName: "auditable-map",
+        provider: "mock",
+        prompt,
+        dryRun: false,
+      });
+
+      const projectDir = join(dir, "auditable-map");
+      const summary = JSON.parse(readFileSync(join(projectDir, "delivery-summary.json"), "utf-8"));
+      const evidence = JSON.parse(readFileSync(join(projectDir, "evidence.json"), "utf-8"));
+      const preflight = JSON.parse(readFileSync(join(projectDir, "preflight.json"), "utf-8"));
+      const review = readFileSync(join(projectDir, "REVIEW.md"), "utf-8");
+      const manifest = JSON.parse(readFileSync(join(projectDir, "artifact-manifest.json"), "utf-8"));
+      const manifestFiles = manifest.files as Array<{
+        path: string;
+        role: string;
+        required: boolean;
+        bytes: number;
+        sha256: string;
+      }>;
+      const filesByPath = new Map(manifestFiles.map((file) => [file.path, file]));
+
+      expect(summary).toMatchObject({
+        provider: "mock",
+        planStatus: result.planStatus,
+        commandCount: result.commandCount,
+        validation: { valid: result.validationValid },
+        evidenceStatus: result.evidenceStatus,
+        retainedRawPrompt: false,
+      });
+      expect(summary.preflight).toMatchObject({
+        ok: preflight.ok,
+        status: preflight.status,
+        diagnostics: {
+          count: preflight.diagnostics.length,
+          error: preflight.diagnostics.filter((diagnostic: { severity: string }) => diagnostic.severity === "error")
+            .length,
+          warning: preflight.diagnostics.filter((diagnostic: { severity: string }) => diagnostic.severity === "warning")
+            .length,
+          info: preflight.diagnostics.filter((diagnostic: { severity: string }) => diagnostic.severity === "info")
+            .length,
+        },
+      });
+      expect(summary.delivery.sections).toEqual(evidence.delivery.sections);
+      expect(summary.delivery.spatialQueryReadiness).toEqual(evidence.delivery.spatialQueryReadiness);
+      expect(manifest.requiredReviewFiles).toEqual([
+        "map.json",
+        "preflight.json",
+        "delivery-summary.json",
+        "REVIEW.md",
+      ]);
+      expect(filesByPath.get("map.json")).toMatchObject({ role: "mapspec", required: true });
+      expect(filesByPath.get("preflight.json")).toMatchObject({ role: "preflight", required: true });
+      expect(filesByPath.get("delivery-summary.json")).toMatchObject({
+        role: "delivery-summary",
+        required: true,
+      });
+      expect(filesByPath.get("REVIEW.md")).toMatchObject({ role: "review", required: true });
+      expect(filesByPath.get("evidence.json")).toMatchObject({ role: "evidence", required: false });
+      expect(filesByPath.get("artifact-manifest.json")).toBeUndefined();
+      expect(review).toContain("## Review Files");
+      for (const requiredFile of manifest.requiredReviewFiles) {
+        expect(review).toContain(`\`${requiredFile}\``);
+      }
+
+      const artifactVerification = verifyArtifacts({ projectDir });
+      expect(artifactVerification).toMatchObject({
+        ok: true,
+        mode: "artifact-manifest-verify",
+        status: "verified",
+        summary: {
+          requiredFileCount: 4,
+          missingFileCount: 0,
+          byteMismatchCount: 0,
+          hashMismatchCount: 0,
+        },
+      });
+      expect(JSON.stringify({ summary, evidence, preflight, manifest, review })).not.toContain(prompt);
+
+      const mapPath = join(projectDir, "map.json");
+      const originalMap = readFileSync(mapPath, "utf-8");
+      expect(originalMap).toContain('"0.1"');
+      writeFileSync(mapPath, originalMap.replace('"0.1"', '"0.2"'), "utf-8");
+      const hashTamperedVerification = verifyArtifacts({ projectDir });
+      expect(hashTamperedVerification.ok).toBe(false);
+      expect(hashTamperedVerification.status).toBe("blocked");
+      expect(hashTamperedVerification.diagnostics.map((diagnostic) => diagnostic.code)).toContain(
+        "ARTIFACT_MANIFEST.HASH_MISMATCH",
+      );
+
+      writeFileSync(mapPath, "{}\n", "utf-8");
+      const byteTamperedVerification = verifyArtifacts({ projectDir });
+      expect(byteTamperedVerification.ok).toBe(false);
+      expect(byteTamperedVerification.status).toBe("blocked");
+      expect(byteTamperedVerification.diagnostics.map((diagnostic) => diagnostic.code)).toContain(
+        "ARTIFACT_MANIFEST.BYTE_MISMATCH",
+      );
+    } finally {
+      process.chdir(cwd);
+      logSpy.mockRestore();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -73,6 +73,12 @@ The repository first-run acceptance gate is `pnpm smoke:first-run`. It wraps the
 packed-package CLI install smoke, keeps the 30-minute first-run budget explicit,
 and writes a dated review artifact under `docs/reviews/`.
 
+The repository OpenAI-compatible provider gate is `pnpm smoke:provider`. It
+uses a local `127.0.0.1` test server, so it does not need CI secrets or an
+external provider. The smoke covers success, malformed provider content, HTTP
+error, timeout, generated map preflight, artifact verification, and prompt/key
+non-retention checks.
+
 To use a real provider, set the provider-specific API key and pass a prompt:
 
 ```bash

@@ -34,7 +34,7 @@ templates, and where to look for the real evidence.
 | MapLibre drift audit | Dependency drift, resource, and go/no-go evidence | `mld-*`, `mlc-*` |
 | AI generation / NL planning | Generation contracts, planner provenance, delivery wording | `nla-*`, `nlq-*`, `ain-*`, `gir-*` |
 | Productization closure | Release runner, PMTiles promotion, SDK+CLI regression, Workbench intake, external signal refresh | `prod-*`, `quality-waiver-*` |
-| W25 adoption evidence | Governance restoration and first-run SDK+CLI acceptance | `first-run-acceptance-*`, `quality-gate-*`, `documentation-audit-*` |
+| W25 adoption evidence | Governance restoration, provider smoke, generated-project audit regression, and P2 No-go boundaries | `first-run-acceptance-*`, `provider-smoke-*`, `generated-project-audit-regression-*`, `pmtiles-runtime-query-promotion-boundary-*`, `studio-workbench-product-go-no-go-*` |
 | AI Map Workbench archive | Product boundary, provider/resource controls, durable audit, implementation gate | [archive/2026-06-10/reviews/](../archive/2026-06-10/reviews/) |
 | Studio local archive | Review/export/local continuity workstreams | [archive/2026-06-10/reviews/](../archive/2026-06-10/reviews/) |
 | Cross-cutting reviews | Architecture or capability-wide conclusions | `architecture-assessment-*`, `ai-orchestration-capability-summary-*`, `main-provider-evidence-hardening-*` |

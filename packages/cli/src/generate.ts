@@ -407,6 +407,7 @@ ${renderFollowUps(delivery)}
 - \`map.json\`: generated MapSpec.
 - \`preflight.json\`: full preflight diagnostics and source-readiness details.
 - \`delivery-summary.json\`: compact delivery and preflight summary for CI and reviewers.
+- \`REVIEW.md\`: this human-readable review handoff.
 - \`artifact-manifest.json\`: generated file list with roles, sizes, and sha256 hashes.
 - \`evidence.json\`: full generation evidence bundle when evidence creation succeeds.
 - \`diagnostics.json\`: written only when pipeline diagnostics are present.

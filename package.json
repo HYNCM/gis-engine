@@ -69,6 +69,7 @@
     "size:check": "du -sk packages/*/dist | sort -rn",
     "smoke:first-run": "node scripts/first-run-acceptance.mjs",
     "smoke:cli-install": "node scripts/cli-install-smoke.mjs",
+    "smoke:provider": "node scripts/provider-smoke.mjs",
     "build:cdn": "node scripts/build-cdn.mjs",
     "publish:dry": "pnpm build && pnpm --filter @gis-engine/engine publish --dry-run --no-git-checks && pnpm --filter @gis-engine/scene3d publish --dry-run --no-git-checks && pnpm --filter @gis-engine/ai publish --dry-run --no-git-checks && pnpm --filter @gis-engine/cli publish --dry-run --no-git-checks",
     "changeset": "changeset",

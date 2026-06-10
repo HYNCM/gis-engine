@@ -36,6 +36,30 @@ Known IDs: `deepseek`, `openai`. Both use the OpenAI chat completions API.
 Unconfigured providers return: `PROVIDER.CONFIG_REQUIRED`,
 `PROVIDER.BASE_URL_REQUIRED`, `PROVIDER.SERVER_ONLY`.
 
+## Local Provider Smoke
+
+Use the repository smoke before wiring real credentials into an adoption or
+release check:
+
+```bash
+pnpm smoke:provider
+```
+
+The smoke starts a local `127.0.0.1` OpenAI-compatible test server and runs the
+CLI generate path with `--provider openai`, `--base-url`, `--api-key`, and
+`--timeout`. It covers:
+
+- successful provider response to reviewable generated map;
+- generated map `--preflight` and `--verify-artifacts`;
+- malformed provider content;
+- provider HTTP error;
+- provider timeout;
+- command-output and generated-file checks that the test API key and raw prompt
+  are not retained.
+
+This gate intentionally does not call a real provider and must not require CI
+secrets.
+
 ## Diagnostics
 
 Use `--dry-run` to inspect status without executing:

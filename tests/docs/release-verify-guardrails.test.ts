@@ -62,4 +62,22 @@ describe("release verify guardrails", () => {
     expect(firstRunScript).toContain("First-run acceptance");
     expect(firstRunScript).toContain("asserts raw prompt text is not retained");
   });
+
+  it("keeps the OpenAI-compatible provider smoke local and leak-safe", () => {
+    const packageJson = readJson("package.json");
+    const scripts = packageJson.scripts as Record<string, string>;
+    const providerSmoke = readText("scripts/provider-smoke.mjs");
+
+    expect(scripts["smoke:provider"]).toBe("node scripts/provider-smoke.mjs");
+    expect(providerSmoke).toContain("127.0.0.1");
+    expect(providerSmoke).toContain("/success/v1/chat/completions");
+    expect(providerSmoke).toContain("/malformed/v1/chat/completions");
+    expect(providerSmoke).toContain("/http-error/v1/chat/completions");
+    expect(providerSmoke).toContain("/timeout/v1/chat/completions");
+    expect(providerSmoke).toContain("--base-url");
+    expect(providerSmoke).toContain("--api-key");
+    expect(providerSmoke).toContain("--timeout");
+    expect(providerSmoke).toContain("--verify-artifacts");
+    expect(providerSmoke).toContain("assertNoSensitiveRetention");
+  });
 });
