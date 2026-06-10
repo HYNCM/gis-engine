@@ -111,6 +111,7 @@ export interface ContextSummary {
     state: SourceReadinessState;
     queryReady: boolean;
     resourcePolicy: SourceResourcePolicyState;
+    sourceContract?: SourceContractSummary;
     archiveContract?: SourceArchiveContractSummary;
     runtimeLoadPlan?: SourceRuntimeLoadPlanSummary;
   }>;
@@ -427,12 +428,15 @@ function summarizeSourceContract(source: MapSpec["sources"][string]): SourceCont
 
 function summarizeSourceReadiness(spec: MapSpec): ContextSummary["sourceReadiness"] {
   return createSourceReadinessReport(spec).sources.map((source) => {
+    const sourceSpec = spec.sources[source.sourceId];
+    const sourceContract = sourceSpec ? summarizeSourceContract(sourceSpec) : undefined;
     return {
       sourceId: source.sourceId,
       type: source.type,
       state: source.state,
       queryReady: source.queryReady,
       resourcePolicy: source.resourcePolicy,
+      ...(sourceContract ? { sourceContract } : {}),
       ...(source.type === "pmtiles" ? { archiveContract: PMTILES_ARCHIVE_CONTRACT_SUMMARY } : {}),
       ...(source.runtimeLoadPlan ? { runtimeLoadPlan: summarizeRuntimeLoadPlan(source.runtimeLoadPlan) } : {}),
     };

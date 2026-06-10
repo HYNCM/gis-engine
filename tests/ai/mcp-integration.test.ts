@@ -295,6 +295,12 @@ describe("MCP Server Integration", () => {
         state: string;
         queryReady: boolean;
         resourcePolicy: string;
+        sourceContract?: {
+          kind: string;
+          state: string;
+          metadataFields: string[];
+          policyFields: string[];
+        };
         archiveContract?: {
           state: string;
           metadataFields: string[];
@@ -331,6 +337,12 @@ describe("MCP Server Integration", () => {
         state: "readiness-only",
         queryReady: false,
         resourcePolicy: "passed",
+        sourceContract: expect.objectContaining({
+          kind: "archive",
+          state: "explicit",
+          metadataFields: expect.arrayContaining(["specVersion", "archiveBytes", "rootDirectoryLength"]),
+          policyFields: expect.arrayContaining(["maxArchiveBytes", "allowRangeRequests", "timeoutMs"]),
+        }),
         archiveContract: expect.objectContaining({
           state: "explicit",
           metadataFields: expect.arrayContaining(["specVersion", "archiveBytes", "rootDirectoryLength"]),
@@ -391,6 +403,12 @@ describe("MCP Server Integration", () => {
         state: string;
         queryReady: boolean;
         resourcePolicy: string;
+        sourceContract?: {
+          kind: string;
+          state: string;
+          metadataFields: string[];
+          policyFields: string[];
+        };
       }>;
     };
 
@@ -415,6 +433,12 @@ describe("MCP Server Integration", () => {
         state: "readiness-only",
         queryReady: false,
         resourcePolicy: "passed",
+        sourceContract: expect.objectContaining({
+          kind: "schema",
+          state: "explicit",
+          metadataFields: expect.arrayContaining(["type", "url", "hasIndex", "featureCount"]),
+          policyFields: expect.arrayContaining(["maxFileBytes", "maxFeatureCount", "indexRequired"]),
+        }),
       }),
     );
   });
@@ -463,6 +487,12 @@ describe("MCP Server Integration", () => {
         state: string;
         queryReady: boolean;
         resourcePolicy: string;
+        sourceContract?: {
+          kind: string;
+          state: string;
+          metadataFields: string[];
+          policyFields: string[];
+        };
       }>;
     };
 
@@ -487,6 +517,12 @@ describe("MCP Server Integration", () => {
         state: "readiness-only",
         queryReady: false,
         resourcePolicy: "passed",
+        sourceContract: expect.objectContaining({
+          kind: "schema",
+          state: "explicit",
+          metadataFields: expect.arrayContaining(["type", "url", "crs", "encoding", "rowCount"]),
+          policyFields: expect.arrayContaining(["maxFileBytes", "maxRowCount", "workerBudget"]),
+        }),
       }),
     );
   });
@@ -542,6 +578,12 @@ describe("MCP Server Integration", () => {
         state: string;
         queryReady: boolean;
         resourcePolicy: string;
+        sourceContract?: {
+          kind: string;
+          state: string;
+          metadataFields: string[];
+          policyFields: string[];
+        };
       }>;
     };
 
@@ -566,6 +608,12 @@ describe("MCP Server Integration", () => {
         state: "readiness-only",
         queryReady: false,
         resourcePolicy: "passed",
+        sourceContract: expect.objectContaining({
+          kind: "schema",
+          state: "explicit",
+          metadataFields: expect.arrayContaining(["type", "url", "crs", "bandCount", "bands"]),
+          policyFields: expect.arrayContaining(["maxFileBytes", "maxPixels", "maxBandCount", "workerBudget"]),
+        }),
       }),
     );
   });
@@ -984,7 +1032,9 @@ describe("MCP Server Integration", () => {
     expect(manifest).toMatchObject({ exampleId: "pmtiles-local", writesFiles: false });
     expect(manifest.files.map((file) => file.path)).toEqual(["examples/pmtiles-local/map.json"]);
     expect(manifest.files.every((file) => !("content" in file))).toBe(true);
-    expect(manifest.notes.join(" ")).toContain("does not parse PMTiles binaries");
+    expect(manifest.notes.join(" ")).toContain("does not parse archives");
+    expect(manifest.notes.join(" ")).toContain("perform hidden fetches");
+    expect(manifest.notes.join(" ")).toContain("runtime feature-query support");
     expect(manifest.notes.join(" ")).toContain("writes no files");
     expect(manifest.generationEvidence).toMatchObject({
       status: "ready",

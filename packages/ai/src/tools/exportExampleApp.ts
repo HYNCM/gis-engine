@@ -850,7 +850,9 @@ const manifests: Record<ExampleId, ExampleAppManifest> = {
         description: "MapSpec with a local PMTiles URL path.",
       },
     ],
-    notes: ["PMTiles coverage validates and transforms the URL path only; it does not parse PMTiles binaries."],
+    notes: [
+      "PMTiles coverage is URL-compatible display and readiness evidence only; it does not parse archives, perform hidden fetches, start workers, or promote runtime feature-query support.",
+    ],
   },
   "vector-tile-url": {
     exampleId: "vector-tile-url",

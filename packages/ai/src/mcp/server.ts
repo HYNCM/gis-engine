@@ -266,6 +266,7 @@ const SourceReadinessSchema = {
     state: { type: "string", enum: ["supported", "readiness-only", "blocked"] },
     queryReady: { type: "boolean" },
     resourcePolicy: { type: "string", enum: ["passed", "blocked", "not-applicable", "not-checked"] },
+    sourceContract: SourceContractSchema,
     archiveContract: SourceArchiveContractSchema,
     runtimeLoadPlan: SourceRuntimeLoadPlanSchema,
   },
