@@ -11,6 +11,16 @@ const startedAt = new Date();
 const startMs = Date.now();
 let smokeStatus = "passed";
 let failureMessage = "";
+let releasePreflight = {
+  ok: false,
+  checks: [],
+};
+
+try {
+  releasePreflight = runReleasePreflight();
+} catch (error) {
+  failureMessage = error instanceof Error ? error.message : String(error);
+}
 
 try {
   execFileSync(process.execPath, [join(root, "scripts/cli-install-smoke.mjs")], {
@@ -26,7 +36,11 @@ const endedAt = new Date();
 const elapsedMs = Date.now() - startMs;
 const budgetMs = options.maxMinutes * 60_000;
 const withinBudget = elapsedMs <= budgetMs;
-const passed = smokeStatus === "passed" && withinBudget;
+const releaseEnvFailures = Array.isArray(releasePreflight.checks)
+  ? releasePreflight.checks.filter((check) => check.status === "fail")
+  : [];
+const releaseEnvReady = releaseEnvFailures.length === 0;
+const passed = smokeStatus === "passed" && withinBudget && (!options.requireReleaseEnv || releaseEnvReady);
 const reportPath = resolve(root, options.outputPath);
 
 writeReport(reportPath, {
@@ -36,6 +50,9 @@ writeReport(reportPath, {
   maxMinutes: options.maxMinutes,
   smokeStatus,
   withinBudget,
+  releasePreflight,
+  releaseEnvReady,
+  requireReleaseEnv: options.requireReleaseEnv,
   passed,
   failureMessage,
 });
@@ -46,6 +63,7 @@ if (!passed) process.exit(1);
 function parseArgs(argv) {
   const parsed = {
     maxMinutes: 30,
+    requireReleaseEnv: false,
     outputPath: `docs/reviews/first-run-acceptance-${new Date().toISOString().slice(0, 10)}.md`,
   };
 
@@ -65,6 +83,10 @@ function parseArgs(argv) {
       index += 1;
       continue;
     }
+    if (arg === "--require-release-env") {
+      parsed.requireReleaseEnv = true;
+      continue;
+    }
     if (arg.startsWith("--output=")) {
       parsed.outputPath = requireValue(arg.slice("--output=".length), "--output");
       continue;
@@ -77,6 +99,24 @@ function parseArgs(argv) {
   }
 
   return parsed;
+}
+
+function runReleasePreflight() {
+  try {
+    return JSON.parse(
+      execFileSync(process.execPath, [join(root, "scripts/release-preflight.mjs"), "--json", "--skip-browser"], {
+        cwd: root,
+        encoding: "utf-8",
+        stdio: ["ignore", "pipe", "inherit"],
+      }),
+    );
+  } catch (error) {
+    const stdout = error?.stdout ? String(error.stdout).trim() : "";
+    if (stdout) {
+      return JSON.parse(stdout);
+    }
+    throw error;
+  }
 }
 
 function parsePositiveNumber(value, flag) {
@@ -126,6 +166,7 @@ function renderReport(result) {
     "| Check | Evidence |",
     "| --- | --- |",
     `| Elapsed time | ${elapsedSeconds}s / ${result.maxMinutes}m budget |`,
+    `| Release-runner parity | ${result.releaseEnvReady ? "pass" : "fail"}${result.requireReleaseEnv ? " (required)" : " (advisory)"} |`,
     `| CLI install smoke | ${result.smokeStatus} |`,
     `| Time budget | ${result.withinBudget ? "within 30-minute first-run budget" : "exceeded first-run budget"} |`,
     "| Fresh consumer path | Packed local GA packages, installed in a temporary consumer project, scaffolded Vite TypeScript, and built the generated app |",
@@ -139,10 +180,24 @@ function renderReport(result) {
     "- `delivery-summary.json`",
     "- `REVIEW.md`",
     "",
+    "## Release Runner Parity",
+    "",
+    ...(Array.isArray(result.releasePreflight.checks) && result.releasePreflight.checks.length > 0
+      ? [
+          "| Check | Status | Evidence |",
+          "| --- | --- | --- |",
+          ...result.releasePreflight.checks.map(
+            (check) => `| ${check.name} | ${check.status} | ${String(check.evidence).replace(/\|/g, "\\|")} |`,
+          ),
+          "",
+        ]
+      : ["No release-preflight evidence captured.", ""]),
     "## Command",
     "",
     "```bash",
     "pnpm smoke:first-run",
+    result.requireReleaseEnv ? "# strict local parity" : "# advisory local parity",
+    result.requireReleaseEnv ? "pnpm smoke:first-run --require-release-env" : "",
     "```",
     ...failureLines,
   ].join("\n");
@@ -162,6 +217,8 @@ Usage: node scripts/first-run-acceptance.mjs [options]
 
 Options:
   --max-minutes <n>  Acceptance budget in minutes (default: 30)
+  --require-release-env
+                     Fail when local release-preflight parity does not match the Node 22 release runner
   --output <path>    Markdown report path (default: docs/reviews/first-run-acceptance-YYYY-MM-DD.md)
   --help, -h         Show this help message
 `);

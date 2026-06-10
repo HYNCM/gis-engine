@@ -73,7 +73,10 @@ npm exec --package @gis-engine/cli@latest -- create-gis-map --verify-artifacts .
 
 The repository first-run acceptance gate is `pnpm smoke:first-run`. It wraps the
 packed-package CLI install smoke, keeps the 30-minute first-run budget explicit,
-and writes a dated review artifact under `docs/reviews/`.
+captures advisory release-runner parity from `release:preflight --skip-browser`,
+and writes a dated review artifact under `docs/reviews/`. Use
+`pnpm smoke:first-run --require-release-env` when you want the local run to fail
+unless it matches the Node 22 release runner contract.
 
 The repository OpenAI-compatible provider gate is `pnpm smoke:provider`. It
 uses a local `127.0.0.1` test server, so it does not need CI secrets or an

@@ -1,7 +1,7 @@
 ---
 agent: builder
 period: 2026-06-10
-generated_at: 2026-06-10T10:28:25.896Z
+generated_at: 2026-06-10T10:27:09.719Z
 repo_revision: "af215b982fc88f701b18dfb2ea4edb2e3dcc460f"
 inputs:
   - scripts/first-run-acceptance.mjs
@@ -17,7 +17,7 @@ Status: **passed**
 
 | Check | Evidence |
 | --- | --- |
-| Elapsed time | 16.8s / 30m budget |
+| Elapsed time | 17.9s / 30m budget |
 | Release-runner parity | fail (advisory) |
 | CLI install smoke | passed |
 | Time budget | within 30-minute first-run budget |
@@ -39,7 +39,7 @@ Status: **passed**
 | node | fail | expected major 22; found 26.0.0 |
 | pnpm | pass | expected 9.15.0; found 9.15.0 |
 | biome | pass | Version: 2.4.16 |
-| listener | pass | 127.0.0.1:53817 |
+| listener | pass | 127.0.0.1:53473 |
 | playwright_chromium | skip | --skip-browser supplied |
 
 ## Command

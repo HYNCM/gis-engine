@@ -52,9 +52,7 @@ jobs:
           cache: "pnpm"
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm lint
-      - run: pnpm build:schema
-      - run: pnpm check
+      - run: pnpm release:verify
 
   publish:
     name: "发布到 npm"

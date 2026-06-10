@@ -18,25 +18,27 @@ describe("release verify guardrails", () => {
     const packageJson = readJson("package.json");
     const scripts = packageJson.scripts as Record<string, string>;
     const releaseVerify = scripts["release:verify"];
+    const releaseVerifyScript = readText("scripts/release-verify.mjs");
 
-    expect(releaseVerify).toContain("pnpm release:preflight");
-    expect(releaseVerify).toContain("pnpm smoke:cli-install");
-    expect(releaseVerify).toContain("pnpm build:cdn -- --dry-run");
-    expect(releaseVerify).toContain("pnpm publish:dry");
-    expect(releaseVerify).toContain("pnpm docs:links");
+    expect(releaseVerify).toBe("node scripts/release-verify.mjs");
+    expect(releaseVerifyScript).toContain('name: "release-preflight"');
+    expect(releaseVerifyScript).toContain('args: ["release:preflight"');
+    expect(releaseVerifyScript).toContain('name: "lint"');
+    expect(releaseVerifyScript).toContain('args: ["lint"]');
+    expect(releaseVerifyScript).toContain('name: "build-schema"');
+    expect(releaseVerifyScript).toContain('args: ["build:schema"]');
+    expect(releaseVerifyScript).toContain('name: "check"');
+    expect(releaseVerifyScript).toContain('args: ["check"]');
+    expect(releaseVerifyScript).toContain('name: "smoke-cli-install"');
+    expect(releaseVerifyScript).toContain('args: ["smoke:cli-install"]');
+    expect(releaseVerifyScript).toContain('name: "build-cdn-dry-run"');
+    expect(releaseVerifyScript).toContain('args: ["build:cdn", "--", "--dry-run"]');
+    expect(releaseVerifyScript).toContain('name: "publish-dry-run"');
+    expect(releaseVerifyScript).toContain('args: ["publish:dry"]');
+    expect(releaseVerifyScript).toContain('name: "docs-links"');
+    expect(releaseVerifyScript).toContain('args: ["docs:links"]');
     expect(releaseVerify).not.toContain("-r publish");
-    expect(releaseVerify).not.toContain("@gis-engine/scene3d-three-adapter publish");
-
-    expect(releaseVerify.indexOf("pnpm release:preflight")).toBeLessThan(
-      releaseVerify.indexOf("pnpm smoke:cli-install"),
-    );
-    expect(releaseVerify.indexOf("pnpm smoke:cli-install")).toBeLessThan(
-      releaseVerify.indexOf("pnpm build:cdn -- --dry-run"),
-    );
-    expect(releaseVerify.indexOf("pnpm build:cdn -- --dry-run")).toBeLessThan(
-      releaseVerify.indexOf("pnpm publish:dry"),
-    );
-    expect(releaseVerify.indexOf("pnpm publish:dry")).toBeLessThan(releaseVerify.indexOf("pnpm docs:links"));
+    expect(releaseVerifyScript).not.toContain("@gis-engine/scene3d-three-adapter publish");
   });
 
   it("keeps the CLI install smoke as a generated-artifact acceptance loop", () => {
@@ -57,6 +59,9 @@ describe("release verify guardrails", () => {
     const firstRunScript = readText("scripts/first-run-acceptance.mjs");
 
     expect(scripts["smoke:first-run"]).toBe("node scripts/first-run-acceptance.mjs");
+    expect(firstRunScript).toContain("scripts/release-preflight.mjs");
+    expect(firstRunScript).toContain("--skip-browser");
+    expect(firstRunScript).toContain("--require-release-env");
     expect(firstRunScript).toContain("scripts/cli-install-smoke.mjs");
     expect(firstRunScript).toContain("maxMinutes: 30");
     expect(firstRunScript).toContain("First-run acceptance");

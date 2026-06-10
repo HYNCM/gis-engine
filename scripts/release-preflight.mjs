@@ -20,7 +20,7 @@ record(
   "node",
   process.versions.node.split(".")[0] === expectedNodeMajor,
   `expected major ${expectedNodeMajor}; found ${process.versions.node}`,
-  "Release gates run in CI on Node 22. Use .nvmrc or the CI runner image before publishing.",
+  `Release gates run in CI on Node ${expectedNodeMajor}. Run \`nvm use\` (or another .nvmrc-aware Node 22 switch) before publishing.`,
 );
 
 const pnpmVersion = runText("pnpm", ["--version"]);

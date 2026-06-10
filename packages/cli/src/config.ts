@@ -170,12 +170,22 @@ export function parseArgs(argv: string[]): CliConfig {
         help = true;
       } else {
         const parsed = Number(raw);
-        if (Number.isFinite(parsed) && parsed > 0) timeout = parsed;
+        if (Number.isFinite(parsed) && parsed > 0) {
+          timeout = parsed;
+        } else {
+          console.error("Error: --timeout must be a positive number of milliseconds.\n");
+          help = true;
+        }
       }
       i++;
     } else if (arg.startsWith("--timeout=")) {
       const parsed = Number(arg.slice("--timeout=".length));
-      if (Number.isFinite(parsed) && parsed > 0) timeout = parsed;
+      if (Number.isFinite(parsed) && parsed > 0) {
+        timeout = parsed;
+      } else {
+        console.error("Error: --timeout must be a positive number of milliseconds.\n");
+        help = true;
+      }
       i++;
     } else if (arg === "--template" || arg === "-t") {
       template = nextValue("--template") || template;

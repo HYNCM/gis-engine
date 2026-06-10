@@ -566,9 +566,22 @@ describe("cli-config-parseArgs", () => {
     expect(config.timeout).toBe(15000);
   });
 
-  it("ignores invalid timeout values", () => {
+  it("treats invalid timeout values as help-triggering input errors", () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const config = parseArgs(["--timeout", "abc"]);
     expect(config.timeout).toBeUndefined();
+    expect(config.help).toBe(true);
+    expect(errorSpy).toHaveBeenCalledWith("Error: --timeout must be a positive number of milliseconds.\n");
+    errorSpy.mockRestore();
+  });
+
+  it("treats invalid timeout equals syntax as help-triggering input errors", () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const config = parseArgs(["--timeout=0"]);
+    expect(config.timeout).toBeUndefined();
+    expect(config.help).toBe(true);
+    expect(errorSpy).toHaveBeenCalledWith("Error: --timeout must be a positive number of milliseconds.\n");
+    errorSpy.mockRestore();
   });
 
   it("reads apiKey from GIS_ENGINE_API_KEY env var", () => {

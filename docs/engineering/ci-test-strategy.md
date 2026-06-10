@@ -72,10 +72,10 @@ ready, required review files are missing from `artifact-manifest.json`, artifact
 hashes drift, or generated files retain the raw prompt. This is the guardrail
 for the scoped package entrypoint:
 
-For operators who want a single local release-verification command, run
-`pnpm release:verify`. It chains the preflight, install smoke, CDN dry-run,
-publish dry-run, and docs link audit in the same order the release wrapper
-expects.
+For operators who want a single local or CI release-verification command, run
+`pnpm release:verify`. The wrapper runs the same ordered release gates used by
+the release workflow: preflight, lint, schema build, deterministic check, CLI
+install smoke, CDN dry-run, publish dry-run, and docs link audit.
 
 ```bash
 npm exec --package @gis-engine/cli@latest -- create-gis-map my-map
