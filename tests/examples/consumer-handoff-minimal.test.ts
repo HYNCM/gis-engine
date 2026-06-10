@@ -1,10 +1,10 @@
+import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
 import { preflightMapSpec } from "@gis-engine/cli";
+import { describe, expect, it } from "vitest";
 
 const repoRoot = resolve(fileURLToPath(new URL("../../", import.meta.url)));
 const exampleRoot = resolve(repoRoot, "examples/consumer-handoff-minimal");

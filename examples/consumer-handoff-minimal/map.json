@@ -11,10 +11,7 @@
             "type": "Feature",
             "geometry": {
               "type": "Point",
-              "coordinates": [
-                120.15,
-                30.28
-              ]
+              "coordinates": [120.15, 30.28]
             },
             "properties": {
               "name": "Hangzhou"
@@ -37,10 +34,7 @@
   ],
   "view": {
     "mode": "map2d",
-    "center": [
-      120.15,
-      30.28
-    ],
+    "center": [120.15, 30.28],
     "zoom": 11
   }
 }

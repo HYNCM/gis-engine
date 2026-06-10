@@ -46,7 +46,7 @@ const report = [
   "",
   `- Map id: \`${spec.id ?? "unknown"}\``,
   `- First layer: \`${spec.layers?.[0]?.id ?? "unknown"}\``,
-  `- View mode: \`${spec.view?.mode ?? "map2d"}\``
+  `- View mode: \`${spec.view?.mode ?? "map2d"}\``,
 ].join("\n");
 
 mkdirSync(dirname(outputPath), { recursive: true });
