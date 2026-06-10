@@ -1,0 +1,17 @@
+[**@gis-engine/cli v1.0.0**](../index.md)
+
+***
+
+# Interface: ProviderConfidence
+
+## Properties
+
+### level
+
+> **level**: `"low"` \| `"medium"` \| `"high"`
+
+***
+
+### reasons
+
+> **reasons**: `string`[]

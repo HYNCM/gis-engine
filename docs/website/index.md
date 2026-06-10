@@ -13,6 +13,9 @@ hero:
       text: Quick Start
       link: /guide/quick-start
     - theme: alt
+      text: API Reference
+      link: /api/
+    - theme: alt
       text: MCP Tools
       link: /mcp/overview
     - theme: alt

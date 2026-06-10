@@ -145,6 +145,10 @@ export function formatVerifyArtifactsText(result: VerifyArtifactsResult): string
     `  Hashes:     ${result.summary.hashMismatchCount} mismatches`,
   ];
 
+  if (result.status === "blocked") {
+    lines.push("  Next step:  restore the missing or changed generated review artifacts, then rerun verification.");
+  }
+
   for (const diagnostic of result.diagnostics) {
     lines.push(`  - [${diagnostic.severity}] ${diagnostic.code} ${diagnostic.path ?? "/"}: ${diagnostic.message}`);
   }

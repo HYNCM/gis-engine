@@ -1,22 +1,33 @@
 # basic-geojson
 
-Minimal example that loads a local GeoJSON file and renders point features as styled circles on a 2D map.
+## Goal
 
-## MapSpec Overview
+Provide the smallest schema-first example in the repository: one GeoJSON
+source, one circle layer, and a relative data file.
 
-- **ID:** `basic-geojson-example` | **View:** `map2d`, center [120.15, 30.28], zoom 11
-- **Source:** `pois` (geojson) -- external file at `./data/points.geojson`
-- **Layer:** `poi-circles` (circle) -- 6px blue circles (`#2563eb`)
+## Prerequisites
 
-## Key Concepts
+- A GIS Engine runtime or test harness that can load `map.json`
+- The sibling file `./data/points.geojson`
 
-- Simplest MapSpec fixture: one GeoJSON source, one circle layer, static paint properties.
-- Demonstrates referencing an external `.geojson` data file via relative path.
+## Run
 
-## Usage
+- Copy or reference `map.json` in a runtime, validation test, or generated app
+  review flow.
+- If you only need a contract check, run `validateSpec()` against the fixture.
 
-Copy this fixture to bootstrap a new MapSpec test or example. Useful for verifying basic GeoJSON ingestion, circle rendering, and local file path resolution.
+## Expected Output
 
-## Requirements
+- A valid `MapSpec` with `view.mode: "map2d"`
+- One `geojson` source named `pois`
+- One `circle` layer named `poi-circles`
+- A minimal proof point for local GeoJSON path resolution and schema coverage
 
-The file `./data/points.geojson` must be present alongside `map.json`.
+## Limits And Follow-up
+
+- This fixture is intentionally minimal; it does not demonstrate commands,
+  generated-app evidence, PMTiles, or MCP flows.
+- Use [`../getting-started`](../getting-started/README.md) when you want a full
+  runnable SDK walkthrough.
+- Use [`../pmtiles-local`](../pmtiles-local/README.md) when you need a readiness
+  example for URL-compatible PMTiles display.

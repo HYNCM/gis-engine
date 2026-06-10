@@ -88,7 +88,7 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
   }
 
   if (!config.projectName) {
-    console.error("Error: <project-name> is required.\n");
+    console.error("Error: <project-name> is required. Start with `create-gis-map my-map` or use --preflight / --verify-artifacts.\n");
     printHelp();
     process.exit(1);
   }
@@ -128,7 +128,9 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
 
   const outDir = resolve(process.cwd(), config.projectName);
   if (existsSync(outDir) && !config.yes) {
-    console.error(`Error: directory "${config.projectName}" already exists. Use --yes to overwrite.`);
+    console.error(
+      `Error: directory "${config.projectName}" already exists. Choose a new folder or rerun with --yes to overwrite scaffold files.`,
+    );
     process.exit(1);
   }
 

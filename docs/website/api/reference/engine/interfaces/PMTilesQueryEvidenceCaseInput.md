@@ -1,0 +1,35 @@
+[**@gis-engine/engine v1.0.0**](../index.md)
+
+***
+
+# Interface: PMTilesQueryEvidenceCaseInput
+
+## Properties
+
+### id
+
+> **id**: `string`
+
+***
+
+### layers?
+
+> `optional` **layers?**: `string`[]
+
+***
+
+### point?
+
+> `optional` **point?**: \[`number`, `number`\]
+
+***
+
+### bbox?
+
+> `optional` **bbox?**: `Bbox`
+
+***
+
+### resultLimit?
+
+> `optional` **resultLimit?**: `number`

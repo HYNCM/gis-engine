@@ -1,17 +1,18 @@
 # Quick Start
 
-## Install
+Get to a visible map through one of two supported v1.0.0 entry paths.
+
+## Path 1: CLI Scaffold
 
 ```bash
-npm install @gis-engine/engine @gis-engine/ai
-# Or scaffold a project:
-npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --template vite-ts
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map
+cd my-map
+open index.html
 ```
 
-`maplibre-gl` (^5.0.0 || ^6.0.0) is an optional peerDependency -- install it
-only when using the MapLibre renderer adapter.
+Use this path when you want the fastest first run and a ready-made scaffold.
 
-## CDN (No Build Step)
+## Path 2: CDN Single HTML
 
 ```html
 <script type="module">
@@ -19,9 +20,10 @@ only when using the MapLibre renderer adapter.
 </script>
 ```
 
-Also available via jsDelivr and esm.sh. See [CDN distribution](./engineering/cdn-distribution.md).
+Also available via jsDelivr and esm.sh. See
+[CDN distribution](./engineering/cdn-distribution.md).
 
-## Minimal HTML Example
+## CDN Minimal HTML
 
 ```html
 <!DOCTYPE html>
@@ -51,7 +53,9 @@ Also available via jsDelivr and esm.sh. See [CDN distribution](./engineering/cdn
 </html>
 ```
 
-## Vite + TypeScript
+Use this path when you want to learn the SDK directly without scaffolding.
+
+## Optional: Vite + TypeScript
 
 ```bash
 npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --template vite-ts
@@ -72,4 +76,5 @@ const server = createGisEngineMcpServer();
 - [CLI templates](./cli/templates.md) -- scaffold options
 - [Provider config](./cli/provider-config.md) -- AI provider setup
 - [MCP tools](./website/mcp/overview.md) -- AI agent integration
+- [API reference](./website/api/index.md) -- generated symbol-level package docs
 - [Feature matrix](./engineering/supported-feature-matrix.md) -- source/layer coverage

@@ -1,25 +1,36 @@
 # pmtiles-local
 
-Loads vector data from a local PMTiles archive and renders it with fill and line layers.
+## Goal
 
-## MapSpec Overview
+Show the current PMTiles contract that GIS Engine v1.0.0 supports for local,
+URL-compatible vector display and readiness/evidence workflows.
 
-- **ID:** `pmtiles-local-example` | **View:** `map2d`, center [120.15, 30.28], zoom 12
-- **Source:** `local-parcels` (pmtiles) -- local file `./data/parcels.pmtiles`, zoom range 0-14
-- **Layers:**
-  - `parcel-fill` (fill) -- semi-transparent green (`#22c55e`, 36% opacity), source-layer `parcels`
-  - `parcel-outline` (line) -- dark green outline (`#166534`, 1.2px), source-layer `parcels`
+## Prerequisites
 
-## Key Concepts
+- A valid PMTiles file at `./data/parcels.pmtiles`
+- A vector layer inside that archive named `parcels`
+- A runtime or validation flow that can consume the fixture
 
-- PMTiles source for efficient, HTTP-range-request-friendly vector tile archives.
-- `metadata.source-layer` targets a specific layer within the PMTiles archive.
-- Two layers share one source but render different geometry styles (fill + outline).
+## Run
 
-## Usage
+- Use this fixture in snapshot, validation, generated-app delivery, or review
+  flows that need PMTiles display/readiness coverage.
+- For CLI-side delivery checks, pair generated output with
+  `create-gis-map --preflight`.
 
-Use this fixture to test PMTiles ingestion, verify source-layer targeting, or validate fill and line rendering from a single vector source.
+## Expected Output
 
-## Requirements
+- A `pmtiles` source named `local-parcels`
+- Two visual layers targeting `metadata["source-layer"] = "parcels"`
+- A fixture that proves URL-compatible PMTiles display and readiness-only
+  delivery semantics
 
-- A valid PMTiles file at `./data/parcels.pmtiles` containing a vector layer named `parcels`.
+## Limits And Follow-up
+
+- This example does **not** imply PMTiles archive parsing, hidden network
+  fetches, worker-based support, or runtime feature-query promotion.
+- Treat it as a display/readiness/evidence surface, not as a promoted PMTiles
+  runtime loader.
+- Use [`../basic-geojson`](../basic-geojson/README.md) for the smallest
+  schema-first example and [`../getting-started`](../getting-started/README.md)
+  for a runnable SDK walkthrough.

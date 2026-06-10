@@ -4,6 +4,13 @@
 
 First stable release of GIS Engine — a schema-first, AI-native map rendering SDK.
 
+### Release Summary
+
+GIS Engine v1.0.0 closes the gap between a contract-heavy engine core and a
+usable external developer experience. The release ships the stable SDK + CLI
+line, generated API reference, migration guidance, release verification chain,
+and first-run paths for both CLI scaffold and CDN single-file usage.
+
 ### Packages
 
 | Package | Version | Tag |
@@ -23,6 +30,16 @@ First stable release of GIS Engine — a schema-first, AI-native map rendering S
 **@gis-engine/cli** — Developer CLI with `create-gis-map` scaffolding and `--generate` flag for AI-powered map generation workflows.
 
 **@gis-engine/scene3d** — Experimental 3D scene contract scaffold. Published under `next` tag — `view.mode: "scene3d"` is reserved and not a stable runtime mode. Includes `validateSceneResourceLoadPlan`, `snapshotScene3DMock`, `queryScene3DMock`, and `evaluateScene3DReleaseVisualGate`.
+
+### Migration Note
+
+- Existing `0.2.x`, `0.3.x`, and `0.4.x` users should start with
+  [/guide/migrate-v0x-to-v1](/guide/migrate-v0x-to-v1).
+- The public MCP tool surface remains seven tools; no migration is required for
+  tool names.
+- SceneView3D and runtime-blocked cloud-native loaders remain explicitly
+  blocked in public wording and should not be treated as newly promoted
+  runtime capabilities.
 
 ### Known Limitations
 

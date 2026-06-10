@@ -1,98 +1,74 @@
 # Quick Start
 
-Get a map rendered with GIS Engine in 5 minutes.
+Get a map rendered with GIS Engine v1.0.0 through one of two supported
+first-run paths.
 
-## 1. Install
+## Path 1: CLI Scaffold
 
-::: code-group
-
-```bash [npm]
-npm install @gis-engine/engine @gis-engine/ai
+```bash
+npm exec --package @gis-engine/cli@latest -- create-gis-map my-map
+cd my-map
+open index.html
 ```
 
-```bash [pnpm]
-pnpm add @gis-engine/engine @gis-engine/ai
-```
+Use this path when you want the shortest route from zero setup to a visible map.
 
-```bash [CDN]
-<script type="module">
-  import { createMap } from "https://unpkg.com/@gis-engine/engine";
-</script>
-```
+The CLI README covers `--generate`, `--preflight`, and `--verify-artifacts`
+after the basic scaffold succeeds.
 
-:::
+## Path 2: CDN Single HTML
 
-## 2. Create Your First Map
+```html
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      body { margin: 0; }
+      #map { width: 100vw; height: 100vh; }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <script type="module">
+      import { createMap } from "https://unpkg.com/@gis-engine/engine";
 
-```typescript
-import { createMap, applyCommands } from "@gis-engine/engine";
-
-const map = createMap({
-  container: "map",
-  spec: {
-    version: "0.1",
-    sources: {
-      points: {
-        type: "geojson",
-        data: {
-          type: "FeatureCollection",
-          features: [
-            {
-              type: "Feature",
-              geometry: { type: "Point", coordinates: [120.15, 30.28] },
-              properties: { name: "Hangzhou" },
-            },
-          ],
+      await createMap(document.getElementById("map"), {
+        version: "0.1",
+        sources: {
+          points: {
+            type: "geojson",
+            data: {
+              type: "FeatureCollection",
+              features: [
+                {
+                  type: "Feature",
+                  geometry: { type: "Point", coordinates: [120.15, 30.28] },
+                  properties: { name: "Hangzhou" }
+                }
+              ]
+            }
+          }
         },
-      },
-    },
-    layers: [
-      {
-        id: "points-layer",
-        type: "circle",
-        source: "points",
-        paint: { "circle-radius": 8, "circle-color": "#3b82f6" },
-      },
-    ],
-    view: { center: [120.15, 30.28], zoom: 12 },
-  },
-});
+        layers: [
+          {
+            id: "points-layer",
+            type: "circle",
+            source: "points",
+            paint: { "circle-radius": 8, "circle-color": "#3b82f6" }
+          }
+        ],
+        view: { mode: "map2d", center: [120.15, 30.28], zoom: 12 }
+      }, { renderer: "maplibre" });
+    </script>
+  </body>
+</html>
 ```
 
-## 3. Edit with Commands
-
-```typescript
-const result = await applyCommands(map, [
-  {
-    type: "setPaint",
-    layerId: "points-layer",
-    paint: { "circle-color": "#ef4444" },
-  },
-]);
-
-console.log(result.status); // "applied"
-console.log(result.revision); // "1"
-```
-
-## 4. Use AI (MCP)
-
-```typescript
-import { createGisEngineMcpServer } from "@gis-engine/ai/mcp";
-
-const server = createGisEngineMcpServer();
-
-// AI agents can now call:
-// - validate_spec  → Validate a MapSpec document
-// - apply_commands → Edit a map through commands
-// - snapshot_spec  → Take a deterministic snapshot
-// - export_spec    → Export the current map state
-// - explain_spec   → Get a human-readable explanation
-// - get_context_summary → Summarize capabilities
-// - export_example_app  → Generate an example app manifest
-```
+Use this path when you want a build-free SDK entry point.
 
 ## Next Steps
 
-- [Core Concepts](/guide/core-concepts) — understand the architecture
-- [Schema-First Design](/guide/schema-first) — learn the schema system
-- [MCP Tools](/mcp/overview) — explore all AI tools
+- [Core Concepts](/guide/core-concepts) — understand the runtime model
+- [API Reference](/api/) — browse generated package-level reference docs
+- [MCP Tools](/mcp/overview) — add AI tooling after the first render succeeds

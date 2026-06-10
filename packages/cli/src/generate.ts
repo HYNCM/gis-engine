@@ -451,7 +451,9 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
     const apiKey = opts.apiKey ?? readProviderApiKey(opts.provider);
     if (!apiKey) {
       const envKey = CLI_API_KEY_ENVS[opts.provider.toLowerCase()] ?? `${opts.provider.toUpperCase()}_API_KEY`;
-      throw new Error(`No API key found. Set ${envKey} environment variable or pass --api-key.`);
+      throw new Error(
+        `No API key found for provider "${opts.provider}". Set ${envKey} or pass --api-key before rerunning generate.`,
+      );
     }
 
     const providerResult = await callProvider({
@@ -463,7 +465,7 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
 
     if (!providerResult.ok) {
       const messages = providerResult.diagnostics.map((d) => `[${d.code}] ${d.message}`).join("; ");
-      throw new Error(`Provider call failed: ${messages}`);
+      throw new Error(`Provider "${opts.provider}" call failed: ${messages}`);
     }
 
     intent = providerResult.providerOutput.intent;

@@ -40,6 +40,8 @@ cd my-map
 open index.html
 ```
 
+This is the recommended first-run path for GIS Engine v1.0.0.
+
 ### 2. Use a different template
 
 ```bash
@@ -79,13 +81,15 @@ external provider. The smoke covers success, malformed provider content, HTTP
 error, timeout, generated map preflight, artifact verification, and prompt/key
 non-retention checks.
 
+### 4. Use a real provider
+
 To use a real provider, set the provider-specific API key and pass a prompt:
 
 ```bash
 DEEPSEEK_API_KEY=sk-xxx npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --generate -p deepseek --prompt "显示北京地铁站"
 ```
 
-### 4. Preview without writing
+### 5. Preview without writing
 
 ```bash
 npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --dry-run
@@ -94,7 +98,7 @@ npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --generate --
 
 The `--dry-run` flag prints what would be created without writing any files.
 
-### 5. Preflight a generated MapSpec
+### 6. Preflight a generated MapSpec
 
 ```bash
 npm exec --package @gis-engine/cli@latest -- create-gis-map --preflight ./map.json
@@ -109,7 +113,7 @@ non-zero only when validation or PMTiles delivery blockers are present. With
 `--require-archive-metadata`, missing PMTiles archive metadata also exits
 non-zero.
 
-### 6. Verify generated artifacts
+### 7. Verify generated artifacts
 
 ```bash
 npm exec --package @gis-engine/cli@latest -- create-gis-map --verify-artifacts ./my-map

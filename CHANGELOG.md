@@ -1,6 +1,13 @@
 # Changelog
 
-## Unreleased
+## v1.0.0 Release Summary
+
+GIS Engine v1.0.0 is the first stable SDK + CLI release line. It formalizes the
+current package surface, generated-app evidence workflow, release wording
+guardrails, and first-run developer paths while keeping stable SceneView3D
+runtime and runtime-blocked cloud-native loaders explicitly out of scope.
+
+## [1.0.0] - 2026-06-10
 
 ### Added
 - **PMTiles fixture query evidence**: `createPMTilesQueryEvidence()` records

@@ -1,156 +1,30 @@
 # @gis-engine/ai
 
-AI and MCP tools for GIS Engine. Seven tools expose engine capabilities to
-LLMs with typed `inputSchema` and `outputSchema`.
+`@gis-engine/ai` is the AI and MCP package for GIS Engine v1.0.0.
 
-## Quick Install
+## What Lives Here
 
-```bash
-pnpm add @gis-engine/ai
-```
+- MCP server wiring and tool descriptors
+- public tool input/output schemas
+- context summary, explain, snapshot, and export helpers
+- generation evidence and generated-app delivery summaries
+- workbench/provider-plan normalization utilities
 
-## MCP Server
+## Reading Order
 
-```typescript
-import { createGisEngineMcpServer } from "@gis-engine/ai/mcp";
+1. Use the [MCP overview](/mcp/overview) for tool behavior and workflow.
+2. Use the [AI generated reference](/api/reference/ai/) for exact exports and
+   types.
+3. Use the release wording and feature-matrix docs for capability limits.
 
-const server = createGisEngineMcpServer();
+## Key Boundaries
 
-// Connect via stdio
-const transport = new StdioServerTransport();
-await server.connect(transport);
-```
+- The public MCP surface remains seven snake_case tools.
+- `export_example_app` exposes manifests and delivery evidence; it does not
+  write files itself.
+- Scene browsing remains extension-only delivery evidence and must not be cited
+  as stable renderer proof.
 
-### Claude Desktop / Cursor Config
+## Reference
 
-```json
-{
-  "mcpServers": {
-    "gis-engine": {
-      "command": "node",
-      "args": ["node_modules/@gis-engine/ai/dist/mcp/server.js"]
-    }
-  }
-}
-```
-
-## MCP Tools
-
-### validate_spec
-
-Validate a MapSpec document.
-
-```typescript
-// Input
-{ spec: MapSpec }
-
-// Output
-{ valid: boolean, diagnostics: Diagnostic[] }
-```
-
-### apply_commands
-
-Edit a map through the command system.
-
-```typescript
-// Input
-{ spec: MapSpec, commands: MapCommand[], dryRun?: boolean }
-
-// Output
-{ spec: MapSpec, results: CommandResult[], diagnostics: Diagnostic[] }
-```
-
-### export_spec
-
-Export the current map state.
-
-```typescript
-// Input
-{ spec: MapSpec, commands?: MapCommand[] }
-
-// Output
-{ spec: MapSpec }
-```
-
-### get_context_summary
-
-Summarize engine capabilities for the current spec.
-
-```typescript
-// Input
-{ spec: MapSpec, capabilities: CapabilityReport }
-
-// Output
-{ summary: ContextSummary }
-```
-
-### snapshot_spec
-
-Take a deterministic snapshot of the map.
-
-```typescript
-// Input
-{ spec: MapSpec }
-
-// Output
-{ snapshot: SnapshotResult }
-```
-
-### explain_spec
-
-Get a human-readable explanation of a MapSpec.
-
-```typescript
-// Input
-{ spec: MapSpec }
-
-// Output
-{ explanation: string, sections: ExplanationSection[] }
-```
-
-### export_example_app
-
-Generate an example app manifest from a MapSpec.
-
-```typescript
-// Input
-{ spec: MapSpec, manifest: ExampleAppManifest }
-
-// Output
-{ manifest: ExampleAppManifest, delivery: ExampleAppDeliverySummary }
-```
-
-## Tool Utilities
-
-```typescript
-import {
-  listGisEngineTools,    // List all tool descriptors
-  gisEngineTools,         // Tool name → handler map
-  callGisEngineTool,      // Call a tool by name
-} from "@gis-engine/ai/mcp";
-```
-
-## Generation Evidence
-
-```typescript
-import { createGenerationEvidenceBundle } from "@gis-engine/ai";
-
-const bundle = await createGenerationEvidenceBundle({
-  promptHash: "sha256:abc123...",
-  skeleton: { /* command skeleton */ },
-  planner: { plan, confidence },
-});
-
-// bundle.ok → boolean
-// bundle.evidence → GenerationEvidenceBundle
-```
-
-## Workbench Provider
-
-```typescript
-import { normalizeWorkbenchProviderPlan } from "@gis-engine/ai";
-
-const plan = normalizeWorkbenchProviderPlan(providerOutput);
-// plan.ok → boolean
-// plan.result → { provider, plan }
-```
+- Generated reference: [/api/reference/ai/](/api/reference/ai/)

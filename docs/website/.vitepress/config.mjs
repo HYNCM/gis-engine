@@ -17,7 +17,7 @@ export default defineConfig({
     },
     nav: [
       { text: "Guide", link: "/guide/what-is-gis-engine" },
-      { text: "API", link: "/api/engine" },
+      { text: "API", link: "/api/" },
       { text: "MCP", link: "/mcp/overview" },
       { text: "Release Notes", link: "/release-notes" },
       { text: "Examples", link: "https://github.com/HYNCM/gis-engine/tree/main/examples" },
@@ -30,6 +30,7 @@ export default defineConfig({
           items: [
             { text: "What is GIS Engine?", link: "/guide/what-is-gis-engine" },
             { text: "Quick Start", link: "/guide/quick-start" },
+            { text: "Migrate from v0.x to v1.0", link: "/guide/migrate-v0x-to-v1" },
             { text: "Core Concepts", link: "/guide/core-concepts" },
             { text: "Schema-First Design", link: "/guide/schema-first" },
             { text: "Command System", link: "/guide/commands" },
@@ -56,10 +57,15 @@ export default defineConfig({
       ],
       "/api/": [
         {
-          text: "Packages",
+          text: "API Reference",
           items: [
+            { text: "Overview", link: "/api/" },
             { text: "@gis-engine/engine", link: "/api/engine" },
+            { text: "Engine reference", link: "/api/reference/engine/" },
             { text: "@gis-engine/ai", link: "/api/ai" },
+            { text: "AI reference", link: "/api/reference/ai/" },
+            { text: "@gis-engine/cli", link: "/api/cli" },
+            { text: "CLI reference", link: "/api/reference/cli/" },
             { text: "@gis-engine/scene3d", link: "/api/scene3d" },
           ],
         },

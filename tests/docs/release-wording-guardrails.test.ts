@@ -8,6 +8,9 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const publicWordingFiles = [
   "README.md",
   "CHANGELOG.md",
+  "docs/website/release-notes.md",
+  "docs/migration/v0.x-to-v1.0.md",
+  "docs/website/api/scene3d.md",
   "docs/engineering/supported-feature-matrix.md",
   "docs/engineering/release-wording-guardrails.md",
   "docs/planning/feature-specs/generated-app-delivery-ux.md",
@@ -35,6 +38,18 @@ const requiredGuardrails: Array<{
       /does not enable stable 3D runtime rendering/,
       /stable-runtime blocker codes.*stable `view\.mode: "scene3d"` blocked/s,
     ],
+  },
+  {
+    file: "docs/website/release-notes.md",
+    patterns: [/`view\.mode: "scene3d"` is reserved and not a stable runtime mode/, /runtime-blocked cloud-native loaders remain explicitly\s+blocked/],
+  },
+  {
+    file: "docs/migration/v0.x-to-v1.0.md",
+    patterns: [/The public MCP tool list remains/, /does not mean archive parsing, hidden fetches, worker-backed\s+runtime queries/],
+  },
+  {
+    file: "docs/website/api/scene3d.md",
+    patterns: [/Stable `view\.mode: "scene3d"` runtime: blocked/, /Do not read API presence here as evidence of stable 3D runtime support/],
   },
   {
     file: "packages/ai/README.md",

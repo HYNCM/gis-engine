@@ -1,20 +1,31 @@
 # GIS Engine
 
-GIS Engine is a schema-first map rendering SDK with AI-powered generation.
+GIS Engine v1.0.0 is a schema-first map rendering SDK with AI-powered
+generation.
 
 [![CI](https://github.com/HYNCM/gis-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/HYNCM/gis-engine/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 ## Quick Start
 
-**Scaffold a new project:**
+Choose one of these two first-run paths:
+
+**Path 1: Scaffold a new project with the CLI**
 
 ```bash
 npm exec --package @gis-engine/cli@latest -- create-gis-map my-map
 cd my-map && open index.html
 ```
 
-**Generate a map with AI:**
+**Path 2: Load the SDK from a CDN in a single HTML file**
+
+```html
+<script type="module">
+import { createMap, applyCommands } from "https://unpkg.com/@gis-engine/engine";
+</script>
+```
+
+**Then layer on AI generation when you need it:**
 
 ```bash
 npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --generate -p mock
@@ -24,14 +35,6 @@ npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --generate -p
 
 ```bash
 npm install @gis-engine/engine maplibre-gl
-```
-
-**Or use from CDN:**
-
-```html
-<script type="module">
-import { createMap, applyCommands } from "https://unpkg.com/@gis-engine/engine";
-</script>
 ```
 
 ## Package Overview
@@ -50,7 +53,7 @@ import { createMap, applyCommands } from "https://unpkg.com/@gis-engine/engine";
 ## Learn More
 
 - **Package READMEs:** [CLI](packages/cli/README.md) · [Engine](packages/engine/README.md) · [AI](packages/ai/README.md)
-- **Documentation:** [Full docs](https://github.com/HYNCM/gis-engine/tree/main/docs) · [Quick start guide](./docs/quickstart.md)
+- **Documentation:** [Docs site](https://hyncm.github.io/gis-engine/) · [Quick start guide](https://hyncm.github.io/gis-engine/guide/quick-start) · [API reference](https://hyncm.github.io/gis-engine/api/)
 - **Examples:** [basic-geojson](examples/basic-geojson) · [raster-basemap](examples/raster-basemap) · [pmtiles-local](examples/pmtiles-local) · [vector-tile-url](examples/vector-tile-url) · [ai-map-edit](examples/ai-map-edit) · [fill-extrusion-lite](examples/fill-extrusion-lite) · [diagnostics-walkthrough](examples/diagnostics-walkthrough) · [snapshot-testing](examples/snapshot-testing) · [mcp-server-setup](examples/mcp-server-setup) · [ai-map-workbench](examples/ai-map-workbench)
 
 ---

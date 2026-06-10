@@ -112,6 +112,12 @@ export function formatPreflightText(result: PreflightResult): string {
     `  Metadata:   ${result.inputs.requireArchiveMetadata ? "required" : "optional"} (${result.inputs.pmtilesMetadataSourceIds.length} provided)`,
   ];
 
+  if (result.status === "blocked") {
+    lines.push("  Next step:  fix the blocking diagnostics, then rerun preflight.");
+  } else if (result.status === "metadata-required") {
+    lines.push("  Next step:  provide required PMTiles archive metadata, then rerun preflight.");
+  }
+
   const counts = countDiagnostics(result.diagnostics);
   lines.push(`  Diagnostics: ${counts.error} errors, ${counts.warning} warnings, ${counts.info} info`);
 

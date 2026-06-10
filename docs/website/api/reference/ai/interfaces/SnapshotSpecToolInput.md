@@ -1,0 +1,23 @@
+[**@gis-engine/ai v1.0.0**](../index.md)
+
+***
+
+# Interface: SnapshotSpecToolInput
+
+## Properties
+
+### spec
+
+> **spec**: `MapSpec`
+
+***
+
+### renderer?
+
+> `optional` **renderer?**: `"maplibre"` \| `"mock"`
+
+***
+
+### snapshot?
+
+> `optional` **snapshot?**: `SnapshotOptions`
