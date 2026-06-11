@@ -1309,6 +1309,104 @@ describe("generation evidence bundle", () => {
     );
   });
 
+  it("maps GeoParquet readiness-only evidence into blocked delivery without runtime claims", async () => {
+    const skeleton = createMapGenerationCommandSkeleton({
+      mapId: "geoparquet-delivery",
+      promptHash: "sha256:geoparquet-delivery",
+      traceId: "trace-geoparquet-delivery",
+      targetDomains: ["feature-display"],
+      sources: {
+        parcels: {
+          type: "geoparquet",
+          url: "./data/parcels.parquet",
+          crs: { authority: "EPSG", code: "4326" },
+          encoding: "WKB",
+          rowCount: 42,
+          bbox: [-123, 37, -122, 38],
+        },
+      },
+      layers: [{ id: "parcel-points", type: "circle", source: "parcels" }],
+    });
+
+    const response = await createGenerationEvidenceBundle({
+      promptHash: "sha256:geoparquet-delivery",
+      skeleton,
+    });
+
+    expect(response.ok).toBe(true);
+    if (!response.ok) throw new Error("Expected GeoParquet delivery evidence to succeed.");
+    expect(response.result.status).toBe("blocked");
+    expect(response.result.delivery).toMatchObject({
+      status: "blocked",
+      acceptance: {
+        state: "blocked",
+        ready: false,
+        blocked: true,
+        needsConfirmation: false,
+        followUpRequired: false,
+      },
+      confirmationRequired: false,
+      sourceReadiness: [
+        expect.objectContaining({
+          sourceId: "parcels",
+          type: "geoparquet",
+          state: "readiness-only",
+          queryReady: false,
+          resourcePolicy: "passed",
+          confirmationReasons: [],
+        }),
+      ],
+    });
+    expect(response.result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: "RENDER.ADAPTER_ERROR",
+        message: expect.stringContaining(
+          'CAPABILITY.UNSUPPORTED: GeoParquet source "parcels" is accepted by MapSpec but remains runtime-blocked in the MapLibre MVP.',
+        ),
+      }),
+    );
+    expect(response.result.summary.sourceReadiness).toContainEqual(
+      expect.objectContaining({
+        sourceId: "parcels",
+        type: "geoparquet",
+        state: "readiness-only",
+        queryReady: false,
+        resourcePolicy: "passed",
+        sourceContract: expect.objectContaining({
+          kind: "schema",
+          state: "explicit",
+          metadataFields: expect.arrayContaining(["type", "url", "crs", "encoding", "rowCount"]),
+          policyFields: expect.arrayContaining(["maxFileBytes", "maxRowCount", "workerBudget"]),
+        }),
+      }),
+    );
+    expect(response.result.delivery.sourcePromotionCandidates).toContainEqual(
+      expect.objectContaining({
+        candidateId: "source-promotion.geoparquet.parcels",
+        format: "geoparquet",
+        state: "readiness-only",
+        resourcePolicy: "passed",
+        target: "GeoParquet runtime/query promotion gate",
+        exitCondition: expect.stringContaining("read-only query fixtures"),
+        notes: expect.arrayContaining([
+          expect.stringContaining("runtime loading remains blocked"),
+          expect.stringContaining("runtime loading, query, and export handoff remain blocked"),
+        ]),
+      }),
+    );
+    expect(response.result.delivery.followUps).toContainEqual(
+      expect.objectContaining({
+        id: "source-readiness.parcels",
+        owner: "@engine-agent",
+        targetArtifact: "docs/planning/feature-specs/cloud-native-source-readiness.md",
+      }),
+    );
+    expect(response.result.delivery.sourceReadiness[0]?.notes.join(" ")).toContain(
+      "GeoParquet runtime loading, query, and export handoff remain blocked until a promotion gate lands.",
+    );
+  });
+
   it("marks extension-only scene browsing as follow-up-required without stable runtime promotion", async () => {
     const skeleton = createMapGenerationCommandSkeleton({
       mapId: "scene-delivery",
