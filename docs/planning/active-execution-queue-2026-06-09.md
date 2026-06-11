@@ -46,7 +46,7 @@ state for execution and prioritization.
 | Release verification | Node 22/pnpm 9.15.0 release runner, `pnpm check`, `pnpm publish:dry`, CDN dry-run, and packed CLI smoke have passing evidence | `prod-001-release-runner-publish-chain-2026-06-08.md`; `prod-005-cli-install-artifact-acceptance-2026-06-09.md` | Primary release-runner blockers are closed | Keep `pnpm release:verify` and install smoke in recurring release checks | high |
 | PMTiles display/load-plan | URL-compatible MapLibre vector display and IO-free runtime load plan are accepted | `prod-004-pmtiles-runtime-promotion-2026-06-08.md` | First cloud-native runtime slice is closed without parser/query overclaim | Open the next PMTiles query slice separately | high |
 | AI Map Workbench | Local/example hardening is accepted; hosted/product promotion remains No-go | `ai-map-workbench-promotion-scope.md` | Reference surface can support SDK+CLI, but is not the first product promise | Keep promotion intake as an issue, not implementation movement | high |
-| GitHub Issues | `gh issue list --state open` returned `[]` after P2 closure | GitHub Issues API via `gh`; `docs/planning/issues-snapshot.md` | Canonical task state has no open P0/P1/P2 productization issues | Keep future execution in GitHub Issues and regenerate issue snapshot after changes | high |
+| GitHub Issues | `gh issue list --state open` returned `[#16]` after GeoParquet gate creation | GitHub Issues API via `gh`; `docs/planning/issues-snapshot.md` | Canonical task state now has one open P2 source/runtime issue | Keep future execution in GitHub Issues and regenerate issue snapshot after changes | high |
 
 ## Canonical Issue Queue
 
@@ -71,9 +71,20 @@ renderer promotion scope.
 | `TASK-2026W24-PROD-010` | [#4](https://github.com/HYNCM/gis-engine/issues/4) | Closed for product-promotion intake | `docs/planning/feature-specs/ai-map-workbench-promotion-scope.md`; `docs/reviews/prod-010-ai-map-workbench-promotion-intake-2026-06-10.md`; `docs/reviews/quality-waiver-amw-p2-intake-2026-06-10.md` | Product/hosted movement remains No-go until a future Go issue passes owners, auth, durable storage, export, resource-policy, MCP, and release-grade visual gates |
 | `TASK-2026W24-PROD-011` | [#6](https://github.com/HYNCM/gis-engine/issues/6) | Closed for W25 external signal refresh | `docs/research/competitor-updates-2026-W24.md`; `docs/research/capability-scorecard.md`; `docs/reviews/prod-011-external-signal-refresh-2026-06-10.md` | No W25 roadmap change; SDK+CLI-first and bounded source-promotion plan stand |
 
-After these issues are closed and `docs/planning/issues-snapshot.md` is
-regenerated, the canonical issue queue has no open P0/P1/P2 productization
-items.
+After these issues were closed and before the GeoParquet gate reopened the
+queue, `docs/planning/issues-snapshot.md` showed no open P0/P1/P2
+productization items.
+
+## 2026-06-11 GeoParquet Gate
+
+The source/runtime queue is reopened with `TASK-2026W26-DATA-002` /
+[issue #16](https://github.com/HYNCM/gis-engine/issues/16). The gate stays
+contract-first and read-only: no GeoParquet runtime loader/query, hidden fetch,
+range requests, or worker startup are approved.
+
+| Task ID | GitHub Issue | Priority | Owner | Scope | Exit Condition | Required Gates |
+| --- | --- | --- | --- | --- | --- | --- |
+| `TASK-2026W26-DATA-002` | [#16](https://github.com/HYNCM/gis-engine/issues/16) | P2 | `@builder`, `@quality` | GeoParquet runtime/query promotion gate | GeoParquet stays readiness-only; read-only query fixtures and diagnostics prove the promotion boundary | `pnpm build:schema`; `pnpm test:resources`; `pnpm test:adapter`; `pnpm test:ai`; `pnpm test:docs`; `node scripts/doc-generator.mjs links` |
 
 ## Closed Productization Items
 

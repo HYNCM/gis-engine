@@ -1,8 +1,8 @@
 ---
 agent: orchestrator
 period: issue-snapshot
-generated_at: 2026-06-11T17:09:14.858Z
-repo_revision: "c515012"
+generated_at: 2026-06-11T17:16:49.473Z
+repo_revision: "0d6aeb2"
 inputs:
   - GitHub Issues API
 owner: "@orchestrator"
@@ -15,14 +15,15 @@ decision_level: info
 
 ## Summary
 
-- Open issues: 0
+- Open issues: 1
 - Closed issues in snapshot: 12
-- Total returned: 12
+- Total returned: 13
 
 ## Issues
 
 | Issue | State | Title | Labels | Assignees | Milestone | Updated |
 | --- | --- | --- | --- | --- | --- | --- |
+| #16 | OPEN | [TASK-2026W26-DATA-002: GeoParquet runtime/query promotion gate](https://github.com/HYNCM/gis-engine/issues/16) | enhancement, priority:p2, track:productization, agent:quality, agent:builder | - | - | 2026-06-11T17:16:09Z |
 | #15 | CLOSED | [TASK-2026W26-STUDIO-001: Review-console Workbench product route Go gate](https://github.com/HYNCM/gis-engine/issues/15) | documentation, agent:product, priority:p2, track:productization, agent:quality | - | - | 2026-06-11T17:09:05Z |
 | #14 | CLOSED | [TASK-2026W26-DATA-001: PMTiles runtime query loader contract and negative fixtures](https://github.com/HYNCM/gis-engine/issues/14) | enhancement, track:productization, agent:quality, agent:builder, priority:p1 | - | - | 2026-06-11T17:05:09Z |
 | #13 | CLOSED | [TASK-2026W25-STUDIO-001: Studio and Workbench product Go/No-go evidence](https://github.com/HYNCM/gis-engine/issues/13) | documentation, agent:product, priority:p2, track:productization, agent:quality | - | - | 2026-06-10T05:46:52Z |

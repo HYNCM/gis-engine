@@ -22,8 +22,8 @@ are the current execution state. The former full burndown was archived to
 
 | Area | Status | Entry Point |
 | --- | --- | --- |
-| Open task queue | No open P0/P1/P2 productization issues after P2 closure | [issues-snapshot.md](./issues-snapshot.md) |
-| Productization queue | Closed through release runner, PMTiles fixture query, SDK+CLI consumer regression, Workbench intake, and W25 signal refresh | [active-execution-queue-2026-06-09.md](./active-execution-queue-2026-06-09.md) |
+| Open task queue | One open P2 GeoParquet runtime/query promotion issue (#16) after reopening the queue | [issues-snapshot.md](./issues-snapshot.md) |
+| Productization queue | Closed through release runner, PMTiles fixture query, SDK+CLI consumer regression, Workbench intake, W25 signal refresh, and the new GeoParquet gate | [active-execution-queue-2026-06-09.md](./active-execution-queue-2026-06-09.md) |
 | Historical burndown | Archived; use only for dated evidence reconstruction | [archive copy](../archive/2026-06-10/planning/task-burndown.md) |
 
 ## Maintenance
