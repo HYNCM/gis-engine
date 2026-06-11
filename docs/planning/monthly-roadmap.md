@@ -34,7 +34,7 @@ archived to
 | Provider compatibility | OpenAI-compatible provider adoption path has a local no-secret smoke gate | [provider smoke](../reviews/provider-smoke-2026-06-10.md) |
 | Generated auditability | Generated project bundles stay reviewable, hash-verifiable, and prompt-safe | [audit regression](../reviews/generated-project-audit-regression-2026-06-10.md) |
 | AI Map Workbench | Keep as local/example; no product/hosted movement without future Go | [Studio/Workbench No-go](./feature-specs/studio-workbench-product-go-no-go.md) |
-| Source runtime | Keep PMTiles evidence bounded and track the next GeoParquet source/runtime slice as a dedicated issue | [PMTiles boundary](./feature-specs/pmtiles-runtime-query-promotion-boundary.md) |
+| Source runtime | Keep bounded PMTiles evidence and do not promote parser/query/runtime claims without a dedicated issue | [PMTiles boundary](./feature-specs/pmtiles-runtime-query-promotion-boundary.md) |
 | SceneView3D | Keep adapter-local; stable runtime remains blocked | [stable renderer contract](./feature-specs/sceneview3d-stable-renderer-contract.md) |
 | External signals | W25 refresh does not change priorities | [competitor update](../research/competitor-updates-2026-W24.md) |
 
