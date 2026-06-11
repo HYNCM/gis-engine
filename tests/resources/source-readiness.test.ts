@@ -126,6 +126,12 @@ describe("source readiness report", () => {
         queryReady: true,
         queryEvidence: expect.objectContaining({
           status: "ready",
+          loaderContract: expect.objectContaining({
+            resourceAccess: "caller-owned",
+            cancellation: "caller-owned",
+            timeoutMs: 30_000,
+            byteBudgetBytes: 1_048_576,
+          }),
           requirements: expect.objectContaining({
             callerSuppliedDecodedFeatures: true,
             archiveParsing: false,

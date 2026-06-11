@@ -8,6 +8,20 @@ type Bbox = [number, number, number, number];
 export type PMTilesQueryEvidenceStatus = "ready" | "empty" | "blocked";
 export type PMTilesQueryOperation = "point" | "bbox";
 
+export interface PMTilesQueryLoaderContract {
+  resourceAccess: "caller-owned";
+  cancellation: "caller-owned";
+  timeoutMs: number;
+  byteBudgetBytes: number;
+}
+
+export interface PMTilesQueryEvidenceCaseLoaderInput {
+  archive?: "unsupported";
+  responseBytes?: number;
+  elapsedMs?: number;
+  worker?: "denied";
+}
+
 export interface PMTilesQueryFixtureFeature {
   id?: string | number;
   sourceLayer: string;
@@ -22,6 +36,7 @@ export interface PMTilesQueryEvidenceCaseInput {
   point?: [number, number];
   bbox?: Bbox;
   resultLimit?: number;
+  loader?: PMTilesQueryEvidenceCaseLoaderInput;
 }
 
 export interface CreatePMTilesQueryEvidenceOptions {
@@ -29,6 +44,10 @@ export interface CreatePMTilesQueryEvidenceOptions {
   features: PMTilesQueryFixtureFeature[];
   cases: PMTilesQueryEvidenceCaseInput[];
   resultLimit?: number;
+  loaderContract?: {
+    timeoutMs?: number;
+    byteBudgetBytes?: number;
+  };
 }
 
 export interface PMTilesQueryEvidenceCase {
@@ -51,6 +70,7 @@ export interface PMTilesQueryEvidence {
   sourceId: string;
   sourceLayerIds: string[];
   layerIds: string[];
+  loaderContract: PMTilesQueryLoaderContract;
   fixtureFeatureCount: number;
   fixtureDigest: string;
   cases: PMTilesQueryEvidenceCase[];
@@ -111,6 +131,8 @@ const geometryTypes = new Set([
 ]);
 
 const defaultResultLimit = 100;
+const defaultLoaderTimeoutMs = 30_000;
+const defaultLoaderByteBudgetBytes = 1_048_576;
 
 export function createPMTilesQueryEvidence(
   spec: MapSpec,
@@ -146,8 +168,9 @@ export function createPMTilesQueryEvidence(
     });
   }
 
+  const loaderContract = resolveLoaderContract(options.loaderContract);
   const cases = options.cases.map((queryCase, caseIndex) =>
-    evaluateQueryCase(spec, options, queryCase, caseIndex, source, indexedFeatures, diagnostics),
+    evaluateQueryCase(spec, options, loaderContract, queryCase, caseIndex, source, indexedFeatures, diagnostics),
   );
 
   const allDiagnostics = [...diagnostics, ...cases.flatMap((queryCase) => queryCase.diagnostics)];
@@ -173,6 +196,7 @@ export function createPMTilesQueryEvidence(
     sourceId: options.sourceId,
     sourceLayerIds: unique(cases.flatMap((queryCase) => queryCase.sourceLayerIds)),
     layerIds: unique(cases.flatMap((queryCase) => queryCase.layerIds)),
+    loaderContract,
     fixtureFeatureCount: indexedFeatures.length,
     fixtureDigest,
     cases,
@@ -201,6 +225,7 @@ export function createPMTilesQueryEvidence(
 function evaluateQueryCase(
   spec: MapSpec,
   options: CreatePMTilesQueryEvidenceOptions,
+  loaderContract: PMTilesQueryLoaderContract,
   queryCase: PMTilesQueryEvidenceCaseInput,
   caseIndex: number,
   source: SourceSpec | undefined,
@@ -217,6 +242,8 @@ function evaluateQueryCase(
   const resultLimit = queryCase.resultLimit ?? options.resultLimit ?? defaultResultLimit;
   const layerIds = unique(layers.map(({ layer }) => layer.id));
   const sourceLayerIds = unique(layerValidation.sourceLayerIds);
+  const loaderDiagnostics = validateQueryLoader(queryCase, caseIndex, loaderContract);
+  diagnostics.push(...loaderDiagnostics);
 
   if (!query.valid || diagnostics.some((diagnostic) => diagnostic.severity === "error") || source?.type !== "pmtiles") {
     return createCaseEvidence(
@@ -262,6 +289,72 @@ function evaluateQueryCase(
     matches,
     diagnostics,
   );
+}
+
+function resolveLoaderContract(
+  loaderContract?: CreatePMTilesQueryEvidenceOptions["loaderContract"],
+): PMTilesQueryLoaderContract {
+  return {
+    resourceAccess: "caller-owned",
+    cancellation: "caller-owned",
+    timeoutMs: resolvePositiveInteger(loaderContract?.timeoutMs, defaultLoaderTimeoutMs),
+    byteBudgetBytes: resolvePositiveInteger(loaderContract?.byteBudgetBytes, defaultLoaderByteBudgetBytes),
+  };
+}
+
+function validateQueryLoader(
+  queryCase: PMTilesQueryEvidenceCaseInput,
+  caseIndex: number,
+  loaderContract: PMTilesQueryLoaderContract,
+): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+  const loader = queryCase.loader;
+  if (!loader) return diagnostics;
+
+  if (loader.archive === "unsupported") {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.CapabilityUnsupported,
+      message: `PMTiles query loader for case "${queryCase.id}" cannot open unsupported archives.`,
+      path: `/pmtilesQuery/cases/${caseIndex}/loader/archive`,
+      fix: manualFix("Keep runtime PMTiles query loader work behind a future parser/adapter promotion gate.", "high"),
+    });
+  }
+
+  if (isFinitePositive(loader.responseBytes) && loader.responseBytes > loaderContract.byteBudgetBytes) {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.SecurityResourceTooLarge,
+      message: `PMTiles query loader response for case "${queryCase.id}" is ${loader.responseBytes} bytes, exceeding byteBudgetBytes=${loaderContract.byteBudgetBytes}.`,
+      path: `/pmtilesQuery/cases/${caseIndex}/loader/responseBytes`,
+      fix: manualFix("Reduce the loader response or raise the byte budget only after a review gate.", "medium"),
+    });
+  }
+
+  if (isFinitePositive(loader.elapsedMs) && loader.elapsedMs > loaderContract.timeoutMs) {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.SecurityResourceTimeout,
+      message: `PMTiles query loader for case "${queryCase.id}" took ${loader.elapsedMs}ms, exceeding timeoutMs=${loaderContract.timeoutMs}.`,
+      path: `/pmtilesQuery/cases/${caseIndex}/loader/elapsedMs`,
+      fix: manualFix("Reduce loader work or increase the timeout only through an explicit contract update.", "medium"),
+    });
+  }
+
+  if (loader.worker === "denied") {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.CapabilityUnsupported,
+      message: `PMTiles query loader for case "${queryCase.id}" requires a worker, but the current contract denies worker use.`,
+      path: `/pmtilesQuery/cases/${caseIndex}/loader/worker`,
+      fix: manualFix(
+        "Keep PMTiles runtime query evidence on caller-owned decoding until a worker contract is approved.",
+        "high",
+      ),
+    });
+  }
+
+  return diagnostics;
 }
 
 function createCaseEvidence(
@@ -336,6 +429,14 @@ function normalizeQuery(queryCase: PMTilesQueryEvidenceCaseInput, caseIndex: num
     diagnostics,
     valid: !diagnostics.some((diagnostic) => diagnostic.severity === "error"),
   };
+}
+
+function resolvePositiveInteger(value: number | undefined, fallback: number): number {
+  return isFinitePositive(value) ? Math.trunc(value) : fallback;
+}
+
+function isFinitePositive(value: number | undefined): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
 }
 
 function selectLayers(

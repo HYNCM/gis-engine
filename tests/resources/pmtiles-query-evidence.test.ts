@@ -38,6 +38,12 @@ describe("PMTiles fixture query evidence", () => {
       worker: false,
       featurePayloadReturned: false,
     });
+    expect(evidence.loaderContract).toMatchObject({
+      resourceAccess: "caller-owned",
+      cancellation: "caller-owned",
+      timeoutMs: 30_000,
+      byteBudgetBytes: 1_048_576,
+    });
     expect(evidence.summary).toMatchObject({
       caseCount: 2,
       readyCaseCount: 2,
@@ -104,6 +110,72 @@ describe("PMTiles fixture query evidence", () => {
         code: DiagnosticCodes.CapabilityUnsupported,
         path: "/pmtilesQuery/cases",
       }),
+    );
+  });
+
+  it("reports loader contract failures for unsupported archives, byte budgets, timeouts, and worker denial", () => {
+    const evidence = createPMTilesQueryEvidence(createPMTilesSpec(), {
+      sourceId: "parcels",
+      loaderContract: {
+        timeoutMs: 5,
+        byteBudgetBytes: 16,
+      },
+      features: [{ id: "alpha", sourceLayer: "parcels", bbox: [0, 0, 1, 1] }],
+      cases: [
+        {
+          id: "unsupported-archive",
+          point: [0, 0],
+          layers: ["parcel-fill"],
+          loader: { archive: "unsupported" },
+        },
+        {
+          id: "over-budget",
+          point: [0, 0],
+          layers: ["parcel-fill"],
+          loader: { responseBytes: 32 },
+        },
+        {
+          id: "timeout",
+          point: [0, 0],
+          layers: ["parcel-fill"],
+          loader: { elapsedMs: 8 },
+        },
+        {
+          id: "worker-denied",
+          point: [0, 0],
+          layers: ["parcel-fill"],
+          loader: { worker: "denied" },
+        },
+      ],
+    });
+
+    expect(evidence.status).toBe("blocked");
+    expect(evidence.loaderContract).toEqual({
+      resourceAccess: "caller-owned",
+      cancellation: "caller-owned",
+      timeoutMs: 5,
+      byteBudgetBytes: 16,
+    });
+    expect(evidence.summary.blockedCaseCount).toBe(4);
+    expect(evidence.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: DiagnosticCodes.CapabilityUnsupported,
+          path: "/pmtilesQuery/cases/0/loader/archive",
+        }),
+        expect.objectContaining({
+          code: DiagnosticCodes.SecurityResourceTooLarge,
+          path: "/pmtilesQuery/cases/1/loader/responseBytes",
+        }),
+        expect.objectContaining({
+          code: DiagnosticCodes.SecurityResourceTimeout,
+          path: "/pmtilesQuery/cases/2/loader/elapsedMs",
+        }),
+        expect.objectContaining({
+          code: DiagnosticCodes.CapabilityUnsupported,
+          path: "/pmtilesQuery/cases/3/loader/worker",
+        }),
+      ]),
     );
   });
 

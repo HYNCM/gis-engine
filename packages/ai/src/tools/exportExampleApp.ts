@@ -118,6 +118,17 @@ const SourcePMTilesQueryEvidenceSchema = {
     status: { type: "string", enum: ["ready", "empty", "blocked"] },
     sourceLayerIds: { type: "array", items: { type: "string" } },
     layerIds: { type: "array", items: { type: "string" } },
+    loaderContract: {
+      type: "object",
+      properties: {
+        resourceAccess: { type: "string", const: "caller-owned" },
+        cancellation: { type: "string", const: "caller-owned" },
+        timeoutMs: { type: "number" },
+        byteBudgetBytes: { type: "number" },
+      },
+      required: ["resourceAccess", "cancellation", "timeoutMs", "byteBudgetBytes"],
+      additionalProperties: false,
+    },
     diagnosticCounts: DiagnosticCountsSchema,
     requirements: {
       type: "object",
@@ -162,7 +173,7 @@ const SourcePMTilesQueryEvidenceSchema = {
       additionalProperties: false,
     },
   },
-  required: ["status", "sourceLayerIds", "layerIds", "diagnosticCounts", "requirements", "summary"],
+  required: ["status", "sourceLayerIds", "layerIds", "loaderContract", "diagnosticCounts", "requirements", "summary"],
   additionalProperties: false,
 } as const;
 

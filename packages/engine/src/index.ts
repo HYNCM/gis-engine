@@ -44,8 +44,10 @@ export {
   type PMTilesQueryEvidence,
   type PMTilesQueryEvidenceCase,
   type PMTilesQueryEvidenceCaseInput,
+  type PMTilesQueryEvidenceCaseLoaderInput,
   type PMTilesQueryEvidenceStatus,
   type PMTilesQueryFixtureFeature,
+  type PMTilesQueryLoaderContract,
   type PMTilesQueryOperation,
 } from "./sources/pmtiles-query.js";
 export {

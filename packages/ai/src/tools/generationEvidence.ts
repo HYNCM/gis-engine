@@ -166,9 +166,28 @@ const PMTilesQueryEvidenceCaseInputSchema = {
     point: { type: "array", items: { type: "number" }, minItems: 2, maxItems: 2 },
     bbox: { type: "array", items: { type: "number" }, minItems: 4, maxItems: 4 },
     resultLimit: { type: "number", minimum: 1 },
+    loader: {
+      type: "object",
+      properties: {
+        archive: { type: "string", enum: ["unsupported"] },
+        responseBytes: { type: "number", minimum: 0 },
+        elapsedMs: { type: "number", minimum: 0 },
+        worker: { type: "string", enum: ["denied"] },
+      },
+      additionalProperties: false,
+    },
   },
   required: ["id"],
   anyOf: [{ required: ["point"] }, { required: ["bbox"] }],
+  additionalProperties: false,
+} as const;
+
+const PMTilesQueryLoaderContractSchema = {
+  type: "object",
+  properties: {
+    timeoutMs: { type: "number", minimum: 1 },
+    byteBudgetBytes: { type: "number", minimum: 1 },
+  },
   additionalProperties: false,
 } as const;
 
@@ -178,6 +197,7 @@ const PMTilesQueryEvidenceInputSchema = {
     features: { type: "array", items: PMTilesQueryFixtureFeatureSchema },
     cases: { type: "array", items: PMTilesQueryEvidenceCaseInputSchema, minItems: 1 },
     resultLimit: { type: "number", minimum: 1 },
+    loaderContract: PMTilesQueryLoaderContractSchema,
   },
   required: ["features", "cases"],
   additionalProperties: false,
@@ -457,6 +477,10 @@ export interface GenerationEvidenceBundleInput {
       features: PMTilesQueryFixtureFeature[];
       cases: PMTilesQueryEvidenceCaseInput[];
       resultLimit?: number;
+      loaderContract?: {
+        timeoutMs?: number;
+        byteBudgetBytes?: number;
+      };
     }
   >;
   exampleId?: ExampleId;
@@ -1481,6 +1505,7 @@ function buildPMTilesQueryEvidence(input: GenerationEvidenceBundleInput): Genera
       features: evidenceInput.features,
       cases: evidenceInput.cases,
       ...(evidenceInput.resultLimit ? { resultLimit: evidenceInput.resultLimit } : {}),
+      ...(evidenceInput.loaderContract ? { loaderContract: evidenceInput.loaderContract } : {}),
     });
   }
 

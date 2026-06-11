@@ -40,6 +40,7 @@ export interface SourcePMTilesQueryReadinessSummary {
   status: PMTilesQueryEvidence["status"];
   sourceLayerIds: string[];
   layerIds: string[];
+  loaderContract: PMTilesQueryEvidence["loaderContract"];
   diagnosticCounts: DiagnosticCounts;
   requirements: PMTilesQueryEvidence["requirements"];
   summary: PMTilesQueryEvidence["summary"];
@@ -343,6 +344,7 @@ function summarizePMTilesQueryEvidence(evidence: PMTilesQueryEvidence): SourcePM
     status: evidence.status,
     sourceLayerIds: evidence.sourceLayerIds,
     layerIds: evidence.layerIds,
+    loaderContract: evidence.loaderContract,
     diagnosticCounts: evidence.diagnosticCounts,
     requirements: evidence.requirements,
     summary: evidence.summary,

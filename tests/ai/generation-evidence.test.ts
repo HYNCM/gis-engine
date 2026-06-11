@@ -1666,6 +1666,10 @@ describe("generation evidence bundle", () => {
       skeleton,
       pmtilesQueryEvidence: {
         parcels: {
+          loaderContract: {
+            timeoutMs: 12,
+            byteBudgetBytes: 64,
+          },
           resultLimit: 1,
           features: [
             {
@@ -1699,6 +1703,12 @@ describe("generation evidence bundle", () => {
           status: "ready",
           sourceLayerIds: ["parcels"],
           layerIds: ["parcel-fill"],
+          loaderContract: expect.objectContaining({
+            resourceAccess: "caller-owned",
+            cancellation: "caller-owned",
+            timeoutMs: 12,
+            byteBudgetBytes: 64,
+          }),
           requirements: expect.objectContaining({
             callerSuppliedDecodedFeatures: true,
             archiveParsing: false,
