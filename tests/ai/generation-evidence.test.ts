@@ -1505,6 +1505,105 @@ describe("generation evidence bundle", () => {
     );
   });
 
+  it("maps GeoTIFF readiness-only evidence into blocked delivery without runtime claims", async () => {
+    const skeleton = createMapGenerationCommandSkeleton({
+      mapId: "geotiff-delivery",
+      promptHash: "sha256:geotiff-delivery",
+      traceId: "trace-geotiff-delivery",
+      targetDomains: ["feature-display"],
+      sources: {
+        orthophoto: {
+          type: "geotiff",
+          url: "./data/orthophoto.tif",
+          crs: { authority: "EPSG", code: "4326" },
+          bbox: [-123, 37, -122, 38],
+          width: 512,
+          height: 256,
+          bandCount: 1,
+          bands: [{ index: 1, name: "elevation", dataType: "float32", noData: -9999 }],
+        },
+      },
+    });
+
+    const response = await createGenerationEvidenceBundle({
+      promptHash: "sha256:geotiff-delivery",
+      skeleton,
+    });
+
+    expect(response.ok).toBe(true);
+    if (!response.ok) throw new Error("Expected GeoTIFF delivery evidence to succeed.");
+    expect(response.result.status).toBe("blocked");
+    expect(response.result.delivery).toMatchObject({
+      status: "blocked",
+      acceptance: {
+        state: "blocked",
+        ready: false,
+        blocked: true,
+        needsConfirmation: false,
+        followUpRequired: false,
+      },
+      confirmationRequired: true,
+      sourceReadiness: [
+        expect.objectContaining({
+          sourceId: "orthophoto",
+          type: "geotiff",
+          state: "readiness-only",
+          queryReady: false,
+          resourcePolicy: "passed",
+          confirmationReasons: ["external-resource"],
+        }),
+      ],
+    });
+    expect(response.result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: "RENDER.ADAPTER_ERROR",
+        message: expect.stringContaining(
+          'CAPABILITY.UNSUPPORTED: GeoTIFF source "orthophoto" is accepted by MapSpec but remains runtime-blocked in the MapLibre MVP.',
+        ),
+      }),
+    );
+    expect(response.result.summary.sourceReadiness).toContainEqual(
+      expect.objectContaining({
+        sourceId: "orthophoto",
+        type: "geotiff",
+        state: "readiness-only",
+        queryReady: false,
+        resourcePolicy: "passed",
+        sourceContract: expect.objectContaining({
+          kind: "schema",
+          state: "explicit",
+          metadataFields: expect.arrayContaining(["type", "url", "crs", "bandCount", "bands"]),
+          policyFields: expect.arrayContaining(["maxFileBytes", "maxPixels", "maxBandCount", "workerBudget"]),
+        }),
+      }),
+    );
+    expect(response.result.delivery.sourcePromotionCandidates).toContainEqual(
+      expect.objectContaining({
+        candidateId: "source-promotion.geotiff.orthophoto",
+        format: "geotiff",
+        state: "readiness-only",
+        resourcePolicy: "passed",
+        target: "GeoTIFF raster source gate",
+        exitCondition: expect.stringContaining("snapshot strategy"),
+        notes: expect.arrayContaining([
+          expect.stringContaining("Raster sampling stays blocked"),
+          expect.stringContaining("runtime loading, decoding, sampling, and query remain blocked"),
+        ]),
+      }),
+    );
+    expect(response.result.delivery.followUps).toContainEqual(
+      expect.objectContaining({
+        id: "source-readiness.orthophoto",
+        owner: "@engine-agent",
+        targetArtifact: "docs/planning/feature-specs/cloud-native-source-readiness.md",
+      }),
+    );
+    expect(response.result.delivery.sourceReadiness[0]?.notes.join(" ")).toContain(
+      "GeoTIFF is schema-valid metadata-only evidence; runtime loading, decoding, sampling, display, and query remain blocked.",
+    );
+  });
+
   it("marks extension-only scene browsing as follow-up-required without stable runtime promotion", async () => {
     const skeleton = createMapGenerationCommandSkeleton({
       mapId: "scene-delivery",
