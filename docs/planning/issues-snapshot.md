@@ -1,8 +1,8 @@
 ---
 agent: orchestrator
 period: issue-snapshot
-generated_at: 2026-06-12T13:22:46.734Z
-repo_revision: "0a05fd4"
+generated_at: 2026-06-13T15:32:57.168Z
+repo_revision: "24733b9"
 inputs:
   - GitHub Issues API
 owner: "@orchestrator"
@@ -16,13 +16,14 @@ decision_level: info
 ## Summary
 
 - Open issues: 0
-- Closed issues in snapshot: 15
-- Total returned: 15
+- Closed issues in snapshot: 16
+- Total returned: 16
 
 ## Issues
 
 | Issue | State | Title | Labels | Assignees | Milestone | Updated |
 | --- | --- | --- | --- | --- | --- | --- |
+| #19 | CLOSED | [TASK-2026W26-CLI-001: Preflight text next-action visibility](https://github.com/HYNCM/gis-engine/issues/19) | enhancement, priority:p2, track:productization, agent:quality, agent:builder | - | - | 2026-06-13T15:29:37Z |
 | #18 | CLOSED | [TASK-2026W26-DATA-004: GeoTIFF runtime/query promotion gate](https://github.com/HYNCM/gis-engine/issues/18) | enhancement, priority:p2, track:productization, agent:quality, agent:builder | - | - | 2026-06-12T13:22:37Z |
 | #17 | CLOSED | [TASK-2026W26-DATA-003: FlatGeobuf runtime/query promotion gate](https://github.com/HYNCM/gis-engine/issues/17) | enhancement, priority:p2, track:productization, agent:quality, agent:builder | - | - | 2026-06-11T17:43:29Z |
 | #16 | CLOSED | [TASK-2026W26-DATA-002: GeoParquet runtime/query promotion gate](https://github.com/HYNCM/gis-engine/issues/16) | enhancement, priority:p2, track:productization, agent:quality, agent:builder | - | - | 2026-06-11T17:33:38Z |

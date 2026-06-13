@@ -114,7 +114,9 @@ the source-readiness and PMTiles runtime load plans without writing files,
 fetching resources, starting workers, or parsing PMTiles archives. It exits
 non-zero only when validation or PMTiles delivery blockers are present. With
 `--require-archive-metadata`, missing PMTiles archive metadata also exits
-non-zero.
+non-zero. Text output includes per-source limitations and next actions for
+readiness-only or blocked sources, so reviewers can identify the promotion gate
+without opening the JSON payload.
 
 ### 7. Verify generated artifacts
 

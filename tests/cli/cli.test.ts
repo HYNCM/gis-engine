@@ -789,6 +789,12 @@ describe("cli-preflight-map-spec", () => {
       ]);
       expect(text).toContain("Readiness:  follow-up-required (0 supported, 1 readiness-only, 0 blocked)");
       expect(text).toContain("Source parcels: flatgeobuf / readiness-only / display no / query no / policy passed");
+      expect(text).toContain(
+        "Limitations: FlatGeobuf runtime loading, query, and export handoff remain blocked until a promotion gate lands.",
+      );
+      expect(text).toContain(
+        "Next:      Keep FlatGeobuf as readiness-only evidence until public runtime loading or query promotion is approved.",
+      );
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
