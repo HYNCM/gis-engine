@@ -874,6 +874,8 @@ type DeliverySourceSummary = {
   state?: string;
   queryReady?: boolean;
   resourcePolicy?: string;
+  confirmationReasons?: string[];
+  notes?: string[];
 };
 
 type DeliveryPromotionCandidate = {
@@ -1847,6 +1849,14 @@ export default function App() {
                       <span className="col-span-2 text-gray-400">
                         {source.type ?? "--"} source, query {flagValue(source.queryReady)}, policy {source.resourcePolicy ?? "--"}
                       </span>
+                      {source.confirmationReasons && source.confirmationReasons.length > 0 ? (
+                        <span className="col-span-2 truncate text-gray-400">
+                          confirmation {source.confirmationReasons.join(", ")}
+                        </span>
+                      ) : null}
+                      {source.notes && source.notes.length > 0 ? (
+                        <span className="col-span-2 truncate text-gray-400">{source.notes.join(" ")}</span>
+                      ) : null}
                     </li>
                   ))}
                 </ul>
@@ -2030,6 +2040,9 @@ handoff. The app validates the loaded MapSpec with
 diagnostic code/path/message feedback when validation blocks the map. It can
 also download a local \`mapspec-validation-report.json\` with validity, stats,
 diagnostic counts, and structured diagnostics for handoff.
+The source rail also surfaces per-source confirmation reasons and next actions
+when readiness-only or blocked evidence is present, so reviewers can see the
+promotion boundary without opening the JSON payload.
 
 ## Preflight
 

@@ -1300,6 +1300,19 @@ describe("cli-templates", () => {
       appCss.content.indexOf("@tailwind base;"),
     );
   });
+
+  it("app template review rail renders source next-action evidence", () => {
+    const tpl = mustGetTemplate("app");
+    const ctx = { projectName: "review-next-action", provider: "mock", cliVersion: "1.0.0" };
+    const files = tpl.generate(ctx);
+    const appFile = mustFindFile(files, "src/App.tsx");
+    const readme = mustFindFile(files, "README.md");
+
+    expect(appFile.content).toContain('confirmation {source.confirmationReasons.join(", ")}');
+    expect(appFile.content).toContain('source.notes.join(" ")');
+    expect(appFile.content).toContain("deliverySources.map");
+    expect(readme.content).toContain("per-source confirmation reasons and next actions");
+  });
 });
 
 // ---------------------------------------------------------------------------
