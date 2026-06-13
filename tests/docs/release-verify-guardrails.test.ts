@@ -45,6 +45,8 @@ describe("release verify guardrails", () => {
     const smokeScript = readText("scripts/cli-install-smoke.mjs");
 
     expect(smokeScript).toContain("--generate");
+    expect(smokeScript).toContain("--template");
+    expect(smokeScript).toContain("app");
     expect(smokeScript).toContain("--provider");
     expect(smokeScript).toContain("mock");
     expect(smokeScript).toContain("--preflight");

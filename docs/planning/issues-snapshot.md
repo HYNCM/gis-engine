@@ -1,8 +1,8 @@
 ---
 agent: orchestrator
 period: issue-snapshot
-generated_at: 2026-06-13T16:43:55.658Z
-repo_revision: "33b342c"
+generated_at: 2026-06-13T18:09:55.613Z
+repo_revision: "19ebfc0"
 inputs:
   - GitHub Issues API
 owner: "@orchestrator"
@@ -16,13 +16,14 @@ decision_level: info
 ## Summary
 
 - Open issues: 0
-- Closed issues in snapshot: 17
-- Total returned: 17
+- Closed issues in snapshot: 18
+- Total returned: 18
 
 ## Issues
 
 | Issue | State | Title | Labels | Assignees | Milestone | Updated |
 | --- | --- | --- | --- | --- | --- | --- |
+| #21 | CLOSED | [TASK-2026W26-CLI-003: CLI install smoke builds generated app](https://github.com/HYNCM/gis-engine/issues/21) | enhancement, priority:p2, track:productization, agent:quality, agent:builder | - | - | 2026-06-13T18:07:18Z |
 | #20 | CLOSED | [TASK-2026W26-CLI-002: Generated app review rail next-action visibility](https://github.com/HYNCM/gis-engine/issues/20) | enhancement, priority:p2, track:productization, agent:quality, agent:builder | - | - | 2026-06-13T16:39:15Z |
 | #19 | CLOSED | [TASK-2026W26-CLI-001: Preflight text next-action visibility](https://github.com/HYNCM/gis-engine/issues/19) | enhancement, priority:p2, track:productization, agent:quality, agent:builder | - | - | 2026-06-13T15:29:37Z |
 | #18 | CLOSED | [TASK-2026W26-DATA-004: GeoTIFF runtime/query promotion gate](https://github.com/HYNCM/gis-engine/issues/18) | enhancement, priority:p2, track:productization, agent:quality, agent:builder | - | - | 2026-06-12T13:22:37Z |

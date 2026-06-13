@@ -40,6 +40,8 @@ try {
       "node_modules/.bin/create-gis-map",
       generateName,
       "--generate",
+      "--template",
+      "app",
       "--provider",
       "mock",
       "--prompt",
@@ -78,6 +80,7 @@ try {
   );
   assertRequiredReviewFiles(join(consumerDir, generateName));
   assertNoRawPromptRetention(join(consumerDir, generateName), generatePrompt);
+  buildGeneratedApp(join(consumerDir, generateName), tarballs);
 
   console.log(`CLI install smoke passed in ${consumerDir}`);
 } finally {
@@ -202,4 +205,13 @@ function assertNoRawPromptRetention(projectDir, prompt) {
     retainedPromptFiles.length === 0,
     `Generated files retained the raw prompt: ${retainedPromptFiles.join(", ")}`,
   );
+}
+
+function buildGeneratedApp(projectDir, tarballs) {
+  const packageJsonPath = join(projectDir, "package.json");
+  assertSmokeResult(existsSync(packageJsonPath), "Generated app smoke did not write package.json.");
+  pinGeneratedPackageDependencies(packageJsonPath, tarballs);
+  assertPinnedPackageDependencies(packageJsonPath, tarballs);
+  run("npm", ["install", "--ignore-scripts"], projectDir);
+  run("npm", ["run", "build"], projectDir);
 }
