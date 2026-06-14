@@ -264,17 +264,7 @@ export function resolveNextAction(result) {
 function renderNextActionSection(nextAction) {
   if (!nextAction) return [];
 
-  return [
-    "## Next Action",
-    "",
-    nextAction.summary,
-    nextAction.guidance,
-    "",
-    "```bash",
-    nextAction.command,
-    "```",
-    "",
-  ];
+  return ["## Next Action", "", nextAction.summary, nextAction.guidance, "", "```bash", nextAction.command, "```", ""];
 }
 
 function escapeFrontMatter(value) {
