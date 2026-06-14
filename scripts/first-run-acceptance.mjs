@@ -202,15 +202,16 @@ export function renderFirstRunAcceptanceReport(result) {
 }
 
 function renderSmokeBreakdown(result) {
-  const steps = Array.isArray(result.smoke?.steps) && result.smoke.steps.length > 0
-    ? result.smoke.steps
-    : [
-        {
-          name: "CLI install smoke",
-          status: result.smokeStatus,
-          evidence: result.smoke?.failureMessage || "No structured smoke evidence captured.",
-        },
-      ];
+  const steps =
+    Array.isArray(result.smoke?.steps) && result.smoke.steps.length > 0
+      ? result.smoke.steps
+      : [
+          {
+            name: "CLI install smoke",
+            status: result.smokeStatus,
+            evidence: result.smoke?.failureMessage || "No structured smoke evidence captured.",
+          },
+        ];
 
   return [
     "## CLI Install Smoke Breakdown",

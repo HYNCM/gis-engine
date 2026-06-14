@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { renderFirstRunAcceptanceReport } from "../../scripts/first-run-acceptance.mjs";
 import { runCliInstallSmoke } from "../../scripts/cli-install-smoke.mjs";
+import { renderFirstRunAcceptanceReport } from "../../scripts/first-run-acceptance.mjs";
 
 describe("smoke report contract", () => {
   it("renders a smoke breakdown for the first-run report", () => {
