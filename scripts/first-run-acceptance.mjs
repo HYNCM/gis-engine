@@ -3,64 +3,12 @@
 import { execFileSync, execSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { runCliInstallSmoke } from "./cli-install-smoke.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const options = parseArgs(process.argv.slice(2));
-const startedAt = new Date();
-const startMs = Date.now();
-let smokeStatus = "passed";
-let failureMessage = "";
-let releasePreflight = {
-  ok: false,
-  checks: [],
-};
 
-try {
-  releasePreflight = runReleasePreflight();
-} catch (error) {
-  failureMessage = error instanceof Error ? error.message : String(error);
-}
-
-try {
-  execFileSync(process.execPath, [join(root, "scripts/cli-install-smoke.mjs")], {
-    cwd: root,
-    stdio: "inherit",
-  });
-} catch (error) {
-  smokeStatus = "failed";
-  failureMessage = error instanceof Error ? error.message : String(error);
-}
-
-const endedAt = new Date();
-const elapsedMs = Date.now() - startMs;
-const budgetMs = options.maxMinutes * 60_000;
-const withinBudget = elapsedMs <= budgetMs;
-const releaseEnvFailures = Array.isArray(releasePreflight.checks)
-  ? releasePreflight.checks.filter((check) => check.status === "fail")
-  : [];
-const releaseEnvReady = releaseEnvFailures.length === 0;
-const passed = smokeStatus === "passed" && withinBudget && (!options.requireReleaseEnv || releaseEnvReady);
-const reportPath = resolve(root, options.outputPath);
-
-writeReport(reportPath, {
-  startedAt,
-  endedAt,
-  elapsedMs,
-  maxMinutes: options.maxMinutes,
-  smokeStatus,
-  withinBudget,
-  releasePreflight,
-  releaseEnvReady,
-  requireReleaseEnv: options.requireReleaseEnv,
-  passed,
-  failureMessage,
-});
-
-console.log(`First-run acceptance report written: ${relative(root, reportPath)}`);
-if (!passed) process.exit(1);
-
-function parseArgs(argv) {
+export function parseArgs(argv) {
   const parsed = {
     maxMinutes: 30,
     requireReleaseEnv: false,
@@ -101,6 +49,54 @@ function parseArgs(argv) {
   return parsed;
 }
 
+export function runFirstRunAcceptance(options) {
+  const startedAt = new Date();
+  const startMs = Date.now();
+  let smokeStatus = "passed";
+  let failureMessage = "";
+  let releasePreflight = {
+    ok: false,
+    checks: [],
+  };
+
+  try {
+    releasePreflight = runReleasePreflight();
+  } catch (error) {
+    failureMessage = error instanceof Error ? error.message : String(error);
+  }
+
+  const smoke = runCliInstallSmoke();
+  if (!smoke.passed) {
+    smokeStatus = "failed";
+    failureMessage = smoke.failureMessage || failureMessage;
+  }
+
+  const endedAt = new Date();
+  const elapsedMs = Date.now() - startMs;
+  const budgetMs = options.maxMinutes * 60_000;
+  const withinBudget = elapsedMs <= budgetMs;
+  const releaseEnvFailures = Array.isArray(releasePreflight.checks)
+    ? releasePreflight.checks.filter((check) => check.status === "fail")
+    : [];
+  const releaseEnvReady = releaseEnvFailures.length === 0;
+  const passed = smokeStatus === "passed" && withinBudget && (!options.requireReleaseEnv || releaseEnvReady);
+
+  return {
+    startedAt,
+    endedAt,
+    elapsedMs,
+    maxMinutes: options.maxMinutes,
+    smokeStatus,
+    smoke,
+    withinBudget,
+    releasePreflight,
+    releaseEnvReady,
+    requireReleaseEnv: options.requireReleaseEnv,
+    passed,
+    failureMessage,
+  };
+}
+
 function runReleasePreflight() {
   try {
     return JSON.parse(
@@ -135,15 +131,16 @@ function requireValue(value, flag) {
 
 function writeReport(path, result) {
   mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, `${renderReport(result)}\n`, "utf-8");
+  writeFileSync(path, `${renderFirstRunAcceptanceReport(result)}\n`, "utf-8");
 }
 
-function renderReport(result) {
+export function renderFirstRunAcceptanceReport(result) {
   const generatedAt = result.endedAt.toISOString();
   const elapsedSeconds = (result.elapsedMs / 1000).toFixed(1);
   const status = result.passed ? "passed" : "failed";
   const decisionLevel = result.passed ? "advisory" : "blocking";
   const failureLines = result.failureMessage ? ["", "## Failure", "", "```txt", result.failureMessage, "```"] : [];
+  const smokeBreakdown = renderSmokeBreakdown(result);
 
   return [
     "---",
@@ -180,6 +177,7 @@ function renderReport(result) {
     "- `delivery-summary.json`",
     "- `REVIEW.md`",
     "",
+    ...smokeBreakdown,
     "## Release Runner Parity",
     "",
     ...(Array.isArray(result.releasePreflight.checks) && result.releasePreflight.checks.length > 0
@@ -203,6 +201,27 @@ function renderReport(result) {
   ].join("\n");
 }
 
+function renderSmokeBreakdown(result) {
+  const steps = Array.isArray(result.smoke?.steps) && result.smoke.steps.length > 0
+    ? result.smoke.steps
+    : [
+        {
+          name: "CLI install smoke",
+          status: result.smokeStatus,
+          evidence: result.smoke?.failureMessage || "No structured smoke evidence captured.",
+        },
+      ];
+
+  return [
+    "## CLI Install Smoke Breakdown",
+    "",
+    "| Check | Status | Evidence |",
+    "| --- | --- | --- |",
+    ...steps.map((step) => `| ${step.name} | ${step.status} | ${String(step.evidence).replace(/\|/g, "\\|")} |`),
+    "",
+  ];
+}
+
 function getGitSha() {
   try {
     return execSync("git rev-parse HEAD", { cwd: root, encoding: "utf-8" }).trim();
@@ -222,4 +241,18 @@ Options:
   --output <path>    Markdown report path (default: docs/reviews/first-run-acceptance-YYYY-MM-DD.md)
   --help, -h         Show this help message
 `);
+}
+
+export function main() {
+  const options = parseArgs(process.argv.slice(2));
+  const result = runFirstRunAcceptance(options);
+  const reportPath = resolve(root, options.outputPath);
+
+  writeReport(reportPath, result);
+  console.log(`First-run acceptance report written: ${relative(root, reportPath)}`);
+  if (!result.passed) process.exit(1);
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main();
 }

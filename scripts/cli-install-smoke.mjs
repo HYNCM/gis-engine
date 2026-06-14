@@ -4,12 +4,9 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const keep = process.argv.includes("--keep");
-const tmp = mkdtempSync(join(tmpdir(), "gis-engine-cli-install-"));
-const consumerDir = join(tmp, "consumer");
 const scaffoldName = "smoke-vite";
 const generateName = "smoke-generate";
 const generatePrompt = "Create a map showing private smoke verifier locations";
@@ -20,71 +17,153 @@ const packTargets = [
   { name: "@gis-engine/cli", dir: "packages/cli" },
 ];
 
-try {
-  mkdirSync(consumerDir, { recursive: true });
-  run("pnpm", ["build"], root);
-  const tarballs = packLocalPackages(tmp);
+export function parseArgs(argv) {
+  return {
+    keep: argv.includes("--keep"),
+  };
+}
 
-  run("npm", ["init", "-y"], consumerDir);
-  run("npm", ["install", "--ignore-scripts", ...packTargets.map(({ name }) => tarballs[name])], consumerDir);
-  assertInstalledPackageVersions(consumerDir);
-  assertInstalledCliBinary(consumerDir);
-  run("node", ["node_modules/.bin/create-gis-map", scaffoldName, "--template", "vite-ts", "--yes"], consumerDir);
-  pinGeneratedPackageDependencies(join(consumerDir, scaffoldName, "package.json"), tarballs);
-  assertPinnedPackageDependencies(join(consumerDir, scaffoldName, "package.json"), tarballs);
-  run("npm", ["install", "--ignore-scripts"], join(consumerDir, scaffoldName));
-  run("npm", ["run", "build"], join(consumerDir, scaffoldName));
-  run(
-    "node",
-    [
-      "node_modules/.bin/create-gis-map",
-      generateName,
-      "--generate",
-      "--template",
-      "app",
-      "--provider",
-      "mock",
-      "--prompt",
-      generatePrompt,
-      "--yes",
-    ],
+export function runCliInstallSmoke(options = {}) {
+  const keep = options.keep ?? false;
+  const tmp = mkdtempSync(join(tmpdir(), "gis-engine-cli-install-"));
+  const consumerDir = join(tmp, "consumer");
+  const result = {
+    passed: false,
     consumerDir,
-  );
+    steps: [],
+    failureMessage: "",
+  };
 
-  const generatedMap = join(consumerDir, generateName, "map.json");
-  if (!existsSync(generatedMap)) {
-    throw new Error(`Generate smoke did not write ${generatedMap}`);
+  try {
+    mkdirSync(consumerDir, { recursive: true });
+    run("pnpm", ["build"], root);
+    const tarballs = packLocalPackages(tmp);
+
+    runStep(
+      result,
+      "Packed install",
+      "Packed local engine, scene3d, ai, and cli tarballs and installed them into a fresh consumer project.",
+      () => {
+        run("npm", ["init", "-y"], consumerDir);
+        run("npm", ["install", "--ignore-scripts", ...packTargets.map(({ name }) => tarballs[name])], consumerDir);
+        assertInstalledPackageVersions(consumerDir);
+        assertInstalledCliBinary(consumerDir);
+      },
+    );
+
+    runStep(
+      result,
+      "Scaffolded app build",
+      "Scaffolded the vite-ts template, pinned local tarballs, installed dependencies, and built the scaffolded app.",
+      () => {
+        run("node", ["node_modules/.bin/create-gis-map", scaffoldName, "--template", "vite-ts", "--yes"], consumerDir);
+        pinGeneratedPackageDependencies(join(consumerDir, scaffoldName, "package.json"), tarballs);
+        assertPinnedPackageDependencies(join(consumerDir, scaffoldName, "package.json"), tarballs);
+        run("npm", ["install", "--ignore-scripts"], join(consumerDir, scaffoldName));
+        run("npm", ["run", "build"], join(consumerDir, scaffoldName));
+      },
+    );
+
+    const generatedProjectDir = join(consumerDir, generateName);
+
+    runStep(
+      result,
+      "Generated app review path",
+      "Ran mock generate with the app template and produced map.json plus the required review files.",
+      () => {
+        run(
+          "node",
+          [
+            "node_modules/.bin/create-gis-map",
+            generateName,
+            "--generate",
+            "--template",
+            "app",
+            "--provider",
+            "mock",
+            "--prompt",
+            generatePrompt,
+            "--yes",
+          ],
+          consumerDir,
+        );
+
+        const generatedMap = join(generatedProjectDir, "map.json");
+        assertSmokeResult(existsSync(generatedMap), `Generate smoke did not write ${generatedMap}`);
+        assertRequiredReviewFiles(generatedProjectDir);
+      },
+    );
+
+    runStep(
+      result,
+      "Generated app verification",
+      "Map preflight and artifact-manifest verification passed with no missing files or hash mismatches.",
+      () => {
+        const preflight = runJson(
+          "node",
+          ["node_modules/.bin/create-gis-map", "--preflight", join(generateName, "map.json"), "--json"],
+          consumerDir,
+        );
+        assertSmokeResult(preflight.ok === true, "Generated map preflight did not pass.");
+        assertSmokeResult(preflight.status === "ready", `Generated map preflight returned status ${preflight.status}.`);
+
+        const artifactVerification = runJson(
+          "node",
+          ["node_modules/.bin/create-gis-map", "--verify-artifacts", generateName, "--json"],
+          consumerDir,
+        );
+        assertSmokeResult(artifactVerification.ok === true, "Generated artifact verification did not pass.");
+        assertSmokeResult(
+          artifactVerification.summary?.missingFileCount === 0,
+          "Generated artifact verification reported missing files.",
+        );
+        assertSmokeResult(
+          artifactVerification.summary?.hashMismatchCount === 0,
+          "Generated artifact verification reported hash mismatches.",
+        );
+      },
+    );
+
+    runStep(
+      result,
+      "Prompt safety",
+      "Checked generated files and artifact-manifest.json to confirm the raw prompt text was not retained.",
+      () => {
+        assertNoRawPromptRetention(generatedProjectDir, generatePrompt);
+      },
+    );
+
+    runStep(
+      result,
+      "Generated app build",
+      "Pinned generated app dependencies to local tarballs, installed dependencies, and built the generated app.",
+      () => {
+        buildGeneratedApp(generatedProjectDir, tarballs);
+      },
+    );
+
+    result.passed = true;
+  } catch (error) {
+    result.failureMessage = error instanceof Error ? error.message : String(error);
+  } finally {
+    if (!keep) rmSync(tmp, { recursive: true, force: true });
   }
 
-  const preflight = runJson(
-    "node",
-    ["node_modules/.bin/create-gis-map", "--preflight", join(generateName, "map.json"), "--json"],
-    consumerDir,
-  );
-  assertSmokeResult(preflight.ok === true, "Generated map preflight did not pass.");
-  assertSmokeResult(preflight.status === "ready", `Generated map preflight returned status ${preflight.status}.`);
+  return result;
+}
 
-  const artifactVerification = runJson(
-    "node",
-    ["node_modules/.bin/create-gis-map", "--verify-artifacts", generateName, "--json"],
-    consumerDir,
-  );
-  assertSmokeResult(artifactVerification.ok === true, "Generated artifact verification did not pass.");
-  assertSmokeResult(
-    artifactVerification.summary?.missingFileCount === 0,
-    "Generated artifact verification reported missing files.",
-  );
-  assertSmokeResult(
-    artifactVerification.summary?.hashMismatchCount === 0,
-    "Generated artifact verification reported hash mismatches.",
-  );
-  assertRequiredReviewFiles(join(consumerDir, generateName));
-  assertNoRawPromptRetention(join(consumerDir, generateName), generatePrompt);
-  buildGeneratedApp(join(consumerDir, generateName), tarballs);
-
-  console.log(`CLI install smoke passed in ${consumerDir}`);
-} finally {
-  if (!keep) rmSync(tmp, { recursive: true, force: true });
+function runStep(result, name, evidence, action) {
+  try {
+    action();
+    result.steps.push({ name, status: "passed", evidence });
+  } catch (error) {
+    result.steps.push({
+      name,
+      status: "failed",
+      evidence: error instanceof Error ? error.message : String(error),
+    });
+    throw error;
+  }
 }
 
 function packLocalPackages(destination) {
@@ -214,4 +293,17 @@ function buildGeneratedApp(projectDir, tarballs) {
   assertPinnedPackageDependencies(packageJsonPath, tarballs);
   run("npm", ["install", "--ignore-scripts"], projectDir);
   run("npm", ["run", "build"], projectDir);
+}
+
+export function main() {
+  const result = runCliInstallSmoke(parseArgs(process.argv.slice(2)));
+  if (!result.passed) {
+    if (result.failureMessage) console.error(result.failureMessage);
+    process.exit(1);
+  }
+  console.log(`CLI install smoke passed in ${result.consumerDir}`);
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main();
 }
