@@ -34,6 +34,33 @@ describe("smoke report contract", () => {
     expect(report).toContain("| Generated map review path | passed | Preflight and artifact checks passed. |");
   });
 
+  it("renders a next action for advisory release parity failures", () => {
+    const report = renderFirstRunAcceptanceReport({
+      startedAt: new Date("2026-06-14T00:00:00Z"),
+      endedAt: new Date("2026-06-14T00:00:30Z"),
+      elapsedMs: 30_000,
+      maxMinutes: 30,
+      smokeStatus: "passed",
+      smoke: {
+        passed: true,
+        steps: [],
+        failureMessage: "",
+      },
+      withinBudget: true,
+      releasePreflight: {
+        ok: false,
+        checks: [{ name: "node", status: "fail", evidence: "expected major 22; found 26.0.0" }],
+      },
+      releaseEnvReady: false,
+      requireReleaseEnv: false,
+      passed: true,
+      failureMessage: "",
+    });
+
+    expect(report).toContain("## Next Action");
+    expect(report).toContain("pnpm smoke:first-run --require-release-env");
+  });
+
   it("keeps the cli install smoke execution summary exportable", () => {
     expect(typeof runCliInstallSmoke).toBe("function");
   });

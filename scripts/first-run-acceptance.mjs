@@ -141,6 +141,7 @@ export function renderFirstRunAcceptanceReport(result) {
   const decisionLevel = result.passed ? "advisory" : "blocking";
   const failureLines = result.failureMessage ? ["", "## Failure", "", "```txt", result.failureMessage, "```"] : [];
   const smokeBreakdown = renderSmokeBreakdown(result);
+  const nextAction = renderNextAction(result);
 
   return [
     "---",
@@ -178,6 +179,7 @@ export function renderFirstRunAcceptanceReport(result) {
     "- `REVIEW.md`",
     "",
     ...smokeBreakdown,
+    ...nextAction,
     "## Release Runner Parity",
     "",
     ...(Array.isArray(result.releasePreflight.checks) && result.releasePreflight.checks.length > 0
@@ -221,6 +223,37 @@ function renderSmokeBreakdown(result) {
     ...steps.map((step) => `| ${step.name} | ${step.status} | ${String(step.evidence).replace(/\|/g, "\\|")} |`),
     "",
   ];
+}
+
+function renderNextAction(result) {
+  if (!result.releaseEnvReady && !result.requireReleaseEnv) {
+    return [
+      "## Next Action",
+      "",
+      "Local acceptance passed, but release-runner parity is still advisory-only.",
+      "Re-run with the strict release environment check before using this as release-grade local evidence:",
+      "",
+      "```bash",
+      "pnpm smoke:first-run --require-release-env",
+      "```",
+      "",
+    ];
+  }
+
+  if (!result.passed && result.requireReleaseEnv) {
+    return [
+      "## Next Action",
+      "",
+      "Fix the failing release-preflight check, then re-run the strict first-run acceptance command:",
+      "",
+      "```bash",
+      "pnpm smoke:first-run --require-release-env",
+      "```",
+      "",
+    ];
+  }
+
+  return [];
 }
 
 function getGitSha() {
