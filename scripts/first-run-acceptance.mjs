@@ -80,8 +80,7 @@ export function runFirstRunAcceptance(options) {
     : [];
   const releaseEnvReady = releaseEnvFailures.length === 0;
   const passed = smokeStatus === "passed" && withinBudget && (!options.requireReleaseEnv || releaseEnvReady);
-
-  return {
+  const result = {
     startedAt,
     endedAt,
     elapsedMs,
@@ -94,6 +93,11 @@ export function runFirstRunAcceptance(options) {
     requireReleaseEnv: options.requireReleaseEnv,
     passed,
     failureMessage,
+  };
+
+  return {
+    ...result,
+    nextAction: resolveNextAction(result),
   };
 }
 
@@ -141,7 +145,8 @@ export function renderFirstRunAcceptanceReport(result) {
   const decisionLevel = result.passed ? "advisory" : "blocking";
   const failureLines = result.failureMessage ? ["", "## Failure", "", "```txt", result.failureMessage, "```"] : [];
   const smokeBreakdown = renderSmokeBreakdown(result);
-  const nextAction = renderNextAction(result);
+  const nextAction = result.nextAction ?? resolveNextAction(result);
+  const nextActionSection = renderNextActionSection(nextAction);
 
   return [
     "---",
@@ -155,6 +160,13 @@ export function renderFirstRunAcceptanceReport(result) {
     "  - https://github.com/HYNCM/gis-engine/issues/9",
     'owner: "@builder"',
     `decision_level: ${decisionLevel}`,
+    ...(nextAction
+      ? [
+          `next_action_kind: ${nextAction.kind}`,
+          `next_action_command: "${escapeFrontMatter(nextAction.command)}"`,
+          `next_action_reason: "${escapeFrontMatter(nextAction.reason)}"`,
+        ]
+      : []),
     "---",
     "",
     "# W25 First-Run Acceptance",
@@ -179,7 +191,7 @@ export function renderFirstRunAcceptanceReport(result) {
     "- `REVIEW.md`",
     "",
     ...smokeBreakdown,
-    ...nextAction,
+    ...nextActionSection,
     "## Release Runner Parity",
     "",
     ...(Array.isArray(result.releasePreflight.checks) && result.releasePreflight.checks.length > 0
@@ -225,35 +237,48 @@ function renderSmokeBreakdown(result) {
   ];
 }
 
-function renderNextAction(result) {
+export function resolveNextAction(result) {
   if (!result.releaseEnvReady && !result.requireReleaseEnv) {
-    return [
-      "## Next Action",
-      "",
-      "Local acceptance passed, but release-runner parity is still advisory-only.",
-      "Re-run with the strict release environment check before using this as release-grade local evidence:",
-      "",
-      "```bash",
-      "pnpm smoke:first-run --require-release-env",
-      "```",
-      "",
-    ];
+    return {
+      kind: "rerun-with-strict-release-env",
+      command: "pnpm smoke:first-run --require-release-env",
+      reason: "release-runner parity is advisory-only",
+      summary: "Local acceptance passed, but release-runner parity is still advisory-only.",
+      guidance: "Re-run with the strict release environment check before using this as release-grade local evidence:",
+    };
   }
 
   if (!result.passed && result.requireReleaseEnv) {
-    return [
-      "## Next Action",
-      "",
-      "Fix the failing release-preflight check, then re-run the strict first-run acceptance command:",
-      "",
-      "```bash",
-      "pnpm smoke:first-run --require-release-env",
-      "```",
-      "",
-    ];
+    return {
+      kind: "rerun-with-strict-release-env",
+      command: "pnpm smoke:first-run --require-release-env",
+      reason: "strict release environment check failed",
+      summary: "Strict local parity is required and the current release-preflight check is failing.",
+      guidance: "Fix the failing release-preflight check, then re-run the strict first-run acceptance command:",
+    };
   }
 
-  return [];
+  return null;
+}
+
+function renderNextActionSection(nextAction) {
+  if (!nextAction) return [];
+
+  return [
+    "## Next Action",
+    "",
+    nextAction.summary,
+    nextAction.guidance,
+    "",
+    "```bash",
+    nextAction.command,
+    "```",
+    "",
+  ];
+}
+
+function escapeFrontMatter(value) {
+  return String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
 function getGitSha() {
