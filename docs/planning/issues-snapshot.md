@@ -1,8 +1,8 @@
 ---
 agent: orchestrator
 period: issue-snapshot
-generated_at: 2026-06-13T18:09:55.613Z
-repo_revision: "19ebfc0"
+generated_at: 2026-06-15T03:40:55.111Z
+repo_revision: "e35d98c"
 inputs:
   - GitHub Issues API
 owner: "@orchestrator"
@@ -13,31 +13,9 @@ decision_level: info
 
 > This file is generated from GitHub Issues when `gh issue list` is available. Markdown planning files remain snapshots; GitHub Issues are the canonical task state once enabled.
 
-## Summary
+## Status
 
-- Open issues: 0
-- Closed issues in snapshot: 18
-- Total returned: 18
-
-## Issues
-
-| Issue | State | Title | Labels | Assignees | Milestone | Updated |
-| --- | --- | --- | --- | --- | --- | --- |
-| #21 | CLOSED | [TASK-2026W26-CLI-003: CLI install smoke builds generated app](https://github.com/HYNCM/gis-engine/issues/21) | enhancement, priority:p2, track:productization, agent:quality, agent:builder | - | - | 2026-06-13T18:07:18Z |
-| #20 | CLOSED | [TASK-2026W26-CLI-002: Generated app review rail next-action visibility](https://github.com/HYNCM/gis-engine/issues/20) | enhancement, priority:p2, track:productization, agent:quality, agent:builder | - | - | 2026-06-13T16:39:15Z |
-| #19 | CLOSED | [TASK-2026W26-CLI-001: Preflight text next-action visibility](https://github.com/HYNCM/gis-engine/issues/19) | enhancement, priority:p2, track:productization, agent:quality, agent:builder | - | - | 2026-06-13T15:29:37Z |
-| #18 | CLOSED | [TASK-2026W26-DATA-004: GeoTIFF runtime/query promotion gate](https://github.com/HYNCM/gis-engine/issues/18) | enhancement, priority:p2, track:productization, agent:quality, agent:builder | - | - | 2026-06-12T13:22:37Z |
-| #17 | CLOSED | [TASK-2026W26-DATA-003: FlatGeobuf runtime/query promotion gate](https://github.com/HYNCM/gis-engine/issues/17) | enhancement, priority:p2, track:productization, agent:quality, agent:builder | - | - | 2026-06-11T17:43:29Z |
-| #16 | CLOSED | [TASK-2026W26-DATA-002: GeoParquet runtime/query promotion gate](https://github.com/HYNCM/gis-engine/issues/16) | enhancement, priority:p2, track:productization, agent:quality, agent:builder | - | - | 2026-06-11T17:33:38Z |
-| #15 | CLOSED | [TASK-2026W26-STUDIO-001: Review-console Workbench product route Go gate](https://github.com/HYNCM/gis-engine/issues/15) | documentation, agent:product, priority:p2, track:productization, agent:quality | - | - | 2026-06-11T17:09:05Z |
-| #14 | CLOSED | [TASK-2026W26-DATA-001: PMTiles runtime query loader contract and negative fixtures](https://github.com/HYNCM/gis-engine/issues/14) | enhancement, track:productization, agent:quality, agent:builder, priority:p1 | - | - | 2026-06-11T17:05:09Z |
-| #13 | CLOSED | [TASK-2026W25-STUDIO-001: Studio and Workbench product Go/No-go evidence](https://github.com/HYNCM/gis-engine/issues/13) | documentation, agent:product, priority:p2, track:productization, agent:quality | - | - | 2026-06-10T05:46:52Z |
-| #12 | CLOSED | [TASK-2026W25-DATA-001: bounded PMTiles runtime query promotion design](https://github.com/HYNCM/gis-engine/issues/12) | enhancement, agent:product, priority:p2, track:productization, agent:quality | - | - | 2026-06-10T05:46:52Z |
-| #11 | CLOSED | [TASK-2026W25-ADOPT-003: generated project auditability regression](https://github.com/HYNCM/gis-engine/issues/11) | enhancement, track:productization, agent:quality, agent:builder, priority:p1 | - | - | 2026-06-10T05:46:52Z |
-| #10 | CLOSED | [TASK-2026W25-ADOPT-002: OpenAI-compatible provider end-to-end smoke](https://github.com/HYNCM/gis-engine/issues/10) | enhancement, track:productization, agent:quality, agent:builder, priority:p1 | - | - | 2026-06-10T05:46:52Z |
-| #9 | CLOSED | [TASK-2026W25-ADOPT-001: SDK+CLI 30-minute first-run acceptance](https://github.com/HYNCM/gis-engine/issues/9) | enhancement, track:productization, agent:quality, agent:builder, priority:p1 | - | - | 2026-06-10T04:56:48Z |
-| #8 | CLOSED | [TASK-2026W25-GOV-001: restore quality/docs cadence and HOC-N3 handoff](https://github.com/HYNCM/gis-engine/issues/8) | documentation, track:productization, agent:quality, priority:p1 | - | - | 2026-06-10T04:56:48Z |
-| #7 | CLOSED | [TASK-2026W24-PROD-009: post-release SDK+CLI consumer regression](https://github.com/HYNCM/gis-engine/issues/7) | enhancement, track:productization, agent:quality, agent:builder, priority:p1 | - | - | 2026-06-09T16:39:46Z |
-| #6 | CLOSED | [TASK-2026W24-PROD-011: external signal refresh for W25 planning](https://github.com/HYNCM/gis-engine/issues/6) | documentation, agent:product, priority:p2, track:productization | - | - | 2026-06-09T16:59:55Z |
-| #5 | CLOSED | [TASK-2026W24-PROD-008: PMTiles point/bbox feature-query promotion gate](https://github.com/HYNCM/gis-engine/issues/5) | enhancement, track:productization, agent:quality, agent:builder, priority:p1 | - | - | 2026-06-09T16:39:47Z |
-| #4 | CLOSED | [TASK-2026W24-PROD-010: AI Map Workbench product-promotion intake](https://github.com/HYNCM/gis-engine/issues/4) | enhancement, agent:product, priority:p2, track:productization, agent:quality | - | - | 2026-06-09T16:59:54Z |
+- GitHub Issues snapshot unavailable in this environment.
+- Reason: gh: To use GitHub CLI in a GitHub Actions workflow, set the GH_TOKEN environment variable. Example:
+  env:
+    GH_TOKEN: ${{ github.token }}
