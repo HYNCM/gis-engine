@@ -1,6 +1,6 @@
 ---
-generated_at: 2026-06-22T02:14:23.108Z
-repo_revision: "fccffd2"
+generated_at: 2026-06-22T03:41:34.769Z
+repo_revision: "6f4ae86"
 period: 2026-06-22
 agent: orchestrator
 decision_level: info
@@ -48,4 +48,4 @@ decision_level: info
 - **健康 agent**: 1/5
 - **问题 agent**: 4/5
 - **数据流异常**: 0
-- **生成时间**: 2026-06-22T02:14:23.114Z
+- **生成时间**: 2026-06-22T03:41:34.772Z
