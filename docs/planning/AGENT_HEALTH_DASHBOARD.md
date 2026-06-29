@@ -1,6 +1,6 @@
 ---
-generated_at: 2026-06-29T02:02:16.460Z
-repo_revision: "f9b0dfa"
+generated_at: 2026-06-29T02:57:43.207Z
+repo_revision: "4c2df87"
 period: 2026-06-29
 agent: orchestrator
 decision_level: info
@@ -48,4 +48,4 @@ decision_level: info
 - **健康 agent**: 1/5
 - **问题 agent**: 4/5
 - **数据流异常**: 0
-- **生成时间**: 2026-06-29T02:02:16.463Z
+- **生成时间**: 2026-06-29T02:57:43.210Z
