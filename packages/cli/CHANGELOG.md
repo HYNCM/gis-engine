@@ -1,5 +1,15 @@
 # @gis-engine/cli
 
+## 1.2.0
+
+### Patch Changes
+
+- Add 9 integration tests covering scaffold disk writes, dry-run, overwrite, error handling, generate pipeline, preflight, and verify-artifacts paths. Add multi-platform CI matrix (ubuntu + macOS, Node 20/22).
+- Updated dependencies
+- Updated dependencies
+  - @gis-engine/engine@1.2.0
+  - @gis-engine/ai@1.2.0
+
 ## 1.1.0
 
 ### Minor Changes

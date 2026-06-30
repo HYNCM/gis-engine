@@ -1,5 +1,21 @@
 # @gis-engine/engine
 
+## 1.2.0
+
+### Minor Changes
+
+- Improve developer experience with runnable examples, diagnostic codes reference, StackBlitz playground links, and enhanced install guidance.
+
+  - Add runnable configs (package.json, index.html, vite) to 6 core examples
+  - Create diagnostic codes reference page in docs
+  - Add StackBlitz playground links for zero-install trial
+  - Improve MapLibre peerDependency install guidance with 3-minute quick verify
+  - Sync all documentation version references to v1.1.0
+
+### Patch Changes
+
+- Clean up import ordering in diagnostics-walkthrough example to satisfy lint rules.
+
 ## 1.1.0
 
 ### Minor Changes
