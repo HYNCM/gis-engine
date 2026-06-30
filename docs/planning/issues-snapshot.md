@@ -21,6 +21,19 @@ decision_level: info
 - Total returned: 19
 - Boundary enforcement regression tests (Task 1 of next-step-plan): completed
 
+## Next Implementation Targets
+
+The next accepted work is guardrail-oriented, not adoption cleanup.
+
+| Target | next-step-plan Task | Scope | Owner | Verification Gate |
+| --- | --- | --- | --- | --- |
+| Core-vs-extension contract matrix | Task 2 | Document stable core fields vs extension-only fields in architecture and spec docs | @builder | `pnpm test:docs` + `node scripts/doc-generator.mjs links` |
+| Extension-only evidence slice | Task 3 | Add narrow extension-only example/test proving extension payloads stay out of stable core | @builder | `pnpm test:ai` + `pnpm test:examples` + `pnpm test:docs` |
+| Queue refresh (this task) | Task 4 | Refresh planning snapshots to point at guardrail work | @orchestrator | `pnpm test:docs` |
+
+- **#22** remains the single open issue and tracks the core/extension boundary matrix — the next guardrail slice.
+- No planning artifact points at SDK+CLI adoption cleanup as the active priority.
+
 ## Issues
 
 | Issue | State | Title | Labels | Assignees | Milestone | Updated |
