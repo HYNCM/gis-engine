@@ -18,6 +18,10 @@ Scene browsing and any future `extensions.scene3d` payloads stay as
 extension-only evidence in this reference app. They do not promote a stable
 `view.mode: "scene3d"` or move 3D capability into the core `MapSpec`.
 
+The `generation-evidence` test suite machine-checks that scene3d extension
+payloads produce `state: "extension-only"` delivery evidence without inflating
+core `sourceCount` or `layerCount`.
+
 ## Run
 
 From the repository root:

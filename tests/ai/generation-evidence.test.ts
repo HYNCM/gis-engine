@@ -2050,6 +2050,119 @@ describe("generation evidence bundle", () => {
     if (!response.ok) throw new Error("Expected generation evidence bundle to succeed.");
     expect(validateBundle(response.result)).toBe(true);
   });
+
+  it("proves extension payload stays outside stable core MapSpec field counts", async () => {
+    // Build a skeleton with 1 core GeoJSON source + 1 core layer AND
+    // 1 scene3d extension source + 1 scene3d extension layer.
+    // The evidence bundle must keep core and extension counts isolated.
+    const skeleton = createMapGenerationCommandSkeleton({
+      mapId: "extension-core-isolation",
+      promptHash: "sha256:extension-core-isolation",
+      traceId: "trace-extension-core-isolation",
+      targetDomains: ["feature-display", "scene-browsing"],
+      sources: {
+        incidents: {
+          type: "geojson",
+          data: {
+            type: "FeatureCollection",
+            features: [
+              {
+                type: "Feature",
+                properties: { id: "incident-1" },
+                geometry: { type: "Point", coordinates: [120.15, 30.28] },
+              },
+            ],
+          },
+        },
+      },
+      layers: [{ id: "incident-points", type: "circle", source: "incidents" }],
+      scene3d: {
+        camera: {
+          position: [120.15, 30.28, 1200],
+          target: [120.15, 30.28, 0],
+        },
+        sources: {
+          city: {
+            type: "3d-tiles",
+            url: "./data/city/tileset.json",
+          },
+        },
+        layers: [
+          {
+            id: "city",
+            type: "tileset3d",
+            source: "city",
+            pickable: true,
+          },
+        ],
+      },
+    });
+
+    const response = await createGenerationEvidenceBundle({
+      promptHash: "sha256:extension-core-isolation",
+      skeleton,
+    });
+
+    expect(response.ok).toBe(true);
+    if (!response.ok) throw new Error("Expected extension-core isolation evidence to succeed.");
+    expect(response.result.status).toBe("ready");
+
+    // Core assertion 1: exportEvidence.sourceCount/layerCount reflect ONLY core entries.
+    expect(response.result.exportEvidence).toMatchObject({
+      ready: true,
+      sourceCount: 1,
+      layerCount: 1,
+    });
+
+    // Core assertion 2: sceneBrowsing counts reflect ONLY extension entries.
+    const sceneBrowsing = response.result.exampleEvidence.generationEvidence?.sceneBrowsing;
+    expect(sceneBrowsing).toMatchObject({
+      requested: true,
+      status: "experimental",
+      state: "extension-only",
+      stableRuntimeBlocked: true,
+      stableViewMode: false,
+      runtimeSupported: false,
+      sourceCount: 1,
+      layerCount: 1,
+      sourceIds: ["city"],
+      layerIds: ["city"],
+      stableRuntimeBlockerCodes: [
+        "SCENE3D.STABLE_RUNTIME_DIMENSIONS_BLOCKED",
+        "SCENE3D.STABLE_RUNTIME_RENDERER_BLOCKED",
+        "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED",
+      ],
+    });
+
+    // Core assertion 3: no evidence of scene3d being promoted to core.
+    // The core spec.sources must not contain the scene3d source id.
+    expect(Object.keys(skeleton.spec.sources)).not.toContain("city");
+    // The core spec.layers must not contain the scene3d layer id.
+    expect(skeleton.spec.layers.map((layer) => layer.id)).not.toContain("city");
+
+    // Core assertion 4: delivery status is follow-up-required (scene3d is not stable).
+    expect(response.result.delivery).toMatchObject({
+      status: "follow-up-required",
+      acceptance: {
+        state: "follow-up-required",
+        followUpRequired: true,
+        ready: false,
+        blocked: false,
+        needsConfirmation: false,
+      },
+    });
+    expect(response.result.delivery.followUps).toContainEqual(
+      expect.objectContaining({
+        id: "scene-browsing.stable-runtime-gate",
+        owner: "@quality-guardian",
+        blockerCode: "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED",
+      }),
+    );
+
+    // Core assertion 5: spec keeps scene3d extension payload isolated in extensions.
+    const extensions = (skeleton.spec as unknown as { extensions?: { scene3d?: unknown } }).extensions;
+    expect(extensions?.scene3d).toBeDefined();
+  });
 });
 
 const spatialQueryCapabilities = {
