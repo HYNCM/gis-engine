@@ -8,6 +8,8 @@ generation.
 
 ## Quick Start
 
+> **Try it online:** [Open Playground on StackBlitz](https://stackblitz.com/github/HYNCM/gis-engine/tree/main/examples/basic-geojson)
+
 Choose one of these first-run paths:
 
 ### Path 1: npm Install (SDK Direct)

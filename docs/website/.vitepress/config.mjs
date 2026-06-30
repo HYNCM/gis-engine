@@ -30,6 +30,7 @@ export default defineConfig({
           items: [
             { text: "What is GIS Engine?", link: "/guide/what-is-gis-engine" },
             { text: "Quick Start", link: "/guide/quick-start" },
+            { text: "Playground", link: "/guide/playground" },
             { text: "Minimal Consumer Handoff", link: "/guide/consumer-handoff" },
             { text: "Migrate from v0.x to v1.0", link: "/guide/migrate-v0x-to-v1" },
             { text: "Core Concepts", link: "/guide/core-concepts" },
