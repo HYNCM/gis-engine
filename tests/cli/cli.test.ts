@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
   CLI_API_KEY_ENVS,
@@ -1763,6 +1763,205 @@ describe("cli-provider-profile", () => {
 
   it("readProviderApiKey returns undefined for unknown provider", () => {
     expect(readProviderApiKey("unknown")).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// bin.ts — scaffold integration (write to disk)
+// ---------------------------------------------------------------------------
+
+describe("cli-bin-scaffold-integration", () => {
+  it("writes scaffold files to disk for static-html template", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      const projectName = "test-static-html";
+      await main([projectName, "--template", "static-html"]);
+
+      const outDir = resolve(process.cwd(), projectName);
+      try {
+        expect(existsSync(join(outDir, "index.html"))).toBe(true);
+        expect(existsSync(join(outDir, "README.md"))).toBe(true);
+        const indexHtml = readFileSync(join(outDir, "index.html"), "utf-8");
+        expect(indexHtml).toContain(projectName);
+      } finally {
+        rmSync(outDir, { recursive: true, force: true });
+      }
+    } finally {
+      logSpy.mockRestore();
+    }
+  });
+
+  it("dry-run mode does not write any files to disk", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      const projectName = "test-dry-run-noop";
+      const outDir = resolve(process.cwd(), projectName);
+      // Ensure clean state
+      rmSync(outDir, { recursive: true, force: true });
+
+      await main([projectName, "--template", "vite-ts", "--dry-run"]);
+
+      expect(existsSync(outDir)).toBe(false);
+    } finally {
+      logSpy.mockRestore();
+    }
+  });
+
+  it("exits non-zero when project directory already exists without --yes", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: string | number | null) => {
+      throw new Error(`process.exit:${code}`);
+    }) as never);
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      const projectName = "dup-project";
+      const outDir = resolve(process.cwd(), projectName);
+      mkdirSync(outDir, { recursive: true });
+      writeFileSync(join(outDir, "placeholder.txt"), "existing", "utf-8");
+
+      try {
+        await expect(main([projectName])).rejects.toThrow("process.exit:1");
+        expect(exitSpy).toHaveBeenCalledWith(1);
+        expect(errorSpy.mock.calls.some((call) => String(call[0]).includes("already exists"))).toBe(true);
+      } finally {
+        rmSync(outDir, { recursive: true, force: true });
+      }
+    } finally {
+      errorSpy.mockRestore();
+      exitSpy.mockRestore();
+      logSpy.mockRestore();
+    }
+  });
+
+  it("overwrites existing directory with --yes flag", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      const projectName = "overwrite-project";
+      const outDir = resolve(process.cwd(), projectName);
+      mkdirSync(outDir, { recursive: true });
+      writeFileSync(join(outDir, "old-file.txt"), "old content", "utf-8");
+
+      try {
+        await main([projectName, "--template", "mapspec", "--yes"]);
+
+        expect(existsSync(join(outDir, "map.json"))).toBe(true);
+        expect(existsSync(join(outDir, "README.md"))).toBe(true);
+        // old file should still exist (--yes only overwrites scaffold files, doesn't delete others)
+        expect(existsSync(join(outDir, "old-file.txt"))).toBe(true);
+      } finally {
+        rmSync(outDir, { recursive: true, force: true });
+      }
+    } finally {
+      logSpy.mockRestore();
+    }
+  });
+
+  it("exits non-zero when no project name and no mode flag provided", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: string | number | null) => {
+      throw new Error(`process.exit:${code}`);
+    }) as never);
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      await expect(main([])).rejects.toThrow("process.exit:1");
+      expect(exitSpy).toHaveBeenCalledWith(1);
+      expect(errorSpy.mock.calls.some((call) => String(call[0]).includes("project-name"))).toBe(true);
+    } finally {
+      errorSpy.mockRestore();
+      exitSpy.mockRestore();
+      logSpy.mockRestore();
+    }
+  });
+
+  it("exits non-zero for unknown template name", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: string | number | null) => {
+      throw new Error(`process.exit:${code}`);
+    }) as never);
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      await expect(main(["some-project", "--template", "nonexistent-tpl"])).rejects.toThrow("process.exit:1");
+      expect(exitSpy).toHaveBeenCalledWith(1);
+      expect(errorSpy.mock.calls.some((call) => String(call[0]).includes('unknown template "nonexistent-tpl"'))).toBe(
+        true,
+      );
+    } finally {
+      errorSpy.mockRestore();
+      exitSpy.mockRestore();
+      logSpy.mockRestore();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// bin.ts — generate integration via main()
+// ---------------------------------------------------------------------------
+
+describe("cli-bin-generate-integration", () => {
+  it("runs full generate pipeline via main() with mock provider", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gis-engine-cli-gen-main-"));
+    const cwd = process.cwd();
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      process.chdir(dir);
+
+      await main(["gen-map", "--generate", "--provider", "mock", "--prompt", "Show parks in NYC"]);
+
+      const projectDir = join(dir, "gen-map");
+      expect(existsSync(join(projectDir, "map.json"))).toBe(true);
+      expect(existsSync(join(projectDir, "evidence.json"))).toBe(true);
+      expect(existsSync(join(projectDir, "preflight.json"))).toBe(true);
+      expect(existsSync(join(projectDir, "delivery-summary.json"))).toBe(true);
+      expect(existsSync(join(projectDir, "REVIEW.md"))).toBe(true);
+      expect(existsSync(join(projectDir, "artifact-manifest.json"))).toBe(true);
+
+      const map = JSON.parse(readFileSync(join(projectDir, "map.json"), "utf-8"));
+      expect(map.version).toBe("0.1");
+    } finally {
+      process.chdir(cwd);
+      logSpy.mockRestore();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// edge cases — preflight and verify with bad inputs
+// ---------------------------------------------------------------------------
+
+describe("cli-edge-case-preflight-nonexistent-file", () => {
+  it("returns blocked when preflight target file does not exist", () => {
+    const result = preflightMapSpec({ filePath: "/nonexistent/path/to/map.json" });
+
+    expect(result.ok).toBe(false);
+    expect(result.status).toBe("blocked");
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: "SPEC.INVALID_TYPE",
+      }),
+    );
+    expect(result.diagnostics[0]?.message).toContain("Could not read or parse MapSpec JSON");
+  });
+});
+
+describe("cli-edge-case-verify-nonexistent-dir", () => {
+  it("returns blocked when project directory has no manifest", () => {
+    const dir = mkdtempSync(join(tmpdir(), "gis-engine-cli-verify-empty-"));
+    try {
+      const result = verifyArtifacts({ projectDir: dir });
+
+      expect(result.ok).toBe(false);
+      expect(result.status).toBe("blocked");
+      expect(result.diagnostics).toContainEqual(
+        expect.objectContaining({
+          severity: "error",
+          code: "ARTIFACT_MANIFEST.READ_FAILED",
+        }),
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 
