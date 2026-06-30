@@ -16,6 +16,17 @@ Loads vector tiles from a URL template and applies data-driven expression stylin
 - Data-driven paint expressions: `match`, `case`, `step`, `get`, `to-string`, `to-number`.
 - Zoom-dependent line width increases at zoom 12 and 14.
 
+## Quick Start
+
+```bash
+npm install
+npm run dev
+```
+
+The runnable version uses MapLibre demo tiles so you can see data-driven styling
+without local tile files. The original `map.json` references local tiles at
+`./tiles/{z}/{x}/{y}.pbf`.
+
 ## Usage
 
 Use this fixture to validate vector tile URL loading, test expression-based paint properties, or verify zoom-dependent and feature-conditional styling.

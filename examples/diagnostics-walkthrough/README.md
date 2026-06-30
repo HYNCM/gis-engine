@@ -35,6 +35,17 @@ Every diagnostic object has a stable structure:
 - `severity` — `"error"` or `"warning"`
 - `fix` — human-readable suggestion
 
+## Quick Start
+
+```bash
+npm install
+npm run dev
+```
+
+The runnable version renders the valid spec on the map and shows diagnostics for
+the intentionally broken specs in a side panel. Open the browser console for
+full diagnostic detail.
+
 ## Usage
 
 ```bash

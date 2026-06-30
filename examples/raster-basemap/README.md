@@ -18,6 +18,16 @@ Combines a local raster tile basemap with an inline GeoJSON vector overlay, demo
 - Inline GeoJSON defined directly in the spec without an external file.
 - Layer ordering: raster basemap first, vector line overlay on top.
 
+## Quick Start
+
+```bash
+npm install
+npm run dev
+```
+
+The runnable version uses OpenStreetMap tiles so you can see raster/vector
+compositing without local tile files.
+
 ## Usage
 
 Use this fixture to test raster tile loading from a local directory, verify raster/vector compositing, or validate raster opacity alongside line styling.

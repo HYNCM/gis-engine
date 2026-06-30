@@ -1,13 +1,15 @@
 // =============================================================================
-// GIS Engine - Raster Basemap Example
+// GIS Engine - Fill Extrusion Lite Example
 // =============================================================================
 //
-// Combines a raster tile basemap with an inline GeoJSON vector overlay,
-// demonstrating raster/vector layering.
+// Renders 3D extruded polygons using the experimental fill-extrusion-lite layer
+// type on a 2.5D map with pitch and bearing. This demonstrates:
+//   - The experimental fill-extrusion-lite capability
+//   - 2.5D view mode (map2_5d) with camera pitch and bearing
+//   - Data-driven extrusion height from GeoJSON feature properties
 //
-// Note: The original map.json references local tiles at ./tiles/{z}/{x}/{y}.png.
-// This runnable version uses OpenStreetMap tiles so you can see the
-// raster/vector compositing without setting up local tiles.
+// Note: fill-extrusion-lite is a beta/experimental layer type. Paint properties
+// may change between releases.
 //
 // =============================================================================
 
@@ -17,31 +19,26 @@ import { createMap, validateSpec } from "@gis-engine/engine";
 // ---------------------------------------------------------------------------
 // Step 1: Define the MapSpec
 // ---------------------------------------------------------------------------
-// The spec registers a raster source and an inline GeoJSON source, then layers
-// a raster basemap beneath a vector line overlay.
-//
-// For local development with your own tiles, replace the tiles URL with:
-//   tiles: ["./tiles/{z}/{x}/{y}.png"]
-// and place your PNG tiles in the public/ directory.
+// The spec declares experimental capabilities and uses a 2.5D view mode with
+// pitch and bearing to show the extruded polygon in perspective.
 // ---------------------------------------------------------------------------
 
 const spec: MapSpec = {
   version: "0.1",
-  id: "raster-basemap-example",
+  id: "fill-extrusion-lite-example",
+  capabilities: {
+    dimensions: ["2_5d"],
+    experimental: ["fill-extrusion-lite"],
+  },
   view: {
-    mode: "map2d",
+    mode: "map2_5d",
     center: [120.15, 30.28],
-    zoom: 10,
+    zoom: 13,
+    pitch: 50,
+    bearing: 20,
   },
   sources: {
-    "local-raster": {
-      type: "raster",
-      tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-      tileSize: 256,
-      attribution: "© OpenStreetMap contributors (runnable substitute for local tiles)",
-    },
-    // Inline GeoJSON: a rectangular polygon representing a city boundary.
-    "city-boundary": {
+    districts: {
       type: "geojson",
       data: {
         type: "FeatureCollection",
@@ -49,17 +46,18 @@ const spec: MapSpec = {
           {
             type: "Feature",
             properties: {
-              name: "demo-boundary",
+              height: 120,
+              name: "Beta block",
             },
             geometry: {
               type: "Polygon",
               coordinates: [
                 [
-                  [120.02, 30.18],
-                  [120.3, 30.18],
-                  [120.3, 30.38],
-                  [120.02, 30.38],
-                  [120.02, 30.18],
+                  [120.145, 30.275],
+                  [120.155, 30.275],
+                  [120.155, 30.285],
+                  [120.145, 30.285],
+                  [120.145, 30.275],
                 ],
               ],
             },
@@ -70,20 +68,15 @@ const spec: MapSpec = {
   },
   layers: [
     {
-      id: "basemap-raster",
-      type: "raster",
-      source: "local-raster",
+      id: "district-extrusion",
+      type: "fill-extrusion-lite",
+      source: "districts",
       paint: {
-        "raster-opacity": 0.92,
-      },
-    },
-    {
-      id: "boundary-line",
-      type: "line",
-      source: "city-boundary",
-      paint: {
-        "line-color": "#0f766e",
-        "line-width": 2,
+        "fill-extrusion-color": "#38bdf8",
+        // Extrusion height is driven by the feature's "height" property.
+        "fill-extrusion-height": ["to-number", ["get", "height"], 0],
+        "fill-extrusion-base": 0,
+        "fill-extrusion-opacity": 0.75,
       },
     },
   ],
@@ -101,11 +94,13 @@ async function main(): Promise<void> {
   console.log(`Sources: ${report.stats.sourceCount}`);
   console.log(`Layers: ${report.stats.layerCount}`);
 
+  // Log any diagnostics (experimental capability warnings, etc.)
+  for (const d of report.diagnostics) {
+    console.log(`  [${d.severity}] ${d.code}: ${d.message}`);
+  }
+
   if (!report.valid) {
     console.error("Spec validation failed:");
-    for (const diagnostic of report.diagnostics) {
-      console.error(`  [${diagnostic.severity}] ${diagnostic.code}: ${diagnostic.message}`);
-    }
     throw new Error("Cannot proceed with an invalid spec.");
   }
 
@@ -121,5 +116,5 @@ async function main(): Promise<void> {
 }
 
 void main().catch((error) => {
-  console.error("Raster basemap example failed:", error);
+  console.error("Fill extrusion lite example failed:", error);
 });

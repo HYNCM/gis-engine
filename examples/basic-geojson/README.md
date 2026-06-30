@@ -10,6 +10,16 @@ source, one circle layer, and a relative data file.
 - A GIS Engine runtime or test harness that can load `map.json`
 - The sibling file `./data/points.geojson`
 
+## Quick Start
+
+```bash
+npm install
+npm run dev
+```
+
+This starts a local dev server with hot reload. Open the URL shown in the
+terminal to see the map rendered in your browser.
+
 ## Run
 
 - Copy or reference `map.json` in a runtime, validation test, or generated app

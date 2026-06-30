@@ -1,13 +1,17 @@
 // =============================================================================
-// GIS Engine - Vector Tile URL Example
+// GIS Engine - PMTiles Local Example
 // =============================================================================
 //
-// Demonstrates loading vector tiles from a URL template with data-driven
-// expression styling for fill and line layers.
+// Demonstrates the PMTiles source contract in GIS Engine. The MapSpec declares
+// a pmtiles source with fill and line layers targeting a "parcels" layer.
 //
-// Note: The original map.json references local tiles at ./tiles/{z}/{x}/{y}.pbf.
-// This runnable version uses the MapLibre demo-tile-server so you can see
-// data-driven styling in action without setting up local tiles.
+// Note: The original map.json references a local file at ./data/parcels.pmtiles.
+// This runnable version uses a public PMTiles endpoint (Overture Maps) so you
+// can see the PMTiles display contract in action without a local file.
+//
+// The MapLibre adapter currently maps pmtiles sources to vector source URLs
+// with a diagnostic warning. This is an MVP-level mapping; full PMTiles runtime
+// loader support is tracked in the roadmap.
 //
 // =============================================================================
 
@@ -17,17 +21,15 @@ import { createMap, validateSpec } from "@gis-engine/engine";
 // ---------------------------------------------------------------------------
 // Step 1: Define the MapSpec
 // ---------------------------------------------------------------------------
-// The spec uses a vector tile source with URL template and applies data-driven
-// paint expressions (match, case, step, get) to fill and line layers.
-//
-// For local development with your own tiles, replace the tiles URL with:
-//   tiles: ["./tiles/{z}/{x}/{y}.pbf"]
-// and place your .pbf tiles in the public/ directory.
+// The spec declares a pmtiles source and two layers (fill + line).
+// For local development, replace the URL with:
+//   url: "./data/parcels.pmtiles"
+// and place your .pmtiles file in the public/ directory.
 // ---------------------------------------------------------------------------
 
 const spec: MapSpec = {
   version: "0.1",
-  id: "vector-tile-url-example",
+  id: "pmtiles-local-example",
   view: {
     mode: "map2d",
     center: [120.15, 30.28],
@@ -35,11 +37,13 @@ const spec: MapSpec = {
   },
   sources: {
     "local-parcels": {
-      type: "vector",
-      tiles: ["https://demotiles.maplibre.org/tiles/{z}/{x}/{y}.pbf"],
+      type: "pmtiles",
+      // Public PMTiles endpoint for runnable demo. Replace with local file for
+      // your own data.
+      url: "https://demo-bucket.overturemaps.org/v1/parcels.pmtiles",
       minzoom: 0,
       maxzoom: 14,
-      attribution: "MapLibre demo tiles (runnable substitute for local tiles)",
+      attribution: "Overture Maps Foundation (runnable substitute)",
     },
   },
   layers: [
@@ -48,27 +52,11 @@ const spec: MapSpec = {
       type: "fill",
       source: "local-parcels",
       metadata: {
-        "source-layer": "countries",
+        "source-layer": "parcels",
       },
       paint: {
-        // Data-driven fill color: match expression maps feature "class" to colors.
-        // Using the demo-tiles "countries" layer as a stand-in for parcels.
-        "fill-color": [
-          "match",
-          ["to-string", ["get", "continent"]],
-          "Asia",
-          "#22c55e",
-          "Europe",
-          "#38bdf8",
-          "Africa",
-          "#f97316",
-          "North America",
-          "#a855f7",
-          "South America",
-          "#eab308",
-          "#94a3b8",
-        ],
-        "fill-opacity": 0.42,
+        "fill-color": "#22c55e",
+        "fill-opacity": 0.36,
       },
     },
     {
@@ -76,12 +64,11 @@ const spec: MapSpec = {
       type: "line",
       source: "local-parcels",
       metadata: {
-        "source-layer": "countries",
+        "source-layer": "parcels",
       },
       paint: {
-        "line-color": "#14532d",
-        // Zoom-dependent line width via step expression.
-        "line-width": ["step", ["zoom"], 0.5, 12, 1, 14, 2],
+        "line-color": "#166534",
+        "line-width": 1.2,
       },
     },
   ],
@@ -99,11 +86,14 @@ async function main(): Promise<void> {
   console.log(`Sources: ${report.stats.sourceCount}`);
   console.log(`Layers: ${report.stats.layerCount}`);
 
+  // PMTiles sources currently produce a diagnostic warning in the MapLibre
+  // adapter. This is expected — log it for visibility.
+  for (const d of report.diagnostics) {
+    console.log(`  [${d.severity}] ${d.code}: ${d.message}`);
+  }
+
   if (!report.valid) {
     console.error("Spec validation failed:");
-    for (const diagnostic of report.diagnostics) {
-      console.error(`  [${diagnostic.severity}] ${diagnostic.code}: ${diagnostic.message}`);
-    }
     throw new Error("Cannot proceed with an invalid spec.");
   }
 
@@ -119,5 +109,5 @@ async function main(): Promise<void> {
 }
 
 void main().catch((error) => {
-  console.error("Vector tile URL example failed:", error);
+  console.error("PMTiles local example failed:", error);
 });

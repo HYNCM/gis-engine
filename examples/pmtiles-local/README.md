@@ -11,6 +11,17 @@ URL-compatible vector display and readiness/evidence workflows.
 - A vector layer inside that archive named `parcels`
 - A runtime or validation flow that can consume the fixture
 
+## Quick Start
+
+```bash
+npm install
+npm run dev
+```
+
+The runnable version uses a public PMTiles endpoint for demo purposes.
+To use your own data, place a `.pmtiles` file in `public/data/` and
+update the URL in `src/main.ts`.
+
 ## Run
 
 - Use this fixture in snapshot, validation, generated-app delivery, or review

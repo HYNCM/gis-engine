@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GIS Engine - Diagnostics Walkthrough</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+
+      #map {
+        width: 100%;
+        height: 100%;
+      }
+
+      #diagnostics-panel {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 380px;
+        max-height: 50vh;
+        overflow-y: auto;
+        background: rgba(255, 255, 255, 0.95);
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 13px;
+        font-family: ui-monospace, monospace;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+        z-index: 1;
+      }
+
+      #diagnostics-panel h3 {
+        margin: 0 0 8px;
+        font-size: 14px;
+        font-family: system-ui, sans-serif;
+      }
+
+      .diag-error {
+        color: #dc2626;
+      }
+
+      .diag-warning {
+        color: #d97706;
+      }
+
+      .diag-item {
+        margin-bottom: 8px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #f1f5f9;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <div id="diagnostics-panel">
+      <h3>Diagnostics — open browser console for full details</h3>
+      <div id="diag-output">Validating specs…</div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

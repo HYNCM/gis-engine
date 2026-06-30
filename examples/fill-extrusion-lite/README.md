@@ -16,6 +16,16 @@ Renders 3D extruded polygons using the experimental `fill-extrusion-lite` layer 
 - 2.5D view mode with camera pitch and bearing for perspective rendering.
 - Data-driven extrusion height read from GeoJSON feature properties.
 
+## Quick Start
+
+```bash
+npm install
+npm run dev
+```
+
+This starts a local dev server showing the 2.5D extruded polygon rendered
+with pitch and bearing.
+
 ## Usage
 
 Use this fixture to test fill-extrusion-lite rendering, validate 2.5D camera settings, or verify experimental capability declarations. The rendering engine must support the `fill-extrusion-lite` and `2_5d` capabilities.
