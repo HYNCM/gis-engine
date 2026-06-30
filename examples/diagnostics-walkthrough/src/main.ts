@@ -14,12 +14,10 @@
 
 import type { MapSpec } from "@gis-engine/engine";
 import { createMap, validateSpec } from "@gis-engine/engine";
-
-// Import the GeoJSON data referenced by the valid spec.
-import pointsGeoJsonRaw from "../data/points.geojson?raw";
-
 // Import the intentionally broken specs for demonstration.
 import invalidExamples from "../data/invalid-examples.json";
+// Import the GeoJSON data referenced by the valid spec.
+import pointsGeoJsonRaw from "../data/points.geojson?raw";
 
 const pointsData = JSON.parse(pointsGeoJsonRaw);
 
