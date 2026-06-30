@@ -193,8 +193,8 @@ function assertInstalledPackageVersions(projectDir) {
       `${target.name} installed version ${installedPackage.version} did not match workspace version ${workspacePackage.version}.`,
     );
     assertSmokeResult(
-      installedPackage.version === "1.0.0",
-      `${target.name} install smoke must verify 1.0.0 artifacts; found ${installedPackage.version}.`,
+      installedPackage.version === workspacePackage.version,
+      `${target.name} install smoke must verify ${workspacePackage.version} artifacts; found ${installedPackage.version}.`,
     );
   }
 }
