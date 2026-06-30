@@ -1,45 +1,5 @@
 ---
 agent: orchestrator
-period: 2026-W27
-generated_at: 2026-06-30T14:00:00Z
-repo_revision: "3890290"
-inputs:
-  - docs/planning/next-step-plan.md
-  - docs/planning/issues-snapshot.md
-  - docs/planning/evolution-ledger.md
-  - docs/reviews/quality-gate-2026-06-10.md
-  - docs/reviews/first-run-acceptance-2026-06-10.md
-  - CHANGELOG.md
-owner: "@orchestrator"
-decision_level: info
----
-
-# Weekly Digest
-
-This active file is a compact pointer for automation. The previous digest was
-archived to
-[archive/2026-06-30/planning/weekly-digest.md](../archive/2026-06-30/planning/weekly-digest.md).
-
-## Current Digest
-
-| Topic | Current Reading | Evidence |
-| --- | --- | --- |
-| Release | v1.1.0 released with 19 changesets consumed; engine/ai/cli/scene3d all at 1.1.0 | [CHANGELOG.md](../../CHANGELOG.md) |
-| Changeset consumption | 19 changesets consumed: 16 CLI minor (app template enhancements), 1 engine minor (PMTiles preflight), 1 ai minor (AI readiness), 1 cross-package (source readiness) | [CHANGELOG.md](../../CHANGELOG.md) |
-| Boundary enforcement | Canonical boundary regression tests added; MapSpec described as core + extensions across all public docs | [next-step-plan.md](./next-step-plan.md) Task 1 |
-| Governance refresh | Evolution ledger updated to v1.0-stable; first monthly trend report generated; W25-W27 snapshots appended | [evolution-ledger.md](./evolution-ledger.md) |
-| Open issues | #22 (core/extension boundary matrix) remains open at P2 | [issues-snapshot.md](./issues-snapshot.md) |
-| SceneView3D | Remains experimental (v1.1.0 via --tag next); stable view.mode still blocked | [CHANGELOG.md](../../CHANGELOG.md) |
-| Next steps | next-step-plan Tasks 2-4: core-vs-extension matrix, extension evidence, queue refresh | [next-step-plan.md](./next-step-plan.md) |
-| PMTiles runtime query | Runtime query remains No-go; future loader/query gate required | [PMTiles boundary](./feature-specs/pmtiles-runtime-query-promotion-boundary.md) |
-| Workbench | Studio/Workbench product movement remains No-go | [Studio/Workbench No-go](./feature-specs/studio-workbench-product-go-no-go.md) |
-
-## Maintenance
-
-Weekly automation may overwrite this file. Keep it short and route dated
-evidence to archive batches or issue snapshots.
----
-agent: orchestrator
 period: current
 generated_at: 2026-06-10T05:47:12Z
 repo_revision: "0254a85"

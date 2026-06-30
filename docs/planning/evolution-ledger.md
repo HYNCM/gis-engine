@@ -1,13 +1,15 @@
 ---
 agent: orchestrator
-period: 2026-W24
-generated_at: 2026-06-05T13:05:41Z
-repo_revision: "4012f51"
+period: 2026-W27
+generated_at: 2026-06-30T14:00:00Z
+repo_revision: "3890290"
 inputs:
   - AGENTS.md
   - docs/planning/evolution-framework.md
   - docs/planning/task-burndown.md
   - docs/planning/weekly-digest.md
+  - docs/reviews/quality-gate-2026-06-10.md
+  - docs/reviews/first-run-acceptance-2026-06-10.md
 owner: "@orchestrator (evolution-guardian)"
 decision_level: advisory
 ---
@@ -25,7 +27,7 @@ GIS Engine 多智能体系统的自我进化记录。每周追加度量快照，
 
 ---
 
-## 当前基准（v0.2-beta，2026-W22 确立）
+## 当前基准（v1.0-stable，2026-W27 刷新）
 
 ### 估算基准
 
@@ -59,9 +61,9 @@ GIS Engine 多智能体系统的自我进化记录。每周追加度量快照，
 
 | 属性 | 值 |
 | --- | --- |
-| 当前阶段 | v0.2-beta |
-| 阶段起始 | 2026-05-18 |
-| 预期阶段分布 | engine 25%, ai 30%, adapter 20%, qa 15%, docs 10% |
+| 当前阶段 | v1.0-stable |
+| 阶段起始 | 2026-06-10 |
+| 预期阶段分布 | engine 10%, ai 15%, adapter 20%, qa 35%, docs 20% |
 
 ---
 
@@ -182,17 +184,109 @@ W23 实际分布（来自 sprint-2026-W23-ai-map-app-generation）：
 | --- | --- | --- | --- | --- |
 | PIT-004 | diagnostic code not registered | CNS implementation | 1 | diagnostics |
 
+### 2026-W25（2026-06-09 ~ 2026-06-15）
+
+> v1.0.0 发布周。首次发布 acceptance 通过。
+
+#### D1：估算准确度
+
+| 任务 | Complexity | Estimated | Actual | 偏差率 |
+| --- | --- | --- | --- | --- |
+| boundary-enforcement regression | M | 12h | 4h | 0.67 |
+
+> **分析**：boundary enforcement 工作延续 W24 的趋势，M 任务偏差率持续偏高（0.67），建议后续下调 M 基准至 8h。
+
+#### D3：质量趋势
+
+| 指标 | 值 |
+| --- | --- |
+| 门禁首次通过率 | 100% — pnpm build:schema, pnpm check (525+ tests) all passed |
+| 返工率 | 0 rework cycles |
+| 新增测试数 | 3 (canonical-boundary-regression + workbench-boundary) |
+| HOC-N3 验收 | quality-gate-2026-06-10.md PASS |
+
+#### D4：知识积累
+
+**新模式**：
+
+| ID | 名称 | 来源 | 类别 |
+| --- | --- | --- | --- |
+| PAT-006 | Canonical boundary regression test | W25 boundary enforcement | docs-governance |
+
+**新陷阱**：
+
+| ID | 名称 | 来源 | 频率 | 类别 |
+| --- | --- | --- | --- | --- |
+| PIT-005 | governance doc staleness post-release | W25-W27 gap | 1 | process |
+
+### 2026-W26（2026-06-16 ~ 2026-06-22）
+
+> 静默周，无主动 agent 运行。changeset 积压持续。
+
+#### D1-D6
+
+无新数据。
+
+### 2026-W27（2026-06-23 ~ 2026-06-29）
+
+> 治理刷新周。消费 19 个 changeset，发布 v1.1.0。
+
+#### D3：质量趋势
+
+| 指标 | 值 |
+| --- | --- |
+| 门禁首次通过率 | 待 v1.1.0 发布确认 |
+| 返工率 | 待确认 |
+
+#### D4：知识积累
+
+**新陷阱**：
+
+| ID | 名称 | 来源 | 频率 | 类别 |
+| --- | --- | --- | --- | --- |
+| PIT-005 | governance doc staleness post-release | W25-W27 20天gap | 1 | process |
+
 ---
 
 ## 月度趋势报告
 
-> 第一个月度报告将在 2026-06 月末生成（需 4+ 周数据）。
+### 2026-06（W22-W27）
+
+> 首个月度报告。覆盖从 v0.2-beta 到 v1.0-stable 再到 v1.1.0 的完整发布周期。
+
+**D1 估算准确度趋势**：
+- W22：初始基准，无实际数据
+- W24：均值偏差率 0.66（偏高），M/S 任务基准可能过高
+- W25：M 任务偏差率 0.67，延续趋势
+- **建议**：下调 S 基准至 3h，M 基准至 8h（需 coordinator 审批）
+
+**D3 质量趋势**：
+- 门禁首次通过率：W24 100%，W25 100%
+- 返工率：W24 0 次，W25 0 次
+- 总测试数：525+ → 528+
+- **评估**：质量门禁稳定，无返工循环
+
+**D4 知识积累**：
+- 新增模式：PAT-004 ~ PAT-006（3 个）
+- 新增陷阱：PIT-004 ~ PIT-005（2 个）
+- 累计：6 个 candidate patterns，5 个 pitfalls
+- **评估**：知识积累正常，需更多实战验证
+
+**D5 职责分布**：
+- v1.0 阶段预期：engine 10%, ai 15%, adapter 20%, qa 35%, docs 20%
+- W25 实际：以 docs/governance 工作为主，符合 v1.0 阶段特征
+- **评估**：符合预期
+
+**D6 决策权重**：
+- 无调整。基准权重保持。
 
 ---
 
 ## 规则变更日志
 
-> 尚无变更。初始基准代表 v0.2-beta 的默认规则集。
+| 日期 | 变更 | 审批者 | 原因 |
+| --- | --- | --- | --- |
+| 2026-06-30 | 产品阶段 v0.2-beta → v1.0-stable | orchestrator | v1.0.0 于 2026-06-10 发布 |
 
 ---
 
@@ -405,3 +499,4 @@ priority = competitor_threat * w1 + ai_operability_gain * w2 + user_value * w3 +
 | v1.0 | 2026-05-30 | 初始账本：W22 基准、初始模式库（3 patterns）、初始陷阱库（3 pitfalls） |
 | v1.1 | 2026-05-30 | 追加方法论参考（D1-D6 自校准规则），合并自 evolution-framework.md |
 | v1.2 | 2026-06-05 | W24 quality acceptance: D3 updated with formal gate results (100% first-pass, 0 rework); HOC-N3 report at `docs/reviews/w24-quality-acceptance-2026-06-05.md` |
+| v1.3 | 2026-06-30 | W25/W26/W27 周快照追加；产品阶段 v0.2-beta → v1.0-stable；首个月度趋势报告（2026-06）；规则变更日志初始化；PIT-005 governance staleness 记录 |
