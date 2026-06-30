@@ -87,6 +87,23 @@ export interface MapSpec {
 | Workflow | `validate -> apply -> snapshot -> export` 作为证据最小闭环 | 其他消费者可以重排或只用其中一段 | 不把参考实现工作流写成唯一协议顺序 |
 | Renderer boundary | `RendererAdapter` contract | MapLibre、WebGL2 lite、scene adapter 的实现细节 | renderer-specific 行为必须留在 adapter 后面 |
 
+### Schema-to-Field Mapping
+
+| TypeBox Schema | Tier | MapSpec Fields | Validation Path |
+|---|---|---|---|
+| `MapSpecSchema` | Core | `version`, `id`, `revision`, `view`, `sources`, `layers`, `interactions`, `metadata`, `capabilities` | `validateSpec()` → Ajv compiled |
+| `ViewSpecSchema` | Core | `view.*` | nested in `MapSpecSchema` |
+| `SourceSpecSchema` (7 types) | Core | `sources.*` | nested + semantic checks |
+| `LayerSpecSchema` (7 types) | Core | `layers[*]` | nested + source reference checks |
+| `InteractionSpecSchema` | Core | `interactions` | nested |
+| `CapabilityRequestSchema` | Core | `capabilities` | nested |
+| `SceneView3DExtensionSchema` | Extension | `extensions.scene3d.*` | `validateSceneView3DExtension()` |
+| `SceneCameraSchema` | Extension | `extensions.scene3d.camera` | nested in extension schema |
+| `SceneSourceSchema` (3 types) | Extension | `extensions.scene3d.sources.*` | nested in extension schema |
+| `SceneLayerSchema` (3 types) | Extension | `extensions.scene3d.layers[*]` | nested in extension schema |
+
+**Single source of truth**: TypeBox schemas in `packages/engine/src/spec/schemas/` are the canonical definitions. This table is a documentation convenience and must stay synchronized.
+
 ## Command Contract
 
 ### 命令基础字段
