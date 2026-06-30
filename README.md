@@ -8,33 +8,83 @@ generation.
 
 ## Quick Start
 
-Choose one of these two first-run paths:
+Choose one of these first-run paths:
 
-**Path 1: Scaffold a new project with the CLI**
+### Path 1: npm Install (SDK Direct)
+
+Install the SDK and its **required** peer dependency:
+
+```bash
+npm install @gis-engine/engine maplibre-gl
+```
+
+> `maplibre-gl` is a **required** peer dependency — not optional.
+> GIS Engine delegates rendering to MapLibre GL JS, so you **must**
+> install it yourself.
+
+Import the MapLibre CSS and create a map:
+
+```typescript
+import "maplibre-gl/dist/maplibre-gl.css";
+import { createMap } from "@gis-engine/engine";
+
+const map = await createMap(
+  document.getElementById("map")!,
+  {
+    version: "0.1",
+    sources: {
+      points: {
+        type: "geojson",
+        data: {
+          type: "FeatureCollection",
+          features: [
+            { type: "Feature", geometry: { type: "Point", coordinates: [0, 0] },
+              properties: { name: "Null Island" } }
+          ]
+        }
+      }
+    },
+    layers: [
+      { id: "points-layer", type: "circle", source: "points",
+        paint: { "circle-radius": 8, "circle-color": "#3b82f6" } }
+    ],
+    view: { mode: "map2d", center: [0, 0], zoom: 2 }
+  },
+  { renderer: "maplibre" }
+);
+```
+
+### Path 2: CLI Scaffold
 
 ```bash
 npm exec --package @gis-engine/cli@latest -- create-gis-map my-map
 cd my-map && open index.html
 ```
 
-**Path 2: Load the SDK from a CDN in a single HTML file**
+### Path 3: CDN Single HTML
+
+Include the MapLibre CSS and JS before importing the SDK:
 
 ```html
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" />
+<script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
 <script type="module">
-import { createMap, applyCommands } from "https://unpkg.com/@gis-engine/engine";
+  import { createMap } from "https://unpkg.com/@gis-engine/engine";
+  // ... createMap() call — see docs/quickstart.md for a full example
 </script>
 ```
+
+### 3-Minute Quick Verify
+
+1. `npm install @gis-engine/engine maplibre-gl`
+2. `import "maplibre-gl/dist/maplibre-gl.css";`
+3. Use the `createMap()` snippet above
+4. Open in browser — you should see a world map with a blue dot
 
 **Then layer on AI generation when you need it:**
 
 ```bash
 npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --generate -p mock
-```
-
-**Install the SDK directly:**
-
-```bash
-npm install @gis-engine/engine maplibre-gl
 ```
 
 ## Package Overview
