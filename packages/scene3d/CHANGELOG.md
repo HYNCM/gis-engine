@@ -1,5 +1,13 @@
 # @gis-engine/scene3d
 
+## 1.1.0
+
+### Patch Changes
+
+- Updated dependencies [a34a6f4]
+- Updated dependencies [d2e5bb8]
+  - @gis-engine/engine@1.1.0
+
 ## 1.0.0
 
 ### Patch Changes

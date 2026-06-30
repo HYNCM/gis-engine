@@ -20,7 +20,12 @@ const canonicalBoundaryDocs = [
   },
   {
     file: "docs/architecture/core-framework.md",
-    required: [/core \+ extensions/i, /核心\s*\/\s*扩展矩阵/i, /参考实现|reference implementation/i, /最小闭环|minimum\s+closed\s+loop/i],
+    required: [
+      /core \+ extensions/i,
+      /核心\s*\/\s*扩展矩阵/i,
+      /参考实现|reference implementation/i,
+      /最小闭环|minimum\s+closed\s+loop/i,
+    ],
   },
   {
     file: "docs/spec/contracts-and-interfaces.md",

@@ -1,5 +1,17 @@
 # @gis-engine/engine
 
+## 1.1.0
+
+### Minor Changes
+
+- a34a6f4: Add IO-free PMTiles runtime load-plan preflight with source URL policy checks,
+  MapLibre `source-layer` metadata validation, range-policy requirements, and
+  optional archive metadata budget diagnostics.
+- d2e5bb8: Add an IO-free source-readiness report for MapSpec preflight. The engine now
+  exports `createSourceReadinessReport()`, and CLI preflight JSON/text output
+  includes `sourceReadiness` with supported, readiness-only, and blocked source
+  states without fetching resources, starting workers, or parsing archives.
+
 ## Unreleased
 
 ### Minor Changes

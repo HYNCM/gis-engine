@@ -1,5 +1,21 @@
 # @gis-engine/ai
 
+## 1.1.0
+
+### Minor Changes
+
+- 7631990: Derive `get_context_summary`, generation evidence delivery, and AI Map
+  Workbench mock fallback source-readiness states from the engine
+  `createSourceReadinessReport()` contract instead of maintaining parallel
+  readiness logic in AI surfaces.
+
+### Patch Changes
+
+- Updated dependencies [a34a6f4]
+- Updated dependencies [d2e5bb8]
+  - @gis-engine/engine@1.1.0
+  - @gis-engine/scene3d@1.1.0
+
 ## 1.0.0
 
 ### Patch Changes
