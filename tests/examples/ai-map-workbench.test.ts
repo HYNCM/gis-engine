@@ -79,6 +79,40 @@ describe("ai-map-workbench API", () => {
       status: "planned",
       intent: "style-red",
     });
+    expect(result.generationEvidence).toMatchObject({
+      status: "ready",
+      toolSequence: [
+        "get_context_summary",
+        "validate_spec",
+        "apply_commands",
+        "snapshot_spec",
+        "export_spec",
+        "export_example_app",
+      ],
+      planner: {
+        provided: true,
+        retainedRawPrompt: false,
+      },
+      command: {
+        usedApplyCommands: true,
+        commandCount: 1,
+        committed: true,
+        rolledBack: false,
+      },
+      snapshot: {
+        requested: true,
+        renderer: "mock",
+        passed: true,
+      },
+      export: {
+        ready: true,
+        sourceCount: 1,
+        layerCount: 2,
+      },
+      delivery: {
+        status: "ready",
+      },
+    });
     expect(result.commandEvidence).toMatchObject({
       commandCount: 1,
       committed: true,

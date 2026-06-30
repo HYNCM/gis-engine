@@ -72,6 +72,11 @@ AI-native, TypeScript-first map runtime for building, validating, replaying,
 snapshotting, and exporting 2D web map applications, with evidence-gated 3D
 contract scaffolds.
 
+Core note: `MapSpec` is a generic core + extensions model, not fixed to the
+current 2D path. The workbench is a reference implementation, and the
+validate -> apply -> snapshot -> export loop is the minimum closed loop, not
+the only workflow.
+
 ## Current Runtime Shape
 
 ```ts

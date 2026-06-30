@@ -33,6 +33,7 @@ Use the docs in this order:
 | CLI reference | [cli/provider-config.md](./cli/provider-config.md), [cli/templates.md](./cli/templates.md) | CLI provider configuration and template authoring. |
 | Migration guides | [migration/README.md](./migration/README.md), [migration/v0.x-to-v1.0.md](./migration/v0.x-to-v1.0.md), [migration/migrating-from-maplibre.md](./migration/migrating-from-maplibre.md), [migration/v0.2-to-v0.3.md](./migration/v0.2-to-v0.3.md) | Upgrade paths for SDK consumers; `v0.x -> v1.0` is the main release-line entry. |
 | Design documents | [design/phase-b-provider-http-layer.md](./design/phase-b-provider-http-layer.md), [design/phase-c-developer-experience.md](./design/phase-c-developer-experience.md) | Phase B/C design specs for provider HTTP layer and DX. |
+| Design boundary notes | [design/design-limits-and-generalization-boundaries.md](./design/design-limits-and-generalization-boundaries.md) | One-page guardrail for keeping `MapSpec` core + extensions generic and avoiding demo-shaped protocol drift. |
 
 ## Dated But Active Evidence
 

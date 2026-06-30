@@ -30,6 +30,9 @@ All agents must respect the existing GIS Engine architecture:
 
 - Schema first: public inputs must be described by TypeBox schemas and validated
   with Ajv.
+- Core model discipline: `MapSpec` is the generic core + extensions contract,
+  not hard-coded to the current 2D path; keep domain-specific capability in
+  extension namespaces or adapter boundaries.
 - Command-only mutation: runtime state changes must go through `MapCommand` and
   `applyCommands`.
 - Structured diagnostics: failures must return stable diagnostic codes instead
@@ -38,6 +41,11 @@ All agents must respect the existing GIS Engine architecture:
   smoke snapshots green and use visual snapshots for release-capable checks.
 - Adapter boundary: renderer-specific behavior must stay behind
   `RendererAdapter` contracts.
+- Reference implementation boundary: `examples/ai-map-workbench` is the
+  canonical Phase 1 reference implementation, not a product-claim commitment.
+- Workflow boundary: `validate -> apply -> snapshot -> export` is the minimum
+  closed loop for evidence, not the only valid workflow order for all
+  consumers.
 - MCP contract: AI tools must use the documented snake_case tool names:
   `validate_spec`, `apply_commands`, `export_spec`, `get_context_summary`,
   `snapshot_spec`, `explain_spec`, and `export_example_app`; every public tool

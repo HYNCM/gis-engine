@@ -4,6 +4,8 @@
 
 本文件把外部评审中指出的工程缺口转成可实现的接口契约。所有实现必须优先满足这些 contract，再扩展功能。
 
+本文件定义的是 core + extensions 的协议边界，不是固定在当前 2D 路径上的产品形态。稳定 2D 只是当前落地路径，3D、scene 和行业能力必须继续通过 extension payload 和 adapter 边界进入。
+
 ## Schema 和类型同步
 
 ### 单一事实来源
@@ -68,6 +70,22 @@ export interface MapSpec {
 - `extensions.scene3d` 必须按 `SceneView3DExtensionSchema` 演进；当前
   `MapSpec` 仍将其作为 extension payload，不把 3D sources/layers 提升到稳定
   `sources` / `layers`。
+- `MapSpec` 的核心字段必须保持最小、通用、可组合；不要把参考实现的
+  workbench 工作流或 `validate -> apply -> snapshot -> export` 误写成唯一、
+  固定的协议顺序。这里的 `validate -> apply -> snapshot -> export` 只是最小
+  闭环，不是所有消费者的唯一流程。
+
+## 核心 / 扩展矩阵
+
+这张矩阵把 contract 的稳定核、扩展负载和 adapter 边界拆开，便于审计哪些能力可以进入核心，哪些只能通过扩展或适配层进入。
+
+| Contract area | Core | Extension / adapter | Notes |
+| --- | --- | --- | --- |
+| `MapSpec` 顶层 | `version`、`id`、`revision`、`view`、`sources`、`layers`、`interactions`、`metadata` | `extensions` 中的 scene / 3D / 行业 / 实验 payload | 核心字段应保持最小和可组合 |
+| Scene / 3D | `extensions.scene3d` 作为版本化 payload | `SceneView3DExtensionSchema`、loader plan、mock snapshot/query、3D adapter spike | 不能把 `view.mode: "scene3d"` 提升成稳定 core 能力 |
+| AI / MCP | 已公开的 snake_case 工具契约和输入/输出 schema | 新工具的扩展 payload、AI 证据和 adapter-local diagnostics | 新 tool 必须继续遵守 schema-first 和 contract tests |
+| Workflow | `validate -> apply -> snapshot -> export` 作为证据最小闭环 | 其他消费者可以重排或只用其中一段 | 不把参考实现工作流写成唯一协议顺序 |
+| Renderer boundary | `RendererAdapter` contract | MapLibre、WebGL2 lite、scene adapter 的实现细节 | renderer-specific 行为必须留在 adapter 后面 |
 
 ## Command Contract
 

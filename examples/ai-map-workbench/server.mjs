@@ -282,19 +282,33 @@ export async function createWorkbenchServer(options = {}) {
           });
         }
 
-        const applied = engine.applyCommands(activeSpec, plan.commands, {
+        const baseSpec = activeSpec;
+        const applied = engine.applyCommands(baseSpec, plan.commands, {
           collectTrace: true,
-          traceId: `workbench.${plan.intent}.${activeSpec.revision ?? "0"}`,
+          traceId: `workbench.${plan.intent}.${baseSpec.revision ?? "0"}`,
         });
-        if (applied.committed && !applied.rolledBack) {
+        const generationEvidence = await createMockGenerationEvidence({
+          engine,
+          ai,
+          baseSpec,
+          plan,
+          applied,
+        });
+        const evidenceDiagnostics = generationEvidence.ok
+          ? generationEvidence.result.diagnostics
+          : generationEvidence.diagnostics;
+        const evidenceBlocked =
+          !generationEvidence.ok ||
+          generationEvidence.result.status === "blocked" ||
+          evidenceDiagnostics.some((diagnostic) => diagnostic.severity === "error");
+
+        if (!evidenceBlocked && applied.committed && !applied.rolledBack) {
           replaceActiveSpec(applied.spec);
         }
 
         const failed = applied.results.some((result) => result.status === "failed");
-        const status = failed ? "blocked" : "applied";
-        lastCompactEvidence = failed
-          ? null
-          : { delivery: { status: "ready", sourceReadiness: mockSourceReadiness(engine, activeSpec) } };
+        const status = failed || evidenceBlocked ? "blocked" : "applied";
+        lastCompactEvidence = generationEvidence.ok ? compactGenerationEvidence(generationEvidence.result) : null;
         appendAuditRecord(auditRecords, {
           sessionId,
           providerId: "mock-ai",
@@ -302,7 +316,7 @@ export async function createWorkbenchServer(options = {}) {
           traceId: applied.traceId,
           status,
           commandCount: applied.results.length,
-          diagnostics: applied.results.flatMap((result) => result.diagnostics),
+          diagnostics: [...applied.results.flatMap((result) => result.diagnostics), ...evidenceDiagnostics],
           fromRevision,
           toRevision: activeSpec.revision ?? "0",
         });
@@ -701,6 +715,7 @@ function compactGenerationEvidence(evidence) {
   return {
     promptHash: evidence.promptHash,
     status: evidence.status,
+    toolSequence: evidence.toolSequence,
     planner: {
       provided: evidence.plannerEvidence.provided,
       plannerId: evidence.plannerEvidence.plannerId,
@@ -718,8 +733,91 @@ function compactGenerationEvidence(evidence) {
       rolledBack: evidence.commandEvidence.rolledBack,
       diagnosticCounts: evidence.commandEvidence.diagnosticCounts,
     },
+    snapshot: {
+      requested: evidence.snapshotEvidence.requested,
+      renderer: evidence.snapshotEvidence.renderer,
+      passed: evidence.snapshotEvidence.passed,
+      dataUrlPresent: evidence.snapshotEvidence.dataUrlPresent,
+      diagnosticCounts: evidence.snapshotEvidence.diagnosticCounts,
+    },
+    export: {
+      ready: evidence.exportEvidence.ready,
+      sourceCount: evidence.exportEvidence.sourceCount,
+      layerCount: evidence.exportEvidence.layerCount,
+      diagnosticCounts: evidence.exportEvidence.diagnosticCounts,
+    },
+    example: {
+      exampleId: evidence.exampleEvidence.exampleId,
+      writesFiles: evidence.exampleEvidence.writesFiles,
+      fileCount: evidence.exampleEvidence.fileCount,
+      diagnosticCounts: evidence.exampleEvidence.diagnosticCounts,
+    },
     diagnostics: evidence.diagnostics,
   };
+}
+
+async function createMockGenerationEvidence({ engine, ai, baseSpec, plan, applied }) {
+  const promptHash = firstPromptHash(plan.commands) ?? `sha256:mock-ai-${plan.intent}`;
+  const plannerPlan = engine.planMapGenerationRequest({
+    promptHash,
+    traceId: applied.traceId,
+    plannerId: "mock-ai",
+    intent: mockGenerationIntent(baseSpec, plan),
+  });
+
+  if (plannerPlan.status === "blocked") {
+    return { ok: false, diagnostics: plannerPlan.diagnostics };
+  }
+
+  const skeleton = engine.createMapGenerationCommandSkeleton(plannerPlan.request);
+  return ai.createGenerationEvidenceBundle({
+    promptHash,
+    skeleton,
+    planner: {
+      plan: plannerPlan,
+      confidence: {
+        level: "high",
+        score: 0.95,
+        reasons: [plan.reply],
+      },
+    },
+    snapshot: { renderer: "mock" },
+    exampleId: "ai-map-edit",
+  });
+}
+
+function mockGenerationIntent(baseSpec, plan) {
+  const intent = {
+    mapId: baseSpec.id ?? "ai-map-workbench",
+    targetDomains: ["feature-display"],
+    baseSpec,
+  };
+  const styleEdits = [];
+  const layers = [];
+  const sources = {};
+
+  for (const command of plan.commands) {
+    if (command.type === "setPaint") {
+      styleEdits.push({ layerId: command.layerId, paint: command.paint });
+    }
+    if (command.type === "setLayout") {
+      styleEdits.push({ layerId: command.layerId, layout: command.layout });
+    }
+    if (command.type === "setView") {
+      intent.view = command.view;
+    }
+    if (command.type === "addSource") {
+      sources[command.sourceId] = command.source;
+    }
+    if (command.type === "addLayer") {
+      layers.push(command.layer);
+    }
+  }
+
+  if (styleEdits.length > 0) intent.styleEdits = styleEdits;
+  if (Object.keys(sources).length > 0) intent.sources = sources;
+  if (layers.length > 0) intent.layers = layers;
+  return intent;
 }
 
 function compactReviewEvidence(auditRecord, generationEvidence) {
@@ -776,37 +874,6 @@ function countDiagnostics(diagnostics) {
     },
     { error: 0, warning: 0, info: 0 },
   );
-}
-
-function mockSourceReadiness(engine, spec) {
-  return engine.createSourceReadinessReport(spec).sources.map((source) => ({
-    sourceId: source.sourceId,
-    type: source.type,
-    state: source.state,
-    queryReady: source.queryReady,
-    resourcePolicy: source.resourcePolicy,
-    ...(source.type === "pmtiles" ? { archiveContract: pmtilesArchiveContract() } : {}),
-    ...(source.runtimeLoadPlan ? { runtimeLoadPlan: source.runtimeLoadPlan } : {}),
-  }));
-}
-
-function pmtilesArchiveContract() {
-  return {
-    state: "explicit",
-    metadataFields: [
-      "specVersion",
-      "archiveBytes",
-      "rootDirectoryOffset",
-      "rootDirectoryLength",
-      "hasVectorTiles",
-      "hasRasterTiles",
-      "tileType",
-      "minZoom",
-      "maxZoom",
-      "bounds",
-    ],
-    policyFields: ["maxArchiveBytes", "maxRootDirectoryBytes", "allowRangeRequests", "maxRangeSegments", "timeoutMs"],
-  };
 }
 
 function firstPromptHash(commands) {

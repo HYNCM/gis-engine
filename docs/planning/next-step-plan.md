@@ -1,63 +1,145 @@
 ---
 agent: orchestrator
 period: 2026-W25
-generated_at: 2026-06-14T00:00:00Z
-repo_revision: "unknown"
+generated_at: 2026-06-18T15:22:04Z
+repo_revision: "fa12c7b98ab43a92a39bfbf35d2b26aefa771752"
 inputs:
-  - docs/planning/feature-specs/current-product-definition.md
-  - docs/planning/monthly-roadmap.md
-  - docs/planning/weekly-digest.md
-  - docs/planning/issues-snapshot.md
-  - docs/reviews/first-run-acceptance-2026-06-10.md
-  - docs/reviews/provider-smoke-2026-06-10.md
-  - docs/reviews/generated-project-audit-regression-2026-06-10.md
+  - docs/intent/project-definition.md
+  - docs/design/design-limits-and-generalization-boundaries.md
+  - docs/architecture/core-framework.md
+  - docs/spec/contracts-and-interfaces.md
+  - docs/README.md
+  - README.md
+  - AGENTS.md
 owner: "@orchestrator"
 decision_level: advisory
 ---
 
-# Next Step Plan
+# Next Stage Plan: Boundary Enforcement
 
 ## Goal
 
-Continue productization by making the SDK+CLI adoption path easier to inspect,
-easier to verify, and harder to misread.
+Turn the current core + extensions boundary into regression-checked project
+guidance so future implementation work cannot drift back to a 2D-only or
+single-workflow interpretation.
 
-## Phase 1: Definition Lock
+## Phase 1: Guardrails
 
-- [ ] Confirm the current product definition as SDK+CLI first.
-- [ ] Keep Workbench, stable SceneView3D, and PMTiles runtime query in bounded
-      no-go / promotion-gate status.
-- [ ] Use the current definition doc as the entry point for future execution.
+- [ ] Task 1: Add a docs regression that asserts the canonical boundary
+      wording and rejects drift.
+  - Description: Make the core + extensions boundary testable in the docs
+    layer so README, AGENTS, architecture, and contract wording stay aligned.
+  - Acceptance criteria:
+    - [ ] README, AGENTS, and the design / architecture / spec docs all
+          describe `MapSpec` as core + extensions.
+    - [ ] The reference implementation boundary and minimum closed-loop
+          language remain present.
+    - [ ] The test fails if new copy reintroduces "2D-only", "workflow-only",
+          or product-shape phrasing.
+  - Verification:
+    - [ ] `pnpm test:docs`
+    - [ ] `node scripts/doc-generator.mjs links`
+  - Dependencies: None
+  - Files likely touched:
+    - `tests/docs/public-docs-consistency.test.ts`
+    - `README.md`
+    - `AGENTS.md`
+    - `docs/architecture/core-framework.md`
+    - `docs/spec/contracts-and-interfaces.md`
+    - `docs/design/design-limits-and-generalization-boundaries.md`
+  - Estimated scope: M
 
-**Verify**
+- [ ] Task 2: Create a structured core-vs-extension contract matrix in the
+      architecture and spec docs.
+  - Description: Make the stable core fields and extension-only fields obvious
+    in one place so scene, 3D, and vertical-domain capability stays out of the
+    stable core until it is explicitly promoted.
+  - Acceptance criteria:
+    - [ ] Core fields and extension-only fields are explicitly separated.
+    - [ ] 3D / scene / vertical capabilities remain extension- or
+          adapter-local.
+    - [ ] `validate -> apply -> snapshot -> export` is documented as a
+          composable minimum closed loop, not a mandatory global order.
+  - Verification:
+    - [ ] `pnpm test:docs`
+    - [ ] `node scripts/doc-generator.mjs links`
+  - Dependencies: Task 1
+  - Files likely touched:
+    - `docs/architecture/core-framework.md`
+    - `docs/spec/contracts-and-interfaces.md`
+  - Estimated scope: S
 
-- [ ] Definition doc exists and matches current roadmap/boundary docs.
-- [ ] No planning artifact claims hosted Workbench or stable 3D promotion.
+### Checkpoint: Boundary Guardrails
 
-## Phase 2: Adoption DX
+- [ ] Boundary wording is enforced by test and reflected in the main docs.
+- [ ] Core vs extension responsibilities are readable in one place.
 
-- [ ] Add one small improvement to first-run or CLI install reporting.
-- [ ] Keep the change machine-readable and reviewable.
-- [ ] Preserve the existing smoke gates and raw-prompt-retention checks.
+## Phase 2: Extension Evidence
 
-**Verify**
+- [ ] Task 3: Add one small extension-only evidence slice that proves
+      extension payloads stay out of the stable core.
+  - Description: Add a narrow example or test that demonstrates extension-only
+    behavior without promoting stable 3D or a new product workflow.
+  - Acceptance criteria:
+    - [ ] An existing test or example demonstrates extension-only behavior.
+    - [ ] The evidence is machine-checkable and does not write files as a side
+          effect.
+    - [ ] Public docs keep the example framed as reference/evidence only.
+  - Verification:
+    - [ ] `pnpm test:ai`
+    - [ ] `pnpm test:examples`
+    - [ ] `pnpm test:docs`
+  - Dependencies: Task 2
+  - Files likely touched:
+    - `tests/ai/generation-evidence.test.ts`
+    - `tests/examples/*`
+    - `examples/ai-map-workbench/README.md`
+  - Estimated scope: M
 
-- [ ] Targeted tests pass.
-- [ ] `pnpm smoke:first-run` or `pnpm smoke:cli-install` still passes.
-- [ ] Docs snapshot links stay green.
+### Checkpoint: Extension Evidence
+
+- [ ] Extension-only evidence exists without narrowing the core.
+- [ ] Reference implementation remains reference-only.
 
 ## Phase 3: Queue Refresh
 
-- [ ] Regenerate issue snapshot after the next accepted change.
-- [ ] Decide the next issue from the current adoption friction, not from
-      archived roadmap pressure.
+- [ ] Task 4: Refresh planning snapshots for the next implementation slice.
+  - Description: Update the planning snapshots so the next accepted issue points
+    at boundary enforcement or extension evidence rather than old adoption
+    cleanup language.
+  - Acceptance criteria:
+    - [ ] `docs/planning/issues-snapshot.md` and roadmap / digest artifacts
+          reflect the next guardrail-oriented issue.
+    - [ ] The next implementation issue has a single owner and a narrow
+          verification gate.
+    - [ ] No planning doc reverts to SDK+CLI adoption cleanup language as the
+          active priority.
+  - Verification:
+    - [ ] `node scripts/issues-snapshot.mjs`
+    - [ ] `pnpm test:docs`
+  - Dependencies: Task 1
+  - Files likely touched:
+    - `docs/planning/issues-snapshot.md`
+    - `docs/planning/monthly-roadmap.md`
+    - `docs/planning/weekly-digest.md`
+  - Estimated scope: S
 
-**Verify**
+### Checkpoint: Ready for Execution
 
-- [ ] `docs/planning/issues-snapshot.md` reflects current GitHub issue state.
-- [ ] Next issue has a single clear owner and gate.
+- [ ] The next stage has a guardrailed implementation target.
+- [ ] Future tasks point at extension evidence, not protocol lock-in.
 
-## Immediate Next Slice
+## Risks and Mitigations
 
-Create a structured report section for the first-run / install smoke evidence
-so the adoption path is easier to audit without reading raw command logs.
+| Risk | Impact | Mitigation |
+|---|---|---|
+| Boundary language stays only in docs and never gets enforced | Medium | Add a docs regression and keep the wording in multiple entry points. |
+| Extension evidence becomes a stealth product promise | High | Keep the workbench / example / reference wording explicit and avoid stable-runtime claims. |
+| The next stage is too broad | Medium | Keep tasks to docs, tests, and issue snapshots; defer runtime feature work. |
+
+## Open Questions
+
+- Which extension slice should be promoted next: scene-only evidence, a domain
+  proof, or more general extension-registry guidance?
+- Should the boundary matrix become a generated artifact later, or remain
+  hand-authored?

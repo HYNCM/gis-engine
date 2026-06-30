@@ -36,6 +36,7 @@ archived to
 | First-run acceptance | SDK+CLI packed-package first-run path passed in 29.8s against the 30-minute budget | [first-run acceptance](../reviews/first-run-acceptance-2026-06-10.md) |
 | Provider smoke | OpenAI-compatible local provider smoke passed without CI secrets | [provider smoke](../reviews/provider-smoke-2026-06-10.md) |
 | Generated audit | Generated project review artifacts are covered by tamper-evidence regression | [audit regression](../reviews/generated-project-audit-regression-2026-06-10.md) |
+| Core/extension matrix | Open issue #22 tracks the next guardrail slice for matrix wording, example evidence, and snapshot sync | [issue #22](https://github.com/HYNCM/gis-engine/issues/22) |
 | PMTiles runtime query | Runtime query remains No-go; future loader/query gate required | [PMTiles boundary](./feature-specs/pmtiles-runtime-query-promotion-boundary.md) |
 | Workbench | Studio/Workbench product movement remains No-go; future product Go issue required | [Studio/Workbench No-go](./feature-specs/studio-workbench-product-go-no-go.md) |
 | W25 planning | No priority change from current external signals | [competitor update](../research/competitor-updates-2026-W24.md) |

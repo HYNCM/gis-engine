@@ -12,6 +12,12 @@ tests. When server environment variables are configured, the same boundary can
 call DeepSeek or another OpenAI-compatible chat completions endpoint from the
 Node server.
 
+## Extension Evidence
+
+Scene browsing and any future `extensions.scene3d` payloads stay as
+extension-only evidence in this reference app. They do not promote a stable
+`view.mode: "scene3d"` or move 3D capability into the core `MapSpec`.
+
 ## Run
 
 From the repository root:
@@ -160,6 +166,13 @@ The chat API returns compact review evidence:
 - `provider`: provider id, raw-prompt retention state, and optional confidence.
 - `generationEvidence`: prompt hash, planner provenance, delivery status, and
   command evidence from `createGenerationEvidenceBundle`.
+- `generationEvidence.toolSequence`: the canonical Phase 1 tool chain:
+  `get_context_summary`, `validate_spec`, `apply_commands`, `snapshot_spec`,
+  `export_spec`, and `export_example_app`.
+- `generationEvidence.snapshot`, `generationEvidence.export`, and
+  `generationEvidence.example`: compact proof that the current authored
+  `MapSpec` can be snapshotted, exported, and handed off through the existing
+  side-effect-free example manifest path.
 - `generationEvidence.delivery.sourcePromotionCandidates`: cloud-native source
   promotion candidates shown in the evidence rail, including PMTiles archive
   metadata contract summaries, GeoParquet / FlatGeobuf schema contract
