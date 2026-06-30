@@ -1,8 +1,8 @@
 ---
 agent: orchestrator
 period: issue-snapshot
-generated_at: 2026-06-29T02:57:43.150Z
-repo_revision: "4c2df87"
+generated_at: 2026-06-30T23:30:00+08:00
+repo_revision: "6f1e867"
 inputs:
   - GitHub Issues API
 owner: "@orchestrator"
@@ -15,9 +15,11 @@ decision_level: info
 
 ## Status
 
+- **v1.1.0 released** (tag `v1.1.0`, commit `6f1e867`) — 19 changesets consumed
 - Open issues: 1
 - Closed issues in snapshot: 18
 - Total returned: 19
+- Boundary enforcement regression tests (Task 1 of next-step-plan): completed
 
 ## Issues
 
