@@ -1,10 +1,29 @@
 # GIS Engine
 
-GIS Engine v1.1.0 is a schema-first map rendering SDK with AI-powered
+GIS Engine v1.2.0 is a schema-first map rendering SDK with AI-powered
 generation.
 
+[![npm version](https://img.shields.io/npm/v/@gis-engine/engine)](https://www.npmjs.com/package/@gis-engine/engine)
 [![CI](https://github.com/HYNCM/gis-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/HYNCM/gis-engine/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![License](https://img.shields.io/github/license/HYNCM/gis-engine)](LICENSE)
+[![Docs](https://img.shields.io/badge/docs-hyncm.github.io-blue)](https://hyncm.github.io/gis-engine/)
+[![Playground](https://img.shields.io/badge/try-StackBlitz-blue)](https://stackblitz.com/github/HYNCM/gis-engine/tree/main/examples/basic-geojson)
+
+## Why GIS Engine?
+
+Traditional map libraries require imperative JavaScript code. GIS Engine takes a different approach:
+
+- **Schema-first**: Describe your map as a JSON spec (MapSpec). Validate it before rendering.
+- **AI-native**: Generate complete maps from natural language prompts. Every map change is traceable and auditable.
+- **Command-based mutations**: All state changes go through a command system with dry-run, conflict detection, and rollback support.
+- **Structured diagnostics**: Errors return machine-readable diagnostic codes, not opaque strings.
+
+```bash
+# Generate a map from a prompt
+npx @gis-engine/cli my-map --generate --provider mock
+```
+
+[Quick Start](https://hyncm.github.io/gis-engine/guide/quick-start) · [Playground](https://stackblitz.com/github/HYNCM/gis-engine/tree/main/examples/basic-geojson) · [Documentation](https://hyncm.github.io/gis-engine/)
 
 ## Quick Start
 

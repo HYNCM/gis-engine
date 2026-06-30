@@ -40,7 +40,7 @@ cd my-map
 open index.html
 ```
 
-This is the recommended first-run path for GIS Engine v1.1.0.
+This is the recommended first-run path for GIS Engine v1.2.0.
 
 ### 2. Use a different template
 

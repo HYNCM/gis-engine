@@ -22,7 +22,7 @@ describe("public docs consistency", () => {
     const files = ["README.md", "docs/quickstart.md", "packages/cli/README.md"];
 
     for (const file of files) {
-      expect(readText(file), `${file} should mention v1.1.0`).toContain("v1.1.0");
+      expect(readText(file), `${file} should mention v1.2.0`).toContain("v1.2.0");
     }
   });
 
