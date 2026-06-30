@@ -1,6 +1,6 @@
 # @gis-engine/ai
 
-`@gis-engine/ai` is the AI and MCP package for GIS Engine v1.0.0.
+`@gis-engine/ai` is the AI and MCP package for GIS Engine v1.1.0.
 
 ## What Lives Here
 

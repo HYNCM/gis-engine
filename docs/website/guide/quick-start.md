@@ -1,6 +1,6 @@
 # Quick Start
 
-Get a map rendered with GIS Engine v1.0.0 through one of two supported
+Get a map rendered with GIS Engine v1.1.0 through one of two supported
 first-run paths.
 
 ## Path 1: CLI Scaffold

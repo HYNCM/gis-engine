@@ -1,6 +1,6 @@
 # Quick Start
 
-Get to a visible map through one of two supported v1.0.0 entry paths.
+Get to a visible map through one of two supported v1.1.0 entry paths.
 
 ## Path 1: CLI Scaffold
 

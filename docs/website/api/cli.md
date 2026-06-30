@@ -1,6 +1,6 @@
 # @gis-engine/cli
 
-`@gis-engine/cli` is the developer entrypoint package for GIS Engine v1.0.0.
+`@gis-engine/cli` is the developer entrypoint package for GIS Engine v1.1.0.
 
 ## What Lives Here
 

@@ -1,6 +1,6 @@
 # @gis-engine/scene3d
 
-`@gis-engine/scene3d` remains an experimental contract package in v1.0.0.
+`@gis-engine/scene3d` remains an experimental contract package in v1.1.0.
 
 ## What Lives Here
 

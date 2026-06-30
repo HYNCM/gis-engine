@@ -1,6 +1,6 @@
 # GIS Engine
 
-GIS Engine v1.0.0 is a schema-first map rendering SDK with AI-powered
+GIS Engine v1.1.0 is a schema-first map rendering SDK with AI-powered
 generation.
 
 [![CI](https://github.com/HYNCM/gis-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/HYNCM/gis-engine/actions/workflows/ci.yml)

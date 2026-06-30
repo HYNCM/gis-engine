@@ -2,7 +2,7 @@
 
 ## Goal
 
-Show the current PMTiles contract that GIS Engine v1.0.0 supports for local,
+Show the current PMTiles contract that GIS Engine v1.1.0 supports for local,
 URL-compatible vector display and readiness/evidence workflows.
 
 ## Prerequisites

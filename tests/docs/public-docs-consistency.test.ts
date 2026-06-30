@@ -11,10 +11,18 @@ function readText(path: string): string {
 
 describe("public docs consistency", () => {
   it("keeps v1.0.0 entry points aligned", () => {
-    const files = ["README.md", "CHANGELOG.md", "docs/website/release-notes.md", "docs/migration/v0.x-to-v1.0.md"];
+    const files = ["CHANGELOG.md", "docs/website/release-notes.md", "docs/migration/v0.x-to-v1.0.md"];
 
     for (const file of files) {
       expect(readText(file), `${file} should mention v1.0.0`).toContain("v1.0.0");
+    }
+  });
+
+  it("keeps current version entry points aligned", () => {
+    const files = ["README.md", "docs/quickstart.md", "packages/cli/README.md"];
+
+    for (const file of files) {
+      expect(readText(file), `${file} should mention v1.1.0`).toContain("v1.1.0");
     }
   });
 

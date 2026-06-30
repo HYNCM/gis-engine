@@ -1,6 +1,6 @@
 # @gis-engine/engine
 
-`@gis-engine/engine` is the core runtime package for GIS Engine v1.0.0.
+`@gis-engine/engine` is the core runtime package for GIS Engine v1.1.0.
 
 ## What Lives Here
 

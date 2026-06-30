@@ -1,7 +1,7 @@
 # Minimal Consumer Handoff
 
 This guide shows the smallest realistic consumer-repo pattern we recommend for
-GIS Engine v1.0.0:
+GIS Engine v1.1.0:
 
 1. a hand-authored `map.json`
 2. a minimal Vite app that renders it with the published SDK

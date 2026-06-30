@@ -38,8 +38,8 @@ JS entry. `createMap` is a named export of `@gis-engine/engine`.
 ## Version Pinning
 
 ```
-https://unpkg.com/@gis-engine/engine@1.0.0
-https://esm.sh/@gis-engine/engine@^1.0.0
+https://unpkg.com/@gis-engine/engine@1.1.0
+https://esm.sh/@gis-engine/engine@^1.1.0
 ```
 
 Unpinned imports resolve to the `latest` dist-tag.
