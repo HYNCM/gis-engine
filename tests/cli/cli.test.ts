@@ -975,7 +975,7 @@ describe("cli-templates", () => {
 
   it("vite-ts template generates package.json, tsconfig.json, index.html, src/main.ts, README.md", () => {
     const tpl = mustGetTemplate("vite-ts");
-    const ctx = { projectName: "test-project", provider: "mock", cliVersion: "0.0.0" };
+    const ctx = { projectName: "test-project", provider: "mock", cliVersion: "1.1.0" };
     const files = tpl.generate(ctx);
     const paths = files.map((f) => f.path);
     expect(paths).toContain("package.json");
@@ -985,8 +985,8 @@ describe("cli-templates", () => {
     expect(paths).toContain("README.md");
     const pkgFile = mustFindFile(files, "package.json");
     const pkg = JSON.parse(pkgFile.content);
-    expect(pkg.dependencies["@gis-engine/engine"]).toBe("^1.0.0");
-    expect(pkg.dependencies["@gis-engine/ai"]).toBe("^1.0.0");
+    expect(pkg.dependencies["@gis-engine/engine"]).toBe("1.x");
+    expect(pkg.dependencies["@gis-engine/ai"]).toBe("1.x");
   });
 
   it("mapspec template generates map.json and README.md", () => {
@@ -1075,7 +1075,7 @@ describe("cli-templates", () => {
     const files = tpl.generate(ctx);
     const pkgFile = mustFindFile(files, "package.json");
     const pkg = JSON.parse(pkgFile.content);
-    expect(pkg.dependencies["@gis-engine/engine"]).toBe("^1.0.0");
+    expect(pkg.dependencies["@gis-engine/engine"]).toBe("1.x");
     expect(pkg.dependencies.react).toBeDefined();
     expect(pkg.dependencies["react-dom"]).toBeDefined();
     expect(pkg.dependencies["maplibre-gl"]).toBeDefined();

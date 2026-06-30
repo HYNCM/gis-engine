@@ -77,6 +77,19 @@ export function normalizeAppConfig(
   };
 }
 
+/**
+ * Derive a major-version-compatible semver range from the CLI version.
+ * e.g. "1.1.0" → "1.x", "2.0.0" → "2.x"
+ *
+ * This ensures scaffolded projects always resolve to the latest compatible
+ * minor/patch within the same major, rather than pinning to the initial
+ * release ("^1.0.0") or excluding prior minors ("^1.1.0").
+ */
+function engineVersionRange(cliVersion: string): string {
+  const major = cliVersion.split(".")[0];
+  return `${major}.x`;
+}
+
 export interface Template {
   name: TemplateName;
   description: string;
@@ -166,8 +179,8 @@ const viteTsTemplate: Template = {
               preview: "vite preview",
             },
             dependencies: {
-              "@gis-engine/engine": "^1.0.0",
-              "@gis-engine/ai": "^1.0.0",
+              "@gis-engine/engine": engineVersionRange(ctx.cliVersion),
+              "@gis-engine/ai": engineVersionRange(ctx.cliVersion),
             },
             devDependencies: {
               typescript: "^5.7.0",
@@ -717,7 +730,7 @@ export default function BasemapSwitcher({ map }: Props) {
               preview: "vite preview",
             },
             dependencies: {
-              "@gis-engine/engine": "^1.0.0",
+              "@gis-engine/engine": engineVersionRange(ctx.cliVersion),
               "maplibre-gl": "^5.0.0",
               react: "^18.3.0",
               "react-dom": "^18.3.0",

@@ -214,6 +214,18 @@ function pinGeneratedPackageDependencies(packageJsonPath, tarballs) {
       if (dependencies[target.name]) dependencies[target.name] = `file:${tarballs[target.name]}`;
     }
   }
+
+  // Add npm overrides so that transitive @gis-engine/* dependencies also
+  // resolve from local tarballs instead of the npm registry.  This is
+  // required when a new package (e.g. @gis-engine/scene3d) is introduced
+  // as a dependency of an existing package (@gis-engine/ai) but has not
+  // been published to the registry yet.
+  const overrides = packageJson.overrides ?? {};
+  for (const target of packTargets) {
+    overrides[target.name] = `file:${tarballs[target.name]}`;
+  }
+  packageJson.overrides = overrides;
+
   writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`, "utf-8");
 }
 
