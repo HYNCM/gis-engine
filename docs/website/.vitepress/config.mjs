@@ -36,6 +36,7 @@ export default defineConfig({
             { text: "Schema-First Design", link: "/guide/schema-first" },
             { text: "Command System", link: "/guide/commands" },
             { text: "Diagnostics", link: "/guide/diagnostics" },
+            { text: "Diagnostic Codes Reference", link: "/guide/diagnostic-codes" },
           ],
         },
         {

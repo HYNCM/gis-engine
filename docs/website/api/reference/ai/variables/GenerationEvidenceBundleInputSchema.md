@@ -30,7 +30,7 @@
 
 #### properties.skeleton
 
-> `readonly` **skeleton**: `TObject`\<\{ `status`: `TUnion`\<\[`TLiteral`\&lt;`"ready"`\&gt;, `TLiteral`\&lt;`"blocked"`\&gt;\]\>; `targetDomains`: `TArray`\<`TUnion`\<\[`TLiteral`\&lt;`"feature-display"`\&gt;, `TLiteral`\&lt;`"spatial-analysis"`\&gt;, `TLiteral`\&lt;`"scene-browsing"`\&gt;\]\>\>; `analysisEvidence`: `TObject`\<\{ `requested`: `TBoolean`; `status`: `TUnion`\<\[`TLiteral`\&lt;`"ready"`\&gt;, `TLiteral`\&lt;`"blocked"`\&gt;, `TLiteral`\&lt;`"not-requested"`\&gt;\]\>; `requestedOperations`: `TArray`\<`TUnion`\<\[`TLiteral`\&lt;`"point-query"`\&gt;, `TLiteral`\&lt;`"bbox-query"`\&gt;, `TLiteral`\&lt;`"buffer"`\&gt;, `TLiteral`\&lt;`"intersection"`\&gt;, `TLiteral`\&lt;`"overlay"`\&gt;, `TLiteral`\&lt;`"routing"`\&gt;, `TLiteral`\&lt;`"aggregation"`\&gt;\]\>\>; `acceptedQueryOperations`: `TArray`\<`TUnion`\<\[`TLiteral`\&lt;`"point-query"`\&gt;, `TLiteral`\&lt;`"bbox-query"`\&gt;\]\>\>; `blockedOperations`: `TArray`\<`TUnion`\<\[`TLiteral`\&lt;`"point-query"`\&gt;, `TLiteral`\&lt;`"bbox-query"`\&gt;, `TLiteral`\&lt;`"buffer"`\&gt;, `TLiteral`\&lt;`"intersection"`\&gt;, `TLiteral`\&lt;`"overlay"`\&gt;, `TLiteral`\&lt;`"routing"`\&gt;, `TLiteral`\&lt;`"aggregation"`\&gt;\]\>\>; `diagnostics`: `TArray`\<`TObject`\<\{ `severity`: `TUnion`\<\[..., ..., ...\]\>; `code`: `TUnion`\&lt;...[]\&gt;; `blockerCode`: `TOptional`\<`TUnion`\&lt;...\&gt;\>; `message`: `TString`; `path`: `TOptional`\&lt;`TString`\&gt;; `relatedResources`: `TOptional`\<`TArray`\&lt;...\&gt;\>; `fix`: `TOptional`\<`TObject`\&lt;...\&gt;\>; \}\>\>; \}\>; `baseSpec`: `TObject`\<\{ `version`: `TLiteral`\&lt;`"0.1"`\&gt;; `id`: `TOptional`\&lt;`TString`\&gt;; `revision`: `TOptional`\&lt;`TString`\&gt;; `capabilities`: `TOptional`\<`TObject`\<\{ `dimensions`: `TOptional`\<`TArray`\&lt;...\&gt;\>; `renderer`: `TOptional`\<`TUnion`\&lt;...\&gt;\>; `experimental`: `TOptional`\<`TArray`\&lt;...\&gt;\>; \}\>\>; `view`: `TObject`\<\{ `mode`: `TOptional`\<`TUnion`\<\[..., ..., ...\]\>\>; `center`: `TOptional`\<`TTuple`\<\[..., ...\]\>\>; `zoom`: `TOptional`\&lt;`TNumber`\&gt;; `bearing`: `TOptional`\&lt;`TNumber`\&gt;; `pitch`: `TOptional`\&lt;`TNumber`\&gt;; `bounds`: `TOptional`\<`TTuple`\<\[..., ..., ..., ...\]\>\>; \}\>; `sources`: `TRecord`\<`TString`, `TUnion`\<\[`TObject`\<\{ `type`: ...; `data`: ...; \}\>, `TObject`\<\{ `type`: ...; `tiles`: ...; `tileSize`: ...; `minzoom`: ...; `maxzoom`: ...; `attribution`: ...; \}\>, `TObject`\<\{ `type`: ...; `url`: ...; `minzoom`: ...; `maxzoom`: ...; `attribution`: ...; \}\>, `TObject`\<\{ `type`: ...; `url`: ...; `hasIndex`: ...; `featureCount`: ...; `bbox`: ...; `geometryType`: ...; `fileBytes`: ...; \}\>\]\>\>; `layers`: `TArray`\<`TObject`\<\{ `id`: `TString`; `type`: `TUnion`\<\[..., ..., ..., ..., ..., ..., ...\]\>; `source`: `TOptional`\&lt;`TString`\&gt;; `filter`: `TOptional`\<`TUnsafe`\&lt;...\&gt;\>; `minzoom`: `TOptional`\&lt;`TNumber`\&gt;; `maxzoom`: `TOptional`\&lt;`TNumber`\&gt;; `layout`: `TOptional`\<`TRecord`\<..., ...\>\>; `paint`: `TOptional`\<`TRecord`\<..., ...\>\>; `metadata`: `TOptional`\<`TRecord`\<..., ...\>\>; \}\>\>; `interactions`: `TOptional`\<`TObject`\<\{ `pan`: `TOptional`\&lt;`TBoolean`\&gt;; `zoom`: `TOptional`\&lt;`TBoolean`\&gt;; `hover`: `TOptional`\&lt;`TBoolean`\&gt;; `click`: `TOptional`\&lt;`TBoolean`\&gt;; `select`: `TOptional`\&lt;`TBoolean`\&gt;; `popup`: `TOptional`\&lt;`TBoolean`\&gt;; \}\>\>; `metadata`: `TOptional`\<`TRecord`\<`TString`, `TUnknown`\>\>; `extensions`: `TOptional`\<`TRecord`\<`TString`, `TUnknown`\>\>; \}\>; `spec`: `TObject`\<\{ `version`: `TLiteral`\&lt;`"0.1"`\&gt;; `id`: `TOptional`\&lt;`TString`\&gt;; `revision`: `TOptional`\&lt;`TString`\&gt;; `capabilities`: `TOptional`\<`TObject`\<\{ `dimensions`: `TOptional`\<`TArray`\&lt;...\&gt;\>; `renderer`: `TOptional`\<`TUnion`\&lt;...\&gt;\>; `experimental`: `TOptional`\<`TArray`\&lt;...\&gt;\>; \}\>\>; `view`: `TObject`\<\{ `mode`: `TOptional`\<`TUnion`\<\[..., ..., ...\]\>\>; `center`: `TOptional`\<`TTuple`\<\[..., ...\]\>\>; `zoom`: `TOptional`\&lt;`TNumber`\&gt;; `bearing`: `TOptional`\&lt;`TNumber`\&gt;; `pitch`: `TOptional`\&lt;`TNumber`\&gt;; `bounds`: `TOptional`\<`TTuple`\<\[..., ..., ..., ...\]\>\>; \}\>; `sources`: `TRecord`\<`TString`, `TUnion`\<\[`TObject`\<\{ `type`: ...; `data`: ...; \}\>, `TObject`\<\{ `type`: ...; `tiles`: ...; `tileSize`: ...; `minzoom`: ...; `maxzoom`: ...; `attribution`: ...; \}\>, `TObject`\<\{ `type`: ...; `url`: ...; `minzoom`: ...; `maxzoom`: ...; `attribution`: ...; \}\>, `TObject`\<\{ `type`: ...; `url`: ...; `hasIndex`: ...; `featureCount`: ...; `bbox`: ...; `geometryType`: ...; `fileBytes`: ...; \}\>\]\>\>; `layers`: `TArray`\<`TObject`\<\{ `id`: `TString`; `type`: `TUnion`\<\[..., ..., ..., ..., ..., ..., ...\]\>; `source`: `TOptional`\&lt;`TString`\&gt;; `filter`: `TOptional`\<`TUnsafe`\&lt;...\&gt;\>; `minzoom`: `TOptional`\&lt;`TNumber`\&gt;; `maxzoom`: `TOptional`\&lt;`TNumber`\&gt;; `layout`: `TOptional`\<`TRecord`\<..., ...\>\>; `paint`: `TOptional`\<`TRecord`\<..., ...\>\>; `metadata`: `TOptional`\<`TRecord`\<..., ...\>\>; \}\>\>; `interactions`: `TOptional`\<`TObject`\<\{ `pan`: `TOptional`\&lt;`TBoolean`\&gt;; `zoom`: `TOptional`\&lt;`TBoolean`\&gt;; `hover`: `TOptional`\&lt;`TBoolean`\&gt;; `click`: `TOptional`\&lt;`TBoolean`\&gt;; `select`: `TOptional`\&lt;`TBoolean`\&gt;; `popup`: `TOptional`\&lt;`TBoolean`\&gt;; \}\>\>; `metadata`: `TOptional`\<`TRecord`\<`TString`, `TUnknown`\>\>; `extensions`: `TOptional`\<`TRecord`\<`TString`, `TUnknown`\>\>; \}\>; `commands`: `TArray`\<`TUnion`\<\[`TObject`\<\{ `id`: `TString`; `createdAt`: `TOptional`\&lt;`TString`\&gt;; `version`: `TLiteral`\&lt;`"0.1"`\&gt;; `baseRevision`: `TOptional`\&lt;`TString`\&gt;; `author`: `TOptional`\<`TObject`\&lt;...\&gt;\>; `reason`: `TOptional`\&lt;`TString`\&gt;; `sourcePromptHash`: `TOptional`\&lt;`TString`\&gt;; `dryRun`: `TOptional`\&lt;`TBoolean`\&gt;; `source`: `TUnion`\<\[..., ..., ..., ...\]\>; `type`: `TLiteral`\&lt;`"addSource"`\&gt;; `sourceId`: `TString`; \}\>, `TObject`\<\{ `id`: `TString`; `createdAt`: `TOptional`\&lt;`TString`\&gt;; `version`: `TLiteral`\&lt;`"0.1"`\&gt;; `baseRevision`: `TOptional`\&lt;`TString`\&gt;; `author`: `TOptional`\<`TObject`\&lt;...\&gt;\>; `reason`: `TOptional`\&lt;`TString`\&gt;; `sourcePromptHash`: `TOptional`\&lt;`TString`\&gt;; `dryRun`: `TOptional`\&lt;`TBoolean`\&gt;; `type`: `TLiteral`\&lt;`"removeSource"`\&gt;; `sourceId`: `TString`; \}\>, `TObject`\<\{ `id`: `TString`; `createdAt`: `TOptional`\&lt;`TString`\&gt;; `version`: `TLiteral`\&lt;`"0.1"`\&gt;; `baseRevision`: `TOptional`\&lt;`TString`\&gt;; `author`: `TOptional`\<`TObject`\&lt;...\&gt;\>; `reason`: `TOptional`\&lt;`TString`\&gt;; `sourcePromptHash`: `TOptional`\&lt;`TString`\&gt;; `dryRun`: `TOptional`\&lt;`TBoolean`\&gt;; `type`: `TLiteral`\&lt;`"addLayer"`\&gt;; `layer`: `TObject`\<\{ `id`: ...; `type`: ...; `source`: ...; `filter`: ...; `minzoom`: ...; `maxzoom`: ...; `layout`: ...; `paint`: ...; `metadata`: ...; \}\>; `beforeLayerId`: `TOptional`\&lt;`TString`\&gt;; \}\>\]\>\>; `diagnostics`: `TArray`\<`TObject`\<\{ `severity`: `TUnion`\<\[`TLiteral`\&lt;`"error"`\&gt;, `TLiteral`\&lt;`"warning"`\&gt;, `TLiteral`\&lt;`"info"`\&gt;\]\>; `code`: `TUnion`\<`TLiteral`\<... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ...\>[]\>; `blockerCode`: `TOptional`\<`TUnion`\<`TLiteral`\&lt;...\&gt;[]\>\>; `message`: `TString`; `path`: `TOptional`\&lt;`TString`\&gt;; `relatedResources`: `TOptional`\<`TArray`\<`TObject`\<\{ `kind`: ...; `id`: ...; `path`: ...; \}\>\>\>; `fix`: `TOptional`\<`TObject`\<\{ `kind`: `TUnion`\&lt;...\&gt;; `confidence`: `TUnion`\&lt;...\&gt;; `message`: `TString`; `patch`: `TOptional`\&lt;...\&gt;; `command`: `TOptional`\&lt;...\&gt;; \}\>\>; \}\>\>; `traceId`: `TString`; \}\>
+> `readonly` **skeleton**: `TObject`\<\{ `status`: `TUnion`\<\[`TLiteral`\&lt;`"ready"`\&gt;, `TLiteral`\&lt;`"blocked"`\&gt;\]\>; `targetDomains`: `TArray`\<`TUnion`\<\[`TLiteral`\&lt;`"feature-display"`\&gt;, `TLiteral`\&lt;`"spatial-analysis"`\&gt;, `TLiteral`\&lt;`"scene-browsing"`\&gt;\]\>\>; `analysisEvidence`: `TObject`\<\{ `requested`: `TBoolean`; `status`: `TUnion`\<\[`TLiteral`\&lt;`"ready"`\&gt;, `TLiteral`\&lt;`"blocked"`\&gt;, `TLiteral`\&lt;`"not-requested"`\&gt;\]\>; `requestedOperations`: `TArray`\<`TUnion`\<\[`TLiteral`\&lt;`"point-query"`\&gt;, `TLiteral`\&lt;`"bbox-query"`\&gt;, `TLiteral`\&lt;`"buffer"`\&gt;, `TLiteral`\&lt;`"intersection"`\&gt;, `TLiteral`\&lt;`"overlay"`\&gt;, `TLiteral`\&lt;`"routing"`\&gt;, `TLiteral`\&lt;`"aggregation"`\&gt;\]\>\>; `acceptedQueryOperations`: `TArray`\<`TUnion`\<\[`TLiteral`\&lt;`"point-query"`\&gt;, `TLiteral`\&lt;`"bbox-query"`\&gt;\]\>\>; `blockedOperations`: `TArray`\<`TUnion`\<\[`TLiteral`\&lt;`"point-query"`\&gt;, `TLiteral`\&lt;`"bbox-query"`\&gt;, `TLiteral`\&lt;`"buffer"`\&gt;, `TLiteral`\&lt;`"intersection"`\&gt;, `TLiteral`\&lt;`"overlay"`\&gt;, `TLiteral`\&lt;`"routing"`\&gt;, `TLiteral`\&lt;`"aggregation"`\&gt;\]\>\>; `diagnostics`: `TArray`\<`TObject`\<\{ `severity`: `TUnion`\<\[..., ..., ...\]\>; `code`: `TUnion`\&lt;...[]\&gt;; `blockerCode`: `TOptional`\<`TUnion`\&lt;...\&gt;\>; `message`: `TString`; `path`: `TOptional`\&lt;`TString`\&gt;; `relatedResources`: `TOptional`\<`TArray`\&lt;...\&gt;\>; `fix`: `TOptional`\<`TObject`\&lt;...\&gt;\>; \}\>\>; \}\>; `baseSpec`: `TObject`\<\{ `version`: `TLiteral`\&lt;`"0.1"`\&gt;; `id`: `TOptional`\&lt;`TString`\&gt;; `revision`: `TOptional`\&lt;`TString`\&gt;; `capabilities`: `TOptional`\<`TObject`\<\{ `dimensions`: `TOptional`\<`TArray`\&lt;...\&gt;\>; `renderer`: `TOptional`\<`TUnion`\&lt;...\&gt;\>; `experimental`: `TOptional`\<`TArray`\&lt;...\&gt;\>; \}\>\>; `view`: `TObject`\<\{ `mode`: `TOptional`\<`TUnion`\<\[..., ..., ...\]\>\>; `center`: `TOptional`\<`TTuple`\<\[..., ...\]\>\>; `zoom`: `TOptional`\&lt;`TNumber`\&gt;; `bearing`: `TOptional`\&lt;`TNumber`\&gt;; `pitch`: `TOptional`\&lt;`TNumber`\&gt;; `bounds`: `TOptional`\<`TTuple`\<\[..., ..., ..., ...\]\>\>; \}\>; `sources`: `TRecord`\<`TString`, `TUnion`\<\[`TObject`\<\{ `type`: ...; `data`: ...; \}\>, `TObject`\<\{ `type`: ...; `tiles`: ...; `tileSize`: ...; `minzoom`: ...; `maxzoom`: ...; `attribution`: ...; \}\>, `TObject`\<\{ `type`: ...; `url`: ...; `minzoom`: ...; `maxzoom`: ...; `attribution`: ...; \}\>, `TObject`\<\{ `type`: ...; `url`: ...; `hasIndex`: ...; `featureCount`: ...; `bbox`: ...; `geometryType`: ...; `fileBytes`: ...; \}\>\]\>\>; `layers`: `TArray`\<`TObject`\<\{ `id`: `TString`; `type`: `TUnion`\<\[..., ..., ..., ..., ..., ..., ...\]\>; `source`: `TOptional`\&lt;`TString`\&gt;; `filter`: `TOptional`\<`TUnsafe`\&lt;...\&gt;\>; `minzoom`: `TOptional`\&lt;`TNumber`\&gt;; `maxzoom`: `TOptional`\&lt;`TNumber`\&gt;; `layout`: `TOptional`\<`TRecord`\<..., ...\>\>; `paint`: `TOptional`\<`TRecord`\<..., ...\>\>; `metadata`: `TOptional`\<`TRecord`\<..., ...\>\>; \}\>\>; `interactions`: `TOptional`\<`TObject`\<\{ `pan`: `TOptional`\&lt;`TBoolean`\&gt;; `zoom`: `TOptional`\&lt;`TBoolean`\&gt;; `hover`: `TOptional`\&lt;`TBoolean`\&gt;; `click`: `TOptional`\&lt;`TBoolean`\&gt;; `select`: `TOptional`\&lt;`TBoolean`\&gt;; `popup`: `TOptional`\&lt;`TBoolean`\&gt;; \}\>\>; `metadata`: `TOptional`\<`TRecord`\<`TString`, `TUnknown`\>\>; `extensions`: `TOptional`\<`TRecord`\<`TString`, `TUnknown`\>\>; \}\>; `spec`: `TObject`\<\{ `version`: `TLiteral`\&lt;`"0.1"`\&gt;; `id`: `TOptional`\&lt;`TString`\&gt;; `revision`: `TOptional`\&lt;`TString`\&gt;; `capabilities`: `TOptional`\<`TObject`\<\{ `dimensions`: `TOptional`\<`TArray`\&lt;...\&gt;\>; `renderer`: `TOptional`\<`TUnion`\&lt;...\&gt;\>; `experimental`: `TOptional`\<`TArray`\&lt;...\&gt;\>; \}\>\>; `view`: `TObject`\<\{ `mode`: `TOptional`\<`TUnion`\<\[..., ..., ...\]\>\>; `center`: `TOptional`\<`TTuple`\<\[..., ...\]\>\>; `zoom`: `TOptional`\&lt;`TNumber`\&gt;; `bearing`: `TOptional`\&lt;`TNumber`\&gt;; `pitch`: `TOptional`\&lt;`TNumber`\&gt;; `bounds`: `TOptional`\<`TTuple`\<\[..., ..., ..., ...\]\>\>; \}\>; `sources`: `TRecord`\<`TString`, `TUnion`\<\[`TObject`\<\{ `type`: ...; `data`: ...; \}\>, `TObject`\<\{ `type`: ...; `tiles`: ...; `tileSize`: ...; `minzoom`: ...; `maxzoom`: ...; `attribution`: ...; \}\>, `TObject`\<\{ `type`: ...; `url`: ...; `minzoom`: ...; `maxzoom`: ...; `attribution`: ...; \}\>, `TObject`\<\{ `type`: ...; `url`: ...; `hasIndex`: ...; `featureCount`: ...; `bbox`: ...; `geometryType`: ...; `fileBytes`: ...; \}\>\]\>\>; `layers`: `TArray`\<`TObject`\<\{ `id`: `TString`; `type`: `TUnion`\<\[..., ..., ..., ..., ..., ..., ...\]\>; `source`: `TOptional`\&lt;`TString`\&gt;; `filter`: `TOptional`\<`TUnsafe`\&lt;...\&gt;\>; `minzoom`: `TOptional`\&lt;`TNumber`\&gt;; `maxzoom`: `TOptional`\&lt;`TNumber`\&gt;; `layout`: `TOptional`\<`TRecord`\<..., ...\>\>; `paint`: `TOptional`\<`TRecord`\<..., ...\>\>; `metadata`: `TOptional`\<`TRecord`\<..., ...\>\>; \}\>\>; `interactions`: `TOptional`\<`TObject`\<\{ `pan`: `TOptional`\&lt;`TBoolean`\&gt;; `zoom`: `TOptional`\&lt;`TBoolean`\&gt;; `hover`: `TOptional`\&lt;`TBoolean`\&gt;; `click`: `TOptional`\&lt;`TBoolean`\&gt;; `select`: `TOptional`\&lt;`TBoolean`\&gt;; `popup`: `TOptional`\&lt;`TBoolean`\&gt;; \}\>\>; `metadata`: `TOptional`\<`TRecord`\<`TString`, `TUnknown`\>\>; `extensions`: `TOptional`\<`TRecord`\<`TString`, `TUnknown`\>\>; \}\>; `commands`: `TArray`\<`TUnion`\<\[`TObject`\<\{ `author`: `TOptional`\<`TObject`\&lt;...\&gt;\>; `id`: `TString`; `version`: `TLiteral`\&lt;`"0.1"`\&gt;; `baseRevision`: `TOptional`\&lt;`TString`\&gt;; `reason`: `TOptional`\&lt;`TString`\&gt;; `createdAt`: `TOptional`\&lt;`TString`\&gt;; `sourcePromptHash`: `TOptional`\&lt;`TString`\&gt;; `dryRun`: `TOptional`\&lt;`TBoolean`\&gt;; `source`: `TUnion`\<\[..., ..., ..., ...\]\>; `sourceId`: `TString`; `type`: `TLiteral`\&lt;`"addSource"`\&gt;; \}\>, `TObject`\<\{ `author`: `TOptional`\<`TObject`\&lt;...\&gt;\>; `id`: `TString`; `version`: `TLiteral`\&lt;`"0.1"`\&gt;; `baseRevision`: `TOptional`\&lt;`TString`\&gt;; `reason`: `TOptional`\&lt;`TString`\&gt;; `createdAt`: `TOptional`\&lt;`TString`\&gt;; `sourcePromptHash`: `TOptional`\&lt;`TString`\&gt;; `dryRun`: `TOptional`\&lt;`TBoolean`\&gt;; `sourceId`: `TString`; `type`: `TLiteral`\&lt;`"removeSource"`\&gt;; \}\>, `TObject`\<\{ `author`: `TOptional`\<`TObject`\&lt;...\&gt;\>; `id`: `TString`; `version`: `TLiteral`\&lt;`"0.1"`\&gt;; `baseRevision`: `TOptional`\&lt;`TString`\&gt;; `reason`: `TOptional`\&lt;`TString`\&gt;; `createdAt`: `TOptional`\&lt;`TString`\&gt;; `sourcePromptHash`: `TOptional`\&lt;`TString`\&gt;; `dryRun`: `TOptional`\&lt;`TBoolean`\&gt;; `type`: `TLiteral`\&lt;`"addLayer"`\&gt;; `layer`: `TObject`\<\{ `id`: ...; `type`: ...; `source`: ...; `filter`: ...; `minzoom`: ...; `maxzoom`: ...; `layout`: ...; `paint`: ...; `metadata`: ...; \}\>; `beforeLayerId`: `TOptional`\&lt;`TString`\&gt;; \}\>\]\>\>; `diagnostics`: `TArray`\<`TObject`\<\{ `severity`: `TUnion`\<\[`TLiteral`\&lt;`"error"`\&gt;, `TLiteral`\&lt;`"warning"`\&gt;, `TLiteral`\&lt;`"info"`\&gt;\]\>; `code`: `TUnion`\<`TLiteral`\<... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ... \| ...\>[]\>; `blockerCode`: `TOptional`\<`TUnion`\<`TLiteral`\&lt;...\&gt;[]\>\>; `message`: `TString`; `path`: `TOptional`\&lt;`TString`\&gt;; `relatedResources`: `TOptional`\<`TArray`\<`TObject`\<\{ `kind`: ...; `id`: ...; `path`: ...; \}\>\>\>; `fix`: `TOptional`\<`TObject`\<\{ `kind`: `TUnion`\&lt;...\&gt;; `confidence`: `TUnion`\&lt;...\&gt;; `message`: `TString`; `patch`: `TOptional`\&lt;...\&gt;; `command`: `TOptional`\&lt;...\&gt;; \}\>\>; \}\>\>; `traceId`: `TString`; \}\>
 
 #### properties.planner
 
@@ -540,6 +540,70 @@
 
 > `readonly` **minimum**: `1` = `1`
 
+#### properties.pmtilesQueryEvidence.additionalProperties.properties.cases.items.properties.loader
+
+> `readonly` **loader**: `object`
+
+#### properties.pmtilesQueryEvidence.additionalProperties.properties.cases.items.properties.loader.type
+
+> `readonly` **type**: `"object"` = `"object"`
+
+#### properties.pmtilesQueryEvidence.additionalProperties.properties.cases.items.properties.loader.properties
+
+> `readonly` **properties**: `object`
+
+#### properties.pmtilesQueryEvidence.additionalProperties.properties.cases.items.properties.loader.properties.archive
+
+> `readonly` **archive**: `object`
+
+#### properties.pmtilesQueryEvidence.additionalProperties.properties.cases.items.properties.loader.properties.archive.type
+
+> `readonly` **type**: ... = `"string"`
+
+#### properties.pmtilesQueryEvidence.additionalProperties.properties.cases.items.properties.loader.properties.archive.enum
+
+> `readonly` **enum**: ...
+
+#### properties.pmtilesQueryEvidence.additionalProperties.properties.cases.items.properties.loader.properties.responseBytes
+
+> `readonly` **responseBytes**: `object`
+
+#### properties.pmtilesQueryEvidence.additionalProperties.properties.cases.items.properties.loader.properties.responseBytes.type
+
+> `readonly` **type**: ... = `"number"`
+
+#### properties.pmtilesQueryEvidence.additionalProperties.properties.cases.items.properties.loader.properties.responseBytes.minimum
+
+> `readonly` **minimum**: ... = `0`
+
+#### properties.pmtilesQueryEvidence.additionalProperties.properties.cases.items.properties.loader.properties.elapsedMs
+
+> `readonly` **elapsedMs**: `object`
+
+#### properties.pmtilesQueryEvidence.additionalProperties.properties.cases.items.properties.loader.properties.elapsedMs.type
+
+> `readonly` **type**: ... = `"number"`
+
+#### properties.pmtilesQueryEvidence.additionalProperties.properties.cases.items.properties.loader.properties.elapsedMs.minimum
+
+> `readonly` **minimum**: ... = `0`
+
+#### properties.pmtilesQueryEvidence.additionalProperties.properties.cases.items.properties.loader.properties.worker
+
+> `readonly` **worker**: `object`
+
+#### properties.pmtilesQueryEvidence.additionalProperties.properties.cases.items.properties.loader.properties.worker.type
+
+> `readonly` **type**: ... = `"string"`
+
+#### properties.pmtilesQueryEvidence.additionalProperties.properties.cases.items.properties.loader.properties.worker.enum
+
+> `readonly` **enum**: ...
+
+#### properties.pmtilesQueryEvidence.additionalProperties.properties.cases.items.properties.loader.additionalProperties
+
+> `readonly` **additionalProperties**: `false` = `false`
+
 #### properties.pmtilesQueryEvidence.additionalProperties.properties.cases.items.required
 
 > `readonly` **required**: readonly \[`"id"`\]
@@ -567,6 +631,46 @@
 #### properties.pmtilesQueryEvidence.additionalProperties.properties.resultLimit.minimum
 
 > `readonly` **minimum**: `1` = `1`
+
+#### properties.pmtilesQueryEvidence.additionalProperties.properties.loaderContract
+
+> `readonly` **loaderContract**: `object` = `PMTilesQueryLoaderContractSchema`
+
+#### properties.pmtilesQueryEvidence.additionalProperties.properties.loaderContract.type
+
+> `readonly` **type**: `"object"` = `"object"`
+
+#### properties.pmtilesQueryEvidence.additionalProperties.properties.loaderContract.properties
+
+> `readonly` **properties**: `object`
+
+#### properties.pmtilesQueryEvidence.additionalProperties.properties.loaderContract.properties.timeoutMs
+
+> `readonly` **timeoutMs**: `object`
+
+#### properties.pmtilesQueryEvidence.additionalProperties.properties.loaderContract.properties.timeoutMs.type
+
+> `readonly` **type**: `"number"` = `"number"`
+
+#### properties.pmtilesQueryEvidence.additionalProperties.properties.loaderContract.properties.timeoutMs.minimum
+
+> `readonly` **minimum**: `1` = `1`
+
+#### properties.pmtilesQueryEvidence.additionalProperties.properties.loaderContract.properties.byteBudgetBytes
+
+> `readonly` **byteBudgetBytes**: `object`
+
+#### properties.pmtilesQueryEvidence.additionalProperties.properties.loaderContract.properties.byteBudgetBytes.type
+
+> `readonly` **type**: `"number"` = `"number"`
+
+#### properties.pmtilesQueryEvidence.additionalProperties.properties.loaderContract.properties.byteBudgetBytes.minimum
+
+> `readonly` **minimum**: `1` = `1`
+
+#### properties.pmtilesQueryEvidence.additionalProperties.properties.loaderContract.additionalProperties
+
+> `readonly` **additionalProperties**: `false` = `false`
 
 #### properties.pmtilesQueryEvidence.additionalProperties.required
 

@@ -33,3 +33,9 @@
 ### resultLimit?
 
 > `optional` **resultLimit?**: `number`
+
+***
+
+### loader?
+
+> `optional` **loader?**: [`PMTilesQueryEvidenceCaseLoaderInput`](PMTilesQueryEvidenceCaseLoaderInput.md)

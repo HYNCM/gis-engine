@@ -30,6 +30,12 @@
 
 ***
 
+### loaderContract
+
+> **loaderContract**: [`PMTilesQueryLoaderContract`](PMTilesQueryLoaderContract.md)
+
+***
+
 ### fixtureFeatureCount
 
 > **fixtureFeatureCount**: `number`

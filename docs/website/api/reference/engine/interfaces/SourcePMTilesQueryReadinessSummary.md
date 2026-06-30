@@ -24,6 +24,12 @@
 
 ***
 
+### loaderContract
+
+> **loaderContract**: [`PMTilesQueryLoaderContract`](PMTilesQueryLoaderContract.md)
+
+***
+
 ### diagnosticCounts
 
 > **diagnosticCounts**: `DiagnosticCounts`

@@ -516,7 +516,7 @@
 
 ### pmtilesQueryEvidence?
 
-> `optional` **pmtilesQueryEvidence?**: `Record`\<`string`, \{ `features`: `PMTilesQueryFixtureFeature`[]; `cases`: `PMTilesQueryEvidenceCaseInput`[]; `resultLimit?`: `number`; \}\>
+> `optional` **pmtilesQueryEvidence?**: `Record`\<`string`, \{ `features`: `PMTilesQueryFixtureFeature`[]; `cases`: `PMTilesQueryEvidenceCaseInput`[]; `resultLimit?`: `number`; `loaderContract?`: \{ `timeoutMs?`: `number`; `byteBudgetBytes?`: `number`; \}; \}\>
 
 ***
 

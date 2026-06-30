@@ -772,6 +772,66 @@
 
 > `readonly` **type**: `"string"` = `"string"`
 
+#### properties.sourceReadiness.items.properties.queryEvidence.properties.loaderContract
+
+> `readonly` **loaderContract**: `object`
+
+#### properties.sourceReadiness.items.properties.queryEvidence.properties.loaderContract.type
+
+> `readonly` **type**: `"object"` = `"object"`
+
+#### properties.sourceReadiness.items.properties.queryEvidence.properties.loaderContract.properties
+
+> `readonly` **properties**: `object`
+
+#### properties.sourceReadiness.items.properties.queryEvidence.properties.loaderContract.properties.resourceAccess
+
+> `readonly` **resourceAccess**: `object`
+
+#### properties.sourceReadiness.items.properties.queryEvidence.properties.loaderContract.properties.resourceAccess.type
+
+> `readonly` **type**: `"string"` = `"string"`
+
+#### properties.sourceReadiness.items.properties.queryEvidence.properties.loaderContract.properties.resourceAccess.const
+
+> `readonly` **const**: `"caller-owned"` = `"caller-owned"`
+
+#### properties.sourceReadiness.items.properties.queryEvidence.properties.loaderContract.properties.cancellation
+
+> `readonly` **cancellation**: `object`
+
+#### properties.sourceReadiness.items.properties.queryEvidence.properties.loaderContract.properties.cancellation.type
+
+> `readonly` **type**: `"string"` = `"string"`
+
+#### properties.sourceReadiness.items.properties.queryEvidence.properties.loaderContract.properties.cancellation.const
+
+> `readonly` **const**: `"caller-owned"` = `"caller-owned"`
+
+#### properties.sourceReadiness.items.properties.queryEvidence.properties.loaderContract.properties.timeoutMs
+
+> `readonly` **timeoutMs**: `object`
+
+#### properties.sourceReadiness.items.properties.queryEvidence.properties.loaderContract.properties.timeoutMs.type
+
+> `readonly` **type**: `"number"` = `"number"`
+
+#### properties.sourceReadiness.items.properties.queryEvidence.properties.loaderContract.properties.byteBudgetBytes
+
+> `readonly` **byteBudgetBytes**: `object`
+
+#### properties.sourceReadiness.items.properties.queryEvidence.properties.loaderContract.properties.byteBudgetBytes.type
+
+> `readonly` **type**: `"number"` = `"number"`
+
+#### properties.sourceReadiness.items.properties.queryEvidence.properties.loaderContract.required
+
+> `readonly` **required**: readonly \[`"resourceAccess"`, `"cancellation"`, `"timeoutMs"`, `"byteBudgetBytes"`\]
+
+#### properties.sourceReadiness.items.properties.queryEvidence.properties.loaderContract.additionalProperties
+
+> `readonly` **additionalProperties**: `false` = `false`
+
 #### properties.sourceReadiness.items.properties.queryEvidence.properties.diagnosticCounts
 
 > `readonly` **diagnosticCounts**: `object` = `DiagnosticCountsSchema`
@@ -986,7 +1046,7 @@
 
 #### properties.sourceReadiness.items.properties.queryEvidence.required
 
-> `readonly` **required**: readonly \[`"status"`, `"sourceLayerIds"`, `"layerIds"`, `"diagnosticCounts"`, `"requirements"`, `"summary"`\]
+> `readonly` **required**: readonly \[`"status"`, `"sourceLayerIds"`, `"layerIds"`, `"loaderContract"`, `"diagnosticCounts"`, `"requirements"`, `"summary"`\]
 
 #### properties.sourceReadiness.items.properties.queryEvidence.additionalProperties
 
