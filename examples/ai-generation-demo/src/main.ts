@@ -16,11 +16,7 @@
 // =============================================================================
 
 import type { MapSpec } from "@gis-engine/engine";
-import {
-  createMap,
-  planMapGenerationRequest,
-  validateSpec,
-} from "@gis-engine/engine";
+import { createMap, planMapGenerationRequest, validateSpec } from "@gis-engine/engine";
 
 // ---------------------------------------------------------------------------
 // Step 1: Simulate a user prompt
@@ -63,7 +59,15 @@ function mockAiGenerateMapSpec(_prompt: string): MapSpec {
               properties: { name: "West Lake Park", area: 640 },
               geometry: {
                 type: "Polygon",
-                coordinates: [[[120.12, 30.23], [120.17, 30.23], [120.17, 30.27], [120.12, 30.27], [120.12, 30.23]]],
+                coordinates: [
+                  [
+                    [120.12, 30.23],
+                    [120.17, 30.23],
+                    [120.17, 30.27],
+                    [120.12, 30.27],
+                    [120.12, 30.23],
+                  ],
+                ],
               },
             },
             {
@@ -71,7 +75,15 @@ function mockAiGenerateMapSpec(_prompt: string): MapSpec {
               properties: { name: "Xixi Wetland", area: 1150 },
               geometry: {
                 type: "Polygon",
-                coordinates: [[[120.04, 30.25], [120.08, 30.25], [120.08, 30.29], [120.04, 30.29], [120.04, 30.25]]],
+                coordinates: [
+                  [
+                    [120.04, 30.25],
+                    [120.08, 30.25],
+                    [120.08, 30.29],
+                    [120.04, 30.29],
+                    [120.04, 30.25],
+                  ],
+                ],
               },
             },
           ],
@@ -86,17 +98,38 @@ function mockAiGenerateMapSpec(_prompt: string): MapSpec {
             {
               type: "Feature",
               properties: { name: "Yan'an Road", type: "major" },
-              geometry: { type: "LineString", coordinates: [[120.15, 30.25], [120.18, 30.26], [120.20, 30.28]] },
+              geometry: {
+                type: "LineString",
+                coordinates: [
+                  [120.15, 30.25],
+                  [120.18, 30.26],
+                  [120.2, 30.28],
+                ],
+              },
             },
             {
               type: "Feature",
               properties: { name: "Wensan Road", type: "major" },
-              geometry: { type: "LineString", coordinates: [[120.10, 30.27], [120.14, 30.275], [120.18, 30.28]] },
+              geometry: {
+                type: "LineString",
+                coordinates: [
+                  [120.1, 30.27],
+                  [120.14, 30.275],
+                  [120.18, 30.28],
+                ],
+              },
             },
             {
               type: "Feature",
               properties: { name: "Tiyuchang Road", type: "major" },
-              geometry: { type: "LineString", coordinates: [[120.13, 30.26], [120.16, 30.265], [120.19, 30.27]] },
+              geometry: {
+                type: "LineString",
+                coordinates: [
+                  [120.13, 30.26],
+                  [120.16, 30.265],
+                  [120.19, 30.27],
+                ],
+              },
             },
           ],
         },
@@ -198,7 +231,9 @@ async function main(): Promise<void> {
   </div>`);
 
   if (!report.valid) {
-    steps.push(`<div class="pipeline-step"><h3>Aborted</h3><div class="pipeline-info">Spec failed validation. Cannot render.</div></div>`);
+    steps.push(
+      `<div class="pipeline-step"><h3>Aborted</h3><div class="pipeline-info">Spec failed validation. Cannot render.</div></div>`,
+    );
     if (pipelineOutput) pipelineOutput.innerHTML = steps.join("");
     return;
   }

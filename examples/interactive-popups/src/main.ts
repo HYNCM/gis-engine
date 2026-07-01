@@ -12,9 +12,9 @@
 //
 // =============================================================================
 
-import maplibregl from "maplibre-gl";
 import type { MapSpec } from "@gis-engine/engine";
 import { createMap, validateSpec } from "@gis-engine/engine";
+import maplibregl from "maplibre-gl";
 
 // ---------------------------------------------------------------------------
 // Step 1: Inline GeoJSON data — landmarks with descriptions
@@ -23,12 +23,36 @@ import { createMap, validateSpec } from "@gis-engine/engine";
 const landmarksData = {
   type: "FeatureCollection",
   features: [
-    { type: "Feature", properties: { name: "West Lake", description: "UNESCO World Heritage Site", rating: 4.8 }, geometry: { type: "Point", coordinates: [120.14, 30.25] } },
-    { type: "Feature", properties: { name: "Lingyin Temple", description: "Ancient Buddhist temple", rating: 4.6 }, geometry: { type: "Point", coordinates: [120.10, 30.24] } },
-    { type: "Feature", properties: { name: "Hefang Street", description: "Historic pedestrian shopping street", rating: 4.3 }, geometry: { type: "Point", coordinates: [120.17, 30.25] } },
-    { type: "Feature", properties: { name: "Grand Canal", description: "World's longest ancient canal", rating: 4.5 }, geometry: { type: "Point", coordinates: [120.20, 30.30] } },
-    { type: "Feature", properties: { name: "Xixi Wetland", description: "National wetland park", rating: 4.7 }, geometry: { type: "Point", coordinates: [120.06, 30.27] } },
-    { type: "Feature", properties: { name: "Qiantang River Bridge", description: "Iconic double-deck bridge", rating: 4.2 }, geometry: { type: "Point", coordinates: [120.22, 30.22] } },
+    {
+      type: "Feature",
+      properties: { name: "West Lake", description: "UNESCO World Heritage Site", rating: 4.8 },
+      geometry: { type: "Point", coordinates: [120.14, 30.25] },
+    },
+    {
+      type: "Feature",
+      properties: { name: "Lingyin Temple", description: "Ancient Buddhist temple", rating: 4.6 },
+      geometry: { type: "Point", coordinates: [120.1, 30.24] },
+    },
+    {
+      type: "Feature",
+      properties: { name: "Hefang Street", description: "Historic pedestrian shopping street", rating: 4.3 },
+      geometry: { type: "Point", coordinates: [120.17, 30.25] },
+    },
+    {
+      type: "Feature",
+      properties: { name: "Grand Canal", description: "World's longest ancient canal", rating: 4.5 },
+      geometry: { type: "Point", coordinates: [120.2, 30.3] },
+    },
+    {
+      type: "Feature",
+      properties: { name: "Xixi Wetland", description: "National wetland park", rating: 4.7 },
+      geometry: { type: "Point", coordinates: [120.06, 30.27] },
+    },
+    {
+      type: "Feature",
+      properties: { name: "Qiantang River Bridge", description: "Iconic double-deck bridge", rating: 4.2 },
+      geometry: { type: "Point", coordinates: [120.22, 30.22] },
+    },
   ],
 };
 
@@ -135,10 +159,7 @@ async function main(): Promise<void> {
       </div>
     `;
 
-    new maplibregl.Popup({ offset: 12 })
-      .setLngLat(e.lngLat)
-      .setHTML(popupHtml)
-      .addTo(map);
+    new maplibregl.Popup({ offset: 12 }).setLngLat(e.lngLat).setHTML(popupHtml).addTo(map);
   });
 
   // --- Hover: cursor change + highlight ---

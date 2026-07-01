@@ -72,7 +72,15 @@ const inlineGeoJson = {
       properties: { name: "Demo Area", height: 80 },
       geometry: {
         type: "Polygon",
-        coordinates: [[[120.14, 30.27], [120.18, 30.27], [120.18, 30.29], [120.14, 30.29], [120.14, 30.27]]],
+        coordinates: [
+          [
+            [120.14, 30.27],
+            [120.18, 30.27],
+            [120.18, 30.29],
+            [120.14, 30.29],
+            [120.14, 30.27],
+          ],
+        ],
       },
     },
   ],
@@ -95,9 +103,7 @@ function buildSpec(tc: CapTestCase): MapSpec {
     layers: [
       {
         id: "demo-fill",
-        type: tc.capabilities.experimental?.includes("fill-extrusion-lite")
-          ? "fill-extrusion-lite"
-          : "fill",
+        type: tc.capabilities.experimental?.includes("fill-extrusion-lite") ? "fill-extrusion-lite" : "fill",
         source: "demo",
         paint: tc.capabilities.experimental?.includes("fill-extrusion-lite")
           ? {

@@ -83,14 +83,7 @@ const spec: MapSpec = {
         "source-layer": "places",
       },
       paint: {
-        "circle-radius": [
-          "interpolate",
-          ["linear"],
-          ["zoom"],
-          2, 2,
-          6, 4,
-          10, 8,
-        ],
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 2, 2, 6, 4, 10, 8],
         "circle-color": "#1e40af",
         "circle-stroke-color": "#ffffff",
         "circle-stroke-width": 1,

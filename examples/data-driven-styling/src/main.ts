@@ -22,16 +22,56 @@ import { createMap, validateSpec } from "@gis-engine/engine";
 const pointsData = {
   type: "FeatureCollection",
   features: [
-    { type: "Feature", properties: { name: "Restaurant A", category: "food", value: 85 }, geometry: { type: "Point", coordinates: [120.12, 30.26] } },
-    { type: "Feature", properties: { name: "Restaurant B", category: "food", value: 72 }, geometry: { type: "Point", coordinates: [120.15, 30.27] } },
-    { type: "Feature", properties: { name: "Park X", category: "nature", value: 95 }, geometry: { type: "Point", coordinates: [120.18, 30.29] } },
-    { type: "Feature", properties: { name: "Park Y", category: "nature", value: 60 }, geometry: { type: "Point", coordinates: [120.22, 30.31] } },
-    { type: "Feature", properties: { name: "Museum 1", category: "culture", value: 45 }, geometry: { type: "Point", coordinates: [120.14, 30.30] } },
-    { type: "Feature", properties: { name: "Museum 2", category: "culture", value: 88 }, geometry: { type: "Point", coordinates: [120.20, 30.26] } },
-    { type: "Feature", properties: { name: "Hotel Alpha", category: "lodging", value: 30 }, geometry: { type: "Point", coordinates: [120.16, 30.25] } },
-    { type: "Feature", properties: { name: "Hotel Beta", category: "lodging", value: 92 }, geometry: { type: "Point", coordinates: [120.24, 30.28] } },
-    { type: "Feature", properties: { name: "Shop 1", category: "shopping", value: 55 }, geometry: { type: "Point", coordinates: [120.13, 30.28] } },
-    { type: "Feature", properties: { name: "Shop 2", category: "shopping", value: 78 }, geometry: { type: "Point", coordinates: [120.21, 30.30] } },
+    {
+      type: "Feature",
+      properties: { name: "Restaurant A", category: "food", value: 85 },
+      geometry: { type: "Point", coordinates: [120.12, 30.26] },
+    },
+    {
+      type: "Feature",
+      properties: { name: "Restaurant B", category: "food", value: 72 },
+      geometry: { type: "Point", coordinates: [120.15, 30.27] },
+    },
+    {
+      type: "Feature",
+      properties: { name: "Park X", category: "nature", value: 95 },
+      geometry: { type: "Point", coordinates: [120.18, 30.29] },
+    },
+    {
+      type: "Feature",
+      properties: { name: "Park Y", category: "nature", value: 60 },
+      geometry: { type: "Point", coordinates: [120.22, 30.31] },
+    },
+    {
+      type: "Feature",
+      properties: { name: "Museum 1", category: "culture", value: 45 },
+      geometry: { type: "Point", coordinates: [120.14, 30.3] },
+    },
+    {
+      type: "Feature",
+      properties: { name: "Museum 2", category: "culture", value: 88 },
+      geometry: { type: "Point", coordinates: [120.2, 30.26] },
+    },
+    {
+      type: "Feature",
+      properties: { name: "Hotel Alpha", category: "lodging", value: 30 },
+      geometry: { type: "Point", coordinates: [120.16, 30.25] },
+    },
+    {
+      type: "Feature",
+      properties: { name: "Hotel Beta", category: "lodging", value: 92 },
+      geometry: { type: "Point", coordinates: [120.24, 30.28] },
+    },
+    {
+      type: "Feature",
+      properties: { name: "Shop 1", category: "shopping", value: 55 },
+      geometry: { type: "Point", coordinates: [120.13, 30.28] },
+    },
+    {
+      type: "Feature",
+      properties: { name: "Shop 2", category: "shopping", value: 78 },
+      geometry: { type: "Point", coordinates: [120.21, 30.3] },
+    },
   ],
 };
 
@@ -64,31 +104,24 @@ const spec: MapSpec = {
         "circle-color": [
           "match",
           ["get", "category"],
-          "food", "#ef4444",
-          "nature", "#22c55e",
-          "culture", "#a855f7",
-          "lodging", "#f97316",
-          "shopping", "#06b6d4",
+          "food",
+          "#ef4444",
+          "nature",
+          "#22c55e",
+          "culture",
+          "#a855f7",
+          "lodging",
+          "#f97316",
+          "shopping",
+          "#06b6d4",
           "#94a3b8", // fallback color
         ],
         // interpolate expression: continuous value → radius mapping
-        "circle-radius": [
-          "interpolate",
-          ["linear"],
-          ["get", "value"],
-          0, 4,
-          50, 8,
-          100, 16,
-        ],
+        "circle-radius": ["interpolate", ["linear"], ["get", "value"], 0, 4, 50, 8, 100, 16],
         "circle-stroke-color": "#ffffff",
         "circle-stroke-width": 1.5,
         // case expression: conditional opacity based on value threshold
-        "circle-opacity": [
-          "case",
-          [">=", ["get", "value"], 70], 1.0,
-          [">=", ["get", "value"], 40], 0.7,
-          0.4,
-        ],
+        "circle-opacity": ["case", [">=", ["get", "value"], 70], 1.0, [">=", ["get", "value"], 40], 0.7, 0.4],
       },
     },
     // Label layer using step expression for text size
@@ -99,13 +132,7 @@ const spec: MapSpec = {
       layout: {
         "text-field": ["get", "name"],
         // step expression: discrete thresholds for text size
-        "text-size": [
-          "step",
-          ["get", "value"],
-          10,
-          50, 12,
-          80, 14,
-        ],
+        "text-size": ["step", ["get", "value"], 10, 50, 12, 80, 14],
         "text-offset": [0, 1.6],
       },
       paint: {

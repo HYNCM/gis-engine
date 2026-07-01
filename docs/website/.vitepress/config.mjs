@@ -93,9 +93,7 @@ export default defineConfig({
       "/research/": [
         {
           text: "Research",
-          items: [
-            { text: "AI-Native Map SDK Design", link: "/research/ai-native-map-sdk-design" },
-          ],
+          items: [{ text: "AI-Native Map SDK Design", link: "/research/ai-native-map-sdk-design" }],
         },
       ],
       "/blog/": [

@@ -24,12 +24,36 @@ import { createMap, validateSpec } from "@gis-engine/engine";
 const pointsData = {
   type: "FeatureCollection",
   features: [
-    { type: "Feature", properties: { name: "Alpha", category: "A", value: 20, population: 5000 }, geometry: { type: "Point", coordinates: [120.10, 30.25] } },
-    { type: "Feature", properties: { name: "Beta", category: "B", value: 45, population: 12000 }, geometry: { type: "Point", coordinates: [120.13, 30.27] } },
-    { type: "Feature", properties: { name: "Gamma", category: "A", value: 70, population: 30000 }, geometry: { type: "Point", coordinates: [120.16, 30.29] } },
-    { type: "Feature", properties: { name: "Delta", category: "C", value: 90, population: 8000 }, geometry: { type: "Point", coordinates: [120.19, 30.26] } },
-    { type: "Feature", properties: { name: "Epsilon", category: "B", value: 35, population: 20000 }, geometry: { type: "Point", coordinates: [120.22, 30.28] } },
-    { type: "Feature", properties: { name: "Zeta", category: "C", value: 60 }, geometry: { type: "Point", coordinates: [120.14, 30.31] } },
+    {
+      type: "Feature",
+      properties: { name: "Alpha", category: "A", value: 20, population: 5000 },
+      geometry: { type: "Point", coordinates: [120.1, 30.25] },
+    },
+    {
+      type: "Feature",
+      properties: { name: "Beta", category: "B", value: 45, population: 12000 },
+      geometry: { type: "Point", coordinates: [120.13, 30.27] },
+    },
+    {
+      type: "Feature",
+      properties: { name: "Gamma", category: "A", value: 70, population: 30000 },
+      geometry: { type: "Point", coordinates: [120.16, 30.29] },
+    },
+    {
+      type: "Feature",
+      properties: { name: "Delta", category: "C", value: 90, population: 8000 },
+      geometry: { type: "Point", coordinates: [120.19, 30.26] },
+    },
+    {
+      type: "Feature",
+      properties: { name: "Epsilon", category: "B", value: 35, population: 20000 },
+      geometry: { type: "Point", coordinates: [120.22, 30.28] },
+    },
+    {
+      type: "Feature",
+      properties: { name: "Zeta", category: "C", value: 60 },
+      geometry: { type: "Point", coordinates: [120.14, 30.31] },
+    },
   ],
 };
 
@@ -39,17 +63,50 @@ const polygonsData = {
     {
       type: "Feature",
       properties: { zone: "residential", density: 0.8 },
-      geometry: { type: "Polygon", coordinates: [[[120.09, 30.24], [120.14, 30.24], [120.14, 30.27], [120.09, 30.27], [120.09, 30.24]]] },
+      geometry: {
+        type: "Polygon",
+        coordinates: [
+          [
+            [120.09, 30.24],
+            [120.14, 30.24],
+            [120.14, 30.27],
+            [120.09, 30.27],
+            [120.09, 30.24],
+          ],
+        ],
+      },
     },
     {
       type: "Feature",
       properties: { zone: "commercial", density: 0.5 },
-      geometry: { type: "Polygon", coordinates: [[[120.15, 30.24], [120.20, 30.24], [120.20, 30.28], [120.15, 30.28], [120.15, 30.24]]] },
+      geometry: {
+        type: "Polygon",
+        coordinates: [
+          [
+            [120.15, 30.24],
+            [120.2, 30.24],
+            [120.2, 30.28],
+            [120.15, 30.28],
+            [120.15, 30.24],
+          ],
+        ],
+      },
     },
     {
       type: "Feature",
       properties: { zone: "industrial", density: 0.3 },
-      geometry: { type: "Polygon", coordinates: [[[120.21, 30.25], [120.25, 30.25], [120.25, 30.29], [120.21, 30.29], [120.21, 30.25]]] },
+      geometry: {
+        type: "Polygon",
+        coordinates: [
+          [
+            [120.21, 30.25],
+            [120.25, 30.25],
+            [120.25, 30.29],
+            [120.21, 30.29],
+            [120.21, 30.25],
+          ],
+        ],
+      },
     },
   ],
 };
@@ -81,9 +138,12 @@ const spec: MapSpec = {
         "fill-color": [
           "match",
           ["get", "zone"],
-          "residential", "#86efac",
-          "commercial", "#93c5fd",
-          "industrial", "#fde68a",
+          "residential",
+          "#86efac",
+          "commercial",
+          "#93c5fd",
+          "industrial",
+          "#fde68a",
           "#e2e8f0", // fallback
         ],
         "fill-opacity": 0.5,
@@ -109,14 +169,7 @@ const spec: MapSpec = {
       source: "points",
       paint: {
         // interpolate: continuous mapping from "value" to radius
-        "circle-radius": [
-          "interpolate",
-          ["linear"],
-          ["get", "value"],
-          0, 3,
-          50, 8,
-          100, 18,
-        ],
+        "circle-radius": ["interpolate", ["linear"], ["get", "value"], 0, 3, 50, 8, 100, 18],
         "circle-color": "#3b82f6",
         "circle-stroke-color": "#ffffff",
         "circle-stroke-width": 1.5,
@@ -133,12 +186,7 @@ const spec: MapSpec = {
         "circle-opacity": [
           "case",
           ["has", "population"],
-          [
-            "case",
-            [">=", ["get", "population"], 10000],
-            1.0,
-            0.6,
-          ],
+          ["case", [">=", ["get", "population"], 10000], 1.0, 0.6],
           0.3,
         ],
         "circle-color": "#f59e0b",

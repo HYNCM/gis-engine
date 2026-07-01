@@ -66,7 +66,7 @@
 
 #### properties.toolSequence.items.enum
 
-> `readonly` **enum**: readonly \[`"validate_spec"`, `"apply_commands"`, `"export_spec"`, `"get_context_summary"`, `"snapshot_spec"`, `"explain_spec"`, `"export_example_app"`\]
+> `readonly` **enum**: readonly \[`"validate_spec"`, `"apply_commands"`, `"export_spec"`, `"get_context_summary"`, `"snapshot_spec"`, `"explain_spec"`, `"export_example_app"`, `"diff_specs"`, `"generate_spec"`\]
 
 #### properties.summary
 
