@@ -4,11 +4,13 @@ export {
   ContextSummaryToolResultSchema,
   callGisEngineTool,
   createGisEngineMcpServer,
+  EditSpecToolResultSchema,
   ExplainSpecToolResultSchema,
   ExportExampleAppToolResultSchema,
   ExportSpecToolInputSchema,
   ExportSpecToolResultSchema,
   gisEngineTools,
+  InspectDataToolResultSchema,
   listGisEngineTools,
   SnapshotSpecToolResultSchema,
   ValidateSpecToolInputSchema,
@@ -24,6 +26,12 @@ export {
   getContextSummary,
   type Scene3DContextSummary,
 } from "./tools/contextSummary.js";
+export {
+  type EditSpecToolInput,
+  EditSpecToolInputSchema,
+  type EditSpecToolResult,
+  editSpecTool,
+} from "./tools/editSpec.js";
 export {
   type ExplainSpecToolInput,
   ExplainSpecToolInputSchema,
@@ -51,6 +59,12 @@ export {
   type GenerationSpatialQueryEvidence,
   type PlannerConfidence,
 } from "./tools/generationEvidence.js";
+export {
+  type InspectDataToolInput,
+  InspectDataToolInputSchema,
+  type InspectDataToolResult,
+  inspectDataTool,
+} from "./tools/inspectData.js";
 export {
   type SnapshotSpecToolInput,
   SnapshotSpecToolInputSchema,

@@ -373,6 +373,7 @@ function isLayerSourceCompatible(layerType: string, sourceType: string): boolean
     layerType === "fill" ||
     layerType === "line" ||
     layerType === "circle" ||
+    layerType === "symbol" ||
     layerType === "symbol-lite" ||
     layerType === "fill-extrusion-lite"
   ) {

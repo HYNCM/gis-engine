@@ -1,4 +1,4 @@
-[**@gis-engine/engine v1.0.0**](../index.md)
+[**@gis-engine/engine v1.1.0**](../index.md)
 
 ***
 
@@ -27,3 +27,17 @@
 ### resultLimit?
 
 > `optional` **resultLimit?**: `number`
+
+***
+
+### loaderContract?
+
+> `optional` **loaderContract?**: `object`
+
+#### timeoutMs?
+
+> `optional` **timeoutMs?**: `number`
+
+#### byteBudgetBytes?
+
+> `optional` **byteBudgetBytes?**: `number`

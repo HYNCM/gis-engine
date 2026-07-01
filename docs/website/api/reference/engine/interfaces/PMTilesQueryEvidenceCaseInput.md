@@ -1,4 +1,4 @@
-[**@gis-engine/engine v1.0.0**](../index.md)
+[**@gis-engine/engine v1.1.0**](../index.md)
 
 ***
 
@@ -33,3 +33,9 @@
 ### resultLimit?
 
 > `optional` **resultLimit?**: `number`
+
+***
+
+### loader?
+
+> `optional` **loader?**: [`PMTilesQueryEvidenceCaseLoaderInput`](PMTilesQueryEvidenceCaseLoaderInput.md)

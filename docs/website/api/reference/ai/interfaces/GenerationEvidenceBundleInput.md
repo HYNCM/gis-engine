@@ -1,4 +1,4 @@
-[**@gis-engine/ai v1.0.0**](../index.md)
+[**@gis-engine/ai v1.1.0**](../index.md)
 
 ***
 
@@ -516,7 +516,7 @@
 
 ### pmtilesQueryEvidence?
 
-> `optional` **pmtilesQueryEvidence?**: `Record`\<`string`, \{ `features`: `PMTilesQueryFixtureFeature`[]; `cases`: `PMTilesQueryEvidenceCaseInput`[]; `resultLimit?`: `number`; \}\>
+> `optional` **pmtilesQueryEvidence?**: `Record`\<`string`, \{ `features`: `PMTilesQueryFixtureFeature`[]; `cases`: `PMTilesQueryEvidenceCaseInput`[]; `resultLimit?`: `number`; `loaderContract?`: \{ `timeoutMs?`: `number`; `byteBudgetBytes?`: `number`; \}; \}\>
 
 ***
 

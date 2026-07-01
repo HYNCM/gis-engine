@@ -128,6 +128,7 @@ export const LayerSpecSchema = Type.Object(
       Type.Literal("fill"),
       Type.Literal("line"),
       Type.Literal("circle"),
+      Type.Literal("symbol"),
       Type.Literal("symbol-lite"),
       Type.Literal("fill-extrusion-lite"),
     ]),

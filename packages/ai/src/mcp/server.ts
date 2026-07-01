@@ -19,12 +19,17 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprot
 import { Ajv, type ValidateFunction } from "ajv/dist/ajv.js";
 import { applyCommandsTool } from "../tools/applyCommands.js";
 import { getContextSummary } from "../tools/contextSummary.js";
+import { EditSpecToolInputSchema, editSpecTool } from "../tools/editSpec.js";
 import { ExplainSpecToolInputSchema, explainSpecTool } from "../tools/explainSpec.js";
 import {
   ExampleAppGenerationEvidenceSummarySchema,
   ExportExampleAppToolInputSchema,
   exportExampleAppTool,
 } from "../tools/exportExampleApp.js";
+import {
+  InspectDataToolInputSchema,
+  inspectDataTool,
+} from "../tools/inspectData.js";
 import { toolInputErrorsToDiagnostics } from "../tools/schemaDiagnostics.js";
 import { DiagnosticCountsSchema, stripNestedIds } from "../tools/shared.js";
 import { SnapshotSpecToolInputSchema, snapshotSpecTool } from "../tools/snapshotSpec.js";
@@ -184,6 +189,8 @@ const CapabilityDomainSummarySchema = {
           "snapshot_spec",
           "explain_spec",
           "export_example_app",
+          "inspect_data",
+          "edit_spec",
         ],
       },
     },
@@ -472,6 +479,44 @@ export const ExportExampleAppToolResultSchema = {
   additionalProperties: false,
 } as const;
 
+export const InspectDataToolResultSchema = {
+  type: "object",
+  properties: {
+    featureCount: { type: "number" },
+    propertySchema: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          name: { type: "string" },
+          types: { type: "array", items: { type: "string" } },
+          sampleValues: { type: "array" },
+        },
+        required: ["name", "types", "sampleValues"],
+        additionalProperties: false,
+      },
+    },
+    geometryTypes: { type: "array", items: { type: "string" } },
+    sample: { type: "array" },
+    bounds: { type: "array", items: { type: "number" }, minItems: 4, maxItems: 4 },
+    suggestions: { type: "array", items: { type: "string" } },
+  },
+  required: ["featureCount", "propertySchema", "geometryTypes", "sample", "bounds", "suggestions"],
+  additionalProperties: false,
+} as const;
+
+export const EditSpecToolResultSchema = {
+  type: "object",
+  properties: {
+    spec: MapSpecSchema,
+    commands: { type: "array", items: MapCommandSchema },
+    diagnostics: { type: "array", items: DiagnosticContractSchema },
+    summary: { type: "string" },
+  },
+  required: ["spec", "commands", "diagnostics", "summary"],
+  additionalProperties: false,
+} as const;
+
 interface ValidateSpecToolInput {
   spec: MapSpec;
 }
@@ -540,6 +585,20 @@ export const gisEngineTools = [
     description: "Return a manifest and file list for a bundled example without writing files.",
     inputSchema: ExportExampleAppToolInputSchema,
     outputSchema: ExportExampleAppToolResultSchema,
+  },
+  {
+    name: "inspect_data",
+    description:
+      "Inspect GeoJSON data structure, properties, geometry types, and bounds to understand the data before visualization.",
+    inputSchema: InspectDataToolInputSchema,
+    outputSchema: InspectDataToolResultSchema,
+  },
+  {
+    name: "edit_spec",
+    description:
+      "Edit a MapSpec using natural language instructions. Supports adding/removing layers, changing paint/layout properties, setting filters, and modifying the view.",
+    inputSchema: EditSpecToolInputSchema,
+    outputSchema: EditSpecToolResultSchema,
   },
 ] as const;
 
@@ -613,6 +672,16 @@ export async function callGisEngineTool(request: { params: { name: string; argum
 
     if (name === "export_example_app") {
       const result = exportExampleAppTool(args);
+      return toolTextResult(result.ok ? result.result : result.diagnostics, !result.ok);
+    }
+
+    if (name === "inspect_data") {
+      const result = inspectDataTool(args);
+      return toolTextResult(result.ok ? result.result : result.diagnostics, !result.ok);
+    }
+
+    if (name === "edit_spec") {
+      const result = editSpecTool(args);
       return toolTextResult(result.ok ? result.result : result.diagnostics, !result.ok);
     }
 

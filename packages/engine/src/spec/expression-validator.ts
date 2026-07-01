@@ -111,6 +111,14 @@ function inferExpression(expr: unknown, path: string, options: NormalizedExpress
       return inferToNumberExpression(expr, path, options);
     case "to-string":
       return inferToStringExpression(expr, path, options);
+    case "concat":
+      return inferConcatExpression(expr, path, options);
+    case "upcase":
+      return inferStringTransformExpression(expr, path, options, "upcase");
+    case "downcase":
+      return inferStringTransformExpression(expr, path, options, "downcase");
+    case "heatmap-density":
+      return inferHeatmapDensityExpression(expr, path);
     default:
       return {
         type: "unknown",
@@ -563,6 +571,74 @@ function inferToStringExpression(
   return { type: "string", diagnostics: collectArgumentDiagnostics(expr, path, options, 1) };
 }
 
+function inferConcatExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+): ExpressionInference {
+  if (expr.length < 2) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected at least 1 argument for "concat", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+
+  const diagnostics: Diagnostic[] = [];
+  for (let argumentIndex = 1; argumentIndex < expr.length; argumentIndex += 1) {
+    const argument = inferExpression(expr[argumentIndex], `${path}/${argumentIndex}`, options);
+    diagnostics.push(...argument.diagnostics);
+    if (argument.type !== "unknown" && argument.type !== "string" && argument.type !== "number") {
+      diagnostics.push({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionTypeMismatch,
+        message: `"concat" arguments must evaluate to string or number values.`,
+        path: `${path}/${argumentIndex}`,
+      });
+    }
+  }
+  return { type: "string", diagnostics };
+}
+
+function inferStringTransformExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+  operator: string,
+): ExpressionInference {
+  if (expr.length !== 2) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 1 argument for "${operator}", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+
+  const argument = inferExpression(expr[1], `${path}/1`, options);
+  const diagnostics = [...argument.diagnostics];
+  if (argument.type !== "unknown" && argument.type !== "string") {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.ExpressionTypeMismatch,
+      message: `"${operator}" argument must evaluate to a string value.`,
+      path: `${path}/1`,
+    });
+  }
+  return { type: "string", diagnostics };
+}
+
 function collectOutputTypes(
   expr: unknown[],
   path: string,
@@ -668,4 +744,21 @@ function normalizeOptions(options: ExpressionValidationOptions): NormalizedExpre
   return {
     knownProperties: new Set(options.knownProperties ?? []),
   };
+}
+
+function inferHeatmapDensityExpression(expr: unknown[], path: string): ExpressionInference {
+  if (expr.length !== 1) {
+    return {
+      type: "number",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `"heatmap-density" takes no arguments, found ${expr.length - 1}.`,
+          path: `${path}`,
+        },
+      ],
+    };
+  }
+  return { type: "number", diagnostics: [] };
 }

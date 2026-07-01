@@ -55,6 +55,7 @@ const supportedLayerTypes = new Set([
   "fill",
   "line",
   "circle",
+  "symbol",
   "symbol-lite",
   "fill-extrusion-lite",
 ]);
@@ -210,7 +211,7 @@ function mapLayerType(layerType: LayerSpec["type"]): MapLibreLayer["type"] {
     layerType === "circle"
   )
     return layerType;
-  if (layerType === "symbol-lite") return "symbol";
+  if (layerType === "symbol" || layerType === "symbol-lite") return "symbol";
   if (layerType === "fill-extrusion-lite") return "fill-extrusion";
   throw new Error(`Unsupported MapLibre layer type: ${layerType}`);
 }

@@ -1,4 +1,4 @@
-[**@gis-engine/ai v1.0.0**](../index.md)
+[**@gis-engine/ai v1.1.0**](../index.md)
 
 ***
 
@@ -568,6 +568,10 @@
 
 > `readonly` **layerIds**: ...
 
+#### properties.generationEvidence.properties.delivery.properties.sourceReadiness.items.properties.queryEvidence.properties.loaderContract
+
+> `readonly` **loaderContract**: ...
+
 #### properties.generationEvidence.properties.delivery.properties.sourceReadiness.items.properties.queryEvidence.properties.diagnosticCounts
 
 > `readonly` **diagnosticCounts**: ... = `DiagnosticCountsSchema`
@@ -582,7 +586,7 @@
 
 #### properties.generationEvidence.properties.delivery.properties.sourceReadiness.items.properties.queryEvidence.required
 
-> `readonly` **required**: readonly \[..., ..., ..., ..., ..., ...\]
+> `readonly` **required**: readonly \[..., ..., ..., ..., ..., ..., ...\]
 
 #### properties.generationEvidence.properties.delivery.properties.sourceReadiness.items.properties.queryEvidence.additionalProperties
 

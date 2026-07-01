@@ -141,7 +141,9 @@ export type GisEngineToolName =
   | "get_context_summary"
   | "snapshot_spec"
   | "explain_spec"
-  | "export_example_app";
+  | "export_example_app"
+  | "inspect_data"
+  | "edit_spec";
 
 export interface CapabilityDomainSummary {
   id: "feature-display" | "spatial-analysis" | "scene-browsing";

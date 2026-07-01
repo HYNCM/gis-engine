@@ -1,4 +1,4 @@
-[**@gis-engine/cli v1.0.0**](../index.md)
+[**@gis-engine/cli v1.1.0**](../index.md)
 
 ***
 

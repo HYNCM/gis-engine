@@ -1,4 +1,4 @@
-[**@gis-engine/ai v1.0.0**](../index.md)
+[**@gis-engine/ai v1.1.0**](../index.md)
 
 ***
 
@@ -740,6 +740,42 @@
 
 > `readonly` **type**: ... = `"string"`
 
+#### properties.delivery.properties.sourceReadiness.items.properties.queryEvidence.properties.loaderContract
+
+> `readonly` **loaderContract**: `object`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.queryEvidence.properties.loaderContract.type
+
+> `readonly` **type**: `"object"` = `"object"`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.queryEvidence.properties.loaderContract.properties
+
+> `readonly` **properties**: `object`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.queryEvidence.properties.loaderContract.properties.resourceAccess
+
+> `readonly` **resourceAccess**: ...
+
+#### properties.delivery.properties.sourceReadiness.items.properties.queryEvidence.properties.loaderContract.properties.cancellation
+
+> `readonly` **cancellation**: ...
+
+#### properties.delivery.properties.sourceReadiness.items.properties.queryEvidence.properties.loaderContract.properties.timeoutMs
+
+> `readonly` **timeoutMs**: ...
+
+#### properties.delivery.properties.sourceReadiness.items.properties.queryEvidence.properties.loaderContract.properties.byteBudgetBytes
+
+> `readonly` **byteBudgetBytes**: ...
+
+#### properties.delivery.properties.sourceReadiness.items.properties.queryEvidence.properties.loaderContract.required
+
+> `readonly` **required**: readonly \[..., ..., ..., ...\]
+
+#### properties.delivery.properties.sourceReadiness.items.properties.queryEvidence.properties.loaderContract.additionalProperties
+
+> `readonly` **additionalProperties**: `false` = `false`
+
 #### properties.delivery.properties.sourceReadiness.items.properties.queryEvidence.properties.diagnosticCounts
 
 > `readonly` **diagnosticCounts**: `object` = `DiagnosticCountsSchema`
@@ -866,7 +902,7 @@
 
 #### properties.delivery.properties.sourceReadiness.items.properties.queryEvidence.required
 
-> `readonly` **required**: readonly \[`"status"`, `"sourceLayerIds"`, `"layerIds"`, `"diagnosticCounts"`, `"requirements"`, `"summary"`\]
+> `readonly` **required**: readonly \[`"status"`, `"sourceLayerIds"`, `"layerIds"`, `"loaderContract"`, `"diagnosticCounts"`, `"requirements"`, `"summary"`\]
 
 #### properties.delivery.properties.sourceReadiness.items.properties.queryEvidence.additionalProperties
 

@@ -1,6 +1,6 @@
 {
   "name": "@gis-engine/scene3d-three-adapter",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Experimental Three.js adapter spike boundary for SceneView3D.",
   "license": "Apache-2.0",
   "type": "module",

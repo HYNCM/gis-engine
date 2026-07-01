@@ -78,6 +78,8 @@ const GisEngineToolNameSchema = {
     "snapshot_spec",
     "explain_spec",
     "export_example_app",
+    "inspect_data",
+    "edit_spec",
   ],
 } as const;
 

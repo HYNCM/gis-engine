@@ -100,6 +100,149 @@ describe("expression validator", () => {
       expect.objectContaining({ code: DiagnosticCodes.ExpressionTypeMismatch }),
     );
   });
+  it("accepts concat expressions with string and number arguments", () => {
+    const spec = withPaintAndLayout(
+      { "circle-color": "#2563eb" },
+      { "text-field": ["concat", "Hello, ", ["get", "name"]] },
+    );
+    const report = validateSpec(spec);
+    expect(report.valid).toBe(true);
+    expect(report.diagnostics).toEqual([]);
+  });
+
+  it("accepts concat with multiple string literals", () => {
+    const spec = withPaintAndLayout(
+      { "circle-color": "#2563eb" },
+      { "text-field": ["concat", "A", "B", "C"] },
+    );
+    const report = validateSpec(spec);
+    expect(report.valid).toBe(true);
+    expect(report.diagnostics).toEqual([]);
+  });
+
+  it("accepts concat with to-string conversion", () => {
+    const spec = withPaintAndLayout(
+      { "circle-color": "#2563eb" },
+      { "text-field": ["concat", "Population: ", ["to-string", ["get", "population"]]] },
+    );
+    const report = validateSpec(spec);
+    expect(report.valid).toBe(true);
+    expect(report.diagnostics).toEqual([]);
+  });
+
+  it("reports concat arity error when no arguments provided", () => {
+    const spec = withPaintAndLayout(
+      { "circle-color": "#2563eb" },
+      { "text-field": ["concat"] },
+    );
+    const report = validateSpec(spec);
+    expect(report.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionInvalidArity,
+      }),
+    );
+  });
+
+  it("reports concat type error for boolean arguments", () => {
+    const spec = withPaintAndLayout(
+      { "circle-color": "#2563eb" },
+      { "text-field": ["concat", true] },
+    );
+    const report = validateSpec(spec);
+    expect(report.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionTypeMismatch,
+      }),
+    );
+  });
+
+  it("accepts upcase expressions", () => {
+    const spec = withPaintAndLayout(
+      { "circle-color": "#2563eb" },
+      { "text-field": ["upcase", ["get", "name"]] },
+    );
+    const report = validateSpec(spec);
+    expect(report.valid).toBe(true);
+    expect(report.diagnostics).toEqual([]);
+  });
+
+  it("accepts upcase with literal string", () => {
+    const spec = withPaintAndLayout(
+      { "circle-color": "#2563eb" },
+      { "text-field": ["upcase", "hello"] },
+    );
+    const report = validateSpec(spec);
+    expect(report.valid).toBe(true);
+    expect(report.diagnostics).toEqual([]);
+  });
+
+  it("reports upcase type error for number argument", () => {
+    const spec = withPaintAndLayout(
+      { "circle-color": "#2563eb" },
+      { "text-field": ["upcase", 42] },
+    );
+    const report = validateSpec(spec);
+    expect(report.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionTypeMismatch,
+      }),
+    );
+  });
+
+  it("reports upcase arity error when missing argument", () => {
+    const spec = withPaintAndLayout(
+      { "circle-color": "#2563eb" },
+      { "text-field": ["upcase"] },
+    );
+    const report = validateSpec(spec);
+    expect(report.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionInvalidArity,
+      }),
+    );
+  });
+
+  it("accepts downcase expressions", () => {
+    const spec = withPaintAndLayout(
+      { "circle-color": "#2563eb" },
+      { "text-field": ["downcase", ["get", "name"]] },
+    );
+    const report = validateSpec(spec);
+    expect(report.valid).toBe(true);
+    expect(report.diagnostics).toEqual([]);
+  });
+
+  it("reports downcase type error for number argument", () => {
+    const spec = withPaintAndLayout(
+      { "circle-color": "#2563eb" },
+      { "text-field": ["downcase", 42] },
+    );
+    const report = validateSpec(spec);
+    expect(report.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionTypeMismatch,
+      }),
+    );
+  });
+
+  it("reports downcase arity error when missing argument", () => {
+    const spec = withPaintAndLayout(
+      { "circle-color": "#2563eb" },
+      { "text-field": ["downcase"] },
+    );
+    const report = validateSpec(spec);
+    expect(report.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionInvalidArity,
+      }),
+    );
+  });
 });
 
 function withPaintAndLayout(
