@@ -7,6 +7,9 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "sideEffects": false,
+  "bin": {
+    "gis-engine-mcp": "./dist/mcp/server.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/HYNCM/gis-engine.git",

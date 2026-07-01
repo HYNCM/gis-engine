@@ -3,11 +3,25 @@
 AI and MCP tool layer for GIS Engine. It wraps the public `@gis-engine/engine`
 contracts without reaching into renderer internals.
 
-## Quick Start
+## Quick Setup
 
-### As an MCP Server (Claude Desktop / Cursor)
+### Claude Desktop
 
-Add to your MCP configuration:
+Add to your Claude Desktop config (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "gis-engine": {
+      "command": "npx",
+      "args": ["-y", "@gis-engine/ai"]
+    }
+  }
+}
+```
+
+Or if installed locally in your project:
+
 ```json
 {
   "mcpServers": {
@@ -19,38 +33,32 @@ Add to your MCP configuration:
 }
 ```
 
-### Programmatic Usage
+### Cursor
 
-```typescript
-import { callGisEngineTool, listGisEngineTools } from "@gis-engine/ai";
+Add the same JSON block above to your Cursor MCP settings
+(`Settings → MCP → Add new global MCP server config`).
 
-// List available tools
-const tools = listGisEngineTools();
+### Smithery
 
-// Call a tool
-const result = await callGisEngineTool({
-  name: "validate_spec",
-  arguments: { spec: myMapSpec }
-});
-```
-
-## Install
+Install via Smithery CLI for Claude Desktop automatically:
 
 ```bash
-npm install @gis-engine/ai @gis-engine/engine
+npx -y @smithery/cli install @gis-engine/ai --client claude
 ```
 
-## Tools
+### Available Tools (9 tools)
 
-The current MCP tool names are:
-
-- `validate_spec`
-- `apply_commands`
-- `export_spec`
-- `get_context_summary`
-- `snapshot_spec`
-- `explain_spec`
-- `export_example_app`
+| Tool | Description |
+|---|---|
+| `validate_spec` | Validate a MapSpec against the schema and return diagnostics |
+| `apply_commands` | Apply a series of MapCommands to mutate a MapSpec |
+| `export_spec` | Export a validated, optionally command-modified MapSpec |
+| `get_context_summary` | Get a compact summary of the map state plus AI capability boundaries |
+| `snapshot_spec` | Validate a MapSpec and produce a headless snapshot result |
+| `explain_spec` | Return a structured AI-facing summary with full validation diagnostics |
+| `export_example_app` | Return a manifest and file list for a bundled example (no files written) |
+| `diff_specs` | Compare two MapSpecs and output the command diff with a change summary |
+| `generate_spec` | Generate a MapSpec skeleton from a structured intent description |
 
 Each public tool descriptor exposes both `inputSchema` and `outputSchema`.
 `apply_commands` accepts `collectTrace: true` for review flows that need
@@ -133,9 +141,34 @@ status, and policy context before review-console evidence is built; inline
 GeoJSON reports resource policy as `not-applicable` because no URL policy check
 is needed.
 
+## Programmatic Usage
+
+```typescript
+import { callGisEngineTool, listGisEngineTools } from "@gis-engine/ai";
+
+// List available tools
+const tools = await listGisEngineTools();
+
+// Call a tool
+const result = await callGisEngineTool({
+  name: "validate_spec",
+  arguments: { spec: myMapSpec }
+});
+```
+
+## Install
+
+```bash
+npm install @gis-engine/ai @gis-engine/engine
+```
+
 ## MCP Server
 
 ```bash
+# Run directly via npx (recommended)
+npx -y @gis-engine/ai
+
+# Or run from a local install
 node node_modules/@gis-engine/ai/dist/mcp/server.js
 ```
 

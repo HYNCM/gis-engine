@@ -1,0 +1,24 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
+  "name": "io.github.hyncm/gis-engine",
+  "version": "1.2.0",
+  "description": "AI-native map editing MCP tools: validate, mutate, summarize, snapshot, diff, generate, and export MapSpec documents.",
+  "title": "GIS Engine",
+  "websiteUrl": "https://gis-engine.dev",
+  "packages": [
+    {
+      "registry_type": "npm",
+      "identifier": "@gis-engine/ai",
+      "version": "1.2.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "package_arguments": [],
+      "environment_variables": []
+    }
+  ],
+  "repository": {
+    "url": "https://github.com/HYNCM/gis-engine",
+    "source": "github"
+  }
+}
