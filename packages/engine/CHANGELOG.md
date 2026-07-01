@@ -1,5 +1,11 @@
 # @gis-engine/engine
 
+## 1.3.0
+
+### Minor Changes
+
+- Expand example library with 8 new runnable examples (multi-layer, data-driven styling, interactive popups, PMTiles cloud, diagnostic error fix, AI generation demo, style expressions, capability declaration). Add Agent Skills package with 5 SKILL.md files for AI coding tools. Add AI evaluation suite with 41 test cases.
+
 ## 1.2.0
 
 ### Minor Changes

@@ -1,5 +1,13 @@
 # @gis-engine/scene3d-three-adapter
 
+## 0.2.4
+
+### Patch Changes
+
+- Updated dependencies
+  - @gis-engine/engine@1.3.0
+  - @gis-engine/scene3d@1.3.0
+
 ## 0.2.3
 
 ### Patch Changes

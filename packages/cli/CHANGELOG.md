@@ -1,5 +1,15 @@
 # @gis-engine/cli
 
+## 1.3.0
+
+### Patch Changes
+
+- Support AI evaluation suite and Agent Skills integration.
+- Updated dependencies
+- Updated dependencies
+  - @gis-engine/ai@1.3.0
+  - @gis-engine/engine@1.3.0
+
 ## 1.2.0
 
 ### Patch Changes

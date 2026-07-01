@@ -1,5 +1,17 @@
 # @gis-engine/ai
 
+## 1.3.0
+
+### Minor Changes
+
+- Add diff_specs and generate_spec MCP tools. diff_specs compares two MapSpec objects and outputs the command set to transform one into the other. generate_spec creates a MapSpec skeleton from a structured intent description. Both tools include full inputSchema/outputSchema and contract tests (22 new test cases).
+
+### Patch Changes
+
+- Updated dependencies
+  - @gis-engine/engine@1.3.0
+  - @gis-engine/scene3d@1.3.0
+
 ## 1.2.0
 
 ### Patch Changes
