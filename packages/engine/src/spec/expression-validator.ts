@@ -111,6 +111,20 @@ function inferExpression(expr: unknown, path: string, options: NormalizedExpress
       return inferToNumberExpression(expr, path, options);
     case "to-string":
       return inferToStringExpression(expr, path, options);
+    case "+":
+    case "-":
+    case "*":
+    case "/":
+      return inferArithmeticExpression(expr, path, options, operator);
+    case "coalesce":
+      return inferCoalesceExpression(expr, path, options);
+    case "heatmap-density":
+      return inferHeatmapDensityExpression(expr, path);
+    case "concat":
+      return inferConcatExpression(expr, path, options);
+    case "upcase":
+    case "downcase":
+      return inferCaseTransformExpression(expr, path, options, operator);
     default:
       return {
         type: "unknown",
@@ -308,7 +322,7 @@ function inferInterpolateExpression(
           severity: "error",
           code: DiagnosticCodes.ExpressionInvalidArity,
           message:
-            'Expected "interpolate" syntax: ["interpolate", ["linear"], input, stop1, output1, stop2, output2, ...].',
+            'Expected "interpolate" syntax: ["interpolate", ["linear"|"exponential", base|"cubic-bezier", x1, y1, x2, y2], input, stop1, output1, stop2, output2, ...].',
           path,
         },
       ],
@@ -316,13 +330,11 @@ function inferInterpolateExpression(
   }
 
   const diagnostics: Diagnostic[] = [];
-  if (!isLinearInterpolation(expr[1])) {
-    diagnostics.push({
-      severity: "error",
-      code: DiagnosticCodes.CapabilityUnsupported,
-      message: "Only linear interpolate expressions are supported in v0.1.",
-      path: `${path}/1`,
-    });
+  const interpolationResult = isInterpolationType(expr[1]);
+  if (!interpolationResult.valid) {
+    for (const diagnostic of interpolationResult.diagnostics) {
+      diagnostics.push({ ...diagnostic, path: `${path}/1` });
+    }
   }
 
   diagnostics.push(...inferExpression(expr[2], `${path}/2`, options).diagnostics);
@@ -563,6 +575,168 @@ function inferToStringExpression(
   return { type: "string", diagnostics: collectArgumentDiagnostics(expr, path, options, 1) };
 }
 
+function inferArithmeticExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+  operator: string,
+): ExpressionInference {
+  if (expr.length !== 3) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 2 arguments for "${operator}", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+
+  const diagnostics: Diagnostic[] = [];
+  const left = inferExpression(expr[1], `${path}/1`, options);
+  diagnostics.push(...left.diagnostics);
+  const right = inferExpression(expr[2], `${path}/2`, options);
+  diagnostics.push(...right.diagnostics);
+
+  if (left.type !== "unknown" && left.type !== "number") {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.ExpressionTypeMismatch,
+      message: `"${operator}" operands must evaluate to number values.`,
+      path: `${path}/1`,
+    });
+  }
+  if (right.type !== "unknown" && right.type !== "number") {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.ExpressionTypeMismatch,
+      message: `"${operator}" operands must evaluate to number values.`,
+      path: `${path}/2`,
+    });
+  }
+
+  return { type: "number", diagnostics };
+}
+
+function inferCoalesceExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+): ExpressionInference {
+  if (expr.length < 2) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected at least 1 argument for "coalesce", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+
+  const diagnostics: Diagnostic[] = [];
+  let resolvedType: ExprType | undefined;
+
+  for (let argumentIndex = 1; argumentIndex < expr.length; argumentIndex += 1) {
+    const argument = inferExpression(expr[argumentIndex], `${path}/${argumentIndex}`, options);
+    diagnostics.push(...argument.diagnostics);
+
+    if (argument.type === "unknown" || argument.type === "null") continue;
+    if (resolvedType === undefined) {
+      resolvedType = argument.type;
+      continue;
+    }
+
+    if (resolvedType !== argument.type) {
+      diagnostics.push({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionTypeMismatch,
+        message: `"coalesce" arguments must use a consistent type. Expected ${resolvedType}, found ${argument.type}.`,
+        path: `${path}/${argumentIndex}`,
+      });
+    }
+  }
+
+  return { type: resolvedType ?? "unknown", diagnostics };
+}
+
+function inferHeatmapDensityExpression(expr: unknown[], path: string): ExpressionInference {
+  if (expr.length !== 1) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 0 arguments for "heatmap-density", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+  return { type: "number", diagnostics: [] };
+}
+
+function inferConcatExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+): ExpressionInference {
+  if (expr.length < 2) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected at least 1 argument for "concat", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+  return { type: "string", diagnostics: collectArgumentDiagnostics(expr, path, options, 1) };
+}
+
+function inferCaseTransformExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+  operator: string,
+): ExpressionInference {
+  if (expr.length !== 2) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 1 argument for "${operator}", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+  const diagnostics: Diagnostic[] = [];
+  const arg = inferExpression(expr[1], `${path}/1`, options);
+  diagnostics.push(...arg.diagnostics);
+  if (arg.type !== "unknown" && arg.type !== "string") {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.ExpressionTypeMismatch,
+      message: `"${operator}" argument must evaluate to a string value.`,
+      path: `${path}/1`,
+    });
+  }
+  return { type: "string", diagnostics };
+}
+
 function collectOutputTypes(
   expr: unknown[],
   path: string,
@@ -656,8 +830,88 @@ function inferLiteralType(value: unknown): ExprType {
   return "unknown";
 }
 
-function isLinearInterpolation(value: unknown): boolean {
-  return value === "linear" || (Array.isArray(value) && value.length === 1 && value[0] === "linear");
+interface InterpolationTypeResult {
+  valid: boolean;
+  diagnostics: Omit<Diagnostic, "path">[];
+}
+
+function isInterpolationType(value: unknown): InterpolationTypeResult {
+  if (value === "linear" || (Array.isArray(value) && value.length === 1 && value[0] === "linear")) {
+    return { valid: true, diagnostics: [] };
+  }
+
+  if (Array.isArray(value)) {
+    const kind = value[0];
+
+    if (kind === "exponential") {
+      if (value.length !== 2 || typeof value[1] !== "number") {
+        return {
+          valid: false,
+          diagnostics: [
+            {
+              severity: "error",
+              code: DiagnosticCodes.ExpressionInvalidArity,
+              message: '"exponential" interpolation requires exactly 1 numeric base argument.',
+            },
+          ],
+        };
+      }
+      if (value[1] <= 0) {
+        return {
+          valid: false,
+          diagnostics: [
+            {
+              severity: "error",
+              code: DiagnosticCodes.ExpressionTypeMismatch,
+              message: '"exponential" interpolation base must be a positive number.',
+            },
+          ],
+        };
+      }
+      return { valid: true, diagnostics: [] };
+    }
+
+    if (kind === "cubic-bezier") {
+      if (value.length !== 5) {
+        return {
+          valid: false,
+          diagnostics: [
+            {
+              severity: "error",
+              code: DiagnosticCodes.ExpressionInvalidArity,
+              message: '"cubic-bezier" interpolation requires exactly 4 numeric arguments (x1, y1, x2, y2).',
+            },
+          ],
+        };
+      }
+      for (let i = 1; i < 5; i++) {
+        if (typeof value[i] !== "number") {
+          return {
+            valid: false,
+            diagnostics: [
+              {
+                severity: "error",
+                code: DiagnosticCodes.ExpressionTypeMismatch,
+                message: '"cubic-bezier" interpolation arguments must all be numbers.',
+              },
+            ],
+          };
+        }
+      }
+      return { valid: true, diagnostics: [] };
+    }
+  }
+
+  return {
+    valid: false,
+    diagnostics: [
+      {
+        severity: "error",
+        code: DiagnosticCodes.CapabilityUnsupported,
+        message: "Supported interpolation types: linear, exponential, cubic-bezier.",
+      },
+    ],
+  };
 }
 
 function isColorString(value: string): boolean {

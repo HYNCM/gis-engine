@@ -154,13 +154,72 @@ export type SourceSpec =
 
 export interface LayerSpec {
   id: string;
-  type: "background" | "raster" | "fill" | "line" | "circle" | "symbol-lite" | "fill-extrusion-lite";
+  type:
+    | "background"
+    | "raster"
+    | "fill"
+    | "line"
+    | "circle"
+    | "symbol"
+    | "symbol-lite"
+    | "fill-extrusion-lite"
+    | "heatmap";
   source?: string;
   filter?: Expression;
   minzoom?: number;
   maxzoom?: number;
   layout?: Record<string, unknown>;
   paint?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Symbol layer type — full-featured text labels and icons.
+ * Provides schema-validated layout and paint properties,
+ * replacing `symbol-lite` (which is retained for backward compatibility).
+ */
+export interface SymbolLayerSpec {
+  id: string;
+  type: "symbol";
+  source: string;
+  layout?: {
+    "text-field"?: unknown;
+    "icon-image"?: unknown;
+    "symbol-placement"?: "point" | "line" | "line-center";
+    "symbol-spacing"?: unknown;
+    "text-font"?: string[];
+    "text-size"?: unknown;
+    "text-anchor"?: "center" | "left" | "right" | "top" | "bottom" | "top-left" | "top-right" | "bottom-left" | "bottom-right";
+    "text-offset"?: unknown[];
+    "text-max-width"?: unknown;
+    "text-line-height"?: unknown;
+    "text-letter-spacing"?: unknown;
+    "text-justify"?: "auto" | "left" | "center" | "right";
+    "text-transform"?: "none" | "uppercase" | "lowercase";
+    "icon-size"?: unknown;
+    "icon-anchor"?: "center" | "left" | "right" | "top" | "bottom" | "top-left" | "top-right" | "bottom-left" | "bottom-right";
+    "icon-rotate"?: unknown;
+    "icon-allow-overlap"?: unknown;
+    "text-allow-overlap"?: unknown;
+    "symbol-sort-key"?: unknown;
+    [key: string]: unknown;
+  };
+  paint?: {
+    "text-color"?: unknown;
+    "text-halo-color"?: unknown;
+    "text-halo-width"?: unknown;
+    "text-halo-blur"?: unknown;
+    "text-opacity"?: unknown;
+    "icon-opacity"?: unknown;
+    "icon-color"?: unknown;
+    "icon-halo-color"?: unknown;
+    "icon-halo-width"?: unknown;
+    "icon-halo-blur"?: unknown;
+    [key: string]: unknown;
+  };
+  filter?: Expression;
+  minzoom?: number;
+  maxzoom?: number;
   metadata?: Record<string, unknown>;
 }
 

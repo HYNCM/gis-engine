@@ -65,7 +65,7 @@ const EVAL_PROMPTS: EvalPrompt[] = [
   {
     id: "data-driven-colors",
     description: "Color regions by population density using data-driven styling",
-    expectedLayerType: "fill",
+    expectedLayerType: "heatmap",
   },
 ];
 
