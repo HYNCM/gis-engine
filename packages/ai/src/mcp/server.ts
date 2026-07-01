@@ -26,10 +26,7 @@ import {
   ExportExampleAppToolInputSchema,
   exportExampleAppTool,
 } from "../tools/exportExampleApp.js";
-import {
-  InspectDataToolInputSchema,
-  inspectDataTool,
-} from "../tools/inspectData.js";
+import { InspectDataToolInputSchema, inspectDataTool } from "../tools/inspectData.js";
 import { toolInputErrorsToDiagnostics } from "../tools/schemaDiagnostics.js";
 import { DiagnosticCountsSchema, stripNestedIds } from "../tools/shared.js";
 import { SnapshotSpecToolInputSchema, snapshotSpecTool } from "../tools/snapshotSpec.js";

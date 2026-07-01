@@ -192,7 +192,7 @@ describe("edit_spec MCP tool", () => {
   it("sets layout property", () => {
     const result = editSpecTool({
       spec: baseSpec(),
-      instruction: 'set city-points visibility to none',
+      instruction: "set city-points visibility to none",
     });
 
     expect(result.ok).toBe(true);

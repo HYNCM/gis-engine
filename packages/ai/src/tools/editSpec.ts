@@ -1,4 +1,5 @@
 import {
+  applyCommands,
   type Diagnostic,
   DiagnosticCodes,
   type JsonValue,
@@ -6,7 +7,6 @@ import {
   type MapSpec,
   MapSpecSchema,
   type ValidationReport,
-  applyCommands,
   validateSpec,
 } from "@gis-engine/engine";
 import { Ajv } from "ajv/dist/ajv.js";
@@ -161,13 +161,7 @@ function parseInstruction(instruction: string, spec: MapSpec): ParsedInstruction
       ...(layerType === "heatmap"
         ? {
             paint: {
-              "circle-radius": [
-                "interpolate",
-                ["linear"],
-                ["zoom"],
-                0, 2,
-                9, 20,
-              ],
+              "circle-radius": ["interpolate", ["linear"], ["zoom"], 0, 2, 9, 20],
               "circle-color": "#ff0000",
               "circle-opacity": 0.6,
             },
@@ -298,8 +292,7 @@ function parseInstruction(instruction: string, spec: MapSpec): ParsedInstruction
     };
   }
 
-  const renameSourceMatch =
-    /^rename\s+source\s+(?:"([^"]+)"|(\S+))\s+to\s+(?:"([^"]+)"|(\S+))$/i.exec(trimmed);
+  const renameSourceMatch = /^rename\s+source\s+(?:"([^"]+)"|(\S+))\s+to\s+(?:"([^"]+)"|(\S+))$/i.exec(trimmed);
   if (renameSourceMatch) {
     const oldId = renameSourceMatch[1] ?? renameSourceMatch[2];
     const newId = renameSourceMatch[3] ?? renameSourceMatch[4];

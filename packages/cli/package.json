@@ -1,6 +1,6 @@
 {
   "name": "@gis-engine/cli",
-  "version": "1.2.0",
+  "version": "1.4.0",
   "description": "CLI for scaffolding and AI-generating GIS Engine map projects.",
   "license": "Apache-2.0",
   "type": "module",

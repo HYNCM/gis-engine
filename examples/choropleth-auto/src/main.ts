@@ -11,8 +11,8 @@
 //
 // =============================================================================
 
-import { planMapGenerationRequest, validateSpec, createMap } from "@gis-engine/engine";
 import type { MapSpec } from "@gis-engine/engine";
+import { createMap, planMapGenerationRequest, validateSpec } from "@gis-engine/engine";
 
 // ---------------------------------------------------------------------------
 // Step 1: Describe the visualization intent
@@ -55,16 +55,56 @@ console.log("Request:", JSON.stringify(plan.request, null, 2));
 const usStatesData: GeoJSON.FeatureCollection = {
   type: "FeatureCollection",
   features: [
-    { type: "Feature", properties: { name: "California", population: 39538223, area: 423967 }, geometry: { type: "Point", coordinates: [-119.4, 36.8] } },
-    { type: "Feature", properties: { name: "Texas", population: 29145505, area: 695662 }, geometry: { type: "Point", coordinates: [-99.9, 31.9] } },
-    { type: "Feature", properties: { name: "Florida", population: 21538187, area: 170312 }, geometry: { type: "Point", coordinates: [-81.5, 27.6] } },
-    { type: "Feature", properties: { name: "New York", population: 20201249, area: 141297 }, geometry: { type: "Point", coordinates: [-75.0, 43.0] } },
-    { type: "Feature", properties: { name: "Pennsylvania", population: 13002700, area: 119280 }, geometry: { type: "Point", coordinates: [-77.0, 41.2] } },
-    { type: "Feature", properties: { name: "Illinois", population: 12812508, area: 149995 }, geometry: { type: "Point", coordinates: [-89.4, 40.6] } },
-    { type: "Feature", properties: { name: "Ohio", population: 11799448, area: 116098 }, geometry: { type: "Point", coordinates: [-82.9, 40.4] } },
-    { type: "Feature", properties: { name: "Georgia", population: 10711908, area: 153910 }, geometry: { type: "Point", coordinates: [-83.5, 32.4] } },
-    { type: "Feature", properties: { name: "North Carolina", population: 10439388, area: 139391 }, geometry: { type: "Point", coordinates: [-79.0, 35.5] } },
-    { type: "Feature", properties: { name: "Michigan", population: 10077331, area: 250487 }, geometry: { type: "Point", coordinates: [-84.5, 44.3] } },
+    {
+      type: "Feature",
+      properties: { name: "California", population: 39538223, area: 423967 },
+      geometry: { type: "Point", coordinates: [-119.4, 36.8] },
+    },
+    {
+      type: "Feature",
+      properties: { name: "Texas", population: 29145505, area: 695662 },
+      geometry: { type: "Point", coordinates: [-99.9, 31.9] },
+    },
+    {
+      type: "Feature",
+      properties: { name: "Florida", population: 21538187, area: 170312 },
+      geometry: { type: "Point", coordinates: [-81.5, 27.6] },
+    },
+    {
+      type: "Feature",
+      properties: { name: "New York", population: 20201249, area: 141297 },
+      geometry: { type: "Point", coordinates: [-75.0, 43.0] },
+    },
+    {
+      type: "Feature",
+      properties: { name: "Pennsylvania", population: 13002700, area: 119280 },
+      geometry: { type: "Point", coordinates: [-77.0, 41.2] },
+    },
+    {
+      type: "Feature",
+      properties: { name: "Illinois", population: 12812508, area: 149995 },
+      geometry: { type: "Point", coordinates: [-89.4, 40.6] },
+    },
+    {
+      type: "Feature",
+      properties: { name: "Ohio", population: 11799448, area: 116098 },
+      geometry: { type: "Point", coordinates: [-82.9, 40.4] },
+    },
+    {
+      type: "Feature",
+      properties: { name: "Georgia", population: 10711908, area: 153910 },
+      geometry: { type: "Point", coordinates: [-83.5, 32.4] },
+    },
+    {
+      type: "Feature",
+      properties: { name: "North Carolina", population: 10439388, area: 139391 },
+      geometry: { type: "Point", coordinates: [-79.0, 35.5] },
+    },
+    {
+      type: "Feature",
+      properties: { name: "Michigan", population: 10077331, area: 250487 },
+      geometry: { type: "Point", coordinates: [-84.5, 44.3] },
+    },
   ],
 };
 
@@ -93,19 +133,18 @@ const spec: MapSpec = {
           "interpolate",
           ["linear"],
           ["/", ["get", "population"], ["get", "area"]],
-          0, "#eff3ff",
-          50, "#bdd7e7",
-          100, "#6baed6",
-          200, "#3182bd",
-          500, "#08519c",
+          0,
+          "#eff3ff",
+          50,
+          "#bdd7e7",
+          100,
+          "#6baed6",
+          200,
+          "#3182bd",
+          500,
+          "#08519c",
         ],
-        "circle-radius": [
-          "interpolate",
-          ["linear"],
-          ["get", "population"],
-          10000000, 8,
-          40000000, 20,
-        ],
+        "circle-radius": ["interpolate", ["linear"], ["get", "population"], 10000000, 8, 40000000, 20],
         "circle-stroke-width": 1.5,
         "circle-stroke-color": "#084594",
       },
