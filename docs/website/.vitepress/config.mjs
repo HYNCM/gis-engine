@@ -19,6 +19,8 @@ export default defineConfig({
       { text: "Guide", link: "/guide/what-is-gis-engine" },
       { text: "API", link: "/api/" },
       { text: "MCP", link: "/mcp/overview" },
+      { text: "Research", link: "/research/ai-native-map-sdk-design" },
+      { text: "Blog", link: "/blog/2026-07-ai-native-map-sdk" },
       { text: "Release Notes", link: "/release-notes" },
       { text: "Examples", link: "https://github.com/HYNCM/gis-engine/tree/main/examples" },
     ],
@@ -85,6 +87,23 @@ export default defineConfig({
             { text: "snapshot_spec", link: "/mcp/snapshot-spec" },
             { text: "explain_spec", link: "/mcp/explain-spec" },
             { text: "export_example_app", link: "/mcp/export-example-app" },
+          ],
+        },
+      ],
+      "/research/": [
+        {
+          text: "Research",
+          items: [
+            { text: "AI-Native Map SDK Design", link: "/research/ai-native-map-sdk-design" },
+          ],
+        },
+      ],
+      "/blog/": [
+        {
+          text: "Blog",
+          items: [
+            { text: "AI-Native Map SDK (Jul 2026)", link: "/blog/2026-07-ai-native-map-sdk" },
+            { text: "GIS Engine v1.2 (Jul 2026)", link: "/blog/2026-07-gis-engine-v1.2" },
           ],
         },
       ],
