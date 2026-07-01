@@ -4,10 +4,12 @@ export {
   ContextSummaryToolResultSchema,
   callGisEngineTool,
   createGisEngineMcpServer,
+  DiffSpecsToolResultSchema,
   ExplainSpecToolResultSchema,
   ExportExampleAppToolResultSchema,
   ExportSpecToolInputSchema,
   ExportSpecToolResultSchema,
+  GenerateSpecToolResultSchema,
   gisEngineTools,
   listGisEngineTools,
   SnapshotSpecToolResultSchema,
@@ -25,6 +27,14 @@ export {
   type Scene3DContextSummary,
 } from "./tools/contextSummary.js";
 export {
+  type DiffSpecsSummary,
+  type DiffSpecsToolInput,
+  DiffSpecsToolInputSchema,
+  type DiffSpecsToolResponse,
+  type DiffSpecsToolResult,
+  diffSpecsTool,
+} from "./tools/diffSpecs.js";
+export {
   type ExplainSpecToolInput,
   ExplainSpecToolInputSchema,
   type ExplainSpecToolResult,
@@ -40,6 +50,13 @@ export {
   ExportExampleAppToolInputSchema,
   exportExampleAppTool,
 } from "./tools/exportExampleApp.js";
+export {
+  type GenerateSpecToolInput,
+  GenerateSpecToolInputSchema,
+  type GenerateSpecToolResponse,
+  type GenerateSpecToolResult,
+  generateSpecTool,
+} from "./tools/generateSpec.js";
 export {
   createGenerationEvidenceBundle,
   type GenerationEvidenceBundle,

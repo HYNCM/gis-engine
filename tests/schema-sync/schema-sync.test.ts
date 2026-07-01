@@ -2,6 +2,8 @@ import {
   ApplyCommandsToolResultSchema,
   ContextSummaryToolInputSchema,
   ContextSummaryToolResultSchema,
+  DiffSpecsToolInputSchema,
+  DiffSpecsToolResultSchema,
   ExplainSpecToolInputSchema,
   ExplainSpecToolResultSchema,
   ExportExampleAppToolInputSchema,
@@ -9,6 +11,8 @@ import {
   ExportSpecToolInputSchema,
   ExportSpecToolResultSchema,
   exportExampleAppTool,
+  GenerateSpecToolInputSchema,
+  GenerateSpecToolResultSchema,
   GenerationEvidenceBundleInputSchema,
   GenerationEvidenceBundleSchema,
   gisEngineTools,
@@ -180,6 +184,8 @@ describe("schema sync gate", () => {
       "snapshot_spec",
       "explain_spec",
       "export_example_app",
+      "diff_specs",
+      "generate_spec",
     ]);
     expect(toolNames.every((name) => /^[a-z]+(?:_[a-z]+)*$/.test(name))).toBe(true);
     expect(toolNames).not.toContain("snapshotSpec");
@@ -197,6 +203,8 @@ describe("schema sync gate", () => {
     expect(schemasByName.snapshot_spec).toBe(SnapshotSpecToolInputSchema);
     expect(schemasByName.explain_spec).toBe(ExplainSpecToolInputSchema);
     expect(schemasByName.export_example_app).toBe(ExportExampleAppToolInputSchema);
+    expect(schemasByName.diff_specs).toBe(DiffSpecsToolInputSchema);
+    expect(schemasByName.generate_spec).toBe(GenerateSpecToolInputSchema);
   });
 
   it("keeps MCP tool output schemas in the public tool bundle", () => {
@@ -209,6 +217,8 @@ describe("schema sync gate", () => {
     expect(schemasByName.snapshot_spec).toBe(SnapshotSpecToolResultSchema);
     expect(schemasByName.explain_spec).toBe(ExplainSpecToolResultSchema);
     expect(schemasByName.export_example_app).toBe(ExportExampleAppToolResultSchema);
+    expect(schemasByName.diff_specs).toBe(DiffSpecsToolResultSchema);
+    expect(schemasByName.generate_spec).toBe(GenerateSpecToolResultSchema);
 
     for (const tool of gisEngineTools) {
       expect(() => new Ajv({ strict: false }).compile(tool.inputSchema)).not.toThrow();

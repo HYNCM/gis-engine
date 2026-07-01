@@ -141,7 +141,9 @@ export type GisEngineToolName =
   | "get_context_summary"
   | "snapshot_spec"
   | "explain_spec"
-  | "export_example_app";
+  | "export_example_app"
+  | "diff_specs"
+  | "generate_spec";
 
 export interface CapabilityDomainSummary {
   id: "feature-display" | "spatial-analysis" | "scene-browsing";
@@ -312,7 +314,15 @@ function buildCapabilitySummary(
         blocked: hasValidationError
           ? ["validation errors must be resolved before export_spec or snapshot_spec can be treated as ready evidence"]
           : [],
-        tools: ["validate_spec", "apply_commands", "export_spec", "snapshot_spec", "export_example_app"],
+        tools: [
+          "validate_spec",
+          "apply_commands",
+          "export_spec",
+          "snapshot_spec",
+          "export_example_app",
+          "diff_specs",
+          "generate_spec",
+        ],
         evidence: [
           "validation.valid and validation.diagnosticCounts",
           "source readiness, source contract, and layer summaries in get_context_summary",

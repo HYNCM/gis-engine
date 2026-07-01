@@ -19,12 +19,14 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprot
 import { Ajv, type ValidateFunction } from "ajv/dist/ajv.js";
 import { applyCommandsTool } from "../tools/applyCommands.js";
 import { getContextSummary } from "../tools/contextSummary.js";
+import { DiffSpecsToolInputSchema, diffSpecsTool } from "../tools/diffSpecs.js";
 import { ExplainSpecToolInputSchema, explainSpecTool } from "../tools/explainSpec.js";
 import {
   ExampleAppGenerationEvidenceSummarySchema,
   ExportExampleAppToolInputSchema,
   exportExampleAppTool,
 } from "../tools/exportExampleApp.js";
+import { GenerateSpecToolInputSchema, generateSpecTool } from "../tools/generateSpec.js";
 import { toolInputErrorsToDiagnostics } from "../tools/schemaDiagnostics.js";
 import { DiagnosticCountsSchema, stripNestedIds } from "../tools/shared.js";
 import { SnapshotSpecToolInputSchema, snapshotSpecTool } from "../tools/snapshotSpec.js";
@@ -184,6 +186,8 @@ const CapabilityDomainSummarySchema = {
           "snapshot_spec",
           "explain_spec",
           "export_example_app",
+          "diff_specs",
+          "generate_spec",
         ],
       },
     },
@@ -472,6 +476,38 @@ export const ExportExampleAppToolResultSchema = {
   additionalProperties: false,
 } as const;
 
+export const DiffSpecsToolResultSchema = {
+  type: "object",
+  properties: {
+    commands: { type: "array", items: MapCommandSchema },
+    summary: {
+      type: "object",
+      properties: {
+        added: { type: "array", items: { type: "string" } },
+        removed: { type: "array", items: { type: "string" } },
+        modified: { type: "array", items: { type: "string" } },
+        unchanged: { type: "array", items: { type: "string" } },
+      },
+      required: ["added", "removed", "modified", "unchanged"],
+      additionalProperties: false,
+    },
+    diagnostics: { type: "array", items: DiagnosticContractSchema },
+  },
+  required: ["commands", "summary", "diagnostics"],
+  additionalProperties: false,
+} as const;
+
+export const GenerateSpecToolResultSchema = {
+  type: "object",
+  properties: {
+    spec: MapSpecSchema,
+    diagnostics: { type: "array", items: DiagnosticContractSchema },
+    suggestions: { type: "array", items: { type: "string" } },
+  },
+  required: ["spec", "diagnostics", "suggestions"],
+  additionalProperties: false,
+} as const;
+
 interface ValidateSpecToolInput {
   spec: MapSpec;
 }
@@ -540,6 +576,20 @@ export const gisEngineTools = [
     description: "Return a manifest and file list for a bundled example without writing files.",
     inputSchema: ExportExampleAppToolInputSchema,
     outputSchema: ExportExampleAppToolResultSchema,
+  },
+  {
+    name: "diff_specs",
+    description:
+      "Compare two MapSpec objects and output the command set needed to transform one into the other, with a summary of changes.",
+    inputSchema: DiffSpecsToolInputSchema,
+    outputSchema: DiffSpecsToolResultSchema,
+  },
+  {
+    name: "generate_spec",
+    description:
+      "Generate a MapSpec skeleton from a structured intent description, with validation and improvement suggestions.",
+    inputSchema: GenerateSpecToolInputSchema,
+    outputSchema: GenerateSpecToolResultSchema,
   },
 ] as const;
 
@@ -613,6 +663,16 @@ export async function callGisEngineTool(request: { params: { name: string; argum
 
     if (name === "export_example_app") {
       const result = exportExampleAppTool(args);
+      return toolTextResult(result.ok ? result.result : result.diagnostics, !result.ok);
+    }
+
+    if (name === "diff_specs") {
+      const result = diffSpecsTool(args);
+      return toolTextResult(result.ok ? result.result : result.diagnostics, !result.ok);
+    }
+
+    if (name === "generate_spec") {
+      const result = generateSpecTool(args);
       return toolTextResult(result.ok ? result.result : result.diagnostics, !result.ok);
     }
 
