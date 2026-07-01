@@ -1,0 +1,17 @@
+{
+  "name": "@gis-engine/example-openai-agent",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "npx tsx src/main.ts",
+    "start:mcp": "npx tsx src/agent-mcp.ts"
+  },
+  "dependencies": {
+    "@gis-engine/engine": "^1.0.0",
+    "@gis-engine/ai": "^1.0.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.0.0"
+  }
+}
