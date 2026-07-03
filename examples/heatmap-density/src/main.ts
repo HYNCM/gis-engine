@@ -21,13 +21,13 @@ import { createMap, validateSpec } from "@gis-engine/engine";
 
 function generateEarthquakeData() {
   const regions: Array<{ center: [number, number]; spread: number; count: number }> = [
-    { center: [142.0, 38.0], spread: 3, count: 8 },   // Japan
-    { center: [-122.0, 37.0], spread: 2, count: 6 },   // California
-    { center: [175.0, -41.0], spread: 3, count: 5 },   // New Zealand
-    { center: [121.0, 14.0], spread: 2, count: 5 },    // Philippines
-    { center: [-71.0, -33.0], spread: 3, count: 6 },   // Chile
-    { center: [28.0, 38.0], spread: 2, count: 5 },     // Turkey
-    { center: [73.0, 33.0], spread: 2, count: 5 },     // Pakistan
+    { center: [142.0, 38.0], spread: 3, count: 8 }, // Japan
+    { center: [-122.0, 37.0], spread: 2, count: 6 }, // California
+    { center: [175.0, -41.0], spread: 3, count: 5 }, // New Zealand
+    { center: [121.0, 14.0], spread: 2, count: 5 }, // Philippines
+    { center: [-71.0, -33.0], spread: 3, count: 6 }, // Chile
+    { center: [28.0, 38.0], spread: 2, count: 5 }, // Turkey
+    { center: [73.0, 33.0], spread: 2, count: 5 }, // Pakistan
   ];
 
   const features: Array<{

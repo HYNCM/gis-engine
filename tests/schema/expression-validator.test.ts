@@ -151,9 +151,7 @@ describe("expression validator", () => {
 
   it("reports mixed types in coalesce", () => {
     const mixed = validateSpec(withPaintAndLayout({ "circle-color": ["coalesce", "hello", 4] }));
-    expect(mixed.diagnostics).toContainEqual(
-      expect.objectContaining({ code: DiagnosticCodes.ExpressionTypeMismatch }),
-    );
+    expect(mixed.diagnostics).toContainEqual(expect.objectContaining({ code: DiagnosticCodes.ExpressionTypeMismatch }));
   });
 
   it("accepts exponential interpolation", () => {

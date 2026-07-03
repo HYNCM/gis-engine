@@ -80,6 +80,8 @@ const GisEngineToolNameSchema = {
     "export_example_app",
     "diff_specs",
     "generate_spec",
+    "inspect_data",
+    "edit_spec",
   ],
 } as const;
 

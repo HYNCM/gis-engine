@@ -24,18 +24,66 @@ import { createMap, validateSpec } from "@gis-engine/engine";
 const citiesData = {
   type: "FeatureCollection" as const,
   features: [
-    { type: "Feature" as const, properties: { name: "Tokyo", population: 37400000, type: "megacity" }, geometry: { type: "Point" as const, coordinates: [139.6917, 35.6895] } },
-    { type: "Feature" as const, properties: { name: "Delhi", population: 30290000, type: "megacity" }, geometry: { type: "Point" as const, coordinates: [77.1025, 28.7041] } },
-    { type: "Feature" as const, properties: { name: "Shanghai", population: 27058000, type: "megacity" }, geometry: { type: "Point" as const, coordinates: [121.4737, 31.2304] } },
-    { type: "Feature" as const, properties: { name: "São Paulo", population: 22043000, type: "megacity" }, geometry: { type: "Point" as const, coordinates: [-46.6333, -23.5505] } },
-    { type: "Feature" as const, properties: { name: "Cairo", population: 20901000, type: "megacity" }, geometry: { type: "Point" as const, coordinates: [31.2357, 30.0444] } },
-    { type: "Feature" as const, properties: { name: "London", population: 9002000, type: "capital" }, geometry: { type: "Point" as const, coordinates: [-0.1276, 51.5074] } },
-    { type: "Feature" as const, properties: { name: "Paris", population: 11020000, type: "capital" }, geometry: { type: "Point" as const, coordinates: [2.3522, 48.8566] } },
-    { type: "Feature" as const, properties: { name: "New York", population: 18819000, type: "megacity" }, geometry: { type: "Point" as const, coordinates: [-74.006, 40.7128] } },
-    { type: "Feature" as const, properties: { name: "Beijing", population: 20463000, type: "capital" }, geometry: { type: "Point" as const, coordinates: [116.4074, 39.9042] } },
-    { type: "Feature" as const, properties: { name: "Sydney", population: 5312000, type: "capital" }, geometry: { type: "Point" as const, coordinates: [151.2093, -33.8688] } },
-    { type: "Feature" as const, properties: { name: "Moscow", population: 12538000, type: "capital" }, geometry: { type: "Point" as const, coordinates: [37.6173, 55.7558] } },
-    { type: "Feature" as const, properties: { name: "Lagos", population: 14368000, type: "megacity" }, geometry: { type: "Point" as const, coordinates: [3.3792, 6.5244] } },
+    {
+      type: "Feature" as const,
+      properties: { name: "Tokyo", population: 37400000, type: "megacity" },
+      geometry: { type: "Point" as const, coordinates: [139.6917, 35.6895] },
+    },
+    {
+      type: "Feature" as const,
+      properties: { name: "Delhi", population: 30290000, type: "megacity" },
+      geometry: { type: "Point" as const, coordinates: [77.1025, 28.7041] },
+    },
+    {
+      type: "Feature" as const,
+      properties: { name: "Shanghai", population: 27058000, type: "megacity" },
+      geometry: { type: "Point" as const, coordinates: [121.4737, 31.2304] },
+    },
+    {
+      type: "Feature" as const,
+      properties: { name: "São Paulo", population: 22043000, type: "megacity" },
+      geometry: { type: "Point" as const, coordinates: [-46.6333, -23.5505] },
+    },
+    {
+      type: "Feature" as const,
+      properties: { name: "Cairo", population: 20901000, type: "megacity" },
+      geometry: { type: "Point" as const, coordinates: [31.2357, 30.0444] },
+    },
+    {
+      type: "Feature" as const,
+      properties: { name: "London", population: 9002000, type: "capital" },
+      geometry: { type: "Point" as const, coordinates: [-0.1276, 51.5074] },
+    },
+    {
+      type: "Feature" as const,
+      properties: { name: "Paris", population: 11020000, type: "capital" },
+      geometry: { type: "Point" as const, coordinates: [2.3522, 48.8566] },
+    },
+    {
+      type: "Feature" as const,
+      properties: { name: "New York", population: 18819000, type: "megacity" },
+      geometry: { type: "Point" as const, coordinates: [-74.006, 40.7128] },
+    },
+    {
+      type: "Feature" as const,
+      properties: { name: "Beijing", population: 20463000, type: "capital" },
+      geometry: { type: "Point" as const, coordinates: [116.4074, 39.9042] },
+    },
+    {
+      type: "Feature" as const,
+      properties: { name: "Sydney", population: 5312000, type: "capital" },
+      geometry: { type: "Point" as const, coordinates: [151.2093, -33.8688] },
+    },
+    {
+      type: "Feature" as const,
+      properties: { name: "Moscow", population: 12538000, type: "capital" },
+      geometry: { type: "Point" as const, coordinates: [37.6173, 55.7558] },
+    },
+    {
+      type: "Feature" as const,
+      properties: { name: "Lagos", population: 14368000, type: "megacity" },
+      geometry: { type: "Point" as const, coordinates: [3.3792, 6.5244] },
+    },
   ],
 };
 

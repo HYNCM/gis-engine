@@ -12,8 +12,8 @@
 //
 // =============================================================================
 
-import { createMap, validateSpec } from "@gis-engine/engine";
 import { generateSpecTool } from "@gis-engine/ai";
+import { createMap, validateSpec } from "@gis-engine/engine";
 
 // ---------------------------------------------------------------------------
 // Step 1: Use generate_spec to create a choropleth spec

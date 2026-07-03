@@ -125,7 +125,7 @@ npm exec --package @gis-engine/cli@latest -- create-gis-map my-map --generate -p
 
 - **Package READMEs:** [CLI](packages/cli/README.md) · [Engine](packages/engine/README.md) · [AI](packages/ai/README.md)
 - **Documentation:** [Docs site](https://hyncm.github.io/gis-engine/) · [Quick start guide](https://hyncm.github.io/gis-engine/guide/quick-start) · [API reference](https://hyncm.github.io/gis-engine/api/)
-- **Examples:** [basic-geojson](examples/basic-geojson) · [raster-basemap](examples/raster-basemap) · [pmtiles-local](examples/pmtiles-local) · [vector-tile-url](examples/vector-tile-url) · [ai-map-edit](examples/ai-map-edit) · [fill-extrusion-lite](examples/fill-extrusion-lite) · [diagnostics-walkthrough](examples/diagnostics-walkthrough) · [snapshot-testing](examples/snapshot-testing) · [mcp-server-setup](examples/mcp-server-setup) · [ai-map-workbench](examples/ai-map-workbench)
+- **Examples:** [basic-geojson](examples/basic-geojson) · [raster-basemap](examples/raster-basemap) · [pmtiles-local](examples/pmtiles-local) · [vector-tile-url](examples/vector-tile-url) · [ai-map-edit](examples/ai-map-edit) · [fill-extrusion-lite](examples/fill-extrusion-lite) · [diagnostics-walkthrough](examples/diagnostics-walkthrough) · [snapshot-testing](examples/snapshot-testing) · [mcp-server-setup](examples/mcp-server-setup) · [ai-map-workbench](examples/ai-map-workbench) · [heatmap-density](examples/heatmap-density) · [choropleth-auto](examples/choropleth-auto) · [symbol-labels](examples/symbol-labels) · [expression-showcase](examples/expression-showcase)
 
 ---
 

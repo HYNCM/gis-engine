@@ -104,6 +104,8 @@ describe("MCP Server Integration", () => {
       "export_example_app",
       "diff_specs",
       "generate_spec",
+      "inspect_data",
+      "edit_spec",
     ]);
     expect(tools.map((tool) => tool.name)).not.toContain("snapshotSpec");
     expect(tools.map((tool) => tool.name)).not.toContain("explainSpec");

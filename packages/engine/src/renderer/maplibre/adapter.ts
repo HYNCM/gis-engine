@@ -37,7 +37,17 @@ export class MapLibreAdapter implements RendererAdapter {
       renderer: this.id,
       dimensions: ["2d", "2_5d"],
       sources: ["geojson", "raster", "pmtiles", "vector"],
-      layers: ["background", "raster", "fill", "line", "circle", "symbol", "symbol-lite", "fill-extrusion-lite", "heatmap"],
+      layers: [
+        "background",
+        "raster",
+        "fill",
+        "line",
+        "circle",
+        "symbol",
+        "symbol-lite",
+        "fill-extrusion-lite",
+        "heatmap",
+      ],
       expressions: [
         "get",
         "has",

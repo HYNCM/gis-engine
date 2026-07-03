@@ -33,6 +33,7 @@ export const GenerateSpecToolInputSchema = {
       properties: {
         includeMetadata: { type: "boolean" },
         includeInteractions: { type: "boolean" },
+        includeTimestamp: { type: "boolean" },
       },
       additionalProperties: false,
     },
@@ -54,6 +55,7 @@ export interface GenerateSpecToolInput {
   options?: {
     includeMetadata?: boolean;
     includeInteractions?: boolean;
+    includeTimestamp?: boolean;
   };
 }
 
@@ -96,7 +98,7 @@ export function generateSpecTool(input: unknown): GenerateSpecToolResponse {
 
   // Build source
   const sourceId = "primary-source";
-  const source = buildSource(dataType, description, vizType);
+  const source = buildSource(dataType, description, vizType, intent.description);
 
   // Build layers
   const theme = intent.theme ?? "dark";
@@ -115,11 +117,12 @@ export function generateSpecTool(input: unknown): GenerateSpecToolResponse {
 
   // Build metadata
   const includeMetadata = options?.includeMetadata ?? true;
+  const includeTimestamp = options?.includeTimestamp ?? false;
   const metadata: Record<string, unknown> | undefined = includeMetadata
     ? {
         generator: "gis-engine/generate_spec",
         description: intent.description,
-        generatedAt: new Date().toISOString(),
+        ...(includeTimestamp ? { generatedAt: new Date().toISOString() } : {}),
       }
     : undefined;
 
@@ -134,14 +137,25 @@ export function generateSpecTool(input: unknown): GenerateSpecToolResponse {
 
   // Validate the generated spec
   const validation = validateSpec(spec);
-  if (!validation.valid) {
+  const hasErrors = validation.diagnostics.some((d) => d.severity === "error");
+
+  if (!validation.valid || hasErrors) {
+    // Error-level diagnostics (e.g. SECURITY.URL_BLOCKED) are preserved as-is;
+    // only non-error diagnostics are downgraded to warnings.
     diagnostics.push({
-      severity: "warning",
+      severity: "error",
       code: DiagnosticCodes.SpecInvalidType,
       message: "Generated spec has validation errors; review before use.",
       path: "/spec",
     });
-    diagnostics.push(...validation.diagnostics.map((d) => ({ ...d, severity: "warning" as const })));
+    diagnostics.push(
+      ...validation.diagnostics.map((d) => (d.severity === "error" ? d : { ...d, severity: "warning" as const })),
+    );
+
+    return {
+      ok: false,
+      diagnostics,
+    };
   }
 
   // Generate suggestions
@@ -149,10 +163,10 @@ export function generateSpecTool(input: unknown): GenerateSpecToolResponse {
     suggestions.push("Replace the placeholder GeoJSON data with your actual feature collection.");
   }
   if (dataType === "vector-tiles") {
-    suggestions.push("Update the tile URL template to point to your vector tile server.");
+    suggestions.push("Replace the placeholder tile URL with your actual vector tile server endpoint.");
   }
   if (dataType === "raster") {
-    suggestions.push("Replace the tile URL template with your raster tile server endpoint.");
+    suggestions.push("Replace the placeholder tile URL with your actual raster tile server endpoint.");
   }
   if (vizType === "fill" || vizType === "fill-extrusion-lite") {
     suggestions.push(
@@ -293,7 +307,8 @@ type VisualizationType =
 
 function detectVisualizationType(description: string): VisualizationType {
   // New types — higher priority
-  if (/(choropleth|等值线|分级统计图|thematic\s*map|colored\s*regions?|区域着色)/.test(description)) return "choropleth";
+  if (/(choropleth|等值线|分级统计图|thematic\s*map|colored\s*regions?|区域着色)/.test(description))
+    return "choropleth";
   if (/(heatmap|density|热力图|密度图)/.test(description)) return "heatmap";
   if (/(graduated|bubble|proportional|气泡图|比例符号)/.test(description)) return "graduated-circle";
   if (/(label|annotation|marker|标注|标签|标记|point\s*of\s*interest)/.test(description)) return "symbol";
@@ -387,11 +402,16 @@ function detectDataProperty(description: string, explicit?: string): string {
 
 /* ─── Source Builder ────────────────────────────────────────────────────── */
 
-function buildSource(dataType: "geojson" | "vector-tiles" | "raster", _description: string, vizType: VisualizationType): SourceSpec {
+function buildSource(
+  dataType: "geojson" | "vector-tiles" | "raster",
+  _description: string,
+  vizType: VisualizationType,
+  seed: string = "default",
+): SourceSpec {
   if (dataType === "raster") {
     return {
       type: "raster",
-      tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+      tiles: ["./data/raster-tiles/{z}/{x}/{y}.png"],
       tileSize: 256,
       attribution: "© OpenStreetMap contributors",
     };
@@ -400,7 +420,7 @@ function buildSource(dataType: "geojson" | "vector-tiles" | "raster", _descripti
   if (dataType === "vector-tiles") {
     return {
       type: "vector",
-      tiles: ["https://example.com/tiles/{z}/{x}/{y}.pbf"],
+      tiles: ["./data/vector-tiles/{z}/{x}/{y}.pbf"],
       minzoom: 0,
       maxzoom: 14,
     };
@@ -409,7 +429,22 @@ function buildSource(dataType: "geojson" | "vector-tiles" | "raster", _descripti
   // GeoJSON with sample data
   return {
     type: "geojson",
-    data: buildSampleGeoJSON(vizType),
+    data: buildSampleGeoJSON(vizType, seed),
+  };
+}
+
+/* ─── Seeded PRNG ──────────────────────────────────────────────────────── */
+
+function createSeededRNG(seed: string): () => number {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) {
+    h = (Math.imul(31, h) + seed.charCodeAt(i)) | 0;
+  }
+  return () => {
+    h ^= h << 13;
+    h ^= h >> 17;
+    h ^= h << 5;
+    return (h >>> 0) / 0xffffffff;
   };
 }
 
@@ -426,27 +461,82 @@ interface Feature {
   properties: Record<string, unknown> | null;
 }
 
-function buildSampleGeoJSON(vizType: string): FeatureCollection {
+function buildSampleGeoJSON(vizType: string, seed: string = "default"): FeatureCollection {
   if (vizType === "choropleth") {
     return {
       type: "FeatureCollection",
       features: [
-        makePolygonFeature([[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]], { name: "Region A", population: 1200000 }),
-        makePolygonFeature([[1, 0], [2, 0], [2, 1], [1, 1], [1, 0]], { name: "Region B", population: 3500000 }),
-        makePolygonFeature([[2, 0], [3, 0], [3, 1], [2, 1], [2, 0]], { name: "Region C", population: 800000 }),
-        makePolygonFeature([[0, 1], [1, 1], [1, 2], [0, 2], [0, 1]], { name: "Region D", population: 5200000 }),
-        makePolygonFeature([[1, 1], [2, 1], [2, 2], [1, 2], [1, 1]], { name: "Region E", population: 2100000 }),
-        makePolygonFeature([[2, 1], [3, 1], [3, 2], [2, 2], [2, 1]], { name: "Region F", population: 4700000 }),
+        makePolygonFeature(
+          [
+            [0, 0],
+            [1, 0],
+            [1, 1],
+            [0, 1],
+            [0, 0],
+          ],
+          { name: "Region A", population: 1200000 },
+        ),
+        makePolygonFeature(
+          [
+            [1, 0],
+            [2, 0],
+            [2, 1],
+            [1, 1],
+            [1, 0],
+          ],
+          { name: "Region B", population: 3500000 },
+        ),
+        makePolygonFeature(
+          [
+            [2, 0],
+            [3, 0],
+            [3, 1],
+            [2, 1],
+            [2, 0],
+          ],
+          { name: "Region C", population: 800000 },
+        ),
+        makePolygonFeature(
+          [
+            [0, 1],
+            [1, 1],
+            [1, 2],
+            [0, 2],
+            [0, 1],
+          ],
+          { name: "Region D", population: 5200000 },
+        ),
+        makePolygonFeature(
+          [
+            [1, 1],
+            [2, 1],
+            [2, 2],
+            [1, 2],
+            [1, 1],
+          ],
+          { name: "Region E", population: 2100000 },
+        ),
+        makePolygonFeature(
+          [
+            [2, 1],
+            [3, 1],
+            [3, 2],
+            [2, 2],
+            [2, 1],
+          ],
+          { name: "Region F", population: 4700000 },
+        ),
       ],
     };
   }
 
   if (vizType === "heatmap") {
+    const rng = createSeededRNG(seed);
     const features: Feature[] = [];
     for (let i = 0; i < 25; i++) {
-      const lng = 116.0 + Math.random() * 2;
-      const lat = 39.0 + Math.random() * 2;
-      features.push(makePointFeature([lng, lat], { name: `Hotspot ${i + 1}`, intensity: Math.random() * 100 }));
+      const lng = 116.0 + rng() * 2;
+      const lat = 39.0 + rng() * 2;
+      features.push(makePointFeature([lng, lat], { name: `Hotspot ${i + 1}`, intensity: rng() * 100 }));
     }
     return { type: "FeatureCollection", features };
   }
@@ -472,9 +562,7 @@ function buildSampleGeoJSON(vizType: string): FeatureCollection {
   // Default: Point features
   return {
     type: "FeatureCollection",
-    features: [
-      makePointFeature([0, 0], { name: "Placeholder" }),
-    ],
+    features: [makePointFeature([0, 0], { name: "Placeholder" })],
   };
 }
 
@@ -511,54 +599,74 @@ function buildLayers(
 
   // Circle
   if (vizType === "circle") {
-    return [{
-      id: "point-layer", type: "circle", source: sourceId,
-      paint: {
-        "circle-radius": 6,
-        "circle-color": palette.circle,
-        "circle-stroke-width": 1,
-        "circle-stroke-color": theme === "dark" || theme === "satellite" ? "#1e3a5f" : "#ffffff",
+    return [
+      {
+        id: "point-layer",
+        type: "circle",
+        source: sourceId,
+        paint: {
+          "circle-radius": 6,
+          "circle-color": palette.circle,
+          "circle-stroke-width": 1,
+          "circle-stroke-color": theme === "dark" || theme === "satellite" ? "#1e3a5f" : "#ffffff",
+        },
       },
-    }];
+    ];
   }
 
   // Line
   if (vizType === "line") {
-    return [{
-      id: "line-layer", type: "line", source: sourceId,
-      paint: { "line-color": palette.line, "line-width": 2 },
-    }];
+    return [
+      {
+        id: "line-layer",
+        type: "line",
+        source: sourceId,
+        paint: { "line-color": palette.line, "line-width": 2 },
+      },
+    ];
   }
 
   // Fill-extrusion-lite
   if (vizType === "fill-extrusion-lite") {
-    return [{
-      id: "extrusion-layer", type: "fill-extrusion-lite", source: sourceId,
-      paint: {
-        "fill-extrusion-color": theme === "dark" || theme === "satellite" ? "#4b5563" : "#9ca3af",
-        "fill-extrusion-height": ["get", "height"],
-        "fill-extrusion-opacity": 0.8,
+    return [
+      {
+        id: "extrusion-layer",
+        type: "fill-extrusion-lite",
+        source: sourceId,
+        paint: {
+          "fill-extrusion-color": theme === "dark" || theme === "satellite" ? "#4b5563" : "#9ca3af",
+          "fill-extrusion-height": ["get", "height"],
+          "fill-extrusion-opacity": 0.8,
+        },
       },
-    }];
+    ];
   }
 
   // Symbol-lite (backward compat)
   if (vizType === "symbol-lite") {
-    return [{
-      id: "label-layer", type: "symbol-lite", source: sourceId,
-      layout: { "text-field": ["get", "name"] },
-      paint: { "text-color": palette.text },
-    }];
+    return [
+      {
+        id: "label-layer",
+        type: "symbol-lite",
+        source: sourceId,
+        layout: { "text-field": ["get", "name"] },
+        paint: { "text-color": palette.text },
+      },
+    ];
   }
 
   // Default: fill
   return [
     {
-      id: "fill-layer", type: "fill", source: sourceId,
+      id: "fill-layer",
+      type: "fill",
+      source: sourceId,
       paint: { "fill-color": palette.fill, "fill-opacity": 0.7 },
     },
     {
-      id: "outline-layer", type: "line", source: sourceId,
+      id: "outline-layer",
+      type: "line",
+      source: sourceId,
       paint: { "line-color": palette.line, "line-width": 1 },
     },
   ];
@@ -575,12 +683,19 @@ function buildChoroplethLayer(sourceId: string, theme: ThemeName, _description: 
       source: sourceId,
       paint: {
         "fill-color": [
-          "interpolate", ["linear"], ["get", prop],
-          0, ramp[0],
-          1000000, ramp[1],
-          2000000, ramp[2],
-          5000000, ramp[3],
-          10000000, ramp[4],
+          "interpolate",
+          ["linear"],
+          ["get", prop],
+          0,
+          ramp[0],
+          1000000,
+          ramp[1],
+          2000000,
+          ramp[2],
+          5000000,
+          ramp[3],
+          10000000,
+          ramp[4],
         ],
         "fill-opacity": 0.8,
       },
@@ -604,12 +719,7 @@ function buildGraduatedCircleLayer(sourceId: string, palette: ThemePalette, prop
       type: "circle",
       source: sourceId,
       paint: {
-        "circle-radius": [
-          "interpolate", ["linear"], ["get", prop],
-          0, 4,
-          5, 12,
-          10, 28,
-        ],
+        "circle-radius": ["interpolate", ["linear"], ["get", prop], 0, 4, 5, 12, 10, 28],
         "circle-color": palette.circle,
         "circle-stroke-width": 1,
         "circle-stroke-color": palette.background,
@@ -630,11 +740,17 @@ function buildHeatmapLayer(sourceId: string, prop: string): LayerSpec[] {
         "heatmap-intensity": 1.5,
         "heatmap-radius": 20,
         "heatmap-color": [
-          "interpolate", ["linear"], ["heatmap-density"],
-          0, "rgba(0,0,0,0)",
-          0.2, "#3b82f6",
-          0.5, "#f59e0b",
-          1, "#ef4444",
+          "interpolate",
+          ["linear"],
+          ["heatmap-density"],
+          0,
+          "rgba(0,0,0,0)",
+          0.2,
+          "#3b82f6",
+          0.5,
+          "#f59e0b",
+          1,
+          "#ef4444",
         ],
       },
     },

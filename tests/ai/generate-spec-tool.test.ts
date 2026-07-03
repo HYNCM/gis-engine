@@ -1,4 +1,4 @@
-import { callGisEngineTool } from "@gis-engine/ai";
+import { callGisEngineTool, generateSpecTool } from "@gis-engine/ai";
 import { describe, expect, it } from "vitest";
 
 describe("generate_spec MCP tool", () => {
@@ -231,8 +231,8 @@ describe("generate_spec MCP tool", () => {
 
     const fillLayer = payload.spec.layers.find((l) => l.id === "choropleth-fill");
     expect(fillLayer).toBeDefined();
-    expect(fillLayer!.type).toBe("fill");
-    const fillColor = fillLayer!.paint["fill-color"] as unknown[];
+    expect(fillLayer?.type).toBe("fill");
+    const fillColor = fillLayer?.paint["fill-color"] as unknown[];
     expect(fillColor[0]).toBe("interpolate");
     // Should use 'population' property detected from description
     const getExpr = fillColor[2] as unknown[];
@@ -241,7 +241,7 @@ describe("generate_spec MCP tool", () => {
 
     const outlineLayer = payload.spec.layers.find((l) => l.id === "choropleth-outline");
     expect(outlineLayer).toBeDefined();
-    expect(outlineLayer!.type).toBe("line");
+    expect(outlineLayer?.type).toBe("line");
   });
 
   it("generates graduated-circle with circle-radius interpolate", async () => {
@@ -415,7 +415,7 @@ describe("generate_spec MCP tool", () => {
 
     const fillLayer = payload.spec.layers.find((l) => l.id === "choropleth-fill");
     expect(fillLayer).toBeDefined();
-    const fillColor = fillLayer!.paint["fill-color"] as unknown[];
+    const fillColor = fillLayer?.paint["fill-color"] as unknown[];
     const getExpr = fillColor[2] as unknown[];
     expect(getExpr[1]).toBe("income");
   });
@@ -437,5 +437,99 @@ describe("generate_spec MCP tool", () => {
     expect(payload.spec.view.center[0]).toBeCloseTo(116.4074, 0);
     expect(payload.spec.view.center[1]).toBeCloseTo(39.9042, 0);
     expect(payload.spec.view.zoom).toBe(10);
+  });
+
+  it("returns ok:true when raster spec uses relative tile URLs", () => {
+    // Directly test generateSpecTool to verify relative URLs pass resource-policy.
+    const result = generateSpecTool({
+      intent: {
+        description: "Display satellite imagery of Tokyo",
+        dataType: "raster" as const,
+      },
+      options: { includeMetadata: false },
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const source = result.result.spec.sources["primary-source"] as { tiles: string[] };
+      expect(source.tiles[0]).toMatch(/^\.\//); // relative path
+    }
+  });
+
+  it("returns ok:true for geojson type (inline data, no external URLs)", () => {
+    const result = generateSpecTool({
+      intent: {
+        description: "Show population choropleth of regions",
+        dataType: "geojson" as const,
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const source = result.result.spec.sources["primary-source"] as { type: string };
+      expect(source.type).toBe("geojson");
+    }
+  });
+
+  it("produces deterministic heatmap output for the same input", () => {
+    const input = {
+      intent: {
+        description: "Show crime density heatmap in New York",
+      },
+    };
+
+    const result1 = generateSpecTool(input);
+    const result2 = generateSpecTool(input);
+
+    expect(result1.ok).toBe(true);
+    expect(result2.ok).toBe(true);
+    if (result1.ok && result2.ok) {
+      expect(result1.result.spec).toEqual(result2.result.spec);
+    }
+  });
+
+  it("produces different heatmap output for different inputs", () => {
+    const result1 = generateSpecTool({
+      intent: { description: "Show crime density heatmap in New York" },
+    });
+    const result2 = generateSpecTool({
+      intent: { description: "Show population density heatmap in Tokyo" },
+    });
+
+    expect(result1.ok).toBe(true);
+    expect(result2.ok).toBe(true);
+    if (result1.ok && result2.ok) {
+      const source1 = result1.result.spec.sources["primary-source"] as { data: { features: unknown[] } };
+      const source2 = result2.result.spec.sources["primary-source"] as { data: { features: unknown[] } };
+      expect(source1.data.features).not.toEqual(source2.data.features);
+    }
+  });
+
+  it("metadata does not include generatedAt by default", () => {
+    const result = generateSpecTool({
+      intent: { description: "A simple map" },
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const metadata = result.result.spec.metadata as Record<string, unknown> | undefined;
+      expect(metadata).toBeDefined();
+      expect(metadata?.generatedAt).toBeUndefined();
+      expect(metadata?.generator).toBe("gis-engine/generate_spec");
+    }
+  });
+
+  it("includes generatedAt when includeTimestamp is true", () => {
+    const result = generateSpecTool({
+      intent: { description: "A simple map" },
+      options: { includeTimestamp: true },
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const metadata = result.result.spec.metadata as Record<string, unknown> | undefined;
+      expect(metadata?.generatedAt).toBeDefined();
+      expect(typeof metadata?.generatedAt).toBe("string");
+    }
   });
 });

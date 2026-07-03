@@ -1,0 +1,85 @@
+# Release — Changesets 驱动的自动发布工作流
+#
+# 触发：
+#   - push 到 main 分支时自动运行
+#
+# 行为：
+#   - 如果有待发布的 changeset → 创建 "Version Packages" PR
+#   - 如果没有待发布的 changeset → 发布当前未发布的 GA 包版本到 npm
+#   - scene3d 使用 next dist-tag；scene3d-three-adapter 不进 GA publish
+#
+# 前置条件：
+#   - GitHub Secrets 中配置 NPM_TOKEN (npm Granular Access Token)
+#   - Token 需要覆盖 @gis-engine/engine、@gis-engine/scene3d、@gis-engine/ai、@gis-engine/cli
+
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: "https://registry.npmjs.org"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build schema
+        run: pnpm build:schema
+
+      - name: Build
+        run: pnpm build
+
+      - name: Detect pending changesets
+        id: changesets
+        shell: bash
+        run: |
+          if find .changeset -maxdepth 1 -name "*.md" ! -name "README.md" | grep -q .; then
+            echo "pending=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "pending=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create Version Packages Pull Request
+        if: steps.changesets.outputs.pending == 'true'
+        uses: changesets/action@v1
+        with:
+          version: pnpm changeset version
+          commit: "chore: version packages"
+          title: "chore: version packages"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish GA packages to npm
+        if: steps.changesets.outputs.pending == 'false'
+        run: pnpm release:publish
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

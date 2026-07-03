@@ -189,7 +189,16 @@ export interface SymbolLayerSpec {
     "symbol-spacing"?: unknown;
     "text-font"?: string[];
     "text-size"?: unknown;
-    "text-anchor"?: "center" | "left" | "right" | "top" | "bottom" | "top-left" | "top-right" | "bottom-left" | "bottom-right";
+    "text-anchor"?:
+      | "center"
+      | "left"
+      | "right"
+      | "top"
+      | "bottom"
+      | "top-left"
+      | "top-right"
+      | "bottom-left"
+      | "bottom-right";
     "text-offset"?: unknown[];
     "text-max-width"?: unknown;
     "text-line-height"?: unknown;
@@ -197,7 +206,16 @@ export interface SymbolLayerSpec {
     "text-justify"?: "auto" | "left" | "center" | "right";
     "text-transform"?: "none" | "uppercase" | "lowercase";
     "icon-size"?: unknown;
-    "icon-anchor"?: "center" | "left" | "right" | "top" | "bottom" | "top-left" | "top-right" | "bottom-left" | "bottom-right";
+    "icon-anchor"?:
+      | "center"
+      | "left"
+      | "right"
+      | "top"
+      | "bottom"
+      | "top-left"
+      | "top-right"
+      | "bottom-left"
+      | "bottom-right";
     "icon-rotate"?: unknown;
     "icon-allow-overlap"?: unknown;
     "text-allow-overlap"?: unknown;

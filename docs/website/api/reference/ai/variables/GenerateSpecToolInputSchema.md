@@ -1,4 +1,4 @@
-[**@gis-engine/ai v1.2.0**](../index.md)
+[**@gis-engine/ai v1.4.0**](../index.md)
 
 ***
 
@@ -94,7 +94,31 @@
 
 #### properties.intent.properties.theme.enum
 
-> `readonly` **enum**: readonly \[`"dark"`, `"light"`, `"satellite"`\]
+> `readonly` **enum**: readonly \[`"dark"`, `"light"`, `"satellite"`, `"ocean"`, `"forest"`, `"warm"`\]
+
+#### properties.intent.properties.dataProperty
+
+> `readonly` **dataProperty**: `object`
+
+#### properties.intent.properties.dataProperty.type
+
+> `readonly` **type**: `"string"` = `"string"`
+
+#### properties.intent.properties.dataProperty.description
+
+> `readonly` **description**: `"Feature property to use for data-driven styling"` = `"Feature property to use for data-driven styling"`
+
+#### properties.intent.properties.multiLayer
+
+> `readonly` **multiLayer**: `object`
+
+#### properties.intent.properties.multiLayer.type
+
+> `readonly` **type**: `"boolean"` = `"boolean"`
+
+#### properties.intent.properties.multiLayer.description
+
+> `readonly` **description**: `"Generate multi-layer composition"` = `"Generate multi-layer composition"`
 
 #### properties.intent.required
 
@@ -129,6 +153,14 @@
 > `readonly` **includeInteractions**: `object`
 
 #### properties.options.properties.includeInteractions.type
+
+> `readonly` **type**: `"boolean"` = `"boolean"`
+
+#### properties.options.properties.includeTimestamp
+
+> `readonly` **includeTimestamp**: `object`
+
+#### properties.options.properties.includeTimestamp.type
 
 > `readonly` **type**: `"boolean"` = `"boolean"`
 

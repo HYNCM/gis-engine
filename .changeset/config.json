@@ -7,5 +7,5 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["@gis-engine/studio", "gis-engine-docs"]
+  "ignore": ["@gis-engine/studio", "gis-engine-docs", "@gis-engine/scene3d-three-adapter"]
 }

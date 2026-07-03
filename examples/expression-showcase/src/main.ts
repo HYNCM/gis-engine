@@ -25,23 +25,99 @@ const regionsData = {
   features: [
     {
       type: "Feature" as const,
-      properties: { name: "Alpha", name_en: "Alpha Region", code: "ALP", population: 5200000, area: 12400, density: 419, magnitude: 3.2 },
-      geometry: { type: "Polygon" as const, coordinates: [[[10, 40], [15, 40], [15, 45], [10, 45], [10, 40]]] },
+      properties: {
+        name: "Alpha",
+        name_en: "Alpha Region",
+        code: "ALP",
+        population: 5200000,
+        area: 12400,
+        density: 419,
+        magnitude: 3.2,
+      },
+      geometry: {
+        type: "Polygon" as const,
+        coordinates: [
+          [
+            [10, 40],
+            [15, 40],
+            [15, 45],
+            [10, 45],
+            [10, 40],
+          ],
+        ],
+      },
     },
     {
       type: "Feature" as const,
-      properties: { name: "Beta", name_en: null, code: "BET", population: 8700000, area: 25800, density: 337, magnitude: 5.1 },
-      geometry: { type: "Polygon" as const, coordinates: [[[15, 40], [20, 40], [20, 45], [15, 45], [15, 40]]] },
+      properties: {
+        name: "Beta",
+        name_en: null,
+        code: "BET",
+        population: 8700000,
+        area: 25800,
+        density: 337,
+        magnitude: 5.1,
+      },
+      geometry: {
+        type: "Polygon" as const,
+        coordinates: [
+          [
+            [15, 40],
+            [20, 40],
+            [20, 45],
+            [15, 45],
+            [15, 40],
+          ],
+        ],
+      },
     },
     {
       type: "Feature" as const,
-      properties: { name: "Gamma", name_en: "Gamma Province", code: "GAM", population: 1500000, area: 8200, density: 183, magnitude: 2.8 },
-      geometry: { type: "Polygon" as const, coordinates: [[[10, 45], [15, 45], [15, 50], [10, 50], [10, 45]]] },
+      properties: {
+        name: "Gamma",
+        name_en: "Gamma Province",
+        code: "GAM",
+        population: 1500000,
+        area: 8200,
+        density: 183,
+        magnitude: 2.8,
+      },
+      geometry: {
+        type: "Polygon" as const,
+        coordinates: [
+          [
+            [10, 45],
+            [15, 45],
+            [15, 50],
+            [10, 50],
+            [10, 45],
+          ],
+        ],
+      },
     },
     {
       type: "Feature" as const,
-      properties: { name: "Delta", name_en: "Delta State", code: "DEL", population: 12000000, area: 45600, density: 263, magnitude: 7.4 },
-      geometry: { type: "Polygon" as const, coordinates: [[[15, 45], [20, 45], [20, 50], [15, 50], [15, 45]]] },
+      properties: {
+        name: "Delta",
+        name_en: "Delta State",
+        code: "DEL",
+        population: 12000000,
+        area: 45600,
+        density: 263,
+        magnitude: 7.4,
+      },
+      geometry: {
+        type: "Polygon" as const,
+        coordinates: [
+          [
+            [15, 45],
+            [20, 45],
+            [20, 50],
+            [15, 50],
+            [15, 45],
+          ],
+        ],
+      },
     },
   ],
 };
@@ -49,10 +125,26 @@ const regionsData = {
 const citiesData = {
   type: "FeatureCollection" as const,
   features: [
-    { type: "Feature" as const, properties: { name: "Springfield", name_en: "Springfield", population: 1200000, magnitude: 4.5 }, geometry: { type: "Point" as const, coordinates: [12.5, 42.5] } },
-    { type: "Feature" as const, properties: { name: "Riverside", name_en: null, population: 850000, magnitude: 6.2 }, geometry: { type: "Point" as const, coordinates: [17.5, 42.5] } },
-    { type: "Feature" as const, properties: { name: "Lakewood", name_en: "Lakewood City", population: 2100000, magnitude: 3.0 }, geometry: { type: "Point" as const, coordinates: [12.5, 47.5] } },
-    { type: "Feature" as const, properties: { name: "Hilltop", name_en: "Hilltop Town", population: 430000, magnitude: 8.1 }, geometry: { type: "Point" as const, coordinates: [17.5, 47.5] } },
+    {
+      type: "Feature" as const,
+      properties: { name: "Springfield", name_en: "Springfield", population: 1200000, magnitude: 4.5 },
+      geometry: { type: "Point" as const, coordinates: [12.5, 42.5] },
+    },
+    {
+      type: "Feature" as const,
+      properties: { name: "Riverside", name_en: null, population: 850000, magnitude: 6.2 },
+      geometry: { type: "Point" as const, coordinates: [17.5, 42.5] },
+    },
+    {
+      type: "Feature" as const,
+      properties: { name: "Lakewood", name_en: "Lakewood City", population: 2100000, magnitude: 3.0 },
+      geometry: { type: "Point" as const, coordinates: [12.5, 47.5] },
+    },
+    {
+      type: "Feature" as const,
+      properties: { name: "Hilltop", name_en: "Hilltop Town", population: 430000, magnitude: 8.1 },
+      geometry: { type: "Point" as const, coordinates: [17.5, 47.5] },
+    },
   ],
 };
 
@@ -127,13 +219,7 @@ const spec: MapSpec = {
       type: "symbol-lite",
       source: "cities",
       layout: {
-        "text-field": [
-          "concat",
-          ["upcase", ["get", "name"]],
-          " (",
-          ["to-string", ["get", "population"]],
-          ")",
-        ],
+        "text-field": ["concat", ["upcase", ["get", "name"]], " (", ["to-string", ["get", "population"]], ")"],
         "text-size": 11,
         "text-offset": [0, 1.5],
       },
@@ -149,26 +235,8 @@ const spec: MapSpec = {
       type: "circle",
       source: "cities",
       paint: {
-        "circle-radius": [
-          "interpolate",
-          ["exponential", 1.5],
-          ["get", "magnitude"],
-          0,
-          1,
-          9,
-          50,
-        ],
-        "circle-color": [
-          "interpolate",
-          ["linear"],
-          ["get", "magnitude"],
-          0,
-          "#22c55e",
-          5,
-          "#f59e0b",
-          9,
-          "#ef4444",
-        ],
+        "circle-radius": ["interpolate", ["exponential", 1.5], ["get", "magnitude"], 0, 1, 9, 50],
+        "circle-color": ["interpolate", ["linear"], ["get", "magnitude"], 0, "#22c55e", 5, "#f59e0b", 9, "#ef4444"],
         "circle-stroke-color": "#ffffff",
         "circle-stroke-width": 1.5,
         "circle-opacity": 0.85,
