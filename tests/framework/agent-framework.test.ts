@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   classifyChangedFiles,
@@ -37,6 +38,15 @@ describe("agent coordination framework", () => {
     expect(coordinationPlan).toContain("pnpm build:schema");
     expect(coordinationPlan).toContain("pnpm check");
     expect(coordinationPlan).toContain("node scripts/doc-generator.mjs links");
+  });
+
+  it("installs Playwright before recovery gates run snapshot smoke", () => {
+    const workflow = readFileSync(".github/workflows/agent-failure-recovery.yml", "utf8");
+    const installIndex = workflow.indexOf("pnpm exec playwright install --with-deps chromium");
+    const gateIndex = workflow.indexOf("pnpm build:schema && pnpm check");
+
+    expect(installIndex).toBeGreaterThan(-1);
+    expect(gateIndex).toBeGreaterThan(installIndex);
   });
 
   it("fails closed on malformed task ids and keeps valid ids in sync", () => {

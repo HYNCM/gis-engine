@@ -94,6 +94,10 @@ jobs:
       - if: ${{ steps.health.outputs.failed > 0 }}
         run: pnpm install --frozen-lockfile
 
+      - name: 安装 Playwright Chromium
+        if: ${{ steps.health.outputs.failed > 0 }}
+        run: pnpm exec playwright install --with-deps chromium
+
       - name: 运行门禁
         if: ${{ steps.health.outputs.failed > 0 }}
         run: |
