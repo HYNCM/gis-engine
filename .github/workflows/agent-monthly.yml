@@ -115,9 +115,27 @@ jobs:
           node scripts/dashboard-generator.mjs --period "$(date -u +%Y-%m-%d)"
 
       - name: Commit monthly artifacts
-        uses: stefanzweifel/git-auto-commit-action@v7
-        with:
-          commit_message: "docs: monthly agent artifacts"
-          file_pattern: "docs/planning/monthly-roadmap.md docs/planning/issues-snapshot.md docs/reviews/quality-gate-release-*.md docs/planning/AGENT_HEALTH_DASHBOARD.md docs/planning/handoff-ledger.json"
-          commit_user_name: "orchestrator[bot]"
-          commit_user_email: "orchestrator[bot]@gis-engine.dev"
+        run: |
+          set -euo pipefail
+          git config user.name "orchestrator[bot]"
+          git config user.email "orchestrator[bot]@gis-engine.dev"
+
+          git add \
+            docs/planning/monthly-roadmap.md \
+            docs/planning/issues-snapshot.md \
+            docs/planning/AGENT_HEALTH_DASHBOARD.md \
+            docs/planning/handoff-ledger.json
+
+          shopt -s nullglob
+          release_reports=(docs/reviews/quality-gate-release-*.md)
+          if [ "${#release_reports[@]}" -gt 0 ]; then
+            git add "${release_reports[@]}"
+          fi
+
+          if git diff --cached --quiet; then
+            echo "No monthly artifacts changed."
+            exit 0
+          fi
+
+          git commit -m "docs: monthly agent artifacts"
+          git push

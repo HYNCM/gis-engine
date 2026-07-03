@@ -59,6 +59,14 @@ describe("agent coordination framework", () => {
     expect(workflow).not.toContain('--label "agent-escalation,automation"');
   });
 
+  it("uses nullglob for optional monthly release reports", () => {
+    const workflow = readFileSync(".github/workflows/agent-monthly.yml", "utf8");
+
+    expect(workflow).toContain("shopt -s nullglob");
+    expect(workflow).toContain("release_reports=(docs/reviews/quality-gate-release-*.md)");
+    expect(workflow).not.toContain('file_pattern: "docs/planning/monthly-roadmap.md');
+  });
+
   it("fails closed on malformed task ids and keeps valid ids in sync", () => {
     const valid = validatePlanningConsistency(
       "| TASK-2026W24-RCU-001 | item |\n| TASK-2026W24-PRD-001 | item |\n",
