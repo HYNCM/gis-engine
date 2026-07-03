@@ -59,8 +59,8 @@ describe("expression validator", () => {
     );
   });
 
-  it("reports unknown operators", () => {
-    const unknown = validateSpec(withPaintAndLayout({ "circle-color": ["coalesce", ["get", "kind"], "#2563eb"] }));
+  it("reports truly unknown operators", () => {
+    const unknown = validateSpec(withPaintAndLayout({ "circle-color": ["bogus-op", ["get", "kind"], "#2563eb"] }));
 
     expect(unknown.diagnostics).toContainEqual(
       expect.objectContaining({
@@ -98,6 +98,118 @@ describe("expression validator", () => {
     );
     expect(invalidCase.diagnostics).toContainEqual(
       expect.objectContaining({ code: DiagnosticCodes.ExpressionTypeMismatch }),
+    );
+  });
+
+  it("accepts arithmetic expressions (+, -, *, /)", () => {
+    const spec = withPaintAndLayout({
+      "circle-radius": ["+", ["get", "population"], ["get", "area"]],
+      "circle-opacity": ["-", ["get", "temperature"], 32],
+      "circle-stroke-width": ["*", ["get", "density"], 100],
+      "circle-blur": ["/", ["get", "total"], ["get", "count"]],
+    });
+
+    const report = validateSpec(spec);
+
+    expect(report.valid).toBe(true);
+    expect(report.diagnostics).toEqual([]);
+  });
+
+  it("reports type errors in arithmetic expressions", () => {
+    const stringLeft = validateSpec(withPaintAndLayout({ "circle-radius": ["+", "not-a-number", 1] }));
+    expect(stringLeft.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionTypeMismatch,
+      }),
+    );
+
+    const invalidArity = validateSpec(withPaintAndLayout({ "circle-radius": ["+", 1] }));
+    expect(invalidArity.diagnostics).toContainEqual(
+      expect.objectContaining({ code: DiagnosticCodes.ExpressionInvalidArity }),
+    );
+  });
+
+  it("accepts coalesce expressions", () => {
+    const spec = withPaintAndLayout({
+      "circle-color": ["coalesce", ["get", "color"], "#2563eb"],
+      "circle-radius": ["coalesce", ["get", "size"], 4],
+    });
+
+    const report = validateSpec(spec);
+
+    expect(report.valid).toBe(true);
+    expect(report.diagnostics).toEqual([]);
+  });
+
+  it("reports coalesce arity errors", () => {
+    const emptyCoalesce = validateSpec(withPaintAndLayout({ "circle-color": ["coalesce"] }));
+    expect(emptyCoalesce.diagnostics).toContainEqual(
+      expect.objectContaining({ code: DiagnosticCodes.ExpressionInvalidArity }),
+    );
+  });
+
+  it("reports mixed types in coalesce", () => {
+    const mixed = validateSpec(withPaintAndLayout({ "circle-color": ["coalesce", "hello", 4] }));
+    expect(mixed.diagnostics).toContainEqual(expect.objectContaining({ code: DiagnosticCodes.ExpressionTypeMismatch }));
+  });
+
+  it("accepts exponential interpolation", () => {
+    const spec = withPaintAndLayout({
+      "circle-color": ["interpolate", ["exponential", 1.5], ["get", "population"], 0, "#fff", 1000, "#f00"],
+    });
+
+    const report = validateSpec(spec);
+
+    expect(report.valid).toBe(true);
+    expect(report.diagnostics).toEqual([]);
+  });
+
+  it("accepts cubic-bezier interpolation", () => {
+    const spec = withPaintAndLayout({
+      "circle-opacity": ["interpolate", ["cubic-bezier", 0.42, 0, 0.58, 1], ["zoom"], 0, 0, 22, 1],
+    });
+
+    const report = validateSpec(spec);
+
+    expect(report.valid).toBe(true);
+    expect(report.diagnostics).toEqual([]);
+  });
+
+  it("reports invalid exponential base", () => {
+    const negativeBase = validateSpec(
+      withPaintAndLayout({ "circle-opacity": ["interpolate", ["exponential", -1], ["zoom"], 0, 0, 22, 1] }),
+    );
+    expect(negativeBase.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionTypeMismatch,
+      }),
+    );
+  });
+
+  it("reports invalid cubic-bezier argument count", () => {
+    const badCubic = validateSpec(
+      withPaintAndLayout({ "circle-opacity": ["interpolate", ["cubic-bezier", 0.42, 0], ["zoom"], 0, 0, 22, 1] }),
+    );
+    expect(badCubic.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionInvalidArity,
+      }),
+    );
+  });
+
+  it("reports unsupported interpolation types", () => {
+    const badType = validateSpec(
+      withPaintAndLayout({ "circle-opacity": ["interpolate", ["unknown-type"], ["zoom"], 0, 0, 22, 1] }),
+    );
+    expect(badType.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.CapabilityUnsupported,
+        message: expect.stringContaining("Supported interpolation types"),
+      }),
     );
   });
 });

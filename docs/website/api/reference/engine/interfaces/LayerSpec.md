@@ -1,4 +1,4 @@
-[**@gis-engine/engine v1.2.0**](../index.md)
+[**@gis-engine/engine v1.4.0**](../index.md)
 
 ***
 
@@ -14,7 +14,7 @@
 
 ### type
 
-> **type**: `"raster"` \| `"background"` \| `"fill"` \| `"line"` \| `"circle"` \| `"symbol-lite"` \| `"fill-extrusion-lite"`
+> **type**: `"symbol"` \| `"raster"` \| `"background"` \| `"fill"` \| `"line"` \| `"circle"` \| `"symbol-lite"` \| `"fill-extrusion-lite"` \| `"heatmap"`
 
 ***
 

@@ -1,5 +1,24 @@
 # @gis-engine/cli
 
+## 1.4.0
+
+### Minor Changes
+
+- Rendering and AI generation enhancement:
+  - Expression engine: +, -, \*, /, coalesce, exponential/cubic-bezier interpolate
+  - String expressions: concat, upcase, downcase
+  - New heatmap layer type
+  - New symbol layer type (full version, symbol-lite retained for backward compatibility)
+  - Enhanced generate_spec: choropleth, graduated-circle, multi-layer, 6 themes, 50+ location keywords
+  - Expression validator: heatmap-density, concat, upcase, downcase support
+  - 4 new runnable examples: heatmap-density, choropleth-auto, symbol-labels, expression-showcase
+
+### Patch Changes
+
+- Updated dependencies
+  - @gis-engine/engine@1.4.0
+  - @gis-engine/ai@1.4.0
+
 ## 1.3.0
 
 ### Patch Changes

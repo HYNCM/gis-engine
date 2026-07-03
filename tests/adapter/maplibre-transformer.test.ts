@@ -23,7 +23,7 @@ describe("MapSpecToMapLibreStyleTransformer", () => {
     spec.layers[0] = {
       ...firstLayer(spec),
       paint: {
-        "fill-color": ["coalesce", ["get", "kind"], "#fff"],
+        "fill-color": ["nonexistent_operator_xyz", ["get", "kind"], "#fff"],
       },
     };
 

@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.4.0] - 2026-07-02
+
+### Added
+- **Expression engine**: arithmetic operators (+, -, *, /), coalesce, exponential/cubic-bezier interpolate.
+- **String expressions**: concat, upcase, downcase.
+- **New layer types**: heatmap layer, symbol layer (full version; symbol-lite retained for backward compatibility).
+- **Enhanced generate_spec**: choropleth, graduated-circle, multi-layer support; 6 themes; 50+ location keywords.
+- **New MCP tools**: `inspect_data` (GeoJSON data inspection) and `edit_spec` (natural language spec editing).
+- **Expression validator**: heatmap-density, concat, upcase, downcase support.
+- **New runnable examples**: heatmap-density, choropleth-auto, symbol-labels, expression-showcase.
+
+### Changed
+- MapLibre adapter rendering improvements for new layer types.
+- TypeScript type definitions updated for new expression and layer support.
+
 ## v1.0.0 Release Summary
 
 GIS Engine v1.0.0 is the first stable SDK + CLI release line. It formalizes the

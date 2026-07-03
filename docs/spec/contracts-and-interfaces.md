@@ -94,7 +94,7 @@ export interface MapSpec {
 | `MapSpecSchema` | Core | `version`, `id`, `revision`, `view`, `sources`, `layers`, `interactions`, `metadata`, `capabilities` | `validateSpec()` → Ajv compiled |
 | `ViewSpecSchema` | Core | `view.*` | nested in `MapSpecSchema` |
 | `SourceSpecSchema` (7 types) | Core | `sources.*` | nested + semantic checks |
-| `LayerSpecSchema` (7 types) | Core | `layers[*]` | nested + source reference checks |
+| `LayerSpecSchema` (9 types) | Core | `layers[*]` | nested + source reference checks |
 | `InteractionSpecSchema` | Core | `interactions` | nested |
 | `CapabilityRequestSchema` | Core | `capabilities` | nested |
 | `SceneView3DExtensionSchema` | Extension | `extensions.scene3d.*` | `validateSceneView3DExtension()` |
@@ -507,7 +507,7 @@ export interface CapabilityReport {
 
 - `CapabilityReportSchema` 是能力报告的单一外部契约，MCP context/explain 工具必须按此 schema 校验输入。
 - `renderer`、`sources`、`layers`、`expressions`、`queries`、`snapshot` 和 `experimental` 都必须显式给出，不允许任意 capability 对象绕过 schema。
-- `sources` 当前可声明 `geojson`、`raster`、`pmtiles`、`vector`；`layers` 当前可声明 `background`、`raster`、`fill`、`line`、`circle`、`symbol-lite` 和 experimental `fill-extrusion-lite`。
+- `sources` 当前可声明 `geojson`、`raster`、`pmtiles`、`vector`；`layers` 当前可声明 `background`、`raster`、`fill`、`line`、`circle`、`symbol`、`symbol-lite`、`heatmap` 和 experimental `fill-extrusion-lite`。
 - experimental 能力只能通过 `experimental` 暴露；MapLibre adapter 当前用该字段声明 beta `fill-extrusion-lite`。
 
 Adapter contract tests 必须验证：
@@ -579,6 +579,8 @@ get_context_summary
 snapshot_spec
 explain_spec
 export_example_app
+diff_specs
+generate_spec
 ```
 
 规则：
@@ -600,11 +602,20 @@ Expression =
   ["literal", value]
   ["case", condition, trueValue, falseValue]
   ["match", input, label, output, ..., fallback]
-  ["interpolate", ["linear"], input, stopInput, stopOutput, ...,]
+  ["interpolate", ["linear"|"exponential", base|"cubic-bezier", x1, y1, x2, y2], input, stopInput, stopOutput, ...,]
   ["step", input, defaultOutput, stopInput, stopOutput, ...]
   ["zoom"]
   ["to-number", input]
   ["to-string", input]
+  ["+", left, right]
+  ["-", left, right]
+  ["*", left, right]
+  ["/", left, right]
+  ["coalesce", value, value, ...]
+  ["heatmap-density"]
+  ["concat", value, value, ...]
+  ["upcase", value]
+  ["downcase", value]
 ```
 
 类型规则：

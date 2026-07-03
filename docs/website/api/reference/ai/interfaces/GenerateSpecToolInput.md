@@ -1,4 +1,4 @@
-[**@gis-engine/ai v1.2.0**](../index.md)
+[**@gis-engine/ai v1.4.0**](../index.md)
 
 ***
 
@@ -28,7 +28,15 @@
 
 #### theme?
 
-> `optional` **theme?**: `"dark"` \| `"light"` \| `"satellite"`
+> `optional` **theme?**: `"dark"` \| `"light"` \| `"satellite"` \| `"ocean"` \| `"forest"` \| `"warm"`
+
+#### dataProperty?
+
+> `optional` **dataProperty?**: `string`
+
+#### multiLayer?
+
+> `optional` **multiLayer?**: `boolean`
 
 ***
 
@@ -43,3 +51,7 @@
 #### includeInteractions?
 
 > `optional` **includeInteractions?**: `boolean`
+
+#### includeTimestamp?
+
+> `optional` **includeTimestamp?**: `boolean`

@@ -76,6 +76,8 @@
     "changeset": "changeset",
     "version": "changeset version",
     "release": "changeset publish",
+    "release:publish": "node scripts/publish-ga-packages.mjs",
+    "release:publish:dry": "node scripts/publish-ga-packages.mjs --dry-run",
     "knip": "knip",
     "lint": "biome check",
     "lint:fix": "biome check --write",

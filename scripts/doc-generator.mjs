@@ -62,6 +62,10 @@ function findFiles(dir, pattern) {
   return results;
 }
 
+function isArchivedDocIssue(issue) {
+  return issue.source.includes("/archive/");
+}
+
 // ── Changelog 生成器 ──
 
 function generateChangelog() {
@@ -266,13 +270,25 @@ function checkDocLinks() {
   let report = "## 文档交叉引用完整性报告\n\n";
   report += `> 自动生成于 ${getDate()}\n\n`;
 
-  if (issues.length === 0) {
-    report += "✅ 所有文档交叉引用完整。\n";
+  const activeIssues = issues.filter((issue) => !isArchivedDocIssue(issue));
+  const archiveIssues = issues.filter(isArchivedDocIssue);
+
+  if (activeIssues.length === 0) {
+    report += "✅ 所有活动文档交叉引用完整。\n";
   } else {
-    report += `❌ 发现 ${issues.length} 个损坏引用：\n\n`;
+    report += `❌ 发现 ${activeIssues.length} 个活动文档损坏引用：\n\n`;
     report += "| 源文件 | 标签 | 目标 |\n";
     report += "| --- | --- | --- |\n";
-    for (const issue of issues) {
+    for (const issue of activeIssues) {
+      report += `| ${issue.source} | ${issue.label} | ${issue.target} |\n`;
+    }
+  }
+
+  if (archiveIssues.length > 0) {
+    report += `\n⚠️ 忽略 ${archiveIssues.length} 个归档文档历史引用：\n\n`;
+    report += "| 归档源文件 | 标签 | 目标 |\n";
+    report += "| --- | --- | --- |\n";
+    for (const issue of archiveIssues) {
       report += `| ${issue.source} | ${issue.label} | ${issue.target} |\n`;
     }
   }
@@ -325,8 +341,33 @@ async function main() {
       content: report,
       description: "文档引用审计",
     });
-    if (issues.length > 0) {
-      console.log(`\n⚠️  发现 ${issues.length} 个损坏引用`);
+
+    // Separate active docs issues from archive issues
+    const activeBrokenLinks = issues.filter((issue) => !isArchivedDocIssue(issue));
+    const archiveBrokenLinks = issues.filter(isArchivedDocIssue);
+
+    // Archive broken links are warnings only
+    if (archiveBrokenLinks.length > 0) {
+      console.warn(`\n⚠️  ${archiveBrokenLinks.length} broken links in archive (ignored):`);
+      for (const l of archiveBrokenLinks) {
+        console.warn(`  ${l.source} → ${l.target}`);
+      }
+    }
+
+    // Active docs broken links are errors
+    if (activeBrokenLinks.length > 0) {
+      console.error(`\n❌ ${activeBrokenLinks.length} broken links in active docs (non-archive):`);
+      for (const l of activeBrokenLinks) {
+        console.error(`  ${l.source} → ${l.target}`);
+      }
+      // Write the audit report before exiting
+      for (const output of outputs) {
+        const outputPath = join(ROOT, output.file);
+        mkdirSync(dirname(outputPath), { recursive: true });
+        writeFileSync(outputPath, output.content, "utf-8");
+        console.log(`   ✅ ${output.description} -> ${output.file}`);
+      }
+      process.exit(1);
     }
   }
 

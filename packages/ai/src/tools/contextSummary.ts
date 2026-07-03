@@ -143,7 +143,9 @@ export type GisEngineToolName =
   | "explain_spec"
   | "export_example_app"
   | "diff_specs"
-  | "generate_spec";
+  | "generate_spec"
+  | "inspect_data"
+  | "edit_spec";
 
 export interface CapabilityDomainSummary {
   id: "feature-display" | "spatial-analysis" | "scene-browsing";
@@ -322,6 +324,7 @@ function buildCapabilitySummary(
           "export_example_app",
           "diff_specs",
           "generate_spec",
+          "edit_spec",
         ],
         evidence: [
           "validation.valid and validation.diagnosticCounts",
@@ -347,7 +350,7 @@ function buildCapabilitySummary(
             : []),
           "buffer, intersection, overlay, routing, and aggregation geoprocessing are not exposed as public MCP tools",
         ],
-        tools: ["get_context_summary", "explain_spec", "validate_spec"],
+        tools: ["get_context_summary", "explain_spec", "validate_spec", "inspect_data"],
         evidence: [
           "capabilities.queries when supplied",
           "RendererAdapter.queryFeatures point/bbox contract",

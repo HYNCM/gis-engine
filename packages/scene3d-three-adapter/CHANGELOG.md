@@ -1,5 +1,21 @@
 # @gis-engine/scene3d-three-adapter
 
+## 0.2.5
+
+### Patch Changes
+
+- Rendering and AI generation enhancement:
+  - Expression engine: +, -, \*, /, coalesce, exponential/cubic-bezier interpolate
+  - String expressions: concat, upcase, downcase
+  - New heatmap layer type
+  - New symbol layer type (full version, symbol-lite retained for backward compatibility)
+  - Enhanced generate_spec: choropleth, graduated-circle, multi-layer, 6 themes, 50+ location keywords
+  - Expression validator: heatmap-density, concat, upcase, downcase support
+  - 4 new runnable examples: heatmap-density, choropleth-auto, symbol-labels, expression-showcase
+- Updated dependencies
+  - @gis-engine/engine@1.4.0
+  - @gis-engine/scene3d@1.4.0
+
 ## 0.2.4
 
 ### Patch Changes

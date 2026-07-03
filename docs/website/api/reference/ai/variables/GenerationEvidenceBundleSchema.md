@@ -1,4 +1,4 @@
-[**@gis-engine/ai v1.2.0**](../index.md)
+[**@gis-engine/ai v1.4.0**](../index.md)
 
 ***
 
@@ -66,7 +66,7 @@
 
 #### properties.toolSequence.items.enum
 
-> `readonly` **enum**: readonly \[`"validate_spec"`, `"apply_commands"`, `"export_spec"`, `"get_context_summary"`, `"snapshot_spec"`, `"explain_spec"`, `"export_example_app"`, `"diff_specs"`, `"generate_spec"`\]
+> `readonly` **enum**: readonly \[`"validate_spec"`, `"apply_commands"`, `"export_spec"`, `"get_context_summary"`, `"snapshot_spec"`, `"explain_spec"`, `"export_example_app"`, `"diff_specs"`, `"generate_spec"`, `"inspect_data"`, `"edit_spec"`\]
 
 #### properties.summary
 

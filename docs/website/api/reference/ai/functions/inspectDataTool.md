@@ -1,0 +1,17 @@
+[**@gis-engine/ai v1.4.0**](../index.md)
+
+***
+
+# Function: inspectDataTool()
+
+> **inspectDataTool**(`input`): `InspectDataToolResponse`
+
+## Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `input` | `unknown` |
+
+## Returns
+
+`InspectDataToolResponse`

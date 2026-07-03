@@ -1,4 +1,4 @@
-[**@gis-engine/ai v1.2.0**](../index.md)
+[**@gis-engine/ai v1.4.0**](../index.md)
 
 ***
 

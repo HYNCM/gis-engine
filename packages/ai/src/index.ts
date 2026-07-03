@@ -5,12 +5,14 @@ export {
   callGisEngineTool,
   createGisEngineMcpServer,
   DiffSpecsToolResultSchema,
+  EditSpecToolResultSchema,
   ExplainSpecToolResultSchema,
   ExportExampleAppToolResultSchema,
   ExportSpecToolInputSchema,
   ExportSpecToolResultSchema,
   GenerateSpecToolResultSchema,
   gisEngineTools,
+  InspectDataToolResultSchema,
   listGisEngineTools,
   SnapshotSpecToolResultSchema,
   ValidateSpecToolInputSchema,
@@ -34,6 +36,12 @@ export {
   type DiffSpecsToolResult,
   diffSpecsTool,
 } from "./tools/diffSpecs.js";
+export {
+  type EditSpecToolInput,
+  EditSpecToolInputSchema,
+  type EditSpecToolResult,
+  editSpecTool,
+} from "./tools/editSpec.js";
 export {
   type ExplainSpecToolInput,
   ExplainSpecToolInputSchema,
@@ -68,6 +76,12 @@ export {
   type GenerationSpatialQueryEvidence,
   type PlannerConfidence,
 } from "./tools/generationEvidence.js";
+export {
+  type InspectDataToolInput,
+  InspectDataToolInputSchema,
+  type InspectDataToolResult,
+  inspectDataTool,
+} from "./tools/inspectData.js";
 export {
   type SnapshotSpecToolInput,
   SnapshotSpecToolInputSchema,
