@@ -25,6 +25,10 @@ function run(command, args, options = {}) {
   }).trim();
 }
 
+function publishToken() {
+  return process.env.NODE_AUTH_TOKEN || process.env.GIS_ENGINE_ALL || process.env.NPM_TOKEN || "";
+}
+
 function runInherit(command, args, options = {}) {
   console.log(`$ ${[command, ...args].join(" ")}`);
   execFileSync(command, args, {
@@ -32,7 +36,7 @@ function runInherit(command, args, options = {}) {
     stdio: "inherit",
     env: {
       ...process.env,
-      NODE_AUTH_TOKEN: process.env.NODE_AUTH_TOKEN ?? process.env.NPM_TOKEN ?? "",
+      NODE_AUTH_TOKEN: publishToken(),
     },
     ...options,
   });
@@ -52,8 +56,8 @@ function isPublished(name, version) {
   }
 }
 
-if (!dryRun && !process.env.NODE_AUTH_TOKEN && !process.env.NPM_TOKEN) {
-  console.error("NPM_TOKEN or NODE_AUTH_TOKEN is required to publish GA packages.");
+if (!dryRun && !publishToken()) {
+  console.error("GIS_ENGINE_ALL, NPM_TOKEN, or NODE_AUTH_TOKEN is required to publish GA packages.");
   process.exit(1);
 }
 
