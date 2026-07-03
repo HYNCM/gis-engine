@@ -49,6 +49,16 @@ describe("agent coordination framework", () => {
     expect(gateIndex).toBeGreaterThan(installIndex);
   });
 
+  it("creates recovery labels before opening escalation issues", () => {
+    const workflow = readFileSync(".github/workflows/agent-failure-recovery.yml", "utf8");
+    const labelIndex = workflow.indexOf("gh label create agent-escalation");
+    const issueIndex = workflow.indexOf("gh issue create");
+
+    expect(labelIndex).toBeGreaterThan(-1);
+    expect(issueIndex).toBeGreaterThan(labelIndex);
+    expect(workflow).not.toContain('--label "agent-escalation,automation"');
+  });
+
   it("fails closed on malformed task ids and keeps valid ids in sync", () => {
     const valid = validatePlanningConsistency(
       "| TASK-2026W24-RCU-001 | item |\n| TASK-2026W24-PRD-001 | item |\n",

@@ -109,9 +109,20 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh issue create \
-            --title "Agent Escalation: Workflow failure detected" \
-            --body "## Agent Workflow Failure Detected
+          LABEL_ARGS=()
+          if gh label create agent-escalation --description "Agent workflow escalation" --color D73A4A --force >/dev/null 2>&1; then
+            LABEL_ARGS+=(--label agent-escalation)
+          else
+            echo "::warning::Could not create or update agent-escalation label; creating issue without it."
+          fi
+          if gh label create automation --description "Automation infrastructure" --color 5319E7 --force >/dev/null 2>&1; then
+            LABEL_ARGS+=(--label automation)
+          else
+            echo "::warning::Could not create or update automation label; creating issue without it."
+          fi
+
+          BODY=$(cat <<'ISSUE_BODY'
+          ## Agent Workflow Failure Detected
 
           The automated health check detected one or more agent workflow failures.
 
@@ -124,5 +135,11 @@ jobs:
           1. Check the failed workflow logs
           2. Apply fix and push to main
           3. Monitor the next scheduled run
-          4. Close this issue when resolved" \
-            --label "agent-escalation,automation"
+          4. Close this issue when resolved
+          ISSUE_BODY
+          )
+
+          gh issue create \
+            --title "Agent Escalation: Workflow failure detected" \
+            --body "${BODY}" \
+            "${LABEL_ARGS[@]}"
