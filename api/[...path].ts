@@ -1,8 +1,11 @@
 /**
- * GET /api/tiles/{provider}/{z}/{x}/{y}.{ext}
+ * Root catch-all route for /api/*
  *
- * Proxies basemap tile requests to upstream servers.
- * Mirrors the logic in apps/studio/server/index.mjs → proxyBasemapTile().
+ * Currently handles:
+ *   - Tile proxy: /api/tiles/{provider}/{z}/{x}/{y}.{ext}
+ *
+ * Other /api/* routes (basemaps, chat, providers, state) are handled by
+ * their own dedicated files and take priority via Vercel's exact-match routing.
  */
 
 import type { IncomingMessage, ServerResponse } from "node:http";
@@ -40,8 +43,7 @@ const TILE_PROVIDERS: Record<string, TileProvider> = {
   osm: {
     contentType: "image/png",
     maxzoom: 19,
-    resolveUrl: ({ z, x, y }) =>
-      `https://tile.openstreetmap.org/${z}/${x}/${y}.png`,
+    resolveUrl: ({ z, x, y }) => `https://tile.openstreetmap.org/${z}/${x}/${y}.png`,
   },
   "arcgis-imagery": {
     contentType: "image/jpeg",
@@ -71,15 +73,7 @@ interface BingMetadata {
   subdomains: string[];
 }
 
-async function resolveBingTileUrl({
-  z,
-  x,
-  y,
-}: {
-  z: number;
-  x: number;
-  y: number;
-}): Promise<string> {
+async function resolveBingTileUrl({ z, x, y }: { z: number; x: number; y: number }): Promise<string> {
   const key = process.env.BING_MAPS_KEY?.trim();
   if (!key) throw new Error("Bing Aerial requires BING_MAPS_KEY.");
 
@@ -171,10 +165,10 @@ const EXT_CONTENT_TYPE: Record<string, string> = {
 };
 
 /* ------------------------------------------------------------------ */
-/*  Handler                                                            */
+/*  Tile handler                                                       */
 /* ------------------------------------------------------------------ */
 
-export default async function handler(req: Req, res: Res): Promise<void> {
+async function handleTileRequest(pathParts: string[], req: Req, res: Res): Promise<void> {
   // CORS headers
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
@@ -189,11 +183,6 @@ export default async function handler(req: Req, res: Res): Promise<void> {
     res.status(405).json({ error: "Method not allowed" });
     return;
   }
-
-  // Parse path: /api/tiles/{provider}/{z}/{x}/{y}.{ext}
-  // Vercel catch-all route populates req.query.path as string[]
-  const rawPath = (req.query as Record<string, string | string[]> | undefined)?.path;
-  const pathParts = Array.isArray(rawPath) ? rawPath : rawPath ? [rawPath] : [];
 
   if (pathParts.length < 4) {
     res.status(400).json({
@@ -236,14 +225,9 @@ export default async function handler(req: Req, res: Res): Promise<void> {
     }
 
     const body = Buffer.from(await upstream.arrayBuffer());
-    const contentType =
-      upstream.headers.get("content-type") ||
-      EXT_CONTENT_TYPE[ext] ||
-      tileProvider.contentType;
+    const contentType = upstream.headers.get("content-type") || EXT_CONTENT_TYPE[ext] || tileProvider.contentType;
 
     res.setHeader("Content-Type", contentType);
-    // Cache 24h at CDN edge (s-maxage) and browser (max-age) to minimise
-    // Vercel function invocations for repeat tile requests.
     res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
     res.setHeader("Content-Length", String(body.byteLength));
     res.status(200).send(body);
@@ -251,4 +235,37 @@ export default async function handler(req: Req, res: Res): Promise<void> {
     const message = error instanceof Error ? error.message : "Tile proxy failed";
     res.status(502).json({ error: message });
   }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Root handler                                                       */
+/* ------------------------------------------------------------------ */
+
+export default async function handler(req: Req, res: Res): Promise<void> {
+  // Parse the catch-all path segments from req.query or URL
+  const rawQuery = (req.query as Record<string, string | string[]> | undefined)?.path;
+  let allParts: string[];
+
+  if (Array.isArray(rawQuery) && rawQuery.length > 0) {
+    allParts = rawQuery;
+  } else if (typeof rawQuery === "string" && rawQuery.length > 0) {
+    allParts = [rawQuery];
+  } else {
+    // Fallback: parse from req.url
+    const url = new URL(req.url || "/", `https://${req.headers.host || "localhost"}`);
+    allParts = url.pathname
+      .replace(/^\/api\/?/, "")
+      .split("/")
+      .filter(Boolean);
+  }
+
+  // Route: /api/tiles/{provider}/{z}/{x}/{y}.{ext}
+  if (allParts[0] === "tiles") {
+    const tileParts = allParts.slice(1);
+    await handleTileRequest(tileParts, req, res);
+    return;
+  }
+
+  // Unknown catch-all path
+  res.status(404).json({ error: "Not found" });
 }

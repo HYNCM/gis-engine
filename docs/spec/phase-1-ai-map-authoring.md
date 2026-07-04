@@ -43,7 +43,7 @@ extension boundaries.
 
 - Language: TypeScript.
 - Package manager: `pnpm@11.9.0`.
-- Runtime: Node.js `>=20.0.0`.
+- Runtime: Node.js `>=22.13.0`.
 - Validation: TypeBox schemas compiled with Ajv.
 - Test runner: Vitest for deterministic tests, Playwright for visual snapshots.
 - Public AI surface: MCP tools from `@gis-engine/ai`.

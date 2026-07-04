@@ -26,7 +26,7 @@ participating, you are expected to uphold this code.
 
 ### Prerequisites
 
-- **Node.js** >= 22
+- **Node.js** >= 22.13.0
 - **pnpm** >= 11.0.0; the workspace default is pinned by `packageManager` to
   `pnpm@11.9.0`
 
