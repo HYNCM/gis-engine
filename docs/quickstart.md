@@ -2,7 +2,7 @@
 
 > **Try it online:** [Open Playground on StackBlitz](https://stackblitz.com/github/HYNCM/gis-engine/tree/main/examples/basic-geojson)
 
-Get to a visible map through one of three supported v1.2.0 entry paths.
+Get to a visible map through one of three supported v1.4.0 entry paths.
 
 ## Path 1: npm Install (SDK Direct)
 
@@ -58,6 +58,9 @@ const map = await createMap(
 
 Run your bundler (`vite`, `webpack`, etc.) and open the result in a browser.
 You should see a map with a blue dot at coordinates [0, 0].
+
+The map is fully interactive — use mouse/touch to pan, zoom, rotate, and tilt
+the view. MapLibre GL JS handles all camera interactions natively.
 
 ## Path 2: CLI Scaffold
 

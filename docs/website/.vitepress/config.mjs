@@ -51,6 +51,14 @@ export default defineConfig({
           ],
         },
         {
+          text: "Tutorials",
+          items: [
+            { text: "Choropleth Map in 10 Minutes", link: "/guide/tutorial-choropleth" },
+            { text: "AI-Assisted Map Creation", link: "/guide/tutorial-ai-map" },
+            { text: "Interactive Map with Events", link: "/guide/tutorial-interactive-map" },
+          ],
+        },
+        {
           text: "Advanced",
           items: [
             { text: "Custom Adapters", link: "/guide/custom-adapters" },

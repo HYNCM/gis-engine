@@ -735,15 +735,21 @@ describe("MCP Server Integration", () => {
         },
       },
     });
-    const snapshot = JSON.parse(snapshotResult.content[0]?.text) as {
+    const imageContent = snapshotResult.content[0];
+    expect(imageContent?.type).toBe("image");
+    if (imageContent?.type === "image") {
+      expect(imageContent.mimeType).toBe("image/png");
+      expect(imageContent.data.length).toBeGreaterThan(0);
+    }
+    const textContent = snapshotResult.content[1];
+    expect(textContent?.type).toBe("text");
+    const snapshot = JSON.parse(textContent?.text ?? "{}") as {
       passed: boolean;
-      dataUrl?: string;
       validation: { valid: boolean };
     };
     expect(snapshotResult.isError).toBeUndefined();
     expect(snapshot.validation.valid).toBe(true);
     expect(snapshot.passed).toBe(true);
-    expect(snapshot.dataUrl).toMatch(/^data:image\/png;base64,/);
 
     const exportResult = await callGisEngineTool({
       params: {
@@ -852,17 +858,23 @@ describe("MCP Server Integration", () => {
       },
     });
 
-    const snapshot = JSON.parse(result.content[0]?.text) as {
+    const imageContent = result.content[0];
+    expect(imageContent?.type).toBe("image");
+    if (imageContent?.type === "image") {
+      expect(imageContent.mimeType).toBe("image/png");
+      expect(imageContent.data.length).toBeGreaterThan(0);
+    }
+    const textContent = result.content[1];
+    expect(textContent?.type).toBe("text");
+    const snapshot = JSON.parse(textContent?.text ?? "{}") as {
       passed: boolean;
       renderer: string;
-      dataUrl?: string;
       diagnostics: Array<{ code: string }>;
       validation: { valid: boolean; diagnostics: Array<{ code: string }> };
     };
     expect(result.isError).toBeUndefined();
     expect(snapshot.passed).toBe(true);
     expect(snapshot.renderer).toBe("maplibre");
-    expect(snapshot.dataUrl).toMatch(/^data:image\/png;base64,/);
     expect(snapshot.diagnostics).toEqual([]);
     expect(snapshot.validation).toMatchObject({ valid: true, diagnostics: [] });
   });

@@ -653,9 +653,11 @@ export async function listGisEngineTools(): Promise<{ tools: typeof gisEngineToo
   return { tools: gisEngineTools };
 }
 
+type McpContent = { type: "text"; text: string } | { type: "image"; data: string; mimeType: string };
+
 export async function callGisEngineTool(request: { params: { name: string; arguments?: unknown } }): Promise<{
   isError?: boolean;
-  content: Array<{ type: "text"; text: string }>;
+  content: Array<McpContent>;
 }> {
   const { name, arguments: args } = request.params;
 
@@ -709,6 +711,14 @@ export async function callGisEngineTool(request: { params: { name: string; argum
 
     if (name === "snapshot_spec") {
       const result = await snapshotSpecTool(args);
+      if (result.ok && result.result.passed && result.result.dataUrl) {
+        return toolImageResult(result.result.dataUrl, {
+          passed: result.result.passed,
+          diagnostics: result.result.diagnostics,
+          renderer: result.result.renderer,
+          validation: result.result.validation,
+        });
+      }
       return toolTextResult(result.ok ? result.result : result.diagnostics, !result.ok);
     }
 
@@ -791,6 +801,26 @@ function toolTextResult(
     ...(isError ? { isError: true } : {}),
     content: [{ type: "text", text: JSON.stringify(value, null, 2) }],
   };
+}
+
+function toolImageResult(dataUrl: string, metadata?: unknown): { content: Array<McpContent> } {
+  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) {
+    return {
+      content: [{ type: "text", text: JSON.stringify(metadata ?? { error: "Invalid data URL format" }, null, 2) }],
+    };
+  }
+  const [, mimeType, base64Data] = match;
+  if (!mimeType || !base64Data) {
+    return {
+      content: [{ type: "text", text: JSON.stringify(metadata ?? { error: "Invalid data URL format" }, null, 2) }],
+    };
+  }
+  const content: Array<McpContent> = [{ type: "image", data: base64Data, mimeType }];
+  if (metadata !== undefined) {
+    content.push({ type: "text", text: JSON.stringify(metadata, null, 2) });
+  }
+  return { content };
 }
 
 function validateToolInput<T>(

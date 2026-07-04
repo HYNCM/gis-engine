@@ -5,7 +5,7 @@ Protocol (MCP) client. GIS Engine exposes 9 structured tools that validate,
 mutate, summarize, snapshot, compare, generate, and export declarative MapSpec
 documents — all with structured diagnostics and schema-enforced contracts.
 
-**Package:** `@gis-engine/ai` (v1.2.0)
+**Package:** `@gis-engine/ai` (v1.4.0)
 **License:** Apache-2.0
 **Repository:** https://github.com/HYNCM/gis-engine
 **Docs:** https://gis-engine.dev

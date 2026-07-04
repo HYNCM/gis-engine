@@ -45,9 +45,9 @@ features:
 
 <div style="text-align:center;padding:2rem 0 1rem;">
   <p style="font-size:1.1rem;font-weight:600;color:var(--vp-c-brand-1);">
-    🎉 v1.2.0 Released — Developer Experience Upgrade
+    🎉 v1.4.0 Released — Real Browser Rendering
   </p>
   <p style="color:var(--vp-c-text-2);">
-    6 runnable examples, diagnostic codes reference, StackBlitz playground — <a href="/release-notes">Read the Release Notes →</a>
+    createMap() now renders a real interactive MapLibre map — <a href="/release-notes">Read the Release Notes →</a>
   </p>
 </div>

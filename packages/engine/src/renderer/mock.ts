@@ -14,6 +14,7 @@ import type {
 } from "../types.js";
 import type {
   AdapterApplyResult,
+  AdapterEvent,
   AdapterEventListener,
   RenderContext,
   RendererAdapter,
@@ -114,7 +115,7 @@ export class MockAdapter implements RendererAdapter {
     return count;
   }
 
-  on(event: string, listener: AdapterEventListener): Unsubscribe {
+  on(event: AdapterEvent, listener: AdapterEventListener): Unsubscribe {
     if (!this.#listeners.has(event)) {
       this.#listeners.set(event, new Set());
     }
@@ -124,5 +125,9 @@ export class MockAdapter implements RendererAdapter {
 
   exportSpec(): MapSpec | null {
     return this.#spec ? structuredClone(this.#spec) : null;
+  }
+
+  getMapInstance(): null {
+    return null;
   }
 }

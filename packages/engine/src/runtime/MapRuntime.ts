@@ -121,6 +121,14 @@ export class MapRuntime {
     return this.#adapter.snapshot(options);
   }
 
+  resize(): void {
+    this.#assertAlive();
+    this.#adapter.resize({
+      width: this.#container.clientWidth,
+      height: this.#container.clientHeight,
+    });
+  }
+
   async destroy(): Promise<ResourceReport> {
     if (this.#destroyed) {
       return {

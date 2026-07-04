@@ -1,6 +1,13 @@
-import type { Map as MapLibreMap, StyleSpecification } from "maplibre-gl";
+import { createMap, type MapRuntime, type MapSpec } from "@gis-engine/engine";
 import { useEffect, useRef, useState } from "react";
 import type { BasemapOption, ServerState } from "../App";
+
+const EMPTY_SPEC: MapSpec = {
+  version: "0.1",
+  sources: {},
+  layers: [],
+  view: { center: [120.15, 30.28], zoom: 10 },
+};
 
 interface Props {
   serverState: ServerState | null;
@@ -22,34 +29,41 @@ export default function MapStage({
   onChangeBasemap,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<MapLibreMap | null>(null);
+  const runtimeRef = useRef<MapRuntime | null>(null);
   const [mapReadyToken, setMapReadyToken] = useState(0);
   const [mapLoadError, setMapLoadError] = useState<string | null>(null);
 
+  // Create or recreate the MapRuntime whenever the server spec changes.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: revision change must trigger full runtime re-creation
   useEffect(() => {
-    if (!containerRef.current || mapRef.current) return;
+    if (!containerRef.current) return;
 
     let cancelled = false;
-    let createdMap: MapLibreMap | null = null;
+    let createdRuntime: MapRuntime | null = null;
+    const container = containerRef.current;
 
-    async function loadMapRenderer() {
+    async function initOrUpdate() {
       try {
-        const [{ default: maplibregl }] = await Promise.all([
-          import("maplibre-gl"),
-          import("maplibre-gl/dist/maplibre-gl.css"),
-        ]);
+        // Tear down the previous runtime if any.
+        if (runtimeRef.current) {
+          await runtimeRef.current.destroy();
+          runtimeRef.current = null;
+        }
 
-        if (cancelled || !containerRef.current) return;
+        // Lazy-load the MapLibre JS + CSS alongside each other.
+        await import("maplibre-gl");
+        await import("maplibre-gl/dist/maplibre-gl.css");
+        const spec = (serverState?.spec as MapSpec | undefined) ?? EMPTY_SPEC;
+        const runtime = await createMap(container, spec, { renderer: "maplibre" });
 
-        const map = new maplibregl.Map({
-          container: containerRef.current,
-          style: { version: 8, sources: {}, layers: [] },
-          center: [120.15, 30.28],
-          zoom: 10,
-        });
-        map.addControl(new maplibregl.NavigationControl(), "top-right");
-        createdMap = map;
-        mapRef.current = map;
+        if (cancelled) {
+          await runtime.destroy();
+          return;
+        }
+
+        createdRuntime = runtime;
+        runtimeRef.current = runtime;
+        setMapLoadError(null);
         setMapReadyToken((token) => token + 1);
       } catch (error) {
         if (!cancelled) {
@@ -58,47 +72,27 @@ export default function MapStage({
       }
     }
 
-    void loadMapRenderer();
+    void initOrUpdate();
 
     return () => {
       cancelled = true;
-      if (mapRef.current === createdMap) mapRef.current = null;
-      createdMap?.remove();
+      if (runtimeRef.current === createdRuntime) runtimeRef.current = null;
+      createdRuntime?.destroy();
     };
-  }, []);
+  }, [serverState?.spec, serverState?.summary.revision]);
 
+  // Resize observer — uses the runtime's resize method.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: mapReadyToken ensures observer is set up after runtime is created
   useEffect(() => {
-    const map = mapRef.current;
     const container = containerRef.current;
-    if (!map || !container || typeof ResizeObserver === "undefined") return;
+    if (!container || typeof ResizeObserver === "undefined") return;
 
-    const observer = new ResizeObserver(() => map.resize());
+    const observer = new ResizeObserver(() => {
+      runtimeRef.current?.resize();
+    });
     observer.observe(container);
     return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !serverState?.style) return;
-    const style = serverState.style as StyleSpecification;
-    map.setStyle(style, { diff: false });
-    map.once("style.load", () => {
-      const target = serverState.summary;
-      if (target.center && target.zoom != null) {
-        map.flyTo({ center: target.center, zoom: target.zoom, duration: 600 });
-        return;
-      }
-      if (target.bounds) {
-        map.fitBounds(
-          [
-            [target.bounds[0], target.bounds[1]],
-            [target.bounds[2], target.bounds[3]],
-          ],
-          { duration: 600, padding: 40 },
-        );
-      }
-    });
-  }, [serverState?.style, serverState?.summary.revision, serverState?.summary]);
+  }, [mapReadyToken]);
 
   const badgeColor =
     status === "ready" || status === "applied" || status === "reviewed"

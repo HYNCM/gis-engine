@@ -1,6 +1,6 @@
 # GIS Engine
 
-GIS Engine v1.2.0 is a schema-first map rendering SDK with AI-powered
+GIS Engine v1.4.0 is a schema-first map rendering SDK with AI-powered
 generation.
 
 [![npm version](https://img.shields.io/npm/v/@gis-engine/engine)](https://www.npmjs.com/package/@gis-engine/engine)

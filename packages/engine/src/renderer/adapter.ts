@@ -21,6 +21,27 @@ export interface AdapterApplyResult {
 export type AdapterEventListener = (event: unknown) => void;
 export type Unsubscribe = () => void;
 
+/**
+ * All event types emitted by renderer adapters.
+ *
+ * Diagnostic events: `"error"`, `"warning"`, `"stats"`
+ * Map interaction / lifecycle events: `"click"`, `"mousemove"`, `"moveend"`,
+ * `"zoomend"`, `"data"`, `"idle"`, `"load"`
+ * Interaction state change: `"interaction"` — fired when InteractionSpec is applied.
+ */
+export type AdapterEvent =
+  | "error"
+  | "warning"
+  | "stats"
+  | "click"
+  | "mousemove"
+  | "moveend"
+  | "zoomend"
+  | "data"
+  | "idle"
+  | "load"
+  | "interaction";
+
 export interface RendererAdapter {
   readonly id: string;
   readonly version: string;
@@ -31,5 +52,11 @@ export interface RendererAdapter {
   snapshot(options: SnapshotOptions): Promise<SnapshotResult>;
   resize(size: { width: number; height: number }): void;
   destroy(): Promise<ResourceReport>;
-  on(event: "error" | "warning" | "stats", listener: AdapterEventListener): Unsubscribe;
+  on(event: AdapterEvent, listener: AdapterEventListener): Unsubscribe;
+  /**
+   * Escape-hatch accessor for the underlying renderer instance
+   * (e.g. `maplibregl.Map`). Returns `null` when the adapter has no live
+   * renderer (headless mode, mock adapter, or before `load()` is called).
+   */
+  getMapInstance?(): unknown;
 }

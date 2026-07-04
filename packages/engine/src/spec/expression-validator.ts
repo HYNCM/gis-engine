@@ -125,6 +125,14 @@ function inferExpression(expr: unknown, path: string, options: NormalizedExpress
     case "upcase":
     case "downcase":
       return inferCaseTransformExpression(expr, path, options, operator);
+    case "feature-state":
+      return inferFeatureStateExpression(expr, path, options);
+    case "geometry-type":
+      return inferGeometryTypeExpression(expr, path);
+    case "id":
+      return inferIdExpression(expr, path);
+    case "properties":
+      return inferPropertiesExpression(expr, path);
     default:
       return {
         type: "unknown",
@@ -702,6 +710,90 @@ function inferConcatExpression(
     };
   }
   return { type: "string", diagnostics: collectArgumentDiagnostics(expr, path, options, 1) };
+}
+
+function inferFeatureStateExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+): ExpressionInference {
+  if (expr.length !== 2) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 1 argument for "feature-state", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+
+  const diagnostics: Diagnostic[] = [];
+  const arg = inferExpression(expr[1], `${path}/1`, options);
+  diagnostics.push(...arg.diagnostics);
+  if (arg.type !== "unknown" && arg.type !== "string") {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.ExpressionTypeMismatch,
+      message: '"feature-state" argument must evaluate to a string value.',
+      path: `${path}/1`,
+    });
+  }
+  return { type: "unknown", diagnostics };
+}
+
+function inferGeometryTypeExpression(expr: unknown[], path: string): ExpressionInference {
+  if (expr.length !== 1) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 0 arguments for "geometry-type", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+  return { type: "string", diagnostics: [] };
+}
+
+function inferIdExpression(expr: unknown[], path: string): ExpressionInference {
+  if (expr.length !== 1) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 0 arguments for "id", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+  return { type: "unknown", diagnostics: [] };
+}
+
+function inferPropertiesExpression(expr: unknown[], path: string): ExpressionInference {
+  if (expr.length !== 1) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 0 arguments for "properties", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+  return { type: "object", diagnostics: [] };
 }
 
 function inferCaseTransformExpression(

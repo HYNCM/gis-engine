@@ -2,7 +2,7 @@
 
 > **Try it online:** [Open Playground on StackBlitz](https://stackblitz.com/github/HYNCM/gis-engine/tree/main/examples/basic-geojson)
 
-Get a map rendered with GIS Engine v1.1.0 through one of three supported
+Get a map rendered with GIS Engine v1.4.0 through one of three supported
 first-run paths.
 
 ## Path 1: npm Install (SDK Direct)
@@ -61,6 +61,9 @@ const map = await createMap(
 
 Run your bundler (`vite`, `webpack`, etc.) and open the result in a browser.
 You should see a map with a blue dot at coordinates [0, 0].
+
+The map is fully interactive — use mouse/touch to pan, zoom, rotate, and tilt
+the view. MapLibre GL JS handles all camera interactions natively.
 
 ## Path 2: CLI Scaffold
 

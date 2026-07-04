@@ -9,7 +9,7 @@ export {
 export { type MapGenerationPromptPlan, planMapGenerationRequest } from "./generation/promptPlanner.js";
 export { toolInputErrorToCode } from "./internal/shared.js";
 export type * from "./renderer/adapter.js";
-export { MapLibreAdapter } from "./renderer/maplibre/adapter.js";
+export { type InteractionBridgeEvent, MapLibreAdapter } from "./renderer/maplibre/adapter.js";
 export {
   type MapLibreLayer,
   type MapLibreSource,

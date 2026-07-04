@@ -82,8 +82,108 @@
         border-left-color: #22c55e;
       }
 
+      .pipeline-error {
+        border-left-color: #ef4444;
+      }
+
+      .pipeline-running {
+        border-left-color: #fbbf24;
+      }
+
       .pipeline-info {
         color: #94a3b8;
+      }
+
+      /* Stage status badge */
+      .stage-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        font-size: 11px;
+        margin-right: 6px;
+        vertical-align: middle;
+      }
+
+      .stage-running {
+        background: #fbbf24;
+        color: #0f172a;
+        animation: spin-pulse 1s linear infinite;
+      }
+
+      .stage-success {
+        background: #22c55e;
+        color: #0f172a;
+      }
+
+      .stage-error {
+        background: #ef4444;
+        color: #fff;
+      }
+
+      @keyframes spin-pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+      }
+
+      /* Progress bar */
+      #progress-bar-wrapper {
+        margin-bottom: 12px;
+      }
+
+      #progress-label {
+        display: block;
+        font-size: 11px;
+        color: #7dd3fc;
+        margin-bottom: 4px;
+      }
+
+      #progress-track {
+        width: 100%;
+        height: 4px;
+        background: #1e293b;
+        border-radius: 2px;
+        overflow: hidden;
+      }
+
+      #progress-bar {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, #3b82f6, #22c55e);
+        border-radius: 2px;
+        transition: width 0.4s ease;
+      }
+
+      /* Map container loading state */
+      #map.map-loading {
+        position: relative;
+      }
+
+      #map.map-loading::after {
+        content: "Rendering map…";
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(15, 23, 42, 0.7);
+        color: #7dd3fc;
+        font-size: 14px;
+        font-family: system-ui, sans-serif;
+        z-index: 1;
+      }
+
+      #map.map-ready {
+        /* subtle fade-in when map is ready */
+        animation: map-fade-in 0.4s ease;
+      }
+
+      @keyframes map-fade-in {
+        from { opacity: 0; }
+        to   { opacity: 1; }
       }
     </style>
   </head>
@@ -92,6 +192,10 @@
       <div id="map"></div>
       <div id="pipeline-panel">
         <h2>AI Generation Pipeline</h2>
+        <div id="progress-bar-wrapper">
+          <span id="progress-label">Initializing…</span>
+          <div id="progress-track"><div id="progress-bar"></div></div>
+        </div>
         <div id="pipeline-output">Processing…</div>
       </div>
     </div>

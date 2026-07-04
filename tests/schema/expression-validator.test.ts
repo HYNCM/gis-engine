@@ -212,6 +212,97 @@ describe("expression validator", () => {
       }),
     );
   });
+
+  it("accepts feature-state, geometry-type, id, and properties expressions", () => {
+    const spec = withPaintAndLayout({
+      "circle-color": ["case", ["feature-state", "hover"], "#dc2626", "#2563eb"],
+      "circle-radius": ["case", ["==", ["geometry-type"], "Point"], 8, 4],
+      "circle-opacity": ["case", ["==", ["to-string", ["id"]], "0"], 0.5, 1],
+      "circle-stroke-width": ["case", ["has", "name", ["properties"]], 2, 0],
+    });
+
+    const report = validateSpec(spec);
+
+    expect(report.valid).toBe(true);
+    expect(report.diagnostics).toEqual([]);
+  });
+
+  it("accepts feature-state with sub-expression argument", () => {
+    const spec = withPaintAndLayout({
+      "circle-color": ["case", ["feature-state", ["get", "stateKey"]], "#dc2626", "#2563eb"],
+    });
+
+    const report = validateSpec(spec);
+
+    expect(report.valid).toBe(true);
+    expect(report.diagnostics).toEqual([]);
+  });
+
+  it("reports feature-state with wrong arity", () => {
+    const noArgs = validateSpec(withPaintAndLayout({ "circle-color": ["feature-state"] }));
+    expect(noArgs.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionInvalidArity,
+      }),
+    );
+
+    const tooManyArgs = validateSpec(withPaintAndLayout({ "circle-color": ["feature-state", "a", "b"] }));
+    expect(tooManyArgs.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionInvalidArity,
+      }),
+    );
+  });
+
+  it("reports feature-state with non-string argument", () => {
+    const numericArg = validateSpec(withPaintAndLayout({ "circle-color": ["feature-state", 42] }));
+    expect(numericArg.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionTypeMismatch,
+      }),
+    );
+
+    const nonStringExpr = validateSpec(withPaintAndLayout({ "circle-color": ["feature-state", ["+", 1, 2]] }));
+    expect(nonStringExpr.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionTypeMismatch,
+      }),
+    );
+  });
+
+  it("reports geometry-type with arguments", () => {
+    const withArgs = validateSpec(withPaintAndLayout({ "circle-color": ["geometry-type", "extra"] }));
+    expect(withArgs.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionInvalidArity,
+      }),
+    );
+  });
+
+  it("reports id with arguments", () => {
+    const withArgs = validateSpec(withPaintAndLayout({ "circle-color": ["id", "extra"] }));
+    expect(withArgs.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionInvalidArity,
+      }),
+    );
+  });
+
+  it("reports properties with arguments", () => {
+    const withArgs = validateSpec(withPaintAndLayout({ "circle-color": ["properties", "extra"] }));
+    expect(withArgs.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionInvalidArity,
+      }),
+    );
+  });
 });
 
 function withPaintAndLayout(

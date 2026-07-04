@@ -3,11 +3,60 @@
 This page separates current operating docs from dated evidence so the active
 tree stays readable.
 
-> **Last cleanup**: 2026-06-10 — active planning and review streams were
-> compacted; dated Workbench, Studio local, productization, and historical
-> planning evidence moved to `docs/archive/2026-06-10/`.
+> **Last cleanup**: 2026-07-04 — added developer-facing navigation section,
+> marked internal-only directories, and documented language strategy.
 
-## Read This First
+---
+
+## For Developers (External)
+
+If you are using or evaluating GIS Engine, start here. These are the
+developer-facing resources you need:
+
+| Resource | Description |
+| --- | --- |
+| [Quickstart](./quickstart.md) | Get up and running in under 5 minutes. |
+| [Documentation Site](./website/) | Full VitePress-powered site with guides, API reference, MCP tools, and blog. |
+| [Architecture Overview](./architecture/core-framework.md) | Runtime boundaries, capability staging, and package layout. |
+| [Core Capabilities](./architecture/core-capabilities.md) | What the engine can do and what is staged for future releases. |
+| [Migration Guides](./migration/README.md) | Upgrade paths: `v0.x → v1.0`, `v0.2 → v0.3`, migrating from MapLibre. |
+| [CLI Reference](./cli/provider-config.md) | CLI provider configuration and template authoring. |
+| [Examples](../examples/) | 20+ runnable examples — from basic GeoJSON to AI generation and MCP setup. |
+| [Blog](./blog/) | Release announcements and technical deep-dives. |
+
+**Public contracts and engineering docs** (authoritative references that apply
+to all consumers):
+
+| Resource | Description |
+| --- | --- |
+| [Contracts & Interfaces](./spec/contracts-and-interfaces.md) | Schemas, commands, diagnostics, adapters, MCP surface. |
+| [Supported Feature Matrix](./engineering/supported-feature-matrix.md) | What is stable, beta, or not yet available. |
+| [CI Test Strategy](./engineering/ci-test-strategy.md) | Deterministic gates, snapshot policy, resource policy. |
+| [Release Wording Guardrails](./engineering/release-wording-guardrails.md) | What release claims are allowed at each stage. |
+| [Design Documents](./design/) | Phase B/C design specs and generalization boundaries. |
+
+---
+
+## Internal Documentation (Project Coordination)
+
+> **Note:** The directories below are for internal project coordination and
+> multi-agent workflow. They are visible in the public repository for
+> transparency but are not intended as developer-facing documentation.
+
+| Directory | Purpose | Audience |
+| --- | --- | --- |
+| [`reviews/`](./reviews/) | Code review audits, quality gate reports, architecture assessments | @quality, @orchestrator |
+| [`planning/`](./planning/) | Sprint plans, task burndown, roadmaps, agent handoff contracts, evolution ledger | @orchestrator, @product |
+| [`research/`](./research/) | Competitor tracking, capability scorecards | @product |
+| [`archive/`](./archive/) | Superseded planning and review snapshots (see Archive Index below) | Historical reference |
+| [`alerts/`](./alerts/) | Critical gap alerts raised by @orchestrator | Internal coordination |
+
+These directories are **excluded** from the VitePress documentation site
+sidebar and navigation.
+
+---
+
+## Read This First (Internal Contributors)
 
 Use the docs in this order:
 
@@ -35,10 +84,11 @@ Use the docs in this order:
 | Design documents | [design/phase-b-provider-http-layer.md](./design/phase-b-provider-http-layer.md), [design/phase-c-developer-experience.md](./design/phase-c-developer-experience.md) | Phase B/C design specs for provider HTTP layer and DX. |
 | Design boundary notes | [design/design-limits-and-generalization-boundaries.md](./design/design-limits-and-generalization-boundaries.md) | One-page guardrail for keeping `MapSpec` core + extensions generic and avoiding demo-shaped protocol drift. |
 
-## Dated But Active Evidence
+## Dated But Active Evidence (Internal)
 
-These files are intentionally timestamped snapshots. Keep them factual instead
-of rewriting them to sound timeless.
+> **Internal use only.** These files are intentionally timestamped snapshots
+> for project coordination. Keep them factual instead of rewriting them to
+> sound timeless.
 
 | Area | Entry point | Notes |
 | --- | --- | --- |
@@ -92,6 +142,22 @@ covered by the retention window.
 | [archive/2026-06-07/](./archive/2026-06-07/) | Reference-driven simplification appendices absorbed into current sources | 2026-06-07 |
 | [archive/2026-06-10/](./archive/2026-06-10/) | Active tree compaction after P0/P1/P2 closure: long planning ledgers, Workbench/Studio local streams, and productization evidence | 2026-06-10 |
 
+## Language Strategy
+
+| Scope | Language | Notes |
+| --- | --- | --- |
+| VitePress documentation site (`website/`) | English | Primary audience: international developers. |
+| Architecture, engineering, and spec docs | English | Authoritative technical references. |
+| Migration guides, CLI docs, blog posts | English | Developer-facing content. |
+| Planning, reviews, and research | Mixed (primarily English) | Internal coordination; some entries may contain Chinese annotations. |
+| GitHub issues, PR descriptions | English | Public collaboration surface. |
+
+English is the default language for all developer-facing and authoritative
+technical documentation. Internal planning and review documents may contain
+mixed-language annotations when the working team shares a common language;
+this is acceptable for internal artifacts but should not leak into public
+guides or API documentation.
+
 ## Maintenance
 
 - Keep root and `docs/` index pages short and authoritative.
@@ -101,3 +167,5 @@ covered by the retention window.
   `node scripts/report-retention.mjs --apply`.
 - Run `pnpm test:docs`, `node scripts/doc-generator.mjs links`, and the
   relevant deterministic gates after doc restructuring.
+- **Never add `reviews/`, `planning/`, or `archive/` paths to the VitePress
+  sidebar** — those directories are internal-only.

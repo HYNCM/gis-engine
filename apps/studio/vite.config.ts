@@ -1,12 +1,15 @@
+import { resolve } from "node:path";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
+
+const ROOT = resolve(__dirname, "..", "..");
 
 export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@gis-engine/engine": "/packages/engine/src/index.ts",
-      "@gis-engine/ai": "/packages/ai/src/index.ts",
+      "@gis-engine/engine": resolve(ROOT, "packages/engine/src/index.ts"),
+      "@gis-engine/ai": resolve(ROOT, "packages/ai/src/index.ts"),
     },
   },
   build: {
