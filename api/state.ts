@@ -1,3 +1,6 @@
+import { randomUUID } from "node:crypto";
+import type { IncomingMessage, ServerResponse } from "node:http";
+
 /**
  * GET /api/state — Return initial MapSpec state.
  *
@@ -5,7 +8,8 @@
  * The client (MapStage) uses @gis-engine/engine to render it.
  */
 
-import { randomUUID } from "node:crypto";
+type Req = IncomingMessage & { query?: Record<string, string | string[]> };
+type Res = ServerResponse & { json: (body: unknown) => void; status: (code: number) => Res };
 
 const TILE_PROXY_PREFIX = "/api/tiles";
 
@@ -136,9 +140,7 @@ function buildSummary(spec: Record<string, unknown>) {
   };
 }
 
-import type { VercelRequest, VercelResponse } from "@vercel/node";
-
-export default function handler(_req: VercelRequest, res: VercelResponse): void {
+export default function handler(_req: Req, res: Res): void {
   const spec = createInitialSpec();
   res.status(200).json({
     status: "ready",

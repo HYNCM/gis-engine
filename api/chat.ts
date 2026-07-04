@@ -1,3 +1,9 @@
+import { randomUUID } from "node:crypto";
+import type { IncomingMessage, ServerResponse } from "node:http";
+
+type Req = IncomingMessage & { query?: Record<string, string | string[]>; body?: unknown; method?: string };
+type Res = ServerResponse & { json: (body: unknown) => void; status: (code: number) => Res };
+
 /**
  * POST /api/chat — Stateless AI chat endpoint.
  *
@@ -7,8 +13,6 @@
  * Stateless: client sends current spec, server returns updated spec.
  * The client-side @gis-engine/engine handles actual rendering.
  */
-
-export const runtime = "edge";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -35,9 +39,9 @@ interface ProviderOutput {
   confidence?: { score: number; level: string };
 }
 
-// ── Env helper (Edge Runtime) ──────────────────────────────────────────────
+// ── Env helper ────────────────────────────────────────────────────────────
 
-const env = process.env as Record<string, string | undefined>;
+const env = process.env;
 
 // ── Spec helpers ───────────────────────────────────────────────────────────
 
@@ -108,13 +112,14 @@ function buildSummary(spec: Record<string, unknown>) {
 }
 
 function stateResponse(
+  res: Res,
   status: string,
   spec: Record<string, unknown>,
   diagnostics: Array<Record<string, unknown>> = [],
   commandEvidence?: Record<string, unknown>,
   provider?: Record<string, unknown>,
 ) {
-  return Response.json({
+  res.status(200).json({
     status,
     spec,
     style: null,
@@ -633,18 +638,20 @@ async function callDeepSeek(
 
 // ── Main handler ───────────────────────────────────────────────────────────
 
-export default async function handler(req: Request): Promise<Response> {
+export default async function handler(req: Req, res: Res): Promise<void> {
   if (req.method !== "POST") {
-    return Response.json({ error: "Method not allowed" }, { status: 405 });
+    res.status(405).json({ error: "Method not allowed" });
+    return;
   }
 
   let body: ChatBody;
   try {
-    body = (await req.json()) as ChatBody;
+    body = (typeof req.body === "string" ? JSON.parse(req.body) : req.body) as ChatBody;
   } catch {
-    return stateResponse("blocked", {}, [
+    stateResponse(res, "blocked", {}, [
       { code: "INPUT.PARSE_ERROR", severity: "error", message: "Invalid JSON body" },
     ]);
+    return;
   }
 
   const message = (body.message ?? "").trim();
@@ -652,13 +659,14 @@ export default async function handler(req: Request): Promise<Response> {
   const spec = (body.spec ?? {}) as Record<string, unknown>;
 
   if (!message) {
-    return stateResponse("ready", spec, [{ code: "INPUT.EMPTY", severity: "error", message: "Empty message" }]);
+    stateResponse(res, "ready", spec, [{ code: "INPUT.EMPTY", severity: "error", message: "Empty message" }]);
+    return;
   }
 
   // Ensure spec has minimal structure
   const safeSpec: Record<string, unknown> = {
     version: spec.version ?? "0.1",
-    id: spec.id ?? crypto.randomUUID(),
+    id: spec.id ?? randomUUID(),
     revision: spec.revision ?? "0",
     sources: spec.sources ?? {},
     layers: spec.layers ?? [],
@@ -669,7 +677,7 @@ export default async function handler(req: Request): Promise<Response> {
   if (providerId === "deepseek") {
     const apiKey = (env.DEEPSEEK_API_KEY ?? "").trim();
     if (!apiKey) {
-      return stateResponse("ready", safeSpec, [
+      stateResponse(res, "ready", safeSpec, [
         {
           code: "PROVIDER.UNAVAILABLE",
           severity: "error",
@@ -677,21 +685,25 @@ export default async function handler(req: Request): Promise<Response> {
           message: "DeepSeek API key not configured. Set DEEPSEEK_API_KEY.",
         },
       ]);
+      return;
     }
 
     const result = await callDeepSeek(apiKey, safeSpec, message);
     if (!result.ok) {
-      return stateResponse(
+      stateResponse(
+        res,
         "blocked",
         safeSpec,
         [{ code: "PROVIDER.ERROR", severity: "error", path: "/providerResponse", message: result.error }],
         undefined,
         { providerId: "deepseek" },
       );
+      return;
     }
 
     const applied = applyAction(safeSpec, result.output);
-    return stateResponse(
+    stateResponse(
+      res,
       applied.status,
       applied.nextSpec,
       applied.diagnostics,
@@ -707,23 +719,27 @@ export default async function handler(req: Request): Promise<Response> {
         confidence: result.output.confidence,
       },
     );
+    return;
   }
 
   // ── Mock AI provider (default) ─────────────────────────────────────────
   const intent = parseMockIntent(message, safeSpec);
 
   if (intent.action === "noop") {
-    return stateResponse(
+    stateResponse(
+      res,
       "ready",
       safeSpec,
       [],
       { commandCount: 0, committed: false, rolledBack: false, failed: false, changedPathCount: 0 },
       { providerId: "mock-ai" },
     );
+    return;
   }
 
   const applied = applyAction(safeSpec, intent);
-  return stateResponse(
+  stateResponse(
+    res,
     applied.status,
     applied.nextSpec,
     applied.diagnostics,

@@ -2,9 +2,12 @@
  * GET /api/providers — Return available AI provider profiles.
  */
 
-export const runtime = "edge";
+import type { IncomingMessage, ServerResponse } from "node:http";
 
-export default function handler(_req: Request): Response {
+type Req = IncomingMessage & { query?: Record<string, string | string[]> };
+type Res = ServerResponse & { json: (body: unknown) => void; status: (code: number) => Res };
+
+export default function handler(_req: Req, res: Res): void {
   const deepseekKey = (process.env.DEEPSEEK_API_KEY ?? "").trim();
   const deepseekBaseUrl = (process.env.DEEPSEEK_BASE_URL ?? "").trim() || "https://api.deepseek.com";
   const deepseekModel = (process.env.DEEPSEEK_MODEL ?? "").trim() || "deepseek-v4-flash";
@@ -28,5 +31,5 @@ export default function handler(_req: Request): Response {
     },
   ];
 
-  return Response.json({ providers });
+  res.status(200).json({ providers });
 }

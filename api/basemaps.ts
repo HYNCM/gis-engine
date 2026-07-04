@@ -2,7 +2,10 @@
  * GET /api/basemaps — Return available basemap options.
  */
 
-export const runtime = "edge";
+import type { IncomingMessage, ServerResponse } from "node:http";
+
+type Req = IncomingMessage & { query?: Record<string, string | string[]> };
+type Res = ServerResponse & { json: (body: unknown) => void; status: (code: number) => Res };
 
 const TILE_PROXY_PREFIX = "/api/tiles";
 
@@ -43,7 +46,7 @@ const BASEMAPS: Record<string, BasemapDef> = {
 
 const DEFAULT_BASEMAP = "none";
 
-export default function handler(_req: Request): Response {
+export default function handler(_req: Req, res: Res): void {
   const env = process.env as Record<string, string | undefined>;
   const options = Object.entries(BASEMAPS).map(([id, basemap]) => {
     const missingCredential = basemap.requiresEnv && !env[basemap.requiresEnv]?.trim();
@@ -56,7 +59,7 @@ export default function handler(_req: Request): Response {
     };
   });
 
-  return Response.json({
+  res.status(200).json({
     current: DEFAULT_BASEMAP,
     options,
   });
