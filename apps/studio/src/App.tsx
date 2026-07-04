@@ -149,7 +149,13 @@ export default function App() {
     try {
       const response = await fetch("/api/providers");
       const data = await response.json();
-      setProviders(data.providers || []);
+      const list = data.providers || [];
+      setProviders(list);
+      // Auto-select best available provider (first non-mock enabled provider)
+      const bestProvider = list.find((p: ProviderProfile) => p.enabled && p.id !== "mock-ai");
+      if (bestProvider) {
+        setProviderId(bestProvider.id);
+      }
     } catch {
       // keep last known
     }
