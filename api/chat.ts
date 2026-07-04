@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 export const config = {
-  runtime: 'nodejs',
+  runtime: "nodejs",
 };
 
 type Req = IncomingMessage & { query?: Record<string, string | string[]>; body?: unknown; method?: string };
@@ -655,14 +655,15 @@ async function callDeepSeek(
 
 export default async function handler(req: Req, res: Res): Promise<void> {
   // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
 
   // Handle preflight
-  if (req.method === 'OPTIONS') {
-    return res.status(204).end();
+  if (req.method === "OPTIONS") {
+    res.status(204).end();
+    return;
   }
 
   if (req.method !== "POST") {
