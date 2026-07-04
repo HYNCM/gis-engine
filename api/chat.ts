@@ -648,9 +648,7 @@ export default async function handler(req: Req, res: Res): Promise<void> {
   try {
     body = (typeof req.body === "string" ? JSON.parse(req.body) : req.body) as ChatBody;
   } catch {
-    stateResponse(res, "blocked", {}, [
-      { code: "INPUT.PARSE_ERROR", severity: "error", message: "Invalid JSON body" },
-    ]);
+    stateResponse(res, "blocked", {}, [{ code: "INPUT.PARSE_ERROR", severity: "error", message: "Invalid JSON body" }]);
     return;
   }
 

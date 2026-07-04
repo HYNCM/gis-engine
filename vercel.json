@@ -2,12 +2,6 @@
   "buildCommand": "pnpm --filter @gis-engine/studio... build",
   "outputDirectory": "apps/studio/dist",
   "installCommand": "pnpm install --frozen-lockfile",
-  "framework": "vite",
-  "cleanUrls": true,
-  "rewrites": [
-    { "source": "/api/state", "destination": "/api/state" },
-    { "source": "/api/chat", "destination": "/api/chat" },
-    { "source": "/api/providers", "destination": "/api/providers" },
-    { "source": "/api/basemaps", "destination": "/api/basemaps" }
-  ]
+  "framework": null,
+  "cleanUrls": true
 }
