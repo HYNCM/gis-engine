@@ -19,15 +19,7 @@ interface Props {
   onChangeBasemap: (id: string) => void;
 }
 
-export default function MapStage({
-  serverState,
-  status,
-  onSave,
-  savedMsg,
-  basemaps,
-  currentBasemap,
-  onChangeBasemap,
-}: Props) {
+export default function MapStage({ serverState }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const runtimeRef = useRef<MapRuntime | null>(null);
   const [mapReadyToken, setMapReadyToken] = useState(0);
@@ -94,13 +86,6 @@ export default function MapStage({
     return () => observer.disconnect();
   }, [mapReadyToken]);
 
-  const badgeColor =
-    status === "ready" || status === "applied" || status === "reviewed"
-      ? "bg-green-900/50 text-green-400"
-      : status === "thinking"
-        ? "bg-yellow-900/50 text-yellow-400"
-        : "bg-red-900/50 text-red-400";
-
   return (
     <div className="relative h-full w-full">
       <div ref={containerRef} className="h-full w-full" />
@@ -112,36 +97,6 @@ export default function MapStage({
       {mapLoadError && (
         <div className="absolute inset-0 grid place-items-center bg-gray-950 text-xs text-red-300">{mapLoadError}</div>
       )}
-      <div className="absolute left-0 right-0 top-0 flex items-center justify-between border-b border-gray-800 bg-gray-900/80 px-4 py-2 backdrop-blur">
-        <div className="flex items-center gap-3">
-          <select
-            value={currentBasemap}
-            onChange={(event) => onChangeBasemap(event.target.value)}
-            className="rounded border border-gray-700 bg-gray-800 px-2 py-1 text-xs text-gray-300 focus:border-blue-500 focus:outline-none"
-          >
-            {basemaps.map((basemap) => (
-              <option key={basemap.id} value={basemap.id} disabled={!basemap.enabled}>
-                {basemap.missingCredential ? `${basemap.label} (${basemap.missingCredential})` : basemap.label}
-              </option>
-            ))}
-          </select>
-          <p className="font-mono text-xs text-gray-500">
-            {serverState ? `v${serverState.summary.revision} · ${serverState.summary.layerCount} layers` : "--"}
-          </p>
-          {savedMsg && <span className="animate-pulse text-xs text-green-400">{savedMsg}</span>}
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onSave}
-            disabled={!serverState}
-            className="rounded bg-gray-800 px-3 py-1 text-xs text-gray-300 transition hover:bg-gray-700 disabled:opacity-40"
-            title="Save"
-          >
-            💾 Save
-          </button>
-          <span className={`rounded-full px-2 py-0.5 text-xs ${badgeColor}`}>{status}</span>
-        </div>
-      </div>
       <div className="absolute bottom-4 left-4 rounded bg-gray-900/80 px-3 py-1.5 font-mono text-xs text-gray-400 backdrop-blur">
         MapSpec v0.1 · MapLibre GL
       </div>

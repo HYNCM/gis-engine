@@ -13,6 +13,7 @@
  *   npm exec --package @gis-engine/cli@latest -- create-gis-map <project-name> --generate -p deepseek --api-key sk-xxx --timeout 20000
  *   npm exec --package @gis-engine/cli@latest -- create-gis-map --preflight ./map.json [--json]
  *   npm exec --package @gis-engine/cli@latest -- create-gis-map --verify-artifacts ./generated-map [--json]
+ *   npm exec --package @gis-engine/cli@latest -- create-gis-map --lint ./map.json [--json]
  *
  * Options:
  *   --template, -t   Template to use: static-html | vite-ts | mapspec (default: static-html)
@@ -44,9 +45,10 @@ import { fileURLToPath } from "node:url";
 import { formatVerifyArtifactsText, verifyArtifacts } from "./artifacts.js";
 import { parseArgs } from "./config.js";
 import { generate } from "./generate.js";
+import { formatLintText, lintMapSpec } from "./lint.js";
 import { formatPreflightText, preflightMapSpec } from "./preflight.js";
 import { createProviderDiagnostics } from "./provider.js";
-import { getTemplate, TEMPLATES } from "./templates/index.js";
+import { getTemplate, isCommunityTemplateName, listCommunityTemplates, TEMPLATES } from "./templates/index.js";
 
 export async function main(argv: string[] = process.argv.slice(2)): Promise<void> {
   const config = parseArgs(argv);
@@ -82,6 +84,17 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
       console.log(JSON.stringify(result, null, 2));
     } else {
       process.stdout.write(formatVerifyArtifactsText(result));
+    }
+    if (!result.ok) process.exit(1);
+    return;
+  }
+
+  if (config.lint) {
+    const result = lintMapSpec({ filePath: config.lint });
+    if (config.json) {
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      process.stdout.write(formatLintText(result));
     }
     if (!result.ok) process.exit(1);
     return;
@@ -124,7 +137,12 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
   const template = getTemplate(config.template);
   if (!template) {
     console.error(`Error: unknown template "${config.template}".`);
-    console.error(`Available templates: ${TEMPLATES.join(", ")}\n`);
+    if (isCommunityTemplateName(config.template)) {
+      const available = listCommunityTemplates().map((t) => `community:${t.name}`);
+      console.error(`Available community templates: ${available.join(", ") || "(none registered)"}\n`);
+    } else {
+      console.error(`Available templates: ${TEMPLATES.join(", ")}, community:<name>\n`);
+    }
     process.exit(1);
   }
 
@@ -195,12 +213,14 @@ Modes:
   generate     Run the AI generate pipeline (--generate flag)
   preflight    Validate a MapSpec JSON file and PMTiles runtime load plan
   verify       Verify generated artifact-manifest.json hashes
+  lint         Validate and lint a MapSpec JSON file
 
 Templates (scaffold mode):
   static-html   Standalone HTML file with inline GIS Engine (default)
   vite-ts       Vite + TypeScript project with GIS Engine
   mapspec       Minimal MapSpec JSON file only
   app           Full interactive map application (Vite + React + Tailwind)
+  community:<name>  Community-contributed template (e.g. community:geojson-explorer)
 
 Options:
   -t, --template   Template name (default: static-html)
@@ -212,6 +232,7 @@ Options:
   -g, --generate   Run AI generate pipeline instead of scaffolding
       --prompt     Prompt text for generate mode
       --preflight  Validate/preflight a MapSpec JSON file without writing files
+      --lint       Validate/lint a MapSpec JSON file (lighter than preflight)
       --verify-artifacts
                    Verify artifact-manifest.json hashes in a generated project
       --require-archive-metadata
@@ -236,6 +257,9 @@ Examples:
   create-gis-map --preflight ./map.json --json       Validate and preflight a MapSpec
   create-gis-map --preflight ./map.json --require-archive-metadata --pmtiles-metadata parcels=./parcels.metadata.json
   create-gis-map --verify-artifacts ./my-map --json  Verify generated artifact hashes
+  create-gis-map --lint ./map.json                   Lint a MapSpec file
+  create-gis-map my-map -t community:geojson-explorer  Scaffold with community template
+  create-gis-map --lint ./map.json --json            Lint with JSON output
 `);
 }
 

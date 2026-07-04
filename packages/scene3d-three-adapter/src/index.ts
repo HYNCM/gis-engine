@@ -1,8 +1,10 @@
 import {
   type CapabilityReport,
+  DEFAULT_SCENE3D_PROMOTION_GATE,
   type Diagnostic,
   DiagnosticCodes,
   type ResourceReport,
+  type Scene3DPromotionGate,
   Scene3DStableRuntimeBlockerCodes,
   type SceneSource,
   type SceneView3DExtension,
@@ -980,7 +982,13 @@ function unsupportedRuntimeDiagnostic(): Diagnostic {
   };
 }
 
-function stableRuntimeBlockedDiagnostics(): Diagnostic[] {
+function stableRuntimeBlockedDiagnostics(gate?: Scene3DPromotionGate): Diagnostic[] {
+  const promotionGate = gate ?? DEFAULT_SCENE3D_PROMOTION_GATE;
+
+  if (promotionGate === "stable" || promotionGate === "experimental") {
+    return [];
+  }
+
   return [
     stableRuntimeBlockedDiagnostic(
       "/view/mode",

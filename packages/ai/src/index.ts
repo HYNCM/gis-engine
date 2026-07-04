@@ -14,7 +14,10 @@ export {
   gisEngineTools,
   InspectDataToolResultSchema,
   listGisEngineTools,
+  QueryFeaturesToolResultSchema,
   SnapshotSpecToolResultSchema,
+  StyleRecommendToolResultSchema,
+  TransformDataToolResultSchema,
   ValidateSpecToolInputSchema,
   ValidateSpecToolResultSchema,
 } from "./mcp/server.js";
@@ -83,11 +86,36 @@ export {
   inspectDataTool,
 } from "./tools/inspectData.js";
 export {
+  type QueryFeaturesToolInput,
+  QueryFeaturesToolInputSchema,
+  type QueryFeaturesToolResult,
+  queryFeaturesTool,
+} from "./tools/queryFeatures.js";
+export {
+  type RenderIntent,
+  type RenderIntentOptions,
+  type RenderIntentResult,
+  renderIntent,
+} from "./tools/renderIntent.js";
+export {
   type SnapshotSpecToolInput,
   SnapshotSpecToolInputSchema,
   type SnapshotSpecToolResult,
   snapshotSpecTool,
 } from "./tools/snapshotSpec.js";
+export {
+  type StyleRecommendationResult,
+  type StyleRecommendToolInput,
+  StyleRecommendToolInputSchema,
+  styleRecommendTool,
+} from "./tools/styleRecommend.js";
+export {
+  type AggregationResult,
+  type TransformDataResult,
+  type TransformDataToolInput,
+  TransformDataToolInputSchema,
+  transformDataTool,
+} from "./tools/transformData.js";
 export {
   normalizeWorkbenchProviderPlan,
   type WorkbenchProviderConfidence,

@@ -11,6 +11,7 @@
   "scripts": {
     "build": "pnpm -r build",
     "build:schema": "pnpm --filter @gis-engine/engine build:schema && pnpm --filter @gis-engine/scene3d build && pnpm --filter @gis-engine/ai build:schema",
+    "schema:diff": "node scripts/schema-diff.mjs",
     "test": "pnpm test:schema && pnpm test:schema-sync && pnpm test:commands && pnpm test:patch && pnpm test:runtime && pnpm test:adapter && pnpm test:ai && pnpm test:cli && pnpm test:examples && pnpm test:docs && pnpm test:agent-framework && pnpm test:resources && pnpm test:perf:smoke && pnpm test:snapshot:smoke",
     "test:schema": "vitest run tests/schema/schema-fixtures.test.ts tests/schema/expression-validator.test.ts tests/schema/resource-policy.test.ts tests/schema/cloud-native-policy.test.ts",
     "test:schema-sync": "vitest run tests/schema-sync",
@@ -31,6 +32,7 @@
     "test:qa-matrix": "vitest run tests/examples/qa-matrix.test.ts",
     "test:perf:smoke": "vitest run tests/perf",
     "test:perf:trend": "vitest run tests/perf/perf-trend-ledger.test.ts",
+    "test:perf:ci": "node scripts/perf-trend.mjs --ci --json --budget-multiplier 2",
     "test:perf:nightly": "vitest run tests/nightly-perf",
     "test:resources": "vitest run tests/resources",
     "test:e2e": "pnpm test:e2e:node && pnpm test:e2e:browser",

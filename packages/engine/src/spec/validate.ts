@@ -14,13 +14,17 @@ import {
   validateResourcePolicy,
   validateResourceUrl,
 } from "./resource-policy.js";
+import { DEFAULT_SCENE3D_PROMOTION_GATE, type Scene3DPromotionGate } from "./scene3d-promotion-gate.js";
 import { MapSpecSchema, SceneView3DExtensionSchema } from "./schemas/index.js";
 
 const ajv = new Ajv({ allErrors: true, strict: true });
 const validateMapSpecSchema = ajv.compile(MapSpecSchema);
 const validateSceneView3DExtensionSchema = ajv.compile(SceneView3DExtensionSchema);
 
-export function validateSpec(spec: unknown, options?: { resourcePolicy?: ResourcePolicy }): ValidationReport {
+export function validateSpec(
+  spec: unknown,
+  options?: { resourcePolicy?: ResourcePolicy; scene3dPromotionGate?: Scene3DPromotionGate },
+): ValidationReport {
   const diagnostics: Diagnostic[] = [];
 
   if (!validateMapSpecSchema(spec)) {
@@ -28,7 +32,7 @@ export function validateSpec(spec: unknown, options?: { resourcePolicy?: Resourc
   }
 
   if (isMapSpecLike(spec)) {
-    diagnostics.push(...validateSemanticRules(spec));
+    diagnostics.push(...validateSemanticRules(spec, options?.scene3dPromotionGate));
     diagnostics.push(...validateResourcePolicy(spec, options?.resourcePolicy));
     diagnostics.push(...validateSceneView3DExtension(spec));
   }
@@ -163,10 +167,10 @@ function schemaKeywordToCode(error: ErrorObject): Diagnostic["code"] {
   return DiagnosticCodes.SpecInvalidType;
 }
 
-function validateSemanticRules(spec: MapSpec): Diagnostic[] {
+function validateSemanticRules(spec: MapSpec, scene3dPromotionGate?: Scene3DPromotionGate): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
 
-  diagnostics.push(...validateViewAndCapabilityBoundary(spec));
+  diagnostics.push(...validateViewAndCapabilityBoundary(spec, scene3dPromotionGate));
 
   if (spec.view.center) {
     const [lng, lat] = spec.view.center;
@@ -325,19 +329,50 @@ function validateSemanticRules(spec: MapSpec): Diagnostic[] {
   return diagnostics;
 }
 
-function validateViewAndCapabilityBoundary(spec: MapSpec): Diagnostic[] {
+function validateViewAndCapabilityBoundary(spec: MapSpec, scene3dPromotionGate?: Scene3DPromotionGate): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
+  const gate = scene3dPromotionGate ?? DEFAULT_SCENE3D_PROMOTION_GATE;
 
   if (spec.view.mode === "scene3d") {
-    diagnostics.push(scene3dUnsupported("/view/mode", Scene3DStableRuntimeBlockerCodes.ViewMode));
+    if (gate === "blocked") {
+      diagnostics.push(scene3dUnsupported("/view/mode", Scene3DStableRuntimeBlockerCodes.ViewMode));
+    } else if (gate === "experimental") {
+      diagnostics.push({
+        severity: "warning",
+        code: DiagnosticCodes.CapabilityUnsupported,
+        message: "scene3d view mode is experimental and may change without notice.",
+        path: "/view/mode",
+      });
+    }
+    // gate === "stable" → no diagnostic
   }
 
   if (spec.capabilities?.renderer === "scene3d") {
-    diagnostics.push(scene3dUnsupported("/capabilities/renderer", Scene3DStableRuntimeBlockerCodes.Renderer));
+    if (gate === "blocked") {
+      diagnostics.push(scene3dUnsupported("/capabilities/renderer", Scene3DStableRuntimeBlockerCodes.Renderer));
+    } else if (gate === "experimental") {
+      diagnostics.push({
+        severity: "warning",
+        code: DiagnosticCodes.CapabilityUnsupported,
+        message: "scene3d renderer is experimental and may change without notice.",
+        path: "/capabilities/renderer",
+      });
+    }
+    // gate === "stable" → no diagnostic
   }
 
   if (spec.capabilities?.dimensions?.includes("3d")) {
-    diagnostics.push(scene3dUnsupported("/capabilities/dimensions", Scene3DStableRuntimeBlockerCodes.Dimensions));
+    if (gate === "blocked") {
+      diagnostics.push(scene3dUnsupported("/capabilities/dimensions", Scene3DStableRuntimeBlockerCodes.Dimensions));
+    } else if (gate === "experimental") {
+      diagnostics.push({
+        severity: "warning",
+        code: DiagnosticCodes.CapabilityUnsupported,
+        message: "3D dimension capability is experimental and may change without notice.",
+        path: "/capabilities/dimensions",
+      });
+    }
+    // gate === "stable" → no diagnostic
   }
 
   return diagnostics;

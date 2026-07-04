@@ -29,9 +29,12 @@ import {
 } from "../tools/exportExampleApp.js";
 import { GenerateSpecToolInputSchema, generateSpecTool } from "../tools/generateSpec.js";
 import { InspectDataToolInputSchema, inspectDataTool } from "../tools/inspectData.js";
+import { QueryFeaturesToolInputSchema, queryFeaturesTool } from "../tools/queryFeatures.js";
 import { toolInputErrorsToDiagnostics } from "../tools/schemaDiagnostics.js";
 import { DiagnosticCountsSchema, stripNestedIds } from "../tools/shared.js";
 import { SnapshotSpecToolInputSchema, snapshotSpecTool } from "../tools/snapshotSpec.js";
+import { StyleRecommendToolInputSchema, styleRecommendTool } from "../tools/styleRecommend.js";
+import { TransformDataToolInputSchema, transformDataTool } from "../tools/transformData.js";
 
 const DiagnosticContractSchema = stripNestedIds(DiagnosticSchema);
 const CapabilityReportContractSchema = stripNestedIds(CapabilityReportSchema);
@@ -192,6 +195,9 @@ const CapabilityDomainSummarySchema = {
           "generate_spec",
           "inspect_data",
           "edit_spec",
+          "query_features",
+          "style_recommend",
+          "transform_data",
         ],
       },
     },
@@ -550,6 +556,122 @@ export const EditSpecToolResultSchema = {
   additionalProperties: false,
 } as const;
 
+export const QueryFeaturesToolResultSchema = {
+  type: "object",
+  properties: {
+    queryType: { type: "string", enum: ["point", "bbox", "all"] },
+    featureCount: { type: "number" },
+    features: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          type: { type: "string", const: "Feature" },
+          id: {},
+          geometry: {
+            type: "object",
+            properties: {
+              type: { type: "string" },
+            },
+            required: ["type"],
+            additionalProperties: false,
+          },
+          properties: {},
+        },
+        required: ["type", "properties"],
+        additionalProperties: false,
+      },
+    },
+    suggestions: { type: "array", items: { type: "string" } },
+  },
+  required: ["queryType", "featureCount", "features", "suggestions"],
+  additionalProperties: false,
+} as const;
+
+export const StyleRecommendToolResultSchema = {
+  type: "object",
+  properties: {
+    featureCount: { type: "number" },
+    geometryTypes: { type: "array", items: { type: "string" } },
+    primaryGeometry: { type: "string" },
+    numericProperties: { type: "array", items: { type: "string" } },
+    categoricalProperties: { type: "array", items: { type: "string" } },
+    recommendations: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          layerType: { type: "string" },
+          rationale: { type: "string" },
+          paint: { type: "object" },
+          layout: { type: "object" },
+          priority: { type: "number" },
+        },
+        required: ["layerType", "rationale", "paint", "layout", "priority"],
+        additionalProperties: false,
+      },
+    },
+    diagnostics: { type: "array", items: DiagnosticContractSchema },
+  },
+  required: [
+    "featureCount",
+    "geometryTypes",
+    "primaryGeometry",
+    "numericProperties",
+    "categoricalProperties",
+    "recommendations",
+    "diagnostics",
+  ],
+  additionalProperties: false,
+} as const;
+
+export const TransformDataToolResultSchema = {
+  type: "object",
+  properties: {
+    operationCount: { type: "number" },
+    inputFeatureCount: { type: "number" },
+    outputFeatureCount: { type: "number" },
+    output: {
+      type: "object",
+      properties: {
+        type: { type: "string" },
+        features: { type: "array" },
+      },
+      required: ["type", "features"],
+      additionalProperties: false,
+    },
+    aggregations: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          groupBy: { type: "string" },
+          aggregation: { type: "string" },
+          property: { type: "string" },
+          groups: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                key: { type: "string" },
+                value: { type: "number" },
+                count: { type: "number" },
+              },
+              required: ["key", "value", "count"],
+              additionalProperties: false,
+            },
+          },
+        },
+        required: ["groupBy", "aggregation", "groups"],
+        additionalProperties: false,
+      },
+    },
+    diagnostics: { type: "array", items: DiagnosticContractSchema },
+  },
+  required: ["operationCount", "inputFeatureCount", "outputFeatureCount", "output", "diagnostics"],
+  additionalProperties: false,
+} as const;
+
 interface ValidateSpecToolInput {
   spec: MapSpec;
 }
@@ -578,74 +700,101 @@ const validateContextSummaryInput = ajv.compile(ContextSummaryToolInputSchema);
 export const gisEngineTools = [
   {
     name: "apply_commands",
-    description: "Apply a series of MapCommands to a MapSpec to modify the map state.",
+    description:
+      "Apply a series of MapCommands to a MapSpec to modify the map state. Use when: the user wants to add layers, change styles, set the view, or perform any map state mutation; pre-check modifications before committing. Do NOT use when: the user only needs to read, query, or export the current map state. Example: user says 'add a heatmap layer showing population density'.",
     inputSchema: ApplyCommandsToolInputSchema,
     outputSchema: ApplyCommandsToolResultSchema,
   },
   {
     name: "validate_spec",
-    description: "Validate a MapSpec and return diagnostics.",
+    description:
+      "Validate a MapSpec and return diagnostics. Use when: the user submits a MapSpec and needs to check its correctness; as a pre-check before apply_commands. Do NOT use when: the spec is already known to be valid and only needs to be exported or explained.",
     inputSchema: ValidateSpecToolInputSchema,
     outputSchema: ValidateSpecToolResultSchema,
   },
   {
     name: "export_spec",
-    description: "Return a validated, optionally command-modified MapSpec.",
+    description:
+      "Return a validated, optionally command-modified MapSpec. Use when: the user needs the final usable MapSpec JSON for deployment or sharing; applying a batch of commands and exporting the result in one step. Do NOT use when: the user only needs to validate or preview the spec without obtaining the full output.",
     inputSchema: ExportSpecToolInputSchema,
     outputSchema: ExportSpecToolResultSchema,
   },
   {
     name: "get_context_summary",
     description:
-      "Return a compact MapSpec summary plus AI orchestration capability boundaries for planning and review.",
+      "Return a compact MapSpec summary plus AI orchestration capability boundaries for planning and review. Use when: the user or an AI agent needs a comprehensive overview of the current MapSpec structure, layers, sources, and capability status. Do NOT use when: the user intends to modify the map — use apply_commands or edit_spec instead.",
     inputSchema: ContextSummaryToolInputSchema,
     outputSchema: ContextSummaryToolResultSchema,
   },
   {
     name: "snapshot_spec",
-    description: "Validate a MapSpec and produce a headless snapshot result without real WebGL.",
+    description:
+      "Validate a MapSpec and produce a headless snapshot result without real WebGL. Use when: the user needs a visual screenshot image of the map as verification evidence or for visual review. Do NOT use when: the user only needs structured data, diagnostics, or a text summary — use explain_spec or get_context_summary instead.",
     inputSchema: SnapshotSpecToolInputSchema,
     outputSchema: SnapshotSpecToolResultSchema,
   },
   {
     name: "explain_spec",
-    description: "Return a structured AI-facing summary, capability boundaries, and full validation diagnostics.",
+    description:
+      "Return a structured AI-facing summary, capability boundaries, and full validation diagnostics. Use when: the user or an AI agent needs to understand what a MapSpec contains — layers, sources, styles, and their relationships — in a machine-readable format. Do NOT use when: the user wants to modify the map — use apply_commands or edit_spec instead.",
     inputSchema: ExplainSpecToolInputSchema,
     outputSchema: ExplainSpecToolResultSchema,
   },
   {
     name: "export_example_app",
-    description: "Return a manifest and file list for a bundled example without writing files.",
+    description:
+      "Return a manifest and file list for a bundled example without writing files. Use when: the user needs a self-contained runnable example application with spec, data, and script files for learning or demonstration. Do NOT use when: the user only needs the MapSpec JSON — use export_spec instead.",
     inputSchema: ExportExampleAppToolInputSchema,
     outputSchema: ExportExampleAppToolResultSchema,
   },
   {
     name: "diff_specs",
     description:
-      "Compare two MapSpec objects and output the command set needed to transform one into the other, with a summary of changes.",
+      "Compare two MapSpec objects and output the command set needed to transform one into the other, with a summary of changes. Use when: the user needs to understand what changed between two versions of a MapSpec or generate migration commands. Do NOT use when: the user only needs to inspect or explain a single spec.",
     inputSchema: DiffSpecsToolInputSchema,
     outputSchema: DiffSpecsToolResultSchema,
   },
   {
     name: "generate_spec",
     description:
-      "Generate a MapSpec skeleton from a structured intent description, with validation and improvement suggestions.",
+      "Generate a MapSpec skeleton from a structured intent description, with validation and improvement suggestions. Use when: the user describes the desired map in natural language and needs a MapSpec created from scratch. Do NOT use when: a MapSpec already exists and only needs small modifications — use edit_spec instead. Example: user says 'create a choropleth map showing GDP by province in China'.",
     inputSchema: GenerateSpecToolInputSchema,
     outputSchema: GenerateSpecToolResultSchema,
   },
   {
     name: "inspect_data",
     description:
-      "Inspect GeoJSON data structure, properties, geometry types, and bounds to understand the data before visualization.",
+      "Inspect GeoJSON data structure, properties, geometry types, and bounds to understand the data before visualization. Use when: the user needs to understand the structure, property types, and statistical summary of GeoJSON data before building a map. Do NOT use when: the user wants to transform the data — use transform_data instead.",
     inputSchema: InspectDataToolInputSchema,
     outputSchema: InspectDataToolResultSchema,
   },
   {
     name: "edit_spec",
     description:
-      "Edit a MapSpec using natural language instructions. Supports adding/removing layers, changing paint/layout properties, setting filters, and modifying the view.",
+      "Edit a MapSpec using natural language instructions. Supports adding/removing layers, changing paint/layout properties, setting filters, and modifying the view. Use when: a MapSpec already exists and the user wants to make small to moderate changes using natural language. Do NOT use when: creating a spec from scratch (use generate_spec) or when precise command-level control is needed (use apply_commands).",
     inputSchema: EditSpecToolInputSchema,
     outputSchema: EditSpecToolResultSchema,
+  },
+  {
+    name: "query_features",
+    description:
+      "Query GeoJSON features by point or bounding box spatial filter. Returns matching features with properties and geometry types. Use when: the user needs to find features at a specific map location or within a bounding box for inspection or interaction. Do NOT use when: the user needs a global data summary — use inspect_data instead.",
+    inputSchema: QueryFeaturesToolInputSchema,
+    outputSchema: QueryFeaturesToolResultSchema,
+  },
+  {
+    name: "style_recommend",
+    description:
+      "Analyze GeoJSON data features and recommend appropriate map layer types, paint properties, and style configurations based on geometry types, property distributions, and optional context hints. Use when: the user has GeoJSON data and wants data-driven suggestions for visualization styling. Do NOT use when: the user has already specified exact style parameters and does not need recommendations.",
+    inputSchema: StyleRecommendToolInputSchema,
+    outputSchema: StyleRecommendToolResultSchema,
+  },
+  {
+    name: "transform_data",
+    description:
+      "Transform GeoJSON data with filter, aggregate, select, sort, and rename operations. Supports property-based filtering, group-by aggregation (count/sum/avg/min/max), property selection, sorting, and renaming. Use when: the user needs to filter, aggregate, sort, or reshape GeoJSON data before visualization. Do NOT use when: the user only needs to inspect the data structure — use inspect_data instead.",
+    inputSchema: TransformDataToolInputSchema,
+    outputSchema: TransformDataToolResultSchema,
   },
 ] as const;
 
@@ -749,6 +898,21 @@ export async function callGisEngineTool(request: { params: { name: string; argum
 
     if (name === "edit_spec") {
       const result = editSpecTool(args);
+      return toolTextResult(result.ok ? result.result : result.diagnostics, !result.ok);
+    }
+
+    if (name === "query_features") {
+      const result = queryFeaturesTool(args);
+      return toolTextResult(result.ok ? result.result : result.diagnostics, !result.ok);
+    }
+
+    if (name === "style_recommend") {
+      const result = styleRecommendTool(args);
+      return toolTextResult(result.ok ? result.result : result.diagnostics, !result.ok);
+    }
+
+    if (name === "transform_data") {
+      const result = transformDataTool(args);
       return toolTextResult(result.ok ? result.result : result.diagnostics, !result.ok);
     }
 

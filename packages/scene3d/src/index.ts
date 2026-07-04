@@ -755,3 +755,213 @@ function countDiagnostics(diagnostics: Diagnostic[]): DiagnosticCounts {
 function escapePathSegment(segment: string): string {
   return segment.replaceAll("~", "~0").replaceAll("/", "~1");
 }
+
+// ---------------------------------------------------------------------------
+// Sprint 3 (T-08a): SceneView3D Visual Evidence Collection
+// ---------------------------------------------------------------------------
+
+export interface Scene3DVisualEvidenceArtifact {
+  kind: "Scene3DVisualEvidenceArtifact";
+  version: "0.1";
+  collectedAt: string;
+  ciTier: Scene3DReleaseCiTier;
+  revision: string;
+  extension: {
+    sourceCount: number;
+    layerCount: number;
+    cameraPresent: boolean;
+  };
+  capabilities: CapabilityReport;
+  snapshot: {
+    passed: boolean;
+    format: "png" | "data-url";
+    width: number;
+    height: number;
+    pendingSourceIds: string[];
+    diagnosticCounts: DiagnosticCounts;
+  };
+  query: {
+    pickCount: number;
+    layerIds: string[];
+    diagnosticCounts: DiagnosticCounts;
+  };
+  rendererVisual?: {
+    passed: boolean;
+    renderer: string;
+    reportPath?: string;
+    diagnosticCounts?: DiagnosticCounts;
+  };
+  releaseGate: {
+    decision: Scene3DReleaseVisualGateDecision;
+    accepted: boolean;
+  };
+  diagnostics: Diagnostic[];
+}
+
+export interface CollectScene3DVisualEvidenceOptions {
+  extension: SceneView3DExtension;
+  ciTier?: Scene3DReleaseCiTier;
+  revision?: string;
+  snapshot: Scene3DMockSnapshotResult;
+  query: Scene3DQueryResult;
+  rendererVisualEvidence?: Scene3DRendererVisualEvidence;
+  waiver?: Scene3DReleaseVisualWaiver;
+  requireRendererVisual?: boolean;
+}
+
+/**
+ * Collects all SceneView3D evidence into a single structured artifact
+ * suitable for CI artifact storage and trend tracking.
+ *
+ * This function combines:
+ * - Extension spec analysis
+ * - Mock snapshot evidence
+ * - Query evidence
+ * - Renderer visual evidence (when available)
+ * - Release gate decision
+ */
+export function collectScene3DVisualEvidence(
+  options: CollectScene3DVisualEvidenceOptions,
+): Scene3DVisualEvidenceArtifact {
+  const ciTier = options.ciTier ?? "local";
+  const revision = options.revision ?? "unknown";
+  const capabilities = getScene3DV1Capabilities();
+
+  const extension = options.extension;
+  const sourceCount = Object.keys(extension.sources ?? {}).length;
+  const layerCount = (extension.layers ?? []).length;
+  const cameraPresent = Boolean(extension.camera);
+
+  const releaseGate = evaluateVisualGateForArtifact({
+    ciTier,
+    ...(options.rendererVisualEvidence ? { rendererVisualEvidence: options.rendererVisualEvidence } : {}),
+    ...(options.waiver ? { waiver: options.waiver } : {}),
+    ...(options.requireRendererVisual !== undefined ? { requireRendererVisual: options.requireRendererVisual } : {}),
+  });
+
+  const allDiagnostics = [
+    ...options.snapshot.diagnostics,
+    ...options.query.diagnostics,
+    ...(options.rendererVisualEvidence?.diagnostics ?? []),
+    ...releaseGate.diagnostics,
+  ];
+
+  return {
+    kind: "Scene3DVisualEvidenceArtifact",
+    version: "0.1",
+    collectedAt: new Date().toISOString(),
+    ciTier,
+    revision,
+    extension: {
+      sourceCount,
+      layerCount,
+      cameraPresent,
+    },
+    capabilities,
+    snapshot: {
+      passed: options.snapshot.passed,
+      format: options.snapshot.summary.format,
+      width: options.snapshot.summary.width,
+      height: options.snapshot.summary.height,
+      pendingSourceIds: options.snapshot.pendingSourceIds,
+      diagnosticCounts: countDiagnostics(options.snapshot.diagnostics),
+    },
+    query: {
+      pickCount: options.query.picks.length,
+      layerIds: uniqueValues(options.query.picks.map((pick) => pick.layerId)),
+      diagnosticCounts: countDiagnostics(options.query.diagnostics),
+    },
+    ...(options.rendererVisualEvidence
+      ? {
+          rendererVisual: {
+            passed: options.rendererVisualEvidence.passed,
+            renderer: options.rendererVisualEvidence.renderer,
+            ...(options.rendererVisualEvidence.reportPath
+              ? { reportPath: options.rendererVisualEvidence.reportPath }
+              : {}),
+            diagnosticCounts: countDiagnostics(options.rendererVisualEvidence.diagnostics ?? []),
+          },
+        }
+      : {}),
+    releaseGate: {
+      decision: releaseGate.decision,
+      accepted: releaseGate.accepted,
+    },
+    diagnostics: allDiagnostics,
+  };
+}
+
+function evaluateVisualGateForArtifact(options: {
+  ciTier: Scene3DReleaseCiTier;
+  rendererVisualEvidence?: Scene3DRendererVisualEvidence;
+  waiver?: Scene3DReleaseVisualWaiver;
+  requireRendererVisual?: boolean;
+}): Scene3DReleaseVisualGateReport {
+  const requiresVisual = options.ciTier === "release" || options.requireRendererVisual === true;
+  const hasEvidence = Boolean(options.rendererVisualEvidence?.passed);
+  const hasWaiver = isReleaseVisualWaiverComplete(options.waiver);
+
+  let decision: Scene3DReleaseVisualGateDecision;
+  let accepted: boolean;
+
+  if (!requiresVisual) {
+    decision = "passed";
+    accepted = true;
+  } else if (hasEvidence) {
+    decision = "passed";
+    accepted = true;
+  } else if (hasWaiver) {
+    decision = "waived";
+    accepted = true;
+  } else {
+    decision = "failed";
+    accepted = false;
+  }
+
+  return {
+    kind: "Scene3DReleaseVisualGateReport",
+    version: "0.1",
+    gate: "scene3d.release.visual",
+    ciTier: options.ciTier,
+    decision,
+    accepted,
+    runtime: {
+      status: "extension-only",
+      stableViewMode: false,
+      rendererVisualRequired: requiresVisual,
+    },
+    ...(hasWaiver && options.waiver ? { waiver: { ...options.waiver, accepted: true } } : {}),
+    evidence: {
+      capabilities: getScene3DV1Capabilities(),
+      snapshot: {
+        passed: false,
+        pendingSourceIds: [],
+        summary: emptySnapshotSummary(),
+        diagnosticCounts: emptyCounts(),
+      },
+      query: { pickCount: 0, diagnosticCounts: emptyCounts() },
+      ...(options.rendererVisualEvidence ? { rendererVisual: options.rendererVisualEvidence } : {}),
+    },
+    diagnostics: requiresVisual && !hasEvidence && !hasWaiver ? [missingReleaseVisualEvidenceDiagnostic()] : [],
+  };
+}
+
+function emptySnapshotSummary(): Scene3DMockSnapshotSummary {
+  return {
+    sourceCount: 0,
+    layerCount: 0,
+    visibleLayerCount: 0,
+    pickableLayerCount: 0,
+    width: 0,
+    height: 0,
+    format: "png",
+  };
+}
+
+function emptyCounts(): DiagnosticCounts {
+  return { error: 0, warning: 0, info: 0 };
+}
+
+function uniqueValues(values: string[]): string[] {
+  return [...new Set(values)];
+}

@@ -30,65 +30,62 @@ describe("AI Map Studio bundle", () => {
     expect(mapStageSource).toContain('import("maplibre-gl")');
   });
 
-  it("keeps audit and review controls in the Studio evidence rail", () => {
-    const evidenceSource = readRepoFile("apps/studio/src/components/EvidencePanel.tsx");
+  it("keeps the Playground components and integration wiring intact", () => {
+    const mapSpecEditorSource = readRepoFile("apps/studio/src/components/MapSpecEditor.tsx");
+    const aiAssistantSource = readRepoFile("apps/studio/src/components/AIAssistant.tsx");
+    const templateBarSource = readRepoFile("apps/studio/src/components/TemplateBar.tsx");
+    const templatesSource = readRepoFile("apps/studio/src/templates/index.ts");
     const appSource = readRepoFile("apps/studio/src/App.tsx");
-    const chatSource = readRepoFile("apps/studio/src/components/ChatPanel.tsx");
 
-    expect(evidenceSource).toContain("Session Audit");
-    expect(evidenceSource).toContain("Review Decision");
-    expect(evidenceSource).toContain("Review History");
-    expect(chatSource).toContain("Saved Maps");
-    expect(chatSource).toContain("Workspace Handoff");
-    expect(chatSource).toContain("Review Ledger");
-    expect(chatSource).toContain("Review Export");
-    expect(chatSource).toContain("onInspectMap(map.id)");
-    expect(chatSource).toContain("onInspectLedger(map.id)");
-    expect(chatSource).toContain("onInspectExport(map.id)");
-    expect(chatSource).toContain("onLoadMap(map.id)");
-    expect(chatSource).toContain("onDeleteMap(map.id)");
-    expect(evidenceSource).toContain("Review reasons");
-    expect(evidenceSource).toContain("Record review");
-    expect(evidenceSource).toContain("Follow-up task ids");
-    expect(evidenceSource).toContain('setReviewComposerOutcome("accepted")');
-    expect(evidenceSource).toContain('setReviewComposerOutcome("blocked")');
-    expect(evidenceSource).toContain('setReviewComposerOutcome("follow-up-required")');
-    expect(evidenceSource).toContain("selectedReasonCodes");
-    expect(evidenceSource).toContain("toggleReasonCode(");
-    expect(evidenceSource).toContain('type="checkbox"');
-    expect(appSource).toContain('fetch("/api/audit")');
-    expect(appSource).toContain('fetch("/api/review-decisions")');
-    expect(appSource).toContain('fetch("/api/review-decision"');
-    expect(appSource).toContain("reasonCodes: request.reasonCodes");
-    expect(appSource).not.toContain("const FOLLOW_UP_TASK_ID");
-    expect(appSource).toContain('fetch("/api/maps")');
-    expect(appSource).toContain("buildLoadedWorkspaceEvidence(");
-    expect(appSource).toContain("loadedEvidence");
-    // biome-ignore lint/suspicious/noTemplateCurlyInString: checking literal template pattern in source
-    expect(appSource).toContain("/api/maps/${mapId}/handoff");
-    // biome-ignore lint/suspicious/noTemplateCurlyInString: checking literal template pattern in source
-    expect(appSource).toContain("/api/maps/${mapId}/review-ledger");
-    expect(appSource).toContain("audit_status: auditStatus");
-    expect(appSource).toContain("review_outcome: reviewOutcome");
-    // biome-ignore lint/suspicious/noTemplateCurlyInString: checking literal template pattern in source
-    expect(appSource).toContain("/api/maps/${mapId}/review-export");
-    expect(appSource).toContain('const kind = query.kind ?? "all"');
-    expect(appSource).toContain('const statusFilter = query.status ?? "all"');
-    expect(appSource).toContain("const limit = query.limit ?? 10");
-    expect(appSource).toContain("new URLSearchParams({");
-    // biome-ignore lint/suspicious/noTemplateCurlyInString: checking literal template pattern in source
-    expect(appSource).toContain("/api/maps/${mapId}/load");
-    expect(chatSource).toContain("Audit Records");
-    expect(chatSource).toContain("Review Decisions");
-    expect(chatSource).toContain("Raw Ledger");
-    expect(chatSource).toContain("No audit records match.");
-    expect(chatSource).toContain("No review decisions match.");
-    expect(chatSource).toContain("All statuses");
-    expect(chatSource).toContain("Follow-up");
-    expect(chatSource).toContain("Page size");
-    expect(chatSource).toContain("Returned Events");
-    expect(chatSource).toContain("Raw Envelope");
-    expect(chatSource).toContain("Newer");
-    expect(chatSource).toContain("Older");
+    // ── MapSpecEditor: JSON editor with diagnostics ──
+    expect(mapSpecEditorSource).toContain("MAPSPEC");
+    expect(mapSpecEditorSource).toContain("Format");
+    expect(mapSpecEditorSource).toContain("Format JSON");
+    expect(mapSpecEditorSource).toContain("ValidationDiagnostic");
+    expect(mapSpecEditorSource).toContain("errorCount");
+    expect(mapSpecEditorSource).toContain("warningCount");
+    expect(mapSpecEditorSource).toContain("line-numbers");
+
+    // ── AIAssistant: chat panel with quick actions ──
+    expect(aiAssistantSource).toContain("AI ASSISTANT");
+    expect(aiAssistantSource).toContain("QUICK_ACTIONS");
+    expect(aiAssistantSource).toContain("Validate");
+    expect(aiAssistantSource).toContain("Explain");
+    expect(aiAssistantSource).toContain("Optimize");
+    expect(aiAssistantSource).toContain("Diagnostics");
+    expect(aiAssistantSource).toContain("Send");
+    expect(aiAssistantSource).toContain("Ask AI about your map");
+
+    // ── TemplateBar: template selector strip ──
+    expect(templateBarSource).toContain("Templates");
+    expect(templateBarSource).toContain("MapSpecTemplate");
+    expect(templateBarSource).toContain("activeTemplateId");
+    expect(templateBarSource).toContain("onSelect");
+
+    // ── Templates registry: all built-in templates ──
+    expect(templatesSource).toContain("basicMapTemplate");
+    expect(templatesSource).toContain("choroplethMapTemplate");
+    expect(templatesSource).toContain("heatmapMapTemplate");
+    expect(templatesSource).toContain("multiLayerMapTemplate");
+    expect(templatesSource).toContain("ALL_TEMPLATES");
+    expect(templatesSource).toContain("MapSpecTemplate");
+
+    // ── App.tsx: Playground integration wiring ──
+    expect(appSource).toContain("MapSpec Playground");
+    expect(appSource).toContain("GIS ENGINE");
+    expect(appSource).toContain('fetch("/api/state")');
+    expect(appSource).toContain('fetch("/api/chat"');
+    expect(appSource).toContain('fetch("/api/providers")');
+    expect(appSource).toContain('fetch("/api/basemaps")');
+    expect(appSource).toContain("MapSpecEditor");
+    expect(appSource).toContain("AIAssistant");
+    expect(appSource).toContain("TemplateBar");
+    expect(appSource).toContain("MapStage");
+    expect(appSource).toContain("ALL_TEMPLATES");
+    expect(appSource).toContain("handleSelectTemplate");
+    expect(appSource).toContain("sendMessage");
+    expect(appSource).toContain("previewSpec");
+    expect(appSource).toContain("editorDiagnostics");
+    expect(appSource).toContain("chatMode");
   });
 });

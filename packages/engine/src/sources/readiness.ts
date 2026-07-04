@@ -11,6 +11,7 @@ import { escapePathSegment } from "../spec/patch/path.js";
 import { defaultResourcePolicy, type ResourcePolicy, validateResourcePolicy } from "../spec/resource-policy.js";
 import type { Diagnostic, MapSpec, SourceSpec } from "../types.js";
 import { createPMTilesRuntimeLoadPlan, type PMTilesRuntimeLoadPlan, type PMTilesRuntimeSourcePlan } from "./pmtiles.js";
+import type { PMTilesRuntimeLoaderReadiness } from "./pmtiles-loader.js";
 import type { PMTilesQueryEvidence } from "./pmtiles-query.js";
 
 type DiagnosticCounts = {
@@ -27,6 +28,7 @@ export interface CreateSourceReadinessReportOptions {
   resourcePolicy?: ResourcePolicy;
   pmtilesLoadPlan?: PMTilesRuntimeLoadPlan;
   pmtilesQueryEvidence?: Record<string, PMTilesQueryEvidence | undefined>;
+  pmtilesRuntimeLoaders?: Record<string, PMTilesRuntimeLoaderReadiness | undefined>;
 }
 
 export interface SourceRuntimeReadinessSummary {
@@ -90,6 +92,7 @@ export function createSourceReadinessReport(
       resourceDiagnostics,
       pmtilesPlans.get(sourceId),
       options.pmtilesQueryEvidence?.[sourceId],
+      options.pmtilesRuntimeLoaders?.[sourceId],
     ),
   );
   const diagnostics = sources.flatMap((source) => source.diagnostics);
@@ -118,6 +121,7 @@ function createSourceReadinessEntry(
   resourceDiagnostics: Diagnostic[],
   pmtilesPlan?: PMTilesRuntimeSourcePlan,
   pmtilesQueryEvidence?: PMTilesQueryEvidence,
+  pmtilesRuntimeLoader?: PMTilesRuntimeLoaderReadiness,
 ): SourceReadinessEntry {
   const sourceType = getSourceType(source);
   const flatGeobufDiagnostics =
@@ -193,7 +197,10 @@ function createSourceReadinessEntry(
     const blocked = pmtilesPlan?.status === "blocked" || resourceBlocked || queryEvidenceBlocked;
     const metadataRequired = pmtilesPlan?.status === "metadata-required";
     const queryReady = Boolean(
-      pmtilesQueryEvidence && pmtilesQueryEvidence.status !== "blocked" && pmtilesQueryEvidence.summary.caseCount > 0,
+      pmtilesRuntimeLoader?.queryReady ||
+        (pmtilesQueryEvidence &&
+          pmtilesQueryEvidence.status !== "blocked" &&
+          pmtilesQueryEvidence.summary.caseCount > 0),
     );
     const pmtilesDiagnostics = [...sourceDiagnostics, ...(pmtilesQueryEvidence?.diagnostics ?? [])];
     return {
@@ -204,20 +211,26 @@ function createSourceReadinessEntry(
       queryReady,
       resourcePolicy,
       diagnostics: pmtilesDiagnostics,
-      limitations: queryReady
+      limitations: pmtilesRuntimeLoader?.queryReady
         ? [
-            "PMTiles point/bbox query evidence is fixture-only with caller-supplied decoded features; archive parsing, hidden range IO, workers, and mutation/export handoff are not implemented.",
+            "PMTiles runtime loader is active with range-request IO; archive mutation/export handoff is not implemented.",
           ]
-        : ["PMTiles archive parsing, mutation/export handoff, and runtime feature query are not implemented."],
+        : queryReady
+          ? [
+              "PMTiles point/bbox query evidence is fixture-only with caller-supplied decoded features; archive parsing, hidden range IO, workers, and mutation/export handoff are not implemented.",
+            ]
+          : ["PMTiles archive parsing, mutation/export handoff, and runtime feature query are not implemented."],
       nextAction: blocked
         ? queryEvidenceBlocked
           ? "Fix PMTiles fixture query evidence blockers before claiming query readiness."
           : "Fix PMTiles load-plan blockers before delivery."
         : metadataRequired
           ? "Provide caller-supplied PMTiles archive metadata for the requested preflight gate."
-          : queryReady
-            ? "Use caller-supplied PMTiles fixture query evidence for review; keep archive parsing, hidden IO, and runtime query as follow-up contracts."
-            : "Use URL-compatible display/export evidence; keep archive parsing and feature query as follow-up contracts.",
+          : pmtilesRuntimeLoader?.queryReady
+            ? "PMTiles runtime loader is active; use range-request query for feature access."
+            : queryReady
+              ? "Use caller-supplied PMTiles fixture query evidence for review; keep archive parsing, hidden IO, and runtime query as follow-up contracts."
+              : "Use URL-compatible display/export evidence; keep archive parsing and feature query as follow-up contracts.",
       ...(pmtilesPlan ? { runtimeLoadPlan: summarizePMTilesRuntimeLoadPlan(pmtilesPlan) } : {}),
       ...(pmtilesQueryEvidence ? { queryEvidence: summarizePMTilesQueryEvidence(pmtilesQueryEvidence) } : {}),
     };

@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import {
   ApplyCommandsToolResultSchema,
   ContextSummaryToolInputSchema,
@@ -192,6 +194,9 @@ describe("schema sync gate", () => {
       "generate_spec",
       "inspect_data",
       "edit_spec",
+      "query_features",
+      "style_recommend",
+      "transform_data",
     ]);
     expect(toolNames.every((name) => /^[a-z]+(?:_[a-z]+)*$/.test(name))).toBe(true);
     expect(toolNames).not.toContain("snapshotSpec");
@@ -334,5 +339,27 @@ describe("schema sync gate", () => {
       }),
     ).toBe(false);
     expect(validateScene.errors?.some((error) => error.keyword === "additionalProperties")).toBe(true);
+  });
+
+  it("keeps MCP tool documentation in sync with actual registered tools", () => {
+    const actualToolNames = new Set(gisEngineTools.map((tool) => tool.name));
+
+    const docPath = path.resolve(__dirname, "../../docs/mcp-server-description.md");
+    const docContent = readFileSync(docPath, "utf-8");
+
+    // Extract tool names from headings like ### `tool_name`
+    const documentedToolNames = new Set<string>();
+    const toolHeadingPattern = /^### `(\w+)`\s*$/gm;
+    let match: RegExpExecArray | null = toolHeadingPattern.exec(docContent);
+    while (match !== null) {
+      documentedToolNames.add(match[1]);
+      match = toolHeadingPattern.exec(docContent);
+    }
+
+    const missing = [...actualToolNames].filter((name) => !documentedToolNames.has(name));
+    const extra = [...documentedToolNames].filter((name) => !actualToolNames.has(name));
+
+    expect(missing, `MCP tools missing from docs/mcp-server-description.md: ${missing.join(", ")}`).toEqual([]);
+    expect(extra, `Documented tools not found in MCP server: ${extra.join(", ")}`).toEqual([]);
   });
 });

@@ -1,7 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
-import ChatPanel from "./components/ChatPanel";
-import EvidencePanel from "./components/EvidencePanel";
+import { useCallback, useEffect, useRef, useState } from "react";
+import AIAssistant from "./components/AIAssistant";
+import MapSpecEditor, { type ValidationDiagnostic } from "./components/MapSpecEditor";
 import MapStage from "./components/MapStage";
+import TemplateBar from "./components/TemplateBar";
+import { ALL_TEMPLATES, basicMapTemplate, type MapSpecTemplate } from "./templates";
+
+// ────────────────────────────────────────────────────────────────────────────
+// Types (kept from original Studio for server compatibility)
+// ────────────────────────────────────────────────────────────────────────────
 
 export interface ServerState {
   status: "ready" | "loading" | "blocked" | "applied" | "reviewed";
@@ -74,11 +80,7 @@ export interface AuditRecord {
   promptHash?: string;
   traceId?: string;
   commandCount: number;
-  diagnosticCounts: {
-    error: number;
-    warning: number;
-    info: number;
-  };
+  diagnosticCounts: { error: number; warning: number; info: number };
   diagnosticCodes?: Array<{ code: string; path: string }>;
   fromRevision: string;
   toRevision: string;
@@ -97,272 +99,40 @@ export interface ReviewDecision {
   traceId?: string;
   deliveryStatus: string;
   commandEvidence: NonNullable<ServerState["commandEvidence"]>;
-  diagnosticCounts: {
-    error: number;
-    warning: number;
-    info: number;
-  };
+  diagnosticCounts: { error: number; warning: number; info: number };
   diagnosticCodes?: Array<{ code: string; path: string }>;
   reasonCodes: string[];
   followUpTaskIds?: string[];
 }
 
-export type ReviewDecisionOutcome = ReviewDecision["outcome"];
-export type ReviewDecisionReasonCode =
-  | "review-accepted"
-  | "manual-review-blocked"
-  | "provider-output-blocked"
-  | "provider-resource-follow-up"
-  | "audit-retention-follow-up"
-  | "visual-evidence-required"
-  | "delivery-needs-confirmation"
-  | "spatial-query-follow-up"
-  | "scene3d-extension-only"
-  | "product-promotion-required";
-
-export interface ReviewDecisionRequest {
-  outcome: ReviewDecisionOutcome;
-  reasonCodes: ReviewDecisionReasonCode[];
-  followUpTaskIds?: string[];
-}
-
-export interface SavedMapSummary {
-  id: string;
-  name: string;
-  revision: string;
-  basemapId: string;
-  createdAt: string;
-  updatedAt: string;
-  auditRecordCount: number;
-  reviewDecisionCount: number;
-}
-
-export interface SavedMapHandoff {
-  handoffVersion: string;
-  exportedAt: string;
-  workspace: {
-    mapId: string;
-    name: string;
-    revision: string;
-    basemapId: string;
-    sourceCount: number;
-    layerCount: number;
-    createdAt: string;
-    updatedAt: string;
-  };
-  handoff: {
-    status: "needs-review" | "accepted" | "blocked" | "follow-up-required";
-    latestReviewDecisionId: string | null;
-    latestReviewOutcome: string | null;
-    followUpTaskIds: string[];
-    reasonCodes: string[];
-  };
-  spec: Record<string, unknown>;
-  evidence: {
-    auditRecordCount: number;
-    reviewDecisionCount: number;
-    auditRecords: AuditRecord[];
-    reviewDecisions: ReviewDecision[];
-  };
-}
-
-export interface SavedMapReviewLedger {
-  reviewLedgerVersion: string;
-  exportedAt: string;
-  workspace: {
-    mapId: string;
-    name: string;
-    revision: string;
-    basemapId: string;
-    createdAt: string;
-    updatedAt: string;
-  };
-  handoff: {
-    status: "needs-review" | "accepted" | "blocked" | "follow-up-required";
-    latestReviewDecisionId: string | null;
-    latestReviewOutcome: string | null;
-    followUpTaskIds: string[];
-    reasonCodes: string[];
-  };
-  filters: {
-    auditStatus: SavedMapReviewLedgerAuditStatus;
-    reviewOutcome: SavedMapReviewLedgerReviewOutcome;
-    limit: number;
-  };
-  summary: {
-    auditStatusCounts: {
-      applied: number;
-      blocked: number;
-      ready: number;
-      reviewed: number;
-    };
-    reviewOutcomeCounts: {
-      accepted: number;
-      blocked: number;
-      followUpRequired: number;
-    };
-    diagnosticTotals: {
-      error: number;
-      warning: number;
-      info: number;
-    };
-    latestAuditRecordId: string | null;
-    latestReviewDecisionId: string | null;
-    matchingAuditRecordCount: number;
-    matchingReviewDecisionCount: number;
-    returnedAuditRecordCount: number;
-    returnedReviewDecisionCount: number;
-  };
-  audit: {
-    recordCount: number;
-    matchingRecordCount: number;
-    returnedRecordCount: number;
-    records: AuditRecord[];
-  };
-  review: {
-    decisionCount: number;
-    matchingDecisionCount: number;
-    returnedDecisionCount: number;
-    decisions: ReviewDecision[];
-  };
-}
-
-export type SavedMapReviewLedgerAuditStatus = "all" | "applied" | "blocked" | "ready" | "reviewed";
-export type SavedMapReviewLedgerReviewOutcome = "all" | "accepted" | "blocked" | "follow-up-required";
-
-export interface SavedMapReviewLedgerQuery {
-  auditStatus?: SavedMapReviewLedgerAuditStatus;
-  reviewOutcome?: SavedMapReviewLedgerReviewOutcome;
-  limit?: number;
-}
-
-export interface SavedMapReviewExportEvent {
-  kind: "audit" | "review";
-  eventId: string;
-  timestamp: string;
-  status: string;
-  providerId: string;
-  promptHash?: string;
-  traceId?: string;
-  commandCount?: number;
-  diagnosticCounts: {
-    error: number;
-    warning: number;
-    info: number;
-  };
-  diagnosticCodes?: Array<{ code: string; path: string }>;
-  fromRevision?: string;
-  toRevision?: string;
-  deliveryStatus?: string;
-  commandEvidence?: NonNullable<ServerState["commandEvidence"]>;
-  reasonCodes?: string[];
-  followUpTaskIds?: string[];
-}
-
-export type SavedMapReviewExportKind = "all" | "audit" | "review";
-export type SavedMapReviewExportStatus =
-  | "all"
-  | "applied"
-  | "blocked"
-  | "ready"
-  | "reviewed"
-  | "accepted"
-  | "follow-up-required";
-
-export interface SavedMapReviewExportQuery {
-  cursor?: number;
-  kind?: SavedMapReviewExportKind;
-  status?: SavedMapReviewExportStatus;
-  limit?: number;
-}
-
-export interface SavedMapReviewExport {
-  reviewExportVersion: string;
-  generatedAt: string;
-  workspace: {
-    mapId: string;
-    name: string;
-    revision: string;
-    basemapId: string;
-    createdAt: string;
-    updatedAt: string;
-  };
-  handoff: {
-    status: "needs-review" | "accepted" | "blocked" | "follow-up-required";
-    latestReviewDecisionId: string | null;
-    latestReviewOutcome: string | null;
-  };
-  filters: {
-    cursor: number;
-    limit: number;
-    kind: SavedMapReviewExportKind;
-    status: SavedMapReviewExportStatus;
-  };
-  summary: {
-    totalEventCount: number;
-    matchingEventCount: number;
-    auditEventCount: number;
-    reviewEventCount: number;
-    matchingAuditEventCount: number;
-    matchingReviewEventCount: number;
-    returnedEventCount: number;
-    pageNewestEventAt: string | null;
-    pageOldestEventAt: string | null;
-  };
-  events: SavedMapReviewExportEvent[];
-  nextCursor: number | null;
-}
-
-function buildLoadedWorkspaceEvidence(
-  auditRecords: AuditRecord[] = [],
-  reviewDecisions: ReviewDecision[] = [],
-  diagnostics: ServerState["diagnostics"] = [],
-): ChatMessage["evidence"] | undefined {
-  const latestReview = reviewDecisions.at(-1);
-  const latestAudit = auditRecords.at(-1);
-  const providerSource = latestReview ?? latestAudit;
-
-  if (!latestReview && !providerSource && diagnostics.length === 0) {
-    return undefined;
-  }
-
-  return {
-    ...(latestReview?.commandEvidence ? { commandEvidence: latestReview.commandEvidence } : {}),
-    ...(providerSource
-      ? {
-          provider: {
-            providerId: providerSource.providerId,
-            ...(providerSource.promptHash ? { promptHash: providerSource.promptHash } : {}),
-            ...(providerSource.traceId ? { traceId: providerSource.traceId } : {}),
-          },
-        }
-      : {}),
-    diagnostics,
-  };
-}
+// ────────────────────────────────────────────────────────────────────────────
+// App
+// ────────────────────────────────────────────────────────────────────────────
 
 export default function App() {
+  // ── Server state ──────────────────────────────────────────────────────────
   const [serverState, setServerState] = useState<ServerState | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [status, setStatus] = useState("Connecting...");
-  const [leftOpen, setLeftOpen] = useState(true);
-  const [rightOpen, setRightOpen] = useState(true);
-  const [savedMsg, setSavedMsg] = useState("");
   const [providerId, setProviderId] = useState("mock-ai");
   const [providers, setProviders] = useState<ProviderProfile[]>([]);
   const [basemaps, setBasemaps] = useState<BasemapOption[]>([]);
   const [currentBasemap, setCurrentBasemap] = useState("none");
-  const [auditRecords, setAuditRecords] = useState<AuditRecord[]>([]);
-  const [reviewDecisions, setReviewDecisions] = useState<ReviewDecision[]>([]);
-  const [savedMaps, setSavedMaps] = useState<SavedMapSummary[]>([]);
-  const [selectedHandoff, setSelectedHandoff] = useState<SavedMapHandoff | null>(null);
-  const [selectedLedger, setSelectedLedger] = useState<SavedMapReviewLedger | null>(null);
-  const [selectedExport, setSelectedExport] = useState<SavedMapReviewExport | null>(null);
+  const [chatMode, setChatMode] = useState<"standard" | "agent">("standard");
 
-  const flashSavedMsg = useCallback((message: string) => {
-    setSavedMsg(message);
-    setTimeout(() => setSavedMsg(""), 2400);
-  }, []);
+  // ── Playground-specific state ─────────────────────────────────────────────
+  const [specText, setSpecText] = useState<string>(() => JSON.stringify(basicMapTemplate.spec, null, 2));
+  const [editorDiagnostics, setEditorDiagnostics] = useState<ValidationDiagnostic[]>([]);
+  const [activeTemplateId, setActiveTemplateId] = useState<string | null>(basicMapTemplate.id);
+  // The parsed spec that the map preview should render (updated from the editor)
+  const [previewSpec, setPreviewSpec] = useState<ServerState | null>(null);
+
+  // Track the last synced revision so we don't loop editor <-> server
+  const lastSyncedRevisionRef = useRef<string>("__initial__");
+  const isTypingRef = useRef(false);
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Server fetch helpers (same as original Studio) ────────────────────────
 
   const fetchState = useCallback(async () => {
     try {
@@ -381,7 +151,7 @@ export default function App() {
       const data = await response.json();
       setProviders(data.providers || []);
     } catch {
-      // Keep the last known provider list when the request fails.
+      // keep last known
     }
   }, []);
 
@@ -392,57 +162,166 @@ export default function App() {
       setBasemaps(data.options || []);
       setCurrentBasemap(data.current || "none");
     } catch {
-      // Keep the last known basemap list when the request fails.
+      // keep last known
     }
   }, []);
 
-  const fetchAudit = useCallback(async () => {
-    try {
-      const response = await fetch("/api/audit");
-      const data = await response.json();
-      setAuditRecords(data.records || []);
-    } catch {
-      // Audit is supplemental evidence, so UI state can stay as-is on failure.
-    }
-  }, []);
-
-  const fetchReviewDecisions = useCallback(async () => {
-    try {
-      const response = await fetch("/api/review-decisions");
-      const data = await response.json();
-      setReviewDecisions(data.decisions || []);
-    } catch {
-      // Review history is supplemental evidence, so UI state can stay as-is.
-    }
-  }, []);
-
-  const fetchMaps = useCallback(async () => {
-    try {
-      const response = await fetch("/api/maps");
-      const data = await response.json();
-      setSavedMaps(data.maps || []);
-    } catch {
-      // Saved map list is supplemental UI state, so keep the last good list.
-    }
-  }, []);
-
+  // ── Initial load ──────────────────────────────────────────────────────────
   useEffect(() => {
-    void Promise.all([
-      fetchState(),
-      fetchProviders(),
-      fetchBasemaps(),
-      fetchAudit(),
-      fetchReviewDecisions(),
-      fetchMaps(),
-    ]);
+    void Promise.all([fetchState(), fetchProviders(), fetchBasemaps()]);
     setMessages([
       {
         role: "assistant",
-        content: "Welcome! Try: 'make points red', 'show only landmarks', or 'make points visible above zoom 12'.",
+        content:
+          "Welcome to the MapSpec Playground!\n\nEdit the JSON spec on the left, see the live map in the center, or ask me to make changes using the AI assistant.\n\nTry selecting a template below to get started.",
       },
     ]);
-  }, [fetchAudit, fetchBasemaps, fetchMaps, fetchProviders, fetchReviewDecisions, fetchState]);
+  }, [fetchBasemaps, fetchProviders, fetchState]);
 
+  // ── Sync server state → editor (only when server pushes a new revision) ──
+  useEffect(() => {
+    if (!serverState?.spec) return;
+    const revision = serverState.summary.revision ?? "";
+    if (revision === lastSyncedRevisionRef.current) return;
+    // Only sync if the user hasn't been typing recently
+    if (!isTypingRef.current) {
+      lastSyncedRevisionRef.current = revision;
+      setSpecText(JSON.stringify(serverState.spec, null, 2));
+      // Also update previewSpec so the map picks up server-driven changes
+      setPreviewSpec(serverState);
+    }
+  }, [serverState]);
+
+  // ── Validate spec text on every keystroke ─────────────────────────────────
+  useEffect(() => {
+    const diags: ValidationDiagnostic[] = [];
+
+    // JSON syntax check
+    let parsed: Record<string, unknown> | null = null;
+    try {
+      parsed = JSON.parse(specText);
+    } catch (e) {
+      diags.push({
+        code: "JSON.SYNTAX_ERROR",
+        severity: "error",
+        message: e instanceof Error ? e.message : "Invalid JSON",
+      });
+      setEditorDiagnostics(diags);
+      return;
+    }
+
+    // Basic MapSpec structure checks
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      diags.push({
+        code: "MAPSPEC.ROOT_TYPE",
+        severity: "error",
+        message: "MapSpec root must be a JSON object.",
+        path: "/",
+      });
+    } else {
+      if (!parsed.version) {
+        diags.push({
+          code: "MAPSPEC.MISSING_VERSION",
+          severity: "warning",
+          message: "MapSpec should have a 'version' field.",
+          path: "/version",
+        });
+      }
+      if (!parsed.sources || typeof parsed.sources !== "object") {
+        diags.push({
+          code: "MAPSPEC.MISSING_SOURCES",
+          severity: "warning",
+          message: "MapSpec should have a 'sources' object.",
+          path: "/sources",
+        });
+      }
+      if (!Array.isArray(parsed.layers)) {
+        diags.push({
+          code: "MAPSPEC.MISSING_LAYERS",
+          severity: "warning",
+          message: "MapSpec should have a 'layers' array.",
+          path: "/layers",
+        });
+      }
+    }
+
+    setEditorDiagnostics(diags);
+
+    // If valid, update preview spec (debounced to avoid thrashing the renderer)
+    if (diags.filter((d) => d.severity === "error").length === 0 && parsed) {
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+      typingTimerRef.current = setTimeout(() => {
+        setPreviewSpec({
+          status: "ready",
+          spec: parsed as Record<string, unknown>,
+          style: null,
+          summary: {
+            mapId: String((parsed as Record<string, unknown>).id ?? "preview"),
+            revision: String((parsed as Record<string, unknown>).revision ?? "0"),
+            sourceCount: Object.keys(((parsed as Record<string, unknown>).sources as Record<string, unknown>) ?? {})
+              .length,
+            layerCount: Array.isArray((parsed as Record<string, unknown>).layers)
+              ? ((parsed as Record<string, unknown>).layers as unknown[]).length
+              : 0,
+            center:
+              (((parsed as Record<string, unknown>).view as Record<string, unknown> | undefined)?.center as
+                | [number, number]
+                | null) ?? null,
+            zoom:
+              (((parsed as Record<string, unknown>).view as Record<string, unknown> | undefined)?.zoom as
+                | number
+                | null) ?? null,
+          },
+          diagnostics: [],
+        });
+      }, 600);
+    }
+
+    return () => {
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    };
+  }, [specText]);
+
+  // ── Track when the user is typing to suppress server → editor sync ────────
+  const handleSpecTextChange = useCallback((value: string) => {
+    isTypingRef.current = true;
+    setSpecText(value);
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = setTimeout(() => {
+      isTypingRef.current = false;
+    }, 2000);
+  }, []);
+
+  // ── Template selection ────────────────────────────────────────────────────
+  const handleSelectTemplate = useCallback((template: MapSpecTemplate) => {
+    setActiveTemplateId(template.id);
+    const freshSpec = JSON.parse(JSON.stringify(template.spec)) as Record<string, unknown>;
+    const specStr = JSON.stringify(freshSpec, null, 2);
+    setSpecText(specStr);
+    lastSyncedRevisionRef.current = String(freshSpec.revision ?? "__template__");
+    isTypingRef.current = false;
+    // Push to preview immediately
+    setPreviewSpec({
+      status: "ready",
+      spec: freshSpec,
+      style: null,
+      summary: {
+        mapId: String(freshSpec.id ?? "template"),
+        revision: String(freshSpec.revision ?? "0"),
+        sourceCount: Object.keys((freshSpec.sources as Record<string, unknown>) ?? {}).length,
+        layerCount: Array.isArray(freshSpec.layers) ? (freshSpec.layers as unknown[]).length : 0,
+        center: ((freshSpec.view as Record<string, unknown> | undefined)?.center as [number, number] | null) ?? null,
+        zoom: ((freshSpec.view as Record<string, unknown> | undefined)?.zoom as number | null) ?? null,
+      },
+      diagnostics: [],
+    });
+    setMessages((prev) => [
+      ...prev,
+      { role: "assistant", content: `Loaded template: ${template.name}. ${template.description}` },
+    ]);
+  }, []);
+
+  // ── AI chat (same protocol as original Studio) ────────────────────────────
   const sendMessage = async (text: string): Promise<ServerState | null> => {
     setMessages((previous) => [...previous, { role: "user", content: text }]);
     setStatus("thinking");
@@ -451,12 +330,12 @@ export default function App() {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, providerId }),
+        body: JSON.stringify({ message: text, providerId, mode: chatMode }),
       });
       const data: ServerState = await response.json();
       const commandEvidence = data.commandEvidence;
       const diagnostics = data.diagnostics || [];
-      const errorCount = diagnostics.filter((diagnostic) => diagnostic.severity === "error").length;
+      const errorCount = diagnostics.filter((d) => d.severity === "error").length;
       const reply =
         data.status === "applied"
           ? `Done. ${commandEvidence?.changedPathCount ?? 0} path(s) changed.`
@@ -470,16 +349,12 @@ export default function App() {
           role: "assistant",
           content: reply,
           status: data.status,
-          evidence: {
-            commandEvidence,
-            provider: data.provider,
-            diagnostics,
-          },
+          evidence: { commandEvidence, provider: data.provider, diagnostics },
         },
       ]);
       setServerState(data);
       setStatus(data.status);
-      await Promise.all([fetchAudit(), fetchReviewDecisions(), fetchBasemaps(), fetchMaps()]);
+      await fetchBasemaps();
       return data;
     } catch (error) {
       setMessages((previous) => [
@@ -494,306 +369,116 @@ export default function App() {
     }
   };
 
-  const submitReviewDecision = useCallback(async (request: ReviewDecisionRequest) => {
-    const payload = {
-      outcome: request.outcome,
-      reasonCodes: request.reasonCodes,
-      ...(request.followUpTaskIds && request.followUpTaskIds.length > 0
-        ? { followUpTaskIds: request.followUpTaskIds }
-        : {}),
-    };
-    try {
-      const response = await fetch("/api/review-decision", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await response.json();
-      const diagnostics = data.diagnostics || [];
-      const reply = data.decision
-        ? `Review recorded: ${data.decision.outcome}.`
-        : "Review could not be recorded. See evidence.";
-
-      setMessages((previous) => [
-        ...previous,
-        {
-          role: "assistant",
-          content: reply,
-          status: data.status,
-          evidence: {
-            commandEvidence: data.commandEvidence,
-            diagnostics,
-          },
-        },
-      ]);
-      setStatus(data.status || "reviewed");
-      if (Array.isArray(data.decisions)) {
-        setReviewDecisions(data.decisions);
-      }
-    } catch (error) {
-      setMessages((previous) => [
-        ...previous,
-        {
-          role: "assistant",
-          content: `Review error: ${error instanceof Error ? error.message : "Unknown error"}`,
-        },
-      ]);
-      setStatus("blocked");
-    }
-  }, []);
-
-  const saveMap = async () => {
-    try {
-      const currentMapId = serverState?.summary.mapId;
-      const existingMap = savedMaps.find((map) => map.id === currentMapId);
-      const name = existingMap?.name || `Map ${savedMaps.length + 1}`;
-      const response = await fetch("/api/maps/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: currentMapId, name }),
-      });
-      const data = await response.json();
-      if (data.ok) {
-        flashSavedMsg(`Saved: ${name}`);
-        await fetchMaps();
-      }
-    } catch {
-      flashSavedMsg("Save failed");
-    }
-  };
-
-  const loadSavedMap = useCallback(
-    async (mapId: string) => {
-      try {
-        setStatus("loading");
-        const response = await fetch(`/api/maps/${mapId}/load`, {
-          method: "POST",
-        });
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error || "Load failed");
-        }
-        setServerState(data);
-        setStatus(data.status || "ready");
-        setCurrentBasemap(data.basemapId || "none");
-        setAuditRecords(data.auditRecords || []);
-        setReviewDecisions(data.reviewDecisions || []);
-        const loadedEvidence = buildLoadedWorkspaceEvidence(
-          data.auditRecords || [],
-          data.reviewDecisions || [],
-          data.diagnostics || [],
-        );
-        flashSavedMsg(`Loaded: ${data.loaded}`);
-        setMessages((previous) => [
-          ...previous,
-          {
-            role: "assistant",
-            content: `Loaded ${data.loaded}. Local audit and review history restored.`,
-            ...(loadedEvidence ? { evidence: loadedEvidence } : {}),
-          },
-        ]);
-        await Promise.all([fetchMaps(), fetchBasemaps()]);
-      } catch (error) {
-        flashSavedMsg("Load failed");
-        setMessages((previous) => [
-          ...previous,
-          {
-            role: "assistant",
-            content: `Load error: ${error instanceof Error ? error.message : "Unknown error"}`,
-          },
-        ]);
-        setStatus("blocked");
-      }
-    },
-    [fetchBasemaps, fetchMaps, flashSavedMsg],
-  );
-
-  const inspectSavedMap = useCallback(async (mapId: string) => {
-    try {
-      const response = await fetch(`/api/maps/${mapId}/handoff`);
-      const data = (await response.json()) as SavedMapHandoff | { error?: string };
-      if (!response.ok) {
-        throw new Error("error" in data && typeof data.error === "string" ? data.error : "Inspect failed");
-      }
-      setSelectedHandoff(data as SavedMapHandoff);
-      setSelectedLedger(null);
-      setSelectedExport(null);
-    } catch (error) {
-      setMessages((previous) => [
-        ...previous,
-        {
-          role: "assistant",
-          content: `Inspect error: ${error instanceof Error ? error.message : "Unknown error"}`,
-        },
-      ]);
-    }
-  }, []);
-
-  const inspectSavedMapLedger = useCallback(async (mapId: string, query: SavedMapReviewLedgerQuery = {}) => {
-    try {
-      const auditStatus = query.auditStatus ?? "all";
-      const reviewOutcome = query.reviewOutcome ?? "all";
-      const limit = query.limit ?? 25;
-      const params = new URLSearchParams({
-        audit_status: auditStatus,
-        review_outcome: reviewOutcome,
-        limit: String(limit),
-      });
-      const response = await fetch(`/api/maps/${mapId}/review-ledger?${params}`);
-      const data = (await response.json()) as SavedMapReviewLedger | { error?: string };
-      if (!response.ok) {
-        throw new Error("error" in data && typeof data.error === "string" ? data.error : "Ledger inspect failed");
-      }
-      setSelectedLedger(data as SavedMapReviewLedger);
-      setSelectedHandoff(null);
-      setSelectedExport(null);
-    } catch (error) {
-      setMessages((previous) => [
-        ...previous,
-        {
-          role: "assistant",
-          content: `Ledger error: ${error instanceof Error ? error.message : "Unknown error"}`,
-        },
-      ]);
-    }
-  }, []);
-
-  const inspectSavedMapExport = useCallback(async (mapId: string, query: SavedMapReviewExportQuery = {}) => {
-    try {
-      const cursor = query.cursor ?? 0;
-      const kind = query.kind ?? "all";
-      const statusFilter = query.status ?? "all";
-      const limit = query.limit ?? 10;
-      const params = new URLSearchParams({
-        cursor: String(cursor),
-        kind,
-        status: statusFilter,
-        limit: String(limit),
-      });
-      const response = await fetch(`/api/maps/${mapId}/review-export?${params}`);
-      const data = (await response.json()) as SavedMapReviewExport | { error?: string };
-      if (!response.ok) {
-        throw new Error("error" in data && typeof data.error === "string" ? data.error : "Export inspect failed");
-      }
-      setSelectedExport(data as SavedMapReviewExport);
-      setSelectedHandoff(null);
-      setSelectedLedger(null);
-    } catch (error) {
-      setMessages((previous) => [
-        ...previous,
-        {
-          role: "assistant",
-          content: `Export error: ${error instanceof Error ? error.message : "Unknown error"}`,
-        },
-      ]);
-    }
-  }, []);
-
-  const deleteSavedMap = useCallback(
-    async (mapId: string) => {
-      try {
-        const response = await fetch(`/api/maps/${mapId}`, { method: "DELETE" });
-        if (!response.ok) {
-          const data = await response.json().catch(() => ({}));
-          throw new Error(data.error || "Delete failed");
-        }
-        await fetchMaps();
-        setSelectedHandoff((current) => (current?.workspace.mapId === mapId ? null : current));
-        setSelectedLedger((current) => (current?.workspace.mapId === mapId ? null : current));
-        setSelectedExport((current) => (current?.workspace.mapId === mapId ? null : current));
-        flashSavedMsg("Deleted saved map");
-      } catch (error) {
-        flashSavedMsg("Delete failed");
-        setMessages((previous) => [
-          ...previous,
-          {
-            role: "assistant",
-            content: `Delete error: ${error instanceof Error ? error.message : "Unknown error"}`,
-          },
-        ]);
-      }
-    },
-    [fetchMaps, flashSavedMsg],
-  );
-
   const changeBasemap = async (basemapId: string) => {
     setCurrentBasemap(basemapId);
-    const data = await sendMessage(`switch to ${basemapId} basemap`);
-    if (data?.status !== "applied") {
-      await fetchBasemaps();
-    }
+    await sendMessage(`switch to ${basemapId} basemap`);
+    await fetchBasemaps();
   };
 
+  // ── Derived state for the map preview ─────────────────────────────────────
+  // Use previewSpec (from editor) if available; otherwise fall back to serverState
+  const mapPreviewState = previewSpec ?? serverState;
+
+  const statusBadgeColor =
+    status === "ready" || status === "applied" || status === "reviewed"
+      ? "bg-green-900/50 text-green-400"
+      : status === "thinking"
+        ? "bg-yellow-900/50 text-yellow-400"
+        : "bg-red-900/50 text-red-400";
+
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-950">
-      <div
-        className={`panel flex flex-col border-r border-gray-800 bg-gray-900 transition-all ${leftOpen ? "w-96" : "w-0"}`}
-      >
-        {leftOpen && (
-          <ChatPanel
-            messages={messages}
+    <div className="flex h-screen flex-col overflow-hidden bg-gray-950">
+      {/* Top bar */}
+      <header className="flex items-center justify-between border-b border-gray-800 bg-gray-900 px-4 py-2 shrink-0">
+        <div className="flex items-center gap-3">
+          <div>
+            <p className="text-[11px] text-blue-400 font-medium tracking-wide leading-none">GIS ENGINE</p>
+            <h1 className="text-sm font-semibold leading-tight">MapSpec Playground</h1>
+          </div>
+          <select
+            value={currentBasemap}
+            onChange={(e) => changeBasemap(e.target.value)}
+            className="rounded border border-gray-700 bg-gray-800 px-2 py-1 text-xs text-gray-300 focus:border-blue-500 focus:outline-none"
+          >
+            {basemaps.map((b) => (
+              <option key={b.id} value={b.id} disabled={!b.enabled}>
+                {b.missingCredential ? `${b.label} (${b.missingCredential})` : b.label}
+              </option>
+            ))}
+          </select>
+          <select
+            value={providerId}
+            onChange={(e) => setProviderId(e.target.value)}
+            className="rounded border border-gray-700 bg-gray-800 px-2 py-1 text-xs text-gray-300 focus:border-blue-500 focus:outline-none"
+          >
+            {providers
+              .filter((p) => p.enabled)
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                  {p.model ? ` / ${p.model}` : ""}
+                </option>
+              ))}
+          </select>
+          <div className="flex overflow-hidden rounded border border-gray-700">
+            <button
+              onClick={() => setChatMode("standard")}
+              className={`px-2 py-1 text-xs transition ${
+                chatMode === "standard" ? "bg-blue-900/50 text-blue-100" : "bg-gray-900 text-gray-400 hover:bg-gray-800"
+              }`}
+            >
+              Std
+            </button>
+            <button
+              onClick={() => setChatMode("agent")}
+              className={`px-2 py-1 text-xs transition ${
+                chatMode === "agent" ? "bg-blue-900/50 text-blue-100" : "bg-gray-900 text-gray-400 hover:bg-gray-800"
+              }`}
+            >
+              Agent
+            </button>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          {serverState && (
+            <p className="font-mono text-[11px] text-gray-500">
+              v{serverState.summary.revision} · {serverState.summary.layerCount} layers ·{" "}
+              {serverState.summary.sourceCount} sources
+            </p>
+          )}
+          <span className={`rounded-full px-2 py-0.5 text-xs ${statusBadgeColor}`}>{status}</span>
+        </div>
+      </header>
+
+      {/* Main 3-column area */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* LEFT — MapSpec Editor */}
+        <div className="flex w-[30%] min-w-[280px] max-w-[480px] flex-col border-r border-gray-800 overflow-hidden">
+          <MapSpecEditor value={specText} onChange={handleSpecTextChange} diagnostics={editorDiagnostics} />
+        </div>
+
+        {/* CENTER — Live Map Preview */}
+        <div className="relative flex-1 overflow-hidden">
+          <MapStage
+            serverState={mapPreviewState}
             status={status}
-            onSend={sendMessage}
-            onClose={() => setLeftOpen(false)}
-            providerId={providerId}
-            providers={providers}
-            onProviderChange={setProviderId}
-            savedMaps={savedMaps}
-            currentMapId={serverState?.summary.mapId || null}
-            selectedHandoff={selectedHandoff}
-            selectedLedger={selectedLedger}
-            selectedExport={selectedExport}
-            onInspectMap={inspectSavedMap}
-            onInspectLedger={inspectSavedMapLedger}
-            onInspectExport={inspectSavedMapExport}
-            onLoadMap={loadSavedMap}
-            onDeleteMap={deleteSavedMap}
+            onSave={() => {}}
+            savedMsg=""
+            basemaps={basemaps}
+            currentBasemap={currentBasemap}
+            onChangeBasemap={changeBasemap}
           />
-        )}
+        </div>
+
+        {/* RIGHT — AI Assistant */}
+        <div className="flex w-[28%] min-w-[240px] max-w-[400px] flex-col border-l border-gray-800 overflow-hidden">
+          <AIAssistant messages={messages} status={status} onSend={sendMessage} />
+        </div>
       </div>
-      {!leftOpen && (
-        <button
-          onClick={() => setLeftOpen(true)}
-          className="absolute left-0 top-1/2 z-10 -translate-y-1/2 rounded-r bg-gray-800/80 px-1.5 py-5 text-gray-400 hover:bg-gray-700 hover:text-white"
-          title="Chat"
-        >
-          ▸
-        </button>
-      )}
-      <div className="relative flex-1">
-        <MapStage
-          serverState={serverState}
-          status={status}
-          onSave={saveMap}
-          savedMsg={savedMsg}
-          basemaps={basemaps}
-          currentBasemap={currentBasemap}
-          onChangeBasemap={changeBasemap}
-        />
-      </div>
-      {!rightOpen && (
-        <button
-          onClick={() => setRightOpen(true)}
-          className="absolute right-0 top-1/2 z-10 -translate-y-1/2 rounded-l bg-gray-800/80 px-1.5 py-5 text-gray-400 hover:bg-gray-700 hover:text-white"
-          title="Evidence"
-        >
-          ◂
-        </button>
-      )}
-      <div
-        className={`panel flex flex-col border-l border-gray-800 bg-gray-900 transition-all ${rightOpen ? "w-80" : "w-0"}`}
-      >
-        {rightOpen && (
-          <EvidencePanel
-            messages={messages}
-            serverState={serverState}
-            auditRecords={auditRecords}
-            reviewDecisions={reviewDecisions}
-            onReviewDecision={submitReviewDecision}
-            onClose={() => setRightOpen(false)}
-          />
-        )}
-      </div>
+
+      {/* BOTTOM — Template Bar */}
+      <TemplateBar templates={ALL_TEMPLATES} activeTemplateId={activeTemplateId} onSelect={handleSelectTemplate} />
     </div>
   );
 }

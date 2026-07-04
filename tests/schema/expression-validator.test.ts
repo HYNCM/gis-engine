@@ -303,6 +303,399 @@ describe("expression validator", () => {
       }),
     );
   });
+
+  // -------------------------------------------------------------------------
+  // Sprint 3 (T-03c): Extended expression operators (51 → 80)
+  // -------------------------------------------------------------------------
+
+  it("accepts trigonometric math expressions (sin, cos, tan, asin, acos, atan)", () => {
+    const spec = withPaintAndLayout({
+      "circle-radius": ["*", 10, ["sin", ["get", "angle"]]],
+      "circle-opacity": ["+", 0.5, ["*", 0.5, ["cos", ["get", "angle"]]]],
+      "circle-stroke-width": ["abs", ["tan", ["get", "slope"]]],
+      "circle-blur": ["asin", ["/", ["get", "ratio"], 1]],
+      "circle-translate": ["literal", [1, 2]],
+      "circle-translate-anchor": "viewport",
+      "text-field": ["to-string", ["atan", ["get", "heading"]]],
+    });
+    // We only check paint expressions for validity; some of these are for demonstration
+    const report = validateSpec(spec);
+    expect(report.valid).toBe(true);
+  });
+
+  it("accepts log and pow math expressions", () => {
+    const spec = withPaintAndLayout({
+      "circle-radius": ["pow", 2, ["get", "magnitude"]],
+      "circle-opacity": ["/", ["ln", ["get", "population"]], 10],
+      "circle-stroke-width": ["*", ["log10", ["get", "value"]], 5],
+      "circle-blur": ["/", ["log2", ["get", "bits"]], 8],
+    });
+
+    const report = validateSpec(spec);
+    expect(report.valid).toBe(true);
+    expect(report.diagnostics).toEqual([]);
+  });
+
+  it("accepts math constant expressions (pi, e, ln2)", () => {
+    const spec = withPaintAndLayout({
+      "circle-radius": ["*", ["pi"], 2],
+      "circle-opacity": ["/", ["e"], 3],
+      "circle-stroke-width": ["*", ["ln2"], 10],
+    });
+
+    const report = validateSpec(spec);
+    expect(report.valid).toBe(true);
+    expect(report.diagnostics).toEqual([]);
+  });
+
+  it("reports invalid arity for math constants", () => {
+    const piWithArgs = validateSpec(withPaintAndLayout({ "circle-radius": ["pi", 1] }));
+    expect(piWithArgs.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionInvalidArity,
+      }),
+    );
+
+    const eWithArgs = validateSpec(withPaintAndLayout({ "circle-radius": ["e", "extra"] }));
+    expect(eWithArgs.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionInvalidArity,
+      }),
+    );
+  });
+
+  it("reports type errors for pow expression", () => {
+    const stringArg = validateSpec(withPaintAndLayout({ "circle-radius": ["pow", "not-a-number", 2] }));
+    expect(stringArg.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionTypeMismatch,
+      }),
+    );
+
+    const invalidArity = validateSpec(withPaintAndLayout({ "circle-radius": ["pow", 2] }));
+    expect(invalidArity.diagnostics).toContainEqual(
+      expect.objectContaining({ code: DiagnosticCodes.ExpressionInvalidArity }),
+    );
+  });
+
+  it("reports type errors for trig expressions", () => {
+    const stringArg = validateSpec(withPaintAndLayout({ "circle-radius": ["sin", "not-a-number"] }));
+    expect(stringArg.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionTypeMismatch,
+      }),
+    );
+
+    const invalidArity = validateSpec(withPaintAndLayout({ "circle-radius": ["cos", 1, 2] }));
+    expect(invalidArity.diagnostics).toContainEqual(
+      expect.objectContaining({ code: DiagnosticCodes.ExpressionInvalidArity }),
+    );
+  });
+
+  it("accepts let/var variable binding expressions", () => {
+    const spec = withPaintAndLayout({
+      "circle-radius": ["let", "size", ["get", "population"], ["*", ["var", "size"], 2]],
+      "circle-color": [
+        "let",
+        "color1",
+        "#ff0000",
+        "color2",
+        "#0000ff",
+        ["case", [">", ["get", "value"], 50], ["var", "color1"], ["var", "color2"]],
+      ],
+    });
+
+    const report = validateSpec(spec);
+    expect(report.valid).toBe(true);
+    expect(report.diagnostics).toEqual([]);
+  });
+
+  it("reports invalid let syntax", () => {
+    const tooFewArgs = validateSpec(withPaintAndLayout({ "circle-radius": ["let", "x"] }));
+    expect(tooFewArgs.diagnostics).toContainEqual(
+      expect.objectContaining({ code: DiagnosticCodes.ExpressionInvalidArity }),
+    );
+
+    const nonStringName = validateSpec(withPaintAndLayout({ "circle-radius": ["let", 42, 10, ["var", "x"]] }));
+    expect(nonStringName.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionTypeMismatch,
+      }),
+    );
+  });
+
+  it("reports invalid var syntax", () => {
+    const noArgs = validateSpec(withPaintAndLayout({ "circle-radius": ["var"] }));
+    expect(noArgs.diagnostics).toContainEqual(
+      expect.objectContaining({ code: DiagnosticCodes.ExpressionInvalidArity }),
+    );
+
+    const nonStringArg = validateSpec(withPaintAndLayout({ "circle-radius": ["var", 42] }));
+    expect(nonStringArg.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionTypeMismatch,
+      }),
+    );
+  });
+
+  it("accepts at lookup expression", () => {
+    const spec = withPaintAndLayout({
+      "circle-radius": ["at", 0, ["literal", [10, 20, 30]]],
+    });
+
+    const report = validateSpec(spec);
+    expect(report.valid).toBe(true);
+    expect(report.diagnostics).toEqual([]);
+  });
+
+  it("reports invalid at expression", () => {
+    const invalidArity = validateSpec(withPaintAndLayout({ "circle-radius": ["at", 0] }));
+    expect(invalidArity.diagnostics).toContainEqual(
+      expect.objectContaining({ code: DiagnosticCodes.ExpressionInvalidArity }),
+    );
+
+    const nonNumberIndex = validateSpec(
+      withPaintAndLayout({ "circle-radius": ["at", "not-a-number", ["literal", [1, 2]]] }),
+    );
+    expect(nonNumberIndex.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionTypeMismatch,
+      }),
+    );
+  });
+
+  it("accepts interpolate-hcl and interpolate-lab color interpolation", () => {
+    const spec = withPaintAndLayout({
+      "circle-color": ["interpolate-hcl", ["linear"], ["get", "score"], 0, "#ff0000", 100, "#0000ff"],
+      "text-color": ["interpolate-lab", ["exponential", 1.5], ["get", "value"], 0, "#000", 100, "#fff"],
+    });
+
+    const report = validateSpec(spec);
+    expect(report.valid).toBe(true);
+    expect(report.diagnostics).toEqual([]);
+  });
+
+  it("reports invalid interpolate-hcl syntax", () => {
+    const tooFew = validateSpec(
+      withPaintAndLayout({ "circle-color": ["interpolate-hcl", ["linear"], ["get", "score"], 0, "#ff0000"] }),
+    );
+    expect(tooFew.diagnostics).toContainEqual(
+      expect.objectContaining({ code: DiagnosticCodes.ExpressionInvalidArity }),
+    );
+  });
+
+  it("accepts array type assertion expression", () => {
+    const spec = withPaintAndLayout({
+      "circle-translate": ["array", ["get", "offset"]],
+    });
+
+    const report = validateSpec(spec);
+    expect(report.valid).toBe(true);
+    expect(report.diagnostics).toEqual([]);
+  });
+
+  it("reports invalid array type assertion", () => {
+    const noArgs = validateSpec(withPaintAndLayout({ "circle-translate": ["array"] }));
+    expect(noArgs.diagnostics).toContainEqual(
+      expect.objectContaining({ code: DiagnosticCodes.ExpressionInvalidArity }),
+    );
+  });
+
+  it("accepts boolean, number, object type assertions", () => {
+    const spec = withPaintAndLayout({
+      "circle-color": ["case", ["boolean", ["get", "active"]], "#ff0000", "#0000ff"],
+      "circle-radius": ["number", ["get", "size"]],
+      "text-field": ["to-string", ["object", ["get", "metadata"]]],
+    });
+
+    const report = validateSpec(spec);
+    expect(report.valid).toBe(true);
+    expect(report.diagnostics).toEqual([]);
+  });
+
+  it("reports invalid boolean/number/object type assertions", () => {
+    const boolNoArgs = validateSpec(withPaintAndLayout({ "circle-color": ["boolean"] }));
+    expect(boolNoArgs.diagnostics).toContainEqual(
+      expect.objectContaining({ code: DiagnosticCodes.ExpressionInvalidArity }),
+    );
+
+    const numNoArgs = validateSpec(withPaintAndLayout({ "circle-radius": ["number"] }));
+    expect(numNoArgs.diagnostics).toContainEqual(
+      expect.objectContaining({ code: DiagnosticCodes.ExpressionInvalidArity }),
+    );
+
+    const objNoArgs = validateSpec(withPaintAndLayout({ "circle-color": ["object"] }));
+    expect(objNoArgs.diagnostics).toContainEqual(
+      expect.objectContaining({ code: DiagnosticCodes.ExpressionInvalidArity }),
+    );
+  });
+
+  it("accepts collator expression", () => {
+    const spec = withPaintAndLayout({
+      "text-field": ["to-string", ["collator", { "case-sensitive": false }]],
+    });
+
+    const report = validateSpec(spec);
+    expect(report.valid).toBe(true);
+    expect(report.diagnostics).toEqual([]);
+  });
+
+  it("reports invalid collator expression", () => {
+    const noArgs = validateSpec(withPaintAndLayout({ "text-field": ["collator"] }));
+    expect(noArgs.diagnostics).toContainEqual(
+      expect.objectContaining({ code: DiagnosticCodes.ExpressionInvalidArity }),
+    );
+
+    const nonObjectArg = validateSpec(withPaintAndLayout({ "text-field": ["collator", "not-an-object"] }));
+    expect(nonObjectArg.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionTypeMismatch,
+      }),
+    );
+  });
+
+  it("accepts format expression", () => {
+    const spec = withPaintAndLayout({
+      "text-field": ["format", ["get", "name"], { "font-scale": 1.5 }],
+    });
+
+    const report = validateSpec(spec);
+    expect(report.valid).toBe(true);
+    expect(report.diagnostics).toEqual([]);
+  });
+
+  it("reports format with no arguments", () => {
+    const noArgs = validateSpec(withPaintAndLayout({ "text-field": ["format"] }));
+    expect(noArgs.diagnostics).toContainEqual(
+      expect.objectContaining({ code: DiagnosticCodes.ExpressionInvalidArity }),
+    );
+  });
+
+  it("accepts image expression", () => {
+    const spec = withPaintAndLayout({
+      "icon-image": ["image", "marker-15"],
+    });
+
+    const report = validateSpec(spec);
+    expect(report.valid).toBe(true);
+    expect(report.diagnostics).toEqual([]);
+  });
+
+  it("reports invalid image expression", () => {
+    const noArgs = validateSpec(withPaintAndLayout({ "icon-image": ["image"] }));
+    expect(noArgs.diagnostics).toContainEqual(
+      expect.objectContaining({ code: DiagnosticCodes.ExpressionInvalidArity }),
+    );
+
+    const nonStringArg = validateSpec(withPaintAndLayout({ "icon-image": ["image", 42] }));
+    expect(nonStringArg.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionTypeMismatch,
+      }),
+    );
+  });
+
+  it("accepts line-progress and accumulated expressions", () => {
+    const spec = withPaintAndLayout({
+      "circle-opacity": ["line-progress"],
+      "circle-radius": ["+", ["accumulated"], 1],
+    });
+
+    const report = validateSpec(spec);
+    expect(report.valid).toBe(true);
+    expect(report.diagnostics).toEqual([]);
+  });
+
+  it("reports line-progress and accumulated with arguments", () => {
+    const progressWithArgs = validateSpec(withPaintAndLayout({ "circle-opacity": ["line-progress", "extra"] }));
+    expect(progressWithArgs.diagnostics).toContainEqual(
+      expect.objectContaining({ code: DiagnosticCodes.ExpressionInvalidArity }),
+    );
+
+    const accumulatedWithArgs = validateSpec(withPaintAndLayout({ "circle-radius": ["accumulated", "extra"] }));
+    expect(accumulatedWithArgs.diagnostics).toContainEqual(
+      expect.objectContaining({ code: DiagnosticCodes.ExpressionInvalidArity }),
+    );
+  });
+
+  it("accepts is-supported-script expression", () => {
+    const spec = withPaintAndLayout({
+      "text-field": ["case", ["is-supported-script", ["get", "name"]], ["get", "name"], "Unsupported"],
+    });
+
+    const report = validateSpec(spec);
+    expect(report.valid).toBe(true);
+    expect(report.diagnostics).toEqual([]);
+  });
+
+  it("reports invalid is-supported-script expression", () => {
+    const noArgs = validateSpec(withPaintAndLayout({ "text-field": ["is-supported-script"] }));
+    expect(noArgs.diagnostics).toContainEqual(
+      expect.objectContaining({ code: DiagnosticCodes.ExpressionInvalidArity }),
+    );
+
+    const nonStringArg = validateSpec(withPaintAndLayout({ "text-field": ["is-supported-script", 42] }));
+    expect(nonStringArg.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionTypeMismatch,
+      }),
+    );
+  });
+
+  it("accepts resolved-locale expression", () => {
+    const spec = withPaintAndLayout({
+      "text-field": ["resolved-locale", ["collator", { locale: "en" }]],
+    });
+
+    const report = validateSpec(spec);
+    expect(report.valid).toBe(true);
+    expect(report.diagnostics).toEqual([]);
+  });
+
+  it("reports invalid resolved-locale expression", () => {
+    const noArgs = validateSpec(withPaintAndLayout({ "text-field": ["resolved-locale"] }));
+    expect(noArgs.diagnostics).toContainEqual(
+      expect.objectContaining({ code: DiagnosticCodes.ExpressionInvalidArity }),
+    );
+  });
+
+  it("supports complex nested expressions with new operators", () => {
+    const spec = withPaintAndLayout({
+      "circle-radius": [
+        "let",
+        "base",
+        ["sqrt", ["get", "population"]],
+        "scale",
+        ["/", ["pi"], 100],
+        ["*", ["var", "base"], ["var", "scale"]],
+      ],
+      "circle-color": [
+        "interpolate-hcl",
+        ["linear"],
+        ["get", "temperature"],
+        0,
+        "#0000ff",
+        50,
+        "#00ff00",
+        100,
+        "#ff0000",
+      ],
+    });
+
+    const report = validateSpec(spec);
+    expect(report.valid).toBe(true);
+    expect(report.diagnostics).toEqual([]);
+  });
 });
 
 function withPaintAndLayout(

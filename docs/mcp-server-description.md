@@ -1,9 +1,10 @@
 # GIS Engine MCP Server
 
 AI-native map editing tools for Claude Desktop, Cursor, and any Model Context
-Protocol (MCP) client. GIS Engine exposes 9 structured tools that validate,
-mutate, summarize, snapshot, compare, generate, and export declarative MapSpec
-documents — all with structured diagnostics and schema-enforced contracts.
+Protocol (MCP) client. GIS Engine exposes 14 structured tools that validate,
+mutate, summarize, snapshot, compare, generate, edit, query, inspect, style,
+and transform declarative MapSpec documents and GeoJSON data — all with
+structured diagnostics and schema-enforced contracts.
 
 **Package:** `@gis-engine/ai` (v1.4.0)
 **License:** Apache-2.0
@@ -58,7 +59,7 @@ Import the following MCP plugin configuration via
 
 ---
 
-## Tools (9 total)
+## Tools (14 total)
 
 ### `validate_spec`
 
@@ -265,6 +266,123 @@ validation diagnostics and improvement suggestions.
   }
 }
 ```
+
+---
+
+### `inspect_data`
+
+Inspect GeoJSON data structure, properties, geometry types, and bounds to
+understand the data before visualization. Returns a property schema with
+detected types and sample values, bounding box, and styling suggestions.
+
+**Input:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `url` | `string` | No | URL to fetch GeoJSON data from |
+| `geojson` | `object` | No | Inline GeoJSON FeatureCollection or GeoJSON object |
+| `sampleSize` | `number` (1–100) | No | Number of sample features to return (default: 5) |
+
+**Output:** `{ featureCount, propertySchema: [{ name, types[], sampleValues[] }], geometryTypes[], sample[], bounds[], suggestions[] }`
+
+---
+
+### `edit_spec`
+
+Edit a MapSpec using natural language instructions. Supports adding/removing
+layers, changing paint/layout properties, setting filters, and modifying the
+view. Returns the updated spec, the commands that were generated, and a
+human-readable summary.
+
+**Input:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `spec` | `MapSpec` | Yes | The map specification to edit |
+| `instruction` | `string` | Yes | Natural language edit instruction |
+
+**Output:** `{ spec, commands[], diagnostics[], summary }`
+
+**Example:**
+
+```json
+{
+  "name": "edit_spec",
+  "arguments": {
+    "spec": { "version": "1.0", "view": { "center": [0, 0], "zoom": 2 }, "sources": {}, "layers": [] },
+    "instruction": "Add a circle layer for the GeoJSON source with radius 5 and blue fill"
+  }
+}
+```
+
+---
+
+### `query_features`
+
+Query GeoJSON features by point or bounding box spatial filter. Returns
+matching features with properties and geometry types.
+
+**Input:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `geojson` | `object` | Yes | Inline GeoJSON FeatureCollection or Feature to query against |
+| `point` | `[number, number]` | No | Point query as [longitude, latitude] |
+| `bbox` | `[number, number, number, number]` | No | Bounding box query as [west, south, east, north] |
+| `layers` | `string[]` | No | Optional layer filter (API consistency; not used for GeoJSON) |
+| `maxFeatures` | `number` (1–1000) | No | Maximum features to return (default: 100) |
+
+**Output:** `{ queryType: "point" | "bbox" | "all", featureCount, features: [{ type, id?, geometry?, properties }], suggestions[] }`
+
+---
+
+### `style_recommend`
+
+Analyze GeoJSON data features and recommend appropriate map layer types, paint
+properties, and style configurations based on geometry types, property
+distributions, and optional context hints.
+
+**Input:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `geojson` | `object` | Yes | Inline GeoJSON FeatureCollection or GeoJSON object to analyze |
+| `hints.theme` | `"light" \| "dark" \| "satellite" \| "minimal"` | No | Preferred visual theme |
+| `hints.density` | `"low" \| "medium" \| "high"` | No | Expected feature density |
+| `hints.purpose` | `"exploration" \| "presentation" \| "analysis" \| "navigation"` | No | Map purpose to influence style choices |
+
+**Output:** `{ featureCount, geometryTypes[], primaryGeometry, numericProperties[], categoricalProperties[], recommendations: [{ layerType, rationale, paint, layout, priority }], diagnostics[] }`
+
+---
+
+### `transform_data`
+
+Transform GeoJSON data with filter, aggregate, select, sort, and rename
+operations. Supports property-based filtering, group-by aggregation
+(count/sum/avg/min/max), property selection, sorting, and renaming.
+
+**Input:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `geojson` | `object` | Yes | Inline GeoJSON FeatureCollection to transform |
+| `operations` | `object[]` | Yes | Ordered list of transform operations to apply |
+
+Each operation object supports:
+
+| Field | Type | Description |
+|---|---|---|
+| `type` | `"filter" \| "aggregate" \| "select" \| "sort" \| "rename"` | Operation type |
+| `property` | `string` | Target property name |
+| `operator` | `"==" \| "!=" \| ">" \| "<" \| ">=" \| "<=" \| "contains" \| "exists"` | Filter comparison operator |
+| `value` | any | Filter comparison value |
+| `groupBy` | `string` | Property to group by (aggregate) |
+| `aggregation` | `"count" \| "sum" \| "avg" \| "min" \| "max"` | Aggregation function |
+| `properties` | `string[]` | Property names for select |
+| `direction` | `"asc" \| "desc"` | Sort direction |
+| `newName` | `string` | New property name for rename |
+
+**Output:** `{ operationCount, inputFeatureCount, outputFeatureCount, output: { type, features[] }, aggregations?: [{ groupBy, aggregation, property?, groups: [{ key, value, count }] }], diagnostics[] }`
 
 ---
 

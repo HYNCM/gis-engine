@@ -19,6 +19,7 @@ export interface CliConfig {
   generate: boolean;
   preflight?: string;
   verifyArtifacts?: string;
+  lint?: string;
   requireArchiveMetadata: boolean;
   pmtilesMetadata: string[];
   prompt?: string;
@@ -75,6 +76,7 @@ export function parseArgs(argv: string[]): CliConfig {
   let generate = DEFAULTS.generate;
   let preflight: string | undefined;
   let verifyArtifacts: string | undefined;
+  let lint: string | undefined;
   let requireArchiveMetadata = DEFAULTS.requireArchiveMetadata;
   const pmtilesMetadata = [...DEFAULTS.pmtilesMetadata];
   let prompt: string | undefined;
@@ -128,6 +130,12 @@ export function parseArgs(argv: string[]): CliConfig {
       i++;
     } else if (arg.startsWith("--verify-artifacts=")) {
       verifyArtifacts = arg.slice("--verify-artifacts=".length);
+      i++;
+    } else if (arg === "--lint") {
+      lint = nextValue("--lint") || lint;
+      i++;
+    } else if (arg.startsWith("--lint=")) {
+      lint = arg.slice("--lint=".length);
       i++;
     } else if (arg === "--require-archive-metadata") {
       requireArchiveMetadata = true;
@@ -243,6 +251,7 @@ export function parseArgs(argv: string[]): CliConfig {
     generate,
     ...(preflight !== undefined ? { preflight } : {}),
     ...(verifyArtifacts !== undefined ? { verifyArtifacts } : {}),
+    ...(lint !== undefined ? { lint } : {}),
     requireArchiveMetadata,
     pmtilesMetadata,
     ...(prompt !== undefined ? { prompt } : {}),

@@ -6,6 +6,7 @@ import {
   Scene3DStableRuntimeBlockerCodes,
 } from "../diagnostics/codes.js";
 import { readString, toolInputErrorToCode } from "../internal/shared.js";
+import { DEFAULT_SCENE3D_PROMOTION_GATE, type Scene3DPromotionGate } from "../spec/scene3d-promotion-gate.js";
 import {
   type MapGenerationAnalysisOperation,
   type MapGenerationQueryReadinessOperation,
@@ -39,9 +40,13 @@ export interface MapGenerationCommandSkeleton {
 const ajv = new Ajv({ allErrors: true, strict: false });
 const validateGenerationRequest = ajv.compile(MapGenerationRequestSchema);
 
-export function createMapGenerationCommandSkeleton(input: unknown): MapGenerationCommandSkeleton {
+export function createMapGenerationCommandSkeleton(
+  input: unknown,
+  options?: { scene3dPromotionGate?: Scene3DPromotionGate },
+): MapGenerationCommandSkeleton {
   const traceId = readString(input, "traceId") ?? "generation.map.r0";
   const fallbackBaseSpec = createBaseSpec(readString(input, "mapId"));
+  const gate = options?.scene3dPromotionGate ?? DEFAULT_SCENE3D_PROMOTION_GATE;
 
   if (!validateGenerationRequest(input)) {
     return blockedSkeleton({
@@ -59,10 +64,10 @@ export function createMapGenerationCommandSkeleton(input: unknown): MapGeneratio
   const request = input as MapGenerationRequestFromSchema;
   const targetDomains = [...(request.targetDomains ?? ["feature-display"])];
   const baseSpec = structuredClone((request.baseSpec ?? createBaseSpec(request.mapId)) as MapSpec);
-  const baseValidation = validateSpec(baseSpec);
+  const baseValidation = validateSpec(baseSpec, { scene3dPromotionGate: gate });
 
   if (!baseValidation.valid) {
-    const boundary = generationBoundaryEvidence(request, targetDomains);
+    const boundary = generationBoundaryEvidence(request, targetDomains, gate);
     return blockedSkeleton({
       baseSpec,
       diagnostics: baseValidation.diagnostics,
@@ -72,7 +77,7 @@ export function createMapGenerationCommandSkeleton(input: unknown): MapGeneratio
     });
   }
 
-  const boundary = generationBoundaryEvidence(request, targetDomains);
+  const boundary = generationBoundaryEvidence(request, targetDomains, gate);
   const boundaryDiagnostics = boundary.diagnostics;
   const blockingBoundaryDiagnostics = boundaryDiagnostics.filter((diagnostic) => diagnostic.severity === "error");
   if (blockingBoundaryDiagnostics.length > 0) {
@@ -236,6 +241,7 @@ function buildGenerationCommands(request: MapGenerationRequestFromSchema): MapCo
 function generationBoundaryEvidence(
   request: MapGenerationRequestFromSchema,
   targetDomains: MapGenerationTargetDomain[],
+  scene3dPromotionGate: Scene3DPromotionGate,
 ): { diagnostics: Diagnostic[]; analysisEvidence: MapGenerationAnalysisEvidence } {
   const diagnostics: Diagnostic[] = [];
   const analysisEvidence = buildAnalysisEvidence(request, targetDomains);
@@ -259,19 +265,46 @@ function generationBoundaryEvidence(
   }
 
   if (request.view?.mode === "scene3d") {
-    diagnostics.push(stableScene3DBlockedDiagnostic("/view/mode", Scene3DStableRuntimeBlockerCodes.ViewMode));
+    if (scene3dPromotionGate === "blocked") {
+      diagnostics.push(stableScene3DBlockedDiagnostic("/view/mode", Scene3DStableRuntimeBlockerCodes.ViewMode));
+    } else if (scene3dPromotionGate === "experimental") {
+      diagnostics.push({
+        severity: "warning",
+        code: DiagnosticCodes.CapabilityUnsupported,
+        message: "scene3d view mode generation is experimental and may change without notice.",
+        path: "/view/mode",
+      });
+    }
   }
 
   if (request.capabilities?.renderer === "scene3d") {
-    diagnostics.push(
-      stableScene3DBlockedDiagnostic("/capabilities/renderer", Scene3DStableRuntimeBlockerCodes.Renderer),
-    );
+    if (scene3dPromotionGate === "blocked") {
+      diagnostics.push(
+        stableScene3DBlockedDiagnostic("/capabilities/renderer", Scene3DStableRuntimeBlockerCodes.Renderer),
+      );
+    } else if (scene3dPromotionGate === "experimental") {
+      diagnostics.push({
+        severity: "warning",
+        code: DiagnosticCodes.CapabilityUnsupported,
+        message: "scene3d renderer generation is experimental and may change without notice.",
+        path: "/capabilities/renderer",
+      });
+    }
   }
 
   if (request.capabilities?.dimensions?.includes("3d")) {
-    diagnostics.push(
-      stableScene3DBlockedDiagnostic("/capabilities/dimensions", Scene3DStableRuntimeBlockerCodes.Dimensions),
-    );
+    if (scene3dPromotionGate === "blocked") {
+      diagnostics.push(
+        stableScene3DBlockedDiagnostic("/capabilities/dimensions", Scene3DStableRuntimeBlockerCodes.Dimensions),
+      );
+    } else if (scene3dPromotionGate === "experimental") {
+      diagnostics.push({
+        severity: "warning",
+        code: DiagnosticCodes.CapabilityUnsupported,
+        message: "3D dimension capability generation is experimental and may change without notice.",
+        path: "/capabilities/dimensions",
+      });
+    }
   }
 
   diagnostics.push(...unsupportedScene3DCommandDiagnostics(request.scene3d));

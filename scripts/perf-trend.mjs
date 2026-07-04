@@ -270,6 +270,9 @@ function parseArgs(argv) {
   const args = {
     outputPath: undefined,
     period: undefined,
+    json: false,
+    ci: false,
+    budgetMultiplier: 1.0,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -284,6 +287,15 @@ function parseArgs(argv) {
       index += 1;
     } else if (value.startsWith("--period=")) {
       args.period = value.slice("--period=".length);
+    } else if (value === "--json") {
+      args.json = true;
+    } else if (value === "--ci") {
+      args.ci = true;
+    } else if (value === "--budget-multiplier") {
+      args.budgetMultiplier = Number.parseFloat(argv[index + 1]) || 1.0;
+      index += 1;
+    } else if (value.startsWith("--budget-multiplier=")) {
+      args.budgetMultiplier = Number.parseFloat(value.slice("--budget-multiplier=".length)) || 1.0;
     }
   }
 
@@ -296,7 +308,50 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     outputPath: args.outputPath,
     period: args.period,
   });
-  if (!args.outputPath) {
+
+  if (args.json || args.ci) {
+    const jsonOutput = {
+      period: result.period,
+      generatedAt: result.generatedAt,
+      repoRevision: result.repoRevision,
+      measurements: result.measurements.map((measurement) => ({
+        name: measurement.name,
+        featureCount: measurement.featureCount,
+        createMs: Math.round(measurement.createMs * 100) / 100,
+        queryMs: Math.round(measurement.queryMs * 100) / 100,
+        destroyMs: Math.round(measurement.destroyMs * 100) / 100,
+        createBudgetMs: Math.round(measurement.createBudgetMs * args.budgetMultiplier),
+        queryBudgetMs: Math.round(measurement.queryBudgetMs * args.budgetMultiplier),
+        destroyBudgetMs: Math.round(measurement.destroyBudgetMs * args.budgetMultiplier),
+        passed:
+          args.budgetMultiplier > 1
+            ? measurement.createMs < measurement.createBudgetMs * args.budgetMultiplier &&
+              measurement.queryMs < measurement.queryBudgetMs * args.budgetMultiplier &&
+              measurement.destroyMs < measurement.destroyBudgetMs * args.budgetMultiplier
+            : measurement.passed,
+      })),
+    };
+    process.stdout.write(`${JSON.stringify(jsonOutput, null, 2)}\n`);
+
+    if (args.ci) {
+      const failedScales = jsonOutput.measurements.filter((measurement) => !measurement.passed);
+      if (failedScales.length > 0) {
+        process.stderr.write(
+          `\n[perf-trend] CI budget gate failed for ${failedScales.length}/${jsonOutput.measurements.length} scales:\n`,
+        );
+        for (const scale of failedScales) {
+          process.stderr.write(
+            `  - ${scale.name}: create=${scale.createMs}ms (budget: ${scale.createBudgetMs}ms) query=${scale.queryMs}ms (budget: ${scale.queryBudgetMs}ms) destroy=${scale.destroyMs}ms (budget: ${scale.destroyBudgetMs}ms)\n`,
+          );
+        }
+        process.exitCode = 1;
+      } else {
+        process.stderr.write(
+          `\n[perf-trend] CI budget gate passed: all ${jsonOutput.measurements.length} scales within budget.\n`,
+        );
+      }
+    }
+  } else if (!args.outputPath) {
     process.stdout.write(result.markdown);
   } else {
     process.stdout.write(`Perf trend report written: ${resolve(ROOT, args.outputPath)}\n`);

@@ -133,6 +133,82 @@ function inferExpression(expr: unknown, path: string, options: NormalizedExpress
       return inferIdExpression(expr, path);
     case "properties":
       return inferPropertiesExpression(expr, path);
+    case "abs":
+    case "ceil":
+    case "floor":
+    case "round":
+    case "sqrt":
+    case "sin":
+    case "cos":
+    case "tan":
+    case "asin":
+    case "acos":
+    case "atan":
+    case "ln":
+    case "log10":
+    case "log2":
+      return inferUnaryMathExpression(expr, path, options, operator);
+    case "min":
+    case "max":
+      return inferVariadicMathExpression(expr, path, options, operator);
+    case "pow":
+      return inferPowExpression(expr, path, options);
+    case "pi":
+    case "e":
+    case "ln2":
+      return inferMathConstantExpression(expr, path, operator);
+    case "typeof":
+      return inferTypeofExpression(expr, path, options);
+    case "to-boolean":
+      return inferToBooleanExpression(expr, path, options);
+    case "to-color":
+      return inferToColorExpression(expr, path, options);
+    case "length":
+      return inferLengthExpression(expr, path, options);
+    case "slice":
+      return inferSliceExpression(expr, path, options);
+    case "index-of":
+      return inferIndexOfExpression(expr, path, options);
+    case "rgb":
+      return inferRgbExpression(expr, path, options);
+    case "rgba":
+      return inferRgbaExpression(expr, path, options);
+    case "to-rgba":
+      return inferToRgbaExpression(expr, path, options);
+    case "string":
+      return inferStringExpression(expr, path, options);
+    case "number-format":
+      return inferNumberFormatExpression(expr, path, options);
+    case "let":
+      return inferLetExpression(expr, path, options);
+    case "var":
+      return inferVarExpression(expr, path, options);
+    case "at":
+      return inferAtExpression(expr, path, options);
+    case "interpolate-hcl":
+    case "interpolate-lab":
+      return inferInterpolateColorExpression(expr, path, options, operator);
+    case "array":
+      return inferArrayTypeExpression(expr, path, options);
+    case "boolean":
+      return inferBooleanTypeExpression(expr, path, options);
+    case "number":
+      return inferNumberTypeExpression(expr, path, options);
+    case "object":
+      return inferObjectTypeExpression(expr, path, options);
+    case "collator":
+      return inferCollatorExpression(expr, path, options);
+    case "format":
+      return inferFormatExpression(expr, path, options);
+    case "image":
+      return inferImageExpression(expr, path, options);
+    case "line-progress":
+    case "accumulated":
+      return inferZeroArgNumberExpression(expr, path, operator);
+    case "is-supported-script":
+      return inferIsSupportedScriptExpression(expr, path, options);
+    case "resolved-locale":
+      return inferResolvedLocaleExpression(expr, path, options);
     default:
       return {
         type: "unknown",
@@ -1010,8 +1086,807 @@ function isColorString(value: string): boolean {
   return /^#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(value) || /^rgba?\(/i.test(value);
 }
 
+function inferUnaryMathExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+  operator: string,
+): ExpressionInference {
+  if (expr.length !== 2) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 1 argument for "${operator}", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+
+  const diagnostics: Diagnostic[] = [];
+  const arg = inferExpression(expr[1], `${path}/1`, options);
+  diagnostics.push(...arg.diagnostics);
+  if (arg.type !== "unknown" && arg.type !== "number") {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.ExpressionTypeMismatch,
+      message: `"${operator}" argument must evaluate to a number value.`,
+      path: `${path}/1`,
+    });
+  }
+  return { type: "number", diagnostics };
+}
+
+function inferVariadicMathExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+  operator: string,
+): ExpressionInference {
+  if (expr.length < 2) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected at least 1 argument for "${operator}", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+
+  const diagnostics: Diagnostic[] = [];
+  for (let argumentIndex = 1; argumentIndex < expr.length; argumentIndex += 1) {
+    const arg = inferExpression(expr[argumentIndex], `${path}/${argumentIndex}`, options);
+    diagnostics.push(...arg.diagnostics);
+    if (arg.type !== "unknown" && arg.type !== "number") {
+      diagnostics.push({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionTypeMismatch,
+        message: `"${operator}" arguments must evaluate to number values.`,
+        path: `${path}/${argumentIndex}`,
+      });
+    }
+  }
+  return { type: "number", diagnostics };
+}
+
+function inferTypeofExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+): ExpressionInference {
+  if (expr.length !== 2) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 1 argument for "typeof", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+
+  return { type: "string", diagnostics: collectArgumentDiagnostics(expr, path, options, 1) };
+}
+
+function inferToBooleanExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+): ExpressionInference {
+  if (expr.length !== 2) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 1 argument for "to-boolean", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+
+  return { type: "boolean", diagnostics: collectArgumentDiagnostics(expr, path, options, 1) };
+}
+
+function inferToColorExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+): ExpressionInference {
+  if (expr.length !== 2) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 1 argument for "to-color", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+
+  return { type: "color", diagnostics: collectArgumentDiagnostics(expr, path, options, 1) };
+}
+
 function normalizeOptions(options: ExpressionValidationOptions): NormalizedExpressionOptions {
   return {
     knownProperties: new Set(options.knownProperties ?? []),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Sprint 2 (T-03b): length, slice, index-of, rgb, rgba, to-rgba, string, number-format
+// ---------------------------------------------------------------------------
+
+function inferLengthExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+): ExpressionInference {
+  if (expr.length !== 2) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 1 argument for "length", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+  return { type: "number", diagnostics: collectArgumentDiagnostics(expr, path, options, 1) };
+}
+
+function inferSliceExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+): ExpressionInference {
+  if (expr.length < 3 || expr.length > 4) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 2 or 3 arguments for "slice", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+  const diagnostics = collectArgumentDiagnostics(expr, path, options, 1);
+  // slice can operate on strings or arrays; output type depends on input
+  return { type: "unknown", diagnostics };
+}
+
+function inferIndexOfExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+): ExpressionInference {
+  if (expr.length !== 3) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 2 arguments for "index-of", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+  return { type: "number", diagnostics: collectArgumentDiagnostics(expr, path, options, 1) };
+}
+
+function inferRgbExpression(expr: unknown[], path: string, options: NormalizedExpressionOptions): ExpressionInference {
+  if (expr.length !== 4) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 3 arguments for "rgb", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+  const diagnostics = collectArgumentDiagnostics(expr, path, options, 1);
+  for (let argumentIndex = 1; argumentIndex <= 3; argumentIndex++) {
+    const arg = inferExpression(expr[argumentIndex], `${path}/${argumentIndex}`, options);
+    if (arg.type !== "unknown" && arg.type !== "number") {
+      diagnostics.push({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionTypeMismatch,
+        message: `"rgb" arguments must evaluate to number values.`,
+        path: `${path}/${argumentIndex}`,
+      });
+    }
+  }
+  return { type: "color", diagnostics };
+}
+
+function inferRgbaExpression(expr: unknown[], path: string, options: NormalizedExpressionOptions): ExpressionInference {
+  if (expr.length !== 5) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 4 arguments for "rgba", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+  const diagnostics = collectArgumentDiagnostics(expr, path, options, 1);
+  for (let argumentIndex = 1; argumentIndex <= 4; argumentIndex++) {
+    const arg = inferExpression(expr[argumentIndex], `${path}/${argumentIndex}`, options);
+    if (arg.type !== "unknown" && arg.type !== "number") {
+      diagnostics.push({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionTypeMismatch,
+        message: `"rgba" arguments must evaluate to number values.`,
+        path: `${path}/${argumentIndex}`,
+      });
+    }
+  }
+  return { type: "color", diagnostics };
+}
+
+function inferToRgbaExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+): ExpressionInference {
+  if (expr.length !== 2) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 1 argument for "to-rgba", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+  const diagnostics = collectArgumentDiagnostics(expr, path, options, 1);
+  const arg = inferExpression(expr[1], `${path}/1`, options);
+  if (arg.type !== "unknown" && arg.type !== "color" && arg.type !== "string") {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.ExpressionTypeMismatch,
+      message: `"to-rgba" argument must evaluate to a color value.`,
+      path: `${path}/1`,
+    });
+  }
+  return { type: "array", diagnostics };
+}
+
+function inferStringExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+): ExpressionInference {
+  if (expr.length < 2 || expr.length > 3) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 1 or 2 arguments for "string", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+  return { type: "string", diagnostics: collectArgumentDiagnostics(expr, path, options, 1) };
+}
+
+function inferNumberFormatExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+): ExpressionInference {
+  if (expr.length < 3) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected at least 2 arguments for "number-format", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+  const diagnostics = collectArgumentDiagnostics(expr, path, options, 1);
+  const numArg = inferExpression(expr[1], `${path}/1`, options);
+  if (numArg.type !== "unknown" && numArg.type !== "number") {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.ExpressionTypeMismatch,
+      message: `First argument of "number-format" must evaluate to a number.`,
+      path: `${path}/1`,
+    });
+  }
+  return { type: "string", diagnostics };
+}
+
+// ---------------------------------------------------------------------------
+// Sprint 3 (T-03c): pow, math constants, trig, let/var, at, interpolate-hcl/lab,
+// type assertions, collator, format, image, line-progress, accumulated,
+// is-supported-script, resolved-locale
+// ---------------------------------------------------------------------------
+
+function inferPowExpression(expr: unknown[], path: string, options: NormalizedExpressionOptions): ExpressionInference {
+  if (expr.length !== 3) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 2 arguments for "pow", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+
+  const diagnostics: Diagnostic[] = [];
+  const base = inferExpression(expr[1], `${path}/1`, options);
+  diagnostics.push(...base.diagnostics);
+  const exponent = inferExpression(expr[2], `${path}/2`, options);
+  diagnostics.push(...exponent.diagnostics);
+
+  if (base.type !== "unknown" && base.type !== "number") {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.ExpressionTypeMismatch,
+      message: `"pow" arguments must evaluate to number values.`,
+      path: `${path}/1`,
+    });
+  }
+  if (exponent.type !== "unknown" && exponent.type !== "number") {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.ExpressionTypeMismatch,
+      message: `"pow" arguments must evaluate to number values.`,
+      path: `${path}/2`,
+    });
+  }
+  return { type: "number", diagnostics };
+}
+
+function inferMathConstantExpression(expr: unknown[], path: string, operator: string): ExpressionInference {
+  if (expr.length !== 1) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 0 arguments for "${operator}", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+  return { type: "number", diagnostics: [] };
+}
+
+function inferLetExpression(expr: unknown[], path: string, options: NormalizedExpressionOptions): ExpressionInference {
+  // ["let", name1, value1, name2, value2, ..., body]
+  // Must have at least 3 elements: name, value, body
+  // The number of elements must be even (pairs) + 1 (body) = odd total
+  if (expr.length < 4 || expr.length % 2 !== 0) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: 'Expected "let" syntax: ["let", name1, value1, ..., body].',
+          path,
+        },
+      ],
+    };
+  }
+
+  const diagnostics: Diagnostic[] = [];
+
+  // Validate variable name/value pairs
+  for (let i = 1; i < expr.length - 1; i += 2) {
+    if (typeof expr[i] !== "string") {
+      diagnostics.push({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionTypeMismatch,
+        message: '"let" variable names must be strings.',
+        path: `${path}/${i}`,
+      });
+    }
+    diagnostics.push(...inferExpression(expr[i + 1], `${path}/${i + 1}`, options).diagnostics);
+  }
+
+  // Validate body expression
+  const bodyIndex = expr.length - 1;
+  const body = inferExpression(expr[bodyIndex], `${path}/${bodyIndex}`, options);
+  diagnostics.push(...body.diagnostics);
+
+  return { type: body.type, diagnostics };
+}
+
+function inferVarExpression(expr: unknown[], path: string, _options: NormalizedExpressionOptions): ExpressionInference {
+  if (expr.length !== 2) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 1 argument for "var", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+
+  const diagnostics: Diagnostic[] = [];
+  if (typeof expr[1] !== "string") {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.ExpressionTypeMismatch,
+      message: '"var" argument must be a string variable name.',
+      path: `${path}/1`,
+    });
+  }
+  return { type: "unknown", diagnostics };
+}
+
+function inferAtExpression(expr: unknown[], path: string, options: NormalizedExpressionOptions): ExpressionInference {
+  if (expr.length !== 3) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 2 arguments for "at", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+
+  const diagnostics: Diagnostic[] = [];
+  const index = inferExpression(expr[1], `${path}/1`, options);
+  diagnostics.push(...index.diagnostics);
+  if (index.type !== "unknown" && index.type !== "number") {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.ExpressionTypeMismatch,
+      message: '"at" first argument must evaluate to a number (index).',
+      path: `${path}/1`,
+    });
+  }
+  diagnostics.push(...inferExpression(expr[2], `${path}/2`, options).diagnostics);
+  return { type: "unknown", diagnostics };
+}
+
+function inferInterpolateColorExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+  operator: string,
+): ExpressionInference {
+  // interpolate-hcl and interpolate-lab have the same structure as interpolate
+  // but always produce color outputs
+  if (expr.length < 7 || expr.length % 2 === 0) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected "${operator}" syntax: ["${operator}", ["linear"|"exponential", base|"cubic-bezier", x1, y1, x2, y2], input, stop1, output1, stop2, output2, ...].`,
+          path,
+        },
+      ],
+    };
+  }
+
+  const diagnostics: Diagnostic[] = [];
+  const interpolationResult = isInterpolationType(expr[1]);
+  if (!interpolationResult.valid) {
+    for (const diagnostic of interpolationResult.diagnostics) {
+      diagnostics.push({ ...diagnostic, path: `${path}/1` });
+    }
+  }
+
+  diagnostics.push(...inferExpression(expr[2], `${path}/2`, options).diagnostics);
+
+  for (let stopIndex = 3; stopIndex < expr.length; stopIndex += 2) {
+    if (typeof expr[stopIndex] !== "number") {
+      diagnostics.push({
+        severity: "error",
+        code: DiagnosticCodes.ExpressionTypeMismatch,
+        message: `"${operator}" stop inputs must be numbers.`,
+        path: `${path}/${stopIndex}`,
+      });
+    }
+  }
+
+  // Color interpolation outputs are always colors
+  collectOutputTypes(expr, path, options, 4);
+
+  return { type: "color", diagnostics };
+}
+
+function inferArrayTypeExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+): ExpressionInference {
+  // ["array", value] or ["array", itemType, value] or ["array", itemType, minLength, maxLength, value]
+  if (expr.length < 2 || expr.length > 5) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 1 to 4 arguments for "array", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+  return { type: "array", diagnostics: collectArgumentDiagnostics(expr, path, options, 1) };
+}
+
+function inferBooleanTypeExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+): ExpressionInference {
+  if (expr.length !== 2) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 1 argument for "boolean", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+  return { type: "boolean", diagnostics: collectArgumentDiagnostics(expr, path, options, 1) };
+}
+
+function inferNumberTypeExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+): ExpressionInference {
+  if (expr.length !== 2) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 1 argument for "number", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+  return { type: "number", diagnostics: collectArgumentDiagnostics(expr, path, options, 1) };
+}
+
+function inferObjectTypeExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+): ExpressionInference {
+  if (expr.length !== 2) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 1 argument for "object", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+  return { type: "object", diagnostics: collectArgumentDiagnostics(expr, path, options, 1) };
+}
+
+function inferCollatorExpression(
+  expr: unknown[],
+  path: string,
+  _options: NormalizedExpressionOptions,
+): ExpressionInference {
+  // ["collator", { case-sensitive?: boolean, diacritic-sensitive?: boolean, locale?: string | string[] }]
+  if (expr.length !== 2) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 1 argument for "collator", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+
+  const diagnostics: Diagnostic[] = [];
+  if (typeof expr[1] !== "object" || expr[1] === null || Array.isArray(expr[1])) {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.ExpressionTypeMismatch,
+      message: '"collator" argument must be an options object.',
+      path: `${path}/1`,
+    });
+  }
+  return { type: "object", diagnostics };
+}
+
+function inferFormatExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+): ExpressionInference {
+  // ["format", text1, options1?, text2, options2?, ...]
+  // Must have at least 2 elements (text + optional options pairs)
+  if (expr.length < 2) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected at least 1 argument for "format", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+  return { type: "string", diagnostics: collectArgumentDiagnostics(expr, path, options, 1) };
+}
+
+function inferImageExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+): ExpressionInference {
+  // ["image", name]
+  if (expr.length !== 2) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 1 argument for "image", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+  const diagnostics: Diagnostic[] = [];
+  const arg = inferExpression(expr[1], `${path}/1`, options);
+  diagnostics.push(...arg.diagnostics);
+  if (arg.type !== "unknown" && arg.type !== "string") {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.ExpressionTypeMismatch,
+      message: '"image" argument must evaluate to a string value.',
+      path: `${path}/1`,
+    });
+  }
+  return { type: "string", diagnostics };
+}
+
+function inferZeroArgNumberExpression(expr: unknown[], path: string, operator: string): ExpressionInference {
+  if (expr.length !== 1) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 0 arguments for "${operator}", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+  return { type: "number", diagnostics: [] };
+}
+
+function inferIsSupportedScriptExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+): ExpressionInference {
+  if (expr.length !== 2) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 1 argument for "is-supported-script", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+  const diagnostics: Diagnostic[] = [];
+  const arg = inferExpression(expr[1], `${path}/1`, options);
+  diagnostics.push(...arg.diagnostics);
+  if (arg.type !== "unknown" && arg.type !== "string") {
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.ExpressionTypeMismatch,
+      message: '"is-supported-script" argument must evaluate to a string value.',
+      path: `${path}/1`,
+    });
+  }
+  return { type: "boolean", diagnostics };
+}
+
+function inferResolvedLocaleExpression(
+  expr: unknown[],
+  path: string,
+  options: NormalizedExpressionOptions,
+): ExpressionInference {
+  if (expr.length !== 2) {
+    return {
+      type: "unknown",
+      diagnostics: [
+        {
+          severity: "error",
+          code: DiagnosticCodes.ExpressionInvalidArity,
+          message: `Expected 1 argument for "resolved-locale", found ${expr.length - 1}.`,
+          path,
+        },
+      ],
+    };
+  }
+  return { type: "string", diagnostics: collectArgumentDiagnostics(expr, path, options, 1) };
 }

@@ -15,6 +15,68 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  schema-diff:
+    name: "schema: diff report"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Run schema diff
+        id: schema-diff
+        run: |
+          set +e
+          node scripts/schema-diff.mjs \
+            --base "${{ github.event.pull_request.base.sha }}" \
+            --head "${{ github.sha }}" \
+            --output .schema-diff-report.md
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Publish schema diff summary
+        if: always()
+        run: |
+          {
+            echo "## Schema Change Report"
+            echo ""
+            if [ -f .schema-diff-report.md ]; then
+              cat .schema-diff-report.md
+            else
+              echo "_No schema diff report generated._"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comment PR with schema diff
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -f .schema-diff-report.md ]; then
+            gh pr comment "${{ github.event.pull_request.number }}" \
+              --body-file .schema-diff-report.md
+          fi
+        continue-on-error: true
+
+      - name: Label breaking changes
+        if: steps.schema-diff.outputs.exit_code == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr edit "${{ github.event.pull_request.number }}" \
+            --add-label "⚠️ breaking-change"
+        continue-on-error: true
+
   quality:
     name: "quality: PR gate plan"
     runs-on: ubuntu-latest

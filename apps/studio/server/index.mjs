@@ -39,7 +39,7 @@ async function loadEngine() {
   return import(enginePath);
 }
 
-async function _loadAi() {
+async function loadAi() {
   const aiPath = join(ROOT, "packages/ai/dist/index.js");
   return import(aiPath);
 }
@@ -446,6 +446,47 @@ export function applyProviderCommands(engine, output, spec) {
       evidence: emptyCommandEvidence(),
     };
   }
+}
+
+/**
+ * Agentic Bridge: use renderIntent() from @gis-engine/ai
+ * to convert provider output into engine commands deterministically.
+ */
+function applyAgentIntent(ai, _engine, providerOutput, spec) {
+  const intent = {
+    action: providerOutput.action,
+    layerId: providerOutput.layerId,
+    paint: providerOutput.paint,
+    layout: providerOutput.layout,
+    filter: providerOutput.filter !== undefined ? providerOutput.filter : undefined,
+    view: providerOutput.view,
+    bounds: providerOutput.bounds,
+    layer: providerOutput.layer,
+    minzoom: providerOutput.minzoom,
+    maxzoom: providerOutput.maxzoom,
+    beforeLayerId: providerOutput.beforeLayerId,
+  };
+
+  const result = ai.renderIntent(spec, intent, {
+    collectTrace: true,
+    traceId: providerOutput.traceId,
+  });
+
+  const diagnostics = result.diagnostics || [];
+  const hasErrors = diagnostics.some((d) => d.severity === "error");
+  const status = hasErrors ? "blocked" : result.changedPathCount > 0 ? "applied" : "ready";
+
+  return {
+    status,
+    nextSpec: result.spec,
+    diagnostics,
+    evidence: {
+      commandCount: result.commands.length,
+      committed: status === "applied",
+      rolledBack: false,
+      changedPathCount: result.changedPathCount,
+    },
+  };
 }
 
 export function applyLegacyIntent(engine, intent, spec) {
@@ -1438,6 +1479,14 @@ async function main() {
   const engine = await loadEngine();
   console.log("✅ Engine loaded");
 
+  let ai;
+  try {
+    ai = await loadAi();
+    console.log("✅ AI loaded");
+  } catch {
+    console.warn("⚠ AI package not available, agent mode disabled");
+  }
+
   const server = createServer(async (req, res) => {
     try {
       const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
@@ -1510,6 +1559,7 @@ async function main() {
         const body = await readJsonBody(req);
         const message = typeof body.message === "string" ? body.message.trim() : "";
         const providerId = typeof body.providerId === "string" ? body.providerId : "mock-ai";
+        const chatMode = typeof body.mode === "string" ? body.mode : "standard";
         const fromRevision = activeSpec.revision || "0";
 
         if (!message) {
@@ -1604,7 +1654,10 @@ async function main() {
             });
           }
 
-          const commandResult = applyProviderCommands(engine, result.providerOutput, activeSpec);
+          const commandResult =
+            chatMode === "agent" && ai?.renderIntent
+              ? applyAgentIntent(ai, engine, result.providerOutput, activeSpec)
+              : applyProviderCommands(engine, result.providerOutput, activeSpec);
           const nextSpec = commandResult.nextSpec;
           const status = commandResult.status;
           if (status === "applied") replaceActiveSpec(nextSpec);

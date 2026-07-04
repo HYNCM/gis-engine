@@ -3,7 +3,32 @@
  *
  * Each template generates a set of files for the target project.
  * Templates: static-html, vite-ts, mapspec, app
+ * Community templates: community:<name> (see ./community.ts)
  */
+
+import {
+  generateCommunityTemplate,
+  getCommunityTemplate,
+  isCommunityTemplateName,
+  parseCommunityTemplateName,
+} from "./community.js";
+
+export {
+  type CommunityManifestValidationResult,
+  type CommunityTemplateDescriptor,
+  type CommunityTemplateFile,
+  type CommunityTemplateGenerateResult,
+  type CommunityTemplateListEntry,
+  type CommunityTemplateManifest,
+  generateCommunityTemplate,
+  getCommunityTemplate,
+  isCommunityTemplateName,
+  listCommunityTemplates,
+  parseCommunityTemplateName,
+  registerCommunityTemplate,
+  unregisterCommunityTemplate,
+  validateCommunityManifest,
+} from "./community.js";
 
 export const TEMPLATES = ["static-html", "vite-ts", "mapspec", "app"] as const;
 export type TemplateName = (typeof TEMPLATES)[number];
@@ -2096,5 +2121,18 @@ const registry: Record<TemplateName, Template> = {
 };
 
 export function getTemplate(name: string): Template | undefined {
+  if (isCommunityTemplateName(name)) {
+    const communityName = parseCommunityTemplateName(name);
+    const descriptor = getCommunityTemplate(communityName);
+    if (!descriptor) return undefined;
+    return {
+      name: name as TemplateName,
+      description: descriptor.manifest.description,
+      generate(ctx: TemplateContext): GeneratedFile[] {
+        const result = generateCommunityTemplate(name, ctx);
+        return result ? result.files : [];
+      },
+    };
+  }
   return registry[name as TemplateName];
 }

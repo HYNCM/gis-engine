@@ -3,6 +3,13 @@ export { main } from "./bin.js";
 export { type CliConfig, parseArgs } from "./config.js";
 export { type GenerateOptions, type GenerateResult, generate, hashPrompt } from "./generate.js";
 export {
+  formatLintText,
+  type LintDiagnosticCounts,
+  type LintOptions,
+  type LintResult,
+  lintMapSpec,
+} from "./lint.js";
+export {
   formatPreflightText,
   type PreflightDiagnosticCounts,
   type PreflightOptions,
@@ -30,10 +37,24 @@ export {
 export {
   type AppConfig,
   type AppType,
+  type CommunityManifestValidationResult,
+  type CommunityTemplateDescriptor,
+  type CommunityTemplateFile,
+  type CommunityTemplateGenerateResult,
+  type CommunityTemplateListEntry,
+  type CommunityTemplateManifest,
   type GeneratedFile,
+  generateCommunityTemplate,
+  getCommunityTemplate,
   getTemplate,
+  isCommunityTemplateName,
+  listCommunityTemplates,
   normalizeAppConfig,
+  parseCommunityTemplateName,
+  registerCommunityTemplate,
   TEMPLATES,
   type Template,
   type TemplateName,
+  unregisterCommunityTemplate,
+  validateCommunityManifest,
 } from "./templates/index.js";
