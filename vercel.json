@@ -1,0 +1,19 @@
+{
+  "buildCommand": "pnpm --filter @gis-engine/studio... build",
+  "outputDirectory": "apps/studio/dist",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "framework": "vite",
+  "cleanUrls": true,
+  "functions": {
+    "apps/studio/api/state.ts": { "runtime": "edge" },
+    "apps/studio/api/chat.ts": { "runtime": "edge", "maxDuration": 60 },
+    "apps/studio/api/providers.ts": { "runtime": "edge" },
+    "apps/studio/api/basemaps.ts": { "runtime": "edge" }
+  },
+  "rewrites": [
+    { "source": "/api/state", "destination": "/apps/studio/api/state" },
+    { "source": "/api/chat", "destination": "/apps/studio/api/chat" },
+    { "source": "/api/providers", "destination": "/apps/studio/api/providers" },
+    { "source": "/api/basemaps", "destination": "/apps/studio/api/basemaps" }
+  ]
+}

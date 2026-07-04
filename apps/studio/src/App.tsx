@@ -330,7 +330,7 @@ export default function App() {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, providerId, mode: chatMode }),
+        body: JSON.stringify({ message: text, providerId, mode: chatMode, spec: serverState?.spec }),
       });
       const data: ServerState = await response.json();
       const commandEvidence = data.commandEvidence;
