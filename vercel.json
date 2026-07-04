@@ -5,10 +5,10 @@
   "framework": "vite",
   "cleanUrls": true,
   "functions": {
-    "apps/studio/api/state.ts": { "runtime": "edge" },
-    "apps/studio/api/chat.ts": { "runtime": "edge", "maxDuration": 60 },
-    "apps/studio/api/providers.ts": { "runtime": "edge" },
-    "apps/studio/api/basemaps.ts": { "runtime": "edge" }
+    "apps/studio/api/state.ts": {},
+    "apps/studio/api/chat.ts": { "maxDuration": 60 },
+    "apps/studio/api/providers.ts": {},
+    "apps/studio/api/basemaps.ts": {}
   },
   "rewrites": [
     { "source": "/api/state", "destination": "/apps/studio/api/state" },
