@@ -662,7 +662,8 @@ export default async function handler(req: Req, res: Res): Promise<void> {
 
   // Handle preflight
   if (req.method === "OPTIONS") {
-    res.status(204).end();
+    res.statusCode = 204;
+    res.end();
     return;
   }
 
