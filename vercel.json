@@ -5,10 +5,7 @@
   "framework": "vite",
   "cleanUrls": true,
   "functions": {
-    "apps/studio/api/state.ts": {},
-    "apps/studio/api/chat.ts": { "maxDuration": 60 },
-    "apps/studio/api/providers.ts": {},
-    "apps/studio/api/basemaps.ts": {}
+    "apps/studio/api/chat.ts": { "maxDuration": 60 }
   },
   "rewrites": [
     { "source": "/api/state", "destination": "/apps/studio/api/state" },
