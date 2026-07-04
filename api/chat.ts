@@ -555,7 +555,7 @@ function parseLLMJsonResponse(content: string): ProviderOutput | null {
       layerId: parsed.layerId || null,
       paint: parsed.paint || null,
       layout: parsed.layout || null,
-      filter: Object.prototype.hasOwnProperty.call(parsed, "filter") ? parsed.filter : undefined,
+      filter: "filter" in parsed ? parsed.filter : undefined,
       view: parsed.view || null,
       bounds: Array.isArray(parsed.bounds) && parsed.bounds.length === 4 ? parsed.bounds : undefined,
       layer: parsed.layer || null,
@@ -692,7 +692,14 @@ export default async function handler(req: Req, res: Res): Promise<void> {
         res,
         "blocked",
         safeSpec,
-        [{ code: "PROVIDER.ERROR", severity: "error", path: "/providerResponse", message: (result as { ok: false; error: string }).error }],
+        [
+          {
+            code: "PROVIDER.ERROR",
+            severity: "error",
+            path: "/providerResponse",
+            message: (result as { ok: false; error: string }).error,
+          },
+        ],
         undefined,
         { providerId: "deepseek" },
       );

@@ -574,7 +574,7 @@ async function callDeepSeek(
   const model = (env.DEEPSEEK_MODEL ?? "").trim() || "deepseek-v4-flash";
 
   const layers = (spec.layers ?? []) as Array<Record<string, unknown>>;
-  const _summary: Record<string, unknown> = {
+  const summary: Record<string, unknown> = {
     sources: Object.keys((spec.sources ?? {}) as Record<string, unknown>),
     layers: layers.length,
     layerIds: layers.map((l) => l.id),
@@ -589,45 +589,55 @@ async function callDeepSeek(
     view: spec.view,
   };
 
-  const systemPrompt = buildSystemPrompt(buildSummary(spec), "");
+  const systemPrompt = buildSystemPrompt(summary, "");
 
   try {
-    const response = await fetch(`${baseUrl.replace(/\/+$/, "")}/chat/completions`, {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${apiKey}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        temperature: 0,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: message },
-        ],
-        response_format: { type: "json_object" },
-      }),
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30_000);
+    try {
+      const response = await fetch(`${baseUrl.replace(/\/+$/, "")}/chat/completions`, {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${apiKey}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          temperature: 0,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: message },
+          ],
+          response_format: { type: "json_object" },
+        }),
+        signal: controller.signal,
+      });
 
-    if (!response.ok) {
-      return { ok: false, error: `Provider returned HTTP ${response.status}.` };
+      if (!response.ok) {
+        return { ok: false, error: `Provider returned HTTP ${response.status}.` };
+      }
+
+      const payload = (await response.json()) as Record<string, unknown>;
+      const choices = payload.choices as Array<Record<string, unknown>> | undefined;
+      const content = (choices?.[0]?.message as Record<string, unknown>)?.content as string | undefined;
+      if (typeof content !== "string") {
+        return { ok: false, error: "No message content in response." };
+      }
+
+      const output = parseLLMJsonResponse(content);
+      if (!output) {
+        return { ok: false, error: "Response must be a JSON object with an 'action' field." };
+      }
+
+      return { ok: true, output };
+    } finally {
+      clearTimeout(timeout);
     }
-
-    const payload = (await response.json()) as Record<string, unknown>;
-    const choices = payload.choices as Array<Record<string, unknown>> | undefined;
-    const content = (choices?.[0]?.message as Record<string, unknown>)?.content as string | undefined;
-    if (typeof content !== "string") {
-      return { ok: false, error: "No message content in response." };
-    }
-
-    const output = parseLLMJsonResponse(content);
-    if (!output) {
-      return { ok: false, error: "Response must be a JSON object with an 'action' field." };
-    }
-
-    return { ok: true, output };
-  } catch {
-    return { ok: false, error: "Provider request failed." };
+  } catch (err: unknown) {
+    const reason = err instanceof DOMException && err.name === "AbortError"
+      ? "Provider request timed out (30s)."
+      : "Provider request failed.";
+    return { ok: false, error: reason };
   }
 }
 
