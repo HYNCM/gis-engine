@@ -634,9 +634,10 @@ async function callDeepSeek(
       clearTimeout(timeout);
     }
   } catch (err: unknown) {
-    const reason = err instanceof DOMException && err.name === "AbortError"
-      ? "Provider request timed out (30s)."
-      : "Provider request failed.";
+    const reason =
+      err instanceof DOMException && err.name === "AbortError"
+        ? "Provider request timed out (30s)."
+        : "Provider request failed.";
     return { ok: false, error: reason };
   }
 }
