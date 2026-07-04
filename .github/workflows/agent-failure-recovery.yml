@@ -83,7 +83,7 @@ jobs:
       - uses: pnpm/action-setup@v6
         if: ${{ steps.health.outputs.failed > 0 }}
         with:
-          version: 9.15.0
+          version: 11.9.0
 
       - uses: actions/setup-node@v6
         if: ${{ steps.health.outputs.failed > 0 }}

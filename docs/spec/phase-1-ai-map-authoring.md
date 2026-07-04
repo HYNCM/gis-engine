@@ -42,7 +42,7 @@ extension boundaries.
 ## Tech Stack
 
 - Language: TypeScript.
-- Package manager: `pnpm@9.15.0`.
+- Package manager: `pnpm@11.9.0`.
 - Runtime: Node.js `>=20.0.0`.
 - Validation: TypeBox schemas compiled with Ajv.
 - Test runner: Vitest for deterministic tests, Playwright for visual snapshots.

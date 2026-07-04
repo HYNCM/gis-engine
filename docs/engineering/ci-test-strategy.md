@@ -56,7 +56,7 @@ fixtures -> schema validation -> command replay -> renderer adapter -> snapshot 
 ## Release Runner Preflight
 
 Release gates must start with `pnpm release:preflight` on a Node 22 runner. The
-script validates `.nvmrc`, `packageManager` (`pnpm@9.15.0`), Biome platform
+script validates `.nvmrc`, `packageManager` (`pnpm@11.9.0`), Biome platform
 binary availability, localhost listener permission, and Playwright/Chromium
 launch capability before any release claim is made.
 
