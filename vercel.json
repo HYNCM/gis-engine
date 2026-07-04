@@ -4,9 +4,6 @@
   "installCommand": "pnpm install --frozen-lockfile",
   "framework": "vite",
   "cleanUrls": true,
-  "functions": {
-    "apps/studio/api/chat.ts": { "maxDuration": 60 }
-  },
   "rewrites": [
     { "source": "/api/state", "destination": "/apps/studio/api/state" },
     { "source": "/api/chat", "destination": "/apps/studio/api/chat" },
