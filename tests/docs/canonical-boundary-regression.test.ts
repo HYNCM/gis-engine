@@ -66,4 +66,17 @@ describe("canonical boundary copy", () => {
       }
     }
   });
+
+  it("keeps generated core/extension matrix blocks in sync with the structured source", async () => {
+    const { BOUNDARY_MATRIX_TARGETS, buildBoundaryMatrixOutputs, extractGeneratedBlock, readBoundaryMatrixSource } =
+      await import("../../scripts/boundary-matrix.mjs");
+    const expectedOutputs = buildBoundaryMatrixOutputs(readBoundaryMatrixSource());
+
+    expect(expectedOutputs).toHaveLength(BOUNDARY_MATRIX_TARGETS.length);
+
+    for (const expected of expectedOutputs) {
+      const actual = extractGeneratedBlock(readText(expected.file), expected.marker);
+      expect(actual, `${expected.file} should match generated boundary matrix source`).toBe(expected.content);
+    }
+  });
 });

@@ -66,6 +66,7 @@
     "reports:retention": "node scripts/report-retention.mjs",
     "docs:generate": "node scripts/doc-generator.mjs",
     "docs:api": "node scripts/build-api-docs.mjs",
+    "docs:boundary": "node scripts/boundary-matrix.mjs",
     "docs:changelog": "node scripts/doc-generator.mjs changelog",
     "docs:features": "node scripts/doc-generator.mjs features",
     "docs:links": "node scripts/doc-generator.mjs links",

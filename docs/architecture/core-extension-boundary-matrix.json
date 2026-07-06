@@ -1,0 +1,85 @@
+{
+  "sourceVersion": 1,
+  "sections": {
+    "framework": {
+      "columns": [
+        { "key": "area", "label": "区域" },
+        { "key": "core", "label": "Core 保留什么" },
+        { "key": "extension", "label": "扩展 / adapter 承担什么" },
+        { "key": "notes", "label": "备注" }
+      ],
+      "rows": [
+        {
+          "area": "`MapSpec` 核心字段",
+          "core": "`version`、`view`、`sources`、`layers`、`interactions`、`metadata`",
+          "extension": "行业域、scene、3D、实验能力放入 `extensions`",
+          "notes": "核心字段保持最小、通用、可组合"
+        },
+        {
+          "area": "`extensions.*`",
+          "core": "只保留版本化扩展入口",
+          "extension": "`scene3d`、`aiHints`、terrain、vertical payload、第三方插件字段",
+          "notes": "3D / scene / 行业能力走扩展命名空间"
+        },
+        {
+          "area": "`RendererAdapter`",
+          "core": "只定义稳定渲染契约",
+          "extension": "MapLibre、WebGL2 lite、scene adapter 的实现细节",
+          "notes": "具体渲染器行为必须留在 adapter 后面"
+        },
+        {
+          "area": "参考实现",
+          "core": "提供可运行 proof-of-concept",
+          "extension": "不定义产品形态，也不替代主协议",
+          "notes": "`examples/ai-map-workbench` 只做 Phase 1 参考实现"
+        },
+        {
+          "area": "工作流",
+          "core": "`validate -> apply -> snapshot -> export` 作为最小闭环",
+          "extension": "其他消费者可按需要重组顺序",
+          "notes": "该闭环是证据最小闭环，不是唯一流程"
+        }
+      ]
+    },
+    "contracts": {
+      "columns": [
+        { "key": "area", "label": "Contract area" },
+        { "key": "core", "label": "Core" },
+        { "key": "extension", "label": "Extension / adapter" },
+        { "key": "notes", "label": "Notes" }
+      ],
+      "rows": [
+        {
+          "area": "`MapSpec` 顶层",
+          "core": "`version`、`id`、`revision`、`view`、`sources`、`layers`、`interactions`、`metadata`",
+          "extension": "`extensions` 中的 scene / 3D / 行业 / 实验 payload",
+          "notes": "核心字段应保持最小和可组合"
+        },
+        {
+          "area": "Scene / 3D",
+          "core": "`extensions.scene3d` 作为版本化 payload",
+          "extension": "`SceneView3DExtensionSchema`、loader plan、mock snapshot/query、3D adapter spike",
+          "notes": "不能把 `view.mode: \"scene3d\"` 提升成稳定 core 能力"
+        },
+        {
+          "area": "AI / MCP",
+          "core": "已公开的 snake_case 工具契约和输入/输出 schema",
+          "extension": "新工具的扩展 payload、AI 证据和 adapter-local diagnostics",
+          "notes": "新 tool 必须继续遵守 schema-first 和 contract tests"
+        },
+        {
+          "area": "Workflow",
+          "core": "`validate -> apply -> snapshot -> export` 作为证据最小闭环",
+          "extension": "其他消费者可以重排或只用其中一段",
+          "notes": "不把参考实现工作流写成唯一协议顺序"
+        },
+        {
+          "area": "Renderer boundary",
+          "core": "`RendererAdapter` contract",
+          "extension": "MapLibre、WebGL2 lite、scene adapter 的实现细节",
+          "notes": "renderer-specific 行为必须留在 adapter 后面"
+        }
+      ]
+    }
+  }
+}

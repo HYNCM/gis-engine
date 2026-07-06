@@ -39,7 +39,7 @@ describe("public docs consistency", () => {
     const files = ["README.md", "docs/quickstart.md", "packages/cli/README.md"];
 
     for (const file of files) {
-      expect(readText(file), `${file} should mention v1.4.0`).toContain("v1.4.0");
+      expect(readText(file), `${file} should mention v1.5.0`).toContain("v1.5.0");
     }
   });
 

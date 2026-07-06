@@ -5,7 +5,7 @@
 CLI for scaffolding and generating GIS Engine map projects. Provides four modes: **scaffold** (default) for creating projects from templates, **generate** (`--generate` flag) for running the full AI pipeline from a natural-language prompt to a validated MapSpec bundle, **preflight** (`--preflight`) for validating a MapSpec JSON file before delivery, and **artifact verification** (`--verify-artifacts`) for checking generated file hashes.
 
 - **Package**: `@gis-engine/cli`
-- **Version**: 1.1.0
+- **Version**: 1.5.0
 - **Binary**: `create-gis-map`
 - **Repository**: [github.com/HYNCM/gis-engine](https://github.com/HYNCM/gis-engine)
 
@@ -40,7 +40,7 @@ cd my-map
 open index.html
 ```
 
-This is the recommended first-run path for GIS Engine v1.4.0.
+This is the recommended first-run path for GIS Engine v1.5.0.
 
 ### 2. Use a different template
 

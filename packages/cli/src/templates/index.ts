@@ -206,6 +206,7 @@ const viteTsTemplate: Template = {
             dependencies: {
               "@gis-engine/engine": engineVersionRange(ctx.cliVersion),
               "@gis-engine/ai": engineVersionRange(ctx.cliVersion),
+              "maplibre-gl": "^5.0.0",
             },
             devDependencies: {
               typescript: "^5.7.0",
@@ -252,6 +253,7 @@ const viteTsTemplate: Template = {
       {
         path: "src/main.ts",
         content: `import { createMap } from "@gis-engine/engine";
+import "maplibre-gl/dist/maplibre-gl.css";
 
 const spec = {
   version: "0.1" as const,

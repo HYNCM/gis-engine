@@ -19,8 +19,8 @@ fixtures -> schema validation -> command replay -> renderer adapter -> snapshot 
   "scripts": {
     "build": "pnpm -r build",
     "build:schema": "pnpm --filter @gis-engine/engine build:schema && pnpm --filter @gis-engine/scene3d build && pnpm --filter @gis-engine/ai build:schema",
-    "test": "pnpm test:schema && pnpm test:schema-sync && pnpm test:commands && pnpm test:patch && pnpm test:runtime && pnpm test:adapter && pnpm test:ai && pnpm test:cli && pnpm test:examples && pnpm test:docs && pnpm test:resources && pnpm test:perf:smoke && pnpm test:snapshot:smoke",
-    "test:schema": "vitest run tests/schema/schema-fixtures.test.ts tests/schema/expression-validator.test.ts tests/schema/resource-policy.test.ts",
+    "test": "pnpm test:schema && pnpm test:schema-sync && pnpm test:commands && pnpm test:patch && pnpm test:runtime && pnpm test:adapter && pnpm test:ai && pnpm test:cli && pnpm test:examples && pnpm test:docs && pnpm test:agent-framework && pnpm test:resources && pnpm test:perf:smoke && pnpm test:snapshot:smoke",
+    "test:schema": "vitest run tests/schema/schema-fixtures.test.ts tests/schema/expression-validator.test.ts tests/schema/resource-policy.test.ts tests/schema/cloud-native-policy.test.ts",
     "test:schema-sync": "vitest run tests/schema-sync",
     "test:commands": "vitest run tests/commands",
     "test:patch": "vitest run tests/patch",
@@ -44,8 +44,9 @@ fixtures -> schema validation -> command replay -> renderer adapter -> snapshot 
     "test:release:rc": "pnpm build:schema && pnpm check && pnpm test:snapshot:visual",
     "test:release:strict": "pnpm build:schema && pnpm check && GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual",
     "release:preflight": "node scripts/release-preflight.mjs",
-    "release:verify": "pnpm release:preflight && pnpm smoke:cli-install && pnpm build:cdn -- --dry-run && pnpm publish:dry && pnpm docs:links",
+    "release:verify": "node scripts/release-verify.mjs",
     "check": "pnpm build && pnpm test && pnpm test:studio",
+    "smoke:first-run": "node scripts/first-run-acceptance.mjs",
     "smoke:cli-install": "node scripts/cli-install-smoke.mjs"
   }
 }
@@ -64,7 +65,7 @@ launch capability before any release claim is made.
 For CLI/package usability, release candidates must also run
 `pnpm smoke:cli-install`. The smoke packs `@gis-engine/cli`, installs it in a
 fresh temporary consumer project, asserts the installed linked package group is
-the workspace `1.1.0` set, runs the installed
+the workspace `1.5.0` set, runs the installed
 `node_modules/.bin/create-gis-map` binary, pins generated scaffold
 dependencies to the same packed tarballs, builds a generated Vite project, and
 checks mock `--generate` output with the installed CLI's `--preflight` and

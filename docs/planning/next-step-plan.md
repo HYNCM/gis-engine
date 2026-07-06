@@ -1,8 +1,8 @@
 ---
 agent: orchestrator
 period: 2026-W25
-generated_at: 2026-06-18T15:22:04Z
-repo_revision: "fa12c7b98ab43a92a39bfbf35d2b26aefa771752"
+generated_at: 2026-07-06T15:48:06Z
+repo_revision: "8cc3a74"
 inputs:
   - docs/intent/project-definition.md
   - docs/design/design-limits-and-generalization-boundaries.md
@@ -11,8 +11,10 @@ inputs:
   - docs/README.md
   - README.md
   - AGENTS.md
+  - docs/architecture/core-extension-boundary-matrix.json
+  - docs/planning/issues-snapshot.md
 owner: "@orchestrator"
-decision_level: advisory
+decision_level: info
 ---
 
 # Next Stage Plan: Boundary Enforcement
@@ -25,20 +27,20 @@ single-workflow interpretation.
 
 ## Phase 1: Guardrails
 
-- [ ] Task 1: Add a docs regression that asserts the canonical boundary
+- [x] Task 1: Add a docs regression that asserts the canonical boundary
       wording and rejects drift.
   - Description: Make the core + extensions boundary testable in the docs
     layer so README, AGENTS, architecture, and contract wording stay aligned.
   - Acceptance criteria:
-    - [ ] README, AGENTS, and the design / architecture / spec docs all
+    - [x] README, AGENTS, and the design / architecture / spec docs all
           describe `MapSpec` as core + extensions.
-    - [ ] The reference implementation boundary and minimum closed-loop
+    - [x] The reference implementation boundary and minimum closed-loop
           language remain present.
-    - [ ] The test fails if new copy reintroduces "2D-only", "workflow-only",
+    - [x] The test fails if new copy reintroduces "2D-only", "workflow-only",
           or product-shape phrasing.
   - Verification:
-    - [ ] `pnpm test:docs`
-    - [ ] `node scripts/doc-generator.mjs links`
+    - [x] `pnpm test:docs`
+    - [x] `node scripts/doc-generator.mjs links`
   - Dependencies: None
   - Files likely touched:
     - `tests/docs/public-docs-consistency.test.ts`
@@ -49,20 +51,20 @@ single-workflow interpretation.
     - `docs/design/design-limits-and-generalization-boundaries.md`
   - Estimated scope: M
 
-- [ ] Task 2: Create a structured core-vs-extension contract matrix in the
+- [x] Task 2: Create a structured core-vs-extension contract matrix in the
       architecture and spec docs.
   - Description: Make the stable core fields and extension-only fields obvious
     in one place so scene, 3D, and vertical-domain capability stays out of the
     stable core until it is explicitly promoted.
   - Acceptance criteria:
-    - [ ] Core fields and extension-only fields are explicitly separated.
-    - [ ] 3D / scene / vertical capabilities remain extension- or
+    - [x] Core fields and extension-only fields are explicitly separated.
+    - [x] 3D / scene / vertical capabilities remain extension- or
           adapter-local.
-    - [ ] `validate -> apply -> snapshot -> export` is documented as a
+    - [x] `validate -> apply -> snapshot -> export` is documented as a
           composable minimum closed loop, not a mandatory global order.
   - Verification:
-    - [ ] `pnpm test:docs`
-    - [ ] `node scripts/doc-generator.mjs links`
+    - [x] `pnpm test:docs`
+    - [x] `node scripts/doc-generator.mjs links`
   - Dependencies: Task 1
   - Files likely touched:
     - `docs/architecture/core-framework.md`
@@ -71,8 +73,8 @@ single-workflow interpretation.
 
 ### Checkpoint: Boundary Guardrails
 
-- [ ] Boundary wording is enforced by test and reflected in the main docs.
-- [ ] Core vs extension responsibilities are readable in one place.
+- [x] Boundary wording is enforced by test and reflected in the main docs.
+- [x] Core vs extension responsibilities are readable in one place.
 
 ## Phase 2: Extension Evidence
 
@@ -103,20 +105,20 @@ single-workflow interpretation.
 
 ## Phase 3: Queue Refresh
 
-- [ ] Task 4: Refresh planning snapshots for the next implementation slice.
+- [x] Task 4: Refresh planning snapshots for the next implementation slice.
   - Description: Update the planning snapshots so the next accepted issue points
     at boundary enforcement or extension evidence rather than old adoption
     cleanup language.
   - Acceptance criteria:
-    - [ ] `docs/planning/issues-snapshot.md` and roadmap / digest artifacts
+    - [x] `docs/planning/issues-snapshot.md` and roadmap / digest artifacts
           reflect the next guardrail-oriented issue.
-    - [ ] The next implementation issue has a single owner and a narrow
+    - [x] The next implementation issue has a single owner and a narrow
           verification gate.
-    - [ ] No planning doc reverts to SDK+CLI adoption cleanup language as the
+    - [x] No planning doc reverts to SDK+CLI adoption cleanup language as the
           active priority.
   - Verification:
-    - [ ] `node scripts/issues-snapshot.mjs`
-    - [ ] `pnpm test:docs`
+    - [x] `node scripts/issues-snapshot.mjs`
+    - [x] `pnpm test:docs`
   - Dependencies: Task 1
   - Files likely touched:
     - `docs/planning/issues-snapshot.md`
@@ -126,8 +128,8 @@ single-workflow interpretation.
 
 ### Checkpoint: Ready for Execution
 
-- [ ] The next stage has a guardrailed implementation target.
-- [ ] Future tasks point at extension evidence, not protocol lock-in.
+- [x] The next stage has a guardrailed implementation target.
+- [x] Future tasks point at extension evidence, not protocol lock-in.
 
 ## Risks and Mitigations
 
@@ -141,5 +143,6 @@ single-workflow interpretation.
 
 - Which extension slice should be promoted next: scene-only evidence, a domain
   proof, or more general extension-registry guidance?
-- Should the boundary matrix become a generated artifact later, or remain
-  hand-authored?
+- Resolved: the boundary matrix is generated from
+  `docs/architecture/core-extension-boundary-matrix.json` by
+  `pnpm docs:boundary`; docs regression tests enforce the rendered blocks.

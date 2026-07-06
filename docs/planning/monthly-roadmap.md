@@ -1,12 +1,15 @@
 ---
 agent: orchestrator
 period: 2026-07
-generated_at: 2026-06-30T14:00:00Z
-repo_revision: "3890290"
+generated_at: 2026-07-06T15:48:06Z
+repo_revision: "8cc3a74"
 inputs:
   - docs/planning/orchestrator-goals-2026-W25.md
   - docs/planning/next-step-plan.md
-  - docs/reviews/first-run-acceptance-2026-06-10.md
+  - docs/planning/issues-snapshot.md
+  - docs/reviews/first-run-acceptance-2026-07-06.md
+  - docs/reviews/quality-gate-2026-07-06.md
+  - docs/architecture/core-extension-boundary-matrix.json
   - docs/reviews/provider-smoke-2026-06-10.md
   - docs/reviews/generated-project-audit-regression-2026-06-10.md
   - docs/planning/feature-specs/pmtiles-runtime-query-promotion-boundary.md
@@ -33,7 +36,7 @@ archived to
 | v1.0.0 | **Released** | 2026-06-10 | Initial stable release — SDK, CLI, engine, AI/MCP tools |
 | v1.1.0 | **Released** | 2026-06-30 | CLI productization enhancements |
 | v1.4.0 | **Released** | 2026-07-02 | Expression engine, heatmap/symbol layers, new MCP tools |
-| v1.5.0 | **In progress** | 2026-07-XX | SDK maturity sprint: test coverage, CI matrix, perf budgets, docs |
+| v1.5.0 | **Released** | 2026-07-06 | SDK maturity sprint: test coverage, CI matrix, perf budgets, docs, first-run acceptance |
 | SceneView3D | Experimental | via `--tag next` | Not promoted to stable; adapter-local only |
 
 ### v1.5.0 Change Scope
@@ -50,16 +53,17 @@ archived to
 
 | Priority | Decision | Evidence |
 | --- | --- | --- |
+| Open queue | No open GitHub Issues after #22 closure | [issues snapshot](./issues-snapshot.md) |
 | SDK+CLI first | Remains the launch surface | [active queue](./active-execution-queue-2026-06-09.md) |
 | W25 adoption evidence | #8-#13 queue closed with governance, SDK+CLI first-run, provider smoke, audit regression, and P2 No-go boundaries | [orchestrator goals](./orchestrator-goals-2026-W25.md) |
-| First-run acceptance | Packed-package SDK+CLI first-run path is now a repeatable W25 smoke/report | [first-run acceptance](../reviews/first-run-acceptance-2026-06-10.md) |
+| First-run acceptance | Strict Node 22 / pnpm 11.9 release-env first-run path passed; Vite scaffold now carries MapLibre dependency and CSS import | [first-run acceptance](../reviews/first-run-acceptance-2026-07-06.md) |
 | Provider compatibility | OpenAI-compatible provider adoption path has a local no-secret smoke gate | [provider smoke](../reviews/provider-smoke-2026-06-10.md) |
 | Generated auditability | Generated project bundles stay reviewable, hash-verifiable, and prompt-safe | [audit regression](../reviews/generated-project-audit-regression-2026-06-10.md) |
 | AI Map Workbench | Keep as local/example; no product/hosted movement without future Go | [Studio/Workbench No-go](./feature-specs/studio-workbench-product-go-no-go.md) |
-| Core/extension matrix | Guardrail issue #22 keeps boundary wording, example evidence, and snapshot sync aligned | [issue #22](https://github.com/HYNCM/gis-engine/issues/22) |
+| Core/extension matrix | Guardrail issue #22 is closed; architecture/spec matrices render from one structured source and docs tests enforce sync | [matrix source](../architecture/core-extension-boundary-matrix.json) |
 | Source runtime | Keep bounded PMTiles evidence and do not promote parser/query/runtime claims without a dedicated issue | [PMTiles boundary](./feature-specs/pmtiles-runtime-query-promotion-boundary.md) |
 | SceneView3D | Keep adapter-local; stable runtime remains blocked | [stable renderer contract](./feature-specs/sceneview3d-stable-renderer-contract.md) |
-| External signals | W25 refresh does not change priorities | [competitor update](../research/competitor-updates-2026-W24.md) |
+| External signals | W24 refresh is stale for current claims; refresh @product before using competitor/standards signals to reprioritize | [competitor update](../research/competitor-updates-2026-W24.md) |
 
 ## August 2026 Focus (v1.6)
 
@@ -78,6 +82,7 @@ archived to
 | PMTiles runtime query | **No-go** — no promotion without dedicated issue and evidence | Parser/query/runtime claims remain bounded |
 | Studio/Workbench productization | **No-go** — no product/hosted movement | Remains local/example only |
 | CLI test gap | **Resolved** — 215 tests across 8 files | All CLI modules covered |
+| Product research freshness | **Overdue** — latest product report is W24 | Do not claim current competitor or standards status before refresh |
 
 ## Maintenance
 

@@ -98,6 +98,9 @@ describe("cli-templates", () => {
     const pkg = JSON.parse(pkgFile.content);
     expect(pkg.dependencies["@gis-engine/engine"]).toBe("1.x");
     expect(pkg.dependencies["@gis-engine/ai"]).toBe("1.x");
+    expect(pkg.dependencies["maplibre-gl"]).toBeDefined();
+    const mainFile = mustFindFile(files, "src/main.ts");
+    expect(mainFile.content).toContain('import "maplibre-gl/dist/maplibre-gl.css";');
   });
 
   it("mapspec template generates map.json and README.md", () => {

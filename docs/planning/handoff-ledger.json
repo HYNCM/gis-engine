@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-07-06T02:41:47.547Z",
-  "repo_revision": "814b9b7",
+  "generated_at": "2026-07-06T15:49:53.870Z",
+  "repo_revision": "8cc3a74",
   "source": "scripts/handoff-ledger.mjs",
   "flows": [
     {
@@ -19,8 +19,8 @@
       },
       "downstream": {
         "path": "docs/planning/weekly-digest.md",
-        "generated_at": "2026-06-30T14:00:00.000Z",
-        "sha256": "e763612b376272b316f0c8c92fede3d7ce148b98c123877043fe141232431529"
+        "generated_at": "2026-07-06T15:48:06.000Z",
+        "sha256": "af7d8a30ffa838860d6f1bfa32df06f09d8bf6215fdb87fb1946938995091825"
       }
     },
     {
@@ -34,9 +34,9 @@
       "note": "builder is ad-hoc and has no active handoff",
       "upstream": null,
       "downstream": {
-        "path": "docs/reviews/quality-gate-2026-06-10.md",
-        "generated_at": "2026-06-10T04:51:24.000Z",
-        "sha256": "2b631a1c313bec264a04a8f9172a504b42bfd613b614a573df5c8d57d98dcd65"
+        "path": "docs/reviews/quality-gate-2026-07-06.md",
+        "generated_at": "2026-07-06T15:47:19.000Z",
+        "sha256": "f78b8c4d159b595f8ba983964ad6de20e16edd56597159d6e1fb8c310a945571"
       }
     },
     {
@@ -47,16 +47,16 @@
       "required": true,
       "status": "consumed",
       "severity": "info",
-      "note": "orchestrator report cites docs/reviews/quality-gate-2026-06-10.md",
+      "note": "orchestrator report cites docs/reviews/quality-gate-2026-07-06.md",
       "upstream": {
-        "path": "docs/reviews/quality-gate-2026-06-10.md",
-        "generated_at": "2026-06-10T04:51:24.000Z",
-        "sha256": "2b631a1c313bec264a04a8f9172a504b42bfd613b614a573df5c8d57d98dcd65"
+        "path": "docs/reviews/quality-gate-2026-07-06.md",
+        "generated_at": "2026-07-06T15:47:19.000Z",
+        "sha256": "f78b8c4d159b595f8ba983964ad6de20e16edd56597159d6e1fb8c310a945571"
       },
       "downstream": {
         "path": "docs/planning/weekly-digest.md",
-        "generated_at": "2026-06-30T14:00:00.000Z",
-        "sha256": "e763612b376272b316f0c8c92fede3d7ce148b98c123877043fe141232431529"
+        "generated_at": "2026-07-06T15:48:06.000Z",
+        "sha256": "af7d8a30ffa838860d6f1bfa32df06f09d8bf6215fdb87fb1946938995091825"
       }
     }
   ]
