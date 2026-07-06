@@ -332,3 +332,220 @@ describe("cli-bin-generate-integration", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// generate.ts — dryRun mode
+// ---------------------------------------------------------------------------
+
+describe("cli-generate-dryrun", () => {
+  it("does not write any files in dryRun mode", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gis-engine-cli-generate-dry-"));
+    const cwd = process.cwd();
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      process.chdir(dir);
+
+      const result = await generate({
+        projectName: "dry-run-map",
+        provider: "mock",
+        prompt: "Create a dry-run map",
+        dryRun: true,
+      });
+
+      expect(result.files).toHaveLength(0);
+      expect(existsSync(join(dir, "dry-run-map"))).toBe(false);
+      expect(result.outputDir).toContain("dry-run-map");
+    } finally {
+      process.chdir(cwd);
+      logSpy.mockRestore();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("still returns pipeline metadata in dryRun mode", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gis-engine-cli-generate-dry-"));
+    const cwd = process.cwd();
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      process.chdir(dir);
+
+      const result = await generate({
+        projectName: "dry-meta",
+        provider: "mock",
+        prompt: "Test dry metadata",
+        dryRun: true,
+      });
+
+      expect(result.promptHash).toMatch(/^sha256:[0-9a-f]{64}$/);
+      expect(result.planStatus).toBeDefined();
+      expect(result.commandCount).toBeGreaterThanOrEqual(0);
+      expect(result.validationValid).toBe(true);
+      expect(result.evidenceStatus).toBe("ok");
+    } finally {
+      process.chdir(cwd);
+      logSpy.mockRestore();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// generate.ts — result structure
+// ---------------------------------------------------------------------------
+
+describe("cli-generate-result-structure", () => {
+  it("returns complete GenerateResult with expected fields", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gis-engine-cli-generate-result-"));
+    const cwd = process.cwd();
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      process.chdir(dir);
+
+      const result = await generate({
+        projectName: "result-map",
+        provider: "mock",
+        prompt: "A map with result structure",
+        dryRun: false,
+      });
+
+      expect(result.promptHash).toMatch(/^sha256:[0-9a-f]{64}$/);
+      expect(typeof result.planStatus).toBe("string");
+      expect(typeof result.commandCount).toBe("number");
+      expect(result.commandCount).toBeGreaterThanOrEqual(0);
+      expect(typeof result.validationValid).toBe("boolean");
+      expect(result.validationValid).toBe(true);
+      expect(typeof result.evidenceStatus).toBe("string");
+      expect(result.outputDir).toContain("result-map");
+      expect(result.files.length).toBeGreaterThan(0);
+      expect(result.files).toContain("map.json");
+      expect(result.files).toContain("preflight.json");
+      expect(result.files).toContain("delivery-summary.json");
+      expect(result.files).toContain("REVIEW.md");
+      expect(result.files).toContain("artifact-manifest.json");
+    } finally {
+      process.chdir(cwd);
+      logSpy.mockRestore();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("uses default prompt when none provided", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gis-engine-cli-generate-default-"));
+    const cwd = process.cwd();
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      process.chdir(dir);
+
+      const result = await generate({
+        projectName: "default-prompt",
+        provider: "mock",
+        dryRun: false,
+      });
+
+      // Should use default prompt "Create a map with GeoJSON points"
+      const expectedHash = hashPrompt("Create a map with GeoJSON points");
+      expect(result.promptHash).toBe(expectedHash);
+    } finally {
+      process.chdir(cwd);
+      logSpy.mockRestore();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("writes diagnostics.json when pipeline diagnostics exist", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gis-engine-cli-generate-diag-"));
+    const cwd = process.cwd();
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      process.chdir(dir);
+
+      const result = await generate({
+        projectName: "diag-map",
+        provider: "mock",
+        prompt: "Create a map with GeoJSON points",
+        dryRun: false,
+      });
+
+      // diagnostics.json is written only when there are diagnostics
+      const diagPath = join(dir, "diag-map", "diagnostics.json");
+      if (result.files.includes("diagnostics.json")) {
+        expect(existsSync(diagPath)).toBe(true);
+        const diagnostics = JSON.parse(readFileSync(diagPath, "utf-8"));
+        expect(Array.isArray(diagnostics)).toBe(true);
+      }
+    } finally {
+      process.chdir(cwd);
+      logSpy.mockRestore();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// generate.ts — provider error handling
+// ---------------------------------------------------------------------------
+
+describe("cli-generate-provider-errors", () => {
+  it("throws when non-mock provider has no API key", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gis-engine-cli-generate-nokey-"));
+    const cwd = process.cwd();
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const origEnv = { ...process.env };
+    try {
+      process.chdir(dir);
+      // Clear all API key env vars
+      delete process.env.DEEPSEEK_API_KEY;
+      delete process.env.OPENAI_API_KEY;
+
+      await expect(
+        generate({
+          projectName: "no-key-map",
+          provider: "deepseek",
+          prompt: "Test no API key",
+          dryRun: false,
+        }),
+      ).rejects.toThrow(/No API key found/);
+    } finally {
+      process.chdir(cwd);
+      logSpy.mockRestore();
+      process.env = origEnv;
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// generate.ts — evidence.json structure
+// ---------------------------------------------------------------------------
+
+describe("cli-generate-evidence-structure", () => {
+  it("evidence.json contains expected top-level fields", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gis-engine-cli-generate-evidence-"));
+    const cwd = process.cwd();
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      process.chdir(dir);
+
+      await generate({
+        projectName: "evidence-map",
+        provider: "mock",
+        prompt: "Test evidence structure",
+        dryRun: false,
+      });
+
+      const evidencePath = join(dir, "evidence-map", "evidence.json");
+      if (existsSync(evidencePath)) {
+        const evidence = JSON.parse(readFileSync(evidencePath, "utf-8"));
+        expect(evidence).toHaveProperty("delivery");
+        expect(evidence).toHaveProperty("promptHash");
+        expect(evidence.promptHash).toMatch(/^sha256:/);
+        // Verify no raw prompt leak
+        expect(JSON.stringify(evidence)).not.toContain("Test evidence structure");
+      }
+    } finally {
+      process.chdir(cwd);
+      logSpy.mockRestore();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});

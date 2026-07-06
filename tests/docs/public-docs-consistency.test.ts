@@ -1,5 +1,5 @@
-import { existsSync, readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
@@ -7,6 +7,23 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
 function readText(path: string): string {
   return readFileSync(resolve(repoRoot, path), "utf8");
+}
+
+function collectMarkdownFiles(paths: string[]): string[] {
+  const result: string[] = [];
+  for (const p of paths) {
+    const full = resolve(repoRoot, p);
+    if (statSync(full).isFile()) {
+      result.push(p);
+    } else {
+      for (const entry of readdirSync(full, { recursive: true })) {
+        if (String(entry).endsWith(".md")) {
+          result.push(join(p, String(entry)));
+        }
+      }
+    }
+  }
+  return result;
 }
 
 describe("public docs consistency", () => {
@@ -26,8 +43,45 @@ describe("public docs consistency", () => {
     }
   });
 
+  it("keeps v1.5 release notes free of date placeholders", () => {
+    const changelog = readText("CHANGELOG.md");
+
+    expect(changelog).toContain("## [1.5.0] - 2026-07-06");
+    expect(changelog).not.toContain("2026-07-XX");
+  });
+
+  it("keeps v1.5 migration MCP surface aligned with the public feature matrix", () => {
+    const migration = readText("docs/migration/v1.4-to-v1.5.md");
+    const featureMatrix = readText("docs/engineering/supported-feature-matrix.md");
+    const currentMcpTools = [
+      "validate_spec",
+      "apply_commands",
+      "export_spec",
+      "get_context_summary",
+      "snapshot_spec",
+      "explain_spec",
+      "export_example_app",
+      "diff_specs",
+      "generate_spec",
+      "inspect_data",
+      "edit_spec",
+      "query_features",
+      "style_recommend",
+      "transform_data",
+    ];
+
+    expect(migration).toContain("14 MCP tools");
+    for (const tool of currentMcpTools) {
+      expect(featureMatrix, `feature matrix should list ${tool}`).toContain(tool);
+      expect(migration, `migration guide should list ${tool}`).toContain(tool);
+    }
+  });
+
   it("links migration index to the main v1.0 guide", () => {
-    expect(readText("docs/migration/README.md")).toContain("./v0.x-to-v1.0.md");
+    const migrationIndex = readText("docs/migration/README.md");
+
+    expect(migrationIndex).toContain("./v0.x-to-v1.0.md");
+    expect(migrationIndex).toContain("./v1.4-to-v1.5.md");
   });
 
   it("keeps generated API reference entry points visible", () => {
@@ -61,5 +115,43 @@ describe("public docs consistency", () => {
     expect(existsSync(resolve(repoRoot, "docs/website/api/reference/engine/index.md"))).toBe(true);
     expect(existsSync(resolve(repoRoot, "docs/website/api/reference/ai/index.md"))).toBe(true);
     expect(existsSync(resolve(repoRoot, "docs/website/api/reference/cli/index.md"))).toBe(true);
+  });
+
+  it("describes MapSpec as core + extensions in key architecture docs", () => {
+    const archDocs = ["docs/architecture/core-framework.md", "docs/spec/contracts-and-interfaces.md"];
+
+    for (const file of archDocs) {
+      const text = readText(file);
+      expect(text, `${file} should mention core + extensions boundary`).toMatch(
+        /core\s*\+\s*extensions?|extensions?\s*\+\s*core/i,
+      );
+    }
+  });
+
+  it("rejects 2D-only wording in public-facing docs", () => {
+    const forbiddenPatterns = [
+      /\b2D[\s-]only\b/i,
+      /\bonly\s+2D\b/i,
+      /\b2D\s+map\s+SDK\s+only\b/i,
+      /\bexclusively\s+2D\b/i,
+    ];
+
+    const publicDocs = collectMarkdownFiles(["docs/website", "docs/quickstart.md"]);
+
+    for (const file of publicDocs) {
+      const text = readText(file);
+      for (const pattern of forbiddenPatterns) {
+        expect(text, `${file} should not contain ${pattern.source}`).not.toMatch(pattern);
+      }
+    }
+  });
+
+  it("keeps core-framework field-level matrix in sync with MapSpec schema", () => {
+    const coreFramework = readText("docs/architecture/core-framework.md");
+    const requiredFields = ["version", "view", "sources", "layers", "interactions", "metadata", "extensions"];
+
+    for (const field of requiredFields) {
+      expect(coreFramework, `core-framework.md should document field: ${field}`).toContain(`\`${field}\``);
+    }
   });
 });

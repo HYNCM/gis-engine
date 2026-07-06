@@ -437,6 +437,100 @@ test("renders a fill-extrusion-lite beta visual snapshot", async ({}, testInfo) 
   }
 });
 
+test("renders a data-driven-styling visual snapshot with circle-color expressions", async ({}, testInfo) => {
+  const maplibre = resolveMapLibreBundle();
+  if (!maplibre.scriptPath) {
+    await completeUnavailable(testInfo, maplibre.reason);
+    return;
+  }
+
+  let browser;
+  try {
+    browser = await chromium.launch();
+  } catch (error) {
+    await completeUnavailable(testInfo, `Playwright Chromium is unavailable: ${formatError(error)}`);
+    return;
+  }
+
+  try {
+    const page = await browser.newPage({
+      viewport: { width, height },
+      deviceScaleFactor: 1,
+    });
+    const consoleErrors: string[] = [];
+    page.on("console", (message) => {
+      if (message.type() === "error") consoleErrors.push(message.text());
+    });
+    page.on("pageerror", (error) => {
+      consoleErrors.push(error.message);
+    });
+
+    await page.setContent(`
+      <!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <style>
+            html, body, #map {
+              width: ${width}px;
+              height: ${height}px;
+              margin: 0;
+              padding: 0;
+            }
+          </style>
+        </head>
+        <body><div id="map"></div></body>
+      </html>
+    `);
+
+    const webgl = await page.evaluate(() => {
+      const canvas = document.createElement("canvas");
+      const context =
+        canvas.getContext("webgl2") ?? canvas.getContext("webgl") ?? canvas.getContext("experimental-webgl");
+      if (!context) return { available: false };
+      const gl = context as WebGLRenderingContext;
+      return {
+        available: true,
+        renderer: String(gl.getParameter(gl.RENDERER)),
+      };
+    });
+    if (!webgl.available) {
+      await completeUnavailable(testInfo, "Browser WebGL is unavailable.");
+      return;
+    }
+
+    try {
+      await loadMapLibreBundle(page, maplibre);
+    } catch (error) {
+      await completeUnavailable(testInfo, `maplibre-gl browser bundle could not be loaded: ${formatError(error)}`);
+      return;
+    }
+
+    const renderResult = await renderStyleSnapshot(page, visualDataDrivenStyle());
+    const report = createVisualReport(renderResult, consoleErrors, {
+      id: "data-driven-styling",
+      revision: "1",
+      sourceCount: 1,
+      layerCount: 2,
+    });
+    assertSnapshotReport(report);
+    await attachReport(testInfo, report);
+
+    if (!renderResult.ok) {
+      throw new Error(`data-driven-styling visual snapshot failed: ${renderResult.reason}`);
+    }
+    expect(renderResult.dataUrl).toMatch(/^data:image\/png;base64,/);
+    expect(renderResult.canvasWidth).toBeGreaterThan(0);
+    expect(renderResult.canvasHeight).toBeGreaterThan(0);
+    expect(renderResult.nonTransparentSamples).toBeGreaterThan(0);
+    expect(renderResult.nonWhiteSamples).toBeGreaterThan(0);
+    expect(consoleErrors).toEqual([]);
+    expect(report.status).toBe("passed");
+  } finally {
+    await browser.close();
+  }
+});
+
 type BrowserRenderResult =
   | {
       ok: true;
@@ -931,6 +1025,73 @@ function vectorTileGeoJson(): unknown {
               [120.02, 30.16],
             ],
           ],
+        },
+      },
+    ],
+  };
+}
+
+function visualDataDrivenStyle(): unknown {
+  return {
+    version: 8,
+    name: "data-driven-styling",
+    center: [120.15, 30.28],
+    zoom: 10,
+    sources: {
+      cities: {
+        type: "geojson",
+        data: {
+          type: "FeatureCollection",
+          features: [
+            {
+              type: "Feature",
+              properties: { name: "City A", category: "large", score: 85 },
+              geometry: { type: "Point", coordinates: [120.1, 30.25] },
+            },
+            {
+              type: "Feature",
+              properties: { name: "City B", category: "medium", score: 55 },
+              geometry: { type: "Point", coordinates: [120.2, 30.3] },
+            },
+            {
+              type: "Feature",
+              properties: { name: "City C", category: "small", score: 25 },
+              geometry: { type: "Point", coordinates: [120.15, 30.22] },
+            },
+            {
+              type: "Feature",
+              properties: { name: "City D", category: "large", score: 92 },
+              geometry: { type: "Point", coordinates: [120.25, 30.28] },
+            },
+          ],
+        },
+      },
+    },
+    layers: [
+      {
+        id: "background",
+        type: "background",
+        paint: { "background-color": "#f0f4f8" },
+      },
+      {
+        id: "city-circles",
+        type: "circle",
+        source: "cities",
+        paint: {
+          "circle-radius": ["interpolate", ["linear"], ["get", "score"], 0, 6, 100, 20],
+          "circle-color": [
+            "match",
+            ["get", "category"],
+            "large",
+            "#d7263d",
+            "medium",
+            "#f46d43",
+            "small",
+            "#42a5f5",
+            "#9e9e9e",
+          ],
+          "circle-stroke-color": "#1e293b",
+          "circle-stroke-width": 2,
         },
       },
     ],

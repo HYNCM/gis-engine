@@ -1,6 +1,6 @@
 ---
 agent: orchestrator
-period: 2026-06
+period: 2026-07
 generated_at: 2026-06-30T14:00:00Z
 repo_revision: "3890290"
 inputs:
@@ -31,17 +31,20 @@ archived to
 | Version | Status | Date | Notes |
 | --- | --- | --- | --- |
 | v1.0.0 | **Released** | 2026-06-10 | Initial stable release — SDK, CLI, engine, AI/MCP tools |
-| v1.1.0 | **In progress** | 2026-06-30 | 19 changesets consumed; CLI productization enhancements |
+| v1.1.0 | **Released** | 2026-06-30 | CLI productization enhancements |
+| v1.4.0 | **Released** | 2026-07-02 | Expression engine, heatmap/symbol layers, new MCP tools |
+| v1.5.0 | **In progress** | 2026-07-XX | SDK maturity sprint: test coverage, CI matrix, perf budgets, docs |
 | SceneView3D | Experimental | via `--tag next` | Not promoted to stable; adapter-local only |
 
-### v1.1.0 Change Scope
+### v1.5.0 Change Scope
 
 | Area | Changes |
 | --- | --- |
-| **CLI app templates** | Delivery evidence, preflight artifact, review details, artifact manifest, MapSpec validation, map reload, artifact verification |
-| **Engine** | PMTiles runtime load-plan preflight, source readiness report |
-| **AI** | AI readiness context summary, generation evidence |
-| **Scene3D** | Linked group passive version bump |
+| **CLI tests** | +74 new tests (lint, community, generate, bin-dispatch); 215 total |
+| **CI matrix** | Node 22+24, macOS lint job |
+| **Performance** | Smoke budgets tightened, applyCommands batch benchmarks |
+| **Docs** | Migration guide, boundary regression tests, example README standardization |
+| **Visual snapshots** | +data-driven-styling scenario (4 total) |
 
 ## Current Priorities
 
@@ -58,14 +61,14 @@ archived to
 | SceneView3D | Keep adapter-local; stable runtime remains blocked | [stable renderer contract](./feature-specs/sceneview3d-stable-renderer-contract.md) |
 | External signals | W25 refresh does not change priorities | [competitor update](../research/competitor-updates-2026-W24.md) |
 
-## July 2026 Focus
+## August 2026 Focus (v1.6)
 
 | Item | Scope | Owner |
 | --- | --- | --- |
-| Core-vs-extension matrix | Complete next-step-plan Tasks 2-4: matrix documentation, extension evidence collection, queue refresh | @builder |
-| SceneView3D renderer evidence | Collect real renderer snapshot/query/visual evidence for future stable promotion | @builder (adapter + qa) |
-| CLI test coverage | Expand beyond 2 test files for 4641-line CLI source; add integration and edge-case coverage | @builder (qa) |
-| Multi-platform CI matrix | Add macOS + Node 20/22 to CI matrix for broader compatibility validation | @builder |
+| SceneView3D evidence | Collect real renderer evidence for stable promotion decision | @builder |
+| Cloud-native sources | FlatGeobuf/GeoParquet runtime loading spike | @builder |
+| Expression completeness | Close remaining Mapbox expression gaps | @builder |
+| Developer experience | Interactive playground, API reference polish | @builder |
 
 ## Risks & Known Blockers
 
@@ -74,7 +77,7 @@ archived to
 | SceneView3D stable runtime | **Blocked** — blocker code still prevents stable promotion | Cannot enable `view.mode: "scene3d"` without `--tag next` |
 | PMTiles runtime query | **No-go** — no promotion without dedicated issue and evidence | Parser/query/runtime claims remain bounded |
 | Studio/Workbench productization | **No-go** — no product/hosted movement | Remains local/example only |
-| CLI test gap | **Advisory** — 4641 lines of source with only 2 test files | Regression risk for CLI enhancements |
+| CLI test gap | **Resolved** — 215 tests across 8 files | All CLI modules covered |
 
 ## Maintenance
 

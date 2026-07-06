@@ -16,8 +16,10 @@ describe("performance smoke", () => {
 
     const result = applyCommands(before as MapSpec, commands, { transaction: "best-effort" });
 
+    const elapsedMs = performance.now() - startedAt;
+    console.log(`[perf-smoke] 50-commands batch replay: ${elapsedMs.toFixed(1)}ms`);
     expect(result.results.every((commandResult) => commandResult.status === "applied")).toBe(true);
-    expect(performance.now() - startedAt).toBeLessThan(2_000);
+    expect(elapsedMs).toBeLessThan(1_000);
   });
 
   it("runs create/query/snapshot/destroy within deterministic Node smoke budgets", async () => {
@@ -42,10 +44,13 @@ describe("performance smoke", () => {
     expect(snapshot.passed).toBe(true);
     expect(resourceReport.destroyed).toBe(true);
 
-    expect(createMs).toBeLessThan(1_000);
-    expect(queryMs).toBeLessThan(500);
-    expect(snapshotMs).toBeLessThan(500);
-    expect(destroyMs).toBeLessThan(500);
+    console.log(
+      `[perf-smoke] create: ${createMs.toFixed(1)}ms, query: ${queryMs.toFixed(1)}ms, snapshot: ${snapshotMs.toFixed(1)}ms, destroy: ${destroyMs.toFixed(1)}ms`,
+    );
+    expect(createMs).toBeLessThan(500);
+    expect(queryMs).toBeLessThan(200);
+    expect(snapshotMs).toBeLessThan(200);
+    expect(destroyMs).toBeLessThan(200);
   });
 });
 

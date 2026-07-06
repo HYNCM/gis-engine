@@ -1,5 +1,41 @@
 # @gis-engine/scene3d
 
+## 1.5.0
+
+### Minor Changes
+
+- ## v1.5.0 — SDK Product Maturity Sprint
+
+  ### Added
+
+  - **CLI lintMapSpec tests**: 20 new tests covering `lintMapSpec()` and `formatLintText()` (lint.test.ts)
+  - **Community Template Registry tests**: 35 new tests covering all 8 public APIs (community-templates.test.ts)
+  - **generate.ts coverage expansion**: 7 new tests covering dryRun mode, result structure, provider errors, and evidence structure
+  - **bin.ts dispatch tests**: 12 new tests covering --help, --version, error paths, and scaffold smoke (bin-dispatch.test.ts)
+  - **applyCommands batch performance benchmarks**: 4 new tests for 100/500/1000 command batches and mixed command types
+  - **Visual snapshot: data-driven styling**: new Playwright scenario with circle-color match/interpolate expressions
+  - **Docs boundary regression tests**: 3 new tests ensuring core+extensions wording and rejecting 2D-only phrasing
+  - **v1.4 → v1.5 migration guide**: new `docs/migration/v1.4-to-v1.5.md`
+
+  ### Changed
+
+  - **CI matrix**: added Node 24 to lint and build-test; macOS lint as separate job
+  - **Performance budgets tightened**: create 1000ms → 500ms, query 500ms → 200ms, snapshot 500ms → 200ms, destroy 500ms → 200ms, batch replay 2000ms → 1000ms
+  - **Example READMEs standardized**: ai-map-edit and fill-extrusion-lite READMEs aligned to Goal/Quick Start/What It Shows/Data/Expected Output/Limits template
+
+  ### Test Coverage
+
+  - CLI tests: 141 → 215 (+74 new tests)
+  - Docs tests: 16 → 19 (+3 new tests)
+  - Visual snapshot scenarios: 3 → 4 (+data-driven-styling)
+  - Main `pnpm test` suite: 979 tests (up from 744)
+  - Full `pnpm check`: 1022 tests including 43 Studio server/bundle tests
+
+### Patch Changes
+
+- Updated dependencies
+  - @gis-engine/engine@1.5.0
+
 ## 1.4.0
 
 ### Minor Changes

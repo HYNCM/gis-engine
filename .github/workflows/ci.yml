@@ -10,8 +10,8 @@ jobs:
   lint:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
-        node-version: [22]
+        os: [ubuntu-latest]
+        node-version: [22, 24]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
@@ -26,11 +26,28 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
 
+  lint-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11.9.0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+
   build-test:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
         node-version: [22]
+        include:
+          - os: ubuntu-latest
+            node-version: 24
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:

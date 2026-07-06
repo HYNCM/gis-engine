@@ -1,6 +1,6 @@
 ---
 agent: orchestrator
-period: 2026-W27
+period: 2026-W28
 generated_at: 2026-06-30T14:00:00Z
 repo_revision: "3890290"
 inputs:
@@ -24,13 +24,14 @@ archived to
 
 | Topic | Current Reading | Evidence |
 | --- | --- | --- |
-| Release | v1.1.0 released with 19 changesets consumed; engine/ai/cli/scene3d all at 1.1.0 | [CHANGELOG.md](../../CHANGELOG.md) |
-| Changeset consumption | 19 changesets consumed: 16 CLI minor (app template enhancements), 1 engine minor (PMTiles preflight), 1 ai minor (AI readiness), 1 cross-package (source readiness) | [CHANGELOG.md](../../CHANGELOG.md) |
-| Boundary enforcement | Canonical boundary regression tests added; MapSpec described as core + extensions across all public docs | [next-step-plan.md](./next-step-plan.md) Task 1 |
-| Governance refresh | Evolution ledger updated to v1.0-stable; first monthly trend report generated; W25-W27 snapshots appended | [evolution-ledger.md](./evolution-ledger.md) |
-| Open issues | #22 (core/extension boundary matrix) remains open at P2 | [issues-snapshot.md](./issues-snapshot.md) |
-| SceneView3D | Remains experimental (v1.1.0 via --tag next); stable view.mode still blocked | [CHANGELOG.md](../../CHANGELOG.md) |
-| Next steps | next-step-plan Tasks 2-4: core-vs-extension matrix, extension evidence, queue refresh | [next-step-plan.md](./next-step-plan.md) |
+| Release | v1.5.0 in progress — SDK maturity sprint (W28-W31) | [CHANGELOG.md](../../CHANGELOG.md) |
+| CLI test coverage | 215 tests across 8 files (+74 new); lint, community, generate, bin-dispatch fully covered | [v1.5 plan](../../../.changeset/v1.5-sdk-maturity.md) |
+| CI matrix | Node 22+24, macOS lint job | [.github/workflows/ci.yml](../../../.github/workflows/ci.yml) |
+| Performance | Smoke budgets tightened; applyCommands batch benchmarks added | [performance-benchmarks.md](../../engineering/performance-benchmarks.md) |
+| Visual snapshots | 4 MapLibre scenarios + SceneView3D adapter (5 total) | [maplibre-visual.spec.ts](../../../tests/snapshot/visual/maplibre-visual.spec.ts) |
+| Docs | Boundary regression tests, migration guide, example README standardization | [v1.4-to-v1.5.md](../../migration/v1.4-to-v1.5.md) |
+| SceneView3D | Remains experimental; stable view.mode still blocked | [CHANGELOG.md](../../CHANGELOG.md) |
+| Next steps | v1.6 planning: SceneView3D evidence, cloud-native sources, expression completeness | [monthly-roadmap.md](./monthly-roadmap.md) |
 | PMTiles runtime query | Runtime query remains No-go; future loader/query gate required | [PMTiles boundary](./feature-specs/pmtiles-runtime-query-promotion-boundary.md) |
 | Workbench | Studio/Workbench product movement remains No-go | [Studio/Workbench No-go](./feature-specs/studio-workbench-product-go-no-go.md) |
 

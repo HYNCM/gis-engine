@@ -14,10 +14,11 @@ pnpm test:perf:smoke
 
 | Case | Budget |
 |---|---|
-| create (spec load + adapter init) | < 100ms |
-| queryFeatures (point) | < 50ms p95 |
-| snapshot (1024x768) | < 2s |
-| destroy (resource cleanup) | < 100ms, no residual raf/listener/worker |
+| create (spec load + adapter init) | < 500ms |
+| queryFeatures (point) | < 200ms p95 |
+| snapshot (1024x768) | < 200ms |
+| destroy (resource cleanup) | < 200ms, no residual raf/listener/worker |
+| 50-command batch replay | < 1000ms |
 
 ## Nightly Tests
 

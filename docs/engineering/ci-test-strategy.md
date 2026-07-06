@@ -55,7 +55,8 @@ fixtures -> schema validation -> command replay -> renderer adapter -> snapshot 
 
 ## Release Runner Preflight
 
-Release gates must start with `pnpm release:preflight` on a Node 22 runner. The
+Release gates must start with `pnpm release:preflight` on a Node 22+ runner.
+The
 script validates `.nvmrc`, `packageManager` (`pnpm@11.9.0`), Biome platform
 binary availability, localhost listener permission, and Playwright/Chromium
 launch capability before any release claim is made.
@@ -138,7 +139,7 @@ fixture 规则：
 Snapshot 分为两层：
 
 - `snapshot:smoke`：必跑。使用 Node/Vitest 和 adapter contract 验证 `load -> snapshot -> exportSpec` 的结构化结果、diagnostics 和状态一致性，不要求真实 WebGL；当前覆盖 GeoJSON、vector tile 和 gated `fill-extrusion-lite`。
-- `snapshot:visual`：条件跑。使用 Playwright、真实浏览器和真实 MapLibre GL canvas 验证像素健康度和可选 baseline diff。当前覆盖 GeoJSON 基础场景、本地生成 MVT 的 vector tile release 场景和 gated `fill-extrusion-lite` beta 场景。
+- `snapshot:visual`：条件跑。使用 Playwright、真实浏览器和真实 MapLibre GL canvas 验证像素健康度和可选 baseline diff。当前覆盖 GeoJSON 基础场景、本地生成 MVT 的 vector tile release 场景、gated `fill-extrusion-lite` beta 场景和 data-driven-styling 表达式场景。
 - `scene3d.release.visual`：release-runner 3D smoke gate。当前没有稳定
   SceneView3D renderer，因此 gate 以 `snapshotScene3DMock`、
   `queryScene3DMock` 和可选 renderer visual evidence 组成；release 模式下
@@ -304,7 +305,7 @@ v0.1 release 前至少运行：
 | snapshot 1024x768 | 不超过 2s |
 | destroy | 无残留 raf、listener、worker |
 
-这些不是长期性能承诺，只是防止当前可发布线出现明显不可用状态。当前 PR 级 perf smoke 仍是小样本确定性 guard；更大的 1k/10k/100k 场景保留给 nightly/release runner，perf trend 则在周度 workflow 中归档为审查证据，避免把不稳定的大数据压测放进默认 `pnpm check`。
+这些不是长期性能承诺，只是防止当前可发布线出现明显不可用状态。当前 PR 级 perf smoke 仍是小样本确定性 guard（create < 500ms, query < 200ms, snapshot < 200ms, destroy < 200ms, 50-command batch < 1000ms）；更大的 1k/10k/100k 场景保留给 nightly/release runner，perf trend 则在周度 workflow 中归档为审查证据，避免把不稳定的大数据压测放进默认 `pnpm check`。
 
 ## Current Gate Evidence
 
@@ -312,7 +313,8 @@ v0.1 release 前至少运行：
 
 - `pnpm build:schema` 覆盖 engine 和 AI schema artifact。
 - `pnpm check` 覆盖 build plus schema、schema-sync、commands、patch、runtime、adapter、AI、examples、resources、perf smoke、snapshot smoke。
-- 默认 `pnpm test:snapshot:visual` 通过 2 个 Playwright 场景：GeoJSON 和 generated local MVT。
+- 默认 `pnpm test:snapshot:visual` 通过 5 个 Playwright 场景：GeoJSON、generated local MVT、gated `fill-extrusion-lite`、data-driven-styling 和 SceneView3D adapter。
+- CI 矩阵覆盖 Node 22 和 Node 24；lint 和 build-test 均在 ubuntu-latest 上运行两个 Node 版本，macOS 单独运行 lint。
 - `GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual` 需要具备 Chromium/WebGL 权限的 runner；当前 macOS 默认沙箱会因 Chromium Mach port 权限失败。
 
 ## Resource Release Tests
