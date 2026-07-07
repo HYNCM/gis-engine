@@ -1,12 +1,12 @@
 ---
-generated_at: 2026-07-06T15:49:53.883Z
-repo_revision: "8cc3a74"
-period: 2026-07-06
+generated_at: 2026-07-07T01:32:27.945Z
+repo_revision: "c920341"
+period: 2026-07-07
 agent: orchestrator
 decision_level: info
 ---
 
-# Agent Health Dashboard (as of 2026-07-06)
+# Agent Health Dashboard (as of 2026-07-07)
 
 > ⚠️ 本 Dashboard 由 `scripts/dashboard-generator.mjs` 自动生成。
 > 状态为自动化推断，需 orchestrator 审查后确认。
@@ -45,4 +45,4 @@ decision_level: info
 - **健康 agent**: 4/5
 - **问题 agent**: 1/5
 - **数据流异常**: 0
-- **生成时间**: 2026-07-06T15:49:53.893Z
+- **生成时间**: 2026-07-07T01:32:27.948Z
