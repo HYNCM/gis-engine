@@ -1,12 +1,12 @@
 ---
-generated_at: 2026-07-07T01:32:27.945Z
-repo_revision: "c920341"
-period: 2026-07-07
+generated_at: 2026-07-08T01:17:20.742Z
+repo_revision: "3acfc4e"
+period: 2026-07-08
 agent: orchestrator
 decision_level: info
 ---
 
-# Agent Health Dashboard (as of 2026-07-07)
+# Agent Health Dashboard (as of 2026-07-08)
 
 > ⚠️ 本 Dashboard 由 `scripts/dashboard-generator.mjs` 自动生成。
 > 状态为自动化推断，需 orchestrator 审查后确认。
@@ -15,11 +15,11 @@ decision_level: info
 
 | Agent | Cadence | Last Report | Last Run | Status | Age |
 | --- | --- | --- | --- | --- | --- |
-| @orchestrator | weekly | docs/planning/weekly-digest.md | 2026-07-06 | 🟢 fresh | 0d |
-| @product | weekly | docs/research/competitor-updates-2026-W24.md | 2026-06-09 | 🔴 overdue | 27d |
-| @quality | daily | docs/reviews/quality-gate-2026-07-06.md | 2026-07-06 | 🟢 fresh | 0d |
+| @orchestrator | weekly | docs/planning/weekly-digest.md | 2026-07-06 | 🟢 ok | 1d |
+| @product | weekly | docs/research/competitor-updates-2026-W24.md | 2026-06-09 | 🔴 overdue | 28d |
+| @quality | daily | docs/reviews/quality-gate-2026-07-06.md | 2026-07-06 | 🟢 ok | 1d |
 | @builder | ad-hoc | — | — | 🟢 ok | — |
-| @docs | daily | docs/reviews/documentation-audit-2026-07-06.md | 2026-07-06 | 🟢 fresh | 0d |
+| @docs | daily | docs/reviews/documentation-audit-2026-07-06.md | 2026-07-06 | 🟢 ok | 1d |
 
 ## Data Flow Health
 
@@ -29,20 +29,20 @@ decision_level: info
 
 | Agent | SLA | Max Latency | Current | Status |
 | --- | --- | --- | --- | --- |
-| @orchestrator | 周一 00:00 UTC | 2d | 0d | ✅ compliant |
-| @product | 周一 00:00 UTC | 2d | 27d | ❌ breach |
-| @quality | 每日 00:00 UTC | 1d | 0d | ✅ compliant |
-| @docs | 每日 00:00 UTC | 2d | 0d | ✅ compliant |
+| @orchestrator | 周一 00:00 UTC | 2d | 1d | ✅ compliant |
+| @product | 周一 00:00 UTC | 2d | 28d | ❌ breach |
+| @quality | 每日 00:00 UTC | 1d | 1d | ✅ compliant |
+| @docs | 每日 00:00 UTC | 2d | 1d | ✅ compliant |
 
 > ℹ️ ad-hoc agent (builder) 无固定 SLA。
 
 ## Action Items
 
-- [ ] **@product**: 报告逾期 27 天 → 手动触发或检查 cron
+- [ ] **@product**: 报告逾期 28 天 → 手动触发或检查 cron
 
 ## Summary
 
 - **健康 agent**: 4/5
 - **问题 agent**: 1/5
 - **数据流异常**: 0
-- **生成时间**: 2026-07-07T01:32:27.948Z
+- **生成时间**: 2026-07-08T01:17:20.745Z
