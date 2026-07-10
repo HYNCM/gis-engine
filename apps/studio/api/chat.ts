@@ -8,6 +8,11 @@
  * The client-side @gis-engine/engine handles actual rendering.
  */
 
+import { Type } from "@sinclair/typebox";
+import Ajv from "ajv";
+import { applyProviderOutput, emptyCommandEvidence } from "../../../api/studio-command-apply";
+import { type DeepSeekProviderProfile, resolveDeepSeekProvider } from "../../../api/studio-provider-guardrails";
+
 export const runtime = "edge";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -39,58 +44,20 @@ interface ProviderOutput {
 
 const env = process.env as Record<string, string | undefined>;
 
+const ChatBodySchema = Type.Object(
+  {
+    message: Type.Optional(Type.String()),
+    providerId: Type.Optional(Type.String()),
+    mode: Type.Optional(Type.String()),
+    spec: Type.Optional(Type.Record(Type.String(), Type.Unknown())),
+  },
+  { additionalProperties: false },
+);
+const validateChatBody = new Ajv({ allErrors: true }).compile(ChatBodySchema);
+
 // ── Spec helpers ───────────────────────────────────────────────────────────
 
 const POINTS_LAYER_ID = "points-layer";
-const BASEMAP_SOURCE_ID = "basemap";
-const BASEMAP_LAYER_ID = "basemap-layer";
-const BASEMAP_BACKGROUND_LAYER_ID = "basemap-background";
-const TILE_PROXY_PREFIX = "/api/tiles";
-
-interface BasemapDef {
-  tiles?: string[];
-  attribution?: string;
-  maxzoom?: number;
-  backgroundColor?: string;
-}
-
-const BASEMAPS: Record<string, BasemapDef> = {
-  none: { backgroundColor: "#020617" },
-  osm: {
-    tiles: [`${TILE_PROXY_PREFIX}/osm/{z}/{x}/{y}.png`],
-    attribution: "© OpenStreetMap contributors",
-    maxzoom: 19,
-  },
-  "arcgis-imagery": {
-    tiles: [`${TILE_PROXY_PREFIX}/arcgis-imagery/{z}/{x}/{y}.jpg`],
-    attribution: "Esri, Maxar, Earthstar Geographics",
-    maxzoom: 23,
-  },
-  "bing-aerial": {
-    tiles: [`${TILE_PROXY_PREFIX}/bing-aerial/{z}/{x}/{y}.jpeg`],
-    attribution: "© Microsoft Bing",
-    maxzoom: 19,
-  },
-};
-
-function normalizeBasemapId(value: string): string {
-  const raw = value.toLowerCase().trim();
-  if (raw === "osm" || raw === "openstreetmap" || raw === "open-street-map") return "osm";
-  if (raw === "arcgis" || raw === "esri" || raw === "satellite" || raw === "imagery" || raw === "arcgis-imagery")
-    return "arcgis-imagery";
-  if (raw === "bing" || raw === "bing-aerial" || raw === "bing-maps") return "bing-aerial";
-  if (raw === "none" || raw === "no-basemap" || raw === "no basemap") return "none";
-  return BASEMAPS[raw] ? raw : "none";
-}
-
-function cloneSpec(spec: Record<string, unknown>): Record<string, unknown> {
-  return JSON.parse(JSON.stringify(spec));
-}
-
-function bumpRevision(spec: Record<string, unknown>): Record<string, unknown> {
-  const rev = Number.parseInt(String(spec.revision ?? "0"), 10);
-  return { ...spec, revision: String(rev + 1) };
-}
 
 function buildSummary(spec: Record<string, unknown>) {
   const sources = (spec.sources ?? {}) as Record<string, unknown>;
@@ -141,171 +108,18 @@ function applyAction(
   changedPaths: number;
   status: string;
   diagnostics: Array<Record<string, unknown>>;
+  evidence: Record<string, unknown>;
 } {
-  let next = cloneSpec(spec);
-  let changedPaths = 0;
-  const diagnostics: Array<Record<string, unknown>> = [];
-  const layers = next.layers as Array<Record<string, unknown>>;
-  const sources = next.sources as Record<string, unknown>;
-
-  switch (output.action) {
-    case "setPaint": {
-      const layer = layers.find((l) => l.id === output.layerId);
-      if (layer && output.paint) {
-        layer.paint = { ...((layer.paint as Record<string, unknown>) ?? {}), ...output.paint };
-        changedPaths = Object.keys(output.paint).length;
-      }
-      break;
-    }
-    case "setLayout": {
-      const layer = layers.find((l) => l.id === output.layerId);
-      if (layer && (output.layout || output.paint)) {
-        layer.layout = { ...((layer.layout as Record<string, unknown>) ?? {}), ...(output.layout || output.paint) };
-        changedPaths = Object.keys(output.layout || output.paint || {}).length;
-      }
-      break;
-    }
-    case "setFilter": {
-      const layer = layers.find((l) => l.id === output.layerId);
-      if (layer) {
-        if (output.filter === null || output.filter === undefined) {
-          delete layer.filter;
-        } else {
-          layer.filter = output.filter;
-        }
-        changedPaths = 1;
-      }
-      break;
-    }
-    case "setLayerZoomRange": {
-      const layer = layers.find((l) => l.id === output.layerId);
-      if (layer && Number.isFinite(output.minzoom) && Number.isFinite(output.maxzoom)) {
-        layer.minzoom = output.minzoom;
-        layer.maxzoom = output.maxzoom;
-        changedPaths = 2;
-      }
-      break;
-    }
-    case "setView": {
-      if (output.view?.center && output.view.zoom != null) {
-        next.view = { ...(next.view as Record<string, unknown>), ...output.view };
-        changedPaths = 2;
-      }
-      break;
-    }
-    case "addLayer": {
-      if (output.layer?.id && output.layer?.type && output.layer?.source) {
-        layers.push(output.layer);
-        changedPaths = 1;
-      }
-      break;
-    }
-    case "removeLayer": {
-      const idx = layers.findIndex((l) => l.id === output.layerId);
-      if (idx !== -1) {
-        layers.splice(idx, 1);
-        changedPaths = 1;
-      }
-      break;
-    }
-    case "reorderLayer": {
-      const idx = layers.findIndex((l) => l.id === output.layerId);
-      if (idx !== -1) {
-        const [layer] = layers.splice(idx, 1);
-        if (output.beforeLayerId) {
-          const beforeIdx = layers.findIndex((l) => l.id === output.beforeLayerId);
-          if (beforeIdx !== -1) {
-            layers.splice(beforeIdx, 0, layer);
-          } else {
-            layers.push(layer);
-          }
-        } else {
-          layers.push(layer);
-        }
-        changedPaths = 1;
-      }
-      break;
-    }
-    case "fitBounds": {
-      if (Array.isArray(output.bounds) && output.bounds.length === 4) {
-        const view = (next.view ?? {}) as Record<string, unknown>;
-        next.view = { ...view, bounds: output.bounds };
-        changedPaths = 1;
-      }
-      break;
-    }
-    case "setBasemap": {
-      const basemapId = normalizeBasemapId(output.layerId || "none");
-      const basemap = BASEMAPS[basemapId] ?? BASEMAPS.none;
-
-      // Remove existing basemap layers and source
-      const filteredLayers = layers.filter((l) => l.id !== BASEMAP_LAYER_ID && l.id !== BASEMAP_BACKGROUND_LAYER_ID);
-      delete sources[BASEMAP_SOURCE_ID];
-
-      const firstNonBasemapLayer = filteredLayers[0];
-
-      if (basemap.tiles) {
-        sources[BASEMAP_SOURCE_ID] = {
-          type: "raster",
-          tiles: basemap.tiles,
-          tileSize: 256,
-          attribution: basemap.attribution,
-          minzoom: 0,
-          maxzoom: basemap.maxzoom ?? 19,
-        };
-        const rasterLayer = { id: BASEMAP_LAYER_ID, type: "raster", source: BASEMAP_SOURCE_ID };
-        // Insert basemap raster layer at the bottom (before first non-basemap layer)
-        const insertIdx = firstNonBasemapLayer ? filteredLayers.indexOf(firstNonBasemapLayer) : filteredLayers.length;
-        filteredLayers.splice(insertIdx, 0, rasterLayer);
-      } else {
-        const bgLayer = {
-          id: BASEMAP_BACKGROUND_LAYER_ID,
-          type: "background",
-          paint: { "background-color": basemap.backgroundColor || "#020617" },
-        };
-        const insertIdx = firstNonBasemapLayer ? filteredLayers.indexOf(firstNonBasemapLayer) : filteredLayers.length;
-        filteredLayers.splice(insertIdx, 0, bgLayer);
-      }
-
-      next.layers = filteredLayers;
-      next.sources = sources;
-      changedPaths = 3;
-      break;
-    }
-    case "reset": {
-      // Return a fresh initial spec (same as /api/state)
-      return applyAction(cloneSpec(spec), {
-        action: "setBasemap",
-        layerId: "none",
-      } as ProviderOutput);
-    }
-    case "unsupported": {
-      return {
-        nextSpec: next,
-        changedPaths: 0,
-        status: "blocked",
-        diagnostics: [
-          {
-            code: "STUDIO.MAPLIBRE_CAPABILITY_UNSUPPORTED",
-            severity: "error",
-            path: "/providerOutput/action",
-            message:
-              output.message ||
-              "The requested MapLibre capability is known, but Studio does not have a safe command contract for it yet.",
-          },
-        ],
-      };
-    }
-    default:
-      break;
-  }
-
-  if (changedPaths === 0) {
-    return { nextSpec: next, changedPaths: 0, status: "ready", diagnostics };
-  }
-
-  next = bumpRevision(next);
-  return { nextSpec: next, changedPaths, status: "applied", diagnostics };
+  const result = applyProviderOutput(spec, output);
+  const changedPaths =
+    typeof result.evidence.changedPathCount === "number" ? (result.evidence.changedPathCount as number) : 0;
+  return {
+    nextSpec: result.nextSpec,
+    changedPaths,
+    status: result.status,
+    diagnostics: result.diagnostics,
+    evidence: result.evidence,
+  };
 }
 
 // ── Mock AI: keyword-based intent parsing ──────────────────────────────────
@@ -349,7 +163,7 @@ function zoomRangeFromPrompt(msg: string): { minzoom: number; maxzoom: number } 
 function boundsForPointsSource(spec: Record<string, unknown>): [number, number, number, number] | null {
   const sources = spec.sources as Record<string, unknown>;
   const pointsSource = sources?.points as Record<string, unknown> | undefined;
-  if (!pointsSource || pointsSource.type !== "geojson") return null;
+  if (pointsSource?.type !== "geojson") return null;
   const data = pointsSource.data as Record<string, unknown>;
   if (!data || typeof data === "string") return null;
 
@@ -566,13 +380,10 @@ function parseLLMJsonResponse(content: string): ProviderOutput | null {
 }
 
 async function callDeepSeek(
-  apiKey: string,
+  provider: Extract<DeepSeekProviderProfile, { ok: true }>,
   spec: Record<string, unknown>,
   message: string,
 ): Promise<{ ok: true; output: ProviderOutput } | { ok: false; error: string }> {
-  const baseUrl = (env.DEEPSEEK_BASE_URL ?? "").trim() || "https://api.deepseek.com";
-  const model = (env.DEEPSEEK_MODEL ?? "").trim() || "deepseek-v4-flash";
-
   const layers = (spec.layers ?? []) as Array<Record<string, unknown>>;
   const summary: Record<string, unknown> = {
     sources: Object.keys((spec.sources ?? {}) as Record<string, unknown>),
@@ -595,14 +406,14 @@ async function callDeepSeek(
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30_000);
     try {
-      const response = await fetch(`${baseUrl.replace(/\/+$/, "")}/chat/completions`, {
+      const response = await fetch(`${provider.baseUrl.replace(/\/+$/, "")}/chat/completions`, {
         method: "POST",
         headers: {
-          authorization: `Bearer ${apiKey}`,
+          authorization: `Bearer ${provider.apiKey}`,
           "content-type": "application/json",
         },
         body: JSON.stringify({
-          model,
+          model: provider.model,
           temperature: 0,
           messages: [
             { role: "system", content: systemPrompt },
@@ -649,12 +460,40 @@ export default async function handler(req: Request): Promise<Response> {
     return Response.json({ error: "Method not allowed" }, { status: 405 });
   }
 
+  if (isBodyTooLarge(req)) {
+    return Response.json(
+      {
+        status: "blocked",
+        diagnostics: [
+          {
+            code: "INPUT.BODY_TOO_LARGE",
+            severity: "error",
+            path: "/",
+            message: "Request body exceeds the serverless chat size limit.",
+          },
+        ],
+      },
+      { status: 413 },
+    );
+  }
+
   let body: ChatBody;
   try {
     body = (await req.json()) as ChatBody;
   } catch {
     return stateResponse("blocked", {}, [
       { code: "INPUT.PARSE_ERROR", severity: "error", message: "Invalid JSON body" },
+    ]);
+  }
+  if (!validateChatBody(body)) {
+    return stateResponse("blocked", {}, [
+      {
+        code: "INPUT.SCHEMA_INVALID",
+        severity: "error",
+        path: "/",
+        message: "Chat request body does not match the serverless chat schema.",
+        errors: validateChatBody.errors,
+      },
     ]);
   }
 
@@ -678,19 +517,19 @@ export default async function handler(req: Request): Promise<Response> {
 
   // ── DeepSeek provider ──────────────────────────────────────────────────
   if (providerId === "deepseek") {
-    const apiKey = (env.DEEPSEEK_API_KEY ?? "").trim();
-    if (!apiKey) {
-      return stateResponse("ready", safeSpec, [
+    const provider = resolveDeepSeekProvider(env);
+    if (!provider.ok) {
+      return stateResponse(provider.code === "PROVIDER.UNAVAILABLE" ? "ready" : "blocked", safeSpec, [
         {
-          code: "PROVIDER.UNAVAILABLE",
+          code: provider.code,
           severity: "error",
           path: "/providerProfile",
-          message: "DeepSeek API key not configured. Set DEEPSEEK_API_KEY.",
+          message: provider.message,
         },
       ]);
     }
 
-    const result = await callDeepSeek(apiKey, safeSpec, message);
+    const result = await callDeepSeek(provider, safeSpec, message);
     if (!result.ok) {
       return stateResponse(
         "blocked",
@@ -702,49 +541,28 @@ export default async function handler(req: Request): Promise<Response> {
     }
 
     const applied = applyAction(safeSpec, result.output);
-    return stateResponse(
-      applied.status,
-      applied.nextSpec,
-      applied.diagnostics,
-      {
-        commandCount: applied.changedPaths,
-        committed: applied.status === "applied",
-        rolledBack: false,
-        failed: false,
-        changedPathCount: applied.changedPaths,
-      },
-      {
-        providerId: "deepseek",
-        confidence: result.output.confidence,
-      },
-    );
+    return stateResponse(applied.status, applied.nextSpec, applied.diagnostics, applied.evidence, {
+      providerId: "deepseek",
+      confidence: result.output.confidence,
+    });
   }
 
   // ── Mock AI provider (default) ─────────────────────────────────────────
   const intent = parseMockIntent(message, safeSpec);
 
   if (intent.action === "noop") {
-    return stateResponse(
-      "ready",
-      safeSpec,
-      [],
-      { commandCount: 0, committed: false, rolledBack: false, failed: false, changedPathCount: 0 },
-      { providerId: "mock-ai" },
-    );
+    return stateResponse("ready", safeSpec, [], emptyCommandEvidence(), { providerId: "mock-ai" });
   }
 
   const applied = applyAction(safeSpec, intent);
-  return stateResponse(
-    applied.status,
-    applied.nextSpec,
-    applied.diagnostics,
-    {
-      commandCount: applied.changedPaths,
-      committed: applied.status === "applied",
-      rolledBack: false,
-      failed: false,
-      changedPathCount: applied.changedPaths,
-    },
-    { providerId: "mock-ai" },
-  );
+  return stateResponse(applied.status, applied.nextSpec, applied.diagnostics, applied.evidence, {
+    providerId: "mock-ai",
+  });
+}
+
+function isBodyTooLarge(req: Request): boolean {
+  const limit = Number.parseInt(env.GIS_ENGINE_CHAT_BODY_LIMIT_BYTES ?? "65536", 10);
+  const maxBytes = Number.isSafeInteger(limit) && limit > 0 ? limit : 65536;
+  const contentLength = Number.parseInt(req.headers.get("content-length") ?? "", 10);
+  return Number.isFinite(contentLength) && contentLength > maxBytes;
 }

@@ -121,9 +121,16 @@ jobs:
           merge-multiple: true
         continue-on-error: true
 
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11.9.0
+
       - uses: actions/setup-node@v6
         with:
           node-version: "22"
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile
 
       - name: Refresh health dashboard and retention window
         env:
@@ -132,6 +139,12 @@ jobs:
           DATE="${DATE_OVERRIDE:-$(date -u +%Y-%m-%d)}"
           node scripts/dashboard-generator.mjs --period "${DATE}"
           node scripts/report-retention.mjs --apply
+
+      - name: Gate generated daily artifacts
+        run: |
+          git diff --check
+          pnpm test:agent-framework
+          node scripts/doc-generator.mjs links
 
       - name: Commit daily artifacts
         uses: stefanzweifel/git-auto-commit-action@v7

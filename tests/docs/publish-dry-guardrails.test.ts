@@ -67,4 +67,17 @@ describe("publish dry-run guardrails", () => {
     expect(publishScript).toContain('tag: "next"');
     expect(publishScript).not.toContain("@gis-engine/scene3d-three-adapter");
   });
+
+  it("keeps legacy NPM Publish workflow delegated to the GA publish script and shared token fallback", () => {
+    const legacyWorkflow = readText(".github/workflows/npm-publish.yml");
+
+    expect(legacyWorkflow).toContain("run: pnpm release:publish");
+    expect(legacyWorkflow).toContain(`GIS_ENGINE_ALL: ${githubExpression("secrets.GIS_ENGINE_ALL")}`);
+    expect(legacyWorkflow).toContain(`NPM_TOKEN: ${githubExpression("secrets.NPM_TOKEN")}`);
+    expect(legacyWorkflow).toContain(
+      `NODE_AUTH_TOKEN: ${githubExpression("secrets.GIS_ENGINE_ALL || secrets.NPM_TOKEN")}`,
+    );
+    expect(legacyWorkflow).not.toContain("pnpm publish --no-git-checks");
+    expect(legacyWorkflow).not.toContain("npm version");
+  });
 });

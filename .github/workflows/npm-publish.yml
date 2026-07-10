@@ -1,14 +1,12 @@
 # NPM Publish — 发布 SDK 到 npm registry
 #
 # 触发：
-#   - 手动触发（workflow_dispatch，选择版本 bump 类型）
+#   - 手动触发（workflow_dispatch）
 #   - Release tag push (v*)
 #
 # 发布策略：
-#   - engine、ai、cli、scene3d 同步 v1.0（linked group）
-#   - scene3d 使用 --tag next（experimental，不覆盖 latest）
-#   - engine、ai、cli 使用 --tag latest
-#   - scene3d-three-adapter 不进 GA publish workflow（独立 0.x 版本）
+#   - 委托给 scripts/publish-ga-packages.mjs，避免 legacy workflow 绕过 GA 发布 guardrail
+#   - engine、ai、cli 使用 latest；scene3d 使用 next；scene3d-three-adapter 不进 GA publish workflow
 
 name: NPM Publish
 
@@ -17,21 +15,6 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
-    inputs:
-      bump:
-        description: "版本升级类型"
-        required: true
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
-          - prerelease
-      prerelease_id:
-        description: "预发布标识 (alpha/beta/rc)"
-        required: false
-        type: string
-        default: "alpha"
 
 permissions:
   contents: write
@@ -74,46 +57,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
 
-      - name: 版本升级（手动触发）
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          BUMP="${{ github.event.inputs.bump }}"
-          PREID="${{ github.event.inputs.prerelease_id }}"
-
-          cd packages/engine && npm version "$BUMP" --preid="$PREID" --no-git-tag-version
-          cd ../ai && npm version "$BUMP" --preid="$PREID" --no-git-tag-version
-          cd ../scene3d && npm version "$BUMP" --preid="$PREID" --no-git-tag-version
-          cd ../cli && npm version "$BUMP" --preid="$PREID" --no-git-tag-version
-
-          echo "📦 版本升级完成"
-
-      # 发布顺序: engine -> scene3d -> ai -> cli
-      # scene3d 在 ai 之前因为 ai 依赖 scene3d
-
-      - name: 发布 @gis-engine/engine
-        run: cd packages/engine && pnpm publish --no-git-checks --provenance
+      - name: Publish GA packages to npm
+        run: pnpm release:publish
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: "发布 @gis-engine/scene3d (tag: next)"
-        run: cd packages/scene3d && pnpm publish --no-git-checks --provenance --tag next
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: 发布 @gis-engine/ai
-        run: cd packages/ai && pnpm publish --no-git-checks --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: 发布 @gis-engine/cli
-        run: cd packages/cli && pnpm publish --no-git-checks --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: 提交版本号变更
-        if: github.event_name == 'workflow_dispatch'
-        uses: stefanzweifel/git-auto-commit-action@v7
-        with:
-          commit_message: "chore: bump versions after npm publish"
-          commit_user_name: "publish[bot]"
-          commit_user_email: "publish[bot]@gis-engine.dev"
+          GIS_ENGINE_ALL: ${{ secrets.GIS_ENGINE_ALL }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GIS_ENGINE_ALL || secrets.NPM_TOKEN }}

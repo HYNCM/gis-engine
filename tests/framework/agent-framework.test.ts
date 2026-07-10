@@ -67,6 +67,21 @@ describe("agent coordination framework", () => {
     expect(workflow).not.toContain('file_pattern: "docs/planning/monthly-roadmap.md');
   });
 
+  it("gates generated daily artifacts before the orchestrator bot commits them", () => {
+    const workflow = readFileSync(".github/workflows/agent-daily.yml", "utf8");
+    const refreshIndex = workflow.indexOf("Refresh health dashboard and retention window");
+    const gateIndex = workflow.indexOf("Gate generated daily artifacts");
+    const commitIndex = workflow.indexOf("Commit daily artifacts");
+
+    expect(refreshIndex).toBeGreaterThan(-1);
+    expect(gateIndex).toBeGreaterThan(refreshIndex);
+    expect(commitIndex).toBeGreaterThan(gateIndex);
+    expect(workflow).toContain("pnpm install --frozen-lockfile");
+    expect(workflow).toContain("git diff --check");
+    expect(workflow).toContain("pnpm test:agent-framework");
+    expect(workflow).toContain("node scripts/doc-generator.mjs links");
+  });
+
   it("fails closed on malformed task ids and keeps valid ids in sync", () => {
     const valid = validatePlanningConsistency(
       "| TASK-2026W24-RCU-001 | item |\n| TASK-2026W24-PRD-001 | item |\n",
