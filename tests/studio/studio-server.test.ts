@@ -6,12 +6,15 @@ import {
   applyProviderCommands,
   buildBasemapCommands,
   buildProviders,
+  buildSavedMapDeletionReceipt,
   buildSavedMapHandoff,
   buildSavedMapReviewExport,
   buildSavedMapReviewLedger,
+  buildWorkbenchProductRouteStatus,
   createInitialSpec,
   detectBasemapFromSpec,
   parseMapRoute,
+  parseWorkbenchProductRoute,
   publicBasemapOptions,
   publicProviderProfiles,
   savedWorkspaceHandoffStatus,
@@ -259,6 +262,61 @@ describe("AI Map Studio server state", () => {
       action: "load",
       mapId: "demo-map",
     });
+  });
+
+  it("parses and gates the Workbench product route without exposing provider endpoints", () => {
+    expect(parseWorkbenchProductRoute("/api/review-console/workbench/project_studio/status")).toEqual({
+      action: "status",
+      projectId: "project_studio",
+    });
+    expect(parseWorkbenchProductRoute("/review-console/workbench/project_studio")).toEqual({
+      action: "shell",
+      projectId: "project_studio",
+    });
+
+    const status = buildWorkbenchProductRouteStatus({
+      projectId: "project_studio",
+      activeProjectId: "project_studio",
+      env: {
+        STUDIO_WORKBENCH_PRODUCT_ROUTE: "1",
+        DEEPSEEK_API_KEY: "sk-secret-provider-key",
+        DEEPSEEK_BASE_URL: "https://secret-provider.example",
+        DEEPSEEK_MODEL: "deepseek-test-model",
+      },
+    });
+
+    expect(status).toMatchObject({
+      routeVersion: "studio.workbench-product-route.v1",
+      concreteRoute: "/review-console/workbench/project_studio",
+      enabled: true,
+      access: "allowed",
+      productReadiness: "candidate",
+      hostedGa: false,
+      contracts: {
+        auditRecordVersion: "amw.audit.v1",
+        reviewDecisionVersion: "amw.review.v1",
+        rawPayloadPolicy: "rejected",
+        mapMutationPolicy: "MapCommand/applyCommands only",
+      },
+    });
+    const serialized = JSON.stringify(status);
+    expect(serialized).not.toContain("sk-secret-provider-key");
+    expect(serialized).not.toContain("secret-provider.example");
+    expect(serialized).not.toContain("baseUrl");
+
+    const disabled = buildWorkbenchProductRouteStatus({
+      projectId: "project_studio",
+      activeProjectId: "project_studio",
+      env: {},
+    });
+    expect(disabled).toMatchObject({ enabled: false, productReadiness: "disabled" });
+
+    const denied = buildWorkbenchProductRouteStatus({
+      projectId: "project_other",
+      activeProjectId: "project_studio",
+      env: { STUDIO_WORKBENCH_PRODUCT_ROUTE: "1" },
+    });
+    expect(denied).toMatchObject({ enabled: true, access: "denied", productReadiness: "disabled" });
   });
 
   it("detects the active basemap from saved Studio specs", () => {
@@ -602,6 +660,11 @@ describe("AI Map Studio server state", () => {
         kind: "all",
         status: "all",
       },
+      contract: {
+        auditRecordVersion: "amw.audit.v1",
+        reviewDecisionVersion: "amw.review.v1",
+        rawPayloadPolicy: "rejected",
+      },
       summary: {
         totalEventCount: 3,
         matchingEventCount: 3,
@@ -627,6 +690,43 @@ describe("AI Map Studio server state", () => {
         }),
       ],
     });
+  });
+
+  it("builds compact deletion receipts for saved map review data", () => {
+    const receipt = buildSavedMapDeletionReceipt(
+      {
+        id: "map-1",
+        auditRecords: [
+          {
+            id: "studio.test.1",
+            status: "applied",
+          },
+        ],
+        reviewDecisions: [
+          {
+            decisionId: "review-1",
+            outcome: "accepted",
+          },
+        ],
+      },
+      {
+        projectId: "project_studio",
+        deletedAt: "2026-06-03T00:05:00Z",
+        actorId: "studio-admin",
+        reasonCode: "map-delete",
+      },
+    );
+
+    expect(receipt).toMatchObject({
+      deletionReceiptVersion: "amw.audit.deletion.v1",
+      projectId: "project_studio",
+      deletedAt: "2026-06-03T00:05:00Z",
+      actorId: "studio-admin",
+      reasonCode: "map-delete",
+      filterSummary: { recordId: "map-1" },
+      deletedCount: 2,
+    });
+    expect(JSON.stringify(receipt)).not.toMatch(/rawPrompt|providerRawBody|apiKey|mapSpec|commandBody|patch/i);
   });
 
   it("filters Studio local review export timelines by kind and status", () => {
@@ -901,7 +1001,7 @@ describe("AI Map Studio server state", () => {
 
     expect(records).toHaveLength(1);
     expect(record).toMatchObject({
-      recordVersion: "studio.audit.v1",
+      recordVersion: "amw.audit.v1",
       status: "applied",
       providerId: "mock-ai",
       commandCount: 1,
@@ -937,7 +1037,7 @@ describe("AI Map Studio server state", () => {
     expect(review.ok).toBe(true);
     if (!review.ok) throw new Error("Expected review decision to be accepted.");
     expect(review.decision).toMatchObject({
-      recordVersion: "studio.review.v1",
+      recordVersion: "amw.review.v1",
       outcome: "accepted",
       auditRecordId: auditRecord.id,
       providerId: "mock-ai",
@@ -972,7 +1072,7 @@ describe("AI Map Studio server state", () => {
     expect(review.ok).toBe(false);
     expect(review.diagnostics).toContainEqual(
       expect.objectContaining({
-        code: "STUDIO.REVIEW_CONTRACT_VIOLATION",
+        code: "REVIEW.CONTRACT_VIOLATION",
         path: "/reviewAction/reasons",
       }),
     );
@@ -1005,7 +1105,7 @@ describe("AI Map Studio server state", () => {
     expect(review.ok).toBe(true);
     if (!review.ok) throw new Error("Expected review decision to be accepted.");
     expect(review.decision).toMatchObject({
-      recordVersion: "studio.review.v1",
+      recordVersion: "amw.review.v1",
       outcome: "follow-up-required",
       reasonCodes: ["delivery-needs-confirmation", "audit-retention-follow-up"],
       followUpTaskIds: ["TASK-2026W23-SER-001"],
@@ -1041,7 +1141,7 @@ describe("AI Map Studio server state", () => {
     expect(review.ok).toBe(false);
     expect(review.diagnostics).toContainEqual(
       expect.objectContaining({
-        code: "STUDIO.REVIEW_CONTRACT_VIOLATION",
+        code: "REVIEW.CONTRACT_VIOLATION",
         path: "/reviewAction/commandSafety",
       }),
     );

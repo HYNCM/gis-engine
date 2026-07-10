@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-07-10T01:22:19.169Z",
-  "repo_revision": "8ad1a6d",
+  "generated_at": "2026-07-10T16:08:32.494Z",
+  "repo_revision": "70399d7",
   "source": "scripts/handoff-ledger.mjs",
   "flows": [
     {
@@ -19,8 +19,8 @@
       },
       "downstream": {
         "path": "docs/planning/weekly-digest.md",
-        "generated_at": "2026-07-06T15:48:06.000Z",
-        "sha256": "af7d8a30ffa838860d6f1bfa32df06f09d8bf6215fdb87fb1946938995091825"
+        "generated_at": "2026-07-10T16:08:08.000Z",
+        "sha256": "237b8f0deee0c7d8ac7a679792c3630c719cda94a9d53576416e0fddee2aa48d"
       }
     },
     {
@@ -34,9 +34,9 @@
       "note": "builder is ad-hoc and has no active handoff",
       "upstream": null,
       "downstream": {
-        "path": "docs/reviews/quality-gate-2026-07-06.md",
-        "generated_at": "2026-07-06T15:47:19.000Z",
-        "sha256": "f78b8c4d159b595f8ba983964ad6de20e16edd56597159d6e1fb8c310a945571"
+        "path": "docs/reviews/quality-gate-workbench-product-route-2026-07-10.md",
+        "generated_at": "2026-07-10T16:06:04.000Z",
+        "sha256": "4bc099d2400323aab82472fed112b61c09296869b12f9d6cc52444e1407c18c0"
       }
     },
     {
@@ -47,16 +47,16 @@
       "required": true,
       "status": "consumed",
       "severity": "info",
-      "note": "orchestrator report cites docs/reviews/quality-gate-2026-07-06.md",
+      "note": "orchestrator report cites docs/reviews/quality-gate-workbench-product-route-2026-07-10.md",
       "upstream": {
-        "path": "docs/reviews/quality-gate-2026-07-06.md",
-        "generated_at": "2026-07-06T15:47:19.000Z",
-        "sha256": "f78b8c4d159b595f8ba983964ad6de20e16edd56597159d6e1fb8c310a945571"
+        "path": "docs/reviews/quality-gate-workbench-product-route-2026-07-10.md",
+        "generated_at": "2026-07-10T16:06:04.000Z",
+        "sha256": "4bc099d2400323aab82472fed112b61c09296869b12f9d6cc52444e1407c18c0"
       },
       "downstream": {
         "path": "docs/planning/weekly-digest.md",
-        "generated_at": "2026-07-06T15:48:06.000Z",
-        "sha256": "af7d8a30ffa838860d6f1bfa32df06f09d8bf6215fdb87fb1946938995091825"
+        "generated_at": "2026-07-10T16:08:08.000Z",
+        "sha256": "237b8f0deee0c7d8ac7a679792c3630c719cda94a9d53576416e0fddee2aa48d"
       }
     }
   ]
