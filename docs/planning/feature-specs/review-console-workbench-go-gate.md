@@ -22,7 +22,7 @@ GitHub issue
 [#25](https://github.com/HYNCM/gis-engine/issues/25) was the P0
 productization gate for moving AI Map Workbench from local/reference evidence
 toward a product-owned review-console candidate route. It is closed after PR
-#26 reached green remote CI on head `511a1c9288d14147edeeefb86e48139fce116ae5`.
+#26 reached green remote CI.
 
 This spec does not approve hosted GA. It defines the evidence package required
 for @quality to issue a Go/No-go decision after implementation evidence lands.
@@ -106,10 +106,4 @@ monitoring, and support policy remain outside #25.
 Remote evidence:
 
 - PR: [#26](https://github.com/HYNCM/gis-engine/pull/26).
-- CI: [29106929309](https://github.com/HYNCM/gis-engine/actions/runs/29106929309).
-- PR Quality Check:
-  [29106929357](https://github.com/HYNCM/gis-engine/actions/runs/29106929357).
-- CI Auto-Fix Pipeline:
-  [29106929319](https://github.com/HYNCM/gis-engine/actions/runs/29106929319).
-- Bundle Size:
-  [29106929328](https://github.com/HYNCM/gis-engine/actions/runs/29106929328).
+- Current PR checks are the canonical remote CI evidence for the latest head.
