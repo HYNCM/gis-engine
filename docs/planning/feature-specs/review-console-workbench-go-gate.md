@@ -1,8 +1,8 @@
 ---
 agent: orchestrator
 period: 2026-W28
-generated_at: 2026-07-10T15:59:29Z
-repo_revision: "70399d7b5ba956b7f714d007ebe871e4fd9024e0"
+generated_at: 2026-07-10T16:23:47Z
+repo_revision: "511a1c9288d14147edeeefb86e48139fce116ae5"
 inputs:
   - https://github.com/HYNCM/gis-engine/issues/25
   - docs/planning/feature-specs/ai-map-workbench-promotion-scope.md
@@ -19,9 +19,10 @@ decision_level: blocking
 ## Decision Target
 
 GitHub issue
-[#25](https://github.com/HYNCM/gis-engine/issues/25) is the active P0
+[#25](https://github.com/HYNCM/gis-engine/issues/25) was the P0
 productization gate for moving AI Map Workbench from local/reference evidence
-toward a product-owned review-console candidate route.
+toward a product-owned review-console candidate route. It is closed after PR
+#26 reached green remote CI on head `511a1c9288d14147edeeefb86e48139fce116ae5`.
 
 This spec does not approve hosted GA. It defines the evidence package required
 for @quality to issue a Go/No-go decision after implementation evidence lands.
@@ -41,7 +42,7 @@ for @quality to issue a Go/No-go decision after implementation evidence lands.
 
 | Task | Status | Acceptance |
 | --- | --- | --- |
-| 1. Go gate issue/spec | In progress | #25 exists; this spec records route, owners, non-goals, and quality gate |
+| 1. Go gate issue/spec | Complete | #25 exists; this spec records route, owners, non-goals, and quality gate |
 | 2. Shared audit/review contract | Implemented | Studio and Workbench consume `@gis-engine/ai` shared `amw.audit.v1` / `amw.review.v1` contract |
 | 3. Feature-flagged route evidence | Implemented | Status API exposes route state and safe provider profiles; shell route stays disabled by default |
 | 4. Export/deletion evidence | Implemented | Review export advertises contract caps; saved map delete returns compact deletion receipt |
@@ -101,3 +102,14 @@ Evidence:
 
 It is still **No-go for hosted GA** because production auth, deployment,
 monitoring, and support policy remain outside #25.
+
+Remote evidence:
+
+- PR: [#26](https://github.com/HYNCM/gis-engine/pull/26).
+- CI: [29106929309](https://github.com/HYNCM/gis-engine/actions/runs/29106929309).
+- PR Quality Check:
+  [29106929357](https://github.com/HYNCM/gis-engine/actions/runs/29106929357).
+- CI Auto-Fix Pipeline:
+  [29106929319](https://github.com/HYNCM/gis-engine/actions/runs/29106929319).
+- Bundle Size:
+  [29106929328](https://github.com/HYNCM/gis-engine/actions/runs/29106929328).

@@ -63,14 +63,14 @@ Every row is blocking for any future hosted/product movement.
 - Do not claim hosted/product readiness in README, roadmap, release notes, or
   examples before @quality accepts a future Go issue.
 
-## Active Go Issue
+## Closed Go Issue
 
-Active P0 gate:
+Closed P0 gate:
 
 `TASK-2026W28-STUDIO-001: Review-console Workbench product route Go gate`
 ([#25](https://github.com/HYNCM/gis-engine/issues/25)).
 
-It may move only a feature-flagged review-console candidate route and compact
+It moved only a feature-flagged review-console candidate route and compact
 audit/review evidence forward. Hosted GA, production auth, deployment,
-monitoring, and support policy remain No-go until #25 receives a @quality
-decision and a separate launch issue approves those production responsibilities.
+monitoring, and support policy remain No-go until a separate launch issue
+approves those production responsibilities.

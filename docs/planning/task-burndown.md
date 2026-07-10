@@ -1,8 +1,8 @@
 ---
 agent: orchestrator
 period: current
-generated_at: 2026-07-10T15:59:29Z
-repo_revision: "70399d7"
+generated_at: 2026-07-10T16:23:47Z
+repo_revision: "511a1c9"
 inputs:
   - docs/planning/active-execution-queue-2026-06-09.md
   - docs/planning/issues-snapshot.md
@@ -26,8 +26,8 @@ are the current execution state. The former full burndown was archived to
 
 | Area | Status | Entry Point |
 | --- | --- | --- |
-| Open task queue | One open P0 GitHub Issue: #25 Review-console Workbench product route Go gate | [issues-snapshot.md](./issues-snapshot.md) |
-| Productization queue | Active on #25: shared audit/review contract, feature-flagged route evidence, export/deletion evidence, and @quality Go/No-go | [Workbench Go gate](./feature-specs/review-console-workbench-go-gate.md) |
+| Open task queue | No open GitHub Issues after #25 closure | [issues-snapshot.md](./issues-snapshot.md) |
+| Productization queue | #25 completed: shared audit/review contract, feature-flagged route evidence, export/deletion evidence, and @quality Go/No-go | [Workbench Go gate](./feature-specs/review-console-workbench-go-gate.md) |
 | v1.1.0 release | **Completed** — 19 changesets consumed, tag `v1.1.0` on commit `6f1e867` | [issues-snapshot.md](./issues-snapshot.md) |
 | v1.5.0 first-run acceptance | **Completed** — strict Node 22 / pnpm 11.9 path passed in 30.6s | [first-run acceptance](../reviews/first-run-acceptance-2026-07-06.md) |
 | Boundary matrix (#22) | **Completed** — generated from one structured source and guarded by docs regression | [matrix source](../architecture/core-extension-boundary-matrix.json) |
