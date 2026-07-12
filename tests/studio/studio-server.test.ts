@@ -995,6 +995,16 @@ describe("AI Map Studio server state", () => {
       traceId: "trace-studio-test",
       commandCount: 1,
       diagnostics: [],
+      deliveryStatus: "ready",
+      sourceReadiness: [
+        {
+          sourceId: "points",
+          type: "geojson",
+          state: "supported",
+          queryReady: true,
+          resourcePolicy: "passed",
+        },
+      ],
       fromRevision: "1",
       toRevision: "2",
     });
@@ -1021,6 +1031,16 @@ describe("AI Map Studio server state", () => {
       traceId: "trace-studio-test",
       commandCount: 1,
       diagnostics: [],
+      deliveryStatus: "ready",
+      sourceReadiness: [
+        {
+          sourceId: "points",
+          type: "geojson",
+          state: "supported",
+          queryReady: true,
+          resourcePolicy: "passed",
+        },
+      ],
       fromRevision: "1",
       toRevision: "2",
     });
@@ -1041,9 +1061,39 @@ describe("AI Map Studio server state", () => {
       outcome: "accepted",
       auditRecordId: auditRecord.id,
       providerId: "mock-ai",
+      deliveryStatus: "ready",
       commandEvidence: expect.objectContaining({ commandCount: 1, committed: true }),
     });
     expect(JSON.stringify(review.decision)).not.toMatch(/MapSpec|commandBody|patch|rawPrompt|West Lake/i);
+  });
+
+  it("rejects accepted Studio review decisions without real delivery readiness evidence", () => {
+    const auditRecord = appendAuditRecord([], {
+      sessionId: "studio.test",
+      status: "applied",
+      providerId: "mock-ai",
+      commandCount: 1,
+      diagnostics: [],
+      fromRevision: "1",
+      toRevision: "2",
+    });
+
+    const review = createReviewDecision({
+      request: { outcome: "accepted", reasonCodes: ["review-accepted"] },
+      evidence: auditRecord,
+      principal: { role: "reviewer", projectIds: ["project_studio"] },
+      projectId: "project_studio",
+      decisionId: "review-1",
+      createdAt: "2026-06-03T00:00:00Z",
+    });
+
+    expect(review.ok).toBe(false);
+    expect(review.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: "REVIEW.CONTRACT_VIOLATION",
+        path: "/reviewAction/evidence",
+      }),
+    );
   });
 
   it("rejects accepted review decisions with extra reason codes", () => {

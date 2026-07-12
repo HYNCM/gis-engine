@@ -1604,6 +1604,7 @@ function collectGeoJsonPropertyKeys(source) {
 }
 
 function appendStudioAudit(input) {
+  const deliveryStatus = studioDeliveryStatus(input.status, input.diagnostics ?? []);
   return appendAuditRecord(auditRecords, {
     sessionId,
     providerId: input.providerId,
@@ -1612,9 +1613,52 @@ function appendStudioAudit(input) {
     traceId: input.traceId,
     commandCount: input.commandEvidence?.commandCount ?? 0,
     diagnostics: input.diagnostics ?? [],
+    deliveryStatus,
+    sourceReadiness: studioSourceReadiness(input.spec ?? activeSpec, deliveryStatus),
     fromRevision: input.fromRevision,
     toRevision: input.toRevision,
   });
+}
+
+function studioDeliveryStatus(status, diagnostics) {
+  const hasError = Array.isArray(diagnostics) && diagnostics.some((diagnostic) => diagnostic?.severity === "error");
+  if (hasError || status === "blocked" || status === "unsupported") return "blocked";
+  return "ready";
+}
+
+function studioSourceReadiness(spec, deliveryStatus) {
+  const sources = Object.entries(spec?.sources || {});
+  if (deliveryStatus !== "ready") {
+    return [
+      {
+        sourceId: "studio-active-map",
+        type: "unknown",
+        state: "blocked",
+        queryReady: false,
+        resourcePolicy: "passed",
+      },
+    ];
+  }
+  return sources.map(([sourceId, source]) => {
+    const type = safeEvidenceToken(source?.type, "unknown");
+    const inlineGeoJson = source?.type === "geojson" && typeof source.data !== "string";
+    const proxyRaster =
+      source?.type === "raster" &&
+      Array.isArray(source.tiles) &&
+      source.tiles.every((tile) => typeof tile === "string" && tile.startsWith(`${TILE_PROXY_PREFIX}/`));
+    const supported = inlineGeoJson || proxyRaster;
+    return {
+      sourceId: safeEvidenceToken(sourceId, "source"),
+      type,
+      state: supported ? "supported" : "unsupported",
+      queryReady: inlineGeoJson,
+      resourcePolicy: supported ? "passed" : "blocked",
+    };
+  });
+}
+
+function safeEvidenceToken(value, fallback) {
+  return typeof value === "string" && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/.test(value) ? value : fallback;
 }
 
 function normalizeProjectId(value) {

@@ -23,22 +23,8 @@ export function createReviewDecision(input) {
 
 function normalizeStudioEvidence(evidence) {
   if (!evidence || typeof evidence !== "object") return evidence;
-  const blocked = evidence.status === "blocked" || evidence.status === "unsupported";
   return {
     ...evidence,
     id: evidence.id ?? evidence.recordId,
-    deliveryStatus: blocked ? "blocked" : "ready",
-    delivery: {
-      status: blocked ? "blocked" : "ready",
-      sourceReadiness: [
-        {
-          sourceId: "studio-active-map",
-          type: "geojson",
-          state: blocked ? "blocked" : "supported",
-          queryReady: !blocked,
-          resourcePolicy: "passed",
-        },
-      ],
-    },
   };
 }

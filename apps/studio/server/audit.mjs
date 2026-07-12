@@ -18,6 +18,8 @@ export function appendAuditRecord(records, input) {
     commandCount: nonNegativeInteger(input.commandCount),
     diagnosticCounts: countDiagnostics(input.diagnostics ?? []),
     diagnosticCodes: compactDiagnosticCodes(input.diagnostics ?? []),
+    deliveryStatus: input.deliveryStatus,
+    sourceReadiness: input.sourceReadiness,
     fromRevision: input.fromRevision,
     toRevision: input.toRevision,
   });

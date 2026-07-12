@@ -109,6 +109,14 @@ export interface WorkbenchDiagnosticCounts {
   info?: number | undefined;
 }
 
+export interface WorkbenchSourceReadiness {
+  sourceId: string;
+  type: string;
+  state: "supported" | "blocked" | "unsupported";
+  queryReady: boolean;
+  resourcePolicy: string;
+}
+
 export interface WorkbenchAuditRecordInput {
   projectId?: string | undefined;
   sessionId?: string | undefined;
@@ -122,6 +130,8 @@ export interface WorkbenchAuditRecordInput {
   diagnosticCounts?: WorkbenchDiagnosticCounts | undefined;
   diagnosticCodes?: WorkbenchDiagnosticCode[] | undefined;
   diagnostics?: WorkbenchDiagnosticCode[] | undefined;
+  deliveryStatus?: string | undefined;
+  sourceReadiness?: unknown[] | undefined;
   fromRevision?: string | undefined;
   toRevision?: string | undefined;
   reviewOutcome?:
@@ -149,6 +159,8 @@ export interface WorkbenchAuditRecord {
   promptHash?: string;
   traceId?: string;
   diagnosticCodes?: Required<WorkbenchDiagnosticCode>[];
+  deliveryStatus?: string;
+  sourceReadiness?: WorkbenchSourceReadiness[];
   fromRevision: string;
   toRevision: string;
   reviewOutcome?: {
@@ -259,6 +271,8 @@ export function createDurableAuditRecord(
     surface: "audit",
   });
   if (!diagnosticCodes.ok) return diagnosticCodes;
+  const sourceReadiness = normalizeSourceReadiness(input.sourceReadiness);
+  if (!sourceReadiness.ok) return sourceReadiness;
 
   const record = removeUndefined({
     recordVersion: AUDIT_RECORD_VERSION,
@@ -275,6 +289,8 @@ export function createDurableAuditRecord(
     commandCount,
     diagnosticCounts: normalizeDiagnosticCounts(input.diagnosticCounts),
     diagnosticCodes: diagnosticCodes.value.length > 0 ? diagnosticCodes.value : undefined,
+    deliveryStatus: normalizeDeliveryStatus(input.deliveryStatus),
+    sourceReadiness: sourceReadiness.value.length > 0 ? sourceReadiness.value : undefined,
     fromRevision: safeRevision(input.fromRevision),
     toRevision: safeRevision(input.toRevision),
     reviewOutcome: normalizeReviewOutcome(input.reviewOutcome),
@@ -421,6 +437,7 @@ export function createReviewDecision(
   const diagnosticCodes = normalizeDiagnosticCodes(evidence.diagnosticCodes ?? []);
   if (!diagnosticCodes.ok) return diagnosticCodes;
 
+  const deliveryStatus = evidence.deliveryStatus ?? evidence.delivery?.status ?? evidence.status;
   const decision = removeUndefined({
     recordVersion: REVIEW_DECISION_VERSION,
     decisionId: input.decisionId,
@@ -432,7 +449,7 @@ export function createReviewDecision(
     providerId: evidence.providerId,
     promptHash: validPromptHash(evidence.promptHash) ? evidence.promptHash : undefined,
     traceId: isSafeToken(evidence.traceId) ? evidence.traceId : undefined,
-    deliveryStatus: evidence.status,
+    deliveryStatus,
     commandEvidence: {
       commandCount: evidence.commandCount,
       committed: evidence.status === "applied" || evidence.status === "reset",
@@ -581,6 +598,42 @@ function normalizeDiagnosticCounts(value: WorkbenchDiagnosticCounts | undefined)
     warning: nonNegativeInteger(value?.warning),
     info: nonNegativeInteger(value?.info),
   };
+}
+
+function normalizeDeliveryStatus(value: unknown): string | undefined {
+  return typeof value === "string" && ["ready", "blocked", "unsupported"].includes(value) ? value : undefined;
+}
+
+function normalizeSourceReadiness(
+  value: unknown,
+): { ok: true; value: WorkbenchSourceReadiness[] } | { ok: false; diagnostics: WorkbenchContractDiagnostic[] } {
+  if (value === undefined) return { ok: true, value: [] };
+  if (!Array.isArray(value)) return auditError("/auditPayload/sourceReadiness", "Source readiness must be an array.");
+  if (value.length > REVIEW_DIAGNOSTIC_CAP) {
+    return auditError("/auditPayload/sourceReadiness", "Source readiness list exceeds the cap.");
+  }
+  const entries: WorkbenchSourceReadiness[] = [];
+  for (const item of value) {
+    const readiness = objectValue(item);
+    const state = stringValue(readiness?.state);
+    if (
+      !isSafeToken(readiness?.sourceId) ||
+      !isSafeToken(readiness?.type) ||
+      !["supported", "blocked", "unsupported"].includes(state) ||
+      typeof readiness?.queryReady !== "boolean" ||
+      !isSafeToken(readiness?.resourcePolicy)
+    ) {
+      return auditError("/auditPayload/sourceReadiness", "Source readiness entry is invalid.");
+    }
+    entries.push({
+      sourceId: readiness.sourceId,
+      type: readiness.type,
+      state: state as WorkbenchSourceReadiness["state"],
+      queryReady: readiness.queryReady,
+      resourcePolicy: readiness.resourcePolicy,
+    });
+  }
+  return { ok: true, value: entries };
 }
 
 function normalizeReviewOutcome(value: unknown): WorkbenchAuditRecord["reviewOutcome"] {
