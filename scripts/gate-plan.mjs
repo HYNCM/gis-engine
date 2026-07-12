@@ -113,8 +113,8 @@ export function buildPlan(files) {
   }
 
   if (files.some((file) => /^apps\/studio\//.test(file))) {
-    addGate(gates, "pnpm test:studio", "Studio behavior");
     addGate(gates, "pnpm studio:build", "Studio bundle");
+    addGate(gates, "pnpm test:studio", "Studio behavior");
   }
 
   if (

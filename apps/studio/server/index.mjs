@@ -20,6 +20,14 @@ import { createServer } from "node:http";
 import { createRequire } from "node:module";
 import { dirname, extname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import {
+  AUDIT_DELETION_RECEIPT_VERSION,
+  AUDIT_EXPORT_BYTE_CAP,
+  AUDIT_EXPORT_RECORD_CAP,
+  AUDIT_RECORD_VERSION,
+  createAuditDeletionReceipt,
+  REVIEW_DECISION_VERSION,
+} from "@gis-engine/ai";
 import { appendAuditRecord, STUDIO_AUDIT_RECORD_CAP } from "./audit.mjs";
 import { createReviewDecision, STUDIO_REVIEW_DECISION_CAP } from "./review-decisions.mjs";
 
@@ -898,6 +906,8 @@ const reviewDecisions = [];
 export const STUDIO_LOCAL_HANDOFF_VERSION = "studio.local-handoff.v1";
 export const STUDIO_LOCAL_REVIEW_LEDGER_VERSION = "studio.review-ledger.v1";
 export const STUDIO_LOCAL_REVIEW_EXPORT_VERSION = "studio.review-export.v1";
+export const WORKBENCH_PRODUCT_ROUTE_VERSION = "studio.workbench-product-route.v1";
+export const WORKBENCH_PRODUCT_ROUTE = "/review-console/workbench/:projectId";
 const REVIEW_LEDGER_AUDIT_STATUSES = new Set(["all", "applied", "blocked", "ready", "reviewed"]);
 const REVIEW_LEDGER_REVIEW_OUTCOMES = new Set(["all", "accepted", "blocked", "follow-up-required"]);
 const REVIEW_EXPORT_KINDS = new Set(["all", "audit", "review"]);
@@ -975,6 +985,119 @@ export function parseMapRoute(pathname) {
   }
 
   return null;
+}
+
+export function parseWorkbenchProductRoute(pathname) {
+  const statusMatch = pathname.match(/^\/api\/review-console\/workbench\/([a-zA-Z0-9_-]+)\/status$/);
+  if (statusMatch) {
+    return { action: "status", projectId: statusMatch[1] };
+  }
+  const shellMatch = pathname.match(/^\/review-console\/workbench\/([a-zA-Z0-9_-]+)$/);
+  if (shellMatch) {
+    return { action: "shell", projectId: shellMatch[1] };
+  }
+  return null;
+}
+
+export function workbenchProductRouteEnabled(env = process.env) {
+  return ["1", "true", "yes", "on"].includes(String(env.STUDIO_WORKBENCH_PRODUCT_ROUTE ?? "").toLowerCase());
+}
+
+export function buildWorkbenchProductRouteStatus(options = {}) {
+  const env = options.env ?? process.env;
+  const requestedProjectId = normalizeProjectId(options.projectId);
+  const activeProjectId = normalizeProjectId(options.activeProjectId ?? env.STUDIO_PROJECT_ID);
+  const enabled = workbenchProductRouteEnabled(env);
+  const access = requestedProjectId === activeProjectId ? "allowed" : "denied";
+
+  return {
+    routeVersion: WORKBENCH_PRODUCT_ROUTE_VERSION,
+    route: WORKBENCH_PRODUCT_ROUTE,
+    concreteRoute: `/review-console/workbench/${requestedProjectId}`,
+    statusApi: `/api/review-console/workbench/${requestedProjectId}/status`,
+    projectId: requestedProjectId,
+    enabled,
+    access,
+    productReadiness: enabled && access === "allowed" ? "candidate" : "disabled",
+    hostedGa: false,
+    featureFlag: {
+      name: "STUDIO_WORKBENCH_PRODUCT_ROUTE",
+      enabled,
+      rollback: "Set STUDIO_WORKBENCH_PRODUCT_ROUTE=0, freeze writes, and keep examples/ai-map-workbench as fallback.",
+    },
+    owners: {
+      product: "@product",
+      runtime: "@builder",
+      releaseGate: "@quality",
+      planning: "@orchestrator",
+    },
+    contracts: {
+      auditRecordVersion: AUDIT_RECORD_VERSION,
+      reviewDecisionVersion: REVIEW_DECISION_VERSION,
+      deletionReceiptVersion: AUDIT_DELETION_RECEIPT_VERSION,
+      auditExportRecordCap: AUDIT_EXPORT_RECORD_CAP,
+      auditExportByteCap: AUDIT_EXPORT_BYTE_CAP,
+      rawPayloadPolicy: "rejected",
+      mapMutationPolicy: "MapCommand/applyCommands only",
+      mcpPolicy: "no new tool names",
+    },
+    providerProfiles: publicProviderProfiles(buildProviders(env)),
+    guardrails: [
+      "server-only provider credentials and base URLs",
+      "append-only compact audit and review records",
+      "no raw prompt/provider body/screenshot/full MapSpec export in review evidence",
+      "feature flag disables route without touching the reference Workbench",
+    ],
+  };
+}
+
+export function buildWorkbenchProductRouteHtml(status) {
+  const body = `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Workbench Review Console</title>
+    <style>
+      body { margin: 0; font: 14px/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f8fafc; color: #111827; }
+      main { max-width: 960px; margin: 0 auto; padding: 32px 20px; }
+      header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; border-bottom: 1px solid #d1d5db; padding-bottom: 16px; }
+      h1 { margin: 0; font-size: 24px; line-height: 1.2; letter-spacing: 0; }
+      h2 { margin: 24px 0 8px; font-size: 16px; letter-spacing: 0; }
+      dl { display: grid; grid-template-columns: minmax(130px, 180px) 1fr; gap: 8px 16px; }
+      dt { color: #4b5563; }
+      dd { margin: 0; overflow-wrap: anywhere; }
+      code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      .badge { border: 1px solid #94a3b8; border-radius: 999px; padding: 4px 10px; background: #ffffff; white-space: nowrap; }
+      ul { padding-left: 20px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <h1>Workbench Review Console</h1>
+          <p>${escapeHtml(status.projectId)}</p>
+        </div>
+        <span class="badge">${escapeHtml(status.productReadiness)}</span>
+      </header>
+      <section>
+        <h2>Route</h2>
+        <dl>
+          <dt>Status API</dt><dd><code>${escapeHtml(status.statusApi)}</code></dd>
+          <dt>Audit Contract</dt><dd><code>${escapeHtml(status.contracts.auditRecordVersion)}</code></dd>
+          <dt>Review Contract</dt><dd><code>${escapeHtml(status.contracts.reviewDecisionVersion)}</code></dd>
+          <dt>Rollback</dt><dd>${escapeHtml(status.featureFlag.rollback)}</dd>
+        </dl>
+      </section>
+      <section>
+        <h2>Guardrails</h2>
+        <ul>${status.guardrails.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+      </section>
+    </main>
+  </body>
+</html>`;
+  return body;
 }
 
 function withCommandDiagnostics(payload, diagnostics = []) {
@@ -1301,6 +1424,13 @@ export function buildSavedMapReviewExport(map, options = {}) {
       kind,
       status,
     },
+    contract: {
+      auditRecordVersion: AUDIT_RECORD_VERSION,
+      reviewDecisionVersion: REVIEW_DECISION_VERSION,
+      auditExportRecordCap: AUDIT_EXPORT_RECORD_CAP,
+      auditExportByteCap: AUDIT_EXPORT_BYTE_CAP,
+      rawPayloadPolicy: "rejected",
+    },
     summary: {
       totalEventCount: timeline.length,
       matchingEventCount: filteredTimeline.length,
@@ -1315,6 +1445,26 @@ export function buildSavedMapReviewExport(map, options = {}) {
     events,
     nextCursor,
   };
+}
+
+export function buildSavedMapDeletionReceipt(map, options = {}) {
+  const projectId = normalizeProjectId(options.projectId);
+  const receipt = createAuditDeletionReceipt({
+    principal: {
+      id: options.actorId ?? "studio-admin",
+      role: "admin",
+      projectIds: [projectId],
+    },
+    projectId,
+    deletedAt: options.deletedAt ?? new Date().toISOString(),
+    actorId: options.actorId ?? "studio-admin",
+    reasonCode: options.reasonCode ?? "map-delete",
+    filterSummary: { recordId: map.id },
+    deletedCount:
+      (Array.isArray(map.auditRecords) ? map.auditRecords.length : 0) +
+      (Array.isArray(map.reviewDecisions) ? map.reviewDecisions.length : 0),
+  });
+  return receipt.ok ? receipt.receipt : { diagnostics: receipt.diagnostics };
 }
 
 const TILE_PROVIDERS = {
@@ -1454,6 +1604,7 @@ function collectGeoJsonPropertyKeys(source) {
 }
 
 function appendStudioAudit(input) {
+  const deliveryStatus = studioDeliveryStatus(input.status, input.diagnostics ?? []);
   return appendAuditRecord(auditRecords, {
     sessionId,
     providerId: input.providerId,
@@ -1462,9 +1613,52 @@ function appendStudioAudit(input) {
     traceId: input.traceId,
     commandCount: input.commandEvidence?.commandCount ?? 0,
     diagnostics: input.diagnostics ?? [],
+    deliveryStatus,
+    sourceReadiness: studioSourceReadiness(input.spec ?? activeSpec, deliveryStatus),
     fromRevision: input.fromRevision,
     toRevision: input.toRevision,
   });
+}
+
+function studioDeliveryStatus(status, diagnostics) {
+  const hasError = Array.isArray(diagnostics) && diagnostics.some((diagnostic) => diagnostic?.severity === "error");
+  if (hasError || status === "blocked" || status === "unsupported") return "blocked";
+  return "ready";
+}
+
+function studioSourceReadiness(spec, deliveryStatus) {
+  const sources = Object.entries(spec?.sources || {});
+  if (deliveryStatus !== "ready") {
+    return [
+      {
+        sourceId: "studio-active-map",
+        type: "unknown",
+        state: "blocked",
+        queryReady: false,
+        resourcePolicy: "passed",
+      },
+    ];
+  }
+  return sources.map(([sourceId, source]) => {
+    const type = safeEvidenceToken(source?.type, "unknown");
+    const inlineGeoJson = source?.type === "geojson" && typeof source.data !== "string";
+    const proxyRaster =
+      source?.type === "raster" &&
+      Array.isArray(source.tiles) &&
+      source.tiles.every((tile) => typeof tile === "string" && tile.startsWith(`${TILE_PROXY_PREFIX}/`));
+    const supported = inlineGeoJson || proxyRaster;
+    return {
+      sourceId: safeEvidenceToken(sourceId, "source"),
+      type,
+      state: supported ? "supported" : "unsupported",
+      queryReady: inlineGeoJson,
+      resourcePolicy: supported ? "passed" : "blocked",
+    };
+  });
+}
+
+function safeEvidenceToken(value, fallback) {
+  return typeof value === "string" && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/.test(value) ? value : fallback;
 }
 
 function normalizeProjectId(value) {
@@ -1473,6 +1667,15 @@ function normalizeProjectId(value) {
 
 function hashPrompt(message) {
   return `sha256:${createHash("sha256").update(message).digest("hex").slice(0, 16)}`;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 async function main() {
@@ -1508,6 +1711,51 @@ async function main() {
 
       if (req.method === "GET" && url.pathname === "/api/maplibre-capabilities") {
         return sendJson(res, maplibreCapabilities.MAPLIBRE_CAPABILITY_REGISTRY);
+      }
+
+      const workbenchRoute = parseWorkbenchProductRoute(url.pathname);
+      if (req.method === "GET" && workbenchRoute?.action === "status") {
+        return sendJson(
+          res,
+          buildWorkbenchProductRouteStatus({
+            env: process.env,
+            projectId: workbenchRoute.projectId,
+            activeProjectId: projectId,
+          }),
+        );
+      }
+
+      if (req.method === "GET" && workbenchRoute?.action === "shell") {
+        const routeStatus = buildWorkbenchProductRouteStatus({
+          env: process.env,
+          projectId: workbenchRoute.projectId,
+          activeProjectId: projectId,
+        });
+        if (!routeStatus.enabled || routeStatus.access !== "allowed") {
+          return sendJson(
+            res,
+            {
+              status: "disabled",
+              diagnostics: [
+                {
+                  code: "STUDIO.WORKBENCH_PRODUCT_ROUTE_DISABLED",
+                  severity: "error",
+                  path: "/review-console/workbench",
+                  message: "Workbench product route is disabled or not authorized for this project.",
+                },
+              ],
+              route: routeStatus,
+            },
+            404,
+          );
+        }
+        const body = buildWorkbenchProductRouteHtml(routeStatus);
+        res.writeHead(200, {
+          "Content-Type": "text/html; charset=utf-8",
+          "Content-Length": Buffer.byteLength(body),
+        });
+        res.end(body);
+        return;
       }
 
       if (req.method === "GET" && url.pathname === "/api/review-decisions") {
@@ -1794,8 +2042,14 @@ async function main() {
       }
 
       if (req.method === "DELETE" && mapRoute?.action === "item") {
+        const map = await store.loadMap(mapRoute.mapId);
+        if (!map) return sendJson(res, { error: "Not found" }, 404);
+        const deletionReceipt = buildSavedMapDeletionReceipt(map, {
+          projectId,
+          reasonCode: url.searchParams.get("reason_code") || "map-delete",
+        });
         await store.deleteMap(mapRoute.mapId);
-        return sendJson(res, { ok: true });
+        return sendJson(res, { ok: true, deletionReceipt });
       }
 
       if (req.method === "GET" && url.pathname === "/api/audit") {

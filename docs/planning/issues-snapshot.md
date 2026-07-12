@@ -1,8 +1,8 @@
 ---
 agent: orchestrator
 period: issue-snapshot
-generated_at: 2026-07-06T15:47:50.535Z
-repo_revision: "8cc3a74"
+generated_at: 2026-07-10T16:23:23.751Z
+repo_revision: "511a1c9"
 inputs:
   - GitHub Issues API
 owner: "@orchestrator"
@@ -16,13 +16,14 @@ decision_level: info
 ## Summary
 
 - Open issues: 0
-- Closed issues in snapshot: 20
-- Total returned: 20
+- Closed issues in snapshot: 21
+- Total returned: 21
 
 ## Issues
 
 | Issue | State | Title | Labels | Assignees | Milestone | Updated |
 | --- | --- | --- | --- | --- | --- | --- |
+| #25 | CLOSED | [TASK-2026W28-STUDIO-001: Review-console Workbench product route Go gate](https://github.com/HYNCM/gis-engine/issues/25) | track:productization, agent:quality, agent:builder, priority:p0 | - | - | 2026-07-10T16:23:06Z |
 | #23 | CLOSED | [Agent Escalation: Workflow failure detected](https://github.com/HYNCM/gis-engine/issues/23) | agent-escalation, automation | - | - | 2026-07-03T12:43:33Z |
 | #22 | CLOSED | [TASK-2026W25-DOC-001: Generate the core/extension boundary matrix from one source](https://github.com/HYNCM/gis-engine/issues/22) | documentation, enhancement, priority:p2, track:productization, agent:quality, agent:builder | - | - | 2026-07-06T15:47:42Z |
 | #21 | CLOSED | [TASK-2026W26-CLI-003: CLI install smoke builds generated app](https://github.com/HYNCM/gis-engine/issues/21) | enhancement, priority:p2, track:productization, agent:quality, agent:builder | - | - | 2026-06-13T18:07:18Z |

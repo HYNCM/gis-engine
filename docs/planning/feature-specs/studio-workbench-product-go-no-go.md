@@ -63,12 +63,14 @@ Every row is blocking for any future hosted/product movement.
 - Do not claim hosted/product readiness in README, roadmap, release notes, or
   examples before @quality accepts a future Go issue.
 
-## Future Go Issue Shape
+## Closed Go Issue
 
-Recommended future issue:
+Closed P0 gate:
 
-`TASK-2026W26-STUDIO-001: Review-console Workbench product route Go gate`
+`TASK-2026W28-STUDIO-001: Review-console Workbench product route Go gate`
+([#25](https://github.com/HYNCM/gis-engine/issues/25)).
 
-It should be opened only when product and runtime owners can provide auth,
-durable audit, export, rollback, resource-policy, MCP, and visual evidence in
-one reviewable bundle.
+It moved only a feature-flagged review-console candidate route and compact
+audit/review evidence forward. Hosted GA, production auth, deployment,
+monitoring, and support policy remain No-go until a separate launch issue
+approves those production responsibilities.
