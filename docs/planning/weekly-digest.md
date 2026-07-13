@@ -1,49 +1,56 @@
 ---
 agent: orchestrator
-period: 2026-W28
-generated_at: 2026-07-10T16:23:47Z
-repo_revision: "511a1c9"
+period: 2026-W29
+generated_at: 2026-07-13T16:06:22Z
+repo_revision: "bdd71e24a6cacc88cef578211943685a23890e38"
 inputs:
+  - docs/research/competitor-updates-2026-W29.md
+  - docs/research/capability-scorecard.md
+  - docs/reviews/quality-gate-planning-input-2026-07-13.md
   - docs/planning/issues-snapshot.md
-  - docs/reviews/quality-gate-2026-07-06.md
-  - docs/reviews/quality-gate-workbench-product-route-2026-07-10.md
-  - docs/reviews/documentation-audit-2026-07-06.md
-  - docs/reviews/first-run-acceptance-2026-07-06.md
-  - docs/architecture/core-extension-boundary-matrix.json
   - docs/planning/next-step-plan.md
-  - docs/planning/feature-specs/review-console-workbench-go-gate.md
-  - CHANGELOG.md
 owner: "@orchestrator"
-decision_level: info
+decision_level: advisory
 ---
 
 # Weekly Digest
 
-This active file is a compact pointer for automation. The previous digest was
-archived to
-[archive/2026-06-30/planning/weekly-digest.md](../archive/2026-06-30/planning/weekly-digest.md).
+## W29 Decision
 
-## Current Digest
+The current HOC-N1 product handoff and HOC-N3 quality input are consumed. No
+existing P0 or release blocker overrides roadmap planning. The next stage is
+contract convergence, with one P0 and three bounded follow-ups under
+[milestone 1](https://github.com/HYNCM/gis-engine/milestone/1).
 
-| Topic | Current Reading | Evidence |
+| Topic | Current reading | Evidence |
 | --- | --- | --- |
-| Open work | GitHub Issues snapshot has 0 open issues after #25 closure | [issues-snapshot.md](./issues-snapshot.md) |
-| Release | v1.5.0 repo release state is current for SDK maturity and CLI first-run acceptance | [CHANGELOG.md](../../CHANGELOG.md) |
-| First-run acceptance | Strict Node 22 / pnpm 11.9 release-env path passed in 30.6s; Vite scaffold now installs `maplibre-gl` and imports the CSS | [first-run acceptance](../reviews/first-run-acceptance-2026-07-06.md) |
-| CLI test coverage | 215 tests across 8 files (+74 new); lint, community, generate, bin-dispatch fully covered | [v1.5 plan](../../../.changeset/v1.5-sdk-maturity.md) |
-| CI matrix | Node 22+24, macOS lint job | [.github/workflows/ci.yml](../../../.github/workflows/ci.yml) |
-| Performance | Smoke budgets tightened; applyCommands batch benchmarks added | [performance-benchmarks.md](../../engineering/performance-benchmarks.md) |
-| Visual snapshots | 4 MapLibre scenarios + SceneView3D adapter (5 total) | [maplibre-visual.spec.ts](../../../tests/snapshot/visual/maplibre-visual.spec.ts) |
-| Docs | Boundary regression tests, migration guide, example README standardization | [v1.4-to-v1.5.md](../../migration/v1.4-to-v1.5.md) |
-| Core/extension matrix | #22 is closed; architecture/spec matrices are generated from one JSON source and checked by docs regression | [matrix source](../architecture/core-extension-boundary-matrix.json) |
-| Governance | #25 has @quality conditional Go for product-route candidate evidence; hosted GA remains No-go | [Workbench quality gate](../reviews/quality-gate-workbench-product-route-2026-07-10.md) |
-| SceneView3D | Remains experimental; stable view.mode still blocked | [CHANGELOG.md](../../CHANGELOG.md) |
-| Next steps | Productization follow-up: define a separate hosted launch gate for auth, deployment, monitoring, and support policy | [Workbench Go gate](./feature-specs/review-console-workbench-go-gate.md) |
-| PMTiles runtime query | Runtime query remains No-go; future loader/query gate required | [PMTiles boundary](./feature-specs/pmtiles-runtime-query-promotion-boundary.md) |
-| Workbench | Product-route candidate gate closed in #25; hosted GA remains No-go | [Workbench Go gate](./feature-specs/review-console-workbench-go-gate.md) |
-| External signals | @product research remains at W24; do not claim current competitor or standards state until refreshed | [competitor update](../research/competitor-updates-2026-W24.md) |
+| P0 | Reconcile the seven-name operating contract with the 14-tool runtime and MCP stable structured results | [#27](https://github.com/HYNCM/gis-engine/issues/27) |
+| PMTiles | Loader behavior and active No-go wording conflict; decide display/load/query claims separately | [#28](https://github.com/HYNCM/gis-engine/issues/28) |
+| MapLibre | Keep 5.24; test v6 prerelease compatibility before any bump | [#29](https://github.com/HYNCM/gis-engine/issues/29) |
+| Infrastructure | Reserve 20% to make issue snapshots and specialist/HOC evidence fail closed | [#30](https://github.com/HYNCM/gis-engine/issues/30) |
+| Quality | Conditional pass for planning only; current head is not a newly full-gated release candidate | [HOC-N3 input](../reviews/quality-gate-planning-input-2026-07-13.md) |
+| Hosted Workbench | Candidate route only; hosted GA remains No-go | [Workbench gate](./feature-specs/review-console-workbench-go-gate.md) |
+| SceneView3D | Experimental and adapter-local; stable mode remains blocked | [stable renderer contract](./feature-specs/sceneview3d-stable-renderer-contract.md) |
+
+## External Signals Checked 2026-07-13
+
+- MCP `2025-11-25` is the stable baseline; declared output schemas require
+  conforming structured results. The `2026-07-28-RC` is watch-only.
+- MapLibre stable remains 5.24 while v6 prereleases continue compatibility
+  changes; Mapbox 3.26 advances the commercial benchmark.
+- OpenLayers 10.9 raises the browser cloud-native IO benchmark, while Cesium,
+  Three.js, and 3DTilesRendererJS reinforce future 3D evidence requirements.
+
+Full dated URLs, package metadata, factor scores, and confidence are in
+[competitor-updates-2026-W29.md](../research/competitor-updates-2026-W29.md).
+
+## Next Checkpoint
+
+Close #27 with a current @quality pass before starting capability claims that
+depend on the reconciled MCP contract. #28 and #29 may then proceed in parallel;
+#30 stays within the reserved infrastructure allocation.
 
 ## Maintenance
 
-Weekly automation may overwrite this file. Keep it short and route dated
-evidence to archive batches or issue snapshots.
+Keep this file short. GitHub Issues are canonical task state; dated evidence
+belongs in research and quality reports.
