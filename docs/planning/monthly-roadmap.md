@@ -1,93 +1,75 @@
 ---
 agent: orchestrator
 period: 2026-07
-generated_at: 2026-07-10T16:23:47Z
-repo_revision: "511a1c9"
+generated_at: 2026-07-13T16:06:22Z
+repo_revision: "bdd71e24a6cacc88cef578211943685a23890e38"
 inputs:
-  - docs/planning/orchestrator-goals-2026-W25.md
+  - docs/research/competitor-updates-2026-W29.md
+  - docs/research/capability-scorecard.md
+  - docs/reviews/quality-gate-planning-input-2026-07-13.md
   - docs/planning/next-step-plan.md
   - docs/planning/issues-snapshot.md
-  - docs/reviews/first-run-acceptance-2026-07-06.md
-  - docs/reviews/quality-gate-2026-07-06.md
-  - docs/reviews/quality-gate-workbench-product-route-2026-07-10.md
-  - docs/architecture/core-extension-boundary-matrix.json
-  - docs/reviews/provider-smoke-2026-06-10.md
-  - docs/reviews/generated-project-audit-regression-2026-06-10.md
-  - docs/planning/feature-specs/pmtiles-runtime-query-promotion-boundary.md
-  - docs/planning/feature-specs/studio-workbench-product-go-no-go.md
-  - docs/planning/feature-specs/review-console-workbench-go-gate.md
-  - docs/planning/active-execution-queue-2026-06-09.md
-  - docs/research/capability-scorecard.md
-  - docs/research/competitor-updates-2026-W24.md
-  - docs/archive/2026-06-10/planning/monthly-roadmap.md
-  - .changeset/
 owner: "@orchestrator"
-decision_level: info
+decision_level: advisory
 ---
 
 # Monthly Roadmap
 
-This active roadmap is intentionally short. The former long-form roadmap was
-archived to
-[archive/2026-06-10/planning/monthly-roadmap.md](../archive/2026-06-10/planning/monthly-roadmap.md).
+## Current Product State
 
-## Release Status
-
-| Version | Status | Date | Notes |
-| --- | --- | --- | --- |
-| v1.0.0 | **Released** | 2026-06-10 | Initial stable release — SDK, CLI, engine, AI/MCP tools |
-| v1.1.0 | **Released** | 2026-06-30 | CLI productization enhancements |
-| v1.4.0 | **Released** | 2026-07-02 | Expression engine, heatmap/symbol layers, new MCP tools |
-| v1.5.0 | **Released** | 2026-07-06 | SDK maturity sprint: test coverage, CI matrix, perf budgets, docs, first-run acceptance |
-| SceneView3D | Experimental | via `--tag next` | Not promoted to stable; adapter-local only |
-
-### v1.5.0 Change Scope
-
-| Area | Changes |
-| --- | --- |
-| **CLI tests** | +74 new tests (lint, community, generate, bin-dispatch); 215 total |
-| **CI matrix** | Node 22+24, macOS lint job |
-| **Performance** | Smoke budgets tightened, applyCommands batch benchmarks |
-| **Docs** | Migration guide, boundary regression tests, example README standardization |
-| **Visual snapshots** | +data-driven-styling scenario (4 total) |
-
-## Current Priorities
-
-| Priority | Decision | Evidence |
+| Surface | Decision | Evidence |
 | --- | --- | --- |
-| Open queue | No open GitHub Issues after #25 closure | [issues snapshot](./issues-snapshot.md) |
-| SDK+CLI first | Remains the launch surface | [active queue](./active-execution-queue-2026-06-09.md) |
-| W25 adoption evidence | #8-#13 queue closed with governance, SDK+CLI first-run, provider smoke, audit regression, and P2 No-go boundaries | [orchestrator goals](./orchestrator-goals-2026-W25.md) |
-| First-run acceptance | Strict Node 22 / pnpm 11.9 release-env first-run path passed; Vite scaffold now carries MapLibre dependency and CSS import | [first-run acceptance](../reviews/first-run-acceptance-2026-07-06.md) |
-| Provider compatibility | OpenAI-compatible provider adoption path has a local no-secret smoke gate | [provider smoke](../reviews/provider-smoke-2026-06-10.md) |
-| Generated auditability | Generated project bundles stay reviewable, hash-verifiable, and prompt-safe | [audit regression](../reviews/generated-project-audit-regression-2026-06-10.md) |
-| AI Map Workbench | #25 advanced the feature-flagged product-route candidate; hosted GA remains blocked | [Workbench Go gate](./feature-specs/review-console-workbench-go-gate.md) |
-| Core/extension matrix | Guardrail issue #22 is closed; architecture/spec matrices render from one structured source and docs tests enforce sync | [matrix source](../architecture/core-extension-boundary-matrix.json) |
-| Source runtime | Keep bounded PMTiles evidence and do not promote parser/query/runtime claims without a dedicated issue | [PMTiles boundary](./feature-specs/pmtiles-runtime-query-promotion-boundary.md) |
-| SceneView3D | Keep adapter-local; stable runtime remains blocked | [stable renderer contract](./feature-specs/sceneview3d-stable-renderer-contract.md) |
-| External signals | W24 refresh is stale for current claims; refresh @product before using competitor/standards signals to reprioritize | [competitor update](../research/competitor-updates-2026-W24.md) |
+| SDK + CLI | Primary stable adoption surface; packages are at v1.5.0 | [CHANGELOG](../../CHANGELOG.md) |
+| MCP | Release prerequisite: public inventory and stable structured-result contract must converge | [W29 research](../research/competitor-updates-2026-W29.md) |
+| PMTiles | Capability truth unresolved; loader export does not by itself approve runtime-query support | [PMTiles boundary](./feature-specs/pmtiles-runtime-query-promotion-boundary.md) |
+| MapLibre | Keep 5.24 as the release baseline pending a v5-v6 compatibility matrix | [next-stage plan](./next-step-plan.md) |
+| Workbench | Feature-flagged candidate route only; hosted GA remains No-go | [Workbench gate](./feature-specs/review-console-workbench-go-gate.md) |
+| SceneView3D | Experimental adapter evidence only; stable `view.mode: "scene3d"` remains blocked | [stable renderer contract](./feature-specs/sceneview3d-stable-renderer-contract.md) |
 
-## August 2026 Focus (v1.6)
+## W29-W30 Stage
 
-| Item | Scope | Owner |
+Milestone: [2026 W29-W30 Contract Convergence](https://github.com/HYNCM/gis-engine/milestone/1).
+
+| Order | Issue | Target outcome | Gate |
+| ---: | --- | --- | --- |
+| P0 | [#27 MCP contract convergence](https://github.com/HYNCM/gis-engine/issues/27) | One public tool inventory and schema-conforming `structuredContent` with text compatibility | `pnpm build:schema`, `pnpm test:ai`, `pnpm check`, @quality pass |
+| P1 | [#28 PMTiles capability truth](https://github.com/HYNCM/gis-engine/issues/28) | Explicit display/load/query Go or No-go backed by resource and negative fixtures | resource/runtime/adapter/AI gates, @quality decision |
+| P1 | [#29 MapLibre compatibility](https://github.com/HYNCM/gis-engine/issues/29) | Executable v5-v6 matrix without an automatic dependency bump | adapter/browser/strict visual gates, @quality keep/bump decision |
+| P2 | [#30 Agent evidence integrity](https://github.com/HYNCM/gis-engine/issues/30) | Authenticated issue snapshots and fail-closed specialist/HOC freshness | agent-framework and docs-link gates |
+
+Tasks #28 and #29 may proceed in parallel only after #27 freezes the AI-facing
+public contract. Reserve 20% of capacity for #30, consistent with the repository
+infrastructure allocation rule.
+
+## Deferred Directions
+
+| Direction | Current score | Evidence | Impact | Action | Confidence |
+| --- | ---: | --- | --- | --- | --- |
+| Hosted Workbench launch gate | 6.10 | Candidate route exists, but auth, deployment, monitoring, and support evidence do not | High security and operational risk if promoted early | Keep hosted GA No-go; reassess after this milestone with a separate launch issue | high |
+| Real SceneView3D renderer evidence | 5.75 | Adapter package has no renderer dependency or graphics context | High delivery and resource-policy risk for limited current AI-loop gain | Keep adapter-local; define a later browser slice with picking, snapshot, cleanup, and blocked-resource evidence | high |
+| Additional cloud-native runtimes | below PMTiles gate | GeoParquet, FlatGeobuf, and GeoTIFF remain independently bounded | Mixing formats would hide capability-specific failure semantics | Do not combine them with #28; open separate promotion gates after PMTiles truth is settled | high |
+
+## Stage Exit Requirements
+
+- [ ] Close #27 before any new MCP tool or package-release claim.
+- [ ] Record independent, current quality decisions for #28 and #29; open
+      issues are not promotion evidence.
+- [ ] Confirm the next weekly automation preserves specialist reports and
+      canonical issue state without treating templates as decisions.
+- [ ] Pass full path-aware gates on every code-bearing PR; keep visual/resource
+      waivers limited to genuinely non-rendering changes.
+
+## Risks
+
+| Risk | Status | Mitigation |
 | --- | --- | --- |
-| Review-console Workbench | Plan the separate hosted launch gate for auth, deployment, monitoring, and support policy | @orchestrator |
-| SceneView3D evidence | Collect real renderer evidence for stable promotion decision | @builder |
-| Cloud-native sources | FlatGeobuf/GeoParquet runtime loading spike | @builder |
-| Expression completeness | Close remaining Mapbox expression gaps | @builder |
-| Developer experience | Interactive playground, API reference polish | @builder |
-
-## Risks & Known Blockers
-
-| Risk | Status | Impact |
-| --- | --- | --- |
-| SceneView3D stable runtime | **Blocked** — blocker code still prevents stable promotion | Cannot enable `view.mode: "scene3d"` without `--tag next` |
-| PMTiles runtime query | **No-go** — no promotion without dedicated issue and evidence | Parser/query/runtime claims remain bounded |
-| Studio/Workbench productization | **Candidate route Go** — #25 closed with green CI and @quality conditional Go | Hosted GA remains No-go until a separate launch issue approves auth, deployment, monitoring, and support |
-| CLI test gap | **Resolved** — 215 tests across 8 files | All CLI modules covered |
-| Product research freshness | **Overdue** — latest product report is W24 | Do not claim current competitor or standards status before refresh |
+| Public tool contract drift | **P0 open** | #27 freezes inventory and structured results before expansion. |
+| PMTiles claims exceed evidence | **P1 open** | #28 separates display, load, and query decisions. |
+| MapLibre peer range exceeds proven compatibility | **P1 open** | #29 creates an exact-version matrix before movement. |
+| Green automation masks stale specialist evidence | **P2 open** | #30 makes evidence preservation and HOC freshness fail closed. |
+| Hosted/3D promotion pressure bypasses gates | **blocked by plan** | Keep these directions outside the milestone and preserve explicit No-go wording. |
 
 ## Maintenance
 
-Monthly automation may overwrite this file. Keep active roadmap text focused on
-current decisions; move dated strategy narratives to archive batches.
+GitHub Issues are the canonical task state. Keep this file as a compact decision
+snapshot and regenerate issue status before changing completion claims.

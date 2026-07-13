@@ -1,42 +1,51 @@
 ---
 agent: orchestrator
-period: current
-generated_at: 2026-06-10T01:20:00+08:00
-repo_revision: "4405f09d195a9a968075cdeea2a82d9eef692d4a"
+period: 2026-W29
+generated_at: 2026-07-13T16:06:22Z
+repo_revision: "bdd71e24a6cacc88cef578211943685a23890e38"
 inputs:
-  - docs/planning/active-execution-queue-2026-06-09.md
+  - docs/research/competitor-updates-2026-W29.md
+  - docs/reviews/quality-gate-planning-input-2026-07-13.md
+  - docs/planning/next-step-plan.md
   - docs/planning/issues-snapshot.md
-  - docs/archive/2026-06-10/planning/dependency-graph.md
 owner: "@orchestrator"
 decision_level: info
 ---
 
 # Dependency Graph
 
-This file now keeps only the current dependency stance. The full historical
-graph was archived to
-[archive/2026-06-10/planning/dependency-graph.md](../archive/2026-06-10/planning/dependency-graph.md).
-
 ```mermaid
 flowchart LR
-  A["SDK+CLI first launch surface"] --> B["Closed productization queue"]
-  B --> C["GitHub Issues canonical task state"]
-  B --> D["Future Workbench product Go issue"]
-  B --> E["Future source/runtime promotion issue"]
-  B --> F["Future SceneView3D stable runtime Go issue"]
+  H1["W29 HOC-N1 product evidence"] --> P0["#27 MCP contract convergence"]
+  H3["2026-07-13 HOC-N3 planning pass"] --> P0
+  P0 --> D1["#28 PMTiles capability truth"]
+  P0 --> D2["#29 MapLibre compatibility matrix"]
+  GOV["#30 Agent evidence integrity"] -. "20% capacity" .-> P0
+  D1 --> EXIT["W30 stage quality checkpoint"]
+  D2 --> EXIT
+  GOV --> EXIT
+  EXIT --> HOSTED["Future hosted Workbench launch gate"]
+  EXIT --> SCENE["Future real SceneView3D evidence slice"]
 ```
 
-## Current Boundaries
+## Execution Rules
 
-| Boundary | Current Decision | Evidence |
+| Dependency | Rule | Evidence |
 | --- | --- | --- |
-| SDK+CLI first | Stands | [active queue](./active-execution-queue-2026-06-09.md) |
-| AI Map Workbench | Product/hosted movement remains No-go until a future Go issue passes owner/auth/storage/export/resource/MCP/visual gates | [promotion scope](./feature-specs/ai-map-workbench-promotion-scope.md) |
-| PMTiles/source runtime | Fixture/display/load-plan evidence is accepted; archive parsing, hidden IO, workers, and runtime cloud-native queries remain separate | [active queue](./active-execution-queue-2026-06-09.md) |
-| SceneView3D | Stable `view.mode: "scene3d"` remains blocked | [stable renderer contract](./feature-specs/sceneview3d-stable-renderer-contract.md) |
+| HOC inputs -> #27 | Product evidence is current and quality permits planning; public AI contract is first | [W29 research](../research/competitor-updates-2026-W29.md), [quality input](../reviews/quality-gate-planning-input-2026-07-13.md) |
+| #27 -> #28/#29 | Freeze AI-facing public tool/result behavior before capability claims use it | [next-stage plan](./next-step-plan.md) |
+| #28 and #29 | May run in parallel after #27; neither supplies evidence for the other | [issues snapshot](./issues-snapshot.md) |
+| #30 | Runs independently within 20% infrastructure capacity; blocks planning only if evidence becomes untrustworthy | [#30](https://github.com/HYNCM/gis-engine/issues/30) |
+| stage exit -> hosted/3D | New product/renderer promotion needs fresh product and quality gates | [roadmap](./monthly-roadmap.md) |
+
+## Boundaries
+
+- SDK + CLI remains the primary stable adoption surface.
+- PMTiles display, load, and query are separate promotion decisions.
+- MapLibre v6 matrix evidence is not an upgrade approval.
+- Hosted Workbench GA and stable SceneView3D remain outside this milestone.
 
 ## Maintenance
 
-Keep this path because agent framework scripts read it. If GitHub Issues gain a
-machine dependency graph, regenerate this file as a pointer instead of growing a
-new manual ledger.
+GitHub Issues and milestone 1 are canonical execution state. This file records
+dependency policy only.
