@@ -1,12 +1,12 @@
 ---
-generated_at: 2026-07-12T12:17:16.398Z
-repo_revision: "7fa4431"
-period: 2026-07-12
+generated_at: 2026-07-13T01:19:21.985Z
+repo_revision: "5d12b13"
+period: 2026-07-13
 agent: orchestrator
 decision_level: info
 ---
 
-# Agent Health Dashboard (as of 2026-07-12)
+# Agent Health Dashboard (as of 2026-07-13)
 
 > ⚠️ 本 Dashboard 由 `scripts/dashboard-generator.mjs` 自动生成。
 > 状态为自动化推断，需 orchestrator 审查后确认。
@@ -17,7 +17,7 @@ decision_level: info
 | --- | --- | --- | --- | --- | --- |
 | @orchestrator | weekly | docs/planning/weekly-digest.md | 2026-07-10 | 🟢 ok | 2d |
 | @product | weekly | docs/research/competitor-updates-2026-W24.md | 2026-06-09 | 🔴 overdue | 33d |
-| @quality | daily | docs/reviews/quality-gate-workbench-product-route-2026-07-10.md | 2026-07-10 | 🟢 ok | 2d |
+| @quality | daily | docs/reviews/quality-gate-workbench-product-route-2026-07-10.md | 2026-07-10 | 🔴 overdue | 2d |
 | @builder | ad-hoc | — | — | 🟢 ok | — |
 | @docs | daily | docs/reviews/documentation-audit-2026-07-06.md | 2026-07-06 | 🔴 overdue | 6d |
 
@@ -39,11 +39,12 @@ decision_level: info
 ## Action Items
 
 - [ ] **@product**: 报告逾期 33 天 → 手动触发或检查 cron
+- [ ] **@quality**: 报告逾期 2 天 → 手动触发或检查 cron
 - [ ] **@docs**: 报告逾期 6 天 → 手动触发或检查 cron
 
 ## Summary
 
-- **健康 agent**: 3/5
-- **问题 agent**: 2/5
+- **健康 agent**: 2/5
+- **问题 agent**: 3/5
 - **数据流异常**: 0
-- **生成时间**: 2026-07-12T12:17:16.408Z
+- **生成时间**: 2026-07-13T01:19:21.990Z
