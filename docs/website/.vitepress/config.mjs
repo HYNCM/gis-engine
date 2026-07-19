@@ -85,11 +85,11 @@ export default defineConfig({
       ],
       "/mcp/": [
         {
-          text: "MCP Tools",
+          text: "Core lifecycle tools",
           items: [
             { text: "Overview", link: "/mcp/overview" },
-            { text: "validate_spec", link: "/mcp/validate-spec" },
             { text: "apply_commands", link: "/mcp/apply-commands" },
+            { text: "validate_spec", link: "/mcp/validate-spec" },
             { text: "export_spec", link: "/mcp/export-spec" },
             { text: "get_context_summary", link: "/mcp/get-context-summary" },
             { text: "snapshot_spec", link: "/mcp/snapshot-spec" },

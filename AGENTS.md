@@ -46,10 +46,21 @@ All agents must respect the existing GIS Engine architecture:
 - Workflow boundary: `validate -> apply -> snapshot -> export` is the minimum
   closed loop for evidence, not the only valid workflow order for all
   consumers.
-- MCP contract: AI tools must use the documented snake_case tool names:
-  `validate_spec`, `apply_commands`, `export_spec`, `get_context_summary`,
-  `snapshot_spec`, `explain_spec`, and `export_example_app`; every public tool
-  descriptor must expose both `inputSchema` and `outputSchema`.
+- MCP contract: the v1.5 14-tool canonical default inventory uses the following
+  snake_case names, returned in this order by `tools/list`:
+  `apply_commands`, `validate_spec`, `export_spec`, `get_context_summary`,
+  `snapshot_spec`, `explain_spec`, `export_example_app`, `diff_specs`,
+  `generate_spec`, `inspect_data`, `edit_spec`, `query_features`,
+  `style_recommend`, and `transform_data`. The first seven are the Phase 1
+  Core lifecycle group; `diff_specs`, `generate_spec`, and `edit_spec` are
+  Authoring extensions; `inspect_data`, `query_features`, `style_recommend`,
+  and `transform_data` are Data intelligence tools. Every public descriptor
+  must expose both `inputSchema` and `outputSchema`; successful calls expose
+  schema-conforming `structuredContent`, while execution failures use the
+  `{ diagnostics: Diagnostic[] }` structured envelope and retain the legacy
+  JSON diagnostics text block. The server targets MCP `2025-11-25`; public
+  `inputSchema` and `outputSchema` descriptors use the JSON Schema draft-07
+  dialect.
 - Resource policy: URL, tile, worker, example, and external asset changes must
   be checked against `packages/engine/src/spec/resource-policy.ts`,
   `tests/schema/resource-policy.test.ts`, and the resource policy sections in

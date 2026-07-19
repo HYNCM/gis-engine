@@ -70,7 +70,9 @@ MapSpec → [Transformer] → RendererAdapter → MapLibre GL / Mock / Future
 
 ## 5. MCP Tools
 
-Seven MCP tools expose engine capabilities to AI agents. Each tool has typed
-`inputSchema` and `outputSchema` — LLMs can call them without hallucinations.
+14 MCP tools expose engine capabilities to AI agents. The seven Core
+lifecycle tools are complemented by Authoring extensions and Data intelligence
+tools; each has typed `inputSchema` and `outputSchema` — LLMs can call them
+without hallucinations.
 
 See [MCP Tools Overview](/mcp/overview) for details.

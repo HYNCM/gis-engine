@@ -234,18 +234,34 @@ suggested fix → re-validate → render. No string parsing, no guessing.
 ## 6. MCP Tools: AI Agent Integration Without Custom Code
 
 The **Model Context Protocol** (MCP) has become the standard interface
-between AI agents and external tools. GIS Engine exposes 7 MCP tools,
-each with a published input schema and output schema:
+between AI agents and external tools. GIS Engine exposes 14 MCP tools,
+each with a published input schema and output schema. The canonical
+`tools/list` order is `apply_commands`, `validate_spec`, `export_spec`,
+`get_context_summary`, `snapshot_spec`, `explain_spec`, `export_example_app`,
+`diff_specs`, `generate_spec`, `inspect_data`, `edit_spec`, `query_features`,
+`style_recommend`, `transform_data`.
 
-| Tool | Purpose |
-|---|---|
-| `validate_spec` | Validate a MapSpec and return structured diagnostics |
-| `apply_commands` | Apply typed commands with dry-run, transactions, and trace |
-| `export_spec` | Export the current MapSpec (with input validation) |
-| `get_context_summary` | Return a capability-aware summary of the map state |
-| `snapshot_spec` | Capture a visual snapshot and validate rendering |
-| `explain_spec` | Explain a MapSpec in natural language with capability context |
-| `export_example_app` | Generate a runnable example app from a MapSpec |
+The inventory is grouped as seven Core lifecycle tools, three Authoring
+extensions (`diff_specs`, `generate_spec`, `edit_spec`), and four Data
+intelligence tools (`inspect_data`, `query_features`, `style_recommend`,
+`transform_data`):
+
+| Group | Tool | Purpose |
+|---|---|---|
+| Core lifecycle | `apply_commands` | Apply typed commands with dry-run, transactions, and trace |
+| Core lifecycle | `validate_spec` | Validate a MapSpec and return structured diagnostics |
+| Core lifecycle | `export_spec` | Export the current MapSpec (with input validation) |
+| Core lifecycle | `get_context_summary` | Return a capability-aware summary of the map state |
+| Core lifecycle | `snapshot_spec` | Capture a visual snapshot and validate rendering |
+| Core lifecycle | `explain_spec` | Explain a MapSpec in natural language with capability context |
+| Core lifecycle | `export_example_app` | Generate a runnable example app from a MapSpec |
+| Authoring extensions | `diff_specs` | Compare MapSpecs and generate typed command differences |
+| Authoring extensions | `generate_spec` | Generate a MapSpec skeleton from structured intent |
+| Data intelligence | `inspect_data` | Inspect inline GeoJSON structure and bounds |
+| Authoring extensions | `edit_spec` | Edit a MapSpec through command-backed instructions |
+| Data intelligence | `query_features` | Query inline GeoJSON by point or bounding box |
+| Data intelligence | `style_recommend` | Recommend data-driven styles from GeoJSON |
+| Data intelligence | `transform_data` | Transform inline GeoJSON with bounded operations |
 
 Every tool descriptor includes both `inputSchema` and `outputSchema`, both
 compilable by Ajv. Tool failures return structured results with diagnostics,

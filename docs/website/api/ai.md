@@ -19,7 +19,11 @@
 
 ## Key Boundaries
 
-- The public MCP surface remains seven snake_case tools.
+- The public MCP surface is the canonical 14-tool snake_case inventory in
+  `tools/list` order: `apply_commands`, `validate_spec`, `export_spec`,
+  `get_context_summary`, `snapshot_spec`, `explain_spec`,
+  `export_example_app`, `diff_specs`, `generate_spec`, `inspect_data`,
+  `edit_spec`, `query_features`, `style_recommend`, `transform_data`.
 - `export_example_app` exposes manifests and delivery evidence; it does not
   write files itself.
 - Scene browsing remains extension-only delivery evidence and must not be cited

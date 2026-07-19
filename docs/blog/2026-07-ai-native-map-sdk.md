@@ -93,10 +93,14 @@ modify, test, debug, or collaborate on that map.
 
 ## MCP: The New Distribution Channel
 
-GIS Engine exposes 7 [MCP tools](/mcp/overview) that let AI agents validate,
-modify, snapshot, and export maps without custom integration code. When an
-AI coding assistant installs the MCP server, it gains full map authoring
-capability immediately.
+GIS Engine exposes a canonical inventory of 14 MCP tools; see the
+[MCP overview](/mcp/overview) for descriptor details. The `tools/list` order is
+`apply_commands`, `validate_spec`, `export_spec`,
+`get_context_summary`, `snapshot_spec`, `explain_spec`,
+`export_example_app`, `diff_specs`, `generate_spec`, `inspect_data`,
+`edit_spec`, `query_features`, `style_recommend`, `transform_data`. Together
+they let AI agents validate, modify, snapshot, export, inspect, query, style,
+and transform maps and inline GeoJSON without custom integration code.
 
 This is not an add-on — it's a core part of what makes an SDK "AI-native."
 The schema is the contract; MCP is how AI agents consume it.

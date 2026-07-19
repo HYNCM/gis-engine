@@ -1,4 +1,4 @@
-[**@gis-engine/ai v1.4.0**](../index.md)
+[**@gis-engine/ai v1.5.0**](../index.md)
 
 ***
 
@@ -38,7 +38,7 @@
 
 ### tools
 
-> **tools**: [`GisEngineToolName`](../type-aliases/GisEngineToolName.md)[]
+> **tools**: (`"apply_commands"` \| `"validate_spec"` \| `"export_spec"` \| `"get_context_summary"` \| `"snapshot_spec"` \| `"explain_spec"` \| `"export_example_app"` \| `"diff_specs"` \| `"generate_spec"` \| `"inspect_data"` \| `"edit_spec"` \| `"query_features"` \| `"style_recommend"` \| `"transform_data"`)[]
 
 ***
 

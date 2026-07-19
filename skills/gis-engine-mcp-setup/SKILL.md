@@ -4,8 +4,8 @@ description: >
   Install, configure, and use the GIS Engine MCP (Model Context Protocol) server
   for AI coding tools. Use when setting up GIS Engine AI tools in Claude Desktop,
   Cursor, Codex, or other MCP-compatible environments. Covers server installation,
-  all 7 MCP tools (validate_spec, apply_commands, export_spec, get_context_summary,
-  snapshot_spec, explain_spec, export_example_app), client configuration templates,
+  all 14 MCP tools across Core lifecycle, Authoring extensions, and Data intelligence,
+  client configuration templates,
   and step-by-step usage examples.
 metadata:
   author: gis-engine
@@ -15,8 +15,9 @@ metadata:
 
 # MCP Server Setup Guide
 
-The GIS Engine MCP server exposes 7 tools that let AI agents validate, modify,
-summarize, snapshot, and export MapSpec documents using the Model Context Protocol.
+The GIS Engine MCP server exposes 14 tools that let AI agents validate, modify,
+summarize, snapshot, export, compare, generate, inspect, query, style, and
+transform MapSpec documents and inline GeoJSON using the Model Context Protocol.
 
 ## Installation
 
@@ -99,17 +100,38 @@ Any MCP-compatible client can connect using the stdio transport:
 
 ### Programmatic Usage (TypeScript)
 
+Install `@modelcontextprotocol/sdk` as a direct dependency when your application
+creates and connects the transport itself.
+
 ```typescript
 import { createGisEngineMcpServer } from "@gis-engine/ai/mcp";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
 const server = createGisEngineMcpServer();
-// Server starts on stdio transport automatically
+const transport = new StdioServerTransport();
+await server.connect(transport);
 ```
 
 ## Available MCP Tools
 
-The server exposes 7 tools. Each tool accepts JSON input and returns structured
-JSON output. All tools follow the `{ ok, result, diagnostics }` response pattern.
+The server exposes the canonical 14-tool inventory in this `tools/list` order:
+`apply_commands`, `validate_spec`, `export_spec`, `get_context_summary`,
+`snapshot_spec`, `explain_spec`, `export_example_app`, `diff_specs`,
+`generate_spec`, `inspect_data`, `edit_spec`, `query_features`,
+`style_recommend`, `transform_data`.
+
+The server targets MCP `2025-11-25`; `inputSchema` and `outputSchema`
+descriptors use the JSON Schema draft-07 dialect. Each tool accepts JSON input
+and returns schema-conforming `structuredContent` plus a JSON text block.
+Execution errors expose `{ diagnostics: [...] }` as structured content while
+retaining the legacy diagnostics array in the text block.
+
+Only the seven Core lifecycle tools are documented in detail below. The
+additive Authoring tools are `diff_specs`, `generate_spec`, and `edit_spec`;
+the Data intelligence tools are `inspect_data`, `query_features`,
+`style_recommend`, and `transform_data`. See the
+[MCP Tools Overview](../../docs/website/mcp/overview.md) for all 14 descriptor
+summaries.
 
 ### 1. `validate_spec`
 
@@ -327,21 +349,30 @@ Call: snapshot_spec(spec, renderer: "mock")
 
 ## Tool Input/Output Schemas
 
-All tools expose both `inputSchema` and `outputSchema` as required by the
-MCP contract. The schemas use TypeBox/JSON Schema format and are validated
-with Ajv before execution.
+All tools expose both `inputSchema` and `outputSchema` as required by the MCP
+contract. The descriptors use the JSON Schema draft-07 dialect and are
+validated with Ajv before execution.
 
-Invalid input returns:
+Invalid public MCP input returns the structured error envelope plus the legacy
+raw diagnostic array in the JSON text block:
 
 ```json
 {
-  "ok": false,
-  "diagnostics": [
+  "isError": true,
+  "structuredContent": {
+    "diagnostics": [
+      {
+        "severity": "error",
+        "code": "SPEC.MISSING_FIELD",
+        "message": "must have required property 'spec'",
+        "path": "/"
+      }
+    ]
+  },
+  "content": [
     {
-      "severity": "error",
-      "code": "SCHEMA.INVALID",
-      "message": "must have required property 'spec'",
-      "path": "/"
+      "type": "text",
+      "text": "[{\"severity\":\"error\",\"code\":\"SPEC.MISSING_FIELD\",\"message\":\"must have required property 'spec'\",\"path\":\"/\"}]"
     }
   ]
 }
@@ -363,7 +394,7 @@ However, if you use it alongside the CLI generate pipeline, you may need:
 | Issue | Solution |
 |---|---|
 | Server not found | Ensure `@gis-engine/ai` is installed: `npm install @gis-engine/ai` |
-| Tool returns schema error | Check input matches the tool's `inputSchema`. All tools require at minimum a `spec` field. |
+| Tool returns schema error | Check that call against its descriptor: lifecycle, diff, and edit tools use MapSpec fields; data tools use `geojson`; `generate_spec` uses `intent`; `export_example_app` uses `exampleId`. |
 | Snapshot blank canvas | Verify layers have visible data and non-transparent styles. |
 | Version mismatch | Ensure `@gis-engine/engine` and `@gis-engine/ai` are the same major version. |
 | MapLibre not found | Install the peer dependency: `npm install maplibre-gl` |

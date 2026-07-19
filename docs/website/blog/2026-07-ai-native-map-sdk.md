@@ -93,8 +93,9 @@ modify, test, debug, or collaborate on that map.
 
 ## MCP: The New Distribution Channel
 
-GIS Engine exposes 7 [MCP tools](/mcp/overview) that let AI agents validate,
-modify, snapshot, and export maps without custom integration code. When an
+GIS Engine exposes 14 MCP tools ([MCP tools](/mcp/overview)) that let AI agents validate,
+modify, snapshot, export, compare, generate, inspect, query, style, and
+transform maps without custom integration code. When an
 AI coding assistant installs the MCP server, it gains full map authoring
 capability immediately.
 

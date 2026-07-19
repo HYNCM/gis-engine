@@ -1,3 +1,4 @@
+import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
 import {
   ApplyCommandsToolInputSchema,
@@ -15,8 +16,16 @@ import {
 } from "@gis-engine/engine";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
+import {
+  CallToolRequestSchema,
+  type CallToolResult,
+  ErrorCode,
+  ListToolsRequestSchema,
+  McpError,
+  SUPPORTED_PROTOCOL_VERSIONS,
+} from "@modelcontextprotocol/sdk/types.js";
 import { Ajv, type ValidateFunction } from "ajv/dist/ajv.js";
+import { GisEngineToolNameSchema } from "../internal/mcpToolNames.js";
 import { applyCommandsTool } from "../tools/applyCommands.js";
 import { getContextSummary } from "../tools/contextSummary.js";
 import { DiffSpecsToolInputSchema, diffSpecsTool } from "../tools/diffSpecs.js";
@@ -38,6 +47,39 @@ import { TransformDataToolInputSchema, transformDataTool } from "../tools/transf
 
 const DiagnosticContractSchema = stripNestedIds(DiagnosticSchema);
 const CapabilityReportContractSchema = stripNestedIds(CapabilityReportSchema);
+const packageRequire = createRequire(import.meta.url);
+const packageVersion = (packageRequire("../../package.json") as { version: string }).version;
+const MCP_JSON_SCHEMA_DIALECT = "http://json-schema.org/draft-07/schema#";
+
+export const GIS_ENGINE_MCP_PROTOCOL_VERSION = "2025-11-25";
+
+if (!SUPPORTED_PROTOCOL_VERSIONS.includes(GIS_ENGINE_MCP_PROTOCOL_VERSION)) {
+  throw new Error(`MCP SDK does not support the GIS Engine protocol target ${GIS_ENGINE_MCP_PROTOCOL_VERSION}.`);
+}
+
+export const McpToolExecutionErrorSchema = {
+  type: "object",
+  properties: {
+    diagnostics: { type: "array", items: DiagnosticContractSchema },
+  },
+  required: ["diagnostics"],
+  additionalProperties: false,
+} as const;
+
+function withMcpToolExecutionError<const T extends object>(successSchema: T) {
+  return {
+    $schema: MCP_JSON_SCHEMA_DIALECT,
+    type: "object",
+    oneOf: [successSchema, McpToolExecutionErrorSchema],
+  } as const;
+}
+
+function withMcpJsonSchemaDialect<const T extends object>(schema: T) {
+  return {
+    ...schema,
+    $schema: MCP_JSON_SCHEMA_DIALECT,
+  } as const;
+}
 
 export const ValidateSpecToolInputSchema = {
   type: "object",
@@ -181,25 +223,7 @@ const CapabilityDomainSummarySchema = {
     blocked: { type: "array", items: { type: "string" } },
     tools: {
       type: "array",
-      items: {
-        type: "string",
-        enum: [
-          "validate_spec",
-          "apply_commands",
-          "export_spec",
-          "get_context_summary",
-          "snapshot_spec",
-          "explain_spec",
-          "export_example_app",
-          "diff_specs",
-          "generate_spec",
-          "inspect_data",
-          "edit_spec",
-          "query_features",
-          "style_recommend",
-          "transform_data",
-        ],
-      },
+      items: GisEngineToolNameSchema,
     },
     evidence: { type: "array", items: { type: "string" } },
   },
@@ -702,99 +726,99 @@ export const gisEngineTools = [
     name: "apply_commands",
     description:
       "Apply a series of MapCommands to a MapSpec to modify the map state. Use when: the user wants to add layers, change styles, set the view, or perform any map state mutation; pre-check modifications before committing. Do NOT use when: the user only needs to read, query, or export the current map state. Example: user says 'add a heatmap layer showing population density'.",
-    inputSchema: ApplyCommandsToolInputSchema,
-    outputSchema: ApplyCommandsToolResultSchema,
+    inputSchema: withMcpJsonSchemaDialect(ApplyCommandsToolInputSchema),
+    outputSchema: withMcpToolExecutionError(ApplyCommandsToolResultSchema),
   },
   {
     name: "validate_spec",
     description:
       "Validate a MapSpec and return diagnostics. Use when: the user submits a MapSpec and needs to check its correctness; as a pre-check before apply_commands. Do NOT use when: the spec is already known to be valid and only needs to be exported or explained.",
-    inputSchema: ValidateSpecToolInputSchema,
-    outputSchema: ValidateSpecToolResultSchema,
+    inputSchema: withMcpJsonSchemaDialect(ValidateSpecToolInputSchema),
+    outputSchema: withMcpToolExecutionError(ValidateSpecToolResultSchema),
   },
   {
     name: "export_spec",
     description:
       "Return a validated, optionally command-modified MapSpec. Use when: the user needs the final usable MapSpec JSON for deployment or sharing; applying a batch of commands and exporting the result in one step. Do NOT use when: the user only needs to validate or preview the spec without obtaining the full output.",
-    inputSchema: ExportSpecToolInputSchema,
-    outputSchema: ExportSpecToolResultSchema,
+    inputSchema: withMcpJsonSchemaDialect(ExportSpecToolInputSchema),
+    outputSchema: withMcpToolExecutionError(ExportSpecToolResultSchema),
   },
   {
     name: "get_context_summary",
     description:
       "Return a compact MapSpec summary plus AI orchestration capability boundaries for planning and review. Use when: the user or an AI agent needs a comprehensive overview of the current MapSpec structure, layers, sources, and capability status. Do NOT use when: the user intends to modify the map — use apply_commands or edit_spec instead.",
-    inputSchema: ContextSummaryToolInputSchema,
-    outputSchema: ContextSummaryToolResultSchema,
+    inputSchema: withMcpJsonSchemaDialect(ContextSummaryToolInputSchema),
+    outputSchema: withMcpToolExecutionError(ContextSummaryToolResultSchema),
   },
   {
     name: "snapshot_spec",
     description:
       "Validate a MapSpec and produce a headless snapshot result without real WebGL. Use when: the user needs a visual screenshot image of the map as verification evidence or for visual review. Do NOT use when: the user only needs structured data, diagnostics, or a text summary — use explain_spec or get_context_summary instead.",
-    inputSchema: SnapshotSpecToolInputSchema,
-    outputSchema: SnapshotSpecToolResultSchema,
+    inputSchema: withMcpJsonSchemaDialect(SnapshotSpecToolInputSchema),
+    outputSchema: withMcpToolExecutionError(SnapshotSpecToolResultSchema),
   },
   {
     name: "explain_spec",
     description:
       "Return a structured AI-facing summary, capability boundaries, and full validation diagnostics. Use when: the user or an AI agent needs to understand what a MapSpec contains — layers, sources, styles, and their relationships — in a machine-readable format. Do NOT use when: the user wants to modify the map — use apply_commands or edit_spec instead.",
-    inputSchema: ExplainSpecToolInputSchema,
-    outputSchema: ExplainSpecToolResultSchema,
+    inputSchema: withMcpJsonSchemaDialect(ExplainSpecToolInputSchema),
+    outputSchema: withMcpToolExecutionError(ExplainSpecToolResultSchema),
   },
   {
     name: "export_example_app",
     description:
       "Return a manifest and file list for a bundled example without writing files. Use when: the user needs a self-contained runnable example application with spec, data, and script files for learning or demonstration. Do NOT use when: the user only needs the MapSpec JSON — use export_spec instead.",
-    inputSchema: ExportExampleAppToolInputSchema,
-    outputSchema: ExportExampleAppToolResultSchema,
+    inputSchema: withMcpJsonSchemaDialect(ExportExampleAppToolInputSchema),
+    outputSchema: withMcpToolExecutionError(ExportExampleAppToolResultSchema),
   },
   {
     name: "diff_specs",
     description:
       "Compare two MapSpec objects and output the command set needed to transform one into the other, with a summary of changes. Use when: the user needs to understand what changed between two versions of a MapSpec or generate migration commands. Do NOT use when: the user only needs to inspect or explain a single spec.",
-    inputSchema: DiffSpecsToolInputSchema,
-    outputSchema: DiffSpecsToolResultSchema,
+    inputSchema: withMcpJsonSchemaDialect(DiffSpecsToolInputSchema),
+    outputSchema: withMcpToolExecutionError(DiffSpecsToolResultSchema),
   },
   {
     name: "generate_spec",
     description:
       "Generate a MapSpec skeleton from a structured intent description, with validation and improvement suggestions. Use when: the user describes the desired map in natural language and needs a MapSpec created from scratch. Do NOT use when: a MapSpec already exists and only needs small modifications — use edit_spec instead. Example: user says 'create a choropleth map showing GDP by province in China'.",
-    inputSchema: GenerateSpecToolInputSchema,
-    outputSchema: GenerateSpecToolResultSchema,
+    inputSchema: withMcpJsonSchemaDialect(GenerateSpecToolInputSchema),
+    outputSchema: withMcpToolExecutionError(GenerateSpecToolResultSchema),
   },
   {
     name: "inspect_data",
     description:
       "Inspect GeoJSON data structure, properties, geometry types, and bounds to understand the data before visualization. Use when: the user needs to understand the structure, property types, and statistical summary of GeoJSON data before building a map. Do NOT use when: the user wants to transform the data — use transform_data instead.",
-    inputSchema: InspectDataToolInputSchema,
-    outputSchema: InspectDataToolResultSchema,
+    inputSchema: withMcpJsonSchemaDialect(InspectDataToolInputSchema),
+    outputSchema: withMcpToolExecutionError(InspectDataToolResultSchema),
   },
   {
     name: "edit_spec",
     description:
       "Edit a MapSpec using natural language instructions. Supports adding/removing layers, changing paint/layout properties, setting filters, and modifying the view. Use when: a MapSpec already exists and the user wants to make small to moderate changes using natural language. Do NOT use when: creating a spec from scratch (use generate_spec) or when precise command-level control is needed (use apply_commands).",
-    inputSchema: EditSpecToolInputSchema,
-    outputSchema: EditSpecToolResultSchema,
+    inputSchema: withMcpJsonSchemaDialect(EditSpecToolInputSchema),
+    outputSchema: withMcpToolExecutionError(EditSpecToolResultSchema),
   },
   {
     name: "query_features",
     description:
       "Query GeoJSON features by point or bounding box spatial filter. Returns matching features with properties and geometry types. Use when: the user needs to find features at a specific map location or within a bounding box for inspection or interaction. Do NOT use when: the user needs a global data summary — use inspect_data instead.",
-    inputSchema: QueryFeaturesToolInputSchema,
-    outputSchema: QueryFeaturesToolResultSchema,
+    inputSchema: withMcpJsonSchemaDialect(QueryFeaturesToolInputSchema),
+    outputSchema: withMcpToolExecutionError(QueryFeaturesToolResultSchema),
   },
   {
     name: "style_recommend",
     description:
       "Analyze GeoJSON data features and recommend appropriate map layer types, paint properties, and style configurations based on geometry types, property distributions, and optional context hints. Use when: the user has GeoJSON data and wants data-driven suggestions for visualization styling. Do NOT use when: the user has already specified exact style parameters and does not need recommendations.",
-    inputSchema: StyleRecommendToolInputSchema,
-    outputSchema: StyleRecommendToolResultSchema,
+    inputSchema: withMcpJsonSchemaDialect(StyleRecommendToolInputSchema),
+    outputSchema: withMcpToolExecutionError(StyleRecommendToolResultSchema),
   },
   {
     name: "transform_data",
     description:
       "Transform GeoJSON data with filter, aggregate, select, sort, and rename operations. Supports property-based filtering, group-by aggregation (count/sum/avg/min/max), property selection, sorting, and renaming. Use when: the user needs to filter, aggregate, sort, or reshape GeoJSON data before visualization. Do NOT use when: the user only needs to inspect the data structure — use inspect_data instead.",
-    inputSchema: TransformDataToolInputSchema,
-    outputSchema: TransformDataToolResultSchema,
+    inputSchema: withMcpJsonSchemaDialect(TransformDataToolInputSchema),
+    outputSchema: withMcpToolExecutionError(TransformDataToolResultSchema),
   },
 ] as const;
 
@@ -804,10 +828,11 @@ export async function listGisEngineTools(): Promise<{ tools: typeof gisEngineToo
 
 type McpContent = { type: "text"; text: string } | { type: "image"; data: string; mimeType: string };
 
-export async function callGisEngineTool(request: { params: { name: string; arguments?: unknown } }): Promise<{
-  isError?: boolean;
-  content: Array<McpContent>;
-}> {
+type McpToolCallResult = CallToolResult;
+
+export async function callGisEngineTool(request: {
+  params: { name: string; arguments?: unknown };
+}): Promise<McpToolCallResult> {
   const { name, arguments: args } = request.params;
 
   try {
@@ -925,11 +950,20 @@ export async function callGisEngineTool(request: { params: { name: string; argum
   }
 }
 
+async function handleMcpToolCall(request: {
+  params: { name: string; arguments?: unknown };
+}): Promise<McpToolCallResult> {
+  if (!gisEngineTools.some((tool) => tool.name === request.params.name)) {
+    throw new McpError(ErrorCode.InvalidParams, `Unknown tool: ${request.params.name}`);
+  }
+  return callGisEngineTool(request);
+}
+
 export function createGisEngineMcpServer(): Server {
   const server = new Server(
     {
       name: "gis-engine",
-      version: "0.1.0",
+      version: packageVersion,
     },
     {
       capabilities: {
@@ -939,7 +973,7 @@ export function createGisEngineMcpServer(): Server {
   );
 
   server.setRequestHandler(ListToolsRequestSchema, listGisEngineTools);
-  server.setRequestHandler(CallToolRequestSchema, callGisEngineTool);
+  server.setRequestHandler(CallToolRequestSchema, handleMcpToolCall);
   return server;
 }
 
@@ -957,34 +991,49 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
   });
 }
 
-function toolTextResult(
-  value: unknown,
-  isError = false,
-): { isError?: boolean; content: Array<{ type: "text"; text: string }> } {
+function toolTextResult(value: unknown, isError = false): McpToolCallResult {
+  const text = JSON.stringify(value, null, 2);
+  if (isError) {
+    if (!Array.isArray(value)) throw new TypeError("MCP tool errors must be diagnostic arrays.");
+    return {
+      isError: true,
+      content: [{ type: "text", text }],
+      structuredContent: { diagnostics: value },
+    };
+  }
+
   return {
-    ...(isError ? { isError: true } : {}),
-    content: [{ type: "text", text: JSON.stringify(value, null, 2) }],
+    content: [{ type: "text", text }],
+    structuredContent: asStructuredContent(value),
   };
 }
 
-function toolImageResult(dataUrl: string, metadata?: unknown): { content: Array<McpContent> } {
+function toolImageResult(dataUrl: string, metadata: object): McpToolCallResult {
+  const structuredContent = asStructuredContent(metadata);
   const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
   if (!match) {
     return {
-      content: [{ type: "text", text: JSON.stringify(metadata ?? { error: "Invalid data URL format" }, null, 2) }],
+      content: [{ type: "text", text: JSON.stringify(metadata, null, 2) }],
+      structuredContent,
     };
   }
   const [, mimeType, base64Data] = match;
   if (!mimeType || !base64Data) {
     return {
-      content: [{ type: "text", text: JSON.stringify(metadata ?? { error: "Invalid data URL format" }, null, 2) }],
+      content: [{ type: "text", text: JSON.stringify(metadata, null, 2) }],
+      structuredContent,
     };
   }
   const content: Array<McpContent> = [{ type: "image", data: base64Data, mimeType }];
-  if (metadata !== undefined) {
-    content.push({ type: "text", text: JSON.stringify(metadata, null, 2) });
+  content.push({ type: "text", text: JSON.stringify(metadata, null, 2) });
+  return { content, structuredContent };
+}
+
+function asStructuredContent(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new TypeError("MCP structured content must be a JSON object.");
   }
-  return { content };
+  return value as Record<string, unknown>;
 }
 
 function validateToolInput<T>(

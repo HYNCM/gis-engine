@@ -81,9 +81,12 @@ breaking/non-breaking note in the PR summary.
 - All published packages use `files` whitelist: `["dist", "README.md"]`
   (CLI adds `"templates"`).
 - Bundle budgets: engine < 130KB gzipped, cli < 35KB gzipped.
-- MCP tool names remain frozen: `validate_spec`, `apply_commands`,
-  `export_spec`, `get_context_summary`, `snapshot_spec`, `explain_spec`,
-  `export_example_app`. No `generate_map_app` or `spatial_query` alias.
+- The canonical 14-tool MCP inventory remains frozen in `tools/list` order:
+  `apply_commands`, `validate_spec`, `export_spec`, `get_context_summary`,
+  `snapshot_spec`, `explain_spec`, `export_example_app`, `diff_specs`,
+  `generate_spec`, `inspect_data`, `edit_spec`, `query_features`,
+  `style_recommend`, `transform_data`. No `generate_map_app` or
+  `spatial_query` alias.
 
 ## Current v1 Source Preflight Additions
 

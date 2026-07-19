@@ -1,12 +1,13 @@
 # GIS Engine MCP Server
 
 AI-native map editing tools for Claude Desktop, Cursor, and any Model Context
-Protocol (MCP) client. GIS Engine exposes 14 structured tools that validate,
+Protocol (MCP) client. GIS Engine exposes 14 MCP tools with structured results
+that validate,
 mutate, summarize, snapshot, compare, generate, edit, query, inspect, style,
 and transform declarative MapSpec documents and GeoJSON data — all with
 structured diagnostics and schema-enforced contracts.
 
-**Package:** `@gis-engine/ai` (v1.4.0)
+**Package:** `@gis-engine/ai` (v1.5.0)
 **License:** Apache-2.0
 **Repository:** https://github.com/HYNCM/gis-engine
 **Docs:** https://gis-engine.dev
@@ -61,6 +62,19 @@ Import the following MCP plugin configuration via
 
 ## Tools (14 total)
 
+The canonical `tools/list` order is: `apply_commands`, `validate_spec`,
+`export_spec`, `get_context_summary`, `snapshot_spec`, `explain_spec`,
+`export_example_app`, `diff_specs`, `generate_spec`, `inspect_data`,
+`edit_spec`, `query_features`, `style_recommend`, `transform_data`. The first
+seven tools are the Phase 1 Core lifecycle group; the remaining tools are
+additive Authoring extensions and Data intelligence tools. The detailed
+reference below is organized for lifecycle readability, not discovery order.
+
+The server uses MCP `2025-11-25`, and descriptors use the JSON Schema draft-07
+dialect. Successful results expose `structuredContent` that conforms to the
+declared output schema, while execution failures use the common
+`{ diagnostics: [...] }` envelope and retain a legacy JSON text block.
+
 ### `validate_spec`
 
 Validate a MapSpec document against the schema and return a validation report.
@@ -80,7 +94,7 @@ Validate a MapSpec document against the schema and return a validation report.
   "name": "validate_spec",
   "arguments": {
     "spec": {
-      "version": "1.0",
+      "version": "0.1",
       "view": { "center": [0, 0], "zoom": 2 },
       "sources": {},
       "layers": []
@@ -224,8 +238,8 @@ elements.
 {
   "name": "diff_specs",
   "arguments": {
-    "before": { "version": "1.0", "view": { "center": [0, 0], "zoom": 2 }, "sources": {}, "layers": [] },
-    "after":  { "version": "1.0", "view": { "center": [120, 30], "zoom": 5 }, "sources": {}, "layers": [] }
+    "before": { "version": "0.1", "view": { "center": [0, 0], "zoom": 2 }, "sources": {}, "layers": [] },
+    "after":  { "version": "0.1", "view": { "center": [120, 30], "zoom": 5 }, "sources": {}, "layers": [] }
   }
 }
 ```
@@ -309,7 +323,7 @@ human-readable summary.
 {
   "name": "edit_spec",
   "arguments": {
-    "spec": { "version": "1.0", "view": { "center": [0, 0], "zoom": 2 }, "sources": {}, "layers": [] },
+    "spec": { "version": "0.1", "view": { "center": [0, 0], "zoom": 2 }, "sources": {}, "layers": [] },
     "instruction": "Add a circle layer for the GeoJSON source with radius 5 and blue fill"
   }
 }

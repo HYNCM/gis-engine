@@ -135,15 +135,23 @@ const result = await callGisEngineTool({
 
 Conventions:
 
-- Public MCP tool names stay snake_case:
-  `validate_spec`, `apply_commands`, `export_spec`, `get_context_summary`,
-  `snapshot_spec`, `explain_spec`, and `export_example_app`.
+- The canonical v1.5 MCP inventory stays snake_case and is returned in the
+  stable order: `apply_commands`, `validate_spec`, `export_spec`,
+  `get_context_summary`, `snapshot_spec`, `explain_spec`,
+  `export_example_app`, `diff_specs`, `generate_spec`, `inspect_data`,
+  `edit_spec`, `query_features`, `style_recommend`, and `transform_data`.
+  The first seven are the Phase 1 Core lifecycle group; the remaining tools
+  are additive Authoring extensions and Data intelligence tools.
 - Public inputs and outputs must have TypeBox schemas and generated JSON
   Schema.
+- Successful MCP calls return schema-conforming `structuredContent` plus a
+  JSON text fallback for older clients.
 - AI mutations must produce `MapCommand[]`; direct `MapSpec` edits are not the
   trusted mutation path.
 - Failures must include stable diagnostic codes, paths when available, and
-  machine-readable evidence.
+  machine-readable evidence. MCP execution failures use the structured
+  `{ diagnostics: Diagnostic[] }` output envelope and retain a JSON text
+  fallback for older clients.
 - Renderer-specific behavior must stay behind `RendererAdapter` or adapter-local
   evidence contracts.
 
@@ -211,9 +219,10 @@ Phase 1 is complete when these conditions are true:
    from a natural-language task.
 2. The accepted mutation path emits `MapCommand[]` and succeeds through
    `apply_commands` / `applyCommands` with traceable replay evidence.
-3. `validate_spec`, `apply_commands`, `export_spec`, `get_context_summary`,
-   `snapshot_spec`, `explain_spec`, and `export_example_app` all expose stable
-   input and output schemas.
+3. The canonical 14-tool inventory exposes stable input and output schemas;
+   the seven Core lifecycle tools preserve the minimum Phase 1 authoring loop,
+   while additive Authoring and Data intelligence tools remain discoverable by
+   default.
 4. A generated or exported Web example can be run by a developer and can reload
    the same `MapSpec`.
 5. CI can block bad changes through schema sync, command replay, structured

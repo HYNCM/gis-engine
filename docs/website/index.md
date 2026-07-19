@@ -30,8 +30,8 @@ features:
     title: AI Generation Pipeline
     details: Go from natural language prompt to a validated, rendered map. Every generation step is traceable, auditable, and replayable through the command system.
   - icon: 🛠️
-    title: 7 MCP Tools
-    details: validate_spec, apply_commands, export_spec, get_context_summary, snapshot_spec, explain_spec, and export_example_app. Every tool exposes input and output schemas.
+    title: 14 MCP Tools
+    details: Seven Core lifecycle tools plus Authoring and Data intelligence tools. Every result includes schema-conforming structured content and a JSON text fallback.
   - icon: 🔍
     title: Structured Diagnostics
     details: Errors are machine-readable diagnostic codes with paths and fix suggestions — not opaque strings. Your AI agent and your IDE can both act on them.
@@ -45,9 +45,9 @@ features:
 
 <div style="text-align:center;padding:2rem 0 1rem;">
   <p style="font-size:1.1rem;font-weight:600;color:var(--vp-c-brand-1);">
-    🎉 v1.4.0 Released — Real Browser Rendering
+    v1.5.0 Released — MCP Contract Convergence
   </p>
   <p style="color:var(--vp-c-text-2);">
-    createMap() now renders a real interactive MapLibre map — <a href="/release-notes">Read the Release Notes →</a>
+    14 MCP tools now expose schema-conforming structured results — <a href="/release-notes">Read the Release Notes →</a>
   </p>
 </div>

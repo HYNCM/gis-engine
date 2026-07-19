@@ -14,7 +14,10 @@ Exports the current map state as a clean, validated `MapSpec` JSON. Optionally a
 
 ## Output Schema
 
-On success the output is a clean `MapSpec` object. On failure the output is a `Diagnostic[]` array.
+On success, `structuredContent` is a clean `MapSpec` object and the text block
+contains the same value as JSON. On failure, `structuredContent` is the common
+`{ diagnostics: Diagnostic[] }` envelope; the legacy JSON text block retains the
+raw `Diagnostic[]` array for older clients.
 
 | Field | Type | Description |
 |-------|------|-------------|

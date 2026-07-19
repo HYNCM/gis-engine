@@ -5,6 +5,7 @@ import {
   type SourcePMTilesQueryReadinessSummary,
 } from "@gis-engine/engine";
 import { Ajv } from "ajv/dist/ajv.js";
+import { type GisEngineToolName, GisEngineToolNameSchema } from "../internal/mcpToolNames.js";
 import { toolInputErrorsToDiagnostics } from "./schemaDiagnostics.js";
 import { DiagnosticCountsSchema } from "./shared.js";
 
@@ -424,18 +425,7 @@ export const ExampleAppGenerationEvidenceSummarySchema = {
     },
     toolSequence: {
       type: "array",
-      items: {
-        type: "string",
-        enum: [
-          "validate_spec",
-          "apply_commands",
-          "export_spec",
-          "get_context_summary",
-          "snapshot_spec",
-          "explain_spec",
-          "export_example_app",
-        ],
-      },
+      items: GisEngineToolNameSchema,
     },
     diagnosticCounts: DiagnosticCountsSchema,
     command: {
@@ -569,15 +559,7 @@ export interface ExampleAppGenerationEvidenceSummary {
   status: "ready" | "blocked";
   delivery: ExampleAppDeliverySummary;
   targetDomains: Array<"feature-display" | "spatial-analysis" | "scene-browsing">;
-  toolSequence: Array<
-    | "validate_spec"
-    | "apply_commands"
-    | "export_spec"
-    | "get_context_summary"
-    | "snapshot_spec"
-    | "explain_spec"
-    | "export_example_app"
-  >;
+  toolSequence: GisEngineToolName[];
   diagnosticCounts: Record<Diagnostic["severity"], number>;
   command: {
     usedApplyCommands: boolean;

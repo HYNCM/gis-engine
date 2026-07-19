@@ -1,4 +1,4 @@
-[**@gis-engine/ai v1.4.0**](../index.md)
+[**@gis-engine/ai v1.5.0**](../index.md)
 
 ***
 
@@ -156,4 +156,44 @@
 
 ### capabilities
 
-> **capabilities**: `CapabilityReport`
+> **capabilities**: `object`
+
+#### renderer
+
+> **renderer**: `string`
+
+#### dimensions
+
+> **dimensions**: (`"2d"` \| `"2_5d"` \| `"3d"`)[]
+
+#### sources
+
+> **sources**: `string`[]
+
+#### layers
+
+> **layers**: `string`[]
+
+#### expressions
+
+> **expressions**: `string`[]
+
+#### queries
+
+> **queries**: `string`[]
+
+#### snapshot
+
+> **snapshot**: `object`
+
+##### snapshot.supported
+
+> **supported**: `boolean`
+
+##### snapshot.formats
+
+> **formats**: (`"png"` \| `"jpeg"` \| `"data-url"`)[]
+
+#### experimental
+
+> **experimental**: `string`[]

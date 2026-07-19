@@ -35,13 +35,14 @@ import {
   validateSpec,
 } from "@gis-engine/engine";
 import { Ajv } from "ajv/dist/ajv.js";
+import { type GisEngineToolName, GisEngineToolNameSchema } from "../internal/mcpToolNames.js";
 import {
   ContextSummaryToolResultSchema,
   SnapshotSpecToolResultSchema,
   ValidateSpecToolResultSchema,
 } from "../mcp/server.js";
 import { applyCommandsTool } from "./applyCommands.js";
-import { type ContextSummary, type GisEngineToolName, getContextSummary } from "./contextSummary.js";
+import { type ContextSummary, getContextSummary } from "./contextSummary.js";
 import {
   type ExampleAppDeliverySummary,
   ExampleAppDeliverySummarySchema,
@@ -67,23 +68,6 @@ const SnapshotSpecContractSchema = stripNestedIds(SnapshotSpecToolResultSchema);
 const ValidationReportContractSchema = stripNestedIds(ValidateSpecToolResultSchema);
 type Scene3DStableRuntimeBlockerCode =
   (typeof Scene3DStableRuntimeBlockerCodes)[keyof typeof Scene3DStableRuntimeBlockerCodes];
-
-const GisEngineToolNameSchema = {
-  type: "string",
-  enum: [
-    "validate_spec",
-    "apply_commands",
-    "export_spec",
-    "get_context_summary",
-    "snapshot_spec",
-    "explain_spec",
-    "export_example_app",
-    "diff_specs",
-    "generate_spec",
-    "inspect_data",
-    "edit_spec",
-  ],
-} as const;
 
 const DEFAULT_SPATIAL_QUERY_RESULT_LIMIT = 100;
 
