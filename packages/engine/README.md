@@ -44,6 +44,28 @@ npm install maplibre-gl
 ```
 The engine works without MapLibre for validation, commands, and spec operations. MapLibre is only required for `createMap()` with the maplibre adapter.
 
+### Runtime Compatibility And Adoption
+
+MapLibre runtime compatibility evidence and dependency adoption are separate
+decisions. Runtime compatibility means the checked adapter types, lifecycle,
+worker delivery, and strict visual evidence have no failures. Adoption also
+requires an explicit quality decision to change the release baseline.
+
+```typescript
+import {
+  isMapLibreV6AdoptionApproved,
+  isMapLibreV6RuntimeCompatible,
+  runMapLibreV6Audit,
+} from "@gis-engine/engine";
+
+const report = runMapLibreV6Audit();
+isMapLibreV6RuntimeCompatible(report); // runtime evidence only
+isMapLibreV6AdoptionApproved(report); // also requires candidateDecision: "bump-approved"
+```
+
+`isMapLibreV6Compatible()` remains a backwards-compatible alias for runtime
+compatibility. It does not approve a package or release-baseline change.
+
 ## CDN
 
 You can also load GIS Engine from a CDN:

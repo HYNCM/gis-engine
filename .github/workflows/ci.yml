@@ -63,3 +63,31 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm build:schema
       - run: pnpm check
+
+  maplibre-compatibility:
+    name: "MapLibre compatibility (${{ matrix.maplibre-version }})"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        maplibre-version: ["5.24.0", "6.0.0-22"]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11.9.0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:compat:maplibre -- --version "${{ matrix.maplibre-version }}"
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: maplibre-compatibility-${{ matrix.maplibre-version }}
+          path: |
+            test-results/maplibre-compatibility/
+            test-results/**/maplibre-*.png
+          if-no-files-found: warn

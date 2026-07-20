@@ -36,10 +36,13 @@ export {
 } from "./renderer/maplibre/transformer.js";
 export {
   getMapLibreV6Warnings,
+  isMapLibreV6AdoptionApproved,
   isMapLibreV6Compatible,
+  isMapLibreV6RuntimeCompatible,
   type MapLibreV6AuditEntry,
   type MapLibreV6AuditReport,
   type MapLibreV6AuditSeverity,
+  type MapLibreV6CandidateDecision,
   runMapLibreV6Audit,
 } from "./renderer/maplibre/v6-audit.js";
 export { MockAdapter } from "./renderer/mock.js";

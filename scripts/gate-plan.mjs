@@ -143,6 +143,25 @@ export function buildPlan(files) {
     addGate(gates, "pnpm test:snapshot:smoke", "snapshot behavior");
   }
 
+  if (
+    files.some((file) =>
+      fileMatches(file, [
+        /^packages\/engine\/src\/renderer\/maplibre\//,
+        /^tests\/(?:adapter\/.*maplibre|e2e\/render-pipeline\.spec\.ts|snapshot\/visual\/maplibre-visual\.spec\.ts)/,
+        /^scripts\/maplibre-compat-matrix\.mjs$/,
+      ]),
+    )
+  ) {
+    addGate(gates, "pnpm test:adapter", "MapLibre adapter contract");
+    addGate(gates, "pnpm test:e2e:browser", "MapLibre browser integration");
+    addGate(gates, "pnpm test:compat:maplibre", "exact-version MapLibre compatibility matrix");
+    addGate(
+      gates,
+      "GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual",
+      "MapLibre rendering changes require strict visual evidence",
+    );
+  }
+
   addGate(gates, "pnpm check", "full deterministic merge gate for non-doc changes");
   return gates;
 }
