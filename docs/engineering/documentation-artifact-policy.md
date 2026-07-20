@@ -14,8 +14,9 @@ that still act as current evidence.
 
 | Artifact | Current Policy | Owner | Required Sync |
 | --- | --- | --- | --- |
-| `docs/planning/AGENT_HEALTH_DASHBOARD.md` | Keep as a committed snapshot. | `@orchestrator` | Regenerate with dashboard tooling when planning health inputs change; keep `docs/README.md` linked. |
-| `docs/planning/handoff-ledger.json` | Keep as a committed snapshot. | `@orchestrator` | Regenerate with `node scripts/handoff-ledger.mjs` when HOC inputs change; keep AGENTS and handoff-contract docs aligned. |
+| `docs/planning/issues-snapshot.md` | Keep the last authenticated snapshot when GitHub issue state is unavailable. | `@orchestrator` | Regenerate with `node scripts/planning-evidence.mjs`; failed or unauthenticated fetches must exit non-zero without replacing the committed snapshot. |
+| `docs/planning/AGENT_HEALTH_DASHBOARD.md` | Keep as a committed snapshot. Template-only reports are not specialist freshness evidence. | `@orchestrator` | Regenerate with `node scripts/planning-evidence.mjs` so its issue counts and evidence run id match the issue snapshot and handoff ledger; keep `docs/README.md` linked. |
+| `docs/planning/handoff-ledger.json` | Keep as a committed snapshot. Template-only upstream or downstream reports cannot satisfy HOC consumption. | `@orchestrator` | Regenerate with `node scripts/planning-evidence.mjs` when issue or HOC inputs change; keep AGENTS and handoff-contract docs aligned. |
 | `docs/reviews/doc-link-audit.md` | Keep as a committed generated report. | `@docs` | Regenerate with `node scripts/doc-generator.mjs links` after documentation restructuring. |
 
 ## Cleanup Rules
@@ -32,6 +33,7 @@ that still act as current evidence.
 Run these gates after changing artifact policy or generated-report locations:
 
 ```bash
+node scripts/planning-evidence.mjs --dry-run
 node scripts/doc-generator.mjs links
 pnpm test:docs
 git diff --check

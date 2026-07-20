@@ -16,7 +16,7 @@
  */
 
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { AGENT_REGISTRY } from "./agent-registry.mjs";
 import { findLatestReport } from "./handoff-ledger.mjs";
 
@@ -34,34 +34,33 @@ function getDateStr() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function main() {
-  const args = process.argv.slice(2);
-  let dryRun = false;
-  let period = getDateStr();
-
-  for (let i = 0; i < args.length; i++) {
-    if (args[i] === "--dry-run") dryRun = true;
-    else if (args[i] === "--period" && args[i + 1]) period = args[++i];
-  }
-
-  console.log(`🔍 SLA Enforcement Checker — ${period}`);
-  console.log("");
-
+export function collectSlaViolations(root = ROOT, now = new Date()) {
   const violations = [];
   const criticals = [];
-  const now = new Date();
 
   for (const [name, agentDef] of Object.entries(AGENT_REGISTRY)) {
     if (!agentDef.slaMaxHours) continue;
 
     const description = `${name} ${agentDef.cadence} report`;
-    const latest = findLatestReport(name, ROOT);
+    const latest = findLatestReport(name, root);
     if (!latest) {
       violations.push({
         agent: name,
         severity: "critical",
         message: `${description}: 无报告产出`,
         action: SLA_ACTIONS[name] ?? "manual orchestrator review",
+      });
+      criticals.push(name);
+      continue;
+    }
+
+    if (latest.evidenceKind === "template") {
+      violations.push({
+        agent: name,
+        severity: "critical",
+        message: `${description}: latest artifact is template-only specialist evidence`,
+        action: SLA_ACTIONS[name] ?? "manual orchestrator review",
+        lastRun: latest.generatedAt.toISOString(),
       });
       criticals.push(name);
       continue;
@@ -89,6 +88,24 @@ function main() {
       });
     }
   }
+
+  return { violations, criticals };
+}
+
+function main() {
+  const args = process.argv.slice(2);
+  let dryRun = false;
+  let period = getDateStr();
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "--dry-run") dryRun = true;
+    else if (args[i] === "--period" && args[i + 1]) period = args[++i];
+  }
+
+  console.log(`🔍 SLA Enforcement Checker — ${period}`);
+  console.log("");
+
+  const { violations, criticals } = collectSlaViolations();
 
   if (violations.length > 0) {
     console.log(`⚠️  检测到 ${violations.length} 个 SLA 违规:`);
@@ -118,4 +135,6 @@ function main() {
   process.exit(0);
 }
 
-main();
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main();
+}

@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   classifyChangedFiles,
+  classifyReportEvidence,
   validateAutomationReportContent,
   validatePlanningConsistency,
 } from "../../scripts/agent-framework.mjs";
@@ -82,6 +83,19 @@ describe("agent coordination framework", () => {
     expect(workflow).toContain("node scripts/doc-generator.mjs links");
   });
 
+  it("passes authenticated issue state into atomic weekly and monthly planning evidence", () => {
+    for (const workflowPath of [".github/workflows/agent-weekly.yml", ".github/workflows/agent-monthly.yml"]) {
+      const workflow = readFileSync(workflowPath, "utf8");
+      const refreshIndex = workflow.indexOf("node scripts/planning-evidence.mjs");
+      const commitIndex = workflow.indexOf("git commit");
+
+      expect(refreshIndex, workflowPath).toBeGreaterThan(-1);
+      expect(commitIndex, workflowPath).toBeGreaterThan(refreshIndex);
+      expect(workflow, workflowPath).toMatch(/permissions:\n(?:[ \t]+.*\n)*?[ \t]+issues: read/);
+      expect(workflow, workflowPath).toContain("GH_TOKEN: ${{ github.token }}");
+    }
+  });
+
   it("fails closed on malformed task ids and keeps valid ids in sync", () => {
     const valid = validatePlanningConsistency(
       "| TASK-2026W24-RCU-001 | item |\n| TASK-2026W24-PRD-001 | item |\n",
@@ -113,7 +127,11 @@ describe("agent coordination framework", () => {
     expect(validation.valid).toBe(true);
     expect(validation.frontMatter?.agent).toBe("orchestrator");
     expect(validation.frontMatter?.decision_level).toBe("info");
+    expect(validation.frontMatter?.evidence_kind).toBe("template");
     expect(validation.frontMatter?.inputs).toEqual(["AGENTS.md", "README.md"]);
+
+    const relabeledTemplate = report.replace("evidence_kind: template", "evidence_kind: specialist");
+    expect(classifyReportEvidence(relabeledTemplate)).toBe("template");
   });
 
   it("requires explicit upstream citation before a handoff counts as consumed", () => {
@@ -152,5 +170,53 @@ describe("agent coordination framework", () => {
       content: `---\nnotes: ${upstream.generatedAt.toISOString()}\n---\n# Weekly Digest\n`,
     };
     expect(classifyFlow(flow, upstream, downstreamWithOnlyTimestamp).status).toBe("pending");
+  });
+
+  it.each([
+    {
+      id: "HOC-N1",
+      from: "product",
+      description: "competitor signals and priority recommendations",
+      path: "docs/research/competitor-updates-2026-W30.md",
+    },
+    {
+      id: "HOC-N3",
+      from: "quality",
+      description: "gate pass/block and release readiness",
+      path: "docs/reviews/quality-gate-2026-07-21.md",
+    },
+  ])("rejects template-only reports on both sides of $id", ({ id, from, description, path }) => {
+    const flow = { id, from, to: "orchestrator", required: true, description };
+    const upstream = {
+      path,
+      generatedAt: new Date("2026-07-21T00:00:00Z"),
+      sha256: `template-${from}`,
+      evidenceKind: "template",
+    };
+    const downstream = {
+      path: "docs/planning/weekly-digest.md",
+      generatedAt: new Date("2026-07-21T00:01:00Z"),
+      content: path,
+      inputs: [path],
+      evidenceKind: "specialist",
+    };
+
+    const templateUpstream = classifyFlow(flow, upstream, downstream);
+    expect(templateUpstream).toMatchObject({
+      status: "invalid-upstream",
+      severity: "error",
+    });
+    expect(templateUpstream.status).not.toBe("consumed");
+
+    const templateDownstream = classifyFlow(
+      flow,
+      { ...upstream, evidenceKind: "specialist" },
+      { ...downstream, evidenceKind: "template" },
+    );
+    expect(templateDownstream).toMatchObject({
+      status: "pending",
+      severity: "error",
+    });
+    expect(templateDownstream.status).not.toBe("consumed");
   });
 });

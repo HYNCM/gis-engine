@@ -5,7 +5,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { extractFrontMatter, reportReferencesArtifact } from "./agent-framework.mjs";
+import { classifyReportEvidence, extractFrontMatter, reportReferencesArtifact } from "./agent-framework.mjs";
 import { AGENT_REGISTRY, HANDOFF_FLOWS } from "./agent-registry.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -17,6 +17,7 @@ function getRepoRevision(root = ROOT) {
     return execSync("git rev-parse --short HEAD", {
       cwd: root,
       encoding: "utf-8",
+      stdio: ["ignore", "pipe", "ignore"],
     }).trim();
   } catch {
     return "unknown";
@@ -54,6 +55,7 @@ export function findLatestReport(agentName, root = ROOT) {
         sha256: createHash("sha256").update(content).digest("hex"),
         content,
         inputs: Array.isArray(frontMatter?.inputs) ? frontMatter.inputs : [],
+        evidenceKind: classifyReportEvidence(content, frontMatter),
       };
       if (!latest || item.generatedAt > latest.generatedAt) {
         latest = item;
@@ -79,11 +81,27 @@ export function classifyFlow(flow, upstream, downstream) {
         };
   }
 
+  if (upstream.evidenceKind === "template") {
+    return {
+      status: "invalid-upstream",
+      severity: flow.required ? "error" : "warning",
+      note: `${flow.from} latest report is template-only and cannot satisfy ${flow.id}`,
+    };
+  }
+
   if (!downstream) {
     return {
       status: "pending",
       severity: flow.required ? "error" : "warning",
       note: `${flow.to} has not consumed ${flow.from} evidence`,
+    };
+  }
+
+  if (downstream.evidenceKind === "template") {
+    return {
+      status: "pending",
+      severity: flow.required ? "error" : "warning",
+      note: `${flow.to} latest report is template-only and cannot consume ${flow.id}`,
     };
   }
 
@@ -111,8 +129,8 @@ export function classifyFlow(flow, upstream, downstream) {
   };
 }
 
-export function buildHandoffLedger(root = ROOT) {
-  const generatedAt = new Date().toISOString();
+export function buildHandoffLedger(root = ROOT, options = {}) {
+  const generatedAt = (options.generatedAt ?? new Date()).toISOString();
   const flows = HANDOFF_FLOWS.map((flow) => {
     const upstream = findLatestReport(flow.from, root);
     const downstream = findLatestReport(flow.to, root);
@@ -148,6 +166,8 @@ export function buildHandoffLedger(root = ROOT) {
     generated_at: generatedAt,
     repo_revision: getRepoRevision(root),
     source: "scripts/handoff-ledger.mjs",
+    evidence_run_id: options.evidenceRunId ?? null,
+    issue_snapshot: options.issueSnapshot ?? null,
     flows,
   };
 }

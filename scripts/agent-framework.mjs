@@ -187,11 +187,34 @@ export function validateAutomationReportContent(content) {
     issues.push(`自动生成报告必须保持 decision_level: info，当前为 ${frontMatter.decision_level ?? "missing"}`);
   }
 
+  if (frontMatter.evidence_kind !== "template") {
+    issues.push(`自动生成报告必须声明 evidence_kind: template，当前为 ${frontMatter.evidence_kind ?? "missing"}`);
+  }
+
   if (!/automation-generated/i.test(String(content ?? "")) && !/Automation Notice/.test(String(content ?? ""))) {
     issues.push("缺少自动化生成标识");
   }
 
   return { valid: issues.length === 0, issues, frontMatter };
+}
+
+export function classifyReportEvidence(content, frontMatter = extractFrontMatter(content)) {
+  const declaredKind = frontMatter?.evidence_kind;
+  const text = String(content ?? "");
+  if (
+    declaredKind === "template" ||
+    /automation-generated evidence\/template output/i.test(text) ||
+    /This report is template-only evidence\./i.test(text) ||
+    /## Specialist Analysis Required[\s\S]*?<!-- Add evidence-backed findings/i.test(text)
+  ) {
+    return "template";
+  }
+
+  if (declaredKind === "specialist") {
+    return "specialist";
+  }
+
+  return "specialist";
 }
 
 export function reportReferencesArtifact(report, upstream) {

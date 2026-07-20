@@ -1,0 +1,31 @@
+{
+  "generatedAt": "2026-07-21T03:00:00.000Z",
+  "period": "2026-07-21",
+  "issues": [
+    {
+      "number": 30,
+      "title": "Make agent planning evidence fail closed",
+      "state": "OPEN",
+      "labels": [{ "name": "automation" }],
+      "assignees": [{ "login": "builder" }],
+      "milestone": { "title": "2026 W29-W30 Contract Convergence" },
+      "updatedAt": "2026-07-21T02:30:00Z",
+      "url": "https://github.com/HYNCM/gis-engine/issues/30"
+    },
+    {
+      "number": 27,
+      "title": "Converge MCP stable contract",
+      "state": "CLOSED",
+      "labels": [{ "name": "priority:p0" }],
+      "assignees": [],
+      "milestone": { "title": "2026 W29-W30 Contract Convergence" },
+      "updatedAt": "2026-07-20T12:00:00Z",
+      "url": "https://github.com/HYNCM/gis-engine/issues/27"
+    }
+  ],
+  "reports": {
+    "docs/research/competitor-updates-2026-W30.md": "---\nagent: product\nperiod: 2026-W30\ngenerated_at: 2026-07-21T02:40:00Z\nrepo_revision: fixture\ninputs:\n  - https://example.test/release\nowner: '@product'\ndecision_level: advisory\nevidence_kind: specialist\n---\n# Product evidence\n",
+    "docs/reviews/quality-gate-2026-07-21.md": "---\nagent: quality\nperiod: 2026-07-21\ngenerated_at: 2026-07-21T02:45:00Z\nrepo_revision: fixture\ninputs:\n  - pnpm test:agent-framework\nowner: '@quality'\ndecision_level: blocking\nevidence_kind: specialist\n---\n# Quality evidence\n",
+    "docs/planning/weekly-digest.md": "---\nagent: orchestrator\nperiod: 2026-W30\ngenerated_at: 2026-07-21T02:50:00Z\nrepo_revision: fixture\ninputs:\n  - docs/research/competitor-updates-2026-W30.md\n  - docs/reviews/quality-gate-2026-07-21.md\nowner: '@orchestrator'\ndecision_level: advisory\nevidence_kind: specialist\n---\n# Weekly digest\n"
+  }
+}
