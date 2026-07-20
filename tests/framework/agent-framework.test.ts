@@ -1,4 +1,6 @@
-import { readFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   classifyChangedFiles,
@@ -9,7 +11,7 @@ import {
 import { AGENT_REGISTRY, listAgentNames } from "../../scripts/agent-registry.mjs";
 import { generateReport } from "../../scripts/agent-runner.mjs";
 import { buildPlan } from "../../scripts/gate-plan.mjs";
-import { classifyFlow } from "../../scripts/handoff-ledger.mjs";
+import { classifyFlow, findLatestReport } from "../../scripts/handoff-ledger.mjs";
 
 describe("agent coordination framework", () => {
   it("separates docs-only changes from framework changes", () => {
@@ -219,4 +221,44 @@ describe("agent coordination framework", () => {
     });
     expect(templateDownstream.status).not.toBe("consumed");
   });
+
+  it("discovers dated specialist builder and quality decision reports", () => {
+    const root = mkdtempSync(join(tmpdir(), "gis-engine-specialist-reports-"));
+    const reports = {
+      "docs/reviews/maplibre-v5-v6-compatibility-builder-evidence-2026-07-21.md": specialistReport(
+        "builder",
+        "2026-07-20T16:51:28Z",
+      ),
+      "docs/reviews/maplibre-v5-v6-compatibility-quality-decision-2026-07-21.md": specialistReport(
+        "quality",
+        "2026-07-20T16:57:56Z",
+      ),
+    };
+
+    for (const [path, content] of Object.entries(reports)) {
+      const outputPath = join(root, path);
+      mkdirSync(dirname(outputPath), { recursive: true });
+      writeFileSync(outputPath, content, "utf8");
+    }
+
+    expect(findLatestReport("builder", root)?.path).toContain("builder-evidence");
+    expect(findLatestReport("quality", root)?.path).toContain("quality-decision");
+  });
 });
+
+function specialistReport(agent: "builder" | "quality", generatedAt: string): string {
+  return `---
+agent: ${agent}
+period: 2026-07-21
+generated_at: ${generatedAt}
+repo_revision: "fixture"
+inputs:
+  - fixture
+owner: "@${agent}"
+decision_level: ${agent === "quality" ? "blocking" : "advisory"}
+evidence_kind: specialist
+---
+
+# Specialist evidence
+`;
+}

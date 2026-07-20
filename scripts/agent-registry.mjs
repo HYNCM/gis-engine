@@ -48,7 +48,10 @@ export const AGENT_REGISTRY = {
     },
     outputDir: "docs/reviews",
     outputFile: (period) => `quality-gate-${period}.md`,
-    reportSearch: [{ dir: "docs/reviews", pattern: /^quality-gate-.*\.md$/ }],
+    reportSearch: [
+      { dir: "docs/reviews", pattern: /^quality-gate-.*\.md$/ },
+      { dir: "docs/reviews", pattern: /^.*-quality-decision-.*\.md$/ },
+    ],
     gates: ["pnpm build:schema", "pnpm check", "pnpm test:snapshot:smoke", "pnpm test:release:scene3d"],
     gateDecisionLevel: "blocking",
     slaMaxHours: 24,
@@ -64,7 +67,10 @@ export const AGENT_REGISTRY = {
     },
     outputDir: "docs/reviews",
     outputFile: (period) => `builder-evidence-${period}.md`,
-    reportSearch: [{ dir: "docs/reviews", pattern: /^builder-evidence-.*\.md$/ }],
+    reportSearch: [
+      { dir: "docs/reviews", pattern: /^builder-evidence-.*\.md$/ },
+      { dir: "docs/reviews", pattern: /^.*-builder-evidence-.*\.md$/ },
+    ],
     gates: ["pnpm build:schema", "pnpm check", "pnpm test"],
     gateDecisionLevel: "advisory",
     slaMaxHours: null,

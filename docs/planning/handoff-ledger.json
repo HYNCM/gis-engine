@@ -1,7 +1,9 @@
 {
-  "generated_at": "2026-07-19T01:15:44.516Z",
-  "repo_revision": "6b70cda",
+  "generated_at": "2026-07-20T17:14:39.721Z",
+  "repo_revision": "282c4a3",
   "source": "scripts/handoff-ledger.mjs",
+  "evidence_run_id": null,
+  "issue_snapshot": null,
   "flows": [
     {
       "id": "HOC-N1",
@@ -19,8 +21,8 @@
       },
       "downstream": {
         "path": "docs/planning/weekly-digest.md",
-        "generated_at": "2026-07-13T16:06:22.000Z",
-        "sha256": "28bd3e69659fffefe6a3f2e15759f43922dc90643662eae6f7b20d5c7d872720"
+        "generated_at": "2026-07-20T17:03:46.000Z",
+        "sha256": "6375bad434a9c1b8af11abd0c0bb1e4a833fab7c199cbb5db75d1a7c7e614751"
       }
     },
     {
@@ -29,14 +31,18 @@
       "to": "quality",
       "description": "implementation evidence and test results",
       "required": false,
-      "status": "idle",
+      "status": "consumed",
       "severity": "info",
-      "note": "builder is ad-hoc and has no active handoff",
-      "upstream": null,
+      "note": "quality report cites docs/reviews/maplibre-v5-v6-compatibility-builder-evidence-2026-07-21.md",
+      "upstream": {
+        "path": "docs/reviews/maplibre-v5-v6-compatibility-builder-evidence-2026-07-21.md",
+        "generated_at": "2026-07-20T16:51:28.000Z",
+        "sha256": "fd6adb670aa45f479d91f780202baad8f9982e84f52ceea32f6e8cda3da1a33b"
+      },
       "downstream": {
-        "path": "docs/reviews/quality-gate-planning-input-2026-07-13.md",
-        "generated_at": "2026-07-13T15:56:00.000Z",
-        "sha256": "bc347c4fe5ad3848f45ae991a39640c95bb70ad2151457f8749b96086017d59d"
+        "path": "docs/reviews/maplibre-v5-v6-compatibility-quality-decision-2026-07-21.md",
+        "generated_at": "2026-07-20T16:57:56.000Z",
+        "sha256": "95d7fd23e5da2c2e6263d06f59dd67b39142f90d10f637622682741ad710512b"
       }
     },
     {
@@ -47,16 +53,16 @@
       "required": true,
       "status": "consumed",
       "severity": "info",
-      "note": "orchestrator report cites docs/reviews/quality-gate-planning-input-2026-07-13.md",
+      "note": "orchestrator report cites docs/reviews/maplibre-v5-v6-compatibility-quality-decision-2026-07-21.md",
       "upstream": {
-        "path": "docs/reviews/quality-gate-planning-input-2026-07-13.md",
-        "generated_at": "2026-07-13T15:56:00.000Z",
-        "sha256": "bc347c4fe5ad3848f45ae991a39640c95bb70ad2151457f8749b96086017d59d"
+        "path": "docs/reviews/maplibre-v5-v6-compatibility-quality-decision-2026-07-21.md",
+        "generated_at": "2026-07-20T16:57:56.000Z",
+        "sha256": "95d7fd23e5da2c2e6263d06f59dd67b39142f90d10f637622682741ad710512b"
       },
       "downstream": {
         "path": "docs/planning/weekly-digest.md",
-        "generated_at": "2026-07-13T16:06:22.000Z",
-        "sha256": "28bd3e69659fffefe6a3f2e15759f43922dc90643662eae6f7b20d5c7d872720"
+        "generated_at": "2026-07-20T17:03:46.000Z",
+        "sha256": "6375bad434a9c1b8af11abd0c0bb1e4a833fab7c199cbb5db75d1a7c7e614751"
       }
     }
   ]

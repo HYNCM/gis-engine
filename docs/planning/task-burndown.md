@@ -1,15 +1,18 @@
 ---
 agent: orchestrator
 period: 2026-W29
-generated_at: 2026-07-13T16:06:22Z
-repo_revision: "bdd71e24a6cacc88cef578211943685a23890e38"
+generated_at: 2026-07-20T17:03:46Z
+repo_revision: "282c4a3136fa93a761c49ef9e05c4aedccc3d9b7"
 inputs:
   - docs/planning/issues-snapshot.md
   - docs/planning/next-step-plan.md
   - docs/research/competitor-updates-2026-W29.md
   - docs/reviews/quality-gate-planning-input-2026-07-13.md
+  - docs/reviews/maplibre-v5-v6-compatibility-quality-decision-2026-07-21.md
+  - docs/reviews/fail-closed-agent-evidence-quality-decision-2026-07-21.md
 owner: "@orchestrator"
 decision_level: info
+evidence_kind: specialist
 ---
 
 # Task Burndown
@@ -21,10 +24,10 @@ automation and does not duplicate hand-maintained completion percentages.
 
 | Priority | Issue | State at planning time | Owner / gate | Entry point |
 | --- | --- | --- | --- | --- |
-| P0 | #27 MCP stable-spec and public-tool contract | Open, first | @builder AI / @quality | [issue](https://github.com/HYNCM/gis-engine/issues/27) |
-| P1 | #28 PMTiles runtime capability truth | Open, depends on #27 | @builder engine+QA / @quality | [issue](https://github.com/HYNCM/gis-engine/issues/28) |
-| P1 | #29 MapLibre v5-v6 compatibility matrix | Open, depends on #27 | @builder adapter+QA / @quality | [issue](https://github.com/HYNCM/gis-engine/issues/29) |
-| P2 | #30 Agent planning evidence integrity | Open, 20% infrastructure capacity | @builder QA / @quality | [issue](https://github.com/HYNCM/gis-engine/issues/30) |
+| P0 | #27 MCP stable-spec and public-tool contract | Implemented + quality PASS; GitHub OPEN pending merge | @builder AI / @quality | [issue](https://github.com/HYNCM/gis-engine/issues/27) |
+| P1 | #28 PMTiles runtime capability truth | Implemented + quality PASS; GitHub OPEN pending merge | @builder engine+QA / @quality | [issue](https://github.com/HYNCM/gis-engine/issues/28) |
+| P1 | #29 MapLibre v5-v6 compatibility matrix | Implemented + quality PASS; keep 5.24.0; GitHub OPEN pending merge | @builder adapter+QA / @quality | [issue](https://github.com/HYNCM/gis-engine/issues/29) |
+| P2 | #30 Agent planning evidence integrity | Implemented + quality PASS; GitHub OPEN pending merge | @builder QA / @quality | [issue](https://github.com/HYNCM/gis-engine/issues/30) |
 
 All four issues belong to
 [milestone 1](https://github.com/HYNCM/gis-engine/milestone/1). Use
