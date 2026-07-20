@@ -31,7 +31,7 @@ PMTiles, or feature payload output in generated-app evidence.
 | --- | --- | --- | --- | --- |
 | Fixture query contract | `createPMTilesQueryEvidence()` records source-layer, point/bbox, result caps, empty results, and diagnostic counts | Reviewers can accept PMTiles query evidence without implying runtime parser support | Keep runtime parser/query promotion as a separate future gate | high |
 | Blocked diagnostics | Resource tests cover hidden layer, missing layer, missing source, unsupported source, and missing `metadata["source-layer"]` paths | Query promotion failures remain machine-readable | Keep diagnostic paths stable when adding runtime decode support | high |
-| Generated-app handoff | `createGenerationEvidenceBundle()` accepts explicit `pmtilesQueryEvidence` and emits source `queryEvidence` summaries without fixture payloads | Source-readiness can explain query-ready evidence, blocked cases, and follow-up runtime work | Keep generated-app evidence payload-free | high |
+| Generated-app handoff | `createGenerationEvidenceBundle()` accepts explicit `pmtilesQueryEvidence` and emits source `queryEvidence` plus fixture-evidence status summaries without fixture payloads | Source-readiness can explain fixture evidence, blocked cases, and follow-up runtime work while runtime `queryReady` stays false | Keep generated-app evidence payload-free | high |
 | Runtime boundary | Existing adapter query path still treats PMTiles as unsupported; fixture evidence has requirements `archiveParsing=false`, `hiddenFetch=false`, `worker=false` | Prevents broad PMTiles runtime support overclaim | Add adapter/runtime query only through a future parser/decode gate | high |
 
 ## Gate Evidence

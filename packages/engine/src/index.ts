@@ -77,11 +77,14 @@ export {
 } from "./sources/pmtiles.js";
 export {
   assessPMTilesRuntimeLoaderReadiness,
+  PMTILES_CAPABILITY_DECISION,
+  type PMTilesCapabilityDecision,
   type PMTilesDecodedFeature,
   type PMTilesDecodedGeometry,
   type PMTilesDecodeTile,
   type PMTilesDecodeTileInput,
   type PMTilesDirectoryEntry,
+  PMTilesFeatureQueryGateIds,
   type PMTilesFetchRange,
   type PMTilesFetchRangeRequest,
   type PMTilesFetchRangeResponse,
@@ -90,6 +93,9 @@ export {
   type PMTilesLoaderQueryResult,
   type PMTilesLoaderSnapshot,
   type PMTilesLoaderStatus,
+  PMTilesLoadGateIds,
+  PMTilesRuntimeBlockedError,
+  PMTilesRuntimeBlockerCodes,
   PMTilesRuntimeLoader,
   type PMTilesRuntimeLoaderOptions,
   type PMTilesRuntimeLoaderReadiness,
@@ -109,6 +115,7 @@ export {
 export {
   type CreateSourceReadinessReportOptions,
   createSourceReadinessReport,
+  type PMTilesFixtureEvidenceStatus,
   type SourcePMTilesQueryReadinessSummary,
   type SourceReadinessEntry,
   type SourceReadinessReport,

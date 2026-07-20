@@ -1,11 +1,13 @@
 import {
   type Diagnostic,
+  type PMTilesCapabilityDecision,
   type PMTilesRuntimeSourcePlan,
   Scene3DStableRuntimeBlockerCodes,
   type SourcePMTilesQueryReadinessSummary,
 } from "@gis-engine/engine";
 import { Ajv } from "ajv/dist/ajv.js";
 import { type GisEngineToolName, GisEngineToolNameSchema } from "../internal/mcpToolNames.js";
+import { PMTilesCapabilityDecisionSchema } from "./pmtilesCapability.js";
 import { toolInputErrorsToDiagnostics } from "./schemaDiagnostics.js";
 import { DiagnosticCountsSchema } from "./shared.js";
 
@@ -278,6 +280,8 @@ export const ExampleAppDeliverySummarySchema = {
           type: { type: "string" },
           state: SourceReadinessStateSchema,
           queryReady: { type: "boolean" },
+          fixtureEvidenceReady: { type: "boolean" },
+          fixtureEvidenceStatus: { type: "string", enum: ["not-requested", "ready", "empty", "blocked"] },
           resourcePolicy: {
             type: "string",
             enum: ["passed", "blocked", "not-applicable", "not-checked"],
@@ -286,6 +290,7 @@ export const ExampleAppDeliverySummarySchema = {
           sourceContract: SourceContractSchema,
           runtimeLoadPlan: SourceRuntimeLoadPlanSchema,
           queryEvidence: SourcePMTilesQueryEvidenceSchema,
+          capabilityDecision: PMTilesCapabilityDecisionSchema,
           confirmationReasons: {
             type: "array",
             items: DeliveryConfirmationReasonSchema,
@@ -649,6 +654,8 @@ export interface ExampleAppDeliverySummary {
     type: string;
     state: "supported" | "readiness-only" | "blocked";
     queryReady: boolean;
+    fixtureEvidenceReady?: boolean;
+    fixtureEvidenceStatus?: "not-requested" | "ready" | "empty" | "blocked";
     resourcePolicy?: "passed" | "blocked" | "not-applicable" | "not-checked";
     archiveContract?: {
       state: "explicit" | "not-applicable" | "not-checked";
@@ -668,6 +675,7 @@ export interface ExampleAppDeliverySummary {
       requirements: PMTilesRuntimeSourcePlan["requirements"];
     };
     queryEvidence?: SourcePMTilesQueryReadinessSummary;
+    capabilityDecision?: PMTilesCapabilityDecision;
     confirmationReasons: Array<
       "external-resource" | "network-fetch" | "archive-parsing" | "worker-use" | "file-write" | "stable-scene3d-runtime"
     >;

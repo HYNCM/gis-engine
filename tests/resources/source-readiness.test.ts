@@ -1,8 +1,10 @@
 import {
+  assessPMTilesRuntimeLoaderReadiness,
   createPMTilesQueryEvidence,
   createPMTilesRuntimeLoadPlan,
   createSourceReadinessReport,
   type MapSpec,
+  PMTilesRuntimeLoader,
 } from "@gis-engine/engine";
 import { describe, expect, it } from "vitest";
 
@@ -74,7 +76,18 @@ describe("source readiness report", () => {
         state: "readiness-only",
         displayReady: true,
         queryReady: false,
+        fixtureEvidenceReady: false,
+        fixtureEvidenceStatus: "not-requested",
         resourcePolicy: "passed",
+        capabilityDecision: expect.objectContaining({
+          display: expect.objectContaining({ status: "go" }),
+          load: expect.objectContaining({ status: "no-go", blockerCode: "PMTILES.RUNTIME_ARCHIVE_LOAD_BLOCKED" }),
+          featureQuery: expect.objectContaining({
+            status: "no-go",
+            blockerCode: "PMTILES.RUNTIME_FEATURE_QUERY_BLOCKED",
+          }),
+          loadPlan: expect.objectContaining({ status: "go" }),
+        }),
         runtimeLoadPlan: expect.objectContaining({ status: "ready", sourceLayerIds: ["parcels"] }),
       }),
     );
@@ -115,7 +128,7 @@ describe("source readiness report", () => {
       readinessOnlySourceCount: 1,
       blockedSourceCount: 0,
       displayReadySourceCount: 1,
-      queryReadySourceCount: 1,
+      queryReadySourceCount: 0,
     });
     expect(report.sources).toEqual([
       expect.objectContaining({
@@ -123,7 +136,9 @@ describe("source readiness report", () => {
         type: "pmtiles",
         state: "readiness-only",
         displayReady: true,
-        queryReady: true,
+        queryReady: false,
+        fixtureEvidenceReady: true,
+        fixtureEvidenceStatus: "ready",
         queryEvidence: expect.objectContaining({
           status: "ready",
           loaderContract: expect.objectContaining({
@@ -143,6 +158,33 @@ describe("source readiness report", () => {
       }),
     ]);
     expect(report.sources[0]?.limitations.join(" ")).toContain("fixture-only");
+  });
+
+  it("blocks the whole source readiness report when a PMTiles runtime loader is blocked", () => {
+    const spec: MapSpec = {
+      version: "0.1",
+      view: { center: [0, 0], zoom: 2 },
+      sources: { parcels: { type: "pmtiles", url: "./tiles/parcels.pmtiles" } },
+      layers: [{ id: "parcels-fill", type: "fill", source: "parcels", metadata: { "source-layer": "parcels" } }],
+    };
+    const loader = new PMTilesRuntimeLoader({
+      sourceId: "parcels",
+      url: "./tiles/parcels.pmtiles",
+      fetchRange: async () => ({ data: new ArrayBuffer(0), status: 206 }),
+      decodeTile: () => [],
+    });
+    const readiness = assessPMTilesRuntimeLoaderReadiness(spec, loader);
+    const report = createSourceReadinessReport(spec, { pmtilesRuntimeLoaders: { parcels: readiness } });
+
+    expect(report.status).toBe("blocked");
+    expect(report.summary.blockedSourceCount).toBe(1);
+    expect(report.sources[0]).toMatchObject({
+      sourceId: "parcels",
+      state: "blocked",
+      queryReady: false,
+      fixtureEvidenceReady: false,
+      fixtureEvidenceStatus: "not-requested",
+    });
   });
 
   it("reports FlatGeobuf as readiness-only now that it is a public source contract", () => {

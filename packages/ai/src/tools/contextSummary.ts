@@ -3,6 +3,8 @@ import {
   createSourceReadinessReport,
   type Diagnostic,
   type MapSpec,
+  type PMTilesCapabilityDecision,
+  type PMTilesFixtureEvidenceStatus,
   type SceneLayer,
   type SceneResourcePolicy,
   type SceneView3DExtension,
@@ -113,9 +115,12 @@ export interface ContextSummary {
     type: string;
     state: SourceReadinessState;
     queryReady: boolean;
+    fixtureEvidenceReady?: boolean;
+    fixtureEvidenceStatus?: PMTilesFixtureEvidenceStatus;
     resourcePolicy: SourceResourcePolicyState;
     sourceContract?: SourceContractSummary;
     archiveContract?: SourceArchiveContractSummary;
+    capabilityDecision?: PMTilesCapabilityDecision;
     runtimeLoadPlan?: SourceRuntimeLoadPlanSummary;
   }>;
   layers: Array<{
@@ -446,9 +451,12 @@ function summarizeSourceReadiness(spec: MapSpec): ContextSummary["sourceReadines
       type: source.type,
       state: source.state,
       queryReady: source.queryReady,
+      ...(source.fixtureEvidenceReady !== undefined ? { fixtureEvidenceReady: source.fixtureEvidenceReady } : {}),
+      ...(source.fixtureEvidenceStatus ? { fixtureEvidenceStatus: source.fixtureEvidenceStatus } : {}),
       resourcePolicy: source.resourcePolicy,
       ...(sourceContract ? { sourceContract } : {}),
       ...(source.type === "pmtiles" ? { archiveContract: PMTILES_ARCHIVE_CONTRACT_SUMMARY } : {}),
+      ...(source.capabilityDecision ? { capabilityDecision: source.capabilityDecision } : {}),
       ...(source.runtimeLoadPlan ? { runtimeLoadPlan: summarizeRuntimeLoadPlan(source.runtimeLoadPlan) } : {}),
     };
   });

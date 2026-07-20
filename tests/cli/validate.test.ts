@@ -41,6 +41,8 @@ describe("cli-preflight-map-spec", () => {
         state: "readiness-only",
         displayReady: true,
         queryReady: false,
+        fixtureEvidenceReady: false,
+        fixtureEvidenceStatus: "not-requested",
         resourcePolicy: "passed",
       });
       expect(result.diagnostics).toEqual([]);
@@ -48,6 +50,7 @@ describe("cli-preflight-map-spec", () => {
       expect(text).toContain("Readiness:  follow-up-required (0 supported, 1 readiness-only, 0 blocked)");
       expect(text).toContain("PMTiles:    ready (1 sources)");
       expect(text).toContain("Source parcels: pmtiles / readiness-only / display yes / query no / policy passed");
+      expect(text).toContain("Fixture evidence: no / not-requested");
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

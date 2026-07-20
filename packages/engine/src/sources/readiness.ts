@@ -11,7 +11,11 @@ import { escapePathSegment } from "../spec/patch/path.js";
 import { defaultResourcePolicy, type ResourcePolicy, validateResourcePolicy } from "../spec/resource-policy.js";
 import type { Diagnostic, MapSpec, SourceSpec } from "../types.js";
 import { createPMTilesRuntimeLoadPlan, type PMTilesRuntimeLoadPlan, type PMTilesRuntimeSourcePlan } from "./pmtiles.js";
-import type { PMTilesRuntimeLoaderReadiness } from "./pmtiles-loader.js";
+import {
+  PMTILES_CAPABILITY_DECISION,
+  type PMTilesCapabilityDecision,
+  type PMTilesRuntimeLoaderReadiness,
+} from "./pmtiles-loader.js";
 import type { PMTilesQueryEvidence } from "./pmtiles-query.js";
 
 type DiagnosticCounts = {
@@ -23,6 +27,7 @@ type DiagnosticCounts = {
 export type SourceReadinessState = "supported" | "readiness-only" | "blocked";
 export type SourceReadinessReportStatus = "ready" | "follow-up-required" | "blocked";
 export type SourceResourcePolicyStatus = "passed" | "blocked" | "not-applicable";
+export type PMTilesFixtureEvidenceStatus = "not-requested" | PMTilesQueryEvidence["status"];
 
 export interface CreateSourceReadinessReportOptions {
   resourcePolicy?: ResourcePolicy;
@@ -54,10 +59,13 @@ export interface SourceReadinessEntry {
   state: SourceReadinessState;
   displayReady: boolean;
   queryReady: boolean;
+  fixtureEvidenceReady?: boolean;
+  fixtureEvidenceStatus?: PMTilesFixtureEvidenceStatus;
   resourcePolicy: SourceResourcePolicyStatus;
   diagnostics: Diagnostic[];
   limitations: string[];
   nextAction: string;
+  capabilityDecision?: PMTilesCapabilityDecision;
   runtimeLoadPlan?: SourceRuntimeReadinessSummary;
   queryEvidence?: SourcePMTilesQueryReadinessSummary;
 }
@@ -194,43 +202,47 @@ function createSourceReadinessEntry(
 
   if (sourceType === "pmtiles") {
     const queryEvidenceBlocked = pmtilesQueryEvidence?.status === "blocked";
-    const blocked = pmtilesPlan?.status === "blocked" || resourceBlocked || queryEvidenceBlocked;
+    const runtimeLoaderBlocked =
+      pmtilesRuntimeLoader?.status === "blocked" ||
+      pmtilesRuntimeLoader?.status === "error" ||
+      pmtilesRuntimeLoader?.diagnostics.some((diagnostic) => diagnostic.severity === "error") === true;
+    const blocked =
+      pmtilesPlan?.status === "blocked" || resourceBlocked || queryEvidenceBlocked || runtimeLoaderBlocked;
     const metadataRequired = pmtilesPlan?.status === "metadata-required";
-    const queryReady = Boolean(
-      pmtilesRuntimeLoader?.queryReady ||
-        (pmtilesQueryEvidence &&
-          pmtilesQueryEvidence.status !== "blocked" &&
-          pmtilesQueryEvidence.summary.caseCount > 0),
-    );
-    const pmtilesDiagnostics = [...sourceDiagnostics, ...(pmtilesQueryEvidence?.diagnostics ?? [])];
+    const fixtureEvidenceStatus = pmtilesQueryEvidence?.status ?? "not-requested";
+    const fixtureEvidenceReady = fixtureEvidenceStatus === "ready";
+    const pmtilesDiagnostics = [
+      ...sourceDiagnostics,
+      ...(pmtilesQueryEvidence?.diagnostics ?? []),
+      ...(pmtilesRuntimeLoader?.diagnostics ?? []),
+    ];
     return {
       sourceId,
       type: sourceType,
       state: blocked ? "blocked" : "readiness-only",
       displayReady: !blocked && !metadataRequired,
-      queryReady,
+      queryReady: false,
+      fixtureEvidenceReady,
+      fixtureEvidenceStatus,
       resourcePolicy,
       diagnostics: pmtilesDiagnostics,
-      limitations: pmtilesRuntimeLoader?.queryReady
+      capabilityDecision: PMTILES_CAPABILITY_DECISION,
+      limitations: fixtureEvidenceReady
         ? [
-            "PMTiles runtime loader is active with range-request IO; archive mutation/export handoff is not implemented.",
+            "PMTiles point/bbox query evidence is fixture-only with caller-supplied decoded features; archive parsing, hidden range IO, workers, and mutation/export handoff are not implemented.",
           ]
-        : queryReady
-          ? [
-              "PMTiles point/bbox query evidence is fixture-only with caller-supplied decoded features; archive parsing, hidden range IO, workers, and mutation/export handoff are not implemented.",
-            ]
-          : ["PMTiles archive parsing, mutation/export handoff, and runtime feature query are not implemented."],
+        : ["PMTiles archive parsing, mutation/export handoff, and runtime feature query are not implemented."],
       nextAction: blocked
-        ? queryEvidenceBlocked
-          ? "Fix PMTiles fixture query evidence blockers before claiming query readiness."
-          : "Fix PMTiles load-plan blockers before delivery."
+        ? runtimeLoaderBlocked
+          ? "Fix PMTiles runtime loader blockers before delivery."
+          : queryEvidenceBlocked
+            ? "Fix PMTiles fixture query evidence blockers before claiming fixture evidence readiness."
+            : "Fix PMTiles load-plan blockers before delivery."
         : metadataRequired
           ? "Provide caller-supplied PMTiles archive metadata for the requested preflight gate."
-          : pmtilesRuntimeLoader?.queryReady
-            ? "PMTiles runtime loader is active; use range-request query for feature access."
-            : queryReady
-              ? "Use caller-supplied PMTiles fixture query evidence for review; keep archive parsing, hidden IO, and runtime query as follow-up contracts."
-              : "Use URL-compatible display/export evidence; keep archive parsing and feature query as follow-up contracts.",
+          : fixtureEvidenceReady
+            ? "Use caller-supplied PMTiles fixture query evidence for review; runtime queryReady remains false until runtime promotion."
+            : "Use URL-compatible display/export evidence; keep archive parsing and feature query as follow-up contracts.",
       ...(pmtilesPlan ? { runtimeLoadPlan: summarizePMTilesRuntimeLoadPlan(pmtilesPlan) } : {}),
       ...(pmtilesQueryEvidence ? { queryEvidence: summarizePMTilesQueryEvidence(pmtilesQueryEvidence) } : {}),
     };

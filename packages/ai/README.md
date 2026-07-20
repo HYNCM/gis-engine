@@ -156,7 +156,11 @@ from the engine `createSourceReadinessReport()` contract. PMTiles sources carry
 an explicit archive contract snapshot so generation can see readiness, query
 status, and policy context before review-console evidence is built; inline
 GeoJSON reports resource policy as `not-applicable` because no URL policy check
-is needed.
+is needed. PMTiles entries also carry `capabilityDecision`, which records
+display Go, IO-free load-plan Go, runtime archive-load No-go, and runtime
+feature-query No-go with stable blocker codes. Their runtime `queryReady` is
+always false; fixture-only evidence is exposed through
+`fixtureEvidenceReady`/`fixtureEvidenceStatus` instead.
 
 ## Programmatic Usage
 

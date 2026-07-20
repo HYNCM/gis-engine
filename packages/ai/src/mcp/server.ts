@@ -38,6 +38,7 @@ import {
 } from "../tools/exportExampleApp.js";
 import { GenerateSpecToolInputSchema, generateSpecTool } from "../tools/generateSpec.js";
 import { InspectDataToolInputSchema, inspectDataTool } from "../tools/inspectData.js";
+import { PMTilesCapabilityDecisionSchema } from "../tools/pmtilesCapability.js";
 import { QueryFeaturesToolInputSchema, queryFeaturesTool } from "../tools/queryFeatures.js";
 import { toolInputErrorsToDiagnostics } from "../tools/schemaDiagnostics.js";
 import { DiagnosticCountsSchema, stripNestedIds } from "../tools/shared.js";
@@ -303,10 +304,13 @@ const SourceReadinessSchema = {
     type: { type: "string" },
     state: { type: "string", enum: ["supported", "readiness-only", "blocked"] },
     queryReady: { type: "boolean" },
+    fixtureEvidenceReady: { type: "boolean" },
+    fixtureEvidenceStatus: { type: "string", enum: ["not-requested", "ready", "empty", "blocked"] },
     resourcePolicy: { type: "string", enum: ["passed", "blocked", "not-applicable", "not-checked"] },
     sourceContract: SourceContractSchema,
     archiveContract: SourceArchiveContractSchema,
     runtimeLoadPlan: SourceRuntimeLoadPlanSchema,
+    capabilityDecision: PMTilesCapabilityDecisionSchema,
   },
   required: ["sourceId", "type", "state", "queryReady", "resourcePolicy"],
   additionalProperties: false,

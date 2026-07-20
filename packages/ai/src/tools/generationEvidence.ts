@@ -1808,6 +1808,10 @@ function buildSourceReadiness(
         type: readiness.type,
         state: readiness.state,
         queryReady: readiness.queryReady,
+        ...(readiness.fixtureEvidenceReady !== undefined
+          ? { fixtureEvidenceReady: readiness.fixtureEvidenceReady }
+          : {}),
+        ...(readiness.fixtureEvidenceStatus ? { fixtureEvidenceStatus: readiness.fixtureEvidenceStatus } : {}),
         resourcePolicy: readiness.resourcePolicy,
         confirmationReasons,
         ...(archiveContract ? { archiveContract } : {}),
@@ -1815,6 +1819,7 @@ function buildSourceReadiness(
           ? { runtimeLoadPlan: summarizePMTilesRuntimeLoadPlan(readiness.runtimeLoadPlan) }
           : {}),
         ...(readiness.queryEvidence ? { queryEvidence: readiness.queryEvidence } : {}),
+        ...(readiness.capabilityDecision ? { capabilityDecision: readiness.capabilityDecision } : {}),
         notes: sourceReadinessNotes(readiness, source),
       };
     },
@@ -1848,7 +1853,7 @@ function sourceReadinessNotes(
 
   if (source?.type === "pmtiles") {
     return [
-      readiness.queryReady
+      readiness.fixtureEvidenceReady
         ? "PMTiles point/bbox query evidence uses caller-supplied decoded fixtures only; runtime archive parsing, hidden range IO, and worker-backed feature query remain future contracts."
         : "PMTiles is URL-compatible for display/export evidence, while archive parsing and feature query support remain future contracts.",
       ...(readiness.state === "blocked"

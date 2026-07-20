@@ -210,7 +210,14 @@ The current `MapLibreAdapter` is still an MVP renderer binding. It transforms su
 PMTiles support is URL-compatible vector delivery plus SDK load-plan preflight
 and caller-supplied fixture query evidence. The engine does not fetch PMTiles
 resources, parse PMTiles archives, start PMTiles workers, or provide PMTiles
-feature-query runtime semantics.
+feature-query runtime semantics. `PMTILES_CAPABILITY_DECISION` records display
+and IO-free load-plan preflight as Go, while runtime archive load and runtime
+feature query are No-go. The compatibility `PMTilesRuntimeLoader` enforces that
+decision without range IO through `PMTILES.RUNTIME_ARCHIVE_LOAD_BLOCKED` and
+`PMTILES.RUNTIME_FEATURE_QUERY_BLOCKED`.
+PMTiles source readiness keeps `queryReady: false`; caller-supplied fixture
+evidence is reported separately by `fixtureEvidenceReady` and
+`fixtureEvidenceStatus`.
 
 `fill-extrusion-lite` is an experimental 2.5D contract gated by `capabilities.experimental` and beta-mapped to MapLibre `fill-extrusion`. `@gis-engine/scene3d`, `@gis-engine/scene3d-three-adapter`, `SceneView3DExtensionSchema`, SceneView3D preparation commands, `validateSceneResourceLoadPlan`, `snapshotScene3DMock`, `queryScene3DMock`, and `evaluateScene3DReleaseVisualGate` now exist as the v1 3D contract scaffold, but `view.mode: "scene3d"` is still reserved and returns structured unsupported diagnostics; terrain, glTF, and 3D Tiles are not implemented renderers yet. Note that stable `view.mode: "scene3d"` remains blocked until the future promotion decision gate accepts the complete renderer package.
 

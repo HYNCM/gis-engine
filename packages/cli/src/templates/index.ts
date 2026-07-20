@@ -913,6 +913,8 @@ type DeliverySourceSummary = {
   type?: string;
   state?: string;
   queryReady?: boolean;
+  fixtureEvidenceReady?: boolean;
+  fixtureEvidenceStatus?: string;
   resourcePolicy?: string;
   confirmationReasons?: string[];
   notes?: string[];
@@ -1887,7 +1889,7 @@ export default function App() {
                       <span className="truncate font-medium text-gray-900">{source.sourceId ?? "source"}</span>
                       <span className="font-medium text-gray-700">{source.state ?? "--"}</span>
                       <span className="col-span-2 text-gray-400">
-                        {source.type ?? "--"} source, query {flagValue(source.queryReady)}, policy {source.resourcePolicy ?? "--"}
+                        {source.type ?? "--"} source, runtime query {flagValue(source.queryReady)}, fixture evidence {source.fixtureEvidenceStatus ? flagValue(source.fixtureEvidenceReady) + " / " + source.fixtureEvidenceStatus : "--"}, policy {source.resourcePolicy ?? "--"}
                       </span>
                       {source.confirmationReasons && source.confirmationReasons.length > 0 ? (
                         <span className="col-span-2 truncate text-gray-400">
