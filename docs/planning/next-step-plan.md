@@ -1,8 +1,8 @@
 ---
 agent: orchestrator
 period: 2026-W29
-generated_at: 2026-07-20T17:03:46Z
-repo_revision: "282c4a3136fa93a761c49ef9e05c4aedccc3d9b7"
+generated_at: 2026-07-21T16:37:55.453Z
+repo_revision: "f3c7a62259acc946376cf9a679a72f2f8becda63"
 inputs:
   - docs/research/competitor-updates-2026-W29.md
   - docs/research/capability-scorecard.md
@@ -11,6 +11,7 @@ inputs:
   - https://github.com/HYNCM/gis-engine/issues/28
   - https://github.com/HYNCM/gis-engine/issues/29
   - https://github.com/HYNCM/gis-engine/issues/30
+  - https://github.com/HYNCM/gis-engine/pull/36
   - docs/reviews/pmtiles-capability-truth-quality-decision-2026-07-20.md
   - docs/reviews/maplibre-v5-v6-compatibility-quality-decision-2026-07-21.md
   - docs/reviews/fail-closed-agent-evidence-quality-decision-2026-07-21.md
@@ -34,18 +35,18 @@ quality input. Quality found no P0 or release blocker that must interrupt
 roadmap work, so the product priority formula controls the execution order.
 
 Implementation closure was recorded on 2026-07-20/21. All four bounded tasks
-now have code, focused verification, and independent quality decisions on
-`codex/mcp-contract-convergence`. GitHub issues remain open until the branch is
-merged; this document does not treat local completion as main-branch delivery.
+have code, focused verification, independent quality decisions, and main-branch
+delivery through PR #36 at `f3c7a62`. GitHub issues #27-#30 are closed; this
+document records the post-merge state rather than local-only completion.
 
 ## Execution Closure
 
 | Issue | Branch result | Quality decision | Merge state |
 | --- | --- | --- | --- |
-| #27 | Canonical 14-tool MCP 2025-11-25 contract and structured results implemented | PASS | open pending PR merge |
-| #28 | PMTiles display/load-plan Go; runtime archive load/query No-go and fail closed | PASS | open pending PR merge |
-| #29 | Exact 5.24.0/6.0.0-22 matrix passed; keep 5.24.0 and do not bump prerelease | PASS | open pending PR merge |
-| #30 | Auth failure preserves planning artifacts; template evidence cannot satisfy HOC/freshness | PASS | open pending PR merge |
+| #27 | Canonical 14-tool MCP 2025-11-25 contract and structured results implemented | PASS | closed via PR #36 |
+| #28 | PMTiles display/load-plan Go; runtime archive load/query No-go and fail closed | PASS | closed via PR #36 |
+| #29 | Exact 5.24.0/6.0.0-22 matrix passed; keep 5.24.0 and do not bump prerelease | PASS | closed via PR #36 |
+| #30 | Auth failure preserves planning artifacts; template evidence cannot satisfy HOC/freshness | PASS | closed via PR #36 |
 
 ## Decisions
 
@@ -201,6 +202,7 @@ consumption, and GitHub issue snapshots distinguishable and current.
 - [x] `node scripts/issues-snapshot.mjs --dry-run` (expected fail-closed exit 2 locally; snapshot preserved)
 - [x] `node scripts/handoff-ledger.mjs --dry-run`
 - [x] `node scripts/dashboard-generator.mjs --dry-run --period 2026-07-21`
+- [x] `node scripts/planning-evidence.mjs --period 2026-07-22` (authenticated post-merge run `planning-evidence-20260721T163755453Z`)
 - [x] `node scripts/doc-generator.mjs links`
 - [x] `pnpm check`
 
@@ -220,7 +222,7 @@ unless planning evidence becomes untrustworthy.
 
 ## Completion Gate
 
-- [ ] #27 is closed with a current @quality pass before capability work claims
+- [x] #27 is closed with a current @quality pass before capability work claims
       the reconciled MCP behavior.
 - [x] #28 and #29 each have independent quality decisions and exact public
       wording; one cannot supply evidence for the other.
@@ -228,8 +230,9 @@ unless planning evidence becomes untrustworthy.
 - [x] `pnpm check` passes on the final code-bearing head, with strict visual and
       resource gates where required.
 - [x] Planning snapshots, HOC ledger, dashboard, and GitHub Issues agree on the
-      current pre-merge state; the last authenticated issue snapshot was
-      preserved because local GitHub authentication is unavailable.
+      post-merge state through evidence run
+      `planning-evidence-20260721T163755453Z`; unrelated open escalation issues
+      #32-#35 remain explicitly visible and outside this milestone.
 
 ## Risks and Mitigations
 

@@ -1,8 +1,8 @@
 ---
 agent: orchestrator
 period: 2026-W29
-generated_at: 2026-07-20T17:03:46Z
-repo_revision: "282c4a3136fa93a761c49ef9e05c4aedccc3d9b7"
+generated_at: 2026-07-21T16:37:55.453Z
+repo_revision: "f3c7a62259acc946376cf9a679a72f2f8becda63"
 inputs:
   - docs/planning/issues-snapshot.md
   - docs/planning/next-step-plan.md
@@ -10,6 +10,8 @@ inputs:
   - docs/reviews/quality-gate-planning-input-2026-07-13.md
   - docs/reviews/maplibre-v5-v6-compatibility-quality-decision-2026-07-21.md
   - docs/reviews/fail-closed-agent-evidence-quality-decision-2026-07-21.md
+  - https://github.com/HYNCM/gis-engine/pull/36
+  - docs/reviews/contract-convergence-closeout-2026-07-22.md
 owner: "@orchestrator"
 decision_level: info
 evidence_kind: specialist
@@ -24,13 +26,14 @@ automation and does not duplicate hand-maintained completion percentages.
 
 | Priority | Issue | State at planning time | Owner / gate | Entry point |
 | --- | --- | --- | --- | --- |
-| P0 | #27 MCP stable-spec and public-tool contract | Implemented + quality PASS; GitHub OPEN pending merge | @builder AI / @quality | [issue](https://github.com/HYNCM/gis-engine/issues/27) |
-| P1 | #28 PMTiles runtime capability truth | Implemented + quality PASS; GitHub OPEN pending merge | @builder engine+QA / @quality | [issue](https://github.com/HYNCM/gis-engine/issues/28) |
-| P1 | #29 MapLibre v5-v6 compatibility matrix | Implemented + quality PASS; keep 5.24.0; GitHub OPEN pending merge | @builder adapter+QA / @quality | [issue](https://github.com/HYNCM/gis-engine/issues/29) |
-| P2 | #30 Agent planning evidence integrity | Implemented + quality PASS; GitHub OPEN pending merge | @builder QA / @quality | [issue](https://github.com/HYNCM/gis-engine/issues/30) |
+| P0 | #27 MCP stable-spec and public-tool contract | Implemented + quality PASS; CLOSED via PR #36 | @builder AI / @quality | [issue](https://github.com/HYNCM/gis-engine/issues/27) |
+| P1 | #28 PMTiles runtime capability truth | Implemented + quality PASS; CLOSED via PR #36 | @builder engine+QA / @quality | [issue](https://github.com/HYNCM/gis-engine/issues/28) |
+| P1 | #29 MapLibre v5-v6 compatibility matrix | Implemented + quality PASS; keep 5.24.0; CLOSED via PR #36 | @builder adapter+QA / @quality | [issue](https://github.com/HYNCM/gis-engine/issues/29) |
+| P2 | #30 Agent planning evidence integrity | Implemented + quality PASS; CLOSED via PR #36 | @builder QA / @quality | [issue](https://github.com/HYNCM/gis-engine/issues/30) |
 
 All four issues belong to
-[milestone 1](https://github.com/HYNCM/gis-engine/milestone/1). Use
+[milestone 1](https://github.com/HYNCM/gis-engine/milestone/1) and are closed
+on `main` at `f3c7a62`. Use
 [issues-snapshot.md](./issues-snapshot.md) for generated current state and
 [next-step-plan.md](./next-step-plan.md) for acceptance and verification.
 
@@ -42,7 +45,8 @@ All four issues belong to
 
 ## Maintenance
 
-- Do not mark issues complete here; close them in GitHub after their quality gate.
+- Keep issue states synchronized with GitHub; #27-#30 are closed after their
+  quality gate and PR #36 merge.
 - Regenerate the issue snapshot and planning health artifacts after issue changes.
 - Preserve the historical burndown in
   [archive/2026-06-10/planning/task-burndown.md](../archive/2026-06-10/planning/task-burndown.md).
