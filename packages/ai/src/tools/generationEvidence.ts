@@ -35,13 +35,14 @@ import {
   validateSpec,
 } from "@gis-engine/engine";
 import { Ajv } from "ajv/dist/ajv.js";
+import { type GisEngineToolName, GisEngineToolNameSchema } from "../internal/mcpToolNames.js";
 import {
   ContextSummaryToolResultSchema,
   SnapshotSpecToolResultSchema,
   ValidateSpecToolResultSchema,
 } from "../mcp/server.js";
 import { applyCommandsTool } from "./applyCommands.js";
-import { type ContextSummary, type GisEngineToolName, getContextSummary } from "./contextSummary.js";
+import { type ContextSummary, getContextSummary } from "./contextSummary.js";
 import {
   type ExampleAppDeliverySummary,
   ExampleAppDeliverySummarySchema,
@@ -67,23 +68,6 @@ const SnapshotSpecContractSchema = stripNestedIds(SnapshotSpecToolResultSchema);
 const ValidationReportContractSchema = stripNestedIds(ValidateSpecToolResultSchema);
 type Scene3DStableRuntimeBlockerCode =
   (typeof Scene3DStableRuntimeBlockerCodes)[keyof typeof Scene3DStableRuntimeBlockerCodes];
-
-const GisEngineToolNameSchema = {
-  type: "string",
-  enum: [
-    "validate_spec",
-    "apply_commands",
-    "export_spec",
-    "get_context_summary",
-    "snapshot_spec",
-    "explain_spec",
-    "export_example_app",
-    "diff_specs",
-    "generate_spec",
-    "inspect_data",
-    "edit_spec",
-  ],
-} as const;
 
 const DEFAULT_SPATIAL_QUERY_RESULT_LIMIT = 100;
 
@@ -1824,6 +1808,10 @@ function buildSourceReadiness(
         type: readiness.type,
         state: readiness.state,
         queryReady: readiness.queryReady,
+        ...(readiness.fixtureEvidenceReady !== undefined
+          ? { fixtureEvidenceReady: readiness.fixtureEvidenceReady }
+          : {}),
+        ...(readiness.fixtureEvidenceStatus ? { fixtureEvidenceStatus: readiness.fixtureEvidenceStatus } : {}),
         resourcePolicy: readiness.resourcePolicy,
         confirmationReasons,
         ...(archiveContract ? { archiveContract } : {}),
@@ -1831,6 +1819,7 @@ function buildSourceReadiness(
           ? { runtimeLoadPlan: summarizePMTilesRuntimeLoadPlan(readiness.runtimeLoadPlan) }
           : {}),
         ...(readiness.queryEvidence ? { queryEvidence: readiness.queryEvidence } : {}),
+        ...(readiness.capabilityDecision ? { capabilityDecision: readiness.capabilityDecision } : {}),
         notes: sourceReadinessNotes(readiness, source),
       };
     },
@@ -1864,7 +1853,7 @@ function sourceReadinessNotes(
 
   if (source?.type === "pmtiles") {
     return [
-      readiness.queryReady
+      readiness.fixtureEvidenceReady
         ? "PMTiles point/bbox query evidence uses caller-supplied decoded fixtures only; runtime archive parsing, hidden range IO, and worker-backed feature query remain future contracts."
         : "PMTiles is URL-compatible for display/export evidence, while archive parsing and feature query support remain future contracts.",
       ...(readiness.state === "blocked"

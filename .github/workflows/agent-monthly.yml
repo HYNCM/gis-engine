@@ -109,10 +109,11 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Refresh issue snapshot and dashboard
+      - name: Refresh authenticated planning evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          node scripts/issues-snapshot.mjs
-          node scripts/dashboard-generator.mjs --period "$(date -u +%Y-%m-%d)"
+          node scripts/planning-evidence.mjs --period "$(date -u +%Y-%m-%d)"
 
       - name: Commit monthly artifacts
         run: |

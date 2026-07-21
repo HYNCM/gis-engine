@@ -573,25 +573,23 @@ Baseline diff 策略：
 
 ## MCP Tool Contract
 
-当前 MCP public tool names 是 snake_case，camelCase 不作为别名暴露：
-
-```txt
-validate_spec
-apply_commands
-export_spec
-get_context_summary
-snapshot_spec
-explain_spec
-export_example_app
-diff_specs
-generate_spec
-```
+当前 v1.5 canonical MCP public inventory 包含 14 tools，名称使用 snake_case，
+camelCase 不作为别名暴露。`tools/list` 的 canonical 顺序是：
+`apply_commands`, `validate_spec`, `export_spec`, `get_context_summary`,
+`snapshot_spec`, `explain_spec`, `export_example_app`, `diff_specs`,
+`generate_spec`, `inspect_data`, `edit_spec`, `query_features`,
+`style_recommend`, `transform_data`。
 
 规则：
 
 - 每个 tool descriptor 必须包含 `inputSchema` 和 `outputSchema`。
 - 所有 `inputSchema` / `outputSchema` 必须可被 Ajv 编译，并由 `pnpm test:schema-sync` 覆盖。
-- 工具失败必须返回包含 `Diagnostic` 的结构化结果，不允许只返回 `{ message }` 或纯自然语言。
+- 成功结果必须符合 descriptor `outputSchema` 的成功分支；工具执行失败
+  必须符合统一的 `{ diagnostics: Diagnostic[] }` 结构化分支，并保留旧的
+  JSON diagnostics 文本块，不允许只返回 `{ message }` 或纯自然语言。
+- MCP stable protocol revision is `2025-11-25`; descriptor schemas use the
+  JSON Schema draft-07 dialect, `outputSchema` results must expose
+  `structuredContent`, and the server advertises the package version.
 - `export_spec` 即使没有 commands，也必须先校验输入 spec。
 - `get_context_summary` 和 `explain_spec` 接收的 `capabilities` 必须符合 `CapabilityReportSchema`。
 - MCP tools 只能调用 engine 的公开 schema、validator、commands、snapshot 和 example export API，不访问 renderer 私有对象。

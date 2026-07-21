@@ -363,6 +363,7 @@ function generateFrontMatter(agentName, agentDef, period, _gateResults) {
     `  note: "${agentDef.modelPolicy?.routingNote ?? "Use the inherited automation model unless a task-specific override is approved."}"`,
     `owner: "${owner}"`,
     `decision_level: ${decisionLevel}`,
+    "evidence_kind: template",
     "---",
     "",
   ].join("\n");

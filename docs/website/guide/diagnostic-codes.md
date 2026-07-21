@@ -226,6 +226,24 @@ These codes are returned by `validateSpec()` when the MapSpec fails JSON Schema 
 | **Fix** | Enable the required capability in `spec.capabilities`, or use a supported alternative. For `fill-extrusion-lite`, set `view.mode` to `"map2_5d"` and add `"fill-extrusion-lite"` to `capabilities.experimental`. |
 | **Example** | `"view": { "mode": "scene3d" }` — blocked until stable runtime promotion gate passes. |
 
+### PMTILES.RUNTIME_ARCHIVE_LOAD_BLOCKED
+
+| Field | Detail |
+|---|---|
+| **Code** | `PMTILES.RUNTIME_ARCHIVE_LOAD_BLOCKED` |
+| **Trigger** | A caller invokes the compatibility PMTiles runtime loader before spec-complete directory, compression, leaf traversal, cancellation, budget, cache, and resource-policy evidence has passed the promotion gate. |
+| **Fix** | Use `createPMTilesRuntimeLoadPlan()` for IO-free preflight and URL-compatible MapLibre display. Keep runtime archive loading disabled until a separate promotion decision is accepted. |
+| **Example** | `PMTilesRuntimeLoader.initialize()` rejects before invoking the caller-supplied range fetcher. |
+
+### PMTILES.RUNTIME_FEATURE_QUERY_BLOCKED
+
+| Field | Detail |
+|---|---|
+| **Code** | `PMTILES.RUNTIME_FEATURE_QUERY_BLOCKED` |
+| **Trigger** | A caller requests PMTiles runtime archive feature query while runtime archive loading remains No-go. |
+| **Fix** | Use caller-supplied, decoded fixture query evidence for review only; do not claim runtime feature query support. |
+| **Example** | `PMTilesRuntimeLoader.query()` returns zero features, zero fetched tiles, and this diagnostic without IO. |
+
 ---
 
 ## COMMAND — Command System
@@ -291,7 +309,7 @@ These codes are returned by `validateSpec()` when the MapSpec fails JSON Schema 
 | Field | Detail |
 |---|---|
 | **Code** | `SECURITY.RESOURCE_TIMEOUT` |
-| **Trigger** | A resource load operation exceeded the configured `timeoutMs` (default: 10 000 ms). Applies to PMTiles queries and SceneView3D resource loads. |
+| **Trigger** | A resource load operation exceeded the configured `timeoutMs` (default: 10 000 ms). Applies to PMTiles fixture query evidence and SceneView3D resource loads. |
 | **Fix** | Optimize the resource load, or increase `timeoutMs` in the resource policy only through an explicit contract update. |
 | **Example** | Scene resource load took 15 000 ms with `timeoutMs: 10000`. |
 
@@ -300,9 +318,9 @@ These codes are returned by `validateSpec()` when the MapSpec fails JSON Schema 
 | Field | Detail |
 |---|---|
 | **Code** | `SECURITY.RESOURCE_TOO_LARGE` |
-| **Trigger** | A resource exceeds the configured byte budget (`maxResourceBytes` or scene resource size limit). Applies to PMTiles query loader responses and SceneView3D asset loads. |
+| **Trigger** | A resource exceeds the configured byte budget (`maxResourceBytes` or scene resource size limit). Applies to PMTiles fixture query evidence and SceneView3D asset loads. |
 | **Fix** | Reduce the resource size, or raise the byte budget only after a review gate. |
-| **Example** | PMTiles loader response is 50 MB with `byteBudgetBytes: 10485760` (10 MB). |
+| **Example** | PMTiles fixture evidence records a 50 MB response with `byteBudgetBytes: 10485760` (10 MB). |
 
 ### SECURITY.UNSUPPORTED_ASSET_TYPE
 
@@ -386,6 +404,8 @@ These codes are returned by `validateSpec()` when the MapSpec fails JSON Schema 
 | `SNAPSHOT.BLANK_CANVAS` | SNAPSHOT | error | Snapshot with no visible layers |
 | `SNAPSHOT.RESOURCE_PENDING` | SNAPSHOT | error/warning | Snapshot before resources loaded |
 | `CAPABILITY.UNSUPPORTED` | CAPABILITY | error | Feature not available in runtime |
+| `PMTILES.RUNTIME_ARCHIVE_LOAD_BLOCKED` | PMTILES | error | Runtime archive loading has not passed its promotion gate |
+| `PMTILES.RUNTIME_FEATURE_QUERY_BLOCKED` | PMTILES | error | Runtime archive feature query remains blocked |
 | `COMMAND.INVALID_PATCH` | COMMAND | error | Malformed patch operation |
 | `COMMAND.UNSUPPORTED` | COMMAND | error | Unknown command type |
 | `CONFLICT.BASE_REVISION` | CONFLICT | error | Revision mismatch on command |

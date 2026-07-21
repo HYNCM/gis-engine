@@ -18,6 +18,7 @@
 // ---------------------------------------------------------------------------
 
 export type MapLibreV6AuditSeverity = "pass" | "warning" | "fail";
+export type MapLibreV6CandidateDecision = "keep-baseline" | "bump-approved";
 
 export interface MapLibreV6AuditEntry {
   /** Unique audit check identifier. */
@@ -39,6 +40,12 @@ export interface MapLibreV6AuditReport {
   status: "compatible" | "warnings" | "incompatible";
   /** MapLibre version range this audit targets. */
   targetVersionRange: string;
+  /** Exact versions exercised by the executable matrix. */
+  checkedVersions: readonly ["5.24.0", "6.0.0-22"];
+  /** Version retained by release and workspace defaults. */
+  releaseBaseline: "5.24.0";
+  /** Candidate adoption decision; independent from runtime compatibility evidence. */
+  candidateDecision: MapLibreV6CandidateDecision;
   /** Individual audit entries. */
   entries: MapLibreV6AuditEntry[];
   /** Summary counts. */
@@ -64,126 +71,50 @@ export interface MapLibreV6AuditReport {
  */
 const MAPLIBRE_V6_AUDIT_ENTRIES: MapLibreV6AuditEntry[] = [
   {
-    id: "style-spec-v8-compat",
-    description: "MapLibre v6 continues to use style spec v8; no spec-level breaking changes expected.",
-    breakingChange: "Style spec v8 remains stable across v5→v6.",
-    severity: "pass",
-    impact: "No transformer changes required.",
-    remediation: "Confirmed compatible — GIS Engine outputs style spec v8.",
-  },
-  {
-    id: "map-constructor-options",
-    description: "Map constructor options audit: container, style, center, zoom, bounds, fitBoundsOptions.",
-    breakingChange: "v6 may deprecate some legacy constructor options.",
-    severity: "pass",
-    impact: "GIS Engine adapter uses standard options (container, style, center, zoom, bearing, pitch).",
-    remediation: "All constructor options used by the adapter are within the v6 stable API surface.",
-  },
-  {
-    id: "setStyle-diff",
-    description: "setStyle() diff parameter behavior may change in v6.",
-    breakingChange: "v6 setStyle() may alter diff semantics for incremental updates.",
+    id: "prerelease-peer-range",
+    description:
+      "npm resolves the release baseline natively but rejects the checked prerelease against the public peer range.",
+    breakingChange: "Semver range ^6.0.0 does not include 6.0.0-22.",
     severity: "warning",
-    impact: "styleDiff.ts relies on setStyle with diff for incremental updates.",
-    remediation: "Monitor v6 release notes for setStyle diff behavior changes. Consider explicit diff: true flag.",
+    impact: "The v6 prerelease is evidence-only and cannot be presented as a supported peer installation.",
+    remediation: "Keep 5.24.0 as the release baseline; make any future stable-v6 range change a separate decision.",
   },
   {
-    id: "queryRenderedFeatures",
-    description: "queryRenderedFeatures API surface and return type stability.",
-    breakingChange: "v6 may change queryRenderedFeatures return type or filter semantics.",
+    id: "public-adapter-types",
+    description: "The packed public adapter API compiles under strict TypeScript against both exact versions.",
+    breakingChange: "v6 changes event subscription return types and adds camera/event types.",
     severity: "pass",
-    impact: "Adapter uses queryRenderedFeatures for interaction feature queries.",
-    remediation: "Standard API — confirmed compatible with v5 and expected v6 behavior.",
+    impact:
+      "MapLibreAdapter, InteractionBridgeEvent, MapSpec, lifecycle subscriptions, and Map access remain type-safe.",
+    remediation: "Keep the exact-version consumer compile in the compatibility matrix.",
   },
   {
-    id: "source-add-remove",
-    description: "addSource() / removeSource() API stability.",
-    breakingChange: "v6 source management API remains stable.",
-    severity: "pass",
-    impact: "Adapter uses addSource/removeSource for dynamic source management.",
-    remediation: "No changes required.",
-  },
-  {
-    id: "layer-add-remove",
-    description: "addLayer() / removeLayer() / moveLayer() API stability.",
-    breakingChange: "v6 layer management API remains stable.",
-    severity: "pass",
-    impact: "Adapter uses addLayer/removeLayer/moveLayer for layer operations.",
-    remediation: "No changes required.",
-  },
-  {
-    id: "setFilter",
-    description: "setFilter() expression validation changes.",
-    breakingChange: "v6 may tighten filter expression validation.",
+    id: "esm-generated-example",
+    description: "Both entries bundle as ESM; v6 requires explicit delivery of its module worker and shared module.",
+    breakingChange:
+      "v6 derives maplibre-gl-worker.mjs beside import.meta.url; Vite renames the application chunk and does not copy the worker pair automatically.",
     severity: "warning",
     impact:
-      "Adapter passes through filter expressions from MapSpec; stricter validation could reject valid expressions.",
-    remediation: "Ensure expression validator (expression-validator.ts) stays aligned with MapLibre's expression spec.",
-  },
-  {
-    id: "setPaintProperty-setLayoutProperty",
-    description: "Property setter API stability for paint and layout properties.",
-    breakingChange: "v6 paint/layout property setters remain stable.",
-    severity: "pass",
-    impact: "Adapter uses setPaintProperty/setLayoutProperty for incremental updates.",
-    remediation: "No changes required.",
-  },
-  {
-    id: "event-system",
-    description: "Map event system (on/off/once) and event payload shapes.",
-    breakingChange: "v6 may deprecate some event names or change payload shapes.",
-    severity: "pass",
-    impact: "Adapter subscribes to moveend, zoomend, data, idle, load, click, mousemove events.",
-    remediation: "All subscribed events are part of the stable MapLibre event API.",
-  },
-  {
-    id: "popup-api",
-    description: "Popup constructor and method API stability.",
-    breakingChange: "v6 Popup API remains stable.",
-    severity: "pass",
-    impact: "Adapter creates Popup instances for interaction popups.",
-    remediation: "No changes required.",
-  },
-  {
-    id: "pmtiles-protocol",
-    description: "PMTiles protocol handler registration via addProtocol().",
-    breakingChange: "v6 addProtocol() API may change signature.",
-    severity: "warning",
-    impact: "PMTiles delivery relies on addProtocol for custom protocol handling.",
+      "A generated v6 app stalls before style.load unless it calls setWorkerUrl with a deployed module-worker URL.",
     remediation:
-      "Monitor v6 addProtocol changes. The adapter currently delegates PMTiles to MapLibre's native support.",
+      "Copy maplibre-gl-worker.mjs and maplibre-gl-shared.mjs as public assets and call setWorkerUrl before constructing a v6 map.",
   },
   {
-    id: "webgl-context",
-    description: "WebGL context creation and rendering pipeline changes.",
-    breakingChange: "v6 may introduce WebGPU rendering path alongside WebGL.",
+    id: "adapter-lifecycle-events",
+    description:
+      "With explicit v6 worker delivery, raw Map and MapLibreAdapter emit load/idle and adapter moveend events.",
+    breakingChange: "v6 module-worker delivery is a prerequisite for lifecycle completion.",
     severity: "pass",
-    impact: "GIS Engine is WebGL-based; WebGPU is an opt-in path.",
-    remediation: "No changes required until WebGPU is explicitly adopted.",
+    impact: "The adapter event bridge works unchanged once the v6 worker is available.",
+    remediation: "Retain raw-map and adapter event assertions in the generated browser fixture.",
   },
   {
-    id: "esm-tree-shaking",
-    description: "ESM export structure for tree-shaking support.",
-    breakingChange: "v6 improves ESM tree-shaking with granular exports.",
+    id: "strict-visual-readiness",
+    description: "Both exact versions produce snapshot success and nonblank Chromium pixels without console errors.",
+    breakingChange: "v6 cannot reach strict visual readiness without explicit module-worker delivery.",
     severity: "pass",
-    impact: "GIS Engine imports maplibre-gl as a type-only dependency at compile time.",
-    remediation: "Type-only imports are unaffected by ESM changes.",
-  },
-  {
-    id: "fill-extrusion-3d",
-    description: "Fill extrusion 3D rendering behavior and property support.",
-    breakingChange: "v6 may change fill-extrusion rendering defaults.",
-    severity: "pass",
-    impact: "GIS Engine uses fill-extrusion for 2.5D building visualization.",
-    remediation: "No breaking property name or value changes expected.",
-  },
-  {
-    id: "terrain-3d",
-    description: "Terrain and 3D terrain API stability.",
-    breakingChange: "v6 may introduce new terrain APIs.",
-    severity: "pass",
-    impact: "GIS Engine does not currently use MapLibre terrain features.",
-    remediation: "Not affected — terrain is out of current scope.",
+    impact: "The accepted migration path preserves visible renderer output in the evidence fixture.",
+    remediation: "Continue to require strict visual evidence before any dependency baseline change.",
   },
 ];
 
@@ -208,7 +139,10 @@ export function runMapLibreV6Audit(): MapLibreV6AuditReport {
 
   return {
     status,
-    targetVersionRange: "^5.0.0 || ^6.0.0",
+    targetVersionRange: "5.24.0 / 6.0.0-22 evidence-only",
+    checkedVersions: ["5.24.0", "6.0.0-22"],
+    releaseBaseline: "5.24.0",
+    candidateDecision: "keep-baseline",
     entries,
     summary: {
       totalChecks: entries.length,
@@ -219,13 +153,22 @@ export function runMapLibreV6Audit(): MapLibreV6AuditReport {
   };
 }
 
+/** Returns true when the checked runtime/type/visual evidence has no failures. */
+export function isMapLibreV6RuntimeCompatible(report: MapLibreV6AuditReport = runMapLibreV6Audit()): boolean {
+  return report.status !== "incompatible";
+}
+
 /**
- * Returns true if the MapLibre v6 audit passes with no failures.
- * Warnings are advisory and do not block v6 adoption.
+ * Backwards-compatible runtime compatibility alias.
+ * This does not approve a dependency or release-baseline change.
  */
 export function isMapLibreV6Compatible(): boolean {
-  const report = runMapLibreV6Audit();
-  return report.status !== "incompatible";
+  return isMapLibreV6RuntimeCompatible();
+}
+
+/** Returns true only when runtime evidence passes and quality separately approves the bump. */
+export function isMapLibreV6AdoptionApproved(report: MapLibreV6AuditReport = runMapLibreV6Audit()): boolean {
+  return isMapLibreV6RuntimeCompatible(report) && report.candidateDecision === "bump-approved";
 }
 
 /**

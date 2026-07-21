@@ -44,6 +44,28 @@ npm install maplibre-gl
 ```
 The engine works without MapLibre for validation, commands, and spec operations. MapLibre is only required for `createMap()` with the maplibre adapter.
 
+### Runtime Compatibility And Adoption
+
+MapLibre runtime compatibility evidence and dependency adoption are separate
+decisions. Runtime compatibility means the checked adapter types, lifecycle,
+worker delivery, and strict visual evidence have no failures. Adoption also
+requires an explicit quality decision to change the release baseline.
+
+```typescript
+import {
+  isMapLibreV6AdoptionApproved,
+  isMapLibreV6RuntimeCompatible,
+  runMapLibreV6Audit,
+} from "@gis-engine/engine";
+
+const report = runMapLibreV6Audit();
+isMapLibreV6RuntimeCompatible(report); // runtime evidence only
+isMapLibreV6AdoptionApproved(report); // also requires candidateDecision: "bump-approved"
+```
+
+`isMapLibreV6Compatible()` remains a backwards-compatible alias for runtime
+compatibility. It does not approve a package or release-baseline change.
+
 ## CDN
 
 You can also load GIS Engine from a CDN:
@@ -103,7 +125,19 @@ if (plan.status === "blocked") {
 
 This preflight does not fetch resources, parse PMTiles archives, or provide
 PMTiles feature-query semantics. It makes URL-compatible MapLibre vector
-delivery auditable before runtime.
+delivery auditable before runtime. `PMTILES_CAPABILITY_DECISION` is the public
+machine-readable truth: URL-compatible display and IO-free load-plan preflight
+are Go; runtime archive load and runtime feature query are No-go.
+
+`PMTilesRuntimeLoader` remains exported for API compatibility, but it is a
+fail-closed shell. `loadHeader()`, `loadDirectory()`, and `initialize()` reject
+with `PMTILES.RUNTIME_ARCHIVE_LOAD_BLOCKED`; `query()` returns
+`PMTILES.RUNTIME_FEATURE_QUERY_BLOCKED`. None of those methods call the
+provided range fetcher or decoder.
+
+Source readiness keeps PMTiles `queryReady: false` even when fixture evidence
+is supplied; that evidence is reported by `fixtureEvidenceReady` and
+`fixtureEvidenceStatus`.
 
 ## Next Steps
 

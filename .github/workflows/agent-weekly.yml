@@ -76,6 +76,7 @@ jobs:
       - name: Run orchestrator agent template
         env:
           WEEK_OVERRIDE: ${{ github.event.inputs.week }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           WEEK="${WEEK_OVERRIDE:-$(date -u +%G-W%V)}"
           node scripts/agent-runner.mjs orchestrator --period "${WEEK}"
@@ -184,11 +185,12 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Refresh issue snapshot, handoff ledger, and dashboard
+      - name: Refresh authenticated planning evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           PERIOD="$(date -u +%Y-%m-%d)"
-          node scripts/issues-snapshot.mjs
-          node scripts/dashboard-generator.mjs --period "${PERIOD}"
+          node scripts/planning-evidence.mjs --period "${PERIOD}"
 
       - name: Commit weekly artifacts
         env:

@@ -20,6 +20,8 @@ export const DiagnosticCodes = {
   SnapshotBlankCanvas: "SNAPSHOT.BLANK_CANVAS",
   SnapshotResourcePending: "SNAPSHOT.RESOURCE_PENDING",
   CapabilityUnsupported: "CAPABILITY.UNSUPPORTED",
+  PMTilesRuntimeArchiveLoadBlocked: "PMTILES.RUNTIME_ARCHIVE_LOAD_BLOCKED",
+  PMTilesRuntimeFeatureQueryBlocked: "PMTILES.RUNTIME_FEATURE_QUERY_BLOCKED",
   CommandInvalidPatch: "COMMAND.INVALID_PATCH",
   CommandUnsupported: "COMMAND.UNSUPPORTED",
   ConflictBaseRevision: "CONFLICT.BASE_REVISION",

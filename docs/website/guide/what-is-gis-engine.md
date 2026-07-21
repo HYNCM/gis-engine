@@ -60,8 +60,10 @@ without changing the core engine API.
 
 ### AI-Native MCP Tools
 
-Seven MCP tools expose every engine capability to AI agents with typed
-input/output schemas—no guesswork, no natural-language-only interfaces.
+14 MCP tools expose engine capabilities to AI agents with typed
+input/output schemas—no guesswork, no natural-language-only interfaces. The
+default inventory groups seven Core lifecycle tools, three Authoring
+extensions, and four Data intelligence tools.
 
 ## Package Structure
 

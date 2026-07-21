@@ -46,7 +46,12 @@ Install via Smithery CLI for Claude Desktop automatically:
 npx -y @smithery/cli install @gis-engine/ai --client claude
 ```
 
-### Available Tools (9 tools)
+### Available Tools (14 tools)
+
+Canonical `tools/list` order: `apply_commands`, `validate_spec`, `export_spec`,
+`get_context_summary`, `snapshot_spec`, `explain_spec`, `export_example_app`,
+`diff_specs`, `generate_spec`, `inspect_data`, `edit_spec`, `query_features`,
+`style_recommend`, `transform_data`.
 
 | Tool | Description |
 |---|---|
@@ -59,10 +64,22 @@ npx -y @smithery/cli install @gis-engine/ai --client claude
 | `export_example_app` | Return a manifest and file list for a bundled example (no files written) |
 | `diff_specs` | Compare two MapSpecs and output the command diff with a change summary |
 | `generate_spec` | Generate a MapSpec skeleton from a structured intent description |
+| `inspect_data` | Inspect GeoJSON structure, properties, geometry types, and bounds |
+| `edit_spec` | Edit a MapSpec using natural-language instructions through commands |
+| `query_features` | Query inline GeoJSON features by point or bounding box |
+| `style_recommend` | Recommend data-driven layer styles from inline GeoJSON |
+| `transform_data` | Filter, aggregate, select, sort, or rename inline GeoJSON |
 
-Each public tool descriptor exposes both `inputSchema` and `outputSchema`.
+The server targets MCP `2025-11-25`. Each public tool descriptor exposes both
+`inputSchema` and `outputSchema` using the JSON Schema draft-07 dialect.
 `apply_commands` accepts `collectTrace: true` for review flows that need
 command provenance, changed paths, and conflict diagnostics in the result.
+The default `tools/list` inventory contains all 14 tools. The seven lifecycle
+tools form the Phase 1 Core group; the remaining tools are additive Authoring
+extensions and Data intelligence capabilities. Successful calls return schema-conforming
+`structuredContent` plus a JSON text block. Execution errors return a
+schema-conforming `{ diagnostics: [...] }` envelope and retain the legacy
+diagnostics array in the text block.
 
 ## Generation Evidence Bundle
 
@@ -139,7 +156,11 @@ from the engine `createSourceReadinessReport()` contract. PMTiles sources carry
 an explicit archive contract snapshot so generation can see readiness, query
 status, and policy context before review-console evidence is built; inline
 GeoJSON reports resource policy as `not-applicable` because no URL policy check
-is needed.
+is needed. PMTiles entries also carry `capabilityDecision`, which records
+display Go, IO-free load-plan Go, runtime archive-load No-go, and runtime
+feature-query No-go with stable blocker codes. Their runtime `queryReady` is
+always false; fixture-only evidence is exposed through
+`fixtureEvidenceReady`/`fixtureEvidenceStatus` instead.
 
 ## Programmatic Usage
 

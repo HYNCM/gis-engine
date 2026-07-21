@@ -2,7 +2,7 @@
 
 > **Try it online:** [Open Playground on StackBlitz](https://stackblitz.com/github/HYNCM/gis-engine/tree/main/examples/basic-geojson)
 
-Get a map rendered with GIS Engine v1.4.0 through one of three supported
+Get a map rendered with GIS Engine v1.5.0 through one of three supported
 first-run paths.
 
 ## Path 1: npm Install (SDK Direct)

@@ -240,11 +240,27 @@ describe("MCP Server Integration", () => {
         type: string;
         state: string;
         queryReady: boolean;
+        fixtureEvidenceReady?: boolean;
+        fixtureEvidenceStatus?: string;
         resourcePolicy: string;
+        capabilityDecision?: {
+          display: { status: string };
+          load: { status: string; blockerCode: string };
+          featureQuery: { status: string; blockerCode: string };
+          loadPlan: { status: string };
+        };
       }>;
       layers: Array<{ id: string; visibility: string }>;
       validation: { valid: boolean; diagnosticCounts: { error: number } };
-      capabilitySummary: { domains: Array<{ id: string; status: string; tools: string[]; blocked: string[] }> };
+      capabilitySummary: {
+        domains: Array<{
+          id: string;
+          status: string;
+          tools: string[];
+          experimental: string[];
+          blocked: string[];
+        }>;
+      };
     };
     expect(summary.id).toBe("style-update");
     expect(summary.revision).toBe("1");
@@ -271,9 +287,16 @@ describe("MCP Server Integration", () => {
     expect(
       summary.capabilitySummary.domains.find((domain) => domain.id === "feature-display")?.tools.join(" "),
     ).toContain("apply_commands");
-    expect(
-      summary.capabilitySummary.domains.find((domain) => domain.id === "spatial-analysis")?.blocked.join(" "),
-    ).toContain("buffer");
+    expect(summary.capabilitySummary.domains.find((domain) => domain.id === "feature-display")?.tools).toContain(
+      "style_recommend",
+    );
+    const spatialAnalysis = summary.capabilitySummary.domains.find((domain) => domain.id === "spatial-analysis");
+    expect(spatialAnalysis?.tools).toEqual(
+      expect.arrayContaining(["inspect_data", "query_features", "transform_data"]),
+    );
+    expect(spatialAnalysis?.experimental.join(" ")).toContain("query_features");
+    expect(spatialAnalysis?.experimental.join(" ")).not.toContain("no dedicated query");
+    expect(spatialAnalysis?.blocked.join(" ")).toContain("buffer");
   });
 
   it("surfaces PMTiles archive contract status in context summaries", async () => {
@@ -343,7 +366,18 @@ describe("MCP Server Integration", () => {
         type: "pmtiles",
         state: "readiness-only",
         queryReady: false,
+        fixtureEvidenceReady: false,
+        fixtureEvidenceStatus: "not-requested",
         resourcePolicy: "passed",
+        capabilityDecision: expect.objectContaining({
+          display: expect.objectContaining({ status: "go" }),
+          load: expect.objectContaining({ status: "no-go", blockerCode: "PMTILES.RUNTIME_ARCHIVE_LOAD_BLOCKED" }),
+          featureQuery: expect.objectContaining({
+            status: "no-go",
+            blockerCode: "PMTILES.RUNTIME_FEATURE_QUERY_BLOCKED",
+          }),
+          loadPlan: expect.objectContaining({ status: "go" }),
+        }),
         sourceContract: expect.objectContaining({
           kind: "archive",
           state: "explicit",

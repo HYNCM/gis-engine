@@ -208,7 +208,7 @@ npx @gis-engine/cli@latest my-map
 cd my-map && open index.html
 ```
 
-## AI Integration: 9 MCP Tools & Real Images
+## AI Integration: 14 MCP Tools & Real Images
 
 The rendering milestone makes AI integration tangible, not theoretical.
 
@@ -216,16 +216,20 @@ The rendering milestone makes AI integration tangible, not theoretical.
 An AI can generate a MapSpec, snapshot it, evaluate the visual result, and
 issue refinement commands — a closed authoring loop with no custom code.
 
-**Two new MCP tools** expand what AI agents can do:
+The canonical v1.5 inventory expands what AI agents can do across Core
+lifecycle, Authoring extensions, and Data intelligence tools. Two tools added
+for this rendering milestone are:
 
 - **`inspect_data`** — inspect GeoJSON source data (feature counts, property
   schemas, sample features) without rendering
 - **`edit_spec`** — natural-language spec editing ("make the cities red,"
   "add a zoom-based circle radius") translated into typed commands
 
-That brings the total to **9 MCP tools**: `validate_spec`, `apply_commands`,
-`export_spec`, `get_context_summary`, `snapshot_spec`, `explain_spec`,
-`export_example_app`, `inspect_data`, and `edit_spec`.
+The complete `tools/list` order is **14 MCP tools**: `apply_commands`,
+`validate_spec`, `export_spec`, `get_context_summary`, `snapshot_spec`,
+`explain_spec`, `export_example_app`, `diff_specs`, `generate_spec`,
+`inspect_data`, `edit_spec`, `query_features`, `style_recommend`, and
+`transform_data`.
 
 **Enhanced `generate_spec`** now supports choropleth, graduated-circle, and
 multi-layer compositions with 6 color themes and 50+ location keywords —

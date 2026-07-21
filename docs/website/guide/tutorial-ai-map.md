@@ -251,5 +251,5 @@ void main().catch(console.error);
 
 - [Build a Choropleth Map](/guide/tutorial-choropleth) — create data-driven styling maps
 - [Interactive Map with Events](/guide/tutorial-interactive-map) — add click handlers and hover effects
-- [MCP Tools Reference](/mcp/overview) — all 7 tools with input/output schemas
+- [MCP Tools Reference](/mcp/overview) — all 14 tools with input/output schemas
 - [Natural Language Editing](/guide/nl-editing) — deeper dive into AI-driven editing

@@ -1221,7 +1221,21 @@ describe("generation evidence bundle", () => {
           type: "pmtiles",
           state: "readiness-only",
           queryReady: false,
+          fixtureEvidenceReady: false,
+          fixtureEvidenceStatus: "not-requested",
           resourcePolicy: "passed",
+          capabilityDecision: expect.objectContaining({
+            display: expect.objectContaining({ status: "go" }),
+            load: expect.objectContaining({
+              status: "no-go",
+              blockerCode: "PMTILES.RUNTIME_ARCHIVE_LOAD_BLOCKED",
+            }),
+            featureQuery: expect.objectContaining({
+              status: "no-go",
+              blockerCode: "PMTILES.RUNTIME_FEATURE_QUERY_BLOCKED",
+            }),
+            loadPlan: expect.objectContaining({ status: "go" }),
+          }),
           archiveContract: expect.objectContaining({
             state: "explicit",
             metadataFields: expect.arrayContaining(["specVersion", "archiveBytes", "rootDirectoryLength"]),
@@ -1993,7 +2007,9 @@ describe("generation evidence bundle", () => {
         sourceId: "parcels",
         type: "pmtiles",
         state: "readiness-only",
-        queryReady: true,
+        queryReady: false,
+        fixtureEvidenceReady: true,
+        fixtureEvidenceStatus: "ready",
         queryEvidence: expect.objectContaining({
           status: "ready",
           sourceLayerIds: ["parcels"],

@@ -1,16 +1,20 @@
 ---
 agent: orchestrator
 period: 2026-07
-generated_at: 2026-07-13T16:06:22Z
-repo_revision: "bdd71e24a6cacc88cef578211943685a23890e38"
+generated_at: 2026-07-20T17:03:46Z
+repo_revision: "282c4a3136fa93a761c49ef9e05c4aedccc3d9b7"
 inputs:
   - docs/research/competitor-updates-2026-W29.md
   - docs/research/capability-scorecard.md
   - docs/reviews/quality-gate-planning-input-2026-07-13.md
   - docs/planning/next-step-plan.md
   - docs/planning/issues-snapshot.md
+  - docs/reviews/pmtiles-capability-truth-quality-decision-2026-07-20.md
+  - docs/reviews/maplibre-v5-v6-compatibility-quality-decision-2026-07-21.md
+  - docs/reviews/fail-closed-agent-evidence-quality-decision-2026-07-21.md
 owner: "@orchestrator"
 decision_level: advisory
+evidence_kind: specialist
 ---
 
 # Monthly Roadmap
@@ -20,9 +24,9 @@ decision_level: advisory
 | Surface | Decision | Evidence |
 | --- | --- | --- |
 | SDK + CLI | Primary stable adoption surface; packages are at v1.5.0 | [CHANGELOG](../../CHANGELOG.md) |
-| MCP | Release prerequisite: public inventory and stable structured-result contract must converge | [W29 research](../research/competitor-updates-2026-W29.md) |
-| PMTiles | Capability truth unresolved; loader export does not by itself approve runtime-query support | [PMTiles boundary](./feature-specs/pmtiles-runtime-query-promotion-boundary.md) |
-| MapLibre | Keep 5.24 as the release baseline pending a v5-v6 compatibility matrix | [next-stage plan](./next-step-plan.md) |
+| MCP | Canonical 14-tool MCP 2025-11-25 contract passes locally; merge pending | [next-stage plan](./next-step-plan.md) |
+| PMTiles | Display/load-plan Go; runtime archive load/query remain fail-closed No-go | [quality decision](../reviews/pmtiles-capability-truth-quality-decision-2026-07-20.md) |
+| MapLibre | Exact-version matrix passes; keep 5.24.0 and do not adopt 6.0.0-22 | [quality decision](../reviews/maplibre-v5-v6-compatibility-quality-decision-2026-07-21.md) |
 | Workbench | Feature-flagged candidate route only; hosted GA remains No-go | [Workbench gate](./feature-specs/review-console-workbench-go-gate.md) |
 | SceneView3D | Experimental adapter evidence only; stable `view.mode: "scene3d"` remains blocked | [stable renderer contract](./feature-specs/sceneview3d-stable-renderer-contract.md) |
 
@@ -32,10 +36,10 @@ Milestone: [2026 W29-W30 Contract Convergence](https://github.com/HYNCM/gis-engi
 
 | Order | Issue | Target outcome | Gate |
 | ---: | --- | --- | --- |
-| P0 | [#27 MCP contract convergence](https://github.com/HYNCM/gis-engine/issues/27) | One public tool inventory and schema-conforming `structuredContent` with text compatibility | `pnpm build:schema`, `pnpm test:ai`, `pnpm check`, @quality pass |
-| P1 | [#28 PMTiles capability truth](https://github.com/HYNCM/gis-engine/issues/28) | Explicit display/load/query Go or No-go backed by resource and negative fixtures | resource/runtime/adapter/AI gates, @quality decision |
-| P1 | [#29 MapLibre compatibility](https://github.com/HYNCM/gis-engine/issues/29) | Executable v5-v6 matrix without an automatic dependency bump | adapter/browser/strict visual gates, @quality keep/bump decision |
-| P2 | [#30 Agent evidence integrity](https://github.com/HYNCM/gis-engine/issues/30) | Authenticated issue snapshots and fail-closed specialist/HOC freshness | agent-framework and docs-link gates |
+| P0 | [#27 MCP contract convergence](https://github.com/HYNCM/gis-engine/issues/27) | Implemented and quality-passed; issue open pending merge | local gates pass; remote PR gate pending |
+| P1 | [#28 PMTiles capability truth](https://github.com/HYNCM/gis-engine/issues/28) | Implemented bounded Go/No-go decision and quality pass | local gates pass; remote PR gate pending |
+| P1 | [#29 MapLibre compatibility](https://github.com/HYNCM/gis-engine/issues/29) | Both exact entries pass; keep/bump decision is keep 5.24.0 | local strict matrix passes; remote PR matrix pending |
+| P2 | [#30 Agent evidence integrity](https://github.com/HYNCM/gis-engine/issues/30) | Fail-closed implementation and quality pass | local framework/docs gates pass; remote PR gate pending |
 
 Tasks #28 and #29 may proceed in parallel only after #27 freezes the AI-facing
 public contract. Reserve 20% of capacity for #30, consistent with the repository
@@ -52,9 +56,9 @@ infrastructure allocation rule.
 ## Stage Exit Requirements
 
 - [ ] Close #27 before any new MCP tool or package-release claim.
-- [ ] Record independent, current quality decisions for #28 and #29; open
+- [x] Record independent, current quality decisions for #28 and #29; open
       issues are not promotion evidence.
-- [ ] Confirm the next weekly automation preserves specialist reports and
+- [x] Confirm the next weekly automation preserves specialist reports and
       canonical issue state without treating templates as decisions.
 - [ ] Pass full path-aware gates on every code-bearing PR; keep visual/resource
       waivers limited to genuinely non-rendering changes.
@@ -63,10 +67,10 @@ infrastructure allocation rule.
 
 | Risk | Status | Mitigation |
 | --- | --- | --- |
-| Public tool contract drift | **P0 open** | #27 freezes inventory and structured results before expansion. |
-| PMTiles claims exceed evidence | **P1 open** | #28 separates display, load, and query decisions. |
-| MapLibre peer range exceeds proven compatibility | **P1 open** | #29 creates an exact-version matrix before movement. |
-| Green automation masks stale specialist evidence | **P2 open** | #30 makes evidence preservation and HOC freshness fail closed. |
+| Public tool contract drift | **contained; merge pending** | #27 freezes inventory and structured results before expansion. |
+| PMTiles claims exceed evidence | **contained; runtime No-go** | #28 separates display, load, and query decisions. |
+| MapLibre peer range exceeds proven compatibility | **contained; bump No-go** | #29 gates exact versions and keeps 5.24.0. |
+| Green automation masks stale specialist evidence | **contained; merge pending** | #30 makes evidence preservation and HOC freshness fail closed. |
 | Hosted/3D promotion pressure bypasses gates | **blocked by plan** | Keep these directions outside the milestone and preserve explicit No-go wording. |
 
 ## Maintenance

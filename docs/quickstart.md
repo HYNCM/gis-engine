@@ -141,8 +141,10 @@ cd my-map && npm install && npm run dev
 ```typescript
 import { createGisEngineMcpServer } from "@gis-engine/ai/mcp";
 const server = createGisEngineMcpServer();
-// Tools: validate_spec, apply_commands, export_spec,
-//   get_context_summary, snapshot_spec, explain_spec, export_example_app
+// Canonical v1.5 inventory (14 tools): apply_commands, validate_spec,
+//   export_spec, get_context_summary,
+//   snapshot_spec, explain_spec, export_example_app, diff_specs, generate_spec,
+//   inspect_data, edit_spec, query_features, style_recommend, transform_data
 ```
 
 ## Next Steps

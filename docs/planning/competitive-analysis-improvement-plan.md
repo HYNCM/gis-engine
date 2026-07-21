@@ -81,7 +81,7 @@ GIS Engine v1.4.0 已完成"从 Schema 到屏幕"的渲染里程碑，但 AI 原
 
 | Task | 交付物 | 关键文件 | 验证 |
 |------|-------|---------|------|
-| T-02a PMTiles 运行时 v1 | range-request 加载，`queryReady: true`（受控） | `packages/engine/src/sources/pmtiles-loader.ts`（新增）, `readiness.ts` | `pnpm test:schema` + `pnpm test:resources` |
+| T-02a PMTiles 运行时 v1 | runtime archive load/query remain No-go; keep `queryReady: false` and track caller-supplied fixture evidence separately | `packages/engine/src/sources/pmtiles-loader.ts`, `readiness.ts` | `pnpm test:schema` + `pnpm test:resources` |
 | T-03b +8 表达式 | `length, slice, indexOf, rgb, rgba, to-rgba, string, number-format` | `packages/engine/src/spec/expression-validator.ts` | `pnpm test:schema` |
 | T-04b `style_recommend` MCP 工具 | 基于数据特征推荐图层样式 | `packages/ai/src/tools/styleRecommend.ts`（新增）, `server.ts` | `pnpm test:ai` |
 | T-05a MapLibre v6 审计 | v6 breaking changes 审计+决策报告 | `packages/engine/src/renderer/maplibre/`, `docs/engineering/maplibre-version-drift-audit.md` | 报告 |

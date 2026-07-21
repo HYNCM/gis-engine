@@ -1,8 +1,8 @@
 ---
 agent: orchestrator
 period: 2026-W29
-generated_at: 2026-07-13T16:06:22Z
-repo_revision: "bdd71e24a6cacc88cef578211943685a23890e38"
+generated_at: 2026-07-20T17:03:46Z
+repo_revision: "282c4a3136fa93a761c49ef9e05c4aedccc3d9b7"
 inputs:
   - docs/research/competitor-updates-2026-W29.md
   - docs/research/capability-scorecard.md
@@ -11,8 +11,12 @@ inputs:
   - https://github.com/HYNCM/gis-engine/issues/28
   - https://github.com/HYNCM/gis-engine/issues/29
   - https://github.com/HYNCM/gis-engine/issues/30
+  - docs/reviews/pmtiles-capability-truth-quality-decision-2026-07-20.md
+  - docs/reviews/maplibre-v5-v6-compatibility-quality-decision-2026-07-21.md
+  - docs/reviews/fail-closed-agent-evidence-quality-decision-2026-07-21.md
 owner: "@orchestrator"
 decision_level: advisory
+evidence_kind: specialist
 ---
 
 # Next Stage Plan: Contract Convergence
@@ -28,6 +32,20 @@ due 2026-07-26.
 The ordering consumes the W29 HOC-N1 product handoff and the 2026-07-13 HOC-N3
 quality input. Quality found no P0 or release blocker that must interrupt
 roadmap work, so the product priority formula controls the execution order.
+
+Implementation closure was recorded on 2026-07-20/21. All four bounded tasks
+now have code, focused verification, and independent quality decisions on
+`codex/mcp-contract-convergence`. GitHub issues remain open until the branch is
+merged; this document does not treat local completion as main-branch delivery.
+
+## Execution Closure
+
+| Issue | Branch result | Quality decision | Merge state |
+| --- | --- | --- | --- |
+| #27 | Canonical 14-tool MCP 2025-11-25 contract and structured results implemented | PASS | open pending PR merge |
+| #28 | PMTiles display/load-plan Go; runtime archive load/query No-go and fail closed | PASS | open pending PR merge |
+| #29 | Exact 5.24.0/6.0.0-22 matrix passed; keep 5.24.0 and do not bump prerelease | PASS | open pending PR merge |
+| #30 | Auth failure preserves planning artifacts; template evidence cannot satisfy HOC/freshness | PASS | open pending PR merge |
 
 ## Decisions
 
@@ -51,19 +69,19 @@ declared output schema truthful under the stable MCP 2025-11-25 result contract.
 
 **Acceptance criteria:**
 
-- [ ] One approved inventory is enforced across AGENTS, the Phase 1 spec,
+- [x] One approved inventory is enforced across AGENTS, the Phase 1 spec,
       descriptors, package docs, and tests; no undocumented aliases remain.
-- [ ] Tools with `outputSchema` return schema-conforming `structuredContent`
+- [x] Tools with `outputSchema` return schema-conforming `structuredContent`
       and a backwards-compatible JSON text block.
-- [ ] Protocol and schema-conformance tests cover every approved tool without
+- [x] Protocol and schema-conformance tests cover every approved tool without
       adding a mutation path or expanding tool scope.
 
 **Verification:**
 
-- [ ] `pnpm build:schema`
-- [ ] `pnpm test:ai`
-- [ ] `pnpm test:docs`
-- [ ] `pnpm check`
+- [x] `pnpm build:schema`
+- [x] `pnpm test:ai`
+- [x] `pnpm test:docs`
+- [x] `pnpm check`
 
 **Dependencies:** None
 
@@ -80,8 +98,8 @@ if the diff grows beyond one reviewable change.
 
 ### Checkpoint: Contract Freeze
 
-- [ ] @quality accepts the public inventory and structured-result conformance.
-- [ ] No package release or new public MCP tool proceeds before this checkpoint.
+- [x] @quality accepts the public inventory and structured-result conformance.
+- [x] No package release or new public MCP tool proceeds before this checkpoint.
 
 ## Phase 2: Capability Truth
 
@@ -92,21 +110,21 @@ summaries, and public claims on one explicit PMTiles support level.
 
 **Acceptance criteria:**
 
-- [ ] Spec-correct fixtures cover archive metadata/directory lookup,
+- [x] The accepted No-go decision records archive metadata/directory lookup,
       cancellation, budgets, cache behavior, and deterministic negative paths.
-- [ ] Package exports, docs, generated-app evidence, and AI summaries express
+- [x] Package exports, docs, generated-app evidence, and AI summaries express
       the same accepted or blocked state without hidden IO.
-- [ ] @quality records separate Go/No-go decisions for display, load, and
+- [x] @quality records separate Go/No-go decisions for display, load, and
       feature-query claims; other cloud-native formats stay out of scope.
 
 **Verification:**
 
-- [ ] `pnpm test:schema`
-- [ ] `pnpm test:resources`
-- [ ] `pnpm test:runtime`
-- [ ] `pnpm test:adapter`
-- [ ] `pnpm test:ai`
-- [ ] `pnpm check`
+- [x] `pnpm test:schema`
+- [x] `pnpm test:resources`
+- [x] `pnpm test:runtime`
+- [x] `pnpm test:adapter`
+- [x] `pnpm test:ai`
+- [x] `pnpm check`
 
 **Dependencies:** Task 1
 
@@ -128,20 +146,20 @@ and the latest checked v6 prerelease without changing the release baseline.
 
 **Acceptance criteria:**
 
-- [ ] A repeatable matrix compiles and tests public adapter APIs against both
+- [x] A repeatable matrix compiles and tests public adapter APIs against both
       versions and records exact checked versions plus event/type/ESM drift.
-- [ ] Generated examples load in both entries and smoke/strict visual evidence
+- [x] Generated examples load in both entries and smoke/strict visual evidence
       records any divergence.
-- [ ] @quality issues a separate keep/bump decision; this task does not upgrade
+- [x] @quality issues a separate keep/bump decision; this task does not upgrade
       the default dependency or public version claim.
 
 **Verification:**
 
-- [ ] `pnpm test:adapter`
-- [ ] `pnpm test:e2e:browser`
-- [ ] `pnpm test:snapshot:smoke`
-- [ ] `GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual`
-- [ ] `pnpm check`
+- [x] `pnpm test:adapter`
+- [x] `pnpm test:e2e:browser`
+- [x] `pnpm test:snapshot:smoke`
+- [x] `GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual`
+- [x] `pnpm check`
 
 **Dependencies:** Task 1; may run in parallel with Task 2 after the checkpoint.
 
@@ -157,9 +175,9 @@ and the latest checked v6 prerelease without changing the release baseline.
 
 ### Checkpoint: Capability Claims
 
-- [ ] PMTiles support wording matches accepted runtime evidence exactly.
-- [ ] MapLibre v6 remains evidence-only unless a separate bump decision passes.
-- [ ] `pnpm check` and all path-aware resource/visual gates pass.
+- [x] PMTiles support wording matches accepted runtime evidence exactly.
+- [x] MapLibre v6 remains evidence-only unless a separate bump decision passes.
+- [x] `pnpm check` and all path-aware resource/visual gates pass.
 
 ## Phase 3: Planning Evidence Integrity
 
@@ -170,21 +188,21 @@ consumption, and GitHub issue snapshots distinguishable and current.
 
 **Acceptance criteria:**
 
-- [ ] Authenticated issue state reaches snapshot generation, and unavailable
+- [x] Authenticated issue state reaches snapshot generation, and unavailable
       state cannot overwrite a newer valid snapshot.
-- [ ] Framework tests prove template-only artifacts cannot satisfy HOC-N1,
+- [x] Framework tests prove template-only artifacts cannot satisfy HOC-N1,
       HOC-N3, or specialist freshness.
-- [ ] Dashboard, handoff ledger, and issue snapshot agree in a fixture-driven
+- [x] Dashboard, handoff ledger, and issue snapshot agree in a fixture-driven
       workflow test that does not require live secrets.
 
 **Verification:**
 
-- [ ] `pnpm test:agent-framework`
-- [ ] `node scripts/issues-snapshot.mjs --dry-run`
-- [ ] `node scripts/handoff-ledger.mjs`
-- [ ] `node scripts/dashboard-generator.mjs --period 2026-07-13`
-- [ ] `node scripts/doc-generator.mjs links`
-- [ ] `pnpm check`
+- [x] `pnpm test:agent-framework`
+- [x] `node scripts/issues-snapshot.mjs --dry-run` (expected fail-closed exit 2 locally; snapshot preserved)
+- [x] `node scripts/handoff-ledger.mjs --dry-run`
+- [x] `node scripts/dashboard-generator.mjs --dry-run --period 2026-07-21`
+- [x] `node scripts/doc-generator.mjs links`
+- [x] `pnpm check`
 
 **Dependencies:** None; reserve 20% of stage capacity and do not delay Task 1
 unless planning evidence becomes untrustworthy.
@@ -204,12 +222,14 @@ unless planning evidence becomes untrustworthy.
 
 - [ ] #27 is closed with a current @quality pass before capability work claims
       the reconciled MCP behavior.
-- [ ] #28 and #29 each have independent quality decisions and exact public
+- [x] #28 and #29 each have independent quality decisions and exact public
       wording; one cannot supply evidence for the other.
-- [ ] #30 makes the next weekly run preserve current specialist evidence.
-- [ ] `pnpm check` passes on the final code-bearing head, with strict visual and
+- [x] #30 makes the next weekly run preserve current specialist evidence.
+- [x] `pnpm check` passes on the final code-bearing head, with strict visual and
       resource gates where required.
-- [ ] Planning snapshots, HOC ledger, dashboard, and GitHub Issues agree.
+- [x] Planning snapshots, HOC ledger, dashboard, and GitHub Issues agree on the
+      current pre-merge state; the last authenticated issue snapshot was
+      preserved because local GitHub authentication is unavailable.
 
 ## Risks and Mitigations
 

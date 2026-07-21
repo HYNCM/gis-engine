@@ -1,4 +1,4 @@
-[**@gis-engine/ai v1.4.0**](../index.md)
+[**@gis-engine/ai v1.5.0**](../index.md)
 
 ***
 
@@ -32,7 +32,7 @@
 
 ### requestedOperations
 
-> **requestedOperations**: (`"point-query"` \| `"bbox-query"` \| `"intersection"` \| `"buffer"` \| `"overlay"` \| `"routing"` \| `"aggregation"`)[]
+> **requestedOperations**: (`"point-query"` \| `"bbox-query"` \| `"aggregation"` \| `"intersection"` \| `"buffer"` \| `"overlay"` \| `"routing"`)[]
 
 ***
 
@@ -44,13 +44,13 @@
 
 ### blockedOperations
 
-> **blockedOperations**: (`"point-query"` \| `"bbox-query"` \| `"intersection"` \| `"buffer"` \| `"overlay"` \| `"routing"` \| `"aggregation"`)[]
+> **blockedOperations**: (`"point-query"` \| `"bbox-query"` \| `"aggregation"` \| `"intersection"` \| `"buffer"` \| `"overlay"` \| `"routing"`)[]
 
 ***
 
 ### unsupportedOperations
 
-> **unsupportedOperations**: (`"point-query"` \| `"bbox-query"` \| `"intersection"` \| `"buffer"` \| `"overlay"` \| `"routing"` \| `"aggregation"`)[]
+> **unsupportedOperations**: (`"point-query"` \| `"bbox-query"` \| `"aggregation"` \| `"intersection"` \| `"buffer"` \| `"overlay"` \| `"routing"`)[]
 
 ***
 

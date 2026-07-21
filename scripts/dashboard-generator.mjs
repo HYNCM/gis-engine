@@ -19,7 +19,7 @@
 import { execSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { AGENT_REGISTRY } from "./agent-registry.mjs";
 import { buildHandoffLedger, findLatestReport, writeHandoffLedger } from "./handoff-ledger.mjs";
 
@@ -28,9 +28,14 @@ const ROOT = join(__dirname, "..");
 
 const DASHBOARD_AGENTS = ["orchestrator", "product", "quality", "builder", "docs"];
 
-function getGitSha() {
+function getGitSha(root = ROOT) {
   try {
-    return execSync("git rev-parse --short HEAD", { cwd: ROOT }).toString().trim();
+    return execSync("git rev-parse --short HEAD", {
+      cwd: root,
+      stdio: ["ignore", "pipe", "ignore"],
+    })
+      .toString()
+      .trim();
   } catch {
     return "unknown";
   }
@@ -43,13 +48,12 @@ function getDateStr() {
 /**
  * 计算执行健康指标
  */
-function computeHealthMetrics() {
+export function computeHealthMetrics(root = ROOT, now = new Date()) {
   const metrics = [];
 
   for (const name of DASHBOARD_AGENTS) {
     const def = AGENT_REGISTRY[name];
-    const latest = findLatestReport(name, ROOT);
-    const now = new Date();
+    const latest = findLatestReport(name, root);
     let status = "unknown";
     let ageDays = null;
 
@@ -57,7 +61,8 @@ function computeHealthMetrics() {
       const refDate = latest.generatedAt;
       ageDays = (now - refDate) / 86400000;
 
-      if (def.cadence === "daily" && ageDays > 2) status = "overdue";
+      if (latest.evidenceKind === "template") status = "template-only";
+      else if (def.cadence === "daily" && ageDays > 2) status = "overdue";
       else if (def.cadence === "weekly" && ageDays > 8) status = "overdue";
       else if (def.cadence === "ad-hoc") status = "ok";
       else if (ageDays < 1) status = "fresh";
@@ -74,6 +79,7 @@ function computeHealthMetrics() {
       lastFile: latest?.path || "—",
       lastRun: latest ? latest.generatedAt.toISOString() : "—",
       status,
+      evidenceKind: latest?.evidenceKind ?? null,
       ageDays: ageDays ? Math.round(ageDays) : null,
     });
   }
@@ -84,7 +90,7 @@ function computeHealthMetrics() {
 /**
  * 检测数据流异常
  */
-function detectDataFlowAnomalies(ledger) {
+export function detectDataFlowAnomalies(ledger) {
   return ledger.flows
     .filter((flow) => flow.status !== "consumed" && flow.status !== "idle")
     .map((flow) => ({
@@ -98,15 +104,21 @@ function detectDataFlowAnomalies(ledger) {
 /**
  * 生成 Dashboard Markdown
  */
-function generateDashboard(metrics, anomalies, period) {
+export function generateDashboard(metrics, anomalies, period, options = {}) {
+  const generatedAt = options.generatedAt ?? new Date();
+  const root = options.root ?? ROOT;
+  const evidenceRunId = options.evidenceRunId ?? null;
+  const issueSnapshot = options.issueSnapshot ?? null;
+  const ledger = options.ledger ?? null;
   const lines = [];
 
   lines.push("---");
-  lines.push(`generated_at: ${new Date().toISOString()}`);
-  lines.push(`repo_revision: "${getGitSha()}"`);
+  lines.push(`generated_at: ${generatedAt.toISOString()}`);
+  lines.push(`repo_revision: "${getGitSha(root)}"`);
   lines.push(`period: ${period}`);
   lines.push("agent: orchestrator");
   lines.push("decision_level: info");
+  if (evidenceRunId) lines.push(`evidence_run_id: ${evidenceRunId}`);
   lines.push("---");
   lines.push("");
   lines.push(`# Agent Health Dashboard (as of ${period})`);
@@ -114,6 +126,19 @@ function generateDashboard(metrics, anomalies, period) {
   lines.push("> ⚠️ 本 Dashboard 由 `scripts/dashboard-generator.mjs` 自动生成。");
   lines.push("> 状态为自动化推断，需 orchestrator 审查后确认。");
   lines.push("");
+
+  if (issueSnapshot && ledger) {
+    const requiredFlows = ledger.flows.filter((flow) => flow.required);
+    const consumedFlows = requiredFlows.filter((flow) => flow.status === "consumed");
+    lines.push("## Planning Evidence");
+    lines.push("");
+    lines.push("| Issue Source | Open | Closed | Total | Required Handoffs |");
+    lines.push("| --- | ---: | ---: | ---: | --- |");
+    lines.push(
+      `| ${issueSnapshot.source} | ${issueSnapshot.open} | ${issueSnapshot.closed} | ${issueSnapshot.total} | ${consumedFlows.length}/${requiredFlows.length} consumed |`,
+    );
+    lines.push("");
+  }
 
   // ── 执行健康 ──
   lines.push("## Execution Health");
@@ -125,6 +150,7 @@ function generateDashboard(metrics, anomalies, period) {
     fresh: "🟢",
     ok: "🟢",
     overdue: "🔴",
+    "template-only": "🔴",
     missing: "🔴",
     unknown: "⚪",
   };
@@ -167,7 +193,7 @@ function generateDashboard(metrics, anomalies, period) {
     if (!agentDef?.slaMaxHours) continue;
     const maxDays = agentDef.slaMaxHours / 24;
     const desc = agentDef.cadence === "daily" ? "每日 00:00 UTC" : "周一 00:00 UTC";
-    const compliant = m.ageDays !== null && m.ageDays <= maxDays;
+    const compliant = m.evidenceKind !== "template" && m.ageDays !== null && m.ageDays <= maxDays;
     const icon = compliant ? "✅" : "❌";
     const ageStr = m.ageDays !== null ? `${m.ageDays}d` : "missing";
     lines.push(`| @${m.agent} | ${desc} | ${maxDays}d | ${ageStr} | ${icon} ${compliant ? "compliant" : "breach"} |`);
@@ -187,6 +213,8 @@ function generateDashboard(metrics, anomalies, period) {
   for (const m of metrics) {
     if (m.status === "missing") {
       actionItems.push(`- [ ] **@${m.agent}**: 无任何报告产出 → 确认 agent 是否已激活`);
+    } else if (m.status === "template-only") {
+      actionItems.push(`- [ ] **@${m.agent}**: 最新产物仅为模板 → 补充 specialist evidence`);
     } else if (m.status === "overdue") {
       actionItems.push(`- [ ] **@${m.agent}**: 报告逾期 ${m.ageDays} 天 → 手动触发或检查 cron`);
     }
@@ -208,13 +236,15 @@ function generateDashboard(metrics, anomalies, period) {
 
   // ── 统计 ──
   const okCount = metrics.filter((m) => m.status === "ok" || m.status === "fresh").length;
-  const problemCount = metrics.filter((m) => m.status === "overdue" || m.status === "missing").length;
+  const problemCount = metrics.filter(
+    (m) => m.status === "overdue" || m.status === "missing" || m.status === "template-only",
+  ).length;
   lines.push("## Summary");
   lines.push("");
   lines.push(`- **健康 agent**: ${okCount}/${metrics.length}`);
   lines.push(`- **问题 agent**: ${problemCount}/${metrics.length}`);
   lines.push(`- **数据流异常**: ${anomalies.length}`);
-  lines.push(`- **生成时间**: ${new Date().toISOString()}`);
+  lines.push(`- **生成时间**: ${generatedAt.toISOString()}`);
 
   return lines.join("\n");
 }
@@ -244,7 +274,9 @@ async function main() {
   const anomalies = detectDataFlowAnomalies(ledger);
 
   const okCount = metrics.filter((m) => m.status === "ok" || m.status === "fresh").length;
-  const problemCount = metrics.filter((m) => m.status === "overdue" || m.status === "missing").length;
+  const problemCount = metrics.filter(
+    (m) => m.status === "overdue" || m.status === "missing" || m.status === "template-only",
+  ).length;
   console.log(`   ✅ ${okCount} 健康, 🔴 ${problemCount} 问题, ⚠️ ${anomalies.length} 数据流异常`);
   console.log("");
 
@@ -269,7 +301,9 @@ async function main() {
   process.exit(0);
 }
 
-main().catch((err) => {
-  console.error(`❌ 错误:`, err.message);
-  process.exit(1);
-});
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((err) => {
+    console.error(`❌ 错误:`, err.message);
+    process.exit(1);
+  });
+}

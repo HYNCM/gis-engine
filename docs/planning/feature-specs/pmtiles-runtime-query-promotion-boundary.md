@@ -31,6 +31,37 @@ state is still bounded to:
 The fixture query evidence proves the query contract shape, not a runtime
 archive parser, range fetcher, worker, or adapter query implementation.
 
+## 2026-07-19 Capability Truth Addendum
+
+The exported experimental loader did not meet the PMTiles v3 directory
+contract: the specification uses columnar directory fields, compressed internal
+directories, offset continuation semantics, and `runLength = 0` leaf-directory
+pointers. The previous implementation interleaved entry fields and did not
+decompress or traverse leaf directories. It also lacked accepted cancellation,
+byte/range budget, cache, and resource-policy-before-IO evidence.
+
+`PMTILES_CAPABILITY_DECISION` therefore records one enforced state:
+
+| Capability | Decision | Enforcement |
+| --- | --- | --- |
+| URL-compatible MapLibre vector display | Go | Existing schema, resource-policy, adapter, and snapshot evidence |
+| IO-free caller-metadata load-plan preflight | Go | `createPMTilesRuntimeLoadPlan()` performs no archive IO |
+| Runtime archive load | No-go | `PMTILES.RUNTIME_ARCHIVE_LOAD_BLOCKED`; compatibility loader load methods reject before IO |
+| Runtime archive feature query | No-go | `PMTILES.RUNTIME_FEATURE_QUERY_BLOCKED`; compatibility loader query returns no features and performs no IO |
+
+Source readiness, `get_context_summary`, and generated-app delivery evidence
+expose this same decision. Fixture-only query evidence remains review evidence
+and does not change the runtime feature-query No-go: PMTiles `queryReady` stays
+false, while `fixtureEvidenceReady` and `fixtureEvidenceStatus` identify the
+separate payload-free fixture evidence state.
+
+The capability decision exposes separate `loadGates` and `featureQueryGates`
+inventories. The load inventory covers archive metadata, columnar directory
+lookup, offset continuation, compression, leaf traversal, cancellation,
+budgets, cache behavior, and resource policy before IO. The feature-query
+inventory covers future query semantics, diagnostics, adapter boundaries,
+payload-free evidence, tests, and docs.
+
 ## Current Accepted Boundary
 
 | Capability | Status | Evidence | Must Not Claim |

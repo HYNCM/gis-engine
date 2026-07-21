@@ -1,4 +1,4 @@
-[**@gis-engine/ai v1.4.0**](../index.md)
+[**@gis-engine/ai v1.5.0**](../index.md)
 
 ***
 
@@ -762,7 +762,7 @@
 
 #### properties.summary.properties.capabilitySummary.properties.domains.items.properties.tools.items
 
-> `readonly` **items**: `object`
+> `readonly` **items**: `object` = `GisEngineToolNameSchema`
 
 #### properties.summary.properties.capabilitySummary.properties.domains.items.properties.tools.items.type
 
@@ -770,7 +770,7 @@
 
 #### properties.summary.properties.capabilitySummary.properties.domains.items.properties.tools.items.enum
 
-> `readonly` **enum**: ...
+> `readonly` **enum**: ... = `GIS_ENGINE_TOOL_NAMES`
 
 #### properties.summary.properties.capabilitySummary.properties.domains.items.properties.evidence
 

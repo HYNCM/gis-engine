@@ -5,8 +5,8 @@ popular AI-powered development environments.
 
 ## Prerequisites
 
-- **Node.js** >= 20
-- **npm** >= 7 or **pnpm** >= 9
+- **Node.js** >= 22.13.0
+- **pnpm** >= 11 (or npm from the supported Node.js release)
 - Network access to download `@gis-engine/ai` from npm (or a local install)
 
 ## Quick Reference
@@ -16,7 +16,9 @@ popular AI-powered development environments.
 | npm package | `@gis-engine/ai` |
 | Bin command | `gis-engine-mcp` |
 | Transport | stdio |
-| Tools | 11 (see [Available Tools](#available-tools)) |
+| Tools | 14 (see [Available Tools](#available-tools)) |
+| MCP protocol | `2025-11-25` |
+| Descriptor dialect | JSON Schema draft-07 |
 
 ---
 
@@ -100,7 +102,7 @@ Create or edit `.cursor/mcp.json` in your project root:
 
 Open a chat in Agent mode and ask:
 
-> "Use the validate_spec tool to check this MapSpec: `{"version":"1.0","view":{"center":[0,0],"zoom":2},"sources":{},"layers":[]}`"
+> "Use the validate_spec tool to check this MapSpec: `{"version":"0.1","view":{"center":[0,0],"zoom":2},"sources":{},"layers":[]}`"
 
 You should receive a structured validation report in the response.
 
@@ -158,7 +160,7 @@ claude mcp list
 ```
 
 You should see `gis-engine` in the output. Start a Claude Code session and
-ask it to call any GIS Engine tool — the agent will discover all 11 tools
+ask it to call any GIS Engine tool — the agent will discover all 14 tools
 automatically.
 
 ### Scope
@@ -212,7 +214,7 @@ Run the command directly in a terminal:
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | npx -y gis-engine-mcp
 ```
 
-You should see a JSON response listing 11 tools.
+You should see a JSON response listing 14 tools.
 
 ### 2. Test validate_spec
 
@@ -220,7 +222,7 @@ Ask your AI tool to call `validate_spec` with a minimal MapSpec:
 
 ```json
 {
-  "version": "1.0",
+  "version": "0.1",
   "view": { "center": [0, 0], "zoom": 2 },
   "sources": {},
   "layers": []
@@ -251,10 +253,15 @@ Expected result: a generated MapSpec skeleton with suggestions for improvement.
 
 ## Available Tools
 
+Canonical `tools/list` order: `apply_commands`, `validate_spec`, `export_spec`,
+`get_context_summary`, `snapshot_spec`, `explain_spec`, `export_example_app`,
+`diff_specs`, `generate_spec`, `inspect_data`, `edit_spec`, `query_features`,
+`style_recommend`, `transform_data`.
+
 | Tool | Description |
 |------|-------------|
-| `validate_spec` | Validate a MapSpec against the schema and return diagnostics |
 | `apply_commands` | Apply MapCommands to modify a MapSpec (supports dry-run and transactions) |
+| `validate_spec` | Validate a MapSpec against the schema and return diagnostics |
 | `export_spec` | Export a validated, optionally command-modified MapSpec |
 | `get_context_summary` | Return a compact summary with capability boundaries for planning |
 | `snapshot_spec` | Produce a headless snapshot (mock or MapLibre renderer) |
@@ -264,17 +271,21 @@ Expected result: a generated MapSpec skeleton with suggestions for improvement.
 | `generate_spec` | Generate a MapSpec skeleton from a natural language description |
 | `inspect_data` | Inspect GeoJSON data structure, properties, geometry types, and bounds |
 | `edit_spec` | Edit a MapSpec using natural language instructions |
+| `query_features` | Query inline GeoJSON by point or bounding box |
+| `style_recommend` | Recommend data-driven styles from inline GeoJSON |
+| `transform_data` | Filter, aggregate, select, sort, or rename inline GeoJSON |
 
 Every tool exposes both `inputSchema` and `outputSchema` for schema-aware AI
-clients. See the [MCP Tools Overview](./overview.md) and individual tool pages
-for detailed parameter and response documentation.
+clients. See the [MCP Tools Overview](./overview.md) for all 14 descriptors and
+use the Core lifecycle tool pages for detailed parameter and response
+documentation for the seven currently published reference pages.
 
 ---
 
 ## AI Agent Usage
 
 GIS Engine MCP tools are designed for AI Agent consumption. Once configured,
-your AI tool automatically discovers all 11 tools and calls them when
+your AI tool automatically discovers all 14 tools and calls them when
 appropriate. This section shows common workflows and prompt patterns.
 
 ### How the AI Agent Sees Your Tools

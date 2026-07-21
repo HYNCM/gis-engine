@@ -8,6 +8,7 @@ import {
   DiffSpecsToolResultSchema,
   EditSpecToolInputSchema,
   EditSpecToolResultSchema,
+  ExampleAppGenerationEvidenceSummarySchema,
   ExplainSpecToolInputSchema,
   ExplainSpecToolResultSchema,
   ExportExampleAppToolInputSchema,
@@ -22,8 +23,15 @@ import {
   gisEngineTools,
   InspectDataToolInputSchema,
   InspectDataToolResultSchema,
+  McpToolExecutionErrorSchema,
+  QueryFeaturesToolInputSchema,
+  QueryFeaturesToolResultSchema,
   SnapshotSpecToolInputSchema,
   SnapshotSpecToolResultSchema,
+  StyleRecommendToolInputSchema,
+  StyleRecommendToolResultSchema,
+  TransformDataToolInputSchema,
+  TransformDataToolResultSchema,
   ValidateSpecToolInputSchema,
   ValidateSpecToolResultSchema,
 } from "@gis-engine/ai";
@@ -205,35 +213,75 @@ describe("schema sync gate", () => {
     expect(toolNames).not.toContain("generate_map_app");
   });
 
+  it("keeps generation evidence tool names aligned with the canonical MCP inventory", () => {
+    const canonicalToolNames = gisEngineTools.map((tool) => tool.name);
+
+    expect(
+      ContextSummaryToolResultSchema.properties.capabilitySummary.properties.domains.items.properties.tools.items.enum,
+    ).toEqual(canonicalToolNames);
+    expect(GenerationEvidenceBundleSchema.properties.toolSequence.items.enum).toEqual(canonicalToolNames);
+    expect(ExampleAppGenerationEvidenceSummarySchema.properties.toolSequence.items.enum).toEqual(canonicalToolNames);
+    expect(ExportExampleAppToolInputSchema.properties.generationEvidence.properties.toolSequence.items.enum).toEqual(
+      canonicalToolNames,
+    );
+  });
+
   it("keeps newly added AI tool input schemas in the MCP tool bundle", () => {
     const schemasByName = Object.fromEntries(gisEngineTools.map((tool) => [tool.name, tool.inputSchema]));
 
-    expect(schemasByName.validate_spec).toBe(ValidateSpecToolInputSchema);
-    expect(schemasByName.export_spec).toBe(ExportSpecToolInputSchema);
-    expect(schemasByName.get_context_summary).toBe(ContextSummaryToolInputSchema);
-    expect(schemasByName.snapshot_spec).toBe(SnapshotSpecToolInputSchema);
-    expect(schemasByName.explain_spec).toBe(ExplainSpecToolInputSchema);
-    expect(schemasByName.export_example_app).toBe(ExportExampleAppToolInputSchema);
-    expect(schemasByName.diff_specs).toBe(DiffSpecsToolInputSchema);
-    expect(schemasByName.generate_spec).toBe(GenerateSpecToolInputSchema);
-    expect(schemasByName.inspect_data).toBe(InspectDataToolInputSchema);
-    expect(schemasByName.edit_spec).toBe(EditSpecToolInputSchema);
+    const inputSchemas = {
+      apply_commands: ApplyCommandsToolInputSchema,
+      validate_spec: ValidateSpecToolInputSchema,
+      export_spec: ExportSpecToolInputSchema,
+      get_context_summary: ContextSummaryToolInputSchema,
+      snapshot_spec: SnapshotSpecToolInputSchema,
+      explain_spec: ExplainSpecToolInputSchema,
+      export_example_app: ExportExampleAppToolInputSchema,
+      diff_specs: DiffSpecsToolInputSchema,
+      generate_spec: GenerateSpecToolInputSchema,
+      inspect_data: InspectDataToolInputSchema,
+      edit_spec: EditSpecToolInputSchema,
+      query_features: QueryFeaturesToolInputSchema,
+      style_recommend: StyleRecommendToolInputSchema,
+      transform_data: TransformDataToolInputSchema,
+    };
+
+    for (const [name, inputSchema] of Object.entries(inputSchemas)) {
+      const { $schema, ...descriptorSchema } = schemasByName[name] as Record<string, unknown>;
+      expect($schema, `${name} should declare its MCP JSON Schema dialect`).toBe(
+        "http://json-schema.org/draft-07/schema#",
+      );
+      expect(descriptorSchema, `${name} should preserve its public input schema`).toEqual(inputSchema);
+    }
   });
 
   it("keeps MCP tool output schemas in the public tool bundle", () => {
     const schemasByName = Object.fromEntries(gisEngineTools.map((tool) => [tool.name, tool.outputSchema]));
 
-    expect(schemasByName.apply_commands).toBe(ApplyCommandsToolResultSchema);
-    expect(schemasByName.validate_spec).toBe(ValidateSpecToolResultSchema);
-    expect(schemasByName.export_spec).toBe(ExportSpecToolResultSchema);
-    expect(schemasByName.get_context_summary).toBe(ContextSummaryToolResultSchema);
-    expect(schemasByName.snapshot_spec).toBe(SnapshotSpecToolResultSchema);
-    expect(schemasByName.explain_spec).toBe(ExplainSpecToolResultSchema);
-    expect(schemasByName.export_example_app).toBe(ExportExampleAppToolResultSchema);
-    expect(schemasByName.diff_specs).toBe(DiffSpecsToolResultSchema);
-    expect(schemasByName.generate_spec).toBe(GenerateSpecToolResultSchema);
-    expect(schemasByName.inspect_data).toBe(InspectDataToolResultSchema);
-    expect(schemasByName.edit_spec).toBe(EditSpecToolResultSchema);
+    const successSchemas = {
+      apply_commands: ApplyCommandsToolResultSchema,
+      validate_spec: ValidateSpecToolResultSchema,
+      export_spec: ExportSpecToolResultSchema,
+      get_context_summary: ContextSummaryToolResultSchema,
+      snapshot_spec: SnapshotSpecToolResultSchema,
+      explain_spec: ExplainSpecToolResultSchema,
+      export_example_app: ExportExampleAppToolResultSchema,
+      diff_specs: DiffSpecsToolResultSchema,
+      generate_spec: GenerateSpecToolResultSchema,
+      inspect_data: InspectDataToolResultSchema,
+      edit_spec: EditSpecToolResultSchema,
+      query_features: QueryFeaturesToolResultSchema,
+      style_recommend: StyleRecommendToolResultSchema,
+      transform_data: TransformDataToolResultSchema,
+    };
+
+    for (const [name, successSchema] of Object.entries(successSchemas)) {
+      const outputSchema = schemasByName[name] as { oneOf?: readonly [unknown, unknown] } | undefined;
+      expect(outputSchema?.oneOf?.[0], `${name} should preserve its success schema`).toBe(successSchema);
+      expect(outputSchema?.oneOf?.[1], `${name} should expose the common error schema`).toBe(
+        McpToolExecutionErrorSchema,
+      );
+    }
 
     for (const tool of gisEngineTools) {
       expect(() => new Ajv({ strict: false }).compile(tool.inputSchema)).not.toThrow();

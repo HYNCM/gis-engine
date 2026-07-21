@@ -129,6 +129,11 @@ export function formatPreflightText(result: PreflightResult): string {
     lines.push(
       `  Source ${source.sourceId}: ${source.type} / ${source.state} / display ${source.displayReady ? "yes" : "no"} / query ${source.queryReady ? "yes" : "no"} / policy ${source.resourcePolicy}`,
     );
+    if (source.fixtureEvidenceStatus) {
+      lines.push(
+        `    Fixture evidence: ${source.fixtureEvidenceReady ? "yes" : "no"} / ${source.fixtureEvidenceStatus}`,
+      );
+    }
     if (source.limitations.length > 0 || source.nextAction) {
       if (source.limitations.length > 0) {
         lines.push(`    Limitations: ${source.limitations.join(" ")}`);

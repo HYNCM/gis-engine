@@ -1,7 +1,9 @@
 # MCP Server Setup
 
-GIS Engine exposes 7 tools through a Model Context Protocol (MCP) server.
-AI agents like Claude, Cursor, and Copilot can call them directly.
+GIS Engine exposes a canonical inventory of 14 tools through a Model Context
+Protocol (MCP) server. AI agents like Claude, Cursor, and Copilot can call
+them directly. The first seven form the Core lifecycle; the remaining tools
+cover authoring extensions and data intelligence.
 
 ## Quick Setup
 
@@ -93,5 +95,8 @@ All MCP tools respect:
 - **Resource policy** — no unapproved URLs or network access
 - **Command-only mutation** — no direct state access
 - **Structured diagnostics** — errors are machine-actionable
+- **Structured results** — successful calls expose schema-conforming
+  `structuredContent` plus JSON text; failures expose `{ diagnostics: [...] }`
+  and retain legacy diagnostics text
 - **No raw prompt retention** — prompt hashes only in audit trails
 - **SceneView3D blocked** — stable 3D requires explicit promotion

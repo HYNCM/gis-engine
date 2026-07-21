@@ -3,6 +3,8 @@ import {
   createSourceReadinessReport,
   type Diagnostic,
   type MapSpec,
+  type PMTilesCapabilityDecision,
+  type PMTilesFixtureEvidenceStatus,
   type SceneLayer,
   type SceneResourcePolicy,
   type SceneView3DExtension,
@@ -10,7 +12,10 @@ import {
   validateSpec,
 } from "@gis-engine/engine";
 import { getScene3DV1Capabilities, queryScene3DMock, snapshotScene3DMock } from "@gis-engine/scene3d";
+import type { GisEngineToolName } from "../internal/mcpToolNames.js";
 import { countDiagnostics } from "./shared.js";
+
+export type { GisEngineToolName } from "../internal/mcpToolNames.js";
 
 type SourceContractSummary = {
   kind: "archive" | "schema";
@@ -110,9 +115,12 @@ export interface ContextSummary {
     type: string;
     state: SourceReadinessState;
     queryReady: boolean;
+    fixtureEvidenceReady?: boolean;
+    fixtureEvidenceStatus?: PMTilesFixtureEvidenceStatus;
     resourcePolicy: SourceResourcePolicyState;
     sourceContract?: SourceContractSummary;
     archiveContract?: SourceArchiveContractSummary;
+    capabilityDecision?: PMTilesCapabilityDecision;
     runtimeLoadPlan?: SourceRuntimeLoadPlanSummary;
   }>;
   layers: Array<{
@@ -133,19 +141,6 @@ export interface ContextSummary {
 export interface CapabilitySummary {
   domains: CapabilityDomainSummary[];
 }
-
-export type GisEngineToolName =
-  | "validate_spec"
-  | "apply_commands"
-  | "export_spec"
-  | "get_context_summary"
-  | "snapshot_spec"
-  | "explain_spec"
-  | "export_example_app"
-  | "diff_specs"
-  | "generate_spec"
-  | "inspect_data"
-  | "edit_spec";
 
 export interface CapabilityDomainSummary {
   id: "feature-display" | "spatial-analysis" | "scene-browsing";
@@ -325,6 +320,7 @@ function buildCapabilitySummary(
           "diff_specs",
           "generate_spec",
           "edit_spec",
+          "style_recommend",
         ],
         evidence: [
           "validation.valid and validation.diagnosticCounts",
@@ -342,15 +338,22 @@ function buildCapabilitySummary(
           "read-only analysis should use capability metadata before planning generated interactions",
         ],
         experimental: [
-          "MCP exposes spatial-analysis readiness as capability metadata; no dedicated query or geoprocessing MCP tool is public yet",
+          "query_features is limited to inline GeoJSON point/bbox filtering; renderer-backed and PMTiles queries remain separate evidence paths",
         ],
         blocked: [
           ...(hasValidationError
             ? ["validation errors must be resolved before query planning can be treated as ready evidence"]
             : []),
-          "buffer, intersection, overlay, routing, and aggregation geoprocessing are not exposed as public MCP tools",
+          "buffer, intersection, overlay, routing, and geometry aggregation geoprocessing are not exposed as public MCP tools",
         ],
-        tools: ["get_context_summary", "explain_spec", "validate_spec", "inspect_data"],
+        tools: [
+          "get_context_summary",
+          "explain_spec",
+          "validate_spec",
+          "inspect_data",
+          "query_features",
+          "transform_data",
+        ],
         evidence: [
           "capabilities.queries when supplied",
           "RendererAdapter.queryFeatures point/bbox contract",
@@ -448,9 +451,12 @@ function summarizeSourceReadiness(spec: MapSpec): ContextSummary["sourceReadines
       type: source.type,
       state: source.state,
       queryReady: source.queryReady,
+      ...(source.fixtureEvidenceReady !== undefined ? { fixtureEvidenceReady: source.fixtureEvidenceReady } : {}),
+      ...(source.fixtureEvidenceStatus ? { fixtureEvidenceStatus: source.fixtureEvidenceStatus } : {}),
       resourcePolicy: source.resourcePolicy,
       ...(sourceContract ? { sourceContract } : {}),
       ...(source.type === "pmtiles" ? { archiveContract: PMTILES_ARCHIVE_CONTRACT_SUMMARY } : {}),
+      ...(source.capabilityDecision ? { capabilityDecision: source.capabilityDecision } : {}),
       ...(source.runtimeLoadPlan ? { runtimeLoadPlan: summarizeRuntimeLoadPlan(source.runtimeLoadPlan) } : {}),
     };
   });

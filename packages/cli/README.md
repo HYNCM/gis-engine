@@ -522,6 +522,8 @@ The prompt hash allows you to correlate runs without exposing the original promp
           "type": "string",
           "state": "supported | readiness-only | blocked",
           "queryReady": "boolean",
+          "fixtureEvidenceReady": "boolean (PMTiles only)",
+          "fixtureEvidenceStatus": "not-requested | ready | empty | blocked (PMTiles only)",
           "resourcePolicy": "passed | blocked | not-applicable | not-checked"
         }
       ]

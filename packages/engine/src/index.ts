@@ -36,10 +36,13 @@ export {
 } from "./renderer/maplibre/transformer.js";
 export {
   getMapLibreV6Warnings,
+  isMapLibreV6AdoptionApproved,
   isMapLibreV6Compatible,
+  isMapLibreV6RuntimeCompatible,
   type MapLibreV6AuditEntry,
   type MapLibreV6AuditReport,
   type MapLibreV6AuditSeverity,
+  type MapLibreV6CandidateDecision,
   runMapLibreV6Audit,
 } from "./renderer/maplibre/v6-audit.js";
 export { MockAdapter } from "./renderer/mock.js";
@@ -77,11 +80,14 @@ export {
 } from "./sources/pmtiles.js";
 export {
   assessPMTilesRuntimeLoaderReadiness,
+  PMTILES_CAPABILITY_DECISION,
+  type PMTilesCapabilityDecision,
   type PMTilesDecodedFeature,
   type PMTilesDecodedGeometry,
   type PMTilesDecodeTile,
   type PMTilesDecodeTileInput,
   type PMTilesDirectoryEntry,
+  PMTilesFeatureQueryGateIds,
   type PMTilesFetchRange,
   type PMTilesFetchRangeRequest,
   type PMTilesFetchRangeResponse,
@@ -90,6 +96,9 @@ export {
   type PMTilesLoaderQueryResult,
   type PMTilesLoaderSnapshot,
   type PMTilesLoaderStatus,
+  PMTilesLoadGateIds,
+  PMTilesRuntimeBlockedError,
+  PMTilesRuntimeBlockerCodes,
   PMTilesRuntimeLoader,
   type PMTilesRuntimeLoaderOptions,
   type PMTilesRuntimeLoaderReadiness,
@@ -109,6 +118,7 @@ export {
 export {
   type CreateSourceReadinessReportOptions,
   createSourceReadinessReport,
+  type PMTilesFixtureEvidenceStatus,
   type SourcePMTilesQueryReadinessSummary,
   type SourceReadinessEntry,
   type SourceReadinessReport,

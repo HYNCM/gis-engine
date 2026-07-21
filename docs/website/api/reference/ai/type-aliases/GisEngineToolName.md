@@ -1,7 +1,7 @@
-[**@gis-engine/ai v1.4.0**](../index.md)
+[**@gis-engine/ai v1.5.0**](../index.md)
 
 ***
 
 # Type Alias: GisEngineToolName
 
-> **GisEngineToolName** = `"validate_spec"` \| `"apply_commands"` \| `"export_spec"` \| `"get_context_summary"` \| `"snapshot_spec"` \| `"explain_spec"` \| `"export_example_app"` \| `"diff_specs"` \| `"generate_spec"` \| `"inspect_data"` \| `"edit_spec"`
+> **GisEngineToolName** = *typeof* `GIS_ENGINE_TOOL_NAMES`\[`number`\]

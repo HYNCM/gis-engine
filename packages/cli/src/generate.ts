@@ -301,11 +301,11 @@ function renderSourceReadiness(delivery?: DeliveryReviewSummary): string {
   }
 
   lines.push("");
-  lines.push("| Source | Type | State | Query ready | Resource policy |");
-  lines.push("|---|---|---|---:|---|");
+  lines.push("| Source | Type | State | Query ready | Fixture evidence | Resource policy |");
+  lines.push("|---|---|---|---:|---|---|");
   for (const source of summary.sources) {
     lines.push(
-      `| ${markdownCell(source.sourceId)} | ${markdownCell(source.type)} | ${markdownCell(source.state)} | ${boolLabel(source.queryReady)} | ${markdownCell(source.resourcePolicy)} |`,
+      `| ${markdownCell(source.sourceId)} | ${markdownCell(source.type)} | ${markdownCell(source.state)} | ${boolLabel(source.queryReady)} | ${source.fixtureEvidenceStatus ? `${boolLabel(source.fixtureEvidenceReady ?? false)} / ${source.fixtureEvidenceStatus}` : "n/a"} | ${markdownCell(source.resourcePolicy)} |`,
     );
   }
 
