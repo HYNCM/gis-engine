@@ -1,32 +1,39 @@
 ---
 agent: orchestrator
 period: issue-snapshot
-generated_at: 2026-07-13T16:09:02.909Z
-repo_revision: "bdd71e2"
+generated_at: 2026-07-21T16:37:55.453Z
+repo_revision: "f3c7a62"
 inputs:
   - GitHub Issues API
 owner: "@orchestrator"
 decision_level: info
+issue_source: authenticated
+source_updated_at: 2026-07-21T16:36:07Z
+evidence_run_id: planning-evidence-20260721T163755453Z
 ---
 
 # GitHub Issues Planning Snapshot
 
-> This file is generated from GitHub Issues when `gh issue list` is available. Markdown planning files remain snapshots; GitHub Issues are the canonical task state once enabled.
+> This file is generated from authenticated GitHub issue state or an explicit test fixture. Markdown planning files remain snapshots; GitHub Issues are the canonical task state once enabled.
 
 ## Summary
 
 - Open issues: 4
-- Closed issues in snapshot: 21
-- Total returned: 25
+- Closed issues in snapshot: 25
+- Total returned: 29
 
 ## Issues
 
 | Issue | State | Title | Labels | Assignees | Milestone | Updated |
 | --- | --- | --- | --- | --- | --- | --- |
-| #30 | OPEN | [TASK-2026W29-GOV-001: Make agent planning evidence fail closed](https://github.com/HYNCM/gis-engine/issues/30) | enhancement, priority:p2, agent:quality, agent:builder, automation | - | 2026 W29-W30 Contract Convergence | 2026-07-13T16:05:28Z |
-| #29 | OPEN | [TASK-2026W30-2D-001: Build MapLibre v5-v6 compatibility matrix](https://github.com/HYNCM/gis-engine/issues/29) | enhancement, track:productization, agent:quality, agent:builder, priority:p1 | - | 2026 W29-W30 Contract Convergence | 2026-07-13T16:05:24Z |
-| #28 | OPEN | [TASK-2026W29-DATA-001: Reconcile PMTiles runtime capability truth](https://github.com/HYNCM/gis-engine/issues/28) | enhancement, track:productization, agent:quality, agent:builder, priority:p1 | - | 2026 W29-W30 Contract Convergence | 2026-07-13T16:05:18Z |
-| #27 | OPEN | [TASK-2026W29-AI-001: Converge MCP stable-spec and public tool contract](https://github.com/HYNCM/gis-engine/issues/27) | enhancement, track:productization, agent:quality, agent:builder, priority:p0 | - | 2026 W29-W30 Contract Convergence | 2026-07-13T16:04:35Z |
+| #35 | OPEN | [Agent Escalation: Workflow failure detected](https://github.com/HYNCM/gis-engine/issues/35) | agent-escalation, automation | - | - | 2026-07-20T19:52:11Z |
+| #34 | OPEN | [Agent Escalation: Workflow failure detected](https://github.com/HYNCM/gis-engine/issues/34) | agent-escalation, automation | - | - | 2026-07-20T14:23:59Z |
+| #33 | OPEN | [Agent Escalation: Workflow failure detected](https://github.com/HYNCM/gis-engine/issues/33) | agent-escalation, automation | - | - | 2026-07-20T09:29:03Z |
+| #32 | OPEN | [Agent Escalation: Workflow failure detected](https://github.com/HYNCM/gis-engine/issues/32) | agent-escalation, automation | - | - | 2026-07-20T03:44:54Z |
+| #30 | CLOSED | [TASK-2026W29-GOV-001: Make agent planning evidence fail closed](https://github.com/HYNCM/gis-engine/issues/30) | enhancement, priority:p2, agent:quality, agent:builder, automation | - | 2026 W29-W30 Contract Convergence | 2026-07-21T16:36:07Z |
+| #29 | CLOSED | [TASK-2026W30-2D-001: Build MapLibre v5-v6 compatibility matrix](https://github.com/HYNCM/gis-engine/issues/29) | enhancement, track:productization, agent:quality, agent:builder, priority:p1 | - | 2026 W29-W30 Contract Convergence | 2026-07-21T16:36:06Z |
+| #28 | CLOSED | [TASK-2026W29-DATA-001: Reconcile PMTiles runtime capability truth](https://github.com/HYNCM/gis-engine/issues/28) | enhancement, track:productization, agent:quality, agent:builder, priority:p1 | - | 2026 W29-W30 Contract Convergence | 2026-07-21T16:36:06Z |
+| #27 | CLOSED | [TASK-2026W29-AI-001: Converge MCP stable-spec and public tool contract](https://github.com/HYNCM/gis-engine/issues/27) | enhancement, track:productization, agent:quality, agent:builder, priority:p0 | - | 2026 W29-W30 Contract Convergence | 2026-07-21T16:36:06Z |
 | #25 | CLOSED | [TASK-2026W28-STUDIO-001: Review-console Workbench product route Go gate](https://github.com/HYNCM/gis-engine/issues/25) | track:productization, agent:quality, agent:builder, priority:p0 | - | - | 2026-07-10T16:36:21Z |
 | #23 | CLOSED | [Agent Escalation: Workflow failure detected](https://github.com/HYNCM/gis-engine/issues/23) | agent-escalation, automation | - | - | 2026-07-03T12:43:33Z |
 | #22 | CLOSED | [TASK-2026W25-DOC-001: Generate the core/extension boundary matrix from one source](https://github.com/HYNCM/gis-engine/issues/22) | documentation, enhancement, priority:p2, track:productization, agent:quality, agent:builder | - | - | 2026-07-06T15:47:42Z |

@@ -1,8 +1,8 @@
 ---
 agent: orchestrator
 period: 2026-W29
-generated_at: 2026-07-20T17:03:46Z
-repo_revision: "282c4a3136fa93a761c49ef9e05c4aedccc3d9b7"
+generated_at: 2026-07-21T16:37:55.453Z
+repo_revision: "f3c7a62259acc946376cf9a679a72f2f8becda63"
 inputs:
   - docs/research/competitor-updates-2026-W29.md
   - docs/research/capability-scorecard.md
@@ -11,6 +11,8 @@ inputs:
   - docs/planning/next-step-plan.md
   - docs/reviews/maplibre-v5-v6-compatibility-quality-decision-2026-07-21.md
   - docs/reviews/fail-closed-agent-evidence-quality-decision-2026-07-21.md
+  - https://github.com/HYNCM/gis-engine/pull/36
+  - docs/reviews/contract-convergence-closeout-2026-07-22.md
 owner: "@orchestrator"
 decision_level: advisory
 evidence_kind: specialist
@@ -20,10 +22,9 @@ evidence_kind: specialist
 
 ## W29-W30 Closure Decision
 
-The contract-convergence implementation is complete on
-`codex/mcp-contract-convergence`. Each bounded task has independent quality
-evidence. The remaining work is remote PR/CI and merge; GitHub issues stay open
-until that merge and remain canonical for delivery state.
+The contract-convergence implementation is complete on `main` at `f3c7a62`.
+Each bounded task has independent quality evidence, PR #36 passed all required
+remote checks, and GitHub issues #27-#30 closed on merge.
 
 | Topic | Current reading | Evidence |
 | --- | --- | --- |
@@ -31,7 +32,7 @@ until that merge and remain canonical for delivery state.
 | PMTiles | Display/load-plan Go; runtime archive load and feature query remain explicit No-go | [#28 decision](../reviews/pmtiles-capability-truth-quality-decision-2026-07-20.md) |
 | MapLibre | Exact 5.24.0/6.0.0-22 matrix passes; keep 5.24.0, v6 bump No-go | [#29 decision](../reviews/maplibre-v5-v6-compatibility-quality-decision-2026-07-21.md) |
 | Infrastructure | Auth failures preserve planning evidence; templates cannot satisfy HOC or freshness | [#30 decision](../reviews/fail-closed-agent-evidence-quality-decision-2026-07-21.md) |
-| Quality | All four bounded tasks have current PASS decisions; combined remote gate still required | [next-step plan](./next-step-plan.md) |
+| Quality | All four bounded tasks have current PASS decisions; PR #36 remote gate passed | [closeout](../reviews/contract-convergence-closeout-2026-07-22.md) |
 | Hosted Workbench | Candidate route only; hosted GA remains No-go | [Workbench gate](./feature-specs/review-console-workbench-go-gate.md) |
 | SceneView3D | Experimental and adapter-local; stable mode remains blocked | [stable renderer contract](./feature-specs/sceneview3d-stable-renderer-contract.md) |
 
@@ -49,9 +50,10 @@ Full dated URLs, package metadata, factor scores, and confidence are in
 
 ## Next Checkpoint
 
-Publish the branch, run the full remote PR gate including both MapLibre matrix
-entries, and merge only when remote checks are green. The PR must close #27-#30
-on merge; until then, planning snapshots correctly continue to show them open.
+The W29-W30 stage is closed on `main`. The next planning run should preserve
+the authenticated issue snapshot and separately triage unrelated escalation
+issues #32-#35, whose recovery workflow currently rediscovers one historical
+failure on repeated schedules.
 
 ## Maintenance
 
