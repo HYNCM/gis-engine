@@ -1,14 +1,9 @@
 {
-  "generated_at": "2026-07-21T16:37:55.453Z",
-  "repo_revision": "f3c7a62",
+  "generated_at": "2026-07-22T01:14:37.122Z",
+  "repo_revision": "b5b8b63",
   "source": "scripts/handoff-ledger.mjs",
-  "evidence_run_id": "planning-evidence-20260721T163755453Z",
-  "issue_snapshot": {
-    "source": "authenticated",
-    "open": 4,
-    "closed": 25,
-    "total": 29
-  },
+  "evidence_run_id": null,
+  "issue_snapshot": null,
   "flows": [
     {
       "id": "HOC-N1",
@@ -26,8 +21,8 @@
       },
       "downstream": {
         "path": "docs/planning/weekly-digest.md",
-        "generated_at": "2026-07-20T17:03:46.000Z",
-        "sha256": "6375bad434a9c1b8af11abd0c0bb1e4a833fab7c199cbb5db75d1a7c7e614751"
+        "generated_at": "2026-07-21T16:37:55.453Z",
+        "sha256": "2592692f2ecf45f857469ad940b9e12328645a1971a72c8fd9976bc5a9dedf37"
       }
     },
     {
@@ -66,8 +61,8 @@
       },
       "downstream": {
         "path": "docs/planning/weekly-digest.md",
-        "generated_at": "2026-07-20T17:03:46.000Z",
-        "sha256": "6375bad434a9c1b8af11abd0c0bb1e4a833fab7c199cbb5db75d1a7c7e614751"
+        "generated_at": "2026-07-21T16:37:55.453Z",
+        "sha256": "2592692f2ecf45f857469ad940b9e12328645a1971a72c8fd9976bc5a9dedf37"
       }
     }
   ]
