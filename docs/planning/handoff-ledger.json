@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-07-22T01:14:37.122Z",
-  "repo_revision": "b5b8b63",
+  "generated_at": "2026-07-23T01:21:55.046Z",
+  "repo_revision": "db1ded8",
   "source": "scripts/handoff-ledger.mjs",
   "evidence_run_id": null,
   "issue_snapshot": null,
