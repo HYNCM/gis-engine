@@ -1,12 +1,12 @@
 ---
-generated_at: 2026-07-28T01:13:57.696Z
-repo_revision: "b65fcb6"
-period: 2026-07-28
+generated_at: 2026-07-29T01:17:27.366Z
+repo_revision: "8330e5e"
+period: 2026-07-29
 agent: orchestrator
 decision_level: info
 ---
 
-# Agent Health Dashboard (as of 2026-07-28)
+# Agent Health Dashboard (as of 2026-07-29)
 
 > ⚠️ 本 Dashboard 由 `scripts/dashboard-generator.mjs` 自动生成。
 > 状态为自动化推断，需 orchestrator 审查后确认。
@@ -15,11 +15,11 @@ decision_level: info
 
 | Agent | Cadence | Last Report | Last Run | Status | Age |
 | --- | --- | --- | --- | --- | --- |
-| @orchestrator | weekly | docs/planning/weekly-digest.md | 2026-07-21 | 🟢 ok | 6d |
-| @product | weekly | docs/research/competitor-updates-2026-W29.md | 2026-07-13 | 🔴 overdue | 14d |
-| @quality | daily | docs/reviews/maplibre-v5-v6-compatibility-quality-decision-2026-07-21.md | 2026-07-20 | 🔴 overdue | 7d |
-| @builder | ad-hoc | docs/reviews/maplibre-v5-v6-compatibility-builder-evidence-2026-07-21.md | 2026-07-20 | 🟢 ok | 7d |
-| @docs | daily | docs/reviews/documentation-audit-2026-07-21.md | 2026-07-20 | 🔴 overdue | 7d |
+| @orchestrator | weekly | docs/planning/weekly-digest.md | 2026-07-21 | 🟢 ok | 7d |
+| @product | weekly | docs/research/competitor-updates-2026-W29.md | 2026-07-13 | 🔴 overdue | 15d |
+| @quality | daily | docs/reviews/maplibre-v5-v6-compatibility-quality-decision-2026-07-21.md | 2026-07-20 | 🔴 overdue | 8d |
+| @builder | ad-hoc | docs/reviews/maplibre-v5-v6-compatibility-builder-evidence-2026-07-21.md | 2026-07-20 | 🟢 ok | 8d |
+| @docs | daily | docs/reviews/documentation-audit-2026-07-21.md | 2026-07-20 | 🔴 overdue | 8d |
 
 ## Data Flow Health
 
@@ -29,22 +29,22 @@ decision_level: info
 
 | Agent | SLA | Max Latency | Current | Status |
 | --- | --- | --- | --- | --- |
-| @orchestrator | 周一 00:00 UTC | 2d | 6d | ❌ breach |
-| @product | 周一 00:00 UTC | 2d | 14d | ❌ breach |
-| @quality | 每日 00:00 UTC | 1d | 7d | ❌ breach |
-| @docs | 每日 00:00 UTC | 2d | 7d | ❌ breach |
+| @orchestrator | 周一 00:00 UTC | 2d | 7d | ❌ breach |
+| @product | 周一 00:00 UTC | 2d | 15d | ❌ breach |
+| @quality | 每日 00:00 UTC | 1d | 8d | ❌ breach |
+| @docs | 每日 00:00 UTC | 2d | 8d | ❌ breach |
 
 > ℹ️ ad-hoc agent (builder) 无固定 SLA。
 
 ## Action Items
 
-- [ ] **@product**: 报告逾期 14 天 → 手动触发或检查 cron
-- [ ] **@quality**: 报告逾期 7 天 → 手动触发或检查 cron
-- [ ] **@docs**: 报告逾期 7 天 → 手动触发或检查 cron
+- [ ] **@product**: 报告逾期 15 天 → 手动触发或检查 cron
+- [ ] **@quality**: 报告逾期 8 天 → 手动触发或检查 cron
+- [ ] **@docs**: 报告逾期 8 天 → 手动触发或检查 cron
 
 ## Summary
 
 - **健康 agent**: 2/5
 - **问题 agent**: 3/5
 - **数据流异常**: 0
-- **生成时间**: 2026-07-28T01:13:57.696Z
+- **生成时间**: 2026-07-29T01:17:27.366Z
