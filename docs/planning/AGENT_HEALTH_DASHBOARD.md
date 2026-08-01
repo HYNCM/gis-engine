@@ -1,15 +1,22 @@
 ---
-generated_at: 2026-08-01T01:24:10.449Z
-repo_revision: "5267ffc"
+generated_at: 2026-08-01T03:19:46.787Z
+repo_revision: "c8788bf"
 period: 2026-08-01
 agent: orchestrator
 decision_level: info
+evidence_run_id: planning-evidence-20260801T031946787Z
 ---
 
 # Agent Health Dashboard (as of 2026-08-01)
 
 > ⚠️ 本 Dashboard 由 `scripts/dashboard-generator.mjs` 自动生成。
 > 状态为自动化推断，需 orchestrator 审查后确认。
+
+## Planning Evidence
+
+| Issue Source | Open | Closed | Total | Required Handoffs |
+| --- | ---: | ---: | ---: | --- |
+| authenticated | 4 | 25 | 29 | 2/2 consumed |
 
 ## Execution Health
 
@@ -48,4 +55,4 @@ decision_level: info
 - **健康 agent**: 1/5
 - **问题 agent**: 4/5
 - **数据流异常**: 0
-- **生成时间**: 2026-08-01T01:24:10.449Z
+- **生成时间**: 2026-08-01T03:19:46.787Z

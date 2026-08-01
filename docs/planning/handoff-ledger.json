@@ -1,9 +1,14 @@
 {
-  "generated_at": "2026-08-01T01:24:10.440Z",
-  "repo_revision": "5267ffc",
+  "generated_at": "2026-08-01T03:19:46.787Z",
+  "repo_revision": "c8788bf",
   "source": "scripts/handoff-ledger.mjs",
-  "evidence_run_id": null,
-  "issue_snapshot": null,
+  "evidence_run_id": "planning-evidence-20260801T031946787Z",
+  "issue_snapshot": {
+    "source": "authenticated",
+    "open": 4,
+    "closed": 25,
+    "total": 29
+  },
   "flows": [
     {
       "id": "HOC-N1",
