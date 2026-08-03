@@ -1,4 +1,4 @@
-[**@gis-engine/engine v1.4.0**](../index.md)
+[**@gis-engine/engine v1.5.0**](../index.md)
 
 ***
 
@@ -120,4 +120,4 @@
 
 ### source
 
-> **source**: [`SceneSource`](../type-aliases/SceneSource.md)
+> **source**: \{ `type`: `"terrain-raster-dem"`; `url`: `string`; `encoding?`: `"mapbox"` \| `"terrarium"`; `attribution?`: `string`; \} \| \{ `type`: `"3d-tiles"`; `url`: `string`; `maximumScreenSpaceError?`: `number`; `attribution?`: `string`; \} \| \{ `type`: `"gltf"`; `url`: `string`; `transform?`: \{ `translate?`: \[`number`, `number`, `number`\]; `rotate?`: \[`number`, `number`, `number`\]; `scale?`: `number` \| \[`number`, `number`, `number`\]; \}; `attribution?`: `string`; \}

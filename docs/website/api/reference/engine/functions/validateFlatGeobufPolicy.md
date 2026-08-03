@@ -1,10 +1,10 @@
-[**@gis-engine/engine v1.4.0**](../index.md)
+[**@gis-engine/engine v1.5.0**](../index.md)
 
 ***
 
 # Function: validateFlatGeobufPolicy()
 
-> **validateFlatGeobufPolicy**(`source`, `policy?`, `sourceId?`): [`Diagnostic`](../interfaces/Diagnostic.md)[]
+> **validateFlatGeobufPolicy**(`source`, `policy?`, `sourceId?`): `object`[]
 
 Validate FlatGeobuf source metadata against policy.
 Returns diagnostics without performing any IO.
@@ -31,4 +31,4 @@ Returns diagnostics without performing any IO.
 
 ## Returns
 
-[`Diagnostic`](../interfaces/Diagnostic.md)[]
+`object`[]

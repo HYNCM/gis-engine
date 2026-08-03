@@ -1,4 +1,4 @@
-[**@gis-engine/engine v1.4.0**](../index.md)
+[**@gis-engine/engine v1.5.0**](../index.md)
 
 ***
 
@@ -114,4 +114,4 @@
 
 ### view
 
-> **view**: `Partial`\&lt;[`ViewSpec`](ViewSpec.md)\&gt;
+> **view**: `Partial`\&lt;[`ViewSpec`](../type-aliases/ViewSpec.md)\&gt;

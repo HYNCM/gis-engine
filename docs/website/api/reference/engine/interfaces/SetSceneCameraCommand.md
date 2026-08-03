@@ -1,4 +1,4 @@
-[**@gis-engine/engine v1.4.0**](../index.md)
+[**@gis-engine/engine v1.5.0**](../index.md)
 
 ***
 
@@ -114,4 +114,32 @@
 
 ### camera
 
-> **camera**: [`SceneCamera`](SceneCamera.md)
+> **camera**: `object`
+
+#### type?
+
+> `optional` **type?**: `"perspective"`
+
+#### position
+
+> **position**: \[`number`, `number`, `number`\] = `ScenePositionSchema`
+
+#### target
+
+> **target**: \[`number`, `number`, `number`\] = `ScenePositionSchema`
+
+#### up?
+
+> `optional` **up?**: \[`number`, `number`, `number`\]
+
+#### fov?
+
+> `optional` **fov?**: `number`
+
+#### near?
+
+> `optional` **near?**: `number`
+
+#### far?
+
+> `optional` **far?**: `number`

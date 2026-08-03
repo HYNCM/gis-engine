@@ -1,7 +1,7 @@
-[**@gis-engine/engine v1.4.0**](../index.md)
+[**@gis-engine/engine v1.5.0**](../index.md)
 
 ***
 
 # Type Alias: GeoParquetSourceSpec
 
-> **GeoParquetSourceSpec** = `Static`\<*typeof* `GeoParquetSourceSchema`\>
+> **GeoParquetSourceSpec** = `Static`\<*typeof* [`GeoParquetSourceSchema`](../variables/GeoParquetSourceSchema.md)\>

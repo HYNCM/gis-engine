@@ -404,6 +404,26 @@
 
 > `readonly` **type**: `"boolean"` = `"boolean"`
 
+#### properties.delivery.properties.sourceReadiness.items.properties.fixtureEvidenceReady
+
+> `readonly` **fixtureEvidenceReady**: `object`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.fixtureEvidenceReady.type
+
+> `readonly` **type**: `"boolean"` = `"boolean"`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.fixtureEvidenceStatus
+
+> `readonly` **fixtureEvidenceStatus**: `object`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.fixtureEvidenceStatus.type
+
+> `readonly` **type**: `"string"` = `"string"`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.fixtureEvidenceStatus.enum
+
+> `readonly` **enum**: readonly \[`"not-requested"`, `"ready"`, `"empty"`, `"blocked"`\]
+
 #### properties.delivery.properties.sourceReadiness.items.properties.resourcePolicy
 
 > `readonly` **resourcePolicy**: `object`
@@ -905,6 +925,186 @@
 > `readonly` **required**: readonly \[`"status"`, `"sourceLayerIds"`, `"layerIds"`, `"loaderContract"`, `"diagnosticCounts"`, `"requirements"`, `"summary"`\]
 
 #### properties.delivery.properties.sourceReadiness.items.properties.queryEvidence.additionalProperties
+
+> `readonly` **additionalProperties**: `false` = `false`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision
+
+> `readonly` **capabilityDecision**: `object` = `PMTilesCapabilityDecisionSchema`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.type
+
+> `readonly` **type**: `"object"` = `"object"`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties
+
+> `readonly` **properties**: `object`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.display
+
+> `readonly` **display**: `object`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.display.type
+
+> `readonly` **type**: `"object"` = `"object"`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.display.properties
+
+> `readonly` **properties**: `object`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.display.properties.status
+
+> `readonly` **status**: ...
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.display.properties.scope
+
+> `readonly` **scope**: ...
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.display.required
+
+> `readonly` **required**: readonly \[..., ...\]
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.display.additionalProperties
+
+> `readonly` **additionalProperties**: `false` = `false`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.load
+
+> `readonly` **load**: `object`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.load.type
+
+> `readonly` **type**: `"object"` = `"object"`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.load.properties
+
+> `readonly` **properties**: `object`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.load.properties.status
+
+> `readonly` **status**: ...
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.load.properties.scope
+
+> `readonly` **scope**: ...
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.load.properties.blockerCode
+
+> `readonly` **blockerCode**: ...
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.load.required
+
+> `readonly` **required**: readonly \[..., ..., ...\]
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.load.additionalProperties
+
+> `readonly` **additionalProperties**: `false` = `false`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.featureQuery
+
+> `readonly` **featureQuery**: `object`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.featureQuery.type
+
+> `readonly` **type**: `"object"` = `"object"`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.featureQuery.properties
+
+> `readonly` **properties**: `object`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.featureQuery.properties.status
+
+> `readonly` **status**: ...
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.featureQuery.properties.scope
+
+> `readonly` **scope**: ...
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.featureQuery.properties.blockerCode
+
+> `readonly` **blockerCode**: ...
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.featureQuery.required
+
+> `readonly` **required**: readonly \[..., ..., ...\]
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.featureQuery.additionalProperties
+
+> `readonly` **additionalProperties**: `false` = `false`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.loadPlan
+
+> `readonly` **loadPlan**: `object`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.loadPlan.type
+
+> `readonly` **type**: `"object"` = `"object"`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.loadPlan.properties
+
+> `readonly` **properties**: `object`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.loadPlan.properties.status
+
+> `readonly` **status**: ...
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.loadPlan.properties.scope
+
+> `readonly` **scope**: ...
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.loadPlan.required
+
+> `readonly` **required**: readonly \[..., ...\]
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.loadPlan.additionalProperties
+
+> `readonly` **additionalProperties**: `false` = `false`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.loadGates
+
+> `readonly` **loadGates**: `object`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.loadGates.type
+
+> `readonly` **type**: `"array"` = `"array"`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.loadGates.items
+
+> `readonly` **items**: `object`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.loadGates.items.type
+
+> `readonly` **type**: ... = `"string"`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.loadGates.items.enum
+
+> `readonly` **enum**: ...
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.featureQueryGates
+
+> `readonly` **featureQueryGates**: `object`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.featureQueryGates.type
+
+> `readonly` **type**: `"array"` = `"array"`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.featureQueryGates.items
+
+> `readonly` **items**: `object`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.featureQueryGates.items.type
+
+> `readonly` **type**: ... = `"string"`
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.featureQueryGates.items.enum
+
+> `readonly` **enum**: ...
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.required
+
+> `readonly` **required**: readonly \[`"display"`, `"load"`, `"featureQuery"`, `"loadPlan"`, `"loadGates"`, `"featureQueryGates"`\]
+
+#### properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.additionalProperties
 
 > `readonly` **additionalProperties**: `false` = `false`
 

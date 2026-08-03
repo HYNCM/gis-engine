@@ -138,7 +138,7 @@
 
 #### state
 
-> **state**: `"blocked"` \| `"extension-only"` \| `"not-requested"`
+> **state**: `"blocked"` \| `"not-requested"` \| `"extension-only"`
 
 #### sourceCount
 

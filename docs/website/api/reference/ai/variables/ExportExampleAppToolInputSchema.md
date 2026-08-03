@@ -428,6 +428,26 @@
 
 > `readonly` **type**: `"boolean"` = `"boolean"`
 
+#### properties.generationEvidence.properties.delivery.properties.sourceReadiness.items.properties.fixtureEvidenceReady
+
+> `readonly` **fixtureEvidenceReady**: `object`
+
+#### properties.generationEvidence.properties.delivery.properties.sourceReadiness.items.properties.fixtureEvidenceReady.type
+
+> `readonly` **type**: `"boolean"` = `"boolean"`
+
+#### properties.generationEvidence.properties.delivery.properties.sourceReadiness.items.properties.fixtureEvidenceStatus
+
+> `readonly` **fixtureEvidenceStatus**: `object`
+
+#### properties.generationEvidence.properties.delivery.properties.sourceReadiness.items.properties.fixtureEvidenceStatus.type
+
+> `readonly` **type**: `"string"` = `"string"`
+
+#### properties.generationEvidence.properties.delivery.properties.sourceReadiness.items.properties.fixtureEvidenceStatus.enum
+
+> `readonly` **enum**: readonly \[..., ..., ..., ...\]
+
 #### properties.generationEvidence.properties.delivery.properties.sourceReadiness.items.properties.resourcePolicy
 
 > `readonly` **resourcePolicy**: `object`
@@ -589,6 +609,50 @@
 > `readonly` **required**: readonly \[..., ..., ..., ..., ..., ..., ...\]
 
 #### properties.generationEvidence.properties.delivery.properties.sourceReadiness.items.properties.queryEvidence.additionalProperties
+
+> `readonly` **additionalProperties**: `false` = `false`
+
+#### properties.generationEvidence.properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision
+
+> `readonly` **capabilityDecision**: `object` = `PMTilesCapabilityDecisionSchema`
+
+#### properties.generationEvidence.properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.type
+
+> `readonly` **type**: `"object"` = `"object"`
+
+#### properties.generationEvidence.properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties
+
+> `readonly` **properties**: `object`
+
+#### properties.generationEvidence.properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.display
+
+> `readonly` **display**: ...
+
+#### properties.generationEvidence.properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.load
+
+> `readonly` **load**: ...
+
+#### properties.generationEvidence.properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.featureQuery
+
+> `readonly` **featureQuery**: ...
+
+#### properties.generationEvidence.properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.loadPlan
+
+> `readonly` **loadPlan**: ...
+
+#### properties.generationEvidence.properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.loadGates
+
+> `readonly` **loadGates**: ...
+
+#### properties.generationEvidence.properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.properties.featureQueryGates
+
+> `readonly` **featureQueryGates**: ...
+
+#### properties.generationEvidence.properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.required
+
+> `readonly` **required**: readonly \[..., ..., ..., ..., ..., ...\]
+
+#### properties.generationEvidence.properties.delivery.properties.sourceReadiness.items.properties.capabilityDecision.additionalProperties
 
 > `readonly` **additionalProperties**: `false` = `false`
 

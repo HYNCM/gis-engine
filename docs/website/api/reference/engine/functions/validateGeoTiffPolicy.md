@@ -1,10 +1,10 @@
-[**@gis-engine/engine v1.4.0**](../index.md)
+[**@gis-engine/engine v1.5.0**](../index.md)
 
 ***
 
 # Function: validateGeoTiffPolicy()
 
-> **validateGeoTiffPolicy**(`source`, `policy?`, `sourceId?`): [`Diagnostic`](../interfaces/Diagnostic.md)[]
+> **validateGeoTiffPolicy**(`source`, `policy?`, `sourceId?`): `object`[]
 
 Validate GeoTIFF source metadata against policy.
 Returns diagnostics without performing any IO.
@@ -40,4 +40,4 @@ Runtime loading/query remains blocked -- this validates metadata only.
 
 ## Returns
 
-[`Diagnostic`](../interfaces/Diagnostic.md)[]
+`object`[]
