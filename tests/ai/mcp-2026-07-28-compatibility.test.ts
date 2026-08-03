@@ -44,7 +44,10 @@ const canonicalToolNames = [
 type CompatibilityFixture = {
   candidate: string;
   checkedAt: string;
-  coverage: Record<(typeof coverageKeys)[number], { status: "supported" | "blocked" | "not-applicable" }>;
+  coverage: Record<
+    (typeof coverageKeys)[number],
+    { evidence: string; status: "supported" | "blocked" | "not-applicable" }
+  >;
   currentDefault: string;
   decision: "go" | "no-go";
   frozenContract: {
@@ -104,6 +107,14 @@ describe("MCP 2026-07-28 no-default-change compatibility gate", () => {
     });
     expect(aiPackage.dependencies[fixture.sdk.currentPackage]).toBe(fixture.sdk.currentRange);
     expect(lockfile).toContain(`'@modelcontextprotocol/sdk@${fixture.sdk.currentLockedVersion}':`);
+    expect(fixture.coverage.discovery.evidence).toContain("The 2026-07-28 server MUST implement server/discover");
+    expect(fixture.coverage.discovery.evidence).toContain(
+      "client MAY call it before other requests or use it as a probe",
+    );
+    expect(fixture.coverage.oldClientBehavior.evidence).toContain(
+      "A 2026-07-28 client MUST treat a result from an earlier-protocol server that omits resultType as complete",
+    );
+    expect(fixture.coverage.oldClientBehavior.evidence).not.toContain("old client response");
   });
 
   it("keeps the current protocol and canonical descriptors frozen", async () => {
@@ -147,11 +158,18 @@ describe("MCP 2026-07-28 no-default-change compatibility gate", () => {
     expect(rfc).toContain("2025-11-25");
     expect(rfc).toContain("2026-07-28");
     expect(rfc).toContain("server/discover");
+    expect(rfc).toContain("server MUST implement `server/discover`");
+    expect(rfc).toContain("client MAY call it before other requests or use it as a probe");
+    expect(rfc).not.toContain("mandatory before normal requests");
     expect(rfc).toContain("subscriptions/listen");
     expect(rfc).toContain("resultType");
     expect(rfc).toContain("ttlMs");
     expect(rfc).toContain("cacheScope");
-    expect(rfc).toContain("missing `resultType`");
+    expect(rfc).toContain(
+      "A `2026-07-28` client MUST treat a result from an earlier-protocol server that omits `resultType` as complete",
+    );
+    expect(rfc).not.toContain("old client response");
+    expect(rfc).not.toContain("from an old client");
 
     for (const invariant of canonicalToolNames) {
       expect(rfc, `RFC should freeze ${invariant}`).toContain(`\`${invariant}\``);
@@ -161,5 +179,9 @@ describe("MCP 2026-07-28 no-default-change compatibility gate", () => {
     expect(decision).toContain("draft-07");
     expect(decision).toContain("structuredContent");
     expect(decision).toContain("legacy JSON");
+    expect(decision).toContain(
+      "A `2026-07-28` client MUST treat a result from an earlier-protocol server that omits `resultType` as complete",
+    );
+    expect(decision).not.toContain("for old clients");
   });
 });

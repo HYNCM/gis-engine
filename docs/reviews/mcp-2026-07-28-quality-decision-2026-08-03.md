@@ -1,8 +1,8 @@
 ---
 agent: quality
 period: 2026-08-03
-generated_at: 2026-08-03T17:00:07Z
-repo_revision: "ebd3034d9c8544b678cf7d9ca134a971f90f4c35"
+generated_at: 2026-08-03T17:10:31Z
+repo_revision: "057bdb24a39bf46d258492987ca1274fecaccbd9"
 inputs:
   - https://github.com/HYNCM/gis-engine/issues/40
   - docs/planning/feature-specs/mcp-2026-07-28-compatibility.md
@@ -40,7 +40,7 @@ and conformance gaps are the blocking evidence.
 | Descriptor contract | The compatibility test validates live `tools/list` through SDK `ListToolsResultSchema` and asserts names/order plus both schemas | Prevents candidate research from changing the public AI surface | Run `pnpm test:compat:mcp` on future MCP changes | high |
 | Result contract | Existing convergence tests cover successful structured content and structured diagnostics with text fallback | Maintains deterministic machine-readable results | Preserve both `structuredContent` and legacy JSON paths during any migration | high |
 | Candidate gaps | Fixture marks discovery, lifecycle, `resultType`, cache metadata, and subscriptions blocked | Default promotion would claim unimplemented protocol behavior | Implement and review a dedicated split-SDK v2 conformance change | high |
-| Compatibility policy | Missing `resultType` for old clients is documented as complete, policy-only behavior | Avoids confusing a fallback interpretation with runtime support | Add real old/new client fixtures before dual-revision Go | high |
+| Compatibility policy | A `2026-07-28` client MUST treat a result from an earlier-protocol server that omits `resultType` as complete | Avoids confusing a client-side fallback interpretation with runtime support | Add real current-client/earlier-server fixtures before dual-revision Go | high |
 
 ## Verification Evidence
 
@@ -51,17 +51,20 @@ and conformance gaps are the blocking evidence.
 | `pnpm build:schema` | PASS; engine, Scene3D, and AI schema builds completed |
 | `pnpm test:ai` | PASS, 14 files / 302 tests |
 | `pnpm test:docs` | PASS, 5 files / 35 tests |
-| `pnpm check` | Environment-limited: all workspace builds and preceding deterministic suites passed; `tests/examples/ai-map-workbench.test.ts` then failed 23 localhost cases only with `listen EPERM: operation not permitted 127.0.0.1` in the restricted sandbox |
+| `pnpm check` (this agent, restricted sandbox) | Environment-limited: all workspace builds and preceding deterministic suites passed; `tests/examples/ai-map-workbench.test.ts` then failed 23 localhost cases only with `listen EPERM: operation not permitted 127.0.0.1` |
+| `pnpm check` (independent root-agent rerun at `057bdb2`, unrestricted environment) | PASS; all suites completed, including 77/77 Workbench tests and the downstream deterministic suites |
 
-The `pnpm check` localhost cases require independent execution outside the
-restricted sandbox before this branch is used as merge evidence. The focused
-MCP, schema, AI, and documentation results above are complete in this run.
+The restricted run remains recorded to distinguish an environment limitation
+from a regression. The independent unrestricted rerun at `057bdb2` satisfies
+the full-check evidence, including the localhost Workbench cases. The focused
+MCP, schema, AI, and documentation results above are this agent's evidence.
 
 ## Promotion Blockers
 
 1. Migrate to and pin the split TypeScript SDK v2 packages.
 2. Prove `server/discover` and per-request protocol/capability behavior.
-3. Prove required `resultType` and old-client behavior over real transports.
+3. Prove required `resultType` and the current-client/earlier-server omission
+   behavior over real transports.
 4. Define and test `ttlMs`, `cacheScope`, and invalidation behavior.
 5. Define and test `subscriptions/listen` lifecycle and authorization.
 6. Re-run the complete schema, AI, documentation, deterministic, and MCP

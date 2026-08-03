@@ -44,13 +44,13 @@ runtime handling and does not modify public MCP behavior.
 
 | Coverage key | Status | Candidate behavior | Repository evidence and gap |
 | --- | --- | --- | --- |
-| `discovery` | blocked | `server/discover` is mandatory before normal requests | The SDK 1.x implementation negotiates with `initialize` and exposes `tools/list`; there is no v2 discovery path |
+| `discovery` | blocked | The server MUST implement `server/discover`; a client MAY call it before other requests or use it as a probe | The SDK 1.x implementation negotiates with `initialize` and exposes `tools/list`; there is no v2 discovery path |
 | `transportLifecycle` | blocked | Sessions and `initialize` are replaced by per-request protocol revision and capability context | The current server and in-memory contract tests exercise the 2025-11-25 session lifecycle only |
 | `resultType` | blocked | Result-bearing definitions require `resultType` | Current tools declare input/output JSON schemas and conforming results, but do not declare or negotiate the v2 result type |
 | `cacheMetadata` | blocked | List results can define `ttlMs` and `cacheScope` | No cache lifetime/scope semantics or invalidation tests exist |
 | `subscriptions` | blocked | Subscription capability uses `subscriptions/listen` | No listen lifecycle, authorization, cancellation, or replay tests exist |
 | `extensions` | not-applicable | Extensions require explicit definition and capability negotiation | GIS Engine claims no extension; adding one requires a separate public-contract issue |
-| `oldClientBehavior` | supported (policy only) | An old client response with missing `resultType` is interpreted as complete | The fixture records this compatibility rule; it does not claim a v2 runtime or dual-client conformance path |
+| `oldClientBehavior` | supported (policy only) | A `2026-07-28` client MUST treat a result from an earlier-protocol server that omits `resultType` as complete | The fixture records this compatibility rule; it does not claim a v2 runtime or dual-client conformance path |
 
 ## Frozen Public Contract
 
@@ -75,8 +75,9 @@ All 14 descriptors must continue to expose both `inputSchema` and
 `outputSchema` using `http://json-schema.org/draft-07/schema#`. Successful
 calls must retain schema-conforming `structuredContent`. Execution failures
 must retain the `{ diagnostics: Diagnostic[] }` structured envelope and the
-legacy JSON diagnostics text block. Missing `resultType` from an old client is
-complete for compatibility interpretation only; it cannot relax any of these
+legacy JSON diagnostics text block. A `2026-07-28` client MUST treat a result
+from an earlier-protocol server that omits `resultType` as complete. This is a
+client-side compatibility interpretation only; it cannot relax any of these
 descriptor or result invariants.
 
 ## Promotion Gates
@@ -87,7 +88,7 @@ A future default or dual-revision proposal must provide all of the following:
 | --- | --- | --- | --- | --- |
 | SDK migration | Split v2 packages pinned and their build/runtime dependency boundaries reviewed | Prevents accidental mixed-major transports | `@builder` implements migration on a dedicated branch | high |
 | Discovery and lifecycle | Positive and negative `server/discover`, per-request revision, and capability tests | Prevents accepting requests under the wrong contract | `@builder` adds real client/server transport fixtures | high |
-| Result contract | `resultType`, structured success, diagnostic failure, and old-client cases | Preserves machine-verifiable AI results | `@quality` validates both protocol revisions | high |
+| Result contract | `resultType`, structured success, diagnostic failure, and earlier-server omission cases | Preserves machine-verifiable AI results | `@quality` validates both protocol revisions | high |
 | Cache and subscriptions | `ttlMs`, `cacheScope`, invalidation, `subscriptions/listen`, cancellation, and authorization cases | Prevents stale state and unbounded listeners | Owners define semantics before implementation | high |
 | Extension isolation | Explicit names, schemas, negotiation, diagnostics, and fallback | Prevents undocumented protocol surface growth | Open a separate public-contract issue for each extension | high |
 | Full regression | Schema build, AI suite, docs suite, deterministic checks, and MCP conformance suite | Protects the frozen 14-tool contract | `@quality` issues the final Go/No-go decision | high |

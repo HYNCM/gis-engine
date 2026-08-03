@@ -14,7 +14,7 @@
   "coverage": {
     "discovery": {
       "status": "blocked",
-      "evidence": "The current SDK 1.x server uses initialize plus tools/list and does not implement mandatory server/discover."
+      "evidence": "The 2026-07-28 server MUST implement server/discover; a client MAY call it before other requests or use it as a probe. The current SDK 1.x server has no implementation."
     },
     "transportLifecycle": {
       "status": "blocked",
@@ -38,7 +38,7 @@
     },
     "oldClientBehavior": {
       "status": "supported",
-      "evidence": "The compatibility policy treats an old client response with missing resultType as complete, without changing the current runtime default."
+      "evidence": "A 2026-07-28 client MUST treat a result from an earlier-protocol server that omits resultType as complete. This policy does not change the current runtime default."
     }
   },
   "frozenContract": {
