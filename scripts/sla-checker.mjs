@@ -18,7 +18,7 @@
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { AGENT_REGISTRY } from "./agent-registry.mjs";
-import { findLatestReport } from "./handoff-ledger.mjs";
+import { inspectSpecialistEvidence } from "./handoff-ledger.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
@@ -42,25 +42,28 @@ export function collectSlaViolations(root = ROOT, now = new Date()) {
     if (!agentDef.slaMaxHours) continue;
 
     const description = `${name} ${agentDef.cadence} report`;
-    const latest = findLatestReport(name, root);
-    if (!latest) {
+    const evidence = inspectSpecialistEvidence(name, root, now);
+    const latest = evidence.report;
+    if (evidence.diagnostic?.code === "EVIDENCE.TEMPLATE_NOT_SPECIALIST") {
       violations.push({
         agent: name,
         severity: "critical",
-        message: `${description}: 无报告产出`,
-        action: SLA_ACTIONS[name] ?? "manual orchestrator review",
+        code: evidence.diagnostic.code,
+        message: `${description}: ${evidence.diagnostic.message}`,
+        action: evidence.diagnostic.action,
+        lastRun: evidence.diagnostic.observedAt.toISOString(),
       });
       criticals.push(name);
       continue;
     }
 
-    if (latest.evidenceKind === "template") {
+    if (!latest) {
       violations.push({
         agent: name,
         severity: "critical",
-        message: `${description}: latest artifact is template-only specialist evidence`,
-        action: SLA_ACTIONS[name] ?? "manual orchestrator review",
-        lastRun: latest.generatedAt.toISOString(),
+        code: "EVIDENCE.SPECIALIST_MISSING",
+        message: `${description}: ${evidence.diagnostic?.message ?? "no specialist evidence"}`,
+        action: evidence.diagnostic?.action ?? SLA_ACTIONS[name] ?? "manual orchestrator review",
       });
       criticals.push(name);
       continue;
@@ -73,8 +76,9 @@ export function collectSlaViolations(root = ROOT, now = new Date()) {
       violations.push({
         agent: name,
         severity: "critical",
-        message: `${description}: 逾期 ${ageHours.toFixed(1)}h (SLA: ${agentDef.slaMaxHours}h)`,
-        action: SLA_ACTIONS[name] ?? "manual orchestrator review",
+        code: "EVIDENCE.SPECIALIST_STALE",
+        message: `${description}: ${evidence.diagnostic?.message}`,
+        action: evidence.diagnostic?.action ?? SLA_ACTIONS[name] ?? "manual orchestrator review",
         lastRun: refDate.toISOString(),
       });
       criticals.push(name);
@@ -82,8 +86,9 @@ export function collectSlaViolations(root = ROOT, now = new Date()) {
       violations.push({
         agent: name,
         severity: "warning",
-        message: `${description}: 接近超时 ${ageHours.toFixed(1)}h (SLA: ${agentDef.slaMaxHours}h)`,
-        action: "monitor; escalate if >2x SLA",
+        code: "EVIDENCE.SPECIALIST_STALE",
+        message: `${description}: ${evidence.diagnostic?.message}`,
+        action: evidence.diagnostic?.action ?? "refresh specialist evidence",
         lastRun: refDate.toISOString(),
       });
     }

@@ -57,52 +57,52 @@ jobs:
 
           {
             cat << ALERTEOF
----
-agent: orchestrator
-period: emergency
-generated_at: ${DATE}
-repo_revision: "${GITHUB_SHA}"
-inputs:
-  - manual_trigger
-decision_level: emergency
----
+          ---
+          agent: orchestrator
+          period: emergency
+          generated_at: ${DATE}
+          repo_revision: "${GITHUB_SHA}"
+          inputs:
+            - manual_trigger
+          decision_level: emergency
+          ---
 
-# Critical Gap Alert
+          # Critical Gap Alert
 
-- **触发时间**: ${DATE}
-- **原因**:
-ALERTEOF
+          - **触发时间**: ${DATE}
+          - **原因**:
+          ALERTEOF
             printf '%s\n' "${ALERT_REASON}" | sed 's/^/  /'
             cat << ALERTEOF
-- **影响**:
-ALERTEOF
+          - **影响**:
+          ALERTEOF
             printf '%s\n' "${ALERT_AFFECTED}" | sed 's/^/  /'
             cat << ALERTEOF
-- **Owner**:
-ALERTEOF
+          - **Owner**:
+          ALERTEOF
             printf '%s\n' "${ALERT_OWNER}" | sed 's/^/  /'
             cat << ALERTEOF
-- **回滚方案**:
-ALERTEOF
+          - **回滚方案**:
+          ALERTEOF
             printf '%s\n' "${ALERT_ROLLBACK_PLAN}" | sed 's/^/  /'
             cat << ALERTEOF
-- **有效期**: 48 小时内
+          - **有效期**: 48 小时内
 
-## 紧急门禁要求
+          ## 紧急门禁要求
 
-1. Schema 验证（如触及公共输入）
-2. 确定性测试（触及区域相关）
-3. 资源策略检查（如涉及 URL/tile/worker 变更）
-4. Smoke snapshot（如可能影响渲染）
+          1. Schema 验证（如触及公共输入）
+          2. 确定性测试（触及区域相关）
+          3. 资源策略检查（如涉及 URL/tile/worker 变更）
+          4. Smoke snapshot（如可能影响渲染）
 
-## 后续任务
+          ## 后续任务
 
-<!-- orchestrator 在此追加 P0/P1 follow-up tasks -->
+          <!-- orchestrator 在此追加 P0/P1 follow-up tasks -->
 
-## 关闭条件
+          ## 关闭条件
 
-<!-- 修复完成后由 orchestrator 填写 -->
-ALERTEOF
+          <!-- 修复完成后由 orchestrator 填写 -->
+          ALERTEOF
           } > docs/alerts/critical-gaps.md
 
           mkdir -p emergency-artifacts/docs/alerts

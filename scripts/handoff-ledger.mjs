@@ -31,11 +31,11 @@ function extractGeneratedAt(content) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-export function findLatestReport(agentName, root = ROOT) {
+function discoverReports(agentName, root = ROOT) {
   const agentDef = AGENT_REGISTRY[agentName];
-  if (!agentDef?.reportSearch) return null;
+  if (!agentDef?.reportSearch) return [];
 
-  let latest = null;
+  const reports = [];
   for (const search of agentDef.reportSearch) {
     const dir = join(root, search.dir);
     if (!existsSync(dir)) continue;
@@ -57,16 +57,70 @@ export function findLatestReport(agentName, root = ROOT) {
         inputs: Array.isArray(frontMatter?.inputs) ? frontMatter.inputs : [],
         evidenceKind: classifyReportEvidence(content, frontMatter),
       };
-      if (!latest || item.generatedAt > latest.generatedAt) {
-        latest = item;
-      }
+      reports.push(item);
     }
   }
 
-  return latest;
+  return reports.sort((left, right) => right.generatedAt.getTime() - left.generatedAt.getTime());
 }
 
-export function classifyFlow(flow, upstream, downstream) {
+export function findLatestReport(agentName, root = ROOT, options = {}) {
+  const reports = discoverReports(agentName, root);
+  if (!options.evidenceKind) return reports[0] ?? null;
+  return reports.find((report) => report.evidenceKind === options.evidenceKind) ?? null;
+}
+
+export function inspectSpecialistEvidence(agentName, root = ROOT, now = new Date()) {
+  const reports = discoverReports(agentName, root);
+  const specialist = reports.find((report) => report.evidenceKind === "specialist") ?? null;
+  const latestTemplate = reports.find((report) => report.evidenceKind === "template") ?? null;
+  const slaMaxHours = AGENT_REGISTRY[agentName]?.slaMaxHours ?? null;
+  const ageHours = specialist ? (now - specialist.generatedAt) / 3600000 : null;
+  let diagnostic = null;
+
+  if (!specialist && latestTemplate) {
+    diagnostic = {
+      code: "EVIDENCE.TEMPLATE_NOT_SPECIALIST",
+      message: `${agentName} latest artifact is template-only, not specialist evidence`,
+      action: `@${agentName} must publish evidence_kind: specialist with evidence-backed analysis`,
+      observedAt: latestTemplate.generatedAt,
+    };
+  } else if (!specialist) {
+    diagnostic = {
+      code: "EVIDENCE.SPECIALIST_MISSING",
+      message: `${agentName} has no specialist evidence`,
+      action: `@${agentName} must publish evidence_kind: specialist with evidence-backed analysis`,
+      observedAt: null,
+    };
+  } else if (slaMaxHours && ageHours > slaMaxHours) {
+    diagnostic = {
+      code: "EVIDENCE.SPECIALIST_STALE",
+      message: `${agentName} specialist evidence is ${ageHours.toFixed(1)}h old (SLA: ${slaMaxHours}h)`,
+      action: `@${agentName} must refresh specialist evidence before the SLA or handoff can pass`,
+      observedAt: specialist.generatedAt,
+    };
+  }
+
+  return {
+    report: specialist,
+    latestArtifact: reports[0] ?? null,
+    latestTemplate,
+    ageHours,
+    diagnostic,
+  };
+}
+
+export function classifyFlow(flow, upstream, downstream, options = {}) {
+  if (flow.required && options.upstreamDiagnostic) {
+    return {
+      status: "invalid-upstream",
+      severity: "error",
+      code: options.upstreamDiagnostic.code,
+      note: options.upstreamDiagnostic.message ?? `${flow.from} specialist evidence cannot satisfy ${flow.id}`,
+      action: options.upstreamDiagnostic.action,
+    };
+  }
+
   if (!upstream) {
     return flow.required
       ? {
@@ -90,6 +144,15 @@ export function classifyFlow(flow, upstream, downstream) {
   }
 
   if (!downstream) {
+    if (flow.required && options.downstreamDiagnostic) {
+      return {
+        status: "pending",
+        severity: "error",
+        code: options.downstreamDiagnostic.code,
+        note: options.downstreamDiagnostic.message ?? `${flow.to} specialist evidence cannot consume ${flow.id}`,
+        action: options.downstreamDiagnostic.action,
+      };
+    }
     return {
       status: "pending",
       severity: flow.required ? "error" : "warning",
@@ -102,6 +165,16 @@ export function classifyFlow(flow, upstream, downstream) {
       status: "pending",
       severity: flow.required ? "error" : "warning",
       note: `${flow.to} latest report is template-only and cannot consume ${flow.id}`,
+    };
+  }
+
+  if (flow.required && options.downstreamDiagnostic) {
+    return {
+      status: "pending",
+      severity: "error",
+      code: options.downstreamDiagnostic.code,
+      note: options.downstreamDiagnostic.message ?? `${flow.to} specialist evidence cannot consume ${flow.id}`,
+      action: options.downstreamDiagnostic.action,
     };
   }
 
@@ -130,11 +203,17 @@ export function classifyFlow(flow, upstream, downstream) {
 }
 
 export function buildHandoffLedger(root = ROOT, options = {}) {
-  const generatedAt = (options.generatedAt ?? new Date()).toISOString();
+  const generatedDate = options.generatedAt ?? new Date();
+  const generatedAt = generatedDate.toISOString();
   const flows = HANDOFF_FLOWS.map((flow) => {
-    const upstream = findLatestReport(flow.from, root);
-    const downstream = findLatestReport(flow.to, root);
-    const state = classifyFlow(flow, upstream, downstream);
+    const upstreamEvidence = inspectSpecialistEvidence(flow.from, root, generatedDate);
+    const downstreamEvidence = inspectSpecialistEvidence(flow.to, root, generatedDate);
+    const upstream = upstreamEvidence.report;
+    const downstream = downstreamEvidence.report;
+    const state = classifyFlow(flow, upstream, downstream, {
+      upstreamDiagnostic: upstreamEvidence.diagnostic,
+      downstreamDiagnostic: downstreamEvidence.diagnostic,
+    });
 
     return {
       id: flow.id,
@@ -144,7 +223,9 @@ export function buildHandoffLedger(root = ROOT, options = {}) {
       required: flow.required,
       status: state.status,
       severity: state.severity,
+      code: state.code ?? null,
       note: state.note,
+      action: state.action ?? null,
       upstream: upstream
         ? {
             path: upstream.path,
@@ -157,6 +238,20 @@ export function buildHandoffLedger(root = ROOT, options = {}) {
             path: downstream.path,
             generated_at: downstream.generatedAt.toISOString(),
             sha256: downstream.sha256,
+          }
+        : null,
+      latest_upstream_template: upstreamEvidence.latestTemplate
+        ? {
+            path: upstreamEvidence.latestTemplate.path,
+            generated_at: upstreamEvidence.latestTemplate.generatedAt.toISOString(),
+            sha256: upstreamEvidence.latestTemplate.sha256,
+          }
+        : null,
+      latest_downstream_template: downstreamEvidence.latestTemplate
+        ? {
+            path: downstreamEvidence.latestTemplate.path,
+            generated_at: downstreamEvidence.latestTemplate.generatedAt.toISOString(),
+            sha256: downstreamEvidence.latestTemplate.sha256,
           }
         : null,
     };

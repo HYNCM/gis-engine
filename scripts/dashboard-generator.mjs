@@ -21,7 +21,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { AGENT_REGISTRY } from "./agent-registry.mjs";
-import { buildHandoffLedger, findLatestReport, writeHandoffLedger } from "./handoff-ledger.mjs";
+import { buildHandoffLedger, inspectSpecialistEvidence, writeHandoffLedger } from "./handoff-ledger.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
@@ -53,7 +53,9 @@ export function computeHealthMetrics(root = ROOT, now = new Date()) {
 
   for (const name of DASHBOARD_AGENTS) {
     const def = AGENT_REGISTRY[name];
-    const latest = findLatestReport(name, root);
+    const evidence = inspectSpecialistEvidence(name, root, now);
+    const latest = evidence.report;
+    const visibleArtifact = latest ?? evidence.latestTemplate;
     let status = "unknown";
     let ageDays = null;
 
@@ -61,12 +63,14 @@ export function computeHealthMetrics(root = ROOT, now = new Date()) {
       const refDate = latest.generatedAt;
       ageDays = (now - refDate) / 86400000;
 
-      if (latest.evidenceKind === "template") status = "template-only";
-      else if (def.cadence === "daily" && ageDays > 2) status = "overdue";
+      if (def.cadence === "daily" && ageDays > 2) status = "overdue";
       else if (def.cadence === "weekly" && ageDays > 8) status = "overdue";
       else if (def.cadence === "ad-hoc") status = "ok";
       else if (ageDays < 1) status = "fresh";
       else status = "ok";
+    } else if (evidence.latestTemplate) {
+      status = "template-only";
+      ageDays = (now - evidence.latestTemplate.generatedAt) / 86400000;
     } else {
       if (def.cadence === "ad-hoc")
         status = "ok"; // ad-hoc 不强制
@@ -76,11 +80,13 @@ export function computeHealthMetrics(root = ROOT, now = new Date()) {
     metrics.push({
       agent: name,
       period: def.cadence,
-      lastFile: latest?.path || "—",
-      lastRun: latest ? latest.generatedAt.toISOString() : "—",
+      lastFile: visibleArtifact?.path || "—",
+      lastRun: visibleArtifact ? visibleArtifact.generatedAt.toISOString() : "—",
       status,
-      evidenceKind: latest?.evidenceKind ?? null,
-      ageDays: ageDays ? Math.round(ageDays) : null,
+      evidenceKind: visibleArtifact?.evidenceKind ?? null,
+      latestTemplateFile: evidence.latestTemplate?.path ?? null,
+      latestTemplateRun: evidence.latestTemplate?.generatedAt.toISOString() ?? null,
+      ageDays: ageDays !== null ? Math.round(ageDays) : null,
     });
   }
 
@@ -143,8 +149,8 @@ export function generateDashboard(metrics, anomalies, period, options = {}) {
   // ── 执行健康 ──
   lines.push("## Execution Health");
   lines.push("");
-  lines.push("| Agent | Cadence | Last Report | Last Run | Status | Age |");
-  lines.push("| --- | --- | --- | --- | --- | --- |");
+  lines.push("| Agent | Cadence | Specialist Report | Last Run | Latest Template | Status | Age |");
+  lines.push("| --- | --- | --- | --- | --- | --- | --- |");
 
   const statusIcon = {
     fresh: "🟢",
@@ -158,8 +164,11 @@ export function generateDashboard(metrics, anomalies, period, options = {}) {
   for (const m of metrics) {
     const icon = statusIcon[m.status] || "⚪";
     const ageStr = m.ageDays !== null ? `${m.ageDays}d` : "—";
+    const templateTrace = m.latestTemplateFile
+      ? `${m.latestTemplateFile} (${m.latestTemplateRun?.slice(0, 10) ?? "unknown"})`
+      : "—";
     lines.push(
-      `| @${m.agent} | ${m.period} | ${m.lastFile} | ${m.lastRun.slice(0, 10)} | ${icon} ${m.status} | ${ageStr} |`,
+      `| @${m.agent} | ${m.period} | ${m.lastFile} | ${m.lastRun.slice(0, 10)} | ${templateTrace} | ${icon} ${m.status} | ${ageStr} |`,
     );
   }
 

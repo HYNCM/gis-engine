@@ -17,7 +17,7 @@ permissions:
   issues: read
 
 concurrency:
-  group: agent-monthly-${{ github.ref }}
+  group: agent-artifact-writers-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -97,6 +97,8 @@ jobs:
       - release-quality
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Download monthly artifacts
         uses: actions/download-artifact@v8
@@ -114,6 +116,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           node scripts/planning-evidence.mjs --period "$(date -u +%Y-%m-%d)"
+
+      - name: Gate specialist evidence health
+        run: |
+          node scripts/sla-checker.mjs --period "$(date -u +%Y-%m-%d)" --dry-run
+          node scripts/handoff-ledger.mjs --check --dry-run
 
       - name: Commit monthly artifacts
         run: |
@@ -139,4 +146,4 @@ jobs:
           fi
 
           git commit -m "docs: monthly agent artifacts"
-          git push
+          node scripts/git-push-retry.mjs --remote origin --branch "${GITHUB_REF_NAME}" --max-attempts 3
