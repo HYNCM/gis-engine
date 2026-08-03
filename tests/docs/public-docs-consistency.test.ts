@@ -77,6 +77,7 @@ describe("public docs consistency", () => {
       "docs/mcp-server-description.md",
       "docs/website/guide/quick-start.md",
       "docs/website/index.md",
+      "docs/website/release-notes.md",
     ];
 
     for (const file of files) {
@@ -118,6 +119,7 @@ describe("public docs consistency", () => {
       "docs/website/api/ai.md",
       "docs/website/mcp/overview.md",
       "docs/website/mcp/setup-guides.md",
+      "docs/website/release-notes.md",
       "packages/ai/README.md",
       "examples/mcp-server-setup/README.md",
       "skills/gis-engine-mcp-setup/SKILL.md",
@@ -131,6 +133,26 @@ describe("public docs consistency", () => {
       }
       expectCanonicalMcpOrder(file);
     }
+  });
+
+  it("keeps the current release section on v1.5 truth and explicit No-go boundaries", () => {
+    const releaseNotes = readText("docs/website/release-notes.md");
+    const currentHeading = releaseNotes.match(/^## (v\d+\.\d+\.\d+)$/m);
+
+    expect(currentHeading?.[1]).toBe("v1.5.0");
+
+    const currentStart = currentHeading?.index ?? -1;
+    const nextReleaseStart = releaseNotes.indexOf("\n## v", currentStart + 1);
+    const currentRelease = releaseNotes.slice(currentStart, nextReleaseStart);
+
+    expect(currentRelease).toContain("14 MCP tools");
+    for (const tool of currentMcpTools) {
+      expect(currentRelease, `current release notes should list ${tool}`).toContain(tool);
+    }
+    expectCanonicalMcpOrder("docs/website/release-notes.md");
+    expect(currentRelease).toContain("- **Hosted Workbench GA**: No-go.");
+    expect(currentRelease).toContain("- **Stable SceneView3D**: No-go.");
+    expect(currentRelease).toContain("- **PMTiles runtime query support**: No-go.");
   });
 
   it("documents the stable MCP protocol and descriptor schema dialect at public setup surfaces", () => {
