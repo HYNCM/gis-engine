@@ -1,7 +1,7 @@
-[**@gis-engine/engine v1.5.0**](../index.md)
+[**@gis-engine/engine v1.4.0**](../index.md)
 
 ***
 
 # Type Alias: SourceSpec
 
-> **SourceSpec** = `Static`\<*typeof* [`SourceSpecSchema`](../variables/SourceSpecSchema.md)\>
+> **SourceSpec** = [`GeoJsonSourceSpec`](../interfaces/GeoJsonSourceSpec.md) \| [`RasterSourceSpec`](../interfaces/RasterSourceSpec.md) \| [`PmtilesSourceSpec`](../interfaces/PmtilesSourceSpec.md) \| `FlatGeobufSourceSpec` \| `GeoParquetSourceSpec` \| `GeoTiffSourceSpec` \| [`VectorSourceSpec`](VectorSourceSpec.md)

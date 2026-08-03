@@ -1,4 +1,4 @@
-[**@gis-engine/engine v1.5.0**](../index.md)
+[**@gis-engine/engine v1.4.0**](../index.md)
 
 ***
 
@@ -91,30 +91,6 @@
 ### CapabilityUnsupported
 
 > `readonly` **CapabilityUnsupported**: `"CAPABILITY.UNSUPPORTED"` = `"CAPABILITY.UNSUPPORTED"`
-
-### PMTilesRuntimeArchiveLoadBlocked
-
-> `readonly` **PMTilesRuntimeArchiveLoadBlocked**: `"PMTILES.RUNTIME_ARCHIVE_LOAD_BLOCKED"` = `"PMTILES.RUNTIME_ARCHIVE_LOAD_BLOCKED"`
-
-### PMTilesRuntimeFeatureQueryBlocked
-
-> `readonly` **PMTilesRuntimeFeatureQueryBlocked**: `"PMTILES.RUNTIME_FEATURE_QUERY_BLOCKED"` = `"PMTILES.RUNTIME_FEATURE_QUERY_BLOCKED"`
-
-### GeoParquetVersionRequired
-
-> `readonly` **GeoParquetVersionRequired**: `"GEOPARQUET.VERSION_REQUIRED"` = `"GEOPARQUET.VERSION_REQUIRED"`
-
-### GeoParquetVersionUnsupported
-
-> `readonly` **GeoParquetVersionUnsupported**: `"GEOPARQUET.VERSION_UNSUPPORTED"` = `"GEOPARQUET.VERSION_UNSUPPORTED"`
-
-### GeoParquetMetadataAmbiguous
-
-> `readonly` **GeoParquetMetadataAmbiguous**: `"GEOPARQUET.METADATA_AMBIGUOUS"` = `"GEOPARQUET.METADATA_AMBIGUOUS"`
-
-### GeoParquetMetadataIncompatible
-
-> `readonly` **GeoParquetMetadataIncompatible**: `"GEOPARQUET.METADATA_INCOMPATIBLE"` = `"GEOPARQUET.METADATA_INCOMPATIBLE"`
 
 ### CommandInvalidPatch
 

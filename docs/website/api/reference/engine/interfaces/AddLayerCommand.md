@@ -1,4 +1,4 @@
-[**@gis-engine/engine v1.5.0**](../index.md)
+[**@gis-engine/engine v1.4.0**](../index.md)
 
 ***
 
@@ -114,55 +114,7 @@
 
 ### layer
 
-> **layer**: `object`
-
-#### id
-
-> **id**: `string`
-
-#### type
-
-> **type**: `"symbol"` \| `"fill"` \| `"raster"` \| `"background"` \| `"line"` \| `"circle"` \| `"symbol-lite"` \| `"fill-extrusion-lite"` \| `"heatmap"`
-
-#### source?
-
-> `optional` **source?**: `string`
-
-#### filter?
-
-> `optional` **filter?**: [`Expression`](../type-aliases/Expression.md)
-
-#### minzoom?
-
-> `optional` **minzoom?**: `number`
-
-#### maxzoom?
-
-> `optional` **maxzoom?**: `number`
-
-#### layout?
-
-> `optional` **layout?**: `object`
-
-##### Index Signature
-
-\[`key`: `string`\]: `unknown`
-
-#### paint?
-
-> `optional` **paint?**: `object`
-
-##### Index Signature
-
-\[`key`: `string`\]: `unknown`
-
-#### metadata?
-
-> `optional` **metadata?**: `object`
-
-##### Index Signature
-
-\[`key`: `string`\]: `unknown`
+> **layer**: [`LayerSpec`](LayerSpec.md)
 
 ***
 

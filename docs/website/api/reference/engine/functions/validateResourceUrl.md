@@ -1,10 +1,10 @@
-[**@gis-engine/engine v1.5.0**](../index.md)
+[**@gis-engine/engine v1.4.0**](../index.md)
 
 ***
 
 # Function: validateResourceUrl()
 
-> **validateResourceUrl**(`urlString`, `path`, `policy?`): `object`[]
+> **validateResourceUrl**(`urlString`, `path`, `policy?`): [`Diagnostic`](../interfaces/Diagnostic.md)[]
 
 ## Parameters
 
@@ -16,4 +16,4 @@
 
 ## Returns
 
-`object`[]
+[`Diagnostic`](../interfaces/Diagnostic.md)[]

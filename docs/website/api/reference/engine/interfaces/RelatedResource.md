@@ -1,4 +1,4 @@
-[**@gis-engine/engine v1.5.0**](../index.md)
+[**@gis-engine/engine v1.4.0**](../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 ### kind
 
-> **kind**: `"url"` \| `"source"` \| `"layer"` \| `"command"` \| `"schema"` \| `"adapter"`
+> **kind**: `"command"` \| `"source"` \| `"layer"` \| `"url"` \| `"schema"` \| `"adapter"`
 
 ***
 

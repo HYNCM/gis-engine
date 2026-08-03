@@ -1,4 +1,4 @@
-[**@gis-engine/engine v1.5.0**](../index.md)
+[**@gis-engine/engine v1.4.0**](../index.md)
 
 ***
 
@@ -114,16 +114,4 @@
 
 ### capabilities
 
-> **capabilities**: `object`
-
-#### dimensions?
-
-> `optional` **dimensions?**: (`"2d"` \| `"2_5d"` \| `"3d"`)[]
-
-#### renderer?
-
-> `optional` **renderer?**: `"maplibre"` \| `"webgl2-lite"` \| `"scene3d"`
-
-#### experimental?
-
-> `optional` **experimental?**: `string`[]
+> **capabilities**: [`CapabilityRequest`](CapabilityRequest.md)

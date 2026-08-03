@@ -1,11 +1,8 @@
-[**@gis-engine/engine v1.5.0**](../index.md)
+[**@gis-engine/engine v1.4.0**](../index.md)
 
 ***
 
 # Interface: SnapshotOptions
-
-Hand-written: differs from SceneSnapshotOptions (which lacks targetLayers and "jpeg" format).
-This is the 2D snapshot API type; SceneSnapshotOptions is the 3D extension type.
 
 ## Properties
 
@@ -29,7 +26,7 @@ This is the 2D snapshot API type; SceneSnapshotOptions is the 3D extension type.
 
 ### format?
 
-> `optional` **format?**: `"png"` \| `"jpeg"` \| `"data-url"`
+> `optional` **format?**: `"png"` \| `"data-url"` \| `"jpeg"`
 
 ***
 

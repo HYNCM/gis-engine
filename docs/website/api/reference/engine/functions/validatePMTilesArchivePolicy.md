@@ -1,10 +1,10 @@
-[**@gis-engine/engine v1.5.0**](../index.md)
+[**@gis-engine/engine v1.4.0**](../index.md)
 
 ***
 
 # Function: validatePMTilesArchivePolicy()
 
-> **validatePMTilesArchivePolicy**(`metadata`, `policy?`): `object`[]
+> **validatePMTilesArchivePolicy**(`metadata`, `policy?`): [`Diagnostic`](../interfaces/Diagnostic.md)[]
 
 Validate PMTiles archive metadata against policy.
 Returns diagnostics without performing any IO.
@@ -33,4 +33,4 @@ Returns diagnostics without performing any IO.
 
 ## Returns
 
-`object`[]
+[`Diagnostic`](../interfaces/Diagnostic.md)[]

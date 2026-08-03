@@ -289,36 +289,6 @@ describe("public docs consistency", () => {
 
     expect(migrationIndex).toContain("./v0.x-to-v1.0.md");
     expect(migrationIndex).toContain("./v1.4-to-v1.5.md");
-    expect(migrationIndex).toContain("./geoparquet-versioned-metadata.md");
-  });
-
-  it("documents the breaking GeoParquet versioned-metadata migration", () => {
-    const migration = readText("docs/migration/geoparquet-versioned-metadata.md");
-
-    expect(migration).toContain("parquetVersion");
-    expect(migration).toContain("metadata.releaseIdentity");
-    expect(migration).toContain("metadata.geoVersion");
-    expect(migration).toContain("sourceMetadata");
-    expect(migration).toMatch(/runtime.*(?:blocked|No-go)/is);
-    expect(migration).toMatch(/4-, 6-, or 8-number/);
-    expect(migration).toMatch(/antimeridian/i);
-  });
-
-  it("keeps generated engine and AI references off the legacy GeoParquet shape", () => {
-    const apiReferences = collectMarkdownFiles(["docs/website/api/reference/engine", "docs/website/api/reference/ai"]);
-
-    for (const file of apiReferences) {
-      const text = readText(file);
-      expect(text, `${file} should not expose legacy parquetVersion`).not.toContain("parquetVersion");
-      expect(text, `${file} should not expose legacy geoarrow-* encoding names`).not.toContain("geoarrow-point");
-    }
-
-    const sourceSpec = readText("docs/website/api/reference/engine/type-aliases/GeoParquetSourceSpec.md");
-    expect(sourceSpec).toContain("GeoParquetSourceSchema");
-
-    const sourceSchema = readText("docs/website/api/reference/engine/variables/GeoParquetSourceSchema.md");
-    expect(sourceSchema).toContain("releaseIdentity");
-    expect(sourceSchema).toContain("geoVersion");
   });
 
   it("keeps generated API reference entry points visible", () => {

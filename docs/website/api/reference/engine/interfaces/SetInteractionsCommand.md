@@ -1,4 +1,4 @@
-[**@gis-engine/engine v1.5.0**](../index.md)
+[**@gis-engine/engine v1.4.0**](../index.md)
 
 ***
 
@@ -114,28 +114,4 @@
 
 ### interactions
 
-> **interactions**: `object`
-
-#### pan?
-
-> `optional` **pan?**: `boolean`
-
-#### zoom?
-
-> `optional` **zoom?**: `boolean`
-
-#### hover?
-
-> `optional` **hover?**: `boolean`
-
-#### click?
-
-> `optional` **click?**: `boolean`
-
-#### select?
-
-> `optional` **select?**: `boolean`
-
-#### popup?
-
-> `optional` **popup?**: `boolean`
+> **interactions**: [`InteractionSpec`](InteractionSpec.md)

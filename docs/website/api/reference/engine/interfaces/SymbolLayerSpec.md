@@ -1,13 +1,12 @@
-[**@gis-engine/engine v1.5.0**](../index.md)
+[**@gis-engine/engine v1.4.0**](../index.md)
 
 ***
 
 # Interface: SymbolLayerSpec
 
 Symbol layer type — full-featured text labels and icons.
-Hand-written: the schema LayerSpecSchema uses generic Record<string, unknown>
-for layout/paint, while this interface provides specific property types.
-Retained for backward compatibility and richer type information.
+Provides schema-validated layout and paint properties,
+replacing `symbol-lite` (which is retained for backward compatibility).
 
 ## Properties
 
@@ -47,7 +46,7 @@ Retained for backward compatibility and richer type information.
 
 #### symbol-placement?
 
-> `optional` **symbol-placement?**: `"point"` \| `"line"` \| `"line-center"`
+> `optional` **symbol-placement?**: `"line"` \| `"point"` \| `"line-center"`
 
 #### symbol-spacing?
 

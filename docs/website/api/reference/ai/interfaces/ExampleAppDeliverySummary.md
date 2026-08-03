@@ -138,14 +138,6 @@
 
 > **queryReady**: `boolean`
 
-#### fixtureEvidenceReady?
-
-> `optional` **fixtureEvidenceReady?**: `boolean`
-
-#### fixtureEvidenceStatus?
-
-> `optional` **fixtureEvidenceStatus?**: `"blocked"` \| `"ready"` \| `"not-requested"` \| `"empty"`
-
 #### resourcePolicy?
 
 > `optional` **resourcePolicy?**: `"not-applicable"` \| `"not-checked"` \| `"blocked"` \| `"passed"`
@@ -237,74 +229,6 @@
 #### queryEvidence?
 
 > `optional` **queryEvidence?**: `SourcePMTilesQueryReadinessSummary`
-
-#### capabilityDecision?
-
-> `optional` **capabilityDecision?**: `object`
-
-##### capabilityDecision.display
-
-> `readonly` **display**: `object`
-
-##### capabilityDecision.display.status
-
-> `readonly` **status**: `"go"`
-
-##### capabilityDecision.display.scope
-
-> `readonly` **scope**: `"url-compatible-maplibre-vector-display"`
-
-##### capabilityDecision.load
-
-> `readonly` **load**: `object`
-
-##### capabilityDecision.load.status
-
-> `readonly` **status**: `"no-go"`
-
-##### capabilityDecision.load.scope
-
-> `readonly` **scope**: `"runtime-archive-load"`
-
-##### capabilityDecision.load.blockerCode
-
-> `readonly` **blockerCode**: `"PMTILES.RUNTIME_ARCHIVE_LOAD_BLOCKED"`
-
-##### capabilityDecision.featureQuery
-
-> `readonly` **featureQuery**: `object`
-
-##### capabilityDecision.featureQuery.status
-
-> `readonly` **status**: `"no-go"`
-
-##### capabilityDecision.featureQuery.scope
-
-> `readonly` **scope**: `"runtime-archive-feature-query"`
-
-##### capabilityDecision.featureQuery.blockerCode
-
-> `readonly` **blockerCode**: `"PMTILES.RUNTIME_FEATURE_QUERY_BLOCKED"`
-
-##### capabilityDecision.loadPlan
-
-> `readonly` **loadPlan**: `object`
-
-##### capabilityDecision.loadPlan.status
-
-> `readonly` **status**: `"go"`
-
-##### capabilityDecision.loadPlan.scope
-
-> `readonly` **scope**: `"io-free-caller-metadata-preflight"`
-
-##### capabilityDecision.loadGates
-
-> `readonly` **loadGates**: readonly \[`"archive-metadata"`, `"columnar-directory-lookup"`, `"offset-continuation"`, `"internal-compression"`, `"leaf-directory-traversal"`, `"cancellation"`, `"byte-budget"`, `"range-budget"`, `"cache-behavior"`, `"resource-policy-before-io"`\]
-
-##### capabilityDecision.featureQueryGates
-
-> `readonly` **featureQueryGates**: readonly \[`"query-semantics"`, `"query-diagnostics"`, `"adapter-boundary"`, `"payload-free-evidence"`, `"query-tests"`, `"docs"`\]
 
 #### confirmationReasons
 
@@ -400,7 +324,7 @@
 
 #### state
 
-> **state**: `"blocked"` \| `"ready"` \| `"not-requested"` \| `"follow-up-required"`
+> **state**: `"blocked"` \| `"ready"` \| `"follow-up-required"` \| `"not-requested"`
 
 #### status
 

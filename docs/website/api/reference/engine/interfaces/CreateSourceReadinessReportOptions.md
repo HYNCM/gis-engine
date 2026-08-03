@@ -1,4 +1,4 @@
-[**@gis-engine/engine v1.5.0**](../index.md)
+[**@gis-engine/engine v1.4.0**](../index.md)
 
 ***
 
@@ -21,9 +21,3 @@
 ### pmtilesQueryEvidence?
 
 > `optional` **pmtilesQueryEvidence?**: `Record`\<`string`, [`PMTilesQueryEvidence`](PMTilesQueryEvidence.md) \| `undefined`\>
-
-***
-
-### pmtilesRuntimeLoaders?
-
-> `optional` **pmtilesRuntimeLoaders?**: `Record`\<`string`, [`PMTilesRuntimeLoaderReadiness`](PMTilesRuntimeLoaderReadiness.md) \| `undefined`\>

@@ -1,10 +1,10 @@
-[**@gis-engine/engine v1.5.0**](../index.md)
+[**@gis-engine/engine v1.4.0**](../index.md)
 
 ***
 
 # Function: validatePatch()
 
-> **validatePatch**(`patch`): `object`[]
+> **validatePatch**(`patch`): [`Diagnostic`](../interfaces/Diagnostic.md)[]
 
 ## Parameters
 
@@ -14,4 +14,4 @@
 
 ## Returns
 
-`object`[]
+[`Diagnostic`](../interfaces/Diagnostic.md)[]
