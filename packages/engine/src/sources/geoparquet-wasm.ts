@@ -16,6 +16,7 @@
  */
 
 import { DiagnosticCodes } from "../diagnostics/codes.js";
+import type { GeoParquetSourceMetadata } from "../spec/cloud-native/geoparquet-source.js";
 import { escapePathSegment } from "../spec/patch/path.js";
 import type { Diagnostic, GeoParquetSourceSpec, JsonValue, MapSpec } from "../types.js";
 
@@ -23,19 +24,10 @@ import type { Diagnostic, GeoParquetSourceSpec, JsonValue, MapSpec } from "../ty
 // Types
 // ---------------------------------------------------------------------------
 
-type Bbox = [number, number, number, number];
-
 export type GeoParquetWasmStatus = "stub" | "wasm-unavailable" | "ready" | "error";
 
-export type GeoParquetGeometryEncoding =
-  | "WKB"
-  | "WKT"
-  | "geoarrow-point"
-  | "geoarrow-linestring"
-  | "geoarrow-polygon"
-  | "geoarrow-multipoint"
-  | "geoarrow-multilinestring"
-  | "geoarrow-multipolygon";
+/** Geometry encoding names are derived from the reviewed versioned source metadata contract. */
+export type GeoParquetGeometryEncoding = GeoParquetSourceMetadata["encoding"];
 
 export interface GeoParquetWasmModule {
   /** Parse raw Parquet bytes and return metadata + feature count. */
@@ -49,10 +41,8 @@ export interface GeoParquetMetadata {
   columnCount: number;
   columns: GeoParquetColumnInfo[];
   geometryColumn: string;
-  encoding: GeoParquetGeometryEncoding;
-  crs: { authority: string; code: string } | null;
-  bbox: Bbox | null;
-  parquetVersion: 1 | 2;
+  /** Version identity, encoding, CRS, bbox, and version-specific readiness evidence. */
+  sourceMetadata: GeoParquetSourceMetadata;
 }
 
 export interface GeoParquetColumnInfo {
