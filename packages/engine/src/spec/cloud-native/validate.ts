@@ -4,7 +4,12 @@ import { escapePathSegment } from "../patch/path.js";
 import type { FlatGeobufPolicy, FlatGeobufSourceSpec } from "./flatgeobuf-source.js";
 import { defaultFlatGeobufPolicy } from "./flatgeobuf-source.js";
 import type { GeoParquetPolicy } from "./geoparquet-source.js";
-import { defaultGeoParquetPolicy } from "./geoparquet-source.js";
+import {
+  defaultGeoParquetPolicy,
+  hasGeoParquet20Rc1RowGroupStatistics,
+  isGeoParquetBbox,
+  isGeoParquetProjJsonCrs,
+} from "./geoparquet-source.js";
 import type { GeoTiffPolicy, GeoTiffSourceSpec } from "./geotiff-source.js";
 import { defaultGeoTiffPolicy } from "./geotiff-source.js";
 import type { PMTilesArchiveMetadata, PMTilesArchivePolicy } from "./pmtiles-archive.js";
@@ -134,35 +139,6 @@ export function validateGeoParquetPolicy(
     });
   }
 
-  const bbox = metadata?.bbox;
-  if (Array.isArray(bbox) && bbox.length === 4 && bbox.every((value) => typeof value === "number")) {
-    const [w, s, e, n] = bbox as [number, number, number, number];
-    if (w < -180 || w > 180 || e < -180 || e > 180 || s < -90 || s > 90 || n < -90 || n > 90) {
-      diagnostics.push({
-        severity: "error",
-        code: DiagnosticCodes.SchemaInvalid,
-        message: "GeoParquet bbox must be within [-180, -90, 180, 90].",
-        path: `${sourcePath}/metadata/bbox`,
-      });
-    }
-    if (w > e) {
-      diagnostics.push({
-        severity: "error",
-        code: DiagnosticCodes.SchemaInvalid,
-        message: "GeoParquet bbox west must be <= east.",
-        path: `${sourcePath}/metadata/bbox`,
-      });
-    }
-    if (s > n) {
-      diagnostics.push({
-        severity: "error",
-        code: DiagnosticCodes.SchemaInvalid,
-        message: "GeoParquet bbox south must be <= north.",
-        path: `${sourcePath}/metadata/bbox`,
-      });
-    }
-  }
-
   const fileBytes = sourceRecord?.fileBytes;
   if (typeof fileBytes === "number") {
     const maxBytes = policy.maxFileBytes ?? DEFAULT_MAX_GEOPARQUET_FILE_BYTES;
@@ -271,12 +247,12 @@ function validateGeoParquetMetadata(
         ),
       );
     }
-    if (!asRecord(metadata.rowGroupStatistics)) {
+    if (!hasGeoParquet20Rc1RowGroupStatistics(metadata.rowGroupStatistics)) {
       diagnostics.push(
         incompatibleMetadataDiagnostic(
           sourcePath,
           "rowGroupStatistics",
-          "GeoParquet 2.0 RC requires explicit row-group spatial-statistics evidence.",
+          "GeoParquet 2.0 RC requires bbox and geometryTypes row-group statistics evidence set to true.",
         ),
       );
     }
@@ -291,9 +267,19 @@ function validateGeoParquetMetadata(
     }
   }
 
-  if (metadata.crs !== undefined && metadata.crs !== null && !asRecord(metadata.crs)) {
+  if (metadata.crs !== undefined && metadata.crs !== null && !isGeoParquetProjJsonCrs(metadata.crs)) {
     diagnostics.push(
       incompatibleMetadataDiagnostic(sourcePath, "crs", "GeoParquet geo metadata CRS must be inline PROJJSON or null."),
+    );
+  }
+
+  if (metadata.bbox !== undefined && !isGeoParquetBbox(metadata.bbox)) {
+    diagnostics.push(
+      incompatibleMetadataDiagnostic(
+        sourcePath,
+        "bbox",
+        "GeoParquet bbox metadata must be a 4-, 6-, or 8-number dimensional extent.",
+      ),
     );
   }
 

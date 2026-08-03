@@ -409,14 +409,45 @@ describe("CNS-002: GeoParquet policy validation", () => {
     expect(diagnostics).toContainEqual(expect.objectContaining({ path: "/sources/geoparquet/url", severity: "error" }));
   });
 
-  it("rejects invalid bbox coordinates", () => {
-    const source: GeoParquetSourceSpec = {
+  it.each([
+    ["projected coordinates", [500_000, 0, 600_000, 100_000]],
+    ["an antimeridian crossing", [170, -10, -170, 10]],
+    ["a 3D extent", [500_000, 0, -20, 600_000, 100_000, 500]],
+  ])("accepts %s as a numeric GeoParquet bbox tuple", (_name, bbox) => {
+    const source = {
       ...validGeoParquet11,
-      metadata: { ...validGeoParquet11.metadata, bbox: [-200, -100, 200, 100] },
+      metadata: { ...validGeoParquet11.metadata, bbox },
     };
-    const diagnostics = validateGeoParquetPolicy(source);
-    expect(diagnostics).toContainEqual(
+
+    expect(validateGeoParquetPolicy(source)).not.toContainEqual(
       expect.objectContaining({ path: "/sources/geoparquet/metadata/bbox", severity: "error" }),
+    );
+    expect(
+      validateSpec({
+        version: "0.1",
+        view: { center: [0, 0], zoom: 1 },
+        sources: { data: source },
+        layers: [],
+      }).valid,
+    ).toBe(true);
+  });
+
+  it.each([
+    ["wrong tuple length", [0, 1, 2]],
+    ["non-numeric member", [0, 1, "2", 3]],
+    ["non-array value", { west: 0, south: 1, east: 2, north: 3 }],
+  ])("fails closed for a GeoParquet bbox with %s", (_name, bbox) => {
+    const source = {
+      ...validGeoParquet11,
+      metadata: { ...validGeoParquet11.metadata, bbox },
+    };
+
+    expect(validateGeoParquetPolicy(source)).toContainEqual(
+      expect.objectContaining({
+        code: "GEOPARQUET.METADATA_INCOMPATIBLE",
+        path: "/sources/geoparquet/metadata/bbox",
+        severity: "error",
+      }),
     );
   });
 
@@ -442,10 +473,39 @@ describe("CNS-002: GeoParquet policy validation", () => {
     );
   });
 
-  it("rejects non-object CRS metadata", () => {
+  it.each([
+    ["null", null],
+    ["GeographicCRS", { type: "GeographicCRS", name: "WGS 84", id: { authority: "EPSG", code: 4326 } }],
+    ["ProjectedCRS", { type: "ProjectedCRS", name: "WGS 84 / UTM zone 33N", customEvidence: true }],
+  ])("accepts %s inline CRS metadata", (_name, crs) => {
     const source = {
       ...validGeoParquet11,
-      metadata: { ...validGeoParquet11.metadata, crs: "EPSG:4326" },
+      metadata: { ...validGeoParquet11.metadata, crs },
+    };
+
+    expect(validateGeoParquetPolicy(source)).not.toContainEqual(
+      expect.objectContaining({ path: "/sources/geoparquet/metadata/crs", severity: "error" }),
+    );
+    expect(
+      validateSpec({
+        version: "0.1",
+        view: { center: [0, 0], zoom: 1 },
+        sources: { data: source },
+        layers: [],
+      }).valid,
+    ).toBe(true);
+  });
+
+  it.each([
+    ["a non-object", "EPSG:4326"],
+    ["an arbitrary object", { notProjJson: true }],
+    ["an unsupported PROJJSON type", { type: "Feature", name: "not a CRS" }],
+    ["a missing name", { type: "GeographicCRS" }],
+    ["an empty name", { type: "ProjectedCRS", name: "" }],
+  ])("rejects %s as inline CRS metadata", (_name, crs) => {
+    const source = {
+      ...validGeoParquet11,
+      metadata: { ...validGeoParquet11.metadata, crs },
     };
 
     expect(validateGeoParquetPolicy(source)).toContainEqual(
@@ -455,6 +515,44 @@ describe("CNS-002: GeoParquet policy validation", () => {
         severity: "error",
       }),
     );
+  });
+
+  it.each([
+    ["false capability evidence", { bbox: false, geometryTypes: false }],
+    ["partial capability evidence", { bbox: true }],
+    ["a non-object", "available"],
+  ])("rejects RC row-group statistics with %s", (_name, rowGroupStatistics) => {
+    const source = {
+      ...validGeoParquet20Rc1,
+      metadata: { ...validGeoParquet20Rc1.metadata, rowGroupStatistics },
+    };
+
+    expect(validateGeoParquetPolicy(source)).toContainEqual(
+      expect.objectContaining({
+        code: "GEOPARQUET.METADATA_INCOMPATIBLE",
+        path: "/sources/geoparquet/metadata/rowGroupStatistics",
+        severity: "error",
+      }),
+    );
+  });
+
+  it("requires literal true RC row-group statistics in the public schema", () => {
+    const source = {
+      ...validGeoParquet20Rc1,
+      metadata: {
+        ...validGeoParquet20Rc1.metadata,
+        rowGroupStatistics: { bbox: false, geometryTypes: true },
+      },
+    };
+
+    expect(
+      validateSpec({
+        version: "0.1",
+        view: { center: [0, 0], zoom: 1 },
+        sources: { data: source },
+        layers: [],
+      }).valid,
+    ).toBe(false);
   });
 });
 

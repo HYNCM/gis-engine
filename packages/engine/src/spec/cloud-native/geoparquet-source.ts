@@ -1,9 +1,36 @@
 import { type Static, Type } from "@sinclair/typebox";
 
-const ProjJsonSchema = Type.Union([
-  Type.Record(Type.String({ minLength: 1 }), Type.Unknown(), { minProperties: 1 }),
-  Type.Null(),
-]);
+export const GeoParquetProjJsonCrsTypeValues = [
+  "BoundCRS",
+  "CompoundCRS",
+  "DerivedEngineeringCRS",
+  "DerivedGeodeticCRS",
+  "DerivedGeographicCRS",
+  "DerivedParametricCRS",
+  "DerivedProjectedCRS",
+  "DerivedTemporalCRS",
+  "DerivedVerticalCRS",
+  "EngineeringCRS",
+  "GeodeticCRS",
+  "GeographicCRS",
+  "ParametricCRS",
+  "ProjectedCRS",
+  "TemporalCRS",
+  "VerticalCRS",
+] as const;
+
+const GeoParquetProjJsonCrsTypeSchema = Type.Union(GeoParquetProjJsonCrsTypeValues.map((value) => Type.Literal(value)));
+
+export const GeoParquetProjJsonCrsSchema = Type.Object(
+  {
+    $schema: Type.Optional(Type.String({ minLength: 1 })),
+    type: GeoParquetProjJsonCrsTypeSchema,
+    name: Type.String({ minLength: 1 }),
+  },
+  { additionalProperties: true },
+);
+
+const ProjJsonSchema = Type.Union([GeoParquetProjJsonCrsSchema, Type.Null()]);
 
 const Bbox2dSchema = Type.Tuple([Type.Number(), Type.Number(), Type.Number(), Type.Number()]);
 const Bbox3dSchema = Type.Tuple([
@@ -72,8 +99,8 @@ export const GeoParquet20Rc1MetadataSchema = Type.Object(
     bbox: Type.Optional(Type.Union([Bbox2dSchema, Bbox3dSchema, Bbox3dMeasuredSchema])),
     rowGroupStatistics: Type.Object(
       {
-        bbox: Type.Boolean(),
-        geometryTypes: Type.Boolean(),
+        bbox: Type.Literal(true),
+        geometryTypes: Type.Literal(true),
       },
       { additionalProperties: false },
     ),
@@ -115,6 +142,41 @@ export type GeoParquet11Metadata = Static<typeof GeoParquet11MetadataSchema>;
 export type GeoParquet20Rc1Metadata = Static<typeof GeoParquet20Rc1MetadataSchema>;
 export type GeoParquetSourceMetadata = Static<typeof GeoParquetSourceMetadataSchema>;
 export type GeoParquetSourceSpec = Static<typeof GeoParquetSourceSchema>;
+
+const geoParquetProjJsonCrsTypes = new Set<string>(GeoParquetProjJsonCrsTypeValues);
+
+/** Minimal inline PROJJSON CRS shape needed for metadata-readiness evidence. */
+export function isGeoParquetProjJsonCrs(value: unknown): value is Static<typeof GeoParquetProjJsonCrsSchema> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  const record = value as Record<string, unknown>;
+  return (
+    typeof record.type === "string" &&
+    geoParquetProjJsonCrsTypes.has(record.type) &&
+    typeof record.name === "string" &&
+    record.name.length > 0 &&
+    (record.$schema === undefined || (typeof record.$schema === "string" && record.$schema.length > 0))
+  );
+}
+
+/** GeoParquet bbox evidence is dimensional, not implicitly geographic. */
+export function isGeoParquetBbox(value: unknown): value is number[] {
+  return (
+    Array.isArray(value) &&
+    (value.length === 4 || value.length === 6 || value.length === 8) &&
+    value.every((coordinate) => typeof coordinate === "number" && Number.isFinite(coordinate))
+  );
+}
+
+/** GeoParquet 2.0 RC row-group statistics must be explicit capability evidence. */
+export function hasGeoParquet20Rc1RowGroupStatistics(value: unknown): boolean {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  const record = value as Record<string, unknown>;
+  return (
+    Object.keys(record).every((key) => key === "bbox" || key === "geometryTypes") &&
+    record.bbox === true &&
+    record.geometryTypes === true
+  );
+}
 
 /** GeoParquet resource policy. */
 export const GeoParquetPolicySchema = Type.Object(
