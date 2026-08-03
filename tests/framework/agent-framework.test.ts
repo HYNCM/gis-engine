@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -463,6 +463,53 @@ exit 0
       severity: "error",
       code: "EVIDENCE.GENERATED_AT_INVALID",
       action: expect.stringContaining("generated_at"),
+      upstream: null,
+    });
+  });
+
+  it.each([
+    {
+      label: "invalid",
+      content: evidenceReport("product", "specialist", "not-a-date"),
+      code: "EVIDENCE.GENERATED_AT_INVALID",
+      artifactMtime: "2026-07-21T02:59:30Z",
+    },
+    {
+      label: "future",
+      content: evidenceReport("product", "specialist", "2026-07-21T03:05:00.001Z"),
+      code: "EVIDENCE.GENERATED_AT_FUTURE",
+      artifactMtime: null,
+    },
+  ])("does not fall back to older valid proof when the newest specialist is $label", ({
+    content,
+    code,
+    artifactMtime,
+  }) => {
+    const root = mkdtempSync(join(tmpdir(), "gis-engine-newest-specialist-authority-"));
+    const olderPath = "docs/research/competitor-updates-2026-W29-specialist.md";
+    const newestPath = "docs/research/competitor-updates-2026-W30-specialist.md";
+    writeReport(root, olderPath, evidenceReport("product", "specialist", "2026-07-21T02:30:00Z"));
+    writeReport(root, newestPath, content);
+    if (artifactMtime) {
+      const mtime = new Date(artifactMtime);
+      utimesSync(join(root, newestPath), mtime, mtime);
+    }
+    writeReport(
+      root,
+      "docs/planning/weekly-digest.md",
+      evidenceReport("orchestrator", "specialist", "2026-07-21T03:00:00Z", [olderPath]),
+    );
+    const now = new Date("2026-07-21T03:00:00Z");
+
+    expect(findLatestReport("product", root, { evidenceKind: "specialist", now })).toBeNull();
+    expect(collectSlaViolations(root, now).violations).toContainEqual(
+      expect.objectContaining({ agent: "product", code, severity: "critical" }),
+    );
+    const hocN1 = buildHandoffLedger(root, { generatedAt: now }).flows.find((flow) => flow.id === "HOC-N1");
+    expect(hocN1).toMatchObject({
+      status: "invalid-upstream",
+      severity: "error",
+      code,
       upstream: null,
     });
   });

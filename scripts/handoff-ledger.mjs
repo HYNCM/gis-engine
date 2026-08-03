@@ -105,31 +105,24 @@ export function findLatestReport(agentName, root = ROOT, options = {}) {
   }
 
   const now = options.now ?? new Date();
-  return (
-    reports.find(
-      (report) =>
-        report.evidenceKind === "specialist" &&
-        !report.timestampCode &&
-        report.generatedAt &&
-        !isFutureEvidence(report, now),
-    ) ?? null
-  );
+  const candidate = reports.find((report) => report.evidenceKind === "specialist") ?? null;
+  if (!candidate || candidate.timestampCode || !candidate.generatedAt || isFutureEvidence(candidate, now)) return null;
+  return candidate;
 }
 
 export function inspectSpecialistEvidence(agentName, root = ROOT, now = new Date()) {
   const reports = discoverReports(agentName, root);
   const specialistReports = reports.filter((report) => report.evidenceKind === "specialist");
-  const specialist =
-    specialistReports.find((report) => !report.timestampCode && report.generatedAt && !isFutureEvidence(report, now)) ??
-    null;
-  const rejectedSpecialist = specialist ? null : (specialistReports[0] ?? null);
+  const specialistCandidate = specialistReports[0] ?? null;
+  const candidateDiagnostic = specialistCandidate ? timestampDiagnostic(agentName, specialistCandidate, now) : null;
+  const specialist = candidateDiagnostic ? null : specialistCandidate;
   const latestTemplate = reports.find((report) => report.evidenceKind === "template") ?? null;
   const slaMaxHours = AGENT_REGISTRY[agentName]?.slaMaxHours ?? null;
   const ageHours = specialist ? (now - specialist.generatedAt) / 3600000 : null;
   let diagnostic = null;
 
-  if (rejectedSpecialist) {
-    diagnostic = timestampDiagnostic(agentName, rejectedSpecialist, now);
+  if (candidateDiagnostic) {
+    diagnostic = candidateDiagnostic;
   } else if (!specialist && latestTemplate) {
     diagnostic = {
       code: "EVIDENCE.TEMPLATE_NOT_SPECIALIST",

@@ -1,8 +1,8 @@
 ---
 agent: quality
 period: 2026-08-03
-generated_at: 2026-08-03T16:49:45Z
-repo_revision: "da94ff95"
+generated_at: 2026-08-03T16:56:05Z
+repo_revision: "ec9921f9"
 inputs:
   - https://github.com/HYNCM/gis-engine/issues/43
   - scripts/handoff-ledger.mjs
@@ -37,6 +37,7 @@ handoff is stale or missing.
 | --- | --- | --- | --- | --- |
 | Specialist selection | Focused tests prove a newer template cannot satisfy SLA/HOC and cannot mask a fresh specialist report; template-only and stale paths return `EVIDENCE.TEMPLATE_NOT_SPECIALIST` or `EVIDENCE.SPECIALIST_STALE` with an action | Automated templates can no longer manufacture freshness or invalidate valid specialist work | Keep freshness consumers on the specialist selector and preserve template trace fields | high |
 | Specialist timestamps | Missing, invalid, and future `generated_at` values return `EVIDENCE.GENERATED_AT_MISSING`, `EVIDENCE.GENERATED_AT_INVALID`, or `EVIDENCE.GENERATED_AT_FUTURE`; exactly five minutes of clock skew is accepted and one millisecond beyond it is rejected | Filesystem mtime and future-dated reports cannot manufacture specialist proof, while a small explicit clock difference remains operable | Keep the five-minute tolerance explicit and require valid report front matter for SLA/HOC proof | high |
+| Specialist history | Mixed-history tests prove that a newest invalid or future specialist artifact blocks SLA/HOC proof and Dashboard green state even when an older fresh specialist exists; a newer template remains trace-only and does not mask older valid proof | Producers cannot recover a green claim by falling back past a bad authoritative specialist artifact | Validate the newest specialist candidate before accepting proof; never search older specialist history after candidate failure | high |
 | Dashboard SLA health | A 36-hour-old quality report is `overdue` because quality's registry SLA is 24 hours; dashboard health and SLA compliance consume the same specialist diagnostic | The visual health summary cannot remain green after the configured SLA has breached | Derive health from `AGENT_REGISTRY.slaMaxHours`; do not reintroduce cadence-specific day constants | high |
 | Cadence enforcement | Daily, weekly, and monthly writers share `agent-artifact-writers-${{ github.ref }}` and run SLA then HOC checks before commit | Stale/missing proof produces deterministic job failure instead of a committed green dashboard | @orchestrator refreshes specialist evidence; do not bypass the nonzero gate | high |
 | Recovery incidents | Recovery tests cover deterministic markers, oldest canonical selection, open update/comment, closed reopen, and distinct run creation; an executable workflow-step regression proves every captured TSV row is attempted before accumulated reconciliation failures produce a nonzero exit | One failed run maps to one durable incident, and one reconciliation error cannot suppress later incident attempts | Deploy to `main`, retain #32 as the historical canonical recommendation, and defer #33-#35 closure until post-deploy verification | high |
@@ -58,6 +59,8 @@ handoff is stale or missing.
 | Recovery reconciliation review GREEN | PASS: 1 file / 22 tests; both TSV rows were attempted, the step exited nonzero after accumulation, and concurrency is non-cancelling |
 | Timestamp/dashboard/push-abort RED | Expected FAIL: 3 files / 7 failures / 26 passes; specialist timestamps fell back to mtime or accepted the future, 36-hour quality evidence stayed green, and rebase failure did not abort |
 | Timestamp/dashboard/push-abort GREEN | PASS: 3 files / 33 tests; explicit timestamp diagnostics, five-minute skew boundary, registry-derived health, and abort cleanup are covered |
+| Authoritative specialist history RED | Expected FAIL: 2 files / 4 failures / 29 passes; newer invalid and future specialist artifacts both fell back to older fresh proof and left Dashboard green |
+| Authoritative specialist history GREEN | PASS: 2 files / 33 tests; SLA, HOC, and Dashboard fail closed on the newest specialist candidate while the template exception remains green |
 
 ## Fail-Closed Evidence
 
@@ -65,7 +68,7 @@ handoff is stale or missing.
 | --- | --- |
 | `node scripts/sla-checker.mjs --period 2026-08-03` | Expected exit 2: orchestrator, product, and docs specialist evidence exceeded their configured SLA; each result returned `EVIDENCE.SPECIALIST_STALE` semantics and a refresh action |
 | `node scripts/handoff-ledger.mjs --check --dry-run` | Expected exit 1: required HOC-N1 upstream product evidence and HOC-N3 downstream orchestrator evidence were stale; JSON included `EVIDENCE.SPECIALIST_STALE` and owner actions |
-| `pnpm test:agent-framework` | PASS: 8 files / 50 tests |
+| `pnpm test:agent-framework` | PASS: 8 files / 54 tests |
 | `pnpm check` (restricted sandbox) | Expected environment failure after successful build and preceding suites: 23 Workbench tests could not bind `127.0.0.1` (`listen EPERM`) |
 | `pnpm check` (outside restricted sandbox) | PASS: complete build, test matrix, smoke snapshots, and Studio suite |
 | `git diff --check` | PASS |

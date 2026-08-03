@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -127,6 +127,51 @@ evidence_kind: specialist
     );
     if (!quality) throw new Error("expected quality health metric");
     const dashboard = generateDashboard([quality], [], "2026-07-21", { root, generatedAt: now });
+    expect(dashboard).toContain("**健康 agent**: 0/1");
+    expect(dashboard).toContain("**问题 agent**: 1/1");
+    expect(dashboard).toContain("❌ breach");
+  });
+
+  it.each([
+    { label: "invalid", generatedAt: "not-a-date", artifactMtime: "2026-07-21T02:59:30Z" },
+    { label: "future", generatedAt: "2026-07-21T03:05:00.001Z", artifactMtime: null },
+  ])("does not show green when the newest specialist timestamp is $label", ({ generatedAt, artifactMtime }) => {
+    const root = mkdtempSync(join(tmpdir(), "gis-engine-dashboard-newest-specialist-"));
+    const reports = [
+      ["competitor-updates-2026-W29-specialist.md", "2026-07-21T02:30:00Z"],
+      ["competitor-updates-2026-W30-specialist.md", generatedAt],
+    ] as const;
+    for (const [file, reportGeneratedAt] of reports) {
+      const reportPath = join(root, "docs/research", file);
+      mkdirSync(dirname(reportPath), { recursive: true });
+      writeFileSync(
+        reportPath,
+        `---
+agent: product
+period: 2026-W30
+generated_at: ${reportGeneratedAt}
+repo_revision: fixture
+inputs:
+  - fixture
+owner: "@product"
+decision_level: advisory
+evidence_kind: specialist
+---
+# Product specialist evidence
+`,
+        "utf8",
+      );
+      if (file.includes("W30") && artifactMtime) {
+        const mtime = new Date(artifactMtime);
+        utimesSync(reportPath, mtime, mtime);
+      }
+    }
+    const now = new Date("2026-07-21T03:00:00Z");
+    const product = computeHealthMetrics(root, now).find((metric) => metric.agent === "product");
+
+    expect(product?.status).not.toBe("fresh");
+    if (!product) throw new Error("expected product health metric");
+    const dashboard = generateDashboard([product], [], "2026-07-21", { root, generatedAt: now });
     expect(dashboard).toContain("**健康 agent**: 0/1");
     expect(dashboard).toContain("**问题 agent**: 1/1");
     expect(dashboard).toContain("❌ breach");
