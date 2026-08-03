@@ -41,8 +41,10 @@ evidence and accepts strict visual evidence in the same dependency state.
 > is the exact stable candidate in the executable compatibility matrix. The
 > release baseline remains `5.24.0`, the optional peer range remains
 > `^5.0.0 || ^6.0.0`, and no workspace default or lockfile was changed. Stable
-> v6 adoption still requires complete dual-version browser evidence and a
-> separate `@quality` bump approval.
+> dual-version compatibility evidence for `5.24.0` and `6.1.0` completed on
+> 2026-08-04. Default v6 adoption remains a separate No-go / keep-baseline
+> decision and requires an explicit package-movement task plus `@quality` bump
+> approval.
 
 Owner names below follow the current 5-agent model. Runtime or schema-level
 waiver terminology may still use legacy `coordinator` wording until the

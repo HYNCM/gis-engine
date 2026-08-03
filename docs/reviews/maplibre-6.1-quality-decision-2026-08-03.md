@@ -43,8 +43,8 @@ sample is insufficient for a baseline decision. `candidateDecision` remains
 | Packed public API strict compile | PASS | Both isolated consumers passed TypeScript |
 | Generated ESM application | PASS | Both entries passed Vite build; v6 resolved exports-only `dist/maplibre-gl.mjs` |
 | Lifecycle / missing image | PASS | Raw and adapter lifecycle sets accepted; `styleimagemissing` handled in both |
-| Overscaled local MVT | PASS | Server observed `/tiles/0/0/0.pbf`; source and rendered query counts are `1` |
-| Adapter rendered-feature query | PASS | Query count `1` for each exact version |
+| Overscaled local MVT | PASS | Server observed `/tiles/0/0/0.pbf`; rendered count is `1` for both versions, while source-cache counts are `1` for `5.24.0` and `4` for `6.1.0` |
+| Adapter rendered-feature query | PASS | Query count `1`, empty diagnostics, and exact `matrix` / `matrix-point` / `points` feature identity for each version |
 | Worker / shared resource | PASS | v6 server paths include both module worker and shared module; v5 uses package-default blob delivery |
 | Strict visual / console | PASS | Chromium `148.0.7778.96`; canvases `1/1`; identical accepted pixels; zero console errors |
 | Browser E2E | PASS | Independent unrestricted run passed 5/5 Chromium tests |

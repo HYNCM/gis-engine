@@ -2,10 +2,12 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { buildPlan } from "../../scripts/gate-plan.mjs";
 import {
+  adapterQueryStageStatus,
   buildPerformanceDelta,
   createConsumerFixture,
   MAPLIBRE_COMPATIBILITY_VERSIONS,
   MAPLIBRE_RELEASE_BASELINE,
+  requireNativePeerInstall,
 } from "../../scripts/maplibre-compat-matrix.mjs";
 
 describe("MapLibre compatibility matrix", () => {
@@ -34,6 +36,12 @@ describe("MapLibre compatibility matrix", () => {
     expect(fixture.source).not.toContain('tiles: ["/tiles/{z}/{x}/{y}.pbf"]');
     expect(fixture.source).toContain("renderDurationMs");
     expect(fixture.source).toContain("queryDurationMs");
+    expect(fixture.source).toContain("adapterQueryPassed");
+    expect(fixture.source).toContain("adapterQueryDiagnostics");
+    expect(fixture.source).toContain("adapterQueryFeatureIdentity");
+    expect(fixture.source).toContain('name: "matrix"');
+    expect(fixture.source).toContain('id: "matrix-point"');
+    expect(fixture.source).toContain('source: "points"');
     expect(fixture.html).toContain("script-src 'self' 'unsafe-eval'");
     expect(fixture.cspScriptSource).toBe("'self' 'unsafe-eval'");
     if (version === "6.1.0") {
@@ -56,12 +64,20 @@ describe("MapLibre compatibility matrix", () => {
     expect(commands).toContain("GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual");
   });
 
-  it("derives peer eligibility from a native install attempt before using evidence-only resolution", () => {
+  it("fails closed when an exact stable entry cannot resolve its peer dependency natively", () => {
     const runner = readFileSync("scripts/maplibre-compat-matrix.mjs", "utf8");
 
     expect(runner).toContain("attemptNativePeerInstall");
-    expect(runner).toContain('"--legacy-peer-deps"');
+    expect(runner).not.toContain('"--legacy-peer-deps"');
+    expect(runner).toContain("MAPLIBRE_NATIVE_INSTALL_REJECTED");
     expect(runner).not.toContain("const peerRangeSatisfied = version");
+    expect(() =>
+      requireNativePeerInstall("6.1.0", { status: "rejected", error: "npm error code ERESOLVE" }),
+    ).toThrowError(/\[MAPLIBRE_NATIVE_INSTALL_REJECTED\].*6\.1\.0.*ERESOLVE/);
+    expect(requireNativePeerInstall("6.1.0", { status: "passed", error: null })).toMatchObject({
+      peerRangeSatisfied: true,
+      peerResolution: "native",
+    });
   });
 
   it("records exact package, browser, CSP, behavior, and timing evidence", () => {
@@ -78,6 +94,7 @@ describe("MapLibre compatibility matrix", () => {
     expect(runner).toContain("queryRenderedFeaturesCount");
     expect(runner).toContain("renderDurationMs");
     expect(runner).toContain("queryDurationMs");
+    expect(runner).toContain("browserEvidence.adapterQueryPassed");
     expect(browserGate).toContain("Boolean(window.__GIS_MATRIX_RESULT__)");
     expect(browserGate).not.toContain('() => window.__GIS_MATRIX_RESULT__?.status !== "loading"');
     expect(browserGate).toContain("expect(browserState.rawMap).toMatchObject");
@@ -89,6 +106,15 @@ describe("MapLibre compatibility matrix", () => {
     expect(browserGate).toContain('requestedPaths.has("/maplibre-gl-worker.mjs")');
     expect(browserGate).toContain('requestedPaths.has("/maplibre-gl-shared.mjs")');
     expect(browserGate).toContain("serverRequestedPaths");
+    expect(browserGate).toContain("result?.adapterQueryPassed");
+    expect(browserGate).toContain("result?.adapterQueryDiagnostics");
+    expect(browserGate).toContain("result?.adapterQueryFeatureIdentity");
+  });
+
+  it("does not accept an adapter query from feature count alone", () => {
+    expect(adapterQueryStageStatus({ adapterQueryPassed: false, adapterQueryFeaturesCount: 1 })).toBe("failed");
+    expect(adapterQueryStageStatus({ adapterQueryPassed: true, adapterQueryFeaturesCount: 1 })).toBe("passed");
+    expect(adapterQueryStageStatus({ adapterQueryFeaturesCount: 1 })).toBe("failed");
   });
 
   it("runs the exact stable-v6 matrix in CI without changing the release baseline", () => {

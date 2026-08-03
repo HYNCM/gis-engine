@@ -43,8 +43,8 @@ not change.
 | Worker delivery | Package-default blob worker | Explicit same-origin `maplibre-gl-worker.mjs` and `maplibre-gl-shared.mjs` |
 | Browser | Chromium `148.0.7778.96` | Chromium `148.0.7778.96` |
 | Lifecycle and missing image | Raw `load/idle/styleimagemissing`; adapter `load/idle/moveend`; pass | Same; pass |
-| Overscaled vector query | Local maxzoom-0 MVT queried at zoom 4; count `1` | Same; count `1` |
-| Adapter rendered-feature query | Count `1` | Count `1` |
+| Overscaled vector query | Local maxzoom-0 MVT queried at zoom 4; rendered count `1`, source-cache count `1` | Same; rendered count `1`, source-cache count `4` |
+| Adapter rendered-feature query | Count `1`; diagnostics empty; identity `matrix` / `matrix-point` / `points` | Same exact identity and empty diagnostics |
 | Canvas / console | Raw and adapter canvases `1/1`; no console errors | Raw and adapter canvases `1/1`; no console errors |
 | Strict visual | Pass; accepted pixel metrics | Pass; identical accepted pixel metrics |
 | Render / query timing | `578.7 ms` / `3.6 ms` | `585.5 ms` / `3.2 ms` |
@@ -75,10 +75,15 @@ assets.
   missing Ajv CSP allowance, a root-relative worker tile URL rejected by v5,
   an over-exact raw-map object assertion, and reliance on main-page resource
   timing for worker requests.
-- GREEN: focused audit/framework tests passed 2 files / 11 tests.
+- Post-pass RED: 5 focused assertions failed against the legacy peer fallback,
+  count-only adapter query gate, and missing query diagnostics/feature identity.
+- Mutation evidence: an adapter query result with count `1` and
+  `adapterQueryPassed: false` remains failed; a rejected native peer install
+  throws `MAPLIBRE_NATIVE_INSTALL_REJECTED` without a fallback install.
+- GREEN: focused audit/framework tests passed 2 files / 12 tests.
 - `pnpm test:adapter` passed 11 files / 74 tests.
 - `pnpm test:docs` passed 5 files / 35 tests.
-- `pnpm test:agent-framework` passed 8 files / 57 tests.
+- `pnpm test:agent-framework` passed 8 files / 58 tests.
 - `pnpm --filter @gis-engine/engine build`, Biome, and `git diff --check`
   passed.
 - Independent unrestricted `pnpm test:compat:maplibre` passed both exact

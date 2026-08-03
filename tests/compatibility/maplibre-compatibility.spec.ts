@@ -147,6 +147,16 @@ test(`loads generated example and records strict visual/event evidence for MapLi
   ).toBe(true);
   expect(result?.queryRenderedFeaturesCount).toBeGreaterThan(0);
   expect(result?.adapterQueryFeaturesCount).toBeGreaterThan(0);
+  expect(
+    result?.adapterQueryPassed,
+    `Adapter query evidence failed: ${JSON.stringify({ result, browserState, consoleErrors })}`,
+  ).toBe(true);
+  expect(result?.adapterQueryDiagnostics).toEqual([]);
+  expect(result?.adapterQueryFeatureIdentity).toEqual({
+    properties: { name: "matrix" },
+    layer: { id: "matrix-point" },
+    source: "points",
+  });
   expect(result?.renderDurationMs).toBeGreaterThan(0);
   expect(result?.queryDurationMs).toBeGreaterThanOrEqual(0);
   expect(browserState.canvasCount).toBe(1);
@@ -249,6 +259,9 @@ test(`loads generated example and records strict visual/event evidence for MapLi
         overscaledQueryPassed: result?.overscaledQueryPassed ?? false,
         queryRenderedFeaturesCount: result?.queryRenderedFeaturesCount ?? 0,
         adapterQueryFeaturesCount: result?.adapterQueryFeaturesCount ?? 0,
+        adapterQueryPassed: result?.adapterQueryPassed ?? false,
+        adapterQueryDiagnostics: result?.adapterQueryDiagnostics ?? [],
+        adapterQueryFeatureIdentity: result?.adapterQueryFeatureIdentity ?? null,
         renderDurationMs: result?.renderDurationMs ?? null,
         queryDurationMs: result?.queryDurationMs ?? null,
         browserState,
@@ -276,6 +289,13 @@ declare global {
       overscaledQueryPassed?: boolean;
       queryRenderedFeaturesCount?: number;
       adapterQueryFeaturesCount?: number;
+      adapterQueryPassed?: boolean;
+      adapterQueryDiagnostics?: unknown[];
+      adapterQueryFeatureIdentity?: {
+        properties: { name: string | null };
+        layer: { id: string | null };
+        source: string | null;
+      };
       renderDurationMs?: number;
       queryDurationMs?: number;
       error?: string;

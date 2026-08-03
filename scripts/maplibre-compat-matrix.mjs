@@ -110,6 +110,13 @@ declare global {
       overscaledQueryPassed?: boolean;
       queryRenderedFeaturesCount?: number;
       adapterQueryFeaturesCount?: number;
+      adapterQueryPassed?: boolean;
+      adapterQueryDiagnostics?: unknown[];
+      adapterQueryFeatureIdentity?: {
+        properties: { name: string | null };
+        layer: { id: string | null };
+        source: string | null;
+      };
       renderDurationMs?: number;
       queryDurationMs?: number;
       error?: string;
@@ -241,6 +248,39 @@ async function completeEvidence(): Promise<void> {
     const adapterFeatures = await adapter.queryFeatures({ point: [0, 0], layers: ["matrix-point"] });
     const queryDurationMs = performance.now() - queryStartedAt;
     const snapshot = await adapter.snapshot({ format: "png", width: 320, height: 200 });
+    const adapterFeature = adapterFeatures.features[0];
+    const adapterFeatureRecord =
+      adapterFeature && typeof adapterFeature === "object" && !Array.isArray(adapterFeature)
+        ? (adapterFeature as Record<string, unknown>)
+        : {};
+    const adapterProperties =
+      adapterFeatureRecord.properties &&
+      typeof adapterFeatureRecord.properties === "object" &&
+      !Array.isArray(adapterFeatureRecord.properties)
+        ? (adapterFeatureRecord.properties as Record<string, unknown>)
+        : {};
+    const adapterLayer =
+      adapterFeatureRecord.layer &&
+      typeof adapterFeatureRecord.layer === "object" &&
+      !Array.isArray(adapterFeatureRecord.layer)
+        ? (adapterFeatureRecord.layer as Record<string, unknown>)
+        : {};
+    const adapterQueryFeatureIdentity = {
+      properties: { name: typeof adapterProperties.name === "string" ? adapterProperties.name : null },
+      layer: { id: typeof adapterLayer.id === "string" ? adapterLayer.id : null },
+      source: typeof adapterFeatureRecord.source === "string" ? adapterFeatureRecord.source : null,
+    };
+    const expectedAdapterFeatureIdentity = {
+      properties: { name: "matrix" },
+      layer: { id: "matrix-point" },
+      source: "points",
+    };
+    const adapterQueryPassed =
+      adapterFeatures.diagnostics.length === 0 &&
+      adapterFeatures.features.length > 0 &&
+      adapterQueryFeatureIdentity.properties.name === expectedAdapterFeatureIdentity.properties.name &&
+      adapterQueryFeatureIdentity.layer.id === expectedAdapterFeatureIdentity.layer.id &&
+      adapterQueryFeatureIdentity.source === expectedAdapterFeatureIdentity.source;
     const overscaledQueryPassed = rawFeatures.some(
       (feature) => feature.properties?.name === "overscaled-matrix" && feature.layer.id === "overscaled-point",
     );
@@ -254,6 +294,9 @@ async function completeEvidence(): Promise<void> {
       overscaledQueryPassed,
       queryRenderedFeaturesCount: rawFeatures.length,
       adapterQueryFeaturesCount: adapterFeatures.features.length,
+      adapterQueryPassed,
+      adapterQueryDiagnostics: adapterFeatures.diagnostics,
+      adapterQueryFeatureIdentity,
       renderDurationMs: performance.now() - renderStartedAt,
       queryDurationMs,
     };
@@ -362,16 +405,25 @@ function attemptNativePeerInstall(directory) {
   }
 }
 
-function installConsumerDependencies(directory) {
-  const nativePeerInstall = attemptNativePeerInstall(directory);
-  if (nativePeerInstall.status === "rejected") {
-    run("npm", [...NPM_INSTALL_ARGS, "--legacy-peer-deps"], { cwd: directory });
+export function requireNativePeerInstall(version, nativePeerInstall) {
+  if (nativePeerInstall.status !== "passed") {
+    throw new Error(
+      `[MAPLIBRE_NATIVE_INSTALL_REJECTED] Native npm install rejected exact MapLibre ${version}: ${nativePeerInstall.error ?? "unknown error"}. The stable compatibility matrix requires native peer resolution; update the engine peer range or select a compatible exact version before rerunning.`,
+    );
   }
   return {
     nativePeerInstall,
-    peerRangeSatisfied: nativePeerInstall.status === "passed",
-    peerResolution: nativePeerInstall.status === "passed" ? "native" : "forced-evidence-only",
+    peerRangeSatisfied: true,
+    peerResolution: "native",
   };
+}
+
+function installConsumerDependencies(directory, version) {
+  return requireNativePeerInstall(version, attemptNativePeerInstall(directory));
+}
+
+export function adapterQueryStageStatus(browserEvidence) {
+  return browserEvidence.adapterQueryPassed === true ? "passed" : "failed";
 }
 
 function writeFixture(directory, fixture) {
@@ -439,7 +491,7 @@ function executeEntry(version, engineTarball, tempRoot) {
   const fixture = createConsumerFixture(version, engineTarball);
   writeFixture(fixtureDirectory, fixture);
 
-  const peerEvidence = installConsumerDependencies(fixtureDirectory);
+  const peerEvidence = installConsumerDependencies(fixtureDirectory, version);
   prepareMapLibreWorker(fixtureDirectory, fixture);
   const packageEvidence = inspectInstalledMapLibre(fixtureDirectory, version);
   packageEvidence.workerDelivery = fixture.workerDelivery;
@@ -486,7 +538,7 @@ function executeEntry(version, engineTarball, tempRoot) {
       strictVisual: browserEvidence.visualStatus,
       missingStyleImage: browserEvidence.missingStyleImageHandled ? "passed" : "failed",
       overscaledVectorQuery: browserEvidence.overscaledQueryPassed ? "passed" : "failed",
-      queryRenderedFeatures: browserEvidence.queryRenderedFeaturesCount > 0 ? "passed" : "failed",
+      queryRenderedFeatures: adapterQueryStageStatus(browserEvidence),
     },
     packageEvidence,
     browserEvidence,
