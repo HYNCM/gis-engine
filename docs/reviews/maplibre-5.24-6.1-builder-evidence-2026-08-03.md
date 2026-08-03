@@ -1,8 +1,8 @@
 ---
 agent: builder
 period: 2026-08-04
-generated_at: 2026-08-03T17:49:24Z
-repo_revision: "cf58b4605036d948e5e4783a2cde245eef536d91"
+generated_at: 2026-08-03T18:03:37Z
+repo_revision: "2f437e7cda88d189cf61c6f1ca7ccc2692cffcb6"
 inputs:
   - https://github.com/maplibre/maplibre-gl-js/releases/tag/v6.1.0
   - https://www.npmjs.com/package/maplibre-gl/v/5.24.0
@@ -22,11 +22,16 @@ evidence_kind: specialist
 ## Outcome
 
 The exact-version compatibility matrix passes for MapLibre GL JS `5.24.0`
-and stable `6.1.0` at revision `cf58b46`. An independent unrestricted root run
+and stable `6.1.0` at revision `2f437e7c`. An independent unrestricted root run
 of `pnpm test:compat:maplibre` exited `0`. Both isolated consumers installed
 the requested version natively, compiled the packed public engine API under
 strict TypeScript, built the generated ESM application, and passed real
 Chromium behavior and strict pixel checks.
+
+The authoritative summary was generated at `2026-08-03T18:01:37.519Z` with
+Chromium `148.0.7778.96`. Both entries record `status: "passed"`,
+`peerRangeSatisfied: true`, `peerResolution: "native"`, and
+`nativePeerInstall: { status: "passed", error: null }`.
 
 This is runtime-compatibility evidence only. The release baseline remains
 `5.24.0`; the optional peer range, workspace dependency state, and lockfile did
@@ -36,7 +41,7 @@ not change.
 
 | Evidence | `5.24.0` | `6.1.0` |
 | --- | --- | --- |
-| Exact native install | Pass | Pass |
+| Exact native install | Requested/installed `5.24.0`; native status `passed`, peer resolution `native` | Requested/installed `6.1.0`; native status `passed`, peer resolution `native` |
 | Public API strict compile | Pass | Pass |
 | Generated ESM build | Pass | Pass |
 | Import/package shape | Named ESM consumer import; package default/UMD artifact available | Named ESM consumer import; `main: null`, `dist/maplibre-gl.mjs`, no UMD artifact |
@@ -44,14 +49,15 @@ not change.
 | Browser | Chromium `148.0.7778.96` | Chromium `148.0.7778.96` |
 | Lifecycle and missing image | Raw `load/idle/styleimagemissing`; adapter `load/idle/moveend`; pass | Same; pass |
 | Overscaled vector query | Local maxzoom-0 MVT queried at zoom 4; rendered count `1`, source-cache count `1` | Same; rendered count `1`, source-cache count `4` |
-| Adapter rendered-feature query | Count `1`; diagnostics empty; identity `matrix` / `matrix-point` / `points` | Same exact identity and empty diagnostics |
+| Adapter rendered-feature query | Count `1`; `adapterQueryPassed: true`; `adapterQueryDiagnostics: []`; identity `name=matrix`, `layer.id=matrix-point`, `source=points` | Same exact count, pass boolean, empty diagnostics, and identity |
 | Canvas / console | Raw and adapter canvases `1/1`; no console errors | Raw and adapter canvases `1/1`; no console errors |
 | Strict visual | Pass; accepted pixel metrics | Pass; identical accepted pixel metrics |
-| Render / query timing | `578.7 ms` / `3.6 ms` | `585.5 ms` / `3.2 ms` |
+| Render / query timing | `576.9000000003725 ms` / `3.5 ms` | `588.3000000007451 ms` / `3.799999998882413 ms` |
 
-The candidate-minus-baseline delta is `+6.8 ms` render (`+1.175%`) and
-`-0.4 ms` query (`-11.111%`). This is one local run, so it is diagnostic data,
-not a performance regression or improvement claim.
+The recorded candidate-minus-baseline delta is `+11.400000000372529 ms`
+render (`+1.976%`) and `+0.2999999988824129 ms` query (`+8.571%`), or
+`+11.4 ms` and `+0.3 ms` when rounded. This is one local run, so it is
+diagnostic data, not a performance regression or improvement claim.
 
 ## Server-Observed Resources
 
@@ -86,8 +92,10 @@ assets.
 - `pnpm test:agent-framework` passed 8 files / 58 tests.
 - `pnpm --filter @gis-engine/engine build`, Biome, and `git diff --check`
   passed.
-- Independent unrestricted `pnpm test:compat:maplibre` passed both exact
-  entries and produced the evidence summarized above.
+- Independent unrestricted `pnpm test:compat:maplibre` at `2f437e7c` passed
+  both exact entries and produced the evidence summarized above. The runner
+  fails closed on native install rejection; neither exact entry used a
+  fallback install in this successful run.
 - Independent unrestricted `pnpm test:e2e:browser` passed 5/5 Chromium tests.
 - Independent unrestricted
   `GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual` passed 5/5
@@ -100,7 +108,7 @@ assets.
 | --- | --- | --- | --- |
 | Exact native installs and all matrix stages pass for `5.24.0` and `6.1.0` | Stable v6 is runtime-compatible with the tested public adapter and generated-app boundary | `@quality` accepts the bounded compatibility evidence | high |
 | Server paths prove tile and v6 worker/shared delivery | Worker fetches cannot be inferred reliably from main-page performance entries | Keep server-observed request paths as the blocking resource evidence | high |
-| One local timing sample shows only small deltas | A single sample cannot justify a performance or default-version decision | Retain timings as diagnostic evidence and require a dedicated adoption run for any bump | high |
+| One local timing sample shows `+1.976%` render and `+8.571%` query deltas | A single sample cannot justify a performance or default-version decision | Retain timings as diagnostic evidence and require a dedicated adoption run for any bump | high |
 | Baseline, peer range, and lockfile remain unchanged | Compatibility proof does not silently change supported defaults | Keep `5.24.0`; use a separate reviewed task for any dependency movement | high |
 
 ## Handoff
