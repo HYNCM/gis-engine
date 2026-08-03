@@ -1,8 +1,8 @@
 ---
 agent: quality
 period: 2026-08-03
-generated_at: 2026-08-03T16:21:15Z
-repo_revision: "70bf59f7"
+generated_at: 2026-08-03T16:36:13Z
+repo_revision: "f1e0f437"
 inputs:
   - https://github.com/HYNCM/gis-engine/issues/43
   - scripts/handoff-ledger.mjs
@@ -37,7 +37,8 @@ handoff is stale or missing.
 | --- | --- | --- | --- | --- |
 | Specialist selection | Focused tests prove a newer template cannot satisfy SLA/HOC and cannot mask a fresh specialist report; template-only and stale paths return `EVIDENCE.TEMPLATE_NOT_SPECIALIST` or `EVIDENCE.SPECIALIST_STALE` with an action | Automated templates can no longer manufacture freshness or invalidate valid specialist work | Keep freshness consumers on the specialist selector and preserve template trace fields | high |
 | Cadence enforcement | Daily, weekly, and monthly writers share `agent-artifact-writers-${{ github.ref }}` and run SLA then HOC checks before commit | Stale/missing proof produces deterministic job failure instead of a committed green dashboard | @orchestrator refreshes specialist evidence; do not bypass the nonzero gate | high |
-| Recovery incidents | Recovery tests cover deterministic markers, oldest canonical selection, open update/comment, closed reopen, and distinct run creation; the workflow passes every failed workflow name/databaseId to the CLI | One failed run maps to one durable incident without collapsing distinct failures | Deploy to `main`, retain #32 as the historical canonical recommendation, and defer #33-#35 closure until post-deploy verification | high |
+| Recovery incidents | Recovery tests cover deterministic markers, oldest canonical selection, open update/comment, closed reopen, and distinct run creation; an executable workflow-step regression proves every captured TSV row is attempted before accumulated reconciliation failures produce a nonzero exit | One failed run maps to one durable incident, and one reconciliation error cannot suppress later incident attempts | Deploy to `main`, retain #32 as the historical canonical recommendation, and defer #33-#35 closure until post-deploy verification | high |
+| Recovery serialization | `.github/workflows/agent-failure-recovery.yml` uses the shared `agent-failure-recovery` concurrency group with `cancel-in-progress: false` | Scheduled and manually dispatched scans cannot race the list-then-create incident sequence for the same marker | Keep the group independent of trigger/ref and preserve non-cancelling queue semantics | high |
 | Concurrent writers | Push tests cover first non-fast-forward then fetch/rebase/second-push success and bounded exhaustion; workflows use the same helper without force push | Concurrent main movement is reconciled safely, while conflict or retry exhaustion stops the writer | Keep retry bound at three and fail closed on fetch/rebase/push errors | high |
 | Workflow YAML | `pnpm knip` no longer reports YAML multiple-document or duplicate-map parser errors after the emergency heredoc and checkout structure fixes | Static analysis can now expose real repository inventory findings | Retain structurally indented heredocs and valid single-map checkout configuration | high |
 
@@ -51,6 +52,8 @@ handoff is stale or missing.
 | Recovery/push/workflow GREEN | PASS: 3 files / 26 tests |
 | Reliability self-review RED | Expected FAIL: 3 focused failures for stale remote ref rebasing, hidden template trace, and fail-open GitHub query fallback |
 | Reliability self-review GREEN | PASS: 3 files / 24 tests |
+| Recovery reconciliation review RED | Expected FAIL: 2 focused failures; the first CLI failure stopped the TSV loop and recovery scans had no shared concurrency group |
+| Recovery reconciliation review GREEN | PASS: 1 file / 22 tests; both TSV rows were attempted, the step exited nonzero after accumulation, and concurrency is non-cancelling |
 
 ## Fail-Closed Evidence
 
@@ -58,7 +61,7 @@ handoff is stale or missing.
 | --- | --- |
 | `node scripts/sla-checker.mjs --period 2026-08-03` | Expected exit 2: orchestrator, product, and docs specialist evidence exceeded their configured SLA; each result returned `EVIDENCE.SPECIALIST_STALE` semantics and a refresh action |
 | `node scripts/handoff-ledger.mjs --check --dry-run` | Expected exit 1: required HOC-N1 upstream product evidence and HOC-N3 downstream orchestrator evidence were stale; JSON included `EVIDENCE.SPECIALIST_STALE` and owner actions |
-| `pnpm test:agent-framework` | PASS: 8 files / 41 tests |
+| `pnpm test:agent-framework` | PASS: 8 files / 43 tests |
 | `pnpm check` (restricted sandbox) | Expected environment failure after successful build and preceding suites: 23 Workbench tests could not bind `127.0.0.1` (`listen EPERM`) |
 | `pnpm check` (outside restricted sandbox) | PASS: complete build, test matrix, smoke snapshots, and Studio suite |
 | `git diff --check` | PASS |

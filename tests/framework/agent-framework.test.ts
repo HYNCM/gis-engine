@@ -1,4 +1,5 @@
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -64,6 +65,55 @@ describe("agent coordination framework", () => {
     );
     expect(workflow).not.toContain("gh issue create");
     expect(workflow).not.toContain('|| echo "[]"');
+  });
+
+  it("attempts every recovery incident before failing the reconciliation step", () => {
+    const workflow = readFileSync(".github/workflows/agent-failure-recovery.yml", "utf8");
+    const script = extractWorkflowRunStep(workflow, "Reconcile escalation incidents");
+    const root = mkdtempSync(join(tmpdir(), "gis-engine-recovery-loop-"));
+    const binDir = join(root, "bin");
+    const attemptsPath = join(root, "attempts.txt");
+    const incidentsPath = join(root, "failed-runs.tsv");
+    mkdirSync(binDir, { recursive: true });
+    writeFileSync(
+      join(binDir, "node"),
+      `#!/bin/sh
+printf '%s\n' "$*" >> "$ATTEMPTS_FILE"
+case "$*" in
+  *"--run-id 111"*) exit 1 ;;
+esac
+exit 0
+`,
+      "utf8",
+    );
+    chmodSync(join(binDir, "node"), 0o755);
+    writeFileSync(
+      incidentsPath,
+      "Agent Daily Cadence\t111\thttps://github.test/actions/runs/111\nAgent Weekly Cadence\t222\thttps://github.test/actions/runs/222\n",
+      "utf8",
+    );
+
+    const result = spawnSync("/bin/bash", ["-c", script], {
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        ATTEMPTS_FILE: attemptsPath,
+        FAILED_RUNS_FILE: incidentsPath,
+        PATH: `${binDir}:${process.env.PATH}`,
+      },
+    });
+    const attempts = readFileSync(attemptsPath, "utf8").trim().split("\n");
+
+    expect(result.status).toBe(1);
+    expect(attempts).toHaveLength(2);
+    expect(attempts[0]).toContain("--run-id 111");
+    expect(attempts[1]).toContain("--run-id 222");
+  });
+
+  it("serializes recovery scans without cancelling an in-progress reconciliation", () => {
+    const workflow = readFileSync(".github/workflows/agent-failure-recovery.yml", "utf8");
+
+    expect(workflow).toContain("concurrency:\n  group: agent-failure-recovery\n  cancel-in-progress: false");
   });
 
   it("uses nullglob for optional monthly release reports", () => {
@@ -411,6 +461,21 @@ function writeReport(root: string, path: string, content: string): void {
   const outputPath = join(root, path);
   mkdirSync(dirname(outputPath), { recursive: true });
   writeFileSync(outputPath, content, "utf8");
+}
+
+function extractWorkflowRunStep(workflow: string, stepName: string): string {
+  const stepStart = workflow.indexOf(`      - name: ${stepName}`);
+  if (stepStart < 0) throw new Error(`workflow step not found: ${stepName}`);
+  const runMarker = "        run: |\n";
+  const runStart = workflow.indexOf(runMarker, stepStart);
+  if (runStart < 0) throw new Error(`workflow run block not found: ${stepName}`);
+  const bodyStart = runStart + runMarker.length;
+  const nextStep = workflow.indexOf("\n      - ", bodyStart);
+  const body = workflow.slice(bodyStart, nextStep < 0 ? workflow.length : nextStep);
+  return body
+    .split("\n")
+    .map((line) => (line.startsWith("          ") ? line.slice(10) : line))
+    .join("\n");
 }
 
 function evidenceReport(

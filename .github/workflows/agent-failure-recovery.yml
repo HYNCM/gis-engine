@@ -31,6 +31,10 @@ permissions:
   issues: write
   actions: read
 
+concurrency:
+  group: agent-failure-recovery
+  cancel-in-progress: false
+
 jobs:
   check-and-recover:
     name: "故障检测与恢复"
@@ -121,7 +125,16 @@ jobs:
           FAILED_RUNS_FILE: ${{ steps.health.outputs.failed_runs_file }}
         run: |
           set -euo pipefail
+          RECOVERY_FAILURES=0
           while IFS=$'\t' read -r WORKFLOW_NAME RUN_ID RUN_URL; do
             [ -n "${RUN_ID}" ] || continue
-            node scripts/recovery-incident.mjs --workflow "${WORKFLOW_NAME}" --run-id "${RUN_ID}" --run-url "${RUN_URL}"
+            if ! node scripts/recovery-incident.mjs --workflow "${WORKFLOW_NAME}" --run-id "${RUN_ID}" --run-url "${RUN_URL}"; then
+              RECOVERY_FAILURES=$((RECOVERY_FAILURES + 1))
+              echo "::error::Recovery reconciliation failed for ${WORKFLOW_NAME} run ${RUN_ID}."
+            fi
           done < "${FAILED_RUNS_FILE}"
+
+          if [ "${RECOVERY_FAILURES}" -gt 0 ]; then
+            echo "::error::${RECOVERY_FAILURES} recovery reconciliation(s) failed."
+            exit 1
+          fi
