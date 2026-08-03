@@ -62,24 +62,37 @@ test(`loads generated example and records strict visual/event evidence for MapLi
   page,
 }) => {
   const consoleErrors: string[] = [];
-  const consoleDiagnosticTasks: Promise<void>[] = [];
+  const consoleDiagnosticTasks = new Set<Promise<void>>();
+  const drainConsoleDiagnostics = async (): Promise<void> => {
+    let stablePasses = 0;
+    while (stablePasses < 2) {
+      await Promise.allSettled([...consoleDiagnosticTasks]);
+      await new Promise<void>((resolveWait) => setTimeout(resolveWait, 25));
+      stablePasses = consoleDiagnosticTasks.size === 0 ? stablePasses + 1 : 0;
+    }
+  };
   page.on("console", (message) => {
     if (message.type() !== "error") return;
-    consoleDiagnosticTasks.push(
-      Promise.all(
-        message
-          .args()
-          .map((argument) =>
-            argument
-              .evaluate((value) =>
-                value instanceof Error ? { name: value.name, message: value.message, stack: value.stack } : value,
-              )
-              .catch(() => argument.toString()),
-          ),
-      ).then((values) => {
-        consoleErrors.push(`${message.text()} ${JSON.stringify(values)}`);
-      }),
-    );
+    const errorIndex = consoleErrors.push(message.text()) - 1;
+    let diagnosticTask: Promise<void>;
+    diagnosticTask = Promise.all(
+      message
+        .args()
+        .map((argument) =>
+          argument
+            .evaluate((value) =>
+              value instanceof Error ? { name: value.name, message: value.message, stack: value.stack } : value,
+            )
+            .catch(() => argument.toString()),
+        ),
+    )
+      .then((values) => {
+        consoleErrors[errorIndex] = `${message.text()} ${JSON.stringify(values)}`;
+      })
+      .finally(() => {
+        consoleDiagnosticTasks.delete(diagnosticTask);
+      });
+    consoleDiagnosticTasks.add(diagnosticTask);
   });
   page.on("pageerror", (error) => consoleErrors.push(error.message));
 
@@ -100,7 +113,7 @@ test(`loads generated example and records strict visual/event evidence for MapLi
   } catch {
     terminalStateReached = false;
   }
-  await Promise.all(consoleDiagnosticTasks);
+  await drainConsoleDiagnostics();
   const browserState = await page.evaluate(() => ({
     result: window.__GIS_MATRIX_RESULT__,
     canvasCount: document.querySelectorAll("#map canvas").length,
@@ -171,8 +184,6 @@ test(`loads generated example and records strict visual/event evidence for MapLi
     expect(requestedPaths.has("/maplibre-gl-worker.mjs")).toBe(true);
     expect(requestedPaths.has("/maplibre-gl-shared.mjs")).toBe(true);
   }
-  expect(consoleErrors).toEqual([]);
-
   const visual = await page.evaluate(async (screenshotBase64) => {
     const image = new Image();
     image.src = `data:image/png;base64,${screenshotBase64}`;
@@ -239,6 +250,9 @@ test(`loads generated example and records strict visual/event evidence for MapLi
   expect(visual.nonBackgroundSamples).toBeGreaterThan(0);
   expect(visual.featureRegionSamples).toBeGreaterThan(500);
   expect(visual.lightBackgroundSamples).toBeGreaterThan(500);
+  await page.close();
+  await drainConsoleDiagnostics();
+  expect(consoleErrors).toEqual([]);
   writeFileSync(
     browserResultPath,
     `${JSON.stringify(

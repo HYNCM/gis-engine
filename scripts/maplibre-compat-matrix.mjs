@@ -51,6 +51,102 @@ export function buildPerformanceDelta(results) {
   };
 }
 
+function aggregateError(code, message) {
+  return new Error(`[${code}] ${message}`);
+}
+
+export function aggregateMatrixSummaries(summaries, generatedAt = new Date().toISOString()) {
+  if (!Array.isArray(summaries)) {
+    throw aggregateError("MAPLIBRE_AGGREGATE_INVALID_ENTRY", "Aggregate inputs must be an array of summaries.");
+  }
+
+  const resultsByVersion = new Map();
+  for (const summary of summaries) {
+    if (!Array.isArray(summary?.checkedVersions) || !Array.isArray(summary?.results)) {
+      throw aggregateError(
+        "MAPLIBRE_AGGREGATE_INVALID_ENTRY",
+        "Each aggregate input must contain checkedVersions and results arrays.",
+      );
+    }
+    if (summary.checkedVersions.length !== 1 || summary.results.length !== 1) {
+      throw aggregateError(
+        "MAPLIBRE_AGGREGATE_INVALID_ENTRY",
+        "Each aggregate input must contain exactly one checked version and one result.",
+      );
+    }
+
+    const checkedVersion = summary.checkedVersions[0];
+    const result = summary.results[0];
+    if (checkedVersion !== result?.version) {
+      throw aggregateError(
+        "MAPLIBRE_AGGREGATE_VERSION_MISMATCH",
+        `Summary checked version ${checkedVersion ?? "unknown"} does not match result version ${result?.version ?? "unknown"}.`,
+      );
+    }
+    if (!MAPLIBRE_COMPATIBILITY_VERSIONS.includes(checkedVersion)) {
+      throw aggregateError(
+        "MAPLIBRE_AGGREGATE_VERSION_MISMATCH",
+        `Aggregate entry version ${checkedVersion} is outside ${MAPLIBRE_COMPATIBILITY_VERSIONS.join(", ")}.`,
+      );
+    }
+    if (resultsByVersion.has(checkedVersion)) {
+      throw aggregateError("MAPLIBRE_AGGREGATE_DUPLICATE_VERSION", `Duplicate aggregate entry for ${checkedVersion}.`);
+    }
+    if (result.status !== "passed") {
+      throw aggregateError(
+        "MAPLIBRE_AGGREGATE_ENTRY_FAILED",
+        `Aggregate entry ${checkedVersion} has non-passing status ${result.status ?? "unknown"}.`,
+      );
+    }
+    if (!Number.isFinite(result.renderDurationMs) || !Number.isFinite(result.queryDurationMs)) {
+      throw aggregateError(
+        "MAPLIBRE_AGGREGATE_INVALID_ENTRY",
+        `Aggregate entry ${checkedVersion} is missing finite render/query timings.`,
+      );
+    }
+    resultsByVersion.set(checkedVersion, result);
+  }
+
+  const missingVersions = MAPLIBRE_COMPATIBILITY_VERSIONS.filter((version) => !resultsByVersion.has(version));
+  if (missingVersions.length > 0) {
+    throw aggregateError(
+      "MAPLIBRE_AGGREGATE_MISSING_VERSION",
+      `Missing exact compatibility result(s): ${missingVersions.join(", ")}.`,
+    );
+  }
+
+  const results = MAPLIBRE_COMPATIBILITY_VERSIONS.map((version) => resultsByVersion.get(version));
+  return {
+    generatedAt,
+    releaseBaseline: MAPLIBRE_RELEASE_BASELINE,
+    checkedVersions: [...MAPLIBRE_COMPATIBILITY_VERSIONS],
+    defaultDependencyChanged: false,
+    performanceDelta: buildPerformanceDelta(results),
+    results,
+  };
+}
+
+function findSummaryFiles(directory) {
+  const summaries = [];
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) {
+      summaries.push(...findSummaryFiles(path));
+    } else if (entry.isFile() && entry.name === "summary.json") {
+      summaries.push(path);
+    }
+  }
+  return summaries;
+}
+
+function writeMatrixSummary(outputDirectory, summary) {
+  mkdirSync(outputDirectory, { recursive: true });
+  for (const result of summary.results) {
+    writeFileSync(join(outputDirectory, `${result.version}.json`), `${JSON.stringify(result, null, 2)}\n`);
+  }
+  writeFileSync(join(outputDirectory, "summary.json"), `${JSON.stringify(summary, null, 2)}\n`);
+}
+
 export function createConsumerFixture(version, engineTarball) {
   if (!MAPLIBRE_COMPATIBILITY_VERSIONS.includes(version)) {
     throw new Error(
@@ -548,6 +644,23 @@ function executeEntry(version, engineTarball, tempRoot) {
 
 export function main(args = process.argv.slice(2)) {
   const requestedVersion = parseOption(args, "--version");
+  const aggregateInput = parseOption(args, "--aggregate-input");
+  const outputDirectory = resolve(repoRoot, parseOption(args, "--output") ?? "test-results/maplibre-compatibility");
+  if (args.includes("--aggregate-input")) {
+    if (!aggregateInput) {
+      throw aggregateError("MAPLIBRE_AGGREGATE_INVALID_ENTRY", "--aggregate-input requires a directory.");
+    }
+    if (requestedVersion) {
+      throw aggregateError("MAPLIBRE_AGGREGATE_INVALID_ENTRY", "--aggregate-input cannot be combined with --version.");
+    }
+    const inputDirectory = resolve(repoRoot, aggregateInput);
+    const summaries = findSummaryFiles(inputDirectory).map((path) => JSON.parse(readFileSync(path, "utf8")));
+    const summary = aggregateMatrixSummaries(summaries);
+    writeMatrixSummary(outputDirectory, summary);
+    process.stdout.write(`${JSON.stringify(summary, null, 2)}\n`);
+    return;
+  }
+
   const versions = requestedVersion ? [requestedVersion] : [...MAPLIBRE_COMPATIBILITY_VERSIONS];
   for (const version of versions) {
     if (!MAPLIBRE_COMPATIBILITY_VERSIONS.includes(version)) {
@@ -555,17 +668,12 @@ export function main(args = process.argv.slice(2)) {
     }
   }
 
-  const outputDirectory = resolve(repoRoot, parseOption(args, "--output") ?? "test-results/maplibre-compatibility");
   const tempRoot = mkdtempSync(join(tmpdir(), "gis-engine-maplibre-matrix-"));
   const keepTemp = args.includes("--keep-temp");
 
   try {
     const engineTarball = packEngine(tempRoot);
     const results = versions.map((version) => executeEntry(version, engineTarball, tempRoot));
-    mkdirSync(outputDirectory, { recursive: true });
-    for (const result of results) {
-      writeFileSync(join(outputDirectory, `${result.version}.json`), `${JSON.stringify(result, null, 2)}\n`);
-    }
     const summary = {
       generatedAt: new Date().toISOString(),
       releaseBaseline: MAPLIBRE_RELEASE_BASELINE,
@@ -574,7 +682,7 @@ export function main(args = process.argv.slice(2)) {
       performanceDelta: buildPerformanceDelta(results),
       results,
     };
-    writeFileSync(join(outputDirectory, "summary.json"), `${JSON.stringify(summary, null, 2)}\n`);
+    writeMatrixSummary(outputDirectory, summary);
     process.stdout.write(`${JSON.stringify(summary, null, 2)}\n`);
   } finally {
     if (keepTemp) {

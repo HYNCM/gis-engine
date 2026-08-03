@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { buildPlan } from "../../scripts/gate-plan.mjs";
 import {
   adapterQueryStageStatus,
+  aggregateMatrixSummaries,
   buildPerformanceDelta,
   createConsumerFixture,
   MAPLIBRE_COMPATIBILITY_VERSIONS,
@@ -109,6 +110,15 @@ describe("MapLibre compatibility matrix", () => {
     expect(browserGate).toContain("result?.adapterQueryPassed");
     expect(browserGate).toContain("result?.adapterQueryDiagnostics");
     expect(browserGate).toContain("result?.adapterQueryFeatureIdentity");
+    expect(browserGate).toContain("consoleErrors.push(message.text())");
+    expect(browserGate).toContain("await drainConsoleDiagnostics()");
+    expect(browserGate).toContain("await page.close()");
+    expect(browserGate.indexOf("await page.close()")).toBeLessThan(
+      browserGate.lastIndexOf("expect(consoleErrors).toEqual([])"),
+    );
+    expect(browserGate.lastIndexOf("expect(consoleErrors).toEqual([])")).toBeLessThan(
+      browserGate.indexOf("writeFileSync("),
+    );
   });
 
   it("does not accept an adapter query from feature count alone", () => {
@@ -122,6 +132,11 @@ describe("MapLibre compatibility matrix", () => {
     const enginePackage = JSON.parse(readFileSync("packages/engine/package.json", "utf8"));
 
     expect(workflow).toContain('maplibre-version: ["5.24.0", "6.1.0"]');
+    expect(workflow).toContain("maplibre-compatibility-summary:");
+    expect(workflow).toContain("needs: maplibre-compatibility");
+    expect(workflow).toContain("actions/download-artifact@v8");
+    expect(workflow).toContain("--aggregate-input test-results/maplibre-compatibility-inputs");
+    expect(workflow).toContain("name: maplibre-compatibility-summary");
     expect(workflow).not.toContain("6.0.0-22");
     expect(enginePackage.peerDependencies["maplibre-gl"]).toBe("^5.0.0 || ^6.0.0");
   });
@@ -137,6 +152,61 @@ describe("MapLibre compatibility matrix", () => {
       candidateVersion: "6.1.0",
       renderDurationMs: { baseline: 100, candidate: 80, delta: -20, deltaPercent: -20 },
       queryDurationMs: { baseline: 4, candidate: 5, delta: 1, deltaPercent: 25 },
+    });
+  });
+
+  it("fails closed when an aggregate is missing either exact version", () => {
+    expect(() =>
+      aggregateMatrixSummaries([
+        {
+          checkedVersions: ["5.24.0"],
+          results: [{ version: "5.24.0", status: "passed", renderDurationMs: 100, queryDurationMs: 4 }],
+        },
+      ]),
+    ).toThrowError(/\[MAPLIBRE_AGGREGATE_MISSING_VERSION\].*6\.1\.0/);
+  });
+
+  it("fails closed when a per-version summary labels a different result version", () => {
+    expect(() =>
+      aggregateMatrixSummaries([
+        {
+          checkedVersions: ["6.1.0"],
+          results: [{ version: "5.24.0", status: "passed", renderDurationMs: 100, queryDurationMs: 4 }],
+        },
+      ]),
+    ).toThrowError(/\[MAPLIBRE_AGGREGATE_VERSION_MISMATCH\].*6\.1\.0.*5\.24\.0/);
+  });
+
+  it("aggregates exact per-version artifacts without rerunning either browser matrix", () => {
+    const summary = aggregateMatrixSummaries(
+      [
+        {
+          checkedVersions: ["6.1.0"],
+          results: [{ version: "6.1.0", status: "passed", renderDurationMs: 120, queryDurationMs: 5 }],
+        },
+        {
+          checkedVersions: ["5.24.0"],
+          results: [{ version: "5.24.0", status: "passed", renderDurationMs: 100, queryDurationMs: 4 }],
+        },
+      ],
+      "2026-08-04T00:00:00.000Z",
+    );
+
+    expect(summary).toEqual({
+      generatedAt: "2026-08-04T00:00:00.000Z",
+      releaseBaseline: "5.24.0",
+      checkedVersions: ["5.24.0", "6.1.0"],
+      defaultDependencyChanged: false,
+      performanceDelta: {
+        baselineVersion: "5.24.0",
+        candidateVersion: "6.1.0",
+        renderDurationMs: { baseline: 100, candidate: 120, delta: 20, deltaPercent: 20 },
+        queryDurationMs: { baseline: 4, candidate: 5, delta: 1, deltaPercent: 25 },
+      },
+      results: [
+        { version: "5.24.0", status: "passed", renderDurationMs: 100, queryDurationMs: 4 },
+        { version: "6.1.0", status: "passed", renderDurationMs: 120, queryDurationMs: 5 },
+      ],
     });
   });
 });
