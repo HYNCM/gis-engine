@@ -21,11 +21,14 @@ const contentTypes: Record<string, string> = {
 
 let server: Server;
 let baseUrl: string;
+const requestedPaths = new Set<string>();
 
 test.beforeAll(async () => {
   const root = resolve(distRoot);
+  requestedPaths.clear();
   server = createServer((request, response) => {
     const requestPath = request.url === "/" ? "/index.html" : (request.url ?? "/index.html").split("?")[0];
+    requestedPaths.add(requestPath);
     const candidate = normalize(join(root, requestPath));
     if (relative(root, candidate).startsWith("..")) {
       response.writeHead(403).end("Forbidden");
@@ -125,9 +128,10 @@ test(`loads generated example and records strict visual/event evidence for MapLi
       : null,
     resources: performance.getEntriesByType("resource").map((entry) => entry.name),
   }));
+  const serverRequestedPaths = [...requestedPaths].sort();
   if (!terminalStateReached) {
     throw new Error(
-      `Generated example did not reach strict readiness: ${JSON.stringify({ browserState, consoleErrors })}`,
+      `Generated example did not reach strict readiness: ${JSON.stringify({ browserState, consoleErrors, serverRequestedPaths })}`,
     );
   }
   const screenshotPath = test.info().outputPath(`maplibre-${expectedVersion}.png`);
@@ -152,9 +156,10 @@ test(`loads generated example and records strict visual/event evidence for MapLi
   expect(browserState.rawMap?.overscaledSourcePresent).toBe(true);
   expect(browserState.rawMap?.overscaledSourceLoaded).toBe(true);
   expect(browserState.rawMap?.overscaledSourceFeatureCount).toBeGreaterThan(0);
-  expect(browserState.resources.some((resource) => resource.endsWith("/tiles/0/0/0.pbf"))).toBe(true);
+  expect(requestedPaths.has("/tiles/0/0/0.pbf")).toBe(true);
   if (expectedVersion === "6.1.0") {
-    expect(browserState.resources.some((resource) => resource.endsWith("/maplibre-gl-worker.mjs"))).toBe(true);
+    expect(requestedPaths.has("/maplibre-gl-worker.mjs")).toBe(true);
+    expect(requestedPaths.has("/maplibre-gl-shared.mjs")).toBe(true);
   }
   expect(consoleErrors).toEqual([]);
 
@@ -247,6 +252,7 @@ test(`loads generated example and records strict visual/event evidence for MapLi
         renderDurationMs: result?.renderDurationMs ?? null,
         queryDurationMs: result?.queryDurationMs ?? null,
         browserState,
+        serverRequestedPaths,
         consoleErrors,
         visual,
       },

@@ -84,6 +84,11 @@ describe("MapLibre compatibility matrix", () => {
     expect(browserGate).toContain("browserState.rawMap?.overscaledSourcePresent");
     expect(browserGate).toContain("browserState.rawMap?.overscaledSourceLoaded");
     expect(browserGate).toContain("browserState.rawMap?.overscaledSourceFeatureCount");
+    expect(browserGate).toContain("requestedPaths.add(requestPath)");
+    expect(browserGate).toContain('requestedPaths.has("/tiles/0/0/0.pbf")');
+    expect(browserGate).toContain('requestedPaths.has("/maplibre-gl-worker.mjs")');
+    expect(browserGate).toContain('requestedPaths.has("/maplibre-gl-shared.mjs")');
+    expect(browserGate).toContain("serverRequestedPaths");
   });
 
   it("runs the exact stable-v6 matrix in CI without changing the release baseline", () => {
