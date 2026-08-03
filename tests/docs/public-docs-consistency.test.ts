@@ -54,10 +54,14 @@ function normalizeContractText(text: string): string {
     .trim();
 }
 
-function expectCanonicalMcpOrder(file: string): void {
-  expect(normalizeContractText(readText(file)), `${file} should list the canonical tools/list order`).toContain(
+function expectCanonicalMcpOrderInText(text: string, source: string): void {
+  expect(normalizeContractText(text), `${source} should list the canonical tools/list order`).toContain(
     canonicalMcpInventory,
   );
+}
+
+function expectCanonicalMcpOrder(file: string): void {
+  expectCanonicalMcpOrderInText(readText(file), file);
 }
 
 describe("public docs consistency", () => {
@@ -149,7 +153,7 @@ describe("public docs consistency", () => {
     for (const tool of currentMcpTools) {
       expect(currentRelease, `current release notes should list ${tool}`).toContain(tool);
     }
-    expectCanonicalMcpOrder("docs/website/release-notes.md");
+    expectCanonicalMcpOrderInText(currentRelease, "current v1.5 release section");
     expect(currentRelease).toContain("- **Hosted Workbench GA**: No-go.");
     expect(currentRelease).toContain("- **Stable SceneView3D**: No-go.");
     expect(currentRelease).toContain("- **PMTiles runtime query support**: No-go.");
