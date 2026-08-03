@@ -1,0 +1,68 @@
+{
+  "currentDefault": "2025-11-25",
+  "candidate": "2026-07-28",
+  "decision": "no-go",
+  "checkedAt": "2026-08-04",
+  "sdk": {
+    "currentPackage": "@modelcontextprotocol/sdk",
+    "currentRange": "^1.29.0",
+    "currentLockedVersion": "1.29.0",
+    "legacyLatestVersion": "1.30.0",
+    "candidateServerPackage": "@modelcontextprotocol/server",
+    "candidateServerVersion": "2.0.0"
+  },
+  "coverage": {
+    "discovery": {
+      "status": "blocked",
+      "evidence": "The current SDK 1.x server uses initialize plus tools/list and does not implement mandatory server/discover."
+    },
+    "transportLifecycle": {
+      "status": "blocked",
+      "evidence": "The current server is session/initialize based and has not implemented the 2026-07-28 per-request protocol and capability context."
+    },
+    "resultType": {
+      "status": "blocked",
+      "evidence": "Current tool descriptors expose inputSchema and outputSchema but do not declare the candidate resultType contract."
+    },
+    "cacheMetadata": {
+      "status": "blocked",
+      "evidence": "No candidate list response evidence covers ttlMs and cacheScope."
+    },
+    "subscriptions": {
+      "status": "blocked",
+      "evidence": "The current server has no subscriptions/listen implementation or lifecycle evidence."
+    },
+    "extensions": {
+      "status": "not-applicable",
+      "evidence": "GIS Engine claims no protocol extension; any future extension must be explicitly negotiated and tested."
+    },
+    "oldClientBehavior": {
+      "status": "supported",
+      "evidence": "The compatibility policy treats an old client response with missing resultType as complete, without changing the current runtime default."
+    }
+  },
+  "frozenContract": {
+    "toolNames": [
+      "apply_commands",
+      "validate_spec",
+      "export_spec",
+      "get_context_summary",
+      "snapshot_spec",
+      "explain_spec",
+      "export_example_app",
+      "diff_specs",
+      "generate_spec",
+      "inspect_data",
+      "edit_spec",
+      "query_features",
+      "style_recommend",
+      "transform_data"
+    ],
+    "descriptorDialect": "http://json-schema.org/draft-07/schema#",
+    "requiresInputSchema": true,
+    "requiresOutputSchema": true,
+    "successStructuredContent": true,
+    "failureEnvelope": "{ diagnostics: Diagnostic[] }",
+    "legacyJsonTextFallback": true
+  }
+}
