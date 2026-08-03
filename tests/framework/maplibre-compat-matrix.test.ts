@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { buildPlan } from "../../scripts/gate-plan.mjs";
 import {
+  buildPerformanceDelta,
   createConsumerFixture,
   MAPLIBRE_COMPATIBILITY_VERSIONS,
   MAPLIBRE_RELEASE_BASELINE,
@@ -10,7 +11,7 @@ import {
 describe("MapLibre compatibility matrix", () => {
   it("pins the release baseline and checked prerelease independently", () => {
     expect(MAPLIBRE_RELEASE_BASELINE).toBe("5.24.0");
-    expect(MAPLIBRE_COMPATIBILITY_VERSIONS).toEqual(["5.24.0", "6.0.0-22"]);
+    expect(MAPLIBRE_COMPATIBILITY_VERSIONS).toEqual(["5.24.0", "6.1.0"]);
   });
 
   it.each(MAPLIBRE_COMPATIBILITY_VERSIONS)("creates an isolated exact-version consumer for %s", (version) => {
@@ -26,7 +27,16 @@ describe("MapLibre compatibility matrix", () => {
     expect(fixture.source).toContain("InteractionBridgeEvent");
     expect(fixture.source).toContain("window.__GIS_MATRIX_RESULT__");
     expect(fixture.source).not.toMatch(/^await\s/m);
-    if (version === "6.0.0-22") {
+    expect(fixture.source).toContain('rawMap.on("styleimagemissing"');
+    expect(fixture.source).toContain("queryRenderedFeatures");
+    expect(fixture.source).toContain("overscaledQueryPassed");
+    expect(fixture.source).toContain("window.location.origin}/tiles/{z}/{x}/{y}.pbf");
+    expect(fixture.source).not.toContain('tiles: ["/tiles/{z}/{x}/{y}.pbf"]');
+    expect(fixture.source).toContain("renderDurationMs");
+    expect(fixture.source).toContain("queryDurationMs");
+    expect(fixture.html).toContain("script-src 'self' 'unsafe-eval'");
+    expect(fixture.cspScriptSource).toBe("'self' 'unsafe-eval'");
+    if (version === "6.1.0") {
       expect(fixture.source).toContain("setWorkerUrl");
       expect(fixture.workerDelivery).toBe("explicit-module-worker");
     } else {
@@ -52,5 +62,46 @@ describe("MapLibre compatibility matrix", () => {
     expect(runner).toContain("attemptNativePeerInstall");
     expect(runner).toContain('"--legacy-peer-deps"');
     expect(runner).not.toContain("const peerRangeSatisfied = version");
+  });
+
+  it("records exact package, browser, CSP, behavior, and timing evidence", () => {
+    const runner = readFileSync("scripts/maplibre-compat-matrix.mjs", "utf8");
+    const browserGate = readFileSync("tests/compatibility/maplibre-compatibility.spec.ts", "utf8");
+
+    expect(runner).toContain("importForm");
+    expect(runner).toContain("browserEngine");
+    expect(runner).toContain("workerPath");
+    expect(runner).toContain("cspWorkerSource");
+    expect(runner).toContain("cspScriptSource");
+    expect(runner).toContain("missingStyleImageHandled");
+    expect(runner).toContain("overscaledQueryPassed");
+    expect(runner).toContain("queryRenderedFeaturesCount");
+    expect(runner).toContain("renderDurationMs");
+    expect(runner).toContain("queryDurationMs");
+    expect(browserGate).toContain("Boolean(window.__GIS_MATRIX_RESULT__)");
+    expect(browserGate).not.toContain('() => window.__GIS_MATRIX_RESULT__?.status !== "loading"');
+  });
+
+  it("runs the exact stable-v6 matrix in CI without changing the release baseline", () => {
+    const workflow = readFileSync(".github/workflows/ci.yml", "utf8");
+    const enginePackage = JSON.parse(readFileSync("packages/engine/package.json", "utf8"));
+
+    expect(workflow).toContain('maplibre-version: ["5.24.0", "6.1.0"]');
+    expect(workflow).not.toContain("6.0.0-22");
+    expect(enginePackage.peerDependencies["maplibre-gl"]).toBe("^5.0.0 || ^6.0.0");
+  });
+
+  it("compares stable-v6 render and query timings with the release baseline", () => {
+    const delta = buildPerformanceDelta([
+      { version: "5.24.0", renderDurationMs: 100, queryDurationMs: 4 },
+      { version: "6.1.0", renderDurationMs: 80, queryDurationMs: 5 },
+    ]);
+
+    expect(delta).toEqual({
+      baselineVersion: "5.24.0",
+      candidateVersion: "6.1.0",
+      renderDurationMs: { baseline: 100, candidate: 80, delta: -20, deltaPercent: -20 },
+      queryDurationMs: { baseline: 4, candidate: 5, delta: 1, deltaPercent: 25 },
+    });
   });
 });

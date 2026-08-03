@@ -17,7 +17,9 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 export const MAPLIBRE_RELEASE_BASELINE = "5.24.0";
-export const MAPLIBRE_COMPATIBILITY_VERSIONS = Object.freeze([MAPLIBRE_RELEASE_BASELINE, "6.0.0-22"]);
+export const MAPLIBRE_COMPATIBILITY_VERSIONS = Object.freeze([MAPLIBRE_RELEASE_BASELINE, "6.1.0"]);
+
+const OVERSCALED_VECTOR_TILE_BASE64 = "Gjd4AQoGbWF0cml4KIAgEg0SAgAAGAEiBQmAIIAgGgRuYW1lIhMKEW92ZXJzY2FsZWQtbWF0cml4";
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(scriptDirectory, "..");
@@ -25,6 +27,28 @@ const repoRoot = resolve(scriptDirectory, "..");
 function parseOption(args, name) {
   const index = args.indexOf(name);
   return index === -1 ? null : (args[index + 1] ?? null);
+}
+
+function timingDelta(baseline, candidate) {
+  const delta = candidate - baseline;
+  return {
+    baseline,
+    candidate,
+    delta,
+    deltaPercent: baseline === 0 ? null : Math.round((delta / baseline) * 100_000) / 1_000,
+  };
+}
+
+export function buildPerformanceDelta(results) {
+  const baseline = results.find((result) => result.version === MAPLIBRE_RELEASE_BASELINE);
+  const candidate = results.find((result) => result.version === "6.1.0");
+  if (!baseline || !candidate) return null;
+  return {
+    baselineVersion: baseline.version,
+    candidateVersion: candidate.version,
+    renderDurationMs: timingDelta(baseline.renderDurationMs, candidate.renderDurationMs),
+    queryDurationMs: timingDelta(baseline.queryDurationMs, candidate.queryDurationMs),
+  };
 }
 
 export function createConsumerFixture(version, engineTarball) {
@@ -37,6 +61,10 @@ export function createConsumerFixture(version, engineTarball) {
   const usesExplicitWorker = version.startsWith("6.");
   return {
     workerDelivery: usesExplicitWorker ? "explicit-module-worker" : "package-default",
+    workerPath: usesExplicitWorker ? "/maplibre-gl-worker.mjs" : "package-default-blob-worker",
+    cspWorkerSource: usesExplicitWorker ? "'self'" : "blob:",
+    cspScriptSource: "'self' 'unsafe-eval'",
+    importForm: "named-esm",
     packageJson: {
       name: `gis-engine-maplibre-${version.replaceAll(".", "-")}`,
       version: "0.0.0",
@@ -59,7 +87,7 @@ export function createConsumerFixture(version, engineTarball) {
       },
       include: ["src/**/*.ts"],
     },
-    html: '<!doctype html><html><head><meta charset="UTF-8" /></head><body><div id="map"></div><div id="raw-map"></div><script type="module" src="/src/main.ts"></script></body></html>\n',
+    html: '<!doctype html><html><head><meta charset="UTF-8" /><meta http-equiv="Content-Security-Policy" content="default-src \'self\'; script-src \'self\' \'unsafe-eval\'; style-src \'self\' \'unsafe-inline\'; worker-src \'self\' blob:; img-src \'self\' data: blob:; connect-src \'self\'" /></head><body><div id="map" style="width:320px;height:200px"></div><div id="raw-map" style="width:320px;height:200px"></div><script type="module" src="/src/main.ts"></script></body></html>\n',
     source: `import "maplibre-gl/dist/maplibre-gl.css";
 import { Map as RawMap, ${usesExplicitWorker ? "setWorkerUrl, " : ""}type StyleSpecification } from "maplibre-gl";
 import {
@@ -78,6 +106,12 @@ declare global {
       events: string[];
       rawEvents?: string[];
       snapshotPassed?: boolean;
+      missingStyleImageHandled?: boolean;
+      overscaledQueryPassed?: boolean;
+      queryRenderedFeaturesCount?: number;
+      adapterQueryFeaturesCount?: number;
+      renderDurationMs?: number;
+      queryDurationMs?: number;
       error?: string;
     };
   }
@@ -87,6 +121,12 @@ const version = ${JSON.stringify(version)};
 ${usesExplicitWorker ? 'setWorkerUrl(new URL("./maplibre-gl-worker.mjs", window.location.href).href);' : ""}
 const events: string[] = [];
 const rawEvents: string[] = [];
+const renderStartedAt = performance.now();
+let adapterIdle = false;
+let adapterMoved = false;
+let rawIdle = false;
+let missingStyleImageHandled = false;
+let completing = false;
 window.__GIS_MATRIX_RESULT__ = { status: "loading", version, events, rawEvents };
 
 const rawStyle: StyleSpecification = {
@@ -105,10 +145,23 @@ const rawStyle: StyleSpecification = {
         ],
       },
     },
+    overscaled: {
+      type: "vector",
+      tiles: [\`\${window.location.origin}/tiles/{z}/{x}/{y}.pbf\`],
+      minzoom: 0,
+      maxzoom: 0,
+    },
   },
   layers: [
     { id: "background", type: "background", paint: { "background-color": "#f7f8fa" } },
     { id: "matrix-point", type: "circle", source: "points", paint: { "circle-radius": 28 } },
+    {
+      id: "overscaled-point",
+      type: "circle",
+      source: "overscaled",
+      "source-layer": "matrix",
+      paint: { "circle-radius": 20, "circle-color": "#197a5b" },
+    },
   ],
 };
 
@@ -153,18 +206,15 @@ function recordInteraction(event: InteractionBridgeEvent): void {
 
 const adapter = new MapLibreAdapter();
 adapter.on("load", () => events.push("load"));
-adapter.on("moveend", (event) => recordInteraction(event as InteractionBridgeEvent));
+adapter.on("moveend", (event) => {
+  recordInteraction(event as InteractionBridgeEvent);
+  adapterMoved = true;
+  void completeEvidence();
+});
 adapter.on("idle", async () => {
-  if (window.__GIS_MATRIX_RESULT__?.status !== "loading") return;
   events.push("idle");
-  const snapshot = await adapter.snapshot({ format: "png", width: 320, height: 200 });
-  window.__GIS_MATRIX_RESULT__ = {
-    status: "ready",
-    version,
-    events: [...events],
-    rawEvents: [...rawEvents],
-    snapshotPassed: snapshot.passed,
-  };
+  adapterIdle = true;
+  void completeEvidence();
 });
 adapter.on("error", (event) => {
   window.__GIS_MATRIX_RESULT__ = {
@@ -175,6 +225,48 @@ adapter.on("error", (event) => {
     error: event instanceof Error ? event.message : JSON.stringify(event),
   };
 });
+
+async function completeEvidence(): Promise<void> {
+  if (completing || !adapterIdle || !adapterMoved || !rawIdle || window.__GIS_MATRIX_RESULT__?.status !== "loading") {
+    return;
+  }
+  completing = true;
+  try {
+    const map = adapter.getMapInstance();
+    const rawMap = window.__GIS_MATRIX_RAW_MAP__;
+    if (!map || !rawMap) throw new Error("Compatibility maps were not ready for evidence collection.");
+
+    const queryStartedAt = performance.now();
+    const rawFeatures = rawMap.queryRenderedFeatures(rawMap.project([0, 0]), { layers: ["overscaled-point"] });
+    const adapterFeatures = await adapter.queryFeatures({ point: [0, 0], layers: ["matrix-point"] });
+    const queryDurationMs = performance.now() - queryStartedAt;
+    const snapshot = await adapter.snapshot({ format: "png", width: 320, height: 200 });
+    const overscaledQueryPassed = rawFeatures.some(
+      (feature) => feature.properties?.name === "overscaled-matrix" && feature.layer.id === "overscaled-point",
+    );
+    window.__GIS_MATRIX_RESULT__ = {
+      status: "ready",
+      version,
+      events: [...events],
+      rawEvents: [...rawEvents],
+      snapshotPassed: snapshot.passed,
+      missingStyleImageHandled,
+      overscaledQueryPassed,
+      queryRenderedFeaturesCount: rawFeatures.length,
+      adapterQueryFeaturesCount: adapterFeatures.features.length,
+      renderDurationMs: performance.now() - renderStartedAt,
+      queryDurationMs,
+    };
+  } catch (error) {
+    window.__GIS_MATRIX_RESULT__ = {
+      status: "error",
+      version,
+      events: [...events],
+      rawEvents: [...rawEvents],
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
 
 async function start(): Promise<void> {
   const container = document.querySelector<HTMLElement>("#map");
@@ -190,18 +282,37 @@ async function start(): Promise<void> {
     container: rawContainer,
     style: rawStyle,
     center: [0, 0],
-    zoom: 1,
+    zoom: 4,
     interactive: false,
   });
   window.__GIS_MATRIX_RAW_MAP__ = rawMap;
-  rawMap.on("load", () => rawEvents.push("load"));
-  rawMap.on("idle", () => rawEvents.push("idle"));
+  rawMap.on("styleimagemissing", (event) => {
+    rawEvents.push("styleimagemissing");
+    if (event.id === "matrix-missing-icon" && !rawMap.hasImage(event.id)) {
+      rawMap.addImage(event.id, { width: 1, height: 1, data: new Uint8Array([25, 122, 91, 255]) });
+      missingStyleImageHandled = true;
+    }
+  });
+  rawMap.on("load", () => {
+    rawEvents.push("load");
+    rawMap.addLayer({
+      id: "missing-image-symbol",
+      type: "symbol",
+      source: "points",
+      layout: { "icon-image": "matrix-missing-icon", "icon-size": 2 },
+    });
+  });
+  rawMap.on("idle", () => {
+    rawEvents.push("idle");
+    rawIdle = true;
+    void completeEvidence();
+  });
 
   await adapter.load(spec, { container });
   const map = adapter.getMapInstance();
   if (!map) throw new Error("MapLibreAdapter did not expose a live Map instance.");
   window.__GIS_MATRIX_MAP__ = map;
-  map.once("idle", () => map.jumpTo({ center: [0.1, 0.1] }));
+  map.jumpTo({ center: [0, 0], zoom: 2 });
 }
 
 void start().catch((error: unknown) => {
@@ -269,6 +380,9 @@ function writeFixture(directory, fixture) {
   writeFileSync(join(directory, "tsconfig.json"), `${JSON.stringify(fixture.tsconfig, null, 2)}\n`);
   writeFileSync(join(directory, "index.html"), fixture.html);
   writeFileSync(join(directory, "src", "main.ts"), fixture.source);
+  const tileDirectory = join(directory, "public", "tiles", "0", "0");
+  mkdirSync(tileDirectory, { recursive: true });
+  writeFileSync(join(tileDirectory, "0.pbf"), Buffer.from(OVERSCALED_VECTOR_TILE_BASE64, "base64"));
 }
 
 function inspectInstalledMapLibre(directory, checkedVersion) {
@@ -287,6 +401,7 @@ function inspectInstalledMapLibre(directory, checkedVersion) {
     mainEntry: manifest.main ?? null,
     typeEntry: manifest.types ?? manifest.typings ?? null,
     exportsDeclared: Boolean(manifest.exports),
+    importForm: "named-esm",
     esmEntry: esmCandidates.find((candidate) => existsSync(join(packageRoot, candidate))) ?? null,
     umdEntry: existsSync(join(packageRoot, "dist", "maplibre-gl.js")) ? "dist/maplibre-gl.js" : null,
     packageJsonSha256: createHash("sha256").update(readFileSync(packageJsonPath)).digest("hex"),
@@ -328,6 +443,9 @@ function executeEntry(version, engineTarball, tempRoot) {
   prepareMapLibreWorker(fixtureDirectory, fixture);
   const packageEvidence = inspectInstalledMapLibre(fixtureDirectory, version);
   packageEvidence.workerDelivery = fixture.workerDelivery;
+  packageEvidence.workerPath = fixture.workerPath;
+  packageEvidence.cspWorkerSource = fixture.cspWorkerSource;
+  packageEvidence.cspScriptSource = fixture.cspScriptSource;
   run(join(repoRoot, "node_modules", ".bin", "tsc"), ["--project", "tsconfig.json"], {
     cwd: fixtureDirectory,
   });
@@ -354,11 +472,21 @@ function executeEntry(version, engineTarball, tempRoot) {
     peerRangeSatisfied: peerEvidence.peerRangeSatisfied,
     peerResolution: peerEvidence.peerResolution,
     nativePeerInstall: peerEvidence.nativePeerInstall,
+    browserEngine: browserEvidence.browserEngine,
+    importForm: browserEvidence.importForm,
+    workerPath: browserEvidence.workerPath,
+    cspWorkerSource: browserEvidence.cspWorkerSource,
+    cspScriptSource: browserEvidence.cspScriptSource,
+    renderDurationMs: browserEvidence.renderDurationMs,
+    queryDurationMs: browserEvidence.queryDurationMs,
     stages: {
       publicTypes: "passed",
       esmBrowserBuild: "passed",
       adapterEvents: browserEvidence.eventsStatus,
       strictVisual: browserEvidence.visualStatus,
+      missingStyleImage: browserEvidence.missingStyleImageHandled ? "passed" : "failed",
+      overscaledVectorQuery: browserEvidence.overscaledQueryPassed ? "passed" : "failed",
+      queryRenderedFeatures: browserEvidence.queryRenderedFeaturesCount > 0 ? "passed" : "failed",
     },
     packageEvidence,
     browserEvidence,
@@ -391,6 +519,7 @@ export function main(args = process.argv.slice(2)) {
       releaseBaseline: MAPLIBRE_RELEASE_BASELINE,
       checkedVersions: versions,
       defaultDependencyChanged: false,
+      performanceDelta: buildPerformanceDelta(results),
       results,
     };
     writeFileSync(join(outputDirectory, "summary.json"), `${JSON.stringify(summary, null, 2)}\n`);

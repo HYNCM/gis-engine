@@ -41,7 +41,7 @@ export interface MapLibreV6AuditReport {
   /** MapLibre version range this audit targets. */
   targetVersionRange: string;
   /** Exact versions exercised by the executable matrix. */
-  checkedVersions: readonly ["5.24.0", "6.0.0-22"];
+  checkedVersions: readonly ["5.24.0", "6.1.0"];
   /** Version retained by release and workspace defaults. */
   releaseBaseline: "5.24.0";
   /** Candidate adoption decision; independent from runtime compatibility evidence. */
@@ -71,13 +71,12 @@ export interface MapLibreV6AuditReport {
  */
 const MAPLIBRE_V6_AUDIT_ENTRIES: MapLibreV6AuditEntry[] = [
   {
-    id: "prerelease-peer-range",
-    description:
-      "npm resolves the release baseline natively but rejects the checked prerelease against the public peer range.",
-    breakingChange: "Semver range ^6.0.0 does not include 6.0.0-22.",
-    severity: "warning",
-    impact: "The v6 prerelease is evidence-only and cannot be presented as a supported peer installation.",
-    remediation: "Keep 5.24.0 as the release baseline; make any future stable-v6 range change a separate decision.",
+    id: "stable-peer-range",
+    description: "npm resolves both the 5.24.0 baseline and stable 6.1.0 candidate against the public peer range.",
+    breakingChange: "Stable v6 is now eligible under the existing ^6.0.0 peer range.",
+    severity: "pass",
+    impact: "Consumers can install either exact matrix version without forced peer resolution.",
+    remediation: "Keep native exact-version installation as a blocking matrix assertion.",
   },
   {
     id: "public-adapter-types",
@@ -93,7 +92,7 @@ const MAPLIBRE_V6_AUDIT_ENTRIES: MapLibreV6AuditEntry[] = [
     description: "Both entries bundle as ESM; v6 requires explicit delivery of its module worker and shared module.",
     breakingChange:
       "v6 derives maplibre-gl-worker.mjs beside import.meta.url; Vite renames the application chunk and does not copy the worker pair automatically.",
-    severity: "warning",
+    severity: "pass",
     impact:
       "A generated v6 app stalls before style.load unless it calls setWorkerUrl with a deployed module-worker URL.",
     remediation:
@@ -107,6 +106,22 @@ const MAPLIBRE_V6_AUDIT_ENTRIES: MapLibreV6AuditEntry[] = [
     severity: "pass",
     impact: "The adapter event bridge works unchanged once the v6 worker is available.",
     remediation: "Retain raw-map and adapter event assertions in the generated browser fixture.",
+  },
+  {
+    id: "missing-image-query-semantics",
+    description: "Stable v5 and v6 handle styleimagemissing and preserve rendered-feature query semantics.",
+    breakingChange: "v6 event typings and rendered-feature internals changed while retaining the public API.",
+    severity: "pass",
+    impact: "Generated styles can recover missing images and adapter queries still return the intended feature.",
+    remediation: "Retain callback, feature identity, query-count, and timing assertions in the browser matrix.",
+  },
+  {
+    id: "overscaled-vector-query",
+    description: "A maxzoom-0 local vector tile remains queryable when rendered at zoom 4 in both matrix entries.",
+    breakingChange: "Stable v6 changed overscaled tile feature-query behavior.",
+    severity: "pass",
+    impact: "queryRenderedFeatures returns the expected source-layer feature from an overscaled tile.",
+    remediation: "Keep the generated local MVT fixture and exact feature identity assertion.",
   },
   {
     id: "strict-visual-readiness",
@@ -139,8 +154,8 @@ export function runMapLibreV6Audit(): MapLibreV6AuditReport {
 
   return {
     status,
-    targetVersionRange: "5.24.0 / 6.0.0-22 evidence-only",
-    checkedVersions: ["5.24.0", "6.0.0-22"],
+    targetVersionRange: "5.24.0 baseline / 6.1.0 stable candidate",
+    checkedVersions: ["5.24.0", "6.1.0"],
     releaseBaseline: "5.24.0",
     candidateDecision: "keep-baseline",
     entries,

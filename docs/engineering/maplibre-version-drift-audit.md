@@ -37,7 +37,12 @@ readiness/evidence-only, `SourceLoader` remains contract-only, and package
 movement is no-go until a future task refreshes official package/changelog
 evidence and accepts strict visual evidence in the same dependency state.
 
-> **Post-audit note (2026-06-03):** Phase 1a of the SDK+CLI productization plan added `maplibre-gl` as an optional `peerDependency` (`^5.0.0 || ^6.0.0`) to `@gis-engine/engine`. This is a peer-dependency broadening with no runtime impact; the full drift audit checklist is deferred until MapLibre v6 reaches stable release.
+> **Stable-v6 audit note (checked 2026-08-04):** MapLibre GL JS `6.1.0`
+> is the exact stable candidate in the executable compatibility matrix. The
+> release baseline remains `5.24.0`, the optional peer range remains
+> `^5.0.0 || ^6.0.0`, and no workspace default or lockfile was changed. Stable
+> v6 adoption still requires complete dual-version browser evidence and a
+> separate `@quality` bump approval.
 
 Owner names below follow the current 5-agent model. Runtime or schema-level
 waiver terminology may still use legacy `coordinator` wording until the
