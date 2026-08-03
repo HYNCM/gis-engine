@@ -1,8 +1,8 @@
 ---
 agent: quality
 period: 2026-08-04
-generated_at: 2026-08-03T17:31:09Z
-repo_revision: "e5eefe43e745a2ca26eeb520bf273561d990a589"
+generated_at: 2026-08-03T17:49:24Z
+repo_revision: "cf58b4605036d948e5e4783a2cde245eef536d91"
 inputs:
   - https://github.com/maplibre/maplibre-gl-js/releases/tag/v6.1.0
   - docs/reviews/maplibre-5.24-6.1-builder-evidence-2026-08-03.md
@@ -10,9 +10,10 @@ inputs:
   - tests/compatibility/maplibre-compatibility.spec.ts
   - tests/framework/maplibre-compat-matrix.test.ts
   - tests/adapter/maplibre-v6-audit.test.ts
+  - test-results/maplibre-compatibility/summary.json
 owner: "@quality"
 decision_level: blocking
-gate_result: block
+gate_result: pass
 evidence_kind: specialist
 ---
 
@@ -20,55 +21,64 @@ evidence_kind: specialist
 
 ## HOC-N3 Decision
 
-**BLOCK for closing the compatibility-evidence slice until the real
-dual-version browser matrix passes.** The focused implementation contracts are
-green, but the current run has no accepted `5.24.0`/`6.1.0` summary and no
-stable-v6 screenshot or timing evidence.
+**PASS for the bounded #38 runtime-compatibility slice.** An independent
+unrestricted root run of `pnpm test:compat:maplibre` at revision `cf58b46`
+passed exact MapLibre versions `5.24.0` and `6.1.0`. Both entries passed native
+installation, strict public types, generated ESM build, lifecycle events,
+missing-image recovery, overscaled vector query, adapter
+`queryRenderedFeatures`, worker/resource observation, console cleanliness, and
+strict visual checks.
 
-**No-go for dependency adoption in this slice.** Runtime compatibility and a
-baseline bump are separate decisions. Even after the matrix passes, keep
-`5.24.0` as the release/default baseline until an intentional dependency
-proposal changes the default, updates release evidence, and receives
-`candidateDecision: "bump-approved"`.
+**No-go for changing the default dependency in this slice.** Keep `5.24.0` as
+the release/default baseline. A runtime-compatible candidate is not an adoption
+approval, this task does not authorize package movement, and one local timing
+sample is insufficient for a baseline decision. `candidateDecision` remains
+`"keep-baseline"`.
 
 ## Gate Status
 
 | Gate | Result | Evidence |
 | --- | --- | --- |
-| Exact matrix contract | PASS | Focused framework and public audit tests: 2 files / 11 tests |
-| Exact `5.24.0` install and strict compile | PASS in partial run | Native install, packed API `tsc`, and Vite build completed |
-| `5.24.0` Chromium behavior / visual | RE-RUN REQUIRED | Diagnostic run reached ready after the CSP correction; absolute tile-template fix still needs the authoritative matrix rerun |
-| Exact `6.1.0` install and browser evidence | NOT RUN | Retry stopped after the first clear browser failure |
-| Adapter regression gate | PASS | 11 files / 74 tests |
-| Browser E2E | BLOCK | Command exited with 5 skips; no executable browser evidence |
-| Strict visual | ENVIRONMENT BLOCK | 5 failures; Chromium rendezvous registration was denied by the local sandbox |
-| Default dependency movement | PASS | Baseline, peer range, workspace dependency state, and lockfile unchanged |
+| Exact native install | PASS | Requested and installed `5.24.0` / `6.1.0`; no forced peer resolution |
+| Packed public API strict compile | PASS | Both isolated consumers passed TypeScript |
+| Generated ESM application | PASS | Both entries passed Vite build; v6 resolved exports-only `dist/maplibre-gl.mjs` |
+| Lifecycle / missing image | PASS | Raw and adapter lifecycle sets accepted; `styleimagemissing` handled in both |
+| Overscaled local MVT | PASS | Server observed `/tiles/0/0/0.pbf`; source and rendered query counts are `1` |
+| Adapter rendered-feature query | PASS | Query count `1` for each exact version |
+| Worker / shared resource | PASS | v6 server paths include both module worker and shared module; v5 uses package-default blob delivery |
+| Strict visual / console | PASS | Chromium `148.0.7778.96`; canvases `1/1`; identical accepted pixels; zero console errors |
+| Browser E2E | PASS | Independent unrestricted run passed 5/5 Chromium tests |
+| Repository strict visual | PASS | Independent unrestricted run passed 5/5: MapLibre base, local MVT, fill-extrusion, data-driven style, and Scene3D |
+| Focused deterministic gates | PASS | Audit/framework 11 tests; adapter 74; docs 35; framework 57; engine build and Biome pass |
+| Default dependency movement | PASS unchanged | Baseline, optional peer range, workspace state, and lockfile did not move |
 
-## Required Before Pass
+## Performance Interpretation
 
-1. Run `pnpm test:compat:maplibre` in a network- and WebGL-capable environment.
-2. Confirm exact native installs for `5.24.0` and `6.1.0`; any version drift or
-   legacy peer retry is blocking.
-3. Accept raw and adapter lifecycle events, `styleimagemissing` recovery,
-   overscaled local-MVT feature identity, adapter rendered-feature semantics,
-   console cleanliness, strict pixels, and worker/CSP resources for both.
-4. Record Chromium name/version, per-entry render/query timings, and the
-   generated performance delta.
-5. Pass `pnpm test:adapter`, `pnpm test:e2e:browser`, and
-   `GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual`.
+The `6.1.0` candidate rendered in `585.5 ms` versus `578.7 ms` for the
+baseline, a `+6.8 ms` (`+1.175%`) delta. Candidate query time was `3.2 ms`
+versus `3.6 ms`, a `-0.4 ms` (`-11.111%`) delta. These are single-run local
+measurements. They show no blocking compatibility symptom, but they do not
+establish a durable performance trend or justify default adoption.
 
-The targeted diagnosis is not accepted release evidence. It established that
-the first timeout came from the fixture CSP blocking Ajv `unsafe-eval`, then
-showed MapLibre v5 rejecting a root-relative vector-tile URL. Both causes have
-focused regressions; the full exact-version rerun remains mandatory.
+## Findings
+
+No Critical, Important, or Minor implementation findings remain in the bounded
+#38 compatibility diff.
+
+The diagnostic sequence closed five fixture-quality defects: premature success
+when the result object was undefined, an undeclared Ajv CSP requirement, a v5
+root-relative tile URL failure, an exact-object assertion that rejected added
+evidence, and main-page resource timing used as worker-fetch proof. Focused
+regressions now protect each correction.
 
 ## Recommendations
 
 | Evidence | Impact | Action | Confidence |
 | --- | --- | --- | --- |
-| Focused behavioral contracts pass but renderer proof is incomplete | Closing now would turn test intent into an unsupported compatibility claim | `@builder` supplies both raw JSON entries and screenshots; `@quality` reissues HOC-N3 | high |
-| Stable v6 is eligible under the current optional peer range | A green matrix would show runtime eligibility, not authorize default movement | `@orchestrator` keeps adoption as a separate task and decision | high |
-| v6 uses explicit same-origin module-worker assets while v5 uses package-default blob delivery | Generated apps can compile yet stall at runtime under incomplete CSP/asset deployment | Preserve the worker/CSP checks as blocking browser evidence | high |
+| Both exact entries pass all type, runtime, query, worker, and visual checks | The stable v6 candidate is compatible with the tested adapter boundary | `@orchestrator` may close #38 as runtime-compatibility evidence complete | high |
+| v6 requires explicit same-origin worker/shared assets and the engine currently requires Ajv `unsafe-eval` | Generated-app CSP or asset deployment can fail despite a green compile | Preserve CSP and server-path assertions in CI; document the constraint in any future adoption proposal | high |
+| One local sample shows `+1.175%` render and `-11.111%` query deltas | Timing noise cannot support a package baseline change | Require repeated measurements and an explicit adoption task before changing defaults | high |
+| The task intentionally left package defaults and lockfile unchanged | Expanding runtime evidence must not become an implicit release decision | Keep `5.24.0` and `candidateDecision: "keep-baseline"` | high |
 
-This report is a fail-closed quality decision. It does not update planning
-state, approve MapLibre `6.1.0` adoption, or waive renderer evidence.
+This HOC-N3 pass closes the compatibility-evidence gate only. It does not
+approve a MapLibre `6.1.0` default bump or alter planning state.
