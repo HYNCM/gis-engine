@@ -148,7 +148,10 @@ test(`loads generated example and records strict visual/event evidence for MapLi
   expect(browserState.canvasCount).toBe(1);
   expect(browserState.rawCanvasCount).toBe(1);
   expect(browserState.map).toMatchObject({ styleLoaded: true, tilesLoaded: true, moving: false });
-  expect(browserState.rawMap).toEqual({ loaded: true, styleLoaded: true, tilesLoaded: true, moving: false });
+  expect(browserState.rawMap).toMatchObject({ loaded: true, styleLoaded: true, tilesLoaded: true, moving: false });
+  expect(browserState.rawMap?.overscaledSourcePresent).toBe(true);
+  expect(browserState.rawMap?.overscaledSourceLoaded).toBe(true);
+  expect(browserState.rawMap?.overscaledSourceFeatureCount).toBeGreaterThan(0);
   expect(browserState.resources.some((resource) => resource.endsWith("/tiles/0/0/0.pbf"))).toBe(true);
   if (expectedVersion === "6.1.0") {
     expect(browserState.resources.some((resource) => resource.endsWith("/maplibre-gl-worker.mjs"))).toBe(true);

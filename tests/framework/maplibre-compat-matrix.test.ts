@@ -80,6 +80,10 @@ describe("MapLibre compatibility matrix", () => {
     expect(runner).toContain("queryDurationMs");
     expect(browserGate).toContain("Boolean(window.__GIS_MATRIX_RESULT__)");
     expect(browserGate).not.toContain('() => window.__GIS_MATRIX_RESULT__?.status !== "loading"');
+    expect(browserGate).toContain("expect(browserState.rawMap).toMatchObject");
+    expect(browserGate).toContain("browserState.rawMap?.overscaledSourcePresent");
+    expect(browserGate).toContain("browserState.rawMap?.overscaledSourceLoaded");
+    expect(browserGate).toContain("browserState.rawMap?.overscaledSourceFeatureCount");
   });
 
   it("runs the exact stable-v6 matrix in CI without changing the release baseline", () => {
