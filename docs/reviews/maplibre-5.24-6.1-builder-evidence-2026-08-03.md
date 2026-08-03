@@ -1,8 +1,10 @@
 ---
 agent: builder
+focus_area: qa
+feature: issue-38-maplibre-stable-compatibility
 period: 2026-08-04
-generated_at: 2026-08-03T18:03:37Z
-repo_revision: "2f437e7cda88d189cf61c6f1ca7ccc2692cffcb6"
+generated_at: 2026-08-03T18:15:31Z
+repo_revision: "6e48d6b92db679c71f43a568d7e148ae94416a63"
 inputs:
   - https://github.com/maplibre/maplibre-gl-js/releases/tag/v6.1.0
   - https://www.npmjs.com/package/maplibre-gl/v/5.24.0
@@ -14,6 +16,7 @@ inputs:
   - test-results/maplibre-compatibility/summary.json
 owner: "@builder"
 decision_level: advisory
+status: ready-for-review
 evidence_kind: specialist
 ---
 
@@ -32,6 +35,15 @@ The authoritative summary was generated at `2026-08-03T18:01:37.519Z` with
 Chromium `148.0.7778.96`. Both entries record `status: "passed"`,
 `peerRangeSatisfied: true`, `peerResolution: "native"`, and
 `nativePeerInstall: { status: "passed", error: null }`.
+
+Revision `6e48d6b9` closes the follow-up evidence-integrity findings without
+rerunning either browser matrix: CI keeps the two exact-version jobs, downloads
+their per-version JSON artifacts, and runs a strict aggregation-only mode. The
+aggregator fails closed on a missing version, mismatched version label,
+duplicate entry, non-passing status, or invalid timing. Console errors are now
+queued synchronously by `message.text()`, while argument details are
+best-effort enrichment; the page closes and the queue drains before the final
+zero-error assertion and evidence write.
 
 This is runtime-compatibility evidence only. The release baseline remains
 `5.24.0`; the optional peer range, workspace dependency state, and lockfile did
@@ -86,10 +98,15 @@ assets.
 - Mutation evidence: an adapter query result with count `1` and
   `adapterQueryPassed: false` remains failed; a rejected native peer install
   throws `MAPLIBRE_NATIVE_INSTALL_REJECTED` without a fallback install.
-- GREEN: focused audit/framework tests passed 2 files / 12 tests.
+- Aggregation/console RED: focused framework ran 12 tests with 5 expected
+  failures for missing aggregation behavior, missing CI aggregation, and the
+  prior asynchronous console queue.
+- Aggregation/console GREEN: the focused MapLibre framework file passed 12/12;
+  full framework passed 8 files / 61 tests.
 - `pnpm test:adapter` passed 11 files / 74 tests.
 - `pnpm test:docs` passed 5 files / 35 tests.
-- `pnpm test:agent-framework` passed 8 files / 58 tests.
+- `pnpm test:resources` passed 4 files / 23 tests, covering the required
+  resource-policy gate for the URL, local tile, and worker evidence surfaces.
 - `pnpm --filter @gis-engine/engine build`, Biome, and `git diff --check`
   passed.
 - Independent unrestricted `pnpm test:compat:maplibre` at `2f437e7c` passed
@@ -101,6 +118,24 @@ assets.
   `GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual` passed 5/5
   strict scenarios: MapLibre base, generated local MVT, fill-extrusion,
   data-driven styling, and Scene3D.
+
+## HOC-N2 Evidence Summary
+
+- What changed: exact-version CI artifacts now converge through a strict
+  aggregation-only job, and browser console evidence has a synchronous error
+  queue with close-and-drain finalization.
+- Test coverage: missing version, version mismatch, correct delta, CI job
+  wiring, console ordering, resource policy, documentation, and the full agent
+  framework are covered by the passing commands above.
+- Resource implications: no new external host or resource-policy exception was
+  added. Existing local tile and v6 same-origin worker/shared paths remain
+  explicit; `pnpm test:resources` passed 23/23.
+- MCP implications: none. No tool name, schema, descriptor, structured output,
+  or diagnostics envelope changed.
+- Known limitation: the full network/browser matrix was not rerun after the
+  aggregation and console-harness-only hardening. The exact matrix evidence at
+  `2f437e7c` remains the runtime evidence; the next remote CI run will exercise
+  both version jobs and publish the new aggregate artifact.
 
 ## Recommendations
 
