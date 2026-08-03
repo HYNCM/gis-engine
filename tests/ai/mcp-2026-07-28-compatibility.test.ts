@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
+import { dirname, join, parse } from "node:path";
 import { GIS_ENGINE_MCP_PROTOCOL_VERSION, listGisEngineTools } from "@gis-engine/ai";
 import { describe, expect, it } from "vitest";
 
@@ -12,7 +13,7 @@ const compatibilityFixtureUrl = new URL("../fixtures/mcp/compatibility-2026-07-2
 const rfcUrl = new URL("../../docs/planning/feature-specs/mcp-2026-07-28-compatibility.md", import.meta.url);
 const qualityDecisionUrl = new URL("../../docs/reviews/mcp-2026-07-28-quality-decision-2026-08-03.md", import.meta.url);
 const aiPackageUrl = new URL("../../packages/ai/package.json", import.meta.url);
-const lockfileUrl = new URL("../../pnpm-lock.yaml", import.meta.url);
+const rootPackageUrl = new URL("../../package.json", import.meta.url);
 
 const coverageKeys = [
   "discovery",
@@ -62,9 +63,9 @@ type CompatibilityFixture = {
   sdk: {
     candidateServerPackage: string;
     candidateServerVersion: string;
-    currentLockedVersion: string;
     currentPackage: string;
     currentRange: string;
+    currentResolvedVersion: string;
     legacyLatestVersion: string;
   };
 };
@@ -73,13 +74,35 @@ function readFixture(): CompatibilityFixture {
   return JSON.parse(readFileSync(compatibilityFixtureUrl, "utf8")) as CompatibilityFixture;
 }
 
+function resolveInstalledSdkVersion(): string {
+  let directory = dirname(requireFromAiPackage.resolve("@modelcontextprotocol/sdk/types.js"));
+  const root = parse(directory).root;
+
+  while (directory !== root) {
+    try {
+      const manifest = JSON.parse(readFileSync(join(directory, "package.json"), "utf8")) as {
+        name?: string;
+        version?: string;
+      };
+      if (manifest.name === "@modelcontextprotocol/sdk" && manifest.version) return manifest.version;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
+    directory = dirname(directory);
+  }
+
+  throw new Error("Unable to resolve the installed @modelcontextprotocol/sdk package version from packages/ai.");
+}
+
 describe("MCP 2026-07-28 no-default-change compatibility gate", () => {
   it("records a complete, dated No-go compatibility matrix", () => {
     const fixture = readFixture();
     const aiPackage = JSON.parse(readFileSync(aiPackageUrl, "utf8")) as {
       dependencies: Record<string, string>;
     };
-    const lockfile = readFileSync(lockfileUrl, "utf8");
+    const rootPackage = JSON.parse(readFileSync(rootPackageUrl, "utf8")) as {
+      scripts: Record<string, string>;
+    };
 
     expect(fixture).toMatchObject({
       currentDefault: "2025-11-25",
@@ -89,7 +112,6 @@ describe("MCP 2026-07-28 no-default-change compatibility gate", () => {
       sdk: {
         currentPackage: "@modelcontextprotocol/sdk",
         currentRange: "^1.29.0",
-        currentLockedVersion: "1.29.0",
         legacyLatestVersion: "1.30.0",
         candidateServerPackage: "@modelcontextprotocol/server",
         candidateServerVersion: "2.0.0",
@@ -106,7 +128,10 @@ describe("MCP 2026-07-28 no-default-change compatibility gate", () => {
       oldClientBehavior: "supported",
     });
     expect(aiPackage.dependencies[fixture.sdk.currentPackage]).toBe(fixture.sdk.currentRange);
-    expect(lockfile).toContain(`'@modelcontextprotocol/sdk@${fixture.sdk.currentLockedVersion}':`);
+    expect(resolveInstalledSdkVersion()).toBe(fixture.sdk.currentResolvedVersion);
+    expect(rootPackage.scripts["test:compat:mcp"]).toBe(
+      "vitest run tests/ai/mcp-2026-07-28-compatibility.test.ts tests/ai/mcp-contract-convergence.test.ts",
+    );
     expect(fixture.coverage.discovery.evidence).toContain("The 2026-07-28 server MUST implement server/discover");
     expect(fixture.coverage.discovery.evidence).toContain(
       "client MAY call it before other requests or use it as a probe",
@@ -179,6 +204,8 @@ describe("MCP 2026-07-28 no-default-change compatibility gate", () => {
     expect(decision).toContain("draft-07");
     expect(decision).toContain("structuredContent");
     expect(decision).toContain("legacy JSON");
+    expect(decision).toContain("2 files / 10 tests");
+    expect(decision).toContain("tests/ai/mcp-contract-convergence.test.ts");
     expect(decision).toContain(
       "A `2026-07-28` client MUST treat a result from an earlier-protocol server that omits `resultType` as complete",
     );

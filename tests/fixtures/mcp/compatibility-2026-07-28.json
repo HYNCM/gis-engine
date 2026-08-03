@@ -6,7 +6,7 @@
   "sdk": {
     "currentPackage": "@modelcontextprotocol/sdk",
     "currentRange": "^1.29.0",
-    "currentLockedVersion": "1.29.0",
+    "currentResolvedVersion": "1.29.0",
     "legacyLatestVersion": "1.30.0",
     "candidateServerPackage": "@modelcontextprotocol/server",
     "candidateServerVersion": "2.0.0"

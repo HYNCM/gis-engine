@@ -1,8 +1,8 @@
 ---
 agent: quality
 period: 2026-08-03
-generated_at: 2026-08-03T17:10:31Z
-repo_revision: "057bdb24a39bf46d258492987ca1274fecaccbd9"
+generated_at: 2026-08-03T17:19:22Z
+repo_revision: "24fe0af5d3d1ff30f2df903f6414adb9ef88b6b8"
 inputs:
   - https://github.com/HYNCM/gis-engine/issues/40
   - docs/planning/feature-specs/mcp-2026-07-28-compatibility.md
@@ -37,8 +37,9 @@ and conformance gaps are the blocking evidence.
 | Area | Evidence | Impact | Action | Confidence |
 | --- | --- | --- | --- | --- |
 | Protocol default | `GIS_ENGINE_MCP_PROTOCOL_VERSION` remains `2025-11-25`; the fixture decision is `no-go` | Existing clients remain on the validated lifecycle | Keep the default until all RFC promotion gates pass | high |
-| Descriptor contract | The compatibility test validates live `tools/list` through SDK `ListToolsResultSchema` and asserts names/order plus both schemas | Prevents candidate research from changing the public AI surface | Run `pnpm test:compat:mcp` on future MCP changes | high |
-| Result contract | Existing convergence tests cover successful structured content and structured diagnostics with text fallback | Maintains deterministic machine-readable results | Preserve both `structuredContent` and legacy JSON paths during any migration | high |
+| Descriptor contract | The dedicated command runs the compatibility and live convergence tests; SDK `ListToolsResultSchema` validates names/order plus both schemas | Prevents candidate research from changing the public AI surface | Run `pnpm test:compat:mcp` on future MCP changes | high |
+| Result contract | The same dedicated command covers successful `structuredContent`, output-schema conformance, the diagnostic envelope, and legacy JSON text fallback | Maintains deterministic machine-readable results | Preserve both structured and text paths during any migration | high |
+| SDK resolution | The test resolves `@modelcontextprotocol/sdk/types.js` from `packages/ai`, walks to the named package manifest, and verifies installed `1.29.0` | A global lockfile entry cannot masquerade as the AI package's actual resolution | Keep manifest range and resolved-version evidence separate | high |
 | Candidate gaps | Fixture marks discovery, lifecycle, `resultType`, cache metadata, and subscriptions blocked | Default promotion would claim unimplemented protocol behavior | Implement and review a dedicated split-SDK v2 conformance change | high |
 | Compatibility policy | A `2026-07-28` client MUST treat a result from an earlier-protocol server that omits `resultType` as complete | Avoids confusing a client-side fallback interpretation with runtime support | Add real current-client/earlier-server fixtures before dual-revision Go | high |
 
@@ -47,7 +48,9 @@ and conformance gaps are the blocking evidence.
 | Check | Result |
 | --- | --- |
 | `pnpm exec vitest run tests/ai/mcp-2026-07-28-compatibility.test.ts` (RED, test only) | Expected FAIL: 1 file / 3 tests; fixture and RFC did not exist |
-| `pnpm test:compat:mcp` | PASS, 1 file / 3 tests |
+| `pnpm test:compat:mcp` (gate-hardening RED) | Expected FAIL: 2/3 compatibility tests failed; the package script still named only one test file and the report still claimed the single-file result |
+| Resolved-version mutation (`1.29.0` fixture changed to `1.29.1`) | Expected FAIL: actual `packages/ai` SDK resolution remained `1.29.0`, proving the gate does not accept an unrelated global lockfile key |
+| `pnpm test:compat:mcp` | PASS, 2 files / 10 tests; includes `tests/ai/mcp-contract-convergence.test.ts` live success/error result coverage |
 | `pnpm build:schema` | PASS; engine, Scene3D, and AI schema builds completed |
 | `pnpm test:ai` | PASS, 14 files / 302 tests |
 | `pnpm test:docs` | PASS, 5 files / 35 tests |

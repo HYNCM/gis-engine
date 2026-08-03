@@ -23,9 +23,9 @@ evidence_kind: specialist
 
 The MCP `2026-07-28` candidate is **No-go** as the GIS Engine runtime default.
 The accepted default remains `2025-11-25` on
-`@modelcontextprotocol/sdk@^1.29.0` (lockfile `1.29.0`; npm legacy-line latest
-`1.30.0`). The TypeScript SDK README and npm package metadata checked on
-2026-08-04 show stable split v2 packages, including
+`@modelcontextprotocol/sdk@^1.29.0` (actual `packages/ai` module resolution
+`1.29.0`; npm legacy-line latest `1.30.0`). The TypeScript SDK README and npm
+package metadata checked on 2026-08-04 show stable split v2 packages, including
 `@modelcontextprotocol/server@2.0.0`, but GIS Engine has not migrated or
 conformance-tested the v2 discovery, lifecycle, result, cache, or subscription
 contracts.
@@ -79,6 +79,14 @@ legacy JSON diagnostics text block. A `2026-07-28` client MUST treat a result
 from an earlier-protocol server that omits `resultType` as complete. This is a
 client-side compatibility interpretation only; it cannot relax any of these
 descriptor or result invariants.
+
+The dedicated `pnpm test:compat:mcp` gate runs both
+`tests/ai/mcp-2026-07-28-compatibility.test.ts` and
+`tests/ai/mcp-contract-convergence.test.ts`. It therefore validates the
+candidate compatibility fixture and live 14-tool descriptors together with
+successful `structuredContent`, output-schema conformance, the
+`{ diagnostics: Diagnostic[] }` failure envelope, and the legacy JSON text
+fallback.
 
 ## Promotion Gates
 
