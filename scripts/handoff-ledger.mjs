@@ -11,6 +11,7 @@ import { AGENT_REGISTRY, HANDOFF_FLOWS } from "./agent-registry.mjs";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
 const LEDGER_PATH = "docs/planning/handoff-ledger.json";
+export const EVIDENCE_CLOCK_SKEW_TOLERANCE_MS = 5 * 60 * 1000;
 
 function getRepoRevision(root = ROOT) {
   try {
@@ -24,11 +25,17 @@ function getRepoRevision(root = ROOT) {
   }
 }
 
-function extractGeneratedAt(content) {
-  const frontMatter = extractFrontMatter(content);
-  if (!frontMatter?.generated_at) return null;
-  const date = new Date(String(frontMatter.generated_at).replace(/^"|"$/g, ""));
-  return Number.isNaN(date.getTime()) ? null : date;
+function parseGeneratedAt(frontMatter) {
+  const rawValue = frontMatter?.generated_at;
+  if (rawValue === undefined || rawValue === null || String(rawValue).trim() === "") {
+    return { generatedAt: null, timestampCode: "EVIDENCE.GENERATED_AT_MISSING" };
+  }
+
+  const generatedAt = new Date(String(rawValue).replace(/^"|"$/g, ""));
+  if (Number.isNaN(generatedAt.getTime())) {
+    return { generatedAt: null, timestampCode: "EVIDENCE.GENERATED_AT_INVALID" };
+  }
+  return { generatedAt, timestampCode: null };
 }
 
 function discoverReports(agentName, root = ROOT) {
@@ -46,39 +53,84 @@ function discoverReports(agentName, root = ROOT) {
       const stats = statSync(fullPath);
       const content = readFileSync(fullPath, "utf-8");
       const frontMatter = extractFrontMatter(content);
-      const generatedAt = extractGeneratedAt(content) ?? stats.mtime;
+      const evidenceKind = classifyReportEvidence(content, frontMatter);
+      const timestamp = parseGeneratedAt(frontMatter);
+      // Templates remain traceable by mtime; specialist proof never inherits filesystem time.
+      const generatedAt = timestamp.generatedAt ?? (evidenceKind === "specialist" ? null : stats.mtime);
       const item = {
         agent: agentName,
         path: relative(root, fullPath),
         generatedAt,
+        sortAt: generatedAt ?? stats.mtime,
+        timestampCode: timestamp.timestampCode,
         mtime: stats.mtime,
         sha256: createHash("sha256").update(content).digest("hex"),
         content,
         inputs: Array.isArray(frontMatter?.inputs) ? frontMatter.inputs : [],
-        evidenceKind: classifyReportEvidence(content, frontMatter),
+        evidenceKind,
       };
       reports.push(item);
     }
   }
 
-  return reports.sort((left, right) => right.generatedAt.getTime() - left.generatedAt.getTime());
+  return reports.sort((left, right) => right.sortAt.getTime() - left.sortAt.getTime());
+}
+
+function isFutureEvidence(report, now) {
+  return report.generatedAt && report.generatedAt.getTime() > now.getTime() + EVIDENCE_CLOCK_SKEW_TOLERANCE_MS;
+}
+
+function timestampDiagnostic(agentName, report, now) {
+  const code = report.timestampCode ?? (isFutureEvidence(report, now) ? "EVIDENCE.GENERATED_AT_FUTURE" : null);
+  if (!code) return null;
+
+  const detail = {
+    "EVIDENCE.GENERATED_AT_MISSING": "is missing generated_at",
+    "EVIDENCE.GENERATED_AT_INVALID": "has an invalid generated_at",
+    "EVIDENCE.GENERATED_AT_FUTURE": `has generated_at beyond the ${EVIDENCE_CLOCK_SKEW_TOLERANCE_MS / 60000}-minute clock-skew tolerance`,
+  }[code];
+  return {
+    code,
+    message: `${agentName} specialist evidence ${detail}`,
+    action: `@${agentName} must publish specialist evidence with a valid generated_at timestamp`,
+    observedAt: report.generatedAt,
+  };
 }
 
 export function findLatestReport(agentName, root = ROOT, options = {}) {
   const reports = discoverReports(agentName, root);
   if (!options.evidenceKind) return reports[0] ?? null;
-  return reports.find((report) => report.evidenceKind === options.evidenceKind) ?? null;
+  if (options.evidenceKind !== "specialist") {
+    return reports.find((report) => report.evidenceKind === options.evidenceKind) ?? null;
+  }
+
+  const now = options.now ?? new Date();
+  return (
+    reports.find(
+      (report) =>
+        report.evidenceKind === "specialist" &&
+        !report.timestampCode &&
+        report.generatedAt &&
+        !isFutureEvidence(report, now),
+    ) ?? null
+  );
 }
 
 export function inspectSpecialistEvidence(agentName, root = ROOT, now = new Date()) {
   const reports = discoverReports(agentName, root);
-  const specialist = reports.find((report) => report.evidenceKind === "specialist") ?? null;
+  const specialistReports = reports.filter((report) => report.evidenceKind === "specialist");
+  const specialist =
+    specialistReports.find((report) => !report.timestampCode && report.generatedAt && !isFutureEvidence(report, now)) ??
+    null;
+  const rejectedSpecialist = specialist ? null : (specialistReports[0] ?? null);
   const latestTemplate = reports.find((report) => report.evidenceKind === "template") ?? null;
   const slaMaxHours = AGENT_REGISTRY[agentName]?.slaMaxHours ?? null;
   const ageHours = specialist ? (now - specialist.generatedAt) / 3600000 : null;
   let diagnostic = null;
 
-  if (!specialist && latestTemplate) {
+  if (rejectedSpecialist) {
+    diagnostic = timestampDiagnostic(agentName, rejectedSpecialist, now);
+  } else if (!specialist && latestTemplate) {
     diagnostic = {
       code: "EVIDENCE.TEMPLATE_NOT_SPECIALIST",
       message: `${agentName} latest artifact is template-only, not specialist evidence`,

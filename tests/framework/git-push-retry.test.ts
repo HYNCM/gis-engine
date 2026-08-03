@@ -44,4 +44,50 @@ describe("bounded artifact push retry", () => {
     expect(calls.filter((args) => args[0] === "fetch")).toHaveLength(1);
     expect(calls.filter((args) => args[0] === "rebase")).toHaveLength(1);
   });
+
+  it("aborts a conflicted rebase before returning the primary rebase failure", async () => {
+    const { pushWithRetry } = await import("../../scripts/git-push-retry.mjs");
+    const calls: string[][] = [];
+    const results = [
+      { status: 1, stderr: "! [rejected] HEAD -> main (non-fast-forward)" },
+      { status: 0, stderr: "" },
+      { status: 1, stderr: "CONFLICT (content): merge conflict" },
+      { status: 0, stderr: "" },
+    ];
+    const runGit = (args: string[]) => {
+      calls.push(args);
+      return results.shift() ?? { status: 0, stderr: "" };
+    };
+
+    expect(() => pushWithRetry({ remote: "origin", branch: "main", runGit })).toThrowError(
+      expect.objectContaining({
+        code: "GIT.REBASE_FAILED",
+        message: expect.stringContaining("merge conflict"),
+      }),
+    );
+    expect(calls).toEqual([
+      ["push", "origin", "HEAD:main"],
+      ["fetch", "origin", "main"],
+      ["rebase", "FETCH_HEAD"],
+      ["rebase", "--abort"],
+    ]);
+  });
+
+  it("retains rebase failure as primary when rebase abort also fails", async () => {
+    const { pushWithRetry } = await import("../../scripts/git-push-retry.mjs");
+    const results = [
+      { status: 1, stderr: "! [rejected] HEAD -> main (non-fast-forward)" },
+      { status: 0, stderr: "" },
+      { status: 1, stderr: "original rebase conflict" },
+      { status: 1, stderr: "abort cleanup failed" },
+    ];
+    const runGit = () => results.shift() ?? { status: 0, stderr: "" };
+
+    expect(() => pushWithRetry({ remote: "origin", branch: "main", runGit })).toThrowError(
+      expect.objectContaining({
+        code: "GIT.REBASE_FAILED",
+        message: expect.stringMatching(/original rebase conflict[\s\S]*abort cleanup failed/),
+      }),
+    );
+  });
 });

@@ -54,7 +54,16 @@ export function pushWithRetry({ remote = "origin", branch, maxAttempts = 3, runG
     }
 
     runRequired(runGit, ["fetch", remote, branch], "GIT.FETCH_FAILED");
-    runRequired(runGit, ["rebase", "FETCH_HEAD"], "GIT.REBASE_FAILED");
+    const rebased = runGit(["rebase", "FETCH_HEAD"]) ?? {};
+    if (rebased.status !== 0) {
+      const rebaseDetail = String(rebased.stderr ?? rebased.stdout ?? "").trim();
+      const aborted = runGit(["rebase", "--abort"]) ?? {};
+      const abortDetail =
+        aborted.status === 0
+          ? ""
+          : `; git rebase --abort failed: ${String(aborted.stderr ?? aborted.stdout ?? "").trim()}`;
+      throw pushError("GIT.REBASE_FAILED", `git rebase failed: ${rebaseDetail}${abortDetail}`);
+    }
   }
 
   throw pushError("GIT.PUSH_RETRY_EXHAUSTED", "unreachable retry exhaustion");

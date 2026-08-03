@@ -44,14 +44,14 @@ export function collectSlaViolations(root = ROOT, now = new Date()) {
     const description = `${name} ${agentDef.cadence} report`;
     const evidence = inspectSpecialistEvidence(name, root, now);
     const latest = evidence.report;
-    if (evidence.diagnostic?.code === "EVIDENCE.TEMPLATE_NOT_SPECIALIST") {
+    if (!latest && evidence.diagnostic) {
       violations.push({
         agent: name,
         severity: "critical",
         code: evidence.diagnostic.code,
         message: `${description}: ${evidence.diagnostic.message}`,
         action: evidence.diagnostic.action,
-        lastRun: evidence.diagnostic.observedAt.toISOString(),
+        ...(evidence.diagnostic.observedAt ? { lastRun: evidence.diagnostic.observedAt.toISOString() } : {}),
       });
       criticals.push(name);
       continue;

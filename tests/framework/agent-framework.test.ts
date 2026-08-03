@@ -386,6 +386,87 @@ exit 0
     );
   });
 
+  it.each([
+    {
+      label: "missing",
+      content: evidenceReport("product", "specialist", "2026-07-21T02:59:00Z").replace(
+        "generated_at: 2026-07-21T02:59:00Z\n",
+        "",
+      ),
+      code: "EVIDENCE.GENERATED_AT_MISSING",
+    },
+    {
+      label: "invalid",
+      content: evidenceReport("product", "specialist", "not-a-date"),
+      code: "EVIDENCE.GENERATED_AT_INVALID",
+    },
+  ])("rejects $label specialist generated_at instead of using filesystem mtime", ({ content, code }) => {
+    const root = mkdtempSync(join(tmpdir(), "gis-engine-invalid-specialist-time-"));
+    writeReport(root, "docs/research/competitor-updates-2026-W30.md", content);
+    const now = new Date("2026-07-21T03:00:00Z");
+
+    expect(findLatestReport("product", root, { evidenceKind: "specialist", now })).toBeNull();
+    expect(collectSlaViolations(root, now).violations).toContainEqual(
+      expect.objectContaining({
+        agent: "product",
+        code,
+        action: expect.stringContaining("generated_at"),
+      }),
+    );
+  });
+
+  it("allows five minutes of clock skew but rejects one millisecond beyond it", () => {
+    const now = new Date("2026-07-21T03:00:00.000Z");
+    const boundaryRoot = mkdtempSync(join(tmpdir(), "gis-engine-clock-skew-boundary-"));
+    writeReport(
+      boundaryRoot,
+      "docs/research/competitor-updates-2026-W30.md",
+      evidenceReport("product", "specialist", "2026-07-21T03:05:00.000Z"),
+    );
+    expect(collectSlaViolations(boundaryRoot, now).violations).not.toContainEqual(
+      expect.objectContaining({ agent: "product" }),
+    );
+
+    const futureRoot = mkdtempSync(join(tmpdir(), "gis-engine-clock-skew-future-"));
+    writeReport(
+      futureRoot,
+      "docs/research/competitor-updates-2026-W30.md",
+      evidenceReport("product", "specialist", "2026-07-21T03:05:00.001Z"),
+    );
+    expect(collectSlaViolations(futureRoot, now).violations).toContainEqual(
+      expect.objectContaining({
+        agent: "product",
+        code: "EVIDENCE.GENERATED_AT_FUTURE",
+        action: expect.stringContaining("generated_at"),
+      }),
+    );
+  });
+
+  it("fails required HOC when specialist generated_at is invalid", () => {
+    const root = mkdtempSync(join(tmpdir(), "gis-engine-hoc-invalid-specialist-time-"));
+    writeReport(
+      root,
+      "docs/research/competitor-updates-2026-W30.md",
+      evidenceReport("product", "specialist", "not-a-date"),
+    );
+    writeReport(
+      root,
+      "docs/planning/weekly-digest.md",
+      evidenceReport("orchestrator", "specialist", "2026-07-21T02:59:00Z"),
+    );
+
+    const hocN1 = buildHandoffLedger(root, { generatedAt: new Date("2026-07-21T03:00:00Z") }).flows.find(
+      (flow) => flow.id === "HOC-N1",
+    );
+    expect(hocN1).toMatchObject({
+      status: "invalid-upstream",
+      severity: "error",
+      code: "EVIDENCE.GENERATED_AT_INVALID",
+      action: expect.stringContaining("generated_at"),
+      upstream: null,
+    });
+  });
+
   it("keeps a required HOC consumed when a newer template follows fresh specialist evidence", () => {
     const root = mkdtempSync(join(tmpdir(), "gis-engine-hoc-specialist-selection-"));
     const specialistPath = "docs/research/competitor-updates-2026-W30-specialist.md";

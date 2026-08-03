@@ -92,4 +92,43 @@ evidence_kind: ${evidenceKind}
     });
     expect(dashboard).toContain("docs/research/competitor-updates-2026-W30-template.md");
   });
+
+  it("marks a 36-hour quality specialist report overdue in both health and SLA", () => {
+    const root = mkdtempSync(join(tmpdir(), "gis-engine-dashboard-quality-sla-"));
+    const reportPath = join(root, "docs/reviews/quality-gate-2026-07-19.md");
+    mkdirSync(dirname(reportPath), { recursive: true });
+    writeFileSync(
+      reportPath,
+      `---
+agent: quality
+period: 2026-07-19
+generated_at: 2026-07-19T15:00:00Z
+repo_revision: fixture
+inputs:
+  - fixture
+owner: "@quality"
+decision_level: blocking
+evidence_kind: specialist
+---
+# Quality specialist evidence
+`,
+      "utf8",
+    );
+    const now = new Date("2026-07-21T03:00:00Z");
+    const quality = computeHealthMetrics(root, now).find((metric) => metric.agent === "quality");
+
+    expect(quality).toMatchObject({ status: "overdue", evidenceKind: "specialist" });
+    expect(collectSlaViolations(root, now).violations).toContainEqual(
+      expect.objectContaining({
+        agent: "quality",
+        code: "EVIDENCE.SPECIALIST_STALE",
+        severity: "warning",
+      }),
+    );
+    if (!quality) throw new Error("expected quality health metric");
+    const dashboard = generateDashboard([quality], [], "2026-07-21", { root, generatedAt: now });
+    expect(dashboard).toContain("**健康 agent**: 0/1");
+    expect(dashboard).toContain("**问题 agent**: 1/1");
+    expect(dashboard).toContain("❌ breach");
+  });
 });

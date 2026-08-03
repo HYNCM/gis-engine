@@ -63,11 +63,9 @@ export function computeHealthMetrics(root = ROOT, now = new Date()) {
       const refDate = latest.generatedAt;
       ageDays = (now - refDate) / 86400000;
 
-      if (def.cadence === "daily" && ageDays > 2) status = "overdue";
-      else if (def.cadence === "weekly" && ageDays > 8) status = "overdue";
+      if (evidence.diagnostic?.code === "EVIDENCE.SPECIALIST_STALE") status = "overdue";
       else if (def.cadence === "ad-hoc") status = "ok";
-      else if (ageDays < 1) status = "fresh";
-      else status = "ok";
+      else status = "fresh";
     } else if (evidence.latestTemplate) {
       status = "template-only";
       ageDays = (now - evidence.latestTemplate.generatedAt) / 86400000;
@@ -202,7 +200,7 @@ export function generateDashboard(metrics, anomalies, period, options = {}) {
     if (!agentDef?.slaMaxHours) continue;
     const maxDays = agentDef.slaMaxHours / 24;
     const desc = agentDef.cadence === "daily" ? "每日 00:00 UTC" : "周一 00:00 UTC";
-    const compliant = m.evidenceKind !== "template" && m.ageDays !== null && m.ageDays <= maxDays;
+    const compliant = m.evidenceKind === "specialist" && m.ageDays !== null && m.status !== "overdue";
     const icon = compliant ? "✅" : "❌";
     const ageStr = m.ageDays !== null ? `${m.ageDays}d` : "missing";
     lines.push(`| @${m.agent} | ${desc} | ${maxDays}d | ${ageStr} | ${icon} ${compliant ? "compliant" : "breach"} |`);
