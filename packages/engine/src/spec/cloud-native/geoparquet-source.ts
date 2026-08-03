@@ -1,41 +1,98 @@
 import { type Static, Type } from "@sinclair/typebox";
 
+const ProjJsonSchema = Type.Union([
+  Type.Record(Type.String({ minLength: 1 }), Type.Unknown(), { minProperties: 1 }),
+  Type.Null(),
+]);
+
+const Bbox2dSchema = Type.Tuple([Type.Number(), Type.Number(), Type.Number(), Type.Number()]);
+const Bbox3dSchema = Type.Tuple([
+  Type.Number(),
+  Type.Number(),
+  Type.Number(),
+  Type.Number(),
+  Type.Number(),
+  Type.Number(),
+]);
+const Bbox3dMeasuredSchema = Type.Tuple([
+  Type.Number(),
+  Type.Number(),
+  Type.Number(),
+  Type.Number(),
+  Type.Number(),
+  Type.Number(),
+  Type.Number(),
+  Type.Number(),
+]);
+
+const GeoParquet11EncodingSchema = Type.Union([
+  Type.Literal("WKB"),
+  Type.Literal("point"),
+  Type.Literal("linestring"),
+  Type.Literal("polygon"),
+  Type.Literal("multipoint"),
+  Type.Literal("multilinestring"),
+  Type.Literal("multipolygon"),
+]);
+
+const GeoParquetCoveringSchema = Type.Object(
+  {
+    bbox: Type.Object(
+      {
+        xmin: Type.Tuple([Type.String({ minLength: 1 }), Type.Literal("xmin")]),
+        xmax: Type.Tuple([Type.String({ minLength: 1 }), Type.Literal("xmax")]),
+        ymin: Type.Tuple([Type.String({ minLength: 1 }), Type.Literal("ymin")]),
+        ymax: Type.Tuple([Type.String({ minLength: 1 }), Type.Literal("ymax")]),
+      },
+      { additionalProperties: false },
+    ),
+  },
+  { additionalProperties: false },
+);
+
+export const GeoParquet11MetadataSchema = Type.Object(
+  {
+    releaseIdentity: Type.Literal("1.1.0"),
+    geoVersion: Type.Literal("1.1.0"),
+    encoding: GeoParquet11EncodingSchema,
+    crs: Type.Optional(ProjJsonSchema),
+    bbox: Type.Optional(Type.Union([Bbox2dSchema, Bbox3dSchema])),
+    covering: Type.Optional(GeoParquetCoveringSchema),
+  },
+  { additionalProperties: false },
+);
+
+export const GeoParquet20Rc1MetadataSchema = Type.Object(
+  {
+    releaseIdentity: Type.Literal("2.0.0-rc.1"),
+    geoVersion: Type.Literal("2.0.0"),
+    encoding: Type.Literal("WKB"),
+    logicalType: Type.Union([Type.Literal("GEOMETRY"), Type.Literal("GEOGRAPHY")]),
+    crs: Type.Optional(ProjJsonSchema),
+    bbox: Type.Optional(Type.Union([Bbox2dSchema, Bbox3dSchema, Bbox3dMeasuredSchema])),
+    rowGroupStatistics: Type.Object(
+      {
+        bbox: Type.Boolean(),
+        geometryTypes: Type.Boolean(),
+      },
+      { additionalProperties: false },
+    ),
+  },
+  { additionalProperties: false },
+);
+
+export const GeoParquetSourceMetadataSchema = Type.Union([GeoParquet11MetadataSchema, GeoParquet20Rc1MetadataSchema]);
+
 const GeoParquetSourceProperties = {
   type: Type.Literal("geoparquet"),
-  /** URL to the GeoParquet file */
+  /** URL is policy-validated, but this metadata-only boundary never fetches it. */
   url: Type.String({ minLength: 1 }),
-  /** CRS metadata */
-  crs: Type.Optional(
-    Type.Object({
-      /** CRS authority code, e.g. "EPSG:4326" */
-      authority: Type.Optional(Type.String()),
-      /** CRS code, e.g. "4326" */
-      code: Type.Optional(Type.String()),
-      /** CRS WKT (for custom projections) */
-      wkt: Type.Optional(Type.String()),
-    }),
-  ),
-  /** Geometry encoding */
-  encoding: Type.Optional(
-    Type.Union([
-      Type.Literal("WKB"),
-      Type.Literal("WKT"),
-      Type.Literal("geoarrow-point"),
-      Type.Literal("geoarrow-linestring"),
-      Type.Literal("geoarrow-polygon"),
-      Type.Literal("geoarrow-multipoint"),
-      Type.Literal("geoarrow-multilinestring"),
-      Type.Literal("geoarrow-multipolygon"),
-    ]),
-  ),
-  /** Bounding box [west, south, east, north] */
-  bbox: Type.Optional(Type.Tuple([Type.Number(), Type.Number(), Type.Number(), Type.Number()])),
-  /** Row count metadata */
+  /** Exact readiness release identity and version-specific metadata evidence. */
+  metadata: GeoParquetSourceMetadataSchema,
+  /** Row count metadata. */
   rowCount: Type.Optional(Type.Integer({ minimum: 0 })),
-  /** File byte size */
+  /** File byte size metadata. */
   fileBytes: Type.Optional(Type.Integer({ minimum: 0 })),
-  /** Parquet schema version */
-  parquetVersion: Type.Optional(Type.Union([Type.Literal(1), Type.Literal(2)])),
 } as const;
 
 function createGeoParquetSourceSchema(id?: string) {
@@ -46,22 +103,20 @@ function createGeoParquetSourceSchema(id?: string) {
 }
 
 /**
- * GeoParquet source schema contract.
- * Defines the metadata schema for GeoParquet sources.
- * Runtime loading/query remains blocked -- this is a schema/policy contract only.
+ * Version-aware GeoParquet metadata-readiness contract.
+ * Runtime loading/query remains blocked; this schema never implies parser support.
  */
 export const GeoParquetSourceSchema = createGeoParquetSourceSchema("GeoParquetSourceSpec");
 
-/**
- * GeoParquet schema variant without an `$id` for embedding inside MapSpecSchema.
- */
+/** GeoParquet schema variant without an `$id` for embedding inside MapSpecSchema. */
 export const GeoParquetSourceSchemaForMapSpec = createGeoParquetSourceSchema();
 
+export type GeoParquet11Metadata = Static<typeof GeoParquet11MetadataSchema>;
+export type GeoParquet20Rc1Metadata = Static<typeof GeoParquet20Rc1MetadataSchema>;
+export type GeoParquetSourceMetadata = Static<typeof GeoParquetSourceMetadataSchema>;
 export type GeoParquetSourceSpec = Static<typeof GeoParquetSourceSchema>;
 
-/**
- * GeoParquet resource policy.
- */
+/** GeoParquet resource policy. */
 export const GeoParquetPolicySchema = Type.Object(
   {
     maxFileBytes: Type.Optional(Type.Integer({ minimum: 0 })),

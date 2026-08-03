@@ -238,10 +238,14 @@ describe("source readiness report", () => {
         parcels: {
           type: "geoparquet",
           url: "./data/parcels.parquet",
-          crs: { authority: "EPSG", code: "4326" },
-          encoding: "WKB",
+          metadata: {
+            releaseIdentity: "1.1.0",
+            geoVersion: "1.1.0",
+            encoding: "WKB",
+            crs: { type: "GeographicCRS", name: "WGS 84 longitude-latitude" },
+            bbox: [-123, 37, -122, 38],
+          },
           rowCount: 42,
-          bbox: [-123, 37, -122, 38],
         },
       },
       layers: [],

@@ -13,8 +13,12 @@ import {
   validateGeoParquetPolicy,
   validateGeoTiffPolicy,
   validatePMTilesArchivePolicy,
+  validateSpec,
 } from "@gis-engine/engine";
 import { describe, expect, it } from "vitest";
+import invalidAmbiguousGeoParquet from "../fixtures/geoparquet/invalid-ambiguous.json";
+import validGeoParquet11 from "../fixtures/geoparquet/valid-1.1.json";
+import validGeoParquet20Rc1 from "../fixtures/geoparquet/valid-2.0-rc.1.json";
 
 describe("CNS-001: PMTiles archive policy validation", () => {
   it("accepts valid PMTiles v3 archive metadata", () => {
@@ -219,49 +223,206 @@ describe("CNS-001 runtime load plan: PMTiles URL-compatible delivery", () => {
 });
 
 describe("CNS-002: GeoParquet policy validation", () => {
-  it("accepts valid GeoParquet metadata and reports runtime-blocked", () => {
-    const source: GeoParquetSourceSpec = {
-      type: "geoparquet",
-      url: "https://localhost/data.parquet",
-      bbox: [-180, -90, 180, 90],
-      encoding: "WKB",
-      crs: { authority: "EPSG", code: "4326" },
-      rowCount: 1000,
-      fileBytes: 1_000_000,
-    };
+  it.each([
+    ["1.1.0", validGeoParquet11],
+    ["2.0.0-rc.1", validGeoParquet20Rc1],
+  ])("accepts explicit GeoParquet %s metadata and remains runtime-blocked", (_version, fixture) => {
+    const source = fixture as GeoParquetSourceSpec;
     const diagnostics = validateGeoParquetPolicy(source);
+
     expect(diagnostics).toContainEqual(
       expect.objectContaining({
-        code: "CAPABILITY.UNSUPPORTED",
+        code: DiagnosticCodes.CapabilityUnsupported,
         path: "/sources/geoparquet/runtime",
       }),
     );
-    // Should have no errors -- only the runtime-blocked warning
-    expect(diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    expect(diagnostics.filter((diagnostic) => diagnostic.severity === "error")).toEqual([]);
+
+    const report = validateSpec({
+      version: "0.1",
+      view: { center: [0, 0], zoom: 1 },
+      sources: { data: fixture },
+      layers: [],
+    });
+    expect(report.valid).toBe(true);
+  });
+
+  it("fails closed when version identity is missing", () => {
+    const diagnostics = validateGeoParquetPolicy({
+      type: "geoparquet",
+      url: "./data.parquet",
+      metadata: { geoVersion: "1.1.0", encoding: "WKB" },
+    });
+
+    expect(diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: "GEOPARQUET.VERSION_REQUIRED",
+        path: "/sources/geoparquet/metadata/releaseIdentity",
+        severity: "error",
+      }),
+    );
+  });
+
+  it("explains legacy top-level metadata while requiring an exact version", () => {
+    const diagnostics = validateGeoParquetPolicy({
+      type: "geoparquet",
+      url: "./data.parquet",
+      parquetVersion: 1,
+      encoding: "WKB",
+    });
+
+    expect(diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "GEOPARQUET.VERSION_REQUIRED",
+          path: "/sources/geoparquet/metadata/releaseIdentity",
+        }),
+        expect.objectContaining({
+          code: "GEOPARQUET.METADATA_AMBIGUOUS",
+          path: "/sources/geoparquet/metadata",
+        }),
+      ]),
+    );
+  });
+
+  it("fails closed for unsupported version identities", () => {
+    const diagnostics = validateGeoParquetPolicy({
+      type: "geoparquet",
+      url: "./data.parquet",
+      metadata: { releaseIdentity: "2.0.0", geoVersion: "2.0.0", encoding: "WKB" },
+    });
+
+    expect(diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: "GEOPARQUET.VERSION_UNSUPPORTED",
+        path: "/sources/geoparquet/metadata/releaseIdentity",
+        severity: "error",
+      }),
+    );
+  });
+
+  it("rejects a raw geo version that does not match the reviewed release", () => {
+    const diagnostics = validateGeoParquetPolicy({
+      ...validGeoParquet20Rc1,
+      metadata: { ...validGeoParquet20Rc1.metadata, geoVersion: "2.0.0-rc.1" },
+    });
+
+    expect(diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: "GEOPARQUET.METADATA_INCOMPATIBLE",
+        path: "/sources/geoparquet/metadata/geoVersion",
+        severity: "error",
+      }),
+    );
+  });
+
+  it("fails closed for mixed-version metadata", () => {
+    const diagnostics = validateGeoParquetPolicy(invalidAmbiguousGeoParquet);
+
+    expect(diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: "GEOPARQUET.METADATA_AMBIGUOUS",
+        path: "/sources/geoparquet/metadata",
+        severity: "error",
+      }),
+    );
+
+    const report = validateSpec({
+      version: "0.1",
+      view: { center: [0, 0], zoom: 1 },
+      sources: { data: invalidAmbiguousGeoParquet },
+      layers: [],
+    });
+    expect(report.valid).toBe(false);
+  });
+
+  it.each([
+    [
+      "1.1 covering under 2.0 RC",
+      {
+        type: "geoparquet",
+        url: "./data.parquet",
+        metadata: {
+          releaseIdentity: "2.0.0-rc.1",
+          geoVersion: "2.0.0",
+          encoding: "WKB",
+          covering: validGeoParquet11.metadata.covering,
+        },
+      },
+      "/sources/geoparquet/metadata/covering",
+    ],
+    [
+      "2.0 logical type under 1.1",
+      {
+        type: "geoparquet",
+        url: "./data.parquet",
+        metadata: {
+          releaseIdentity: "1.1.0",
+          geoVersion: "1.1.0",
+          encoding: "WKB",
+          logicalType: "GEOMETRY",
+        },
+      },
+      "/sources/geoparquet/metadata/logicalType",
+    ],
+    [
+      "GeoArrow encoding under 2.0 RC",
+      {
+        type: "geoparquet",
+        url: "./data.parquet",
+        metadata: {
+          releaseIdentity: "2.0.0-rc.1",
+          geoVersion: "2.0.0",
+          encoding: "point",
+          logicalType: "GEOMETRY",
+        },
+      },
+      "/sources/geoparquet/metadata/encoding",
+    ],
+  ])("reports stable incompatible metadata for %s", (_name, source, path) => {
+    expect(validateGeoParquetPolicy(source)).toContainEqual(
+      expect.objectContaining({
+        code: "GEOPARQUET.METADATA_INCOMPATIBLE",
+        path,
+        severity: "error",
+      }),
+    );
+  });
+
+  it("handles unknown input without throwing and keeps runtime blocked", () => {
+    const diagnostics = validateGeoParquetPolicy(null);
+
+    expect(diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: DiagnosticCodes.CapabilityUnsupported, path: "/sources/geoparquet/runtime" }),
+        expect.objectContaining({
+          code: "GEOPARQUET.VERSION_REQUIRED",
+          path: "/sources/geoparquet/metadata/releaseIdentity",
+        }),
+      ]),
+    );
   });
 
   it("rejects empty URL", () => {
-    const source: GeoParquetSourceSpec = { type: "geoparquet", url: "" };
+    const source = { ...validGeoParquet11, url: "" } as GeoParquetSourceSpec;
     const diagnostics = validateGeoParquetPolicy(source);
     expect(diagnostics).toContainEqual(expect.objectContaining({ path: "/sources/geoparquet/url", severity: "error" }));
   });
 
   it("rejects invalid bbox coordinates", () => {
     const source: GeoParquetSourceSpec = {
-      type: "geoparquet",
-      url: "data.parquet",
-      bbox: [-200, -100, 200, 100],
+      ...validGeoParquet11,
+      metadata: { ...validGeoParquet11.metadata, bbox: [-200, -100, 200, 100] },
     };
     const diagnostics = validateGeoParquetPolicy(source);
     expect(diagnostics).toContainEqual(
-      expect.objectContaining({ path: "/sources/geoparquet/bbox", severity: "error" }),
+      expect.objectContaining({ path: "/sources/geoparquet/metadata/bbox", severity: "error" }),
     );
   });
 
   it("rejects file exceeding byte limit", () => {
     const source: GeoParquetSourceSpec = {
-      type: "geoparquet",
-      url: "data.parquet",
+      ...validGeoParquet11,
       fileBytes: 2_000_000_000,
     };
     const diagnostics = validateGeoParquetPolicy(source);
@@ -272,8 +433,7 @@ describe("CNS-002: GeoParquet policy validation", () => {
 
   it("rejects row count exceeding limit", () => {
     const source: GeoParquetSourceSpec = {
-      type: "geoparquet",
-      url: "data.parquet",
+      ...validGeoParquet11,
       rowCount: 20_000_000,
     };
     const diagnostics = validateGeoParquetPolicy(source);
@@ -282,17 +442,17 @@ describe("CNS-002: GeoParquet policy validation", () => {
     );
   });
 
-  it("warns about non-EPSG CRS authority", () => {
-    const source: GeoParquetSourceSpec = {
-      type: "geoparquet",
-      url: "data.parquet",
-      crs: { authority: "IAU", code: "49900" },
+  it("rejects non-object CRS metadata", () => {
+    const source = {
+      ...validGeoParquet11,
+      metadata: { ...validGeoParquet11.metadata, crs: "EPSG:4326" },
     };
-    const diagnostics = validateGeoParquetPolicy(source);
-    expect(diagnostics).toContainEqual(
+
+    expect(validateGeoParquetPolicy(source)).toContainEqual(
       expect.objectContaining({
-        path: "/sources/geoparquet/crs/authority",
-        severity: "warning",
+        code: "GEOPARQUET.METADATA_INCOMPATIBLE",
+        path: "/sources/geoparquet/metadata/crs",
+        severity: "error",
       }),
     );
   });

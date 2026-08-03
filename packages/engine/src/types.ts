@@ -7,6 +7,7 @@
  * (e.g., internal helpers, callback signatures, individual command interfaces).
  */
 import type { Static } from "@sinclair/typebox";
+import type { GeoParquetSourceSchema } from "./spec/cloud-native/geoparquet-source.js";
 import type { MapCommandSchema } from "./spec/schemas/command.schema.js";
 import type { DiagnosticSchema } from "./spec/schemas/diagnostics.schema.js";
 import type {
@@ -108,28 +109,7 @@ export interface FlatGeobufSourceSpec {
   fileBytes?: number;
 }
 
-export interface GeoParquetSourceSpec {
-  type: "geoparquet";
-  url: string;
-  crs?: {
-    authority?: string;
-    code?: string;
-    wkt?: string;
-  };
-  encoding?:
-    | "WKB"
-    | "WKT"
-    | "geoarrow-point"
-    | "geoarrow-linestring"
-    | "geoarrow-polygon"
-    | "geoarrow-multipoint"
-    | "geoarrow-multilinestring"
-    | "geoarrow-multipolygon";
-  bbox?: [number, number, number, number];
-  rowCount?: number;
-  fileBytes?: number;
-  parquetVersion?: 1 | 2;
-}
+export type GeoParquetSourceSpec = Static<typeof GeoParquetSourceSchema>;
 
 export interface GeoTiffSourceSpec {
   type: "geotiff";

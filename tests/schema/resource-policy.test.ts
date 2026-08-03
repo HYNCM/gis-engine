@@ -67,6 +67,7 @@ describe("ResourcePolicy validation", () => {
     const raster = validateSpec(withRasterTile("file:///tmp/{z}/{x}/{y}.png"));
     const pmtiles = validateSpec(withPmtilesUrl("file:///tmp/parcels.pmtiles"));
     const flatgeobuf = validateSpec(withFlatGeobufUrl("file:///tmp/parcels.fgb"));
+    const geoparquet = validateSpec(withGeoParquetUrl("file:///tmp/parcels.parquet"));
     const geotiff = validateSpec(withGeoTiffUrl("file:///tmp/orthophoto.tif"));
     const vector = validateSpec(withVectorTile("file:///tmp/vector/{z}/{x}/{y}.pbf"));
 
@@ -83,6 +84,12 @@ describe("ResourcePolicy validation", () => {
       }),
     );
     expect(flatgeobuf.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: DiagnosticCodes.SecurityUrlBlocked,
+        path: "/sources/parcels/url",
+      }),
+    );
+    expect(geoparquet.diagnostics).toContainEqual(
       expect.objectContaining({
         code: DiagnosticCodes.SecurityUrlBlocked,
         path: "/sources/parcels/url",
@@ -340,6 +347,26 @@ function withGeoTiffUrl(url: string): MapSpec {
         source: "orthophoto",
       },
     ],
+  };
+}
+
+function withGeoParquetUrl(url: string): MapSpec {
+  return {
+    version: "0.1",
+    id: "resource-policy-geoparquet",
+    view: { center: [120, 30], zoom: 10 },
+    sources: {
+      parcels: {
+        type: "geoparquet",
+        url,
+        metadata: {
+          releaseIdentity: "1.1.0",
+          geoVersion: "1.1.0",
+          encoding: "WKB",
+        },
+      },
+    },
+    layers: [],
   };
 }
 

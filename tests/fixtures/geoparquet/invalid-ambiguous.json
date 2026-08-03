@@ -1,0 +1,22 @@
+{
+  "type": "geoparquet",
+  "url": "./data/parcels-ambiguous.parquet",
+  "metadata": {
+    "releaseIdentity": "2.0.0-rc.1",
+    "geoVersion": "2.0.0",
+    "encoding": "WKB",
+    "logicalType": "GEOMETRY",
+    "rowGroupStatistics": {
+      "bbox": true,
+      "geometryTypes": true
+    },
+    "covering": {
+      "bbox": {
+        "xmin": ["bbox", "xmin"],
+        "xmax": ["bbox", "xmax"],
+        "ymin": ["bbox", "ymin"],
+        "ymax": ["bbox", "ymax"]
+      }
+    }
+  }
+}
