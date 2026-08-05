@@ -27,9 +27,11 @@ not claim that MapLibre has been upgraded, and it must not be used as release
 evidence until the upgrade run records the proposed version, source URLs, checked
 dates, package diff, test output, and reviewer decision.
 
-Current package evidence: `package.json` declares `maplibre-gl` as `^5.24.0`.
-Before changing that range or the lockfile, run this checklist against the exact
-candidate version and keep the evidence with the PR or gate report.
+Current package evidence: the root and engine manifests declare `maplibre-gl`
+as `^5.0.0 || ^6.0.0`, while the lockfile resolves the release baseline to
+`5.24.0`. Before changing that range or the lockfile, run this checklist
+against the exact candidate version and keep the evidence with the PR or gate
+report.
 
 2026-06-01 closure note: `MLD-002` through `MLD-004` closed the current drift
 audit without package movement. PMTiles/vector delivery boundaries remain

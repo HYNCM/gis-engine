@@ -1,5 +1,9 @@
 # Migrating GeoParquet Versioned Metadata
 
+> **Unreleased:** This contract is not part of the published v1.5.0 package.
+> It is queued through a breaking engine changeset and must not be presented as
+> available until the matching package version is published.
+
 The GeoParquet source contract now requires exact, versioned metadata evidence.
 This is a breaking schema and TypeScript change for consumers that used the
 earlier optional top-level `parquetVersion`, `encoding`, `crs`, or `bbox`

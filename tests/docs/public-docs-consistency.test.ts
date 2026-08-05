@@ -312,6 +312,31 @@ describe("public docs consistency", () => {
     expect(migration).toMatch(/antimeridian/i);
   });
 
+  it("marks the breaking GeoParquet contract as unreleased and records its release vehicle", () => {
+    const migration = readText("docs/migration/geoparquet-versioned-metadata.md");
+    const releaseNotes = readText("docs/website/release-notes.md");
+    const engineApi = readText("docs/website/api/reference/engine/index.md");
+    const changesetPath = resolve(repoRoot, ".changeset/geoparquet-versioned-metadata.md");
+
+    expect(migration).toContain("Unreleased");
+    expect(migration).toContain("not part of the published v1.5.0 package");
+    expect(releaseNotes).toContain("## Unreleased");
+    expect(releaseNotes).toContain("GeoParquet versioned metadata");
+    expect(engineApi).toContain("Unreleased main-branch API");
+    expect(existsSync(changesetPath), "breaking GeoParquet contract should have a changeset").toBe(true);
+    if (existsSync(changesetPath)) {
+      expect(readText(".changeset/geoparquet-versioned-metadata.md")).toContain('"@gis-engine/engine": major');
+    }
+  });
+
+  it("distinguishes the MapLibre peer range from the resolved release baseline", () => {
+    const audit = readText("docs/engineering/maplibre-version-drift-audit.md");
+
+    expect(audit).toMatch(/declar(?:e|es) `maplibre-gl`\s+as `\^5\.0\.0 \|\| \^6\.0\.0`/);
+    expect(audit).toMatch(/lockfile resolves the release baseline to\s+`5\.24\.0`/);
+    expect(audit).not.toContain('declares `maplibre-gl` as `^5.24.0`');
+  });
+
   it("keeps generated engine and AI references off the legacy GeoParquet shape", () => {
     const apiReferences = collectMarkdownFiles(["docs/website/api/reference/engine", "docs/website/api/reference/ai"]);
 
