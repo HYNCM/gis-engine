@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-08-05T16:41:20.196Z",
-  "repo_revision": "661967f",
+  "generated_at": "2026-08-05T17:18:19.860Z",
+  "repo_revision": "23472d8",
   "source": "scripts/handoff-ledger.mjs",
-  "evidence_run_id": "planning-evidence-20260805T164120196Z",
+  "evidence_run_id": "planning-evidence-20260805T171819860Z",
   "issue_snapshot": {
     "source": "authenticated",
-    "open": 12,
-    "closed": 25,
-    "total": 37
+    "open": 3,
+    "closed": 35,
+    "total": 38
   },
   "flows": [
     {
@@ -28,8 +28,8 @@
       },
       "downstream": {
         "path": "docs/planning/weekly-digest.md",
-        "generated_at": "2026-08-05T16:20:00.000Z",
-        "sha256": "3236d337215487f9a87328beb5705d1ba61d8e881d8a8e9c517ef7d28e0d498e"
+        "generated_at": "2026-08-05T17:13:00.000Z",
+        "sha256": "d6e5cb00e1d7465450f425b5f2ec7967ee09a53fecb2db12d065ccdc103a43dd"
       },
       "latest_upstream_template": null,
       "latest_downstream_template": null
@@ -80,8 +80,8 @@
       },
       "downstream": {
         "path": "docs/planning/weekly-digest.md",
-        "generated_at": "2026-08-05T16:20:00.000Z",
-        "sha256": "3236d337215487f9a87328beb5705d1ba61d8e881d8a8e9c517ef7d28e0d498e"
+        "generated_at": "2026-08-05T17:13:00.000Z",
+        "sha256": "d6e5cb00e1d7465450f425b5f2ec7967ee09a53fecb2db12d065ccdc103a43dd"
       },
       "latest_upstream_template": {
         "path": "docs/reviews/quality-gate-2026-07-06.md",

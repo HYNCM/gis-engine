@@ -1,8 +1,8 @@
 ---
 agent: orchestrator
 period: 2026-08
-generated_at: 2026-08-05T16:20:00Z
-repo_revision: "5800a6d034898a17a94eb46a621ac52943d5919d"
+generated_at: 2026-08-05T17:13:00Z
+repo_revision: "23472d8050cad0178c49f85f045f488bd5aaaf41"
 inputs:
   - docs/research/competitor-updates-2026-W32.md
   - docs/research/capability-scorecard.md
@@ -37,18 +37,18 @@ evidence_kind: specialist
 
 Milestone: [2026 W32-W34 Compatibility and Evidence Integrity](https://github.com/HYNCM/gis-engine/milestone/2).
 
-| Priority | Issue | Branch result | Remote exit condition |
+| Priority | Issue | Final result | Remote evidence |
 | --- | --- | --- | --- |
-| P0 | #41 release truth | PASS | PR merged and issue closed |
-| P0 | #43 evidence/recovery integrity | PASS | merged-main manual recovery proves deduplication |
-| P1 | #38 MapLibre 6.1 matrix | PASS, keep baseline | PR merged and issue closed |
-| P1 | #40 MCP 2026-07-28 matrix | PASS, keep baseline | PR merged and issue closed |
-| P2 | #39 package budgets | PASS | PR merged and issue closed |
-| P2 | #42 GeoParquet version boundary | PASS, runtime No-go | PR merged and issue closed |
+| P0 | #41 release truth | PASS, CLOSED | PR #46 / main `23472d8` |
+| P0 | #43 evidence/recovery integrity | PASS, CLOSED | recovery run 31028265187 |
+| P1 | #38 MapLibre 6.1 matrix | PASS, CLOSED; keep baseline | PR #46 final-head matrix |
+| P1 | #40 MCP 2026-07-28 matrix | PASS, CLOSED; keep baseline | PR #46 final-head contract gate |
+| P2 | #39 package budgets | PASS, CLOSED | PR #46 bundle-size gate |
+| P2 | #42 GeoParquet version boundary | PASS, CLOSED; runtime No-go | PR #46 schema/quality gates |
 
-The stage exit is intentionally not checked off in this pre-merge snapshot.
-Local quality evidence cannot substitute for final-head CI, merged-main
-recovery behavior, canonical Issue state, or authenticated planning evidence.
+Milestone 2 is closed with zero open issues. Authenticated planning run
+`planning-evidence-20260805T171819860Z` records 3 open follow-ups, 35 closed
+issues, 2/2 required HOCs consumed, and 5/5 agents healthy.
 
 ## Next Queue
 
@@ -56,23 +56,24 @@ recovery behavior, canonical Issue state, or authenticated planning evidence.
 | ---: | --- | --- | --- |
 | 1 | #44 static inventory and dependency declarations | Open P1 follow-up | @builder / @quality |
 | 2 | #45 report-retention unit | Open P2 follow-up | @orchestrator + @builder + @docs / @quality |
+| 3 | #48 Release action runtime upgrade | Open P2 follow-up | @builder / @quality |
 | advisory | MCP 2026-07-28 v2 discovery/transport intake | Do not open implementation until milestone 2 closes and scope is approved | @product -> @orchestrator |
 | watch | GeoParquet 2.0 final contract delta | Trigger only when an official final tag exists | @product |
 | gated | PMTiles runtime or MapLibre default adoption | Separate issues only; no implicit promotion | @orchestrator / @quality |
 
-Reserve at least 20% of the next sprint for #44/#45 and other verified
+Reserve at least 20% of the next sprint for #44/#45/#48 and other verified
 infrastructure debt. Do not let the higher-scored MCP research bypass current
 release, security, schema, or evidence-integrity gates.
 
 ## August Exit Requirements
 
-- [ ] Merge final-head-green implementation PR for #38-#43.
-- [ ] Prove recovery incident deduplication on merged `main`, then reconcile
+- [x] Merge final-head-green implementation PR for #38-#43.
+- [x] Prove recovery incident deduplication on merged `main`, then reconcile
       historical duplicate issues #32-#35.
-- [ ] Close milestone 2 only when it has zero open issues.
-- [ ] Generate an authenticated post-merge issue snapshot, HOC ledger, and
+- [x] Close milestone 2 only when it has zero open issues.
+- [x] Generate an authenticated post-merge issue snapshot, HOC ledger, and
       health dashboard from one evidence run.
-- [ ] Keep #44/#45 open with explicit owners and no broad suppression or data
+- [x] Keep #44/#45/#48 open with explicit owners and no broad suppression or data
       deletion.
 
 ## Risks
@@ -81,6 +82,8 @@ release, security, schema, or evidence-integrity gates.
 | --- | --- | --- |
 | Stable upstream release is mistaken for default adoption | contained | Keep MapLibre 5.24.0 and MCP 2025-11-25 defaults explicit. |
 | GeoParquet metadata docs are mistaken for published v1.5/runtime support | contained | Breaking changeset plus unreleased notices; runtime remains blocked. |
-| Green branch evidence is mistaken for merged delivery | active until merge | Require final-head CI, merged-main workflow proof, and issue closure. |
+| Green branch evidence is mistaken for merged delivery | contained | PR #46 final-head CI, main workflows, recovery run, and Issue closure are recorded. |
+| Release automation cannot open its version PR | contained | Repository Actions PR permission enabled with default token still read; Release rerun created PR #47 and skipped npm publish. |
+| Release actions rely on deprecated Node 20 bundles | tracked in #48 | Upgrade action majors with release guardrails; do not combine with versioning or publication. |
 | Static inventory debt is hidden by ignore rules | tracked in #44 | Classify findings and forbid broad suppression. |
 | Retention cleanup deletes evidence under ambiguous policy | tracked in #45 | No deletion until the unit and boundary tests are approved. |

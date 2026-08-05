@@ -1,8 +1,8 @@
 ---
 agent: orchestrator
 period: 2026-W32-W34
-generated_at: 2026-08-05T16:20:00Z
-repo_revision: "5800a6d034898a17a94eb46a621ac52943d5919d"
+generated_at: 2026-08-05T17:13:00Z
+repo_revision: "23472d8050cad0178c49f85f045f488bd5aaaf41"
 inputs:
   - docs/research/competitor-updates-2026-W32.md
   - docs/research/capability-scorecard.md
@@ -29,21 +29,22 @@ evidence_kind: specialist
 
 ## Outcome
 
-Close milestone 2 by proving current compatibility and evidence boundaries
-without silently promoting a new protocol, renderer default, data runtime, or
-hosted product claim. The implementation branch is complete; remote delivery
-and post-merge reconciliation remain the only stage-exit work.
+Milestone 2 is closed after proving current compatibility and evidence
+boundaries without promoting a new protocol, renderer default, data runtime,
+hosted product claim, or package release. PR #46, merged-main workflows,
+recovery reconciliation, and authenticated planning evidence satisfy the full
+stage exit.
 
 ## Execution Results
 
-| Order | Issue | Implemented result | Quality | Remaining closure |
+| Order | Issue | Implemented result | Quality | Final closure |
 | ---: | --- | --- | --- | --- |
-| 1 | #41 | v1.5 release truth and ordered 14-tool inventory aligned | PASS | final-head CI, merge, close issue |
-| 2 | #43 | specialist freshness, fail-closed timestamps, incident deduplication, recovery reconciliation, and bounded push retry | PASS for code; current cadence blocked until merge | run recovery on merged main, reconcile #32-#35 |
-| 3 | #40 | executable MCP 2026-07-28 matrix with default unchanged | PASS, adoption No-go | merge and close issue |
-| 4 | #38 | real MapLibre 5.24.0/6.1.0 browser/query/worker/visual matrix | PASS, keep 5.24.0 | merge and close issue |
-| 5 | #42 | TypeBox/policy parity for exact GeoParquet 1.1/2.0-RC metadata and diagnostics | PASS, runtime No-go | merge and close issue |
-| 6 | #39 | reproducible clean-build gzip budgets from one structured policy | PASS | merge and close issue |
+| 1 | #41 | v1.5 release truth and ordered 14-tool inventory aligned | PASS | CLOSED by PR #46 |
+| 2 | #43 | specialist freshness, fail-closed timestamps, incident deduplication, recovery reconciliation, and bounded push retry | PASS | CLOSED; main recovery run 31028265187 |
+| 3 | #40 | executable MCP 2026-07-28 matrix with default unchanged | PASS, adoption No-go | CLOSED by PR #46 |
+| 4 | #38 | real MapLibre 5.24.0/6.1.0 browser/query/worker/visual matrix | PASS, keep 5.24.0 | CLOSED by PR #46 |
+| 5 | #42 | TypeBox/policy parity for exact GeoParquet 1.1/2.0-RC metadata and diagnostics | PASS, runtime No-go | CLOSED by PR #46 |
+| 6 | #39 | reproducible clean-build gzip budgets from one structured policy | PASS | CLOSED by PR #46 |
 
 ## Acceptance Evidence
 
@@ -62,7 +63,7 @@ and post-merge reconciliation remain the only stage-exit work.
       updates or reopens a canonical issue instead of creating duplicates.
 - [x] Scheduled planning push uses bounded fetch/rebase/push retry without
       force push.
-- [ ] Merged-main manual workflow run proves no new duplicate incident and
+- [x] Merged-main manual workflow run proves no new duplicate incident and
       permits #32-#35 reconciliation.
 
 ### MCP compatibility (#40)
@@ -110,8 +111,8 @@ and post-merge reconciliation remain the only stage-exit work.
 - [x] `pnpm size:check`
 - [x] `pnpm test:docs`
 - [x] Node 22 `scripts/release-preflight.mjs`
-- [ ] Final-head GitHub Actions checks
-- [ ] Authenticated post-merge planning evidence
+- [x] Final-head GitHub Actions checks
+- [x] Authenticated post-merge planning evidence
 
 `pnpm knip` correctly remains red on classified repository inventory debt; it
 is not hidden or broadened into this milestone. [#44](https://github.com/HYNCM/gis-engine/issues/44)
@@ -120,15 +121,13 @@ owns the independent retention-policy mismatch.
 
 ## Stage Exit Sequence
 
-1. Commit the synchronized specialist and planning evidence.
-2. Push `codex/w32-w34-completion` and open one PR closing #38-#43.
-3. Wait for every final-head GitHub Actions check and fix real failures without
-   weakening gates.
-4. Merge, then run Agent Failure Recovery manually on merged `main`.
-5. Reconcile #32-#35 from the workflow evidence and close milestone 2 only at
-   zero open milestone issues.
-6. Generate one authenticated issue snapshot, HOC ledger, and dashboard, then
-   publish the post-merge closeout through a small planning PR.
+1. [x] Commit the synchronized specialist and planning evidence.
+2. [x] Push `codex/w32-w34-completion` and open PR #46 closing #38-#43.
+3. [x] Require every final-head GitHub Actions check without weakening gates.
+4. [x] Merge as `23472d8` and run Agent Failure Recovery on merged `main`.
+5. [x] Reconcile #32-#35 and close milestone 2 at zero open issues.
+6. [x] Generate authenticated issue/HOC/dashboard evidence run
+   `planning-evidence-20260805T171819860Z` and publish this planning closeout.
 
 ## Guardrails
 

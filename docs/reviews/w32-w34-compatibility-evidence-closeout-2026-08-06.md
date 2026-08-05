@@ -1,8 +1,8 @@
 ---
 agent: orchestrator
 period: 2026-08-06
-generated_at: 2026-08-05T16:20:00Z
-repo_revision: "5800a6d034898a17a94eb46a621ac52943d5919d"
+generated_at: 2026-08-05T17:13:00Z
+repo_revision: "23472d8050cad0178c49f85f045f488bd5aaaf41"
 inputs:
   - docs/research/competitor-updates-2026-W32.md
   - docs/reviews/release-truth-quality-decision-2026-08-03.md
@@ -16,27 +16,33 @@ inputs:
   - docs/planning/handoff-ledger.json
   - docs/planning/AGENT_HEALTH_DASHBOARD.md
   - https://github.com/HYNCM/gis-engine/milestone/2
+  - https://github.com/HYNCM/gis-engine/pull/46
+  - https://github.com/HYNCM/gis-engine/actions/runs/31027254395
+  - https://github.com/HYNCM/gis-engine/actions/runs/31027274769
+  - https://github.com/HYNCM/gis-engine/actions/runs/31028265187
+  - https://github.com/HYNCM/gis-engine/actions/runs/31028166943
 owner: "@orchestrator"
 decision_level: blocking
 evidence_kind: specialist
-gate_result: pending-remote
+gate_result: pass
 ---
 
 # W32-W34 Compatibility And Evidence Closeout
 
 ## Current Decision
 
-**LOCAL/BRANCH PASS; REMOTE CLOSEOUT PENDING.** Issues #38-#43 satisfy their
-bounded implementation and quality contracts on `codex/w32-w34-completion`.
-This report does not yet claim merged-main delivery, issue closure, milestone
-closure, package publication, or current scheduled-cadence success.
+**FINAL PASS.** PR #46 merged the reviewed implementation as `23472d8` after
+all final-head checks passed. Issues #38-#43 and milestone 2 are closed,
+merged-main recovery run 31028265187 passed without creating another duplicate
+incident, #32-#35 are reconciled, and authenticated planning run
+`planning-evidence-20260805T171819860Z` records the final canonical state.
 
 ## Requirement Audit
 
 | Requirement | Authoritative evidence | Decision |
 | --- | --- | --- |
 | Public v1.5 release truth | release notes, docs consistency tests, Node 22 preflight, #41 quality report | PASS |
-| Specialist evidence and recovery integrity | framework/recovery/push-retry tests, #43 quality report | PASS in code; merged-main workflow proof pending |
+| Specialist evidence and recovery integrity | framework/recovery/push-retry tests, #43 quality report, main run 31028265187 | PASS deployed |
 | MCP 2026-07-28 compatibility | official-source RFC, SDK descriptor validation, live 14-tool test, #40 quality report | PASS; keep 2025-11-25 |
 | MapLibre 5.24.0/6.1.0 compatibility | native exact installs, Chromium/query/worker/resource/visual artifacts, #38 quality report | PASS; keep 5.24.0 |
 | GeoParquet 1.1/2.0-RC boundary | TypeBox/Ajv and policy parity, fixtures, public types/docs, #42 quality report | PASS; runtime No-go |
@@ -67,6 +73,25 @@ matrix passed both 5.24.0 and 6.1.0 with native installs and strict visual
 evidence. The MCP live descriptor test retained all 14 canonical tools on
 2025-11-25.
 
+## Remote Closure Evidence
+
+- PR #46 final head `24d5e1d` passed CI, MapLibre 5.24.0/6.1.0, bundle size,
+  schema diff, path-aware quality, auto-fix diagnostics, and Linux/macOS Node
+  matrices before merge.
+- Merge commit `23472d8` reached `main`; merged-main CI, Deploy Docs, Bundle
+  Size, and Agent Daily Cadence completed successfully.
+- Agent Failure Recovery run 31028265187 completed successfully on `23472d8`
+  and created no new agent-escalation issue.
+- #38-#43 are closed; milestone 2 is closed with 0 open / 6 closed.
+- #32 is the closed canonical historical incident; #33-#35 are closed
+  duplicates with evidence comments.
+- The first Release attempt exposed repository Actions PR permission drift.
+  After explicit authorization, the default token remained `read`, PR creation
+  was enabled, and run 31028166943 succeeded. It created Version Packages PR
+  #47 and skipped npm publication.
+- Planning evidence run `planning-evidence-20260805T171819860Z` reports 3 open
+  follow-ups, 35 closed issues, HOC-N1/N2/N3 consumed, and 5/5 agents healthy.
+
 ## Release And Capability Boundaries
 
 - The GeoParquet metadata change has a pending major engine changeset. Because
@@ -78,18 +103,13 @@ evidence. The MCP live descriptor test retained all 14 canonical tools on
 - GeoParquet and PMTiles runtime archive load/query remain blocked.
 - Hosted Workbench GA and stable SceneView3D remain blocked.
 
-## Required Before Final PASS
+## Residual Queue
 
-1. Push the exact final branch head and open a PR that closes #38-#43.
-2. Require all GitHub Actions checks on that final head to complete without a
-   blocking failure.
-3. Merge the PR and exercise Agent Failure Recovery from merged `main`.
-4. Reconcile #32-#35 only after deterministic incident readback proves the
-   deduplication behavior.
-5. Confirm #38-#43 are closed and milestone 2 has zero open issues.
-6. Generate one authenticated post-merge planning evidence run and update this
-   report with PR, merge SHA, workflow run, issue, milestone, HOC, and dashboard
-   evidence.
-
-Until all six items are evidenced, `gate_result: pending-remote` remains the
-only defensible decision.
+1. #44 owns the static inventory/dependency declaration debt and forbids broad
+   suppression.
+2. #45 owns the seven-days versus seven-files retention mismatch and
+   authorizes no deletion.
+3. PR #47 is a pending version proposal, not authorization to merge, version,
+   publish, or change any package dist-tag.
+4. #48 owns the Release workflow Actions v4/Node 20 deprecation cleanup; it
+   did not block the restored release run and cannot authorize publication.

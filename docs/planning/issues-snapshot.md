@@ -1,15 +1,15 @@
 ---
 agent: orchestrator
 period: issue-snapshot
-generated_at: 2026-08-05T16:41:20.196Z
-repo_revision: "661967f"
+generated_at: 2026-08-05T17:18:19.860Z
+repo_revision: "23472d8"
 inputs:
   - GitHub Issues API
 owner: "@orchestrator"
 decision_level: info
 issue_source: authenticated
-source_updated_at: 2026-08-05T16:17:25Z
-evidence_run_id: planning-evidence-20260805T164120196Z
+source_updated_at: 2026-08-05T17:17:39Z
+evidence_run_id: planning-evidence-20260805T171819860Z
 ---
 
 # GitHub Issues Planning Snapshot
@@ -18,26 +18,27 @@ evidence_run_id: planning-evidence-20260805T164120196Z
 
 ## Summary
 
-- Open issues: 12
-- Closed issues in snapshot: 25
-- Total returned: 37
+- Open issues: 3
+- Closed issues in snapshot: 35
+- Total returned: 38
 
 ## Issues
 
 | Issue | State | Title | Labels | Assignees | Milestone | Updated |
 | --- | --- | --- | --- | --- | --- | --- |
+| #48 | OPEN | [TASK-2026W35-GOV-003: Upgrade Release workflow actions off deprecated Node 20 runtime](https://github.com/HYNCM/gis-engine/issues/48) | priority:p2, agent:quality, agent:builder, automation | - | - | 2026-08-05T17:17:39Z |
 | #45 | OPEN | [TASK-2026W35-GOV-002: Resolve rolling-report retention unit](https://github.com/HYNCM/gis-engine/issues/45) | documentation, priority:p2, agent:quality, agent:builder, automation | - | - | 2026-08-05T16:17:25Z |
 | #44 | OPEN | [TASK-2026W35-GOV-001: Reconcile static inventory and dependency declarations](https://github.com/HYNCM/gis-engine/issues/44) | agent:quality, agent:builder, priority:p1, automation | - | - | 2026-08-05T16:09:10Z |
-| #43 | OPEN | [TASK-2026W32-GOV-001: Make scheduled agent evidence actionable and deduplicate recovery incidents](https://github.com/HYNCM/gis-engine/issues/43) | enhancement, agent:quality, agent:builder, automation, priority:p0 | - | 2026 W32-W34 Compatibility and Evidence Integrity | 2026-08-03T14:40:35Z |
-| #42 | OPEN | [TASK-2026W34-DATA-001: Define GeoParquet 1.1 and 2.0 RC readiness boundaries](https://github.com/HYNCM/gis-engine/issues/42) | documentation, enhancement, agent:product, priority:p2, track:productization, agent:quality, agent:builder | - | 2026 W32-W34 Compatibility and Evidence Integrity | 2026-08-03T14:40:29Z |
-| #41 | OPEN | [TASK-2026W32-DOC-001: Align v1.5 release truth and public MCP inventory](https://github.com/HYNCM/gis-engine/issues/41) | documentation, track:productization, agent:quality, agent:builder, priority:p0 | - | 2026 W32-W34 Compatibility and Evidence Integrity | 2026-08-03T14:40:28Z |
-| #40 | OPEN | [TASK-2026W32-AI-001: Gate MCP 2026-07-28 compatibility without changing the default](https://github.com/HYNCM/gis-engine/issues/40) | enhancement, agent:product, track:productization, agent:quality, agent:builder, priority:p1 | - | 2026 W32-W34 Compatibility and Evidence Integrity | 2026-08-03T14:40:28Z |
-| #39 | OPEN | [TASK-2026W34-GOV-002: Converge package bundle budgets on one source](https://github.com/HYNCM/gis-engine/issues/39) | enhancement, priority:p2, agent:quality, agent:builder, automation | - | 2026 W32-W34 Compatibility and Evidence Integrity | 2026-08-03T14:40:28Z |
-| #38 | OPEN | [TASK-2026W33-2D-001: Gate MapLibre 6.1 stable compatibility and promotion](https://github.com/HYNCM/gis-engine/issues/38) | enhancement, track:productization, agent:quality, agent:builder, priority:p1 | - | 2026 W32-W34 Compatibility and Evidence Integrity | 2026-08-03T14:40:28Z |
-| #35 | OPEN | [Agent Escalation: Workflow failure detected](https://github.com/HYNCM/gis-engine/issues/35) | agent-escalation, automation | - | - | 2026-07-20T19:52:11Z |
-| #34 | OPEN | [Agent Escalation: Workflow failure detected](https://github.com/HYNCM/gis-engine/issues/34) | agent-escalation, automation | - | - | 2026-07-20T14:23:59Z |
-| #33 | OPEN | [Agent Escalation: Workflow failure detected](https://github.com/HYNCM/gis-engine/issues/33) | agent-escalation, automation | - | - | 2026-07-20T09:29:03Z |
-| #32 | OPEN | [Agent Escalation: Workflow failure detected](https://github.com/HYNCM/gis-engine/issues/32) | agent-escalation, automation | - | - | 2026-07-20T03:44:54Z |
+| #43 | CLOSED | [TASK-2026W32-GOV-001: Make scheduled agent evidence actionable and deduplicate recovery incidents](https://github.com/HYNCM/gis-engine/issues/43) | enhancement, agent:quality, agent:builder, automation, priority:p0 | - | 2026 W32-W34 Compatibility and Evidence Integrity | 2026-08-05T17:02:49Z |
+| #42 | CLOSED | [TASK-2026W34-DATA-001: Define GeoParquet 1.1 and 2.0 RC readiness boundaries](https://github.com/HYNCM/gis-engine/issues/42) | documentation, enhancement, agent:product, priority:p2, track:productization, agent:quality, agent:builder | - | 2026 W32-W34 Compatibility and Evidence Integrity | 2026-08-05T17:02:51Z |
+| #41 | CLOSED | [TASK-2026W32-DOC-001: Align v1.5 release truth and public MCP inventory](https://github.com/HYNCM/gis-engine/issues/41) | documentation, track:productization, agent:quality, agent:builder, priority:p0 | - | 2026 W32-W34 Compatibility and Evidence Integrity | 2026-08-05T17:02:50Z |
+| #40 | CLOSED | [TASK-2026W32-AI-001: Gate MCP 2026-07-28 compatibility without changing the default](https://github.com/HYNCM/gis-engine/issues/40) | enhancement, agent:product, track:productization, agent:quality, agent:builder, priority:p1 | - | 2026 W32-W34 Compatibility and Evidence Integrity | 2026-08-05T17:02:50Z |
+| #39 | CLOSED | [TASK-2026W34-GOV-002: Converge package bundle budgets on one source](https://github.com/HYNCM/gis-engine/issues/39) | enhancement, priority:p2, agent:quality, agent:builder, automation | - | 2026 W32-W34 Compatibility and Evidence Integrity | 2026-08-05T17:02:49Z |
+| #38 | CLOSED | [TASK-2026W33-2D-001: Gate MapLibre 6.1 stable compatibility and promotion](https://github.com/HYNCM/gis-engine/issues/38) | enhancement, track:productization, agent:quality, agent:builder, priority:p1 | - | 2026 W32-W34 Compatibility and Evidence Integrity | 2026-08-05T17:02:48Z |
+| #35 | CLOSED | [Agent Escalation: Workflow failure detected](https://github.com/HYNCM/gis-engine/issues/35) | agent-escalation, automation | - | - | 2026-08-05T17:05:34Z |
+| #34 | CLOSED | [Agent Escalation: Workflow failure detected](https://github.com/HYNCM/gis-engine/issues/34) | agent-escalation, automation | - | - | 2026-08-05T17:05:34Z |
+| #33 | CLOSED | [Agent Escalation: Workflow failure detected](https://github.com/HYNCM/gis-engine/issues/33) | agent-escalation, automation | - | - | 2026-08-05T17:05:33Z |
+| #32 | CLOSED | [Agent Escalation: Workflow failure detected](https://github.com/HYNCM/gis-engine/issues/32) | agent-escalation, automation | - | - | 2026-08-05T17:05:31Z |
 | #30 | CLOSED | [TASK-2026W29-GOV-001: Make agent planning evidence fail closed](https://github.com/HYNCM/gis-engine/issues/30) | enhancement, priority:p2, agent:quality, agent:builder, automation | - | 2026 W29-W30 Contract Convergence | 2026-07-21T16:36:07Z |
 | #29 | CLOSED | [TASK-2026W30-2D-001: Build MapLibre v5-v6 compatibility matrix](https://github.com/HYNCM/gis-engine/issues/29) | enhancement, track:productization, agent:quality, agent:builder, priority:p1 | - | 2026 W29-W30 Contract Convergence | 2026-07-21T16:36:06Z |
 | #28 | CLOSED | [TASK-2026W29-DATA-001: Reconcile PMTiles runtime capability truth](https://github.com/HYNCM/gis-engine/issues/28) | enhancement, track:productization, agent:quality, agent:builder, priority:p1 | - | 2026 W29-W30 Contract Convergence | 2026-07-21T16:36:06Z |

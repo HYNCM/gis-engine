@@ -1,8 +1,8 @@
 ---
 agent: orchestrator
 period: 2026-W32
-generated_at: 2026-08-05T16:20:00Z
-repo_revision: "5800a6d034898a17a94eb46a621ac52943d5919d"
+generated_at: 2026-08-05T17:13:00Z
+repo_revision: "23472d8050cad0178c49f85f045f488bd5aaaf41"
 inputs:
   - docs/research/competitor-updates-2026-W32.md
   - docs/research/capability-scorecard.md
@@ -16,6 +16,8 @@ inputs:
   - docs/planning/issues-snapshot.md
   - docs/planning/next-step-plan.md
   - https://github.com/HYNCM/gis-engine/milestone/2
+  - https://github.com/HYNCM/gis-engine/pull/46
+  - https://github.com/HYNCM/gis-engine/actions/runs/31028265187
 owner: "@orchestrator"
 decision_level: advisory
 evidence_kind: specialist
@@ -25,20 +27,20 @@ evidence_kind: specialist
 
 ## W32-W34 Gate Decision
 
-Implementation for issues #38 through #43 is complete on
-`codex/w32-w34-completion`. Each issue has bounded builder evidence, an
-independent quality PASS, and the required local deterministic or browser
-gate. This is a **pre-merge decision**: the issues and milestone remain open
-until the final branch head passes GitHub Actions and lands on `main`.
+**FINAL PASS.** PR #46 merged the exact reviewed head to `main` as
+`23472d8050cad0178c49f85f045f488bd5aaaf41`. All final-head PR checks passed,
+the merged-main CI, docs, bundle-size, daily cadence, Release rerun, and manual
+recovery workflows succeeded, issues #38-#43 closed, and milestone 2 closed at
+zero open issues.
 
-| Issue | Accepted branch outcome | Promotion decision |
+| Issue | Accepted outcome | Final state / promotion decision |
 | --- | --- | --- |
-| #38 | Exact MapLibre 5.24.0/6.1.0 native install, type, worker/resource, query, browser, and strict visual matrix passes | Keep 5.24.0 as default; 6.1.0 adoption remains No-go |
-| #39 | One structured source owns clean-build package baselines, 200 KiB engine and 64 KiB CLI blocking limits, and CI/local semantics | Package-size gate PASS |
-| #40 | MCP 2026-07-28 compatibility matrix covers the new lifecycle and fails closed | Keep MCP 2025-11-25 as default; v2 migration remains No-go |
-| #41 | Public v1.5 release notes expose the ordered 14-tool contract and explicit hosted/3D/PMTiles exclusions | Release-truth gate PASS |
-| #42 | GeoParquet 1.1 and reviewed 2.0 RC metadata are version-discriminated with stable diagnostics | Metadata gate PASS; fetch/parse/WASM/display/query remain No-go |
-| #43 | Specialist evidence, HOC freshness, incident identity, recovery deduplication, and bounded push retry are fail closed | Merge-ready; scheduled recovery proof is required on merged `main` |
+| #38 | Exact MapLibre 5.24.0/6.1.0 native install, type, worker/resource, query, browser, and strict visual matrix passes | CLOSED; keep 5.24.0 as default, 6.1.0 adoption remains No-go |
+| #39 | One structured source owns clean-build package baselines, 200 KiB engine and 64 KiB CLI blocking limits, and CI/local semantics | CLOSED; package-size gate PASS |
+| #40 | MCP 2026-07-28 compatibility matrix covers the new lifecycle and fails closed | CLOSED; keep MCP 2025-11-25 as default, v2 migration remains No-go |
+| #41 | Public v1.5 release notes expose the ordered 14-tool contract and explicit hosted/3D/PMTiles exclusions | CLOSED; release-truth gate PASS |
+| #42 | GeoParquet 1.1 and reviewed 2.0 RC metadata are version-discriminated with stable diagnostics | CLOSED; metadata PASS, fetch/parse/WASM/display/query remain No-go |
+| #43 | Specialist evidence, HOC freshness, incident identity, recovery deduplication, and bounded push retry are fail closed | CLOSED; merged-main recovery run 31028265187 PASS |
 
 ## Current External Signals
 
@@ -61,13 +63,17 @@ the explicit No-go boundaries above.
 - [#45](https://github.com/HYNCM/gis-engine/issues/45) owns the pre-existing
   seven-days versus seven-files report-retention mismatch. It authorizes no
   deletion.
-- Issues #32-#35 remain open historical recovery duplicates until the repaired
-  workflow is manually exercised on merged `main` and proves one canonical
-  incident identity.
+- Historical recovery #32 closed as the canonical resolved incident; #33-#35
+  closed as duplicate records after merged-main run 31028265187 created no new
+  escalation issue.
+- [Version Packages PR #47](https://github.com/HYNCM/gis-engine/pull/47) is the
+  pending major-release vehicle. It is not release authorization and remains
+  unmerged.
+- [#48](https://github.com/HYNCM/gis-engine/issues/48) owns the advisory
+  Release workflow Actions v4/Node 20 deprecation cleanup.
 
 ## Next Checkpoint
 
-Publish the implementation PR, require final-head remote checks, merge, run the
-manual recovery workflow, reconcile #32-#35, close #38-#43 and milestone 2,
-then generate one authenticated post-merge planning evidence run. Until those
-steps complete, branch evidence must not be described as main-branch delivery.
+Begin W35 with #44, then #45 and #48. Preserve the explicit protocol,
+renderer, data-runtime, hosted-product, and package-publication No-go
+boundaries until separate issues and quality gates authorize a change.
