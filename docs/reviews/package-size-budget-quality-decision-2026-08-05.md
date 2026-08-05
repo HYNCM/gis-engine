@@ -1,75 +1,75 @@
 ---
 agent: quality
 period: 2026-08-05
-generated_at: 2026-08-05T15:31:21Z
-repo_revision: "f60452d5eba453f828834590b9ea1d0dc88bb827"
+generated_at: 2026-08-05T15:42:37Z
+repo_revision: "343862ae792de1cfa9d5f4cd767215591429124b"
 inputs:
   - docs/reviews/package-size-budget-builder-evidence-2026-08-05.md
   - config/package-size-budgets.json
   - scripts/package-size-policy.mjs
   - tests/framework/package-size-policy.test.ts
+  - .github/workflows/bundle-size.yml
+  - docs/design/phase-b-provider-http-layer.md
 owner: "@quality"
-decision_level: advisory
-gate_result: conditional-pass
-status: ready-for-independent-review
+decision_level: blocking
+gate_result: pass
+status: reviewed
 evidence_kind: specialist
 ---
 
-# Package Size Budget Quality Decision Candidate
+# Package Size Budget Quality Decision
 
-## HOC-N3 Decision Status
+## HOC-N3 Decision
 
-**READY FOR INDEPENDENT REVIEW; this is not a final HOC-N3 pass.** The builder
-prepared this checklist candidate from
-`docs/reviews/package-size-budget-builder-evidence-2026-08-05.md` so the
-independent `@quality` reviewer has an explicit gate surface. The reviewer must
-rerun the commands, inspect the bounded diff, and either replace the
-conditional result with `pass` or record blocking diagnostics. `@orchestrator`
-must not treat this candidate as planning closure.
+**PASS for the bounded Issue #39 package-size policy slice.** One strict JSON
+source now owns the build recipe, deterministic measurement algorithm, exact
+baselines, byte budgets, provenance, rationale, and blocking/advisory
+semantics. Local verification and the Bundle Size workflow invoke the same
+`pnpm size:check` entry point.
 
-This candidate supersedes the `d2ad409` version, whose stale shared `dist`,
-locale-aware ordering, and incomplete cache cleanup produced non-reproducible
-numbers. Only implementation revision `0b35bb0`, baseline-provenance revision
-`f60452d`, and the clean baseline rebuilt at `2026-08-05T15:23:33Z` are valid
-inputs for independent review.
+This decision supersedes the `d2ad409` candidate, whose stale shared `dist`,
+locale-aware ordering, and incomplete incremental-cache cleanup produced
+non-reproducible numbers. The accepted evidence is the UTF-8 bytewise recipe at
+`343862a`, with clean baseline provenance from `c176f317` rebuilt at
+`2026-08-05T15:23:33Z`.
 
-## Gate Candidate
+## Gate Status
 
-| Gate | Candidate result | Evidence to verify independently |
+| Gate | Result | Independent evidence |
 | --- | --- | --- |
-| Focused policy contract | PASS reported | 8 tests cover structure, recipe, bytes, bytewise framing, fail-closed behavior, semantics, and consumers |
-| Package-size command | PASS reported | policy-owned clean/schema/full-build recipe; engine 194509/204800 bytes; CLI 60730/65536 bytes |
-| Clean baseline reproduction | PASS reported | two detached `c176f317` worktrees independently produced engine 193984 B / 210 files and CLI 60730 B / 44 files |
-| Agent framework | PASS reported | 9 files / 69 tests |
-| Documentation | PASS reported | 5 files / 38 tests |
+| Focused policy contract | PASS | clean HEAD archive with no `dist`: 8/8 |
+| Package-size command | PASS | engine 194509/204800 bytes (+0.27%); CLI 60730/65536 bytes (0%); exit 0 |
+| Clean baseline reproduction | PASS | `c176f317`: engine 193984 gzip / 1984108 raw / 210 files; CLI 60730 / 296932 / 44 |
+| Agent framework | PASS | 9 files / 69 tests, including checkout-safe temporary fixture reporting |
+| Documentation | PASS | 5 files / 38 tests; all active package-budget consumers aligned |
 | Resource policy | Not applicable | no URL, tile, worker, host, or example resource changed |
 | MCP contract | Not applicable | no AI tool or protocol surface changed |
-| Visual snapshot | Waiver candidate | non-rendering CI policy/script/docs-only behavior |
-| Formatting and syntax | PASS reported | Biome, Node syntax, and diff check pass |
+| Visual snapshot | WAIVED | non-rendering CI policy/script/docs-only behavior |
+| Formatting and syntax | PASS | Biome, Node syntax, and diff check pass |
 
-## Review Checklist Candidate
+## Review Checklist
 
-| Area | Candidate result | Evidence |
+| Area | Result | Evidence |
 | --- | --- | --- |
 | Architecture | PASS | package policy stays in `config`/`scripts`; no engine or adapter runtime dependency added |
 | AI operability | PASS | JSON result and stable diagnostics make the gate machine-readable and auditable |
 | Commands | PASS unchanged | no `MapSpec` state mutation changed |
 | Diagnostics | PASS | missing/malformed/over-budget states fail closed; advisory status remains non-blocking |
-| Tests | PASS reported | RED/GREEN cycle plus clean-CI, incremental-cache, bytewise-order, consumer-drift, and semantics regressions recorded |
-| Docs | PASS reported | three active docs use the canonical algorithm and 200/64 KiB limits |
+| Tests | PASS | RED/GREEN plus clean-CI, incremental-cache, bytewise-order, checkout safety, trigger coverage, consumer drift, and semantics regressions |
+| Docs | PASS | engineering, website, contract, and active provider design surfaces consume the canonical 200/64 KiB policy |
 | Security | PASS unchanged | no network or resource policy surface changed |
 | TypeScript | PASS unchanged | implementation is Node ESM and adds no public TypeScript API |
 
-## Independent Review Requirements
+## Findings Closed During Review
 
-1. Reproduce `pnpm size:check` and confirm its built-in clean/schema/full-build
-   recipe leaves the final branch below both blocking budgets.
-2. Run the focused, framework, and docs suites and inspect CLI failure behavior
-   for malformed policy and missing `dist`.
-3. Confirm workflow paths cover the policy, both scripts, focused test,
-   `package.json`, and the workflow itself, with no inline numeric budget.
-4. Confirm `canonical-dist-gzip-v1` includes the complete `dist` tree, uses
-   UTF-8 bytewise path order, and does not encode timestamps or permissions.
+1. The framework suite no longer reads workspace `dist`; temporary fixtures
+   keep daily aggregate jobs valid on a clean checkout.
+2. Bundle Size now triggers for `packages/**`, root TypeScript configuration,
+   the lockfile/workspace file, policy, scripts, test, package script, and the
+   workflow itself.
+3. The active provider HTTP design no longer publishes a stale 30 KB CLI
+   allowance and is covered by consumer-drift regression.
 
-Blocking diagnostics: none reported by the builder. Final diagnostic status is
-pending independent `@quality` review.
+No Critical, Important, or Minor finding remains. Blocking diagnostics: none.
+This HOC-N3 pass authorizes the package-size policy and automation gate only;
+it does not authorize unrelated dependency or performance refactors.

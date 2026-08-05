@@ -3,8 +3,8 @@ agent: builder
 focus_area: qa
 feature: issue-39-package-size-budget-convergence
 period: 2026-08-05
-generated_at: 2026-08-05T15:31:21Z
-repo_revision: "f60452d5eba453f828834590b9ea1d0dc88bb827"
+generated_at: 2026-08-05T15:42:37Z
+repo_revision: "343862ae792de1cfa9d5f4cd767215591429124b"
 inputs:
   - config/package-size-budgets.json
   - scripts/package-size-policy.mjs
@@ -81,6 +81,14 @@ stderr, and appends the same summary to `GITHUB_STEP_SUMMARY` when invoked with
 - Clean-CI review GREEN: the policy-owned clean/schema/full-build recipe and
   UTF-8 bytewise ordering reproduce 193984/60730-byte baselines in two detached
   `c176f317` worktrees. The focused suite now passes 8/8.
+- Independent-quality RED: three Important findings reproduced a clean-checkout
+  framework failure caused by reading absent `dist`, incomplete workflow path
+  triggers for real build inputs, and a stale 30 KB CLI budget in an active
+  provider design document.
+- Independent-quality GREEN: framework reporting uses temporary fixtures,
+  Bundle Size triggers on all package/root TypeScript/pnpm inputs, and the
+  active provider design consumes the canonical 64 KiB policy. A clean HEAD
+  archive passes focused 8/8, framework 69/69, and docs 38/38.
 
 ## Verification
 
@@ -125,5 +133,5 @@ the 5% advisory threshold. CLI exactly reproduces its baseline.
 | Canonical bytes exclude archive metadata | Linux/macOS tar headers cannot create false regressions | Retain the framing mutation tests | high |
 | Current engine is +0.27% and CLI is unchanged | Final branch remains below both advisory and blocking thresholds | `@quality` should independently rerun focused, framework, docs, and the recipe-owning size gate | high |
 
-HOC-N2 is ready for `@quality`. Planning state remains owned by
-`@orchestrator`.
+HOC-N2 was independently accepted by `@quality` at `343862a`. Planning state
+remains owned by `@orchestrator`.
