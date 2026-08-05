@@ -50,11 +50,19 @@ MapLibre WebGL dependencies in CI.
 
 | Package | Budget (gzipped) |
 |---|---|
-| `@gis-engine/engine` | < 130 KB |
-| `@gis-engine/cli` | < 35 KB |
+| `@gis-engine/engine` | 200 KiB blocking |
+| `@gis-engine/cli` | 64 KiB blocking |
 
-MapLibre GL JS is an optional `peerDependency` and is **not** included in the
-engine bundle size budget.
+The canonical limits and measured baselines live in
+`config/package-size-budgets.json`. `canonical-dist-gzip-v1` measures all
+regular files in each complete `dist` tree using sorted relative paths,
+path/length/content framing, and gzip level 9 without timestamp or permission
+metadata. `pnpm size:check` blocks above 200 KiB or 64 KiB respectively; growth
+more than 5% above the recorded baseline is advisory while still below the
+blocking limit.
+
+MapLibre GL JS is an optional `peerDependency` and is not present in the engine
+`dist` tree measured by this policy.
 
 ## Running Performance Tests Locally
 

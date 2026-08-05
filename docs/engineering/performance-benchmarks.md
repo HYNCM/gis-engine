@@ -39,8 +39,16 @@ pnpm test:perf:nightly
 
 | Package | Budget (gzipped) |
 |---|---|
-| `@gis-engine/engine` | < 130KB |
-| `@gis-engine/cli` | < 35KB |
+| `@gis-engine/engine` | 200 KiB blocking |
+| `@gis-engine/cli` | 64 KiB blocking |
 
-MapLibre GL JS is an optional peerDependency and is not included in the engine
-bundle.
+`config/package-size-budgets.json` is the only authority for these byte limits,
+their baselines, and their rationale. `canonical-dist-gzip-v1` measures every
+regular file in the complete `dist` tree with sorted relative paths,
+path/length/content framing, and gzip level 9; timestamps and permissions do
+not affect the result. The checked baseline is 193998 bytes for engine and
+60730 bytes for CLI. A measurement more than 5% above its baseline is an
+advisory; crossing a blocking budget fails `pnpm size:check`.
+
+MapLibre GL JS remains an optional peer dependency and therefore is not present
+in the engine `dist` tree measured by this policy.

@@ -80,7 +80,11 @@ breaking/non-breaking note in the PR summary.
   remains internal/experimental and is not part of the GA publish workflow.
 - All published packages use `files` whitelist: `["dist", "README.md"]`
   (CLI adds `"templates"`).
-- Bundle budgets: engine < 130KB gzipped, cli < 35KB gzipped.
+- Package-size budgets are `200 KiB` for engine and `64 KiB` for CLI. Both are
+  blocking limits sourced only from `config/package-size-budgets.json` and
+  measured by `canonical-dist-gzip-v1` over each complete `dist` tree. Growth
+  above the recorded baseline by more than 5% is advisory until the blocking
+  byte limit is crossed.
 - The canonical 14-tool MCP inventory remains frozen in `tools/list` order:
   `apply_commands`, `validate_spec`, `export_spec`, `get_context_summary`,
   `snapshot_spec`, `explain_spec`, `export_example_app`, `diff_specs`,
