@@ -3,8 +3,8 @@ agent: builder
 focus_area: qa
 feature: issue-39-package-size-budget-convergence
 period: 2026-08-05
-generated_at: 2026-08-05T15:16:43Z
-repo_revision: "181abbe7836a011466ffbe930fed557f923eac44"
+generated_at: 2026-08-05T15:31:21Z
+repo_revision: "f60452d5eba453f828834590b9ea1d0dc88bb827"
 inputs:
   - config/package-size-budgets.json
   - scripts/package-size-policy.mjs
@@ -26,20 +26,36 @@ Issue #39 now has one structured package-size authority:
 130/35 KB claims, the workflow-only 170/70 KB thresholds, and the previous
 `du`-only local command without narrowing the artifact scope.
 
+This report supersedes the first candidate committed at `d2ad409`. That
+candidate used a stale shared `dist`, locale-aware ordering, and a build recipe
+that did not clear TypeScript incremental state. Its 193998-byte engine
+baseline and 194524-byte final measurement are invalid and must not be consumed
+as HOC evidence.
+
 The blocking complete-`dist` budgets are 204800 bytes (200 KiB) for engine and
-65536 bytes (64 KiB) for CLI. The recorded `c176f317` baselines are 193998 and
-60730 bytes. Growth above a baseline by more than 5% is advisory; crossing a
-package rule whose `semantics` is `blocking` fails the command.
+65536 bytes (64 KiB) for CLI. Two detached clean `c176f317` worktrees using the
+same recipe independently reproduced the baselines: engine 1,984,108 raw /
+193,984 gzip bytes / 210 files and CLI 296,932 raw / 60,730 gzip bytes / 44
+files at `2026-08-05T15:23:33Z`. Growth above a baseline by more than 5% is
+advisory; crossing a package rule whose `semantics` is `blocking` fails the
+command.
 
 ## Measurement Contract
 
 `canonical-dist-gzip-v1` recursively accepts only regular files, sorts POSIX
-relative paths using `localeCompare(..., "en")`, and starts with the magic
+relative paths with UTF-8 `Buffer.compare`, and starts with the magic
 `gis-engine-dist-gzip-v1\0`. Each record is framed as
 `path\0byteLength\0content\0`, then the complete byte sequence is compressed at
-gzip level 9. File modification time and permissions are excluded. Missing
-directories, non-regular entries, malformed policy fields, and blocking
-overages fail closed with stable `PACKAGE_SIZE.*` diagnostics.
+gzip level 9. File modification time, permissions, and host ICU collation are
+excluded.
+
+The policy also owns the build recipe. It removes only engine/CLI `dist` and
+`.tsbuildinfo`, runs `pnpm build:schema`, then runs `pnpm build`. Clearing the
+incremental caches is required: a reproduced negative run that removed only
+`dist` caused TypeScript to skip emit and `build:schema` to fail on missing
+`dist/scripts/build-schema.js`. Missing directories, non-regular entries,
+malformed policy/build recipe fields, failed builds, and blocking overages fail
+closed with stable `PACKAGE_SIZE.*` diagnostics.
 
 The CLI emits a machine-readable JSON result on stdout, a Markdown summary on
 stderr, and appends the same summary to `GITHUB_STEP_SUMMARY` when invoked with
@@ -58,21 +74,28 @@ stderr, and appends the same summary to `GITHUB_STEP_SUMMARY` when invoked with
   deterministic metadata-independent framing, advisory versus blocking exit
   behavior, missing-dist failure, workflow/script/docs convergence, and a
   tampered-doc divergence regression.
+- Clean-CI review RED: a clean `pnpm build` produced only 200 engine files and
+  exposed that the original 193998-byte baseline contained residual schema
+  output; locale-aware sorting also depended on ICU. A second RED showed that
+  cleaning `dist` without `.tsbuildinfo` suppresses TypeScript emit.
+- Clean-CI review GREEN: the policy-owned clean/schema/full-build recipe and
+  UTF-8 bytewise ordering reproduce 193984/60730-byte baselines in two detached
+  `c176f317` worktrees. The focused suite now passes 8/8.
 
 ## Verification
 
 | Command | Result | Evidence |
 | --- | --- | --- |
-| `pnpm exec vitest run tests/framework/package-size-policy.test.ts` | PASS | 1 file / 7 tests |
-| `pnpm --filter @gis-engine/engine build && pnpm size:check` | PASS | engine 194524 B / 210 files; CLI 60730 B / 44 files; two consecutive measurements matched, with zero blocking failures and zero warnings |
-| `pnpm test:agent-framework` | PASS | 9 files / 68 tests |
+| `pnpm exec vitest run tests/framework/package-size-policy.test.ts` | PASS | 1 file / 8 tests |
+| `pnpm size:check` | PASS | authoritative clean/schema/full-build recipe; engine 1,987,192 raw / 194,509 gzip bytes / 210 files; CLI 296,932 / 60,730 / 44; zero blocking failures and warnings |
+| `pnpm test:agent-framework` | PASS | 9 files / 69 tests |
 | `pnpm test:docs` | PASS | 5 files / 38 tests |
 | Biome + Node syntax | PASS | both scripts and the focused test are formatted; both `.mjs` files parse |
 | `git diff --check` | PASS | no whitespace errors |
 
-Engine is 526 bytes (+0.27%) above the recorded `c176f317` baseline because
+Engine is 525 gzip bytes (+0.27%) above the recorded `c176f317` baseline because
 the final branch also contains the subsequent GeoParquet fail-closed source
-shape fix. It remains 10276 bytes below the blocking budget and does not cross
+shape fix. It remains 10291 bytes below the blocking budget and does not cross
 the 5% advisory threshold. CLI exactly reproduces its baseline.
 
 ## HOC-N2 Evidence Summary
@@ -100,7 +123,7 @@ the 5% advisory threshold. CLI exactly reproduces its baseline.
 | --- | --- | --- | --- |
 | Local, CI, and active docs consume one JSON authority | Divergent numbers can no longer silently coexist | Keep budget changes coupled to policy tests and rationale | high |
 | Canonical bytes exclude archive metadata | Linux/macOS tar headers cannot create false regressions | Retain the framing mutation tests | high |
-| Current engine is +0.27% and CLI is unchanged | Final branch remains below both advisory and blocking thresholds | `@quality` should independently rerun focused, framework, docs, and size gates | high |
+| Current engine is +0.27% and CLI is unchanged | Final branch remains below both advisory and blocking thresholds | `@quality` should independently rerun focused, framework, docs, and the recipe-owning size gate | high |
 
 HOC-N2 is ready for `@quality`. Planning state remains owned by
 `@orchestrator`.
