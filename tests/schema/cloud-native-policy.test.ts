@@ -432,6 +432,48 @@ describe("CNS-002: GeoParquet policy validation", () => {
     ).toBe(true);
   });
 
+  it("rejects an 8-number bbox for GeoParquet 1.1 in both policy and schema validation", () => {
+    const source = {
+      ...validGeoParquet11,
+      metadata: { ...validGeoParquet11.metadata, bbox: [0, 1, 2, 3, 4, 5, 6, 7] },
+    };
+
+    expect(validateGeoParquetPolicy(source)).toContainEqual(
+      expect.objectContaining({
+        code: "GEOPARQUET.METADATA_INCOMPATIBLE",
+        path: "/sources/geoparquet/metadata/bbox",
+        severity: "error",
+      }),
+    );
+    expect(
+      validateSpec({
+        version: "0.1",
+        view: { center: [0, 0], zoom: 1 },
+        sources: { data: source },
+        layers: [],
+      }).valid,
+    ).toBe(false);
+  });
+
+  it("accepts an 8-number bbox for GeoParquet 2.0 RC in both policy and schema validation", () => {
+    const source = {
+      ...validGeoParquet20Rc1,
+      metadata: { ...validGeoParquet20Rc1.metadata, bbox: [0, 1, 2, 3, 4, 5, 6, 7] },
+    };
+
+    expect(validateGeoParquetPolicy(source)).not.toContainEqual(
+      expect.objectContaining({ path: "/sources/geoparquet/metadata/bbox", severity: "error" }),
+    );
+    expect(
+      validateSpec({
+        version: "0.1",
+        view: { center: [0, 0], zoom: 1 },
+        sources: { data: source },
+        layers: [],
+      }).valid,
+    ).toBe(true);
+  });
+
   it.each([
     ["wrong tuple length", [0, 1, 2]],
     ["non-numeric member", [0, 1, "2", 3]],

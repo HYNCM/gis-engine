@@ -273,12 +273,13 @@ function validateGeoParquetMetadata(
     );
   }
 
-  if (metadata.bbox !== undefined && !isGeoParquetBbox(metadata.bbox)) {
+  if (metadata.bbox !== undefined && !isGeoParquetBbox(metadata.bbox, releaseIdentity)) {
+    const dimensionality = releaseIdentity === "1.1.0" ? "4- or 6-number" : "4-, 6-, or 8-number";
     diagnostics.push(
       incompatibleMetadataDiagnostic(
         sourcePath,
         "bbox",
-        "GeoParquet bbox metadata must be a 4-, 6-, or 8-number dimensional extent.",
+        `GeoParquet ${releaseIdentity} bbox metadata must be a ${dimensionality} dimensional extent.`,
       ),
     );
   }

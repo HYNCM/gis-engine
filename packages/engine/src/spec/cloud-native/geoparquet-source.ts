@@ -158,11 +158,14 @@ export function isGeoParquetProjJsonCrs(value: unknown): value is Static<typeof 
   );
 }
 
-/** GeoParquet bbox evidence is dimensional, not implicitly geographic. */
-export function isGeoParquetBbox(value: unknown): value is number[] {
+/** GeoParquet bbox evidence is dimensional and version-bound, not implicitly geographic. */
+export function isGeoParquetBbox(
+  value: unknown,
+  releaseIdentity: "1.1.0" | "2.0.0-rc.1",
+): value is number[] {
   return (
     Array.isArray(value) &&
-    (value.length === 4 || value.length === 6 || value.length === 8) &&
+    (value.length === 4 || value.length === 6 || (releaseIdentity === "2.0.0-rc.1" && value.length === 8)) &&
     value.every((coordinate) => typeof coordinate === "number" && Number.isFinite(coordinate))
   );
 }
