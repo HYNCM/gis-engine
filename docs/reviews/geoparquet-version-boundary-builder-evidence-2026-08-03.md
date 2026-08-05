@@ -3,8 +3,8 @@ agent: builder
 focus_area: engine
 feature: issue-42-geoparquet-version-boundary
 period: 2026-08-04
-generated_at: 2026-08-05T14:48:18Z
-repo_revision: "2404aebfda21d10d43645cb46d59aaf71d594bbd"
+generated_at: 2026-08-05T15:04:00Z
+repo_revision: "11716b35c96d566cad9d7bfd0f0759b8a0fb049f"
 inputs:
   - https://github.com/opengeospatial/geoparquet/releases/tag/v2.0.0-rc.1
   - https://github.com/opengeospatial/geoparquet/blob/v1.1.0/format-specs/schema.json
@@ -44,10 +44,11 @@ file metadata version or treating the candidate as 2.0 final.
 Specification review then closed four fail-open or drift paths. CRS objects now
 require a recognized PROJJSON CRS `type` and non-empty `name`; 2.0 RC row-group
 statistics require both accepted flags to be `true`; bbox validation checks only
-the versioned numeric tuple shape instead of assuming WGS84 ranges or rejecting
-RFC 7946 antimeridian boxes; and tracked API references plus the exported WASM
-stub metadata type now derive from the same source metadata contract. The WASM
-change is type-only and adds no execution behavior.
+the version-specific numeric tuple shape (4D/6D for 1.1 and 4D/6D/8D for the
+2.0 RC) instead of assuming WGS84 ranges or rejecting RFC 7946 antimeridian
+boxes; and tracked API references plus the exported WASM stub metadata type now
+derive from the same source metadata contract. The WASM change is type-only and
+adds no execution behavior.
 
 ## Version Contract
 
@@ -94,6 +95,14 @@ change is type-only and adds no execution behavior.
 - Specification-review GREEN: cloud-native policy now passes 51/51 and the
   combined policy/docs regression set passes 92/92. Public type compilation
   proves the WASM stub metadata surface consumes `GeoParquetSourceMetadata`.
+- Final parity-review RED: the 1.1 policy helper accepted an 8-number bbox even
+  though its TypeBox branch rejected it; the new paired policy/schema regression
+  failed exactly at the policy assertion.
+- Final parity-review GREEN: the version-aware helper now rejects 8-number bbox
+  evidence for 1.1 and accepts it for 2.0 RC. Cloud-native policy passes 53/53,
+  the full schema suite passes 132/132, public type compilation remains green,
+  and a rebuilt public engine artifact reproduces the stable 1.1 diagnostic
+  while accepting the equivalent 2.0 RC case.
 
 ## HOC-N2 Evidence Summary
 
@@ -119,7 +128,7 @@ change is type-only and adds no execution behavior.
 - `pnpm build:schema`: pass.
 - `pnpm test:types`: pass for the versioned source and WASM-stub metadata
   public type contract.
-- `pnpm test:schema`: 4 files / 130 tests pass.
+- `pnpm test:schema`: 4 files / 132 tests pass.
 - `pnpm test:schema-sync`: 1 file / 16 tests pass.
 - `pnpm test:resources`: 4 files / 23 tests pass.
 - `pnpm test:docs`: 5 files / 37 tests pass.

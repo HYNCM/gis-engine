@@ -1,8 +1,8 @@
 ---
 agent: quality
 period: 2026-08-04
-generated_at: 2026-08-05T14:48:18Z
-repo_revision: "2404aebfda21d10d43645cb46d59aaf71d594bbd"
+generated_at: 2026-08-05T15:04:00Z
+repo_revision: "11716b35c96d566cad9d7bfd0f0759b8a0fb049f"
 inputs:
   - docs/reviews/geoparquet-version-boundary-builder-evidence-2026-08-03.md
   - docs/planning/feature-specs/cloud-native-source-readiness.md
@@ -27,8 +27,9 @@ stable diagnostics, and retain explicit URL resource policy.
 
 The final review fixes also validate a recognizable PROJJSON CRS structure,
 require affirmative 2.0 RC statistics evidence, avoid unsupported CRS/range
-assumptions for bbox values, and align tracked public API plus WASM-stub types
-with the versioned source metadata contract.
+assumptions for bbox values, enforce 4D/6D for 1.1 versus 4D/6D/8D for the 2.0
+RC in both policy and TypeBox validation, and align tracked public API plus
+WASM-stub types with the versioned source metadata contract.
 
 **No-go for runtime promotion.** The change does not approve archive fetch,
 Parquet parsing, range IO, WASM execution, workers, renderer integration,
@@ -41,7 +42,7 @@ issue is required before that boundary can be reconsidered.
 | Gate | Result | Evidence |
 | --- | --- | --- |
 | Schema build | PASS | `pnpm build:schema` compiled engine/Scene3D/AI schemas |
-| Schema contract | PASS | 130 schema tests; 16 schema-sync/Ajv tests |
+| Schema contract | PASS | 132 schema tests; 16 schema-sync/Ajv tests; rebuilt public engine output confirms policy/schema bbox parity for both versions |
 | Deterministic checks | PASS | unrestricted `pnpm check` completed all builds and test layers |
 | Resource policy | PASS | 23/23; GeoParquet file URL remains explicit at `/sources/{id}/url` |
 | Adapter boundary | PASS | 74/74; MapLibre/headless query stays unsupported |
@@ -69,7 +70,7 @@ issue is required before that boundary can be reconsidered.
 
 No Critical, Important, or Minor finding remains in the bounded diff.
 
-Review required six corrections before this pass:
+Review required seven corrections before this pass:
 
 1. The initial proposed WASM execution contract changes were removed. A later
    type-only alignment replaced the stub's contradictory numeric version and
@@ -86,9 +87,13 @@ Review required six corrections before this pass:
    non-object evidence fails closed.
 5. Bbox validation accepts projected coordinates and antimeridian-crossing
    geographic boxes because this boundary does not interpret CRS axes; it
-   validates only the 4D/6D/8D numeric tuple contract.
+   validates only the version-specific numeric tuple contract.
 6. A narrowed generated API update, public type test, and migration guide
    remove the legacy shape without importing unrelated TypeDoc backlog.
+7. Policy validation now uses the same version-specific bbox tuple widths as
+   TypeBox: 1.1 rejects 8-number evidence while 2.0 RC accepts it. Paired
+   positive and negative regressions prevent the two validation layers from
+   drifting again.
 
 ## Recommendations
 

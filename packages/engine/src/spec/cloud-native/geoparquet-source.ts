@@ -159,10 +159,7 @@ export function isGeoParquetProjJsonCrs(value: unknown): value is Static<typeof 
 }
 
 /** GeoParquet bbox evidence is dimensional and version-bound, not implicitly geographic. */
-export function isGeoParquetBbox(
-  value: unknown,
-  releaseIdentity: "1.1.0" | "2.0.0-rc.1",
-): value is number[] {
+export function isGeoParquetBbox(value: unknown, releaseIdentity: "1.1.0" | "2.0.0-rc.1"): value is number[] {
   return (
     Array.isArray(value) &&
     (value.length === 4 || value.length === 6 || (releaseIdentity === "2.0.0-rc.1" && value.length === 8)) &&
