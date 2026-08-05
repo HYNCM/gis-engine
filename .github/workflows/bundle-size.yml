@@ -52,8 +52,5 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: 构建所有包
-        run: pnpm build
-
-      - name: 读取唯一预算源并执行体积门禁
+      - name: 按权威构建配方执行体积门禁
         run: pnpm size:check -- --github-summary

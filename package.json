@@ -76,7 +76,7 @@
     "docs:dev": "pnpm docs:api && cd docs/website && pnpm docs:dev",
     "docs:build": "pnpm docs:api && cd docs/website && pnpm docs:build",
     "docs:preview": "cd docs/website && pnpm docs:preview",
-    "size:check": "node scripts/check-package-size.mjs",
+    "size:check": "node scripts/check-package-size.mjs --build",
     "smoke:first-run": "node scripts/first-run-acceptance.mjs",
     "smoke:cli-install": "node scripts/cli-install-smoke.mjs",
     "smoke:provider": "node scripts/provider-smoke.mjs",

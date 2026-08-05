@@ -55,11 +55,13 @@ MapLibre WebGL dependencies in CI.
 
 The canonical limits and measured baselines live in
 `config/package-size-budgets.json`. `canonical-dist-gzip-v1` measures all
-regular files in each complete `dist` tree using sorted relative paths,
-path/length/content framing, and gzip level 9 without timestamp or permission
-metadata. `pnpm size:check` blocks above 200 KiB or 64 KiB respectively; growth
-more than 5% above the recorded baseline is advisory while still below the
-blocking limit.
+regular files in each complete `dist` tree using UTF-8 bytewise relative-path
+ordering, path/length/content framing, and gzip level 9 without timestamp,
+permission, or host-locale metadata. `pnpm size:check` first cleans the managed
+engine/CLI outputs and TypeScript incremental caches, then runs
+`pnpm build:schema` and `pnpm build` before measuring. It blocks above 200 KiB
+or 64 KiB respectively; growth more than 5% above the recorded baseline is
+advisory while still below the blocking limit.
 
 MapLibre GL JS is an optional `peerDependency` and is not present in the engine
 `dist` tree measured by this policy.

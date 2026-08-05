@@ -1,13 +1,21 @@
 #!/usr/bin/env node
 import { appendFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { checkPackageSizes, loadPackageSizePolicy, renderPackageSizeSummary } from "./package-size-policy.mjs";
+import {
+  checkPackageSizes,
+  loadPackageSizePolicy,
+  preparePackageSizeArtifacts,
+  renderPackageSizeSummary,
+} from "./package-size-policy.mjs";
 
 const args = new Set(process.argv.slice(2));
 const policyPath = resolve("config/package-size-budgets.json");
 
 try {
   const policy = loadPackageSizePolicy(policyPath);
+  if (args.has("--build")) {
+    preparePackageSizeArtifacts(policy, { rootDir: process.cwd() });
+  }
   const report = checkPackageSizes(policy, { rootDir: process.cwd() });
   const humanSummary = renderPackageSizeSummary(report);
 

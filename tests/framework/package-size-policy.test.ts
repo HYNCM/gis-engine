@@ -1,4 +1,4 @@
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, utimesSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { gzipSync } from "node:zlib";
@@ -7,6 +7,7 @@ import {
   checkPackageSizes,
   loadPackageSizePolicy,
   measureCanonicalDistGzip,
+  preparePackageSizeArtifacts,
   renderPackageSizeSummary,
   validatePackageSizeConsumerContent,
   validatePackageSizePolicy,
@@ -24,7 +25,20 @@ describe("package size policy", () => {
       measurement: {
         algorithm: "canonical-dist-gzip-v1",
         scope: "complete-dist",
+        pathOrder: "relative-posix-utf8-bytewise",
         gzipLevel: 9,
+      },
+      buildRecipe: {
+        cleanPaths: [
+          "packages/engine/dist",
+          "packages/engine/.tsbuildinfo",
+          "packages/cli/dist",
+          "packages/cli/.tsbuildinfo",
+        ],
+        commands: [
+          { command: "pnpm", args: ["build:schema"] },
+          { command: "pnpm", args: ["build"] },
+        ],
       },
       advisoryRegressionPercent: 5,
       packages: {
@@ -32,7 +46,9 @@ describe("package size policy", () => {
           distPath: "packages/engine/dist",
           budgetBytes: 204_800,
           semantics: "blocking",
-          baselineBytes: 193_998,
+          baselineBytes: 193_984,
+          baselineRawBytes: 1_984_108,
+          baselineFileCount: 210,
           baselineRevision: "c176f317227991781ab35b13b08bcf12923329d2",
         },
         cli: {
@@ -40,6 +56,8 @@ describe("package size policy", () => {
           budgetBytes: 65_536,
           semantics: "blocking",
           baselineBytes: 60_730,
+          baselineRawBytes: 296_932,
+          baselineFileCount: 44,
           baselineRevision: "c176f317227991781ab35b13b08bcf12923329d2",
         },
       },
@@ -53,22 +71,22 @@ describe("package size policy", () => {
     const root = mkdtempSync(join(tmpdir(), "gis-engine-size-policy-"));
     const dist = join(root, "dist");
     mkdirSync(join(dist, "nested"), { recursive: true });
-    writeFileSync(join(dist, "z.js"), "export const z = 1;\n");
-    writeFileSync(join(dist, "nested/a.d.ts"), "export declare const a: string;\n");
+    writeFileSync(join(dist, "a.js"), "export const a = 1;\n");
+    writeFileSync(join(dist, "Z.js"), "export const z = 1;\n");
 
     const expectedFrame = Buffer.concat([
       Buffer.from("gis-engine-dist-gzip-v1\0"),
-      frame("nested/a.d.ts", Buffer.from("export declare const a: string;\n")),
-      frame("z.js", Buffer.from("export const z = 1;\n")),
+      frame("Z.js", Buffer.from("export const z = 1;\n")),
+      frame("a.js", Buffer.from("export const a = 1;\n")),
     ]);
     const expectedBytes = gzipSync(expectedFrame, { level: 9, mtime: 0 }).byteLength;
     const first = measureCanonicalDistGzip(dist);
 
-    expect(first).toEqual({ algorithm: "canonical-dist-gzip-v1", bytes: expectedBytes, fileCount: 2 });
+    expect(first).toEqual({ algorithm: "canonical-dist-gzip-v1", bytes: expectedBytes, rawBytes: 40, fileCount: 2 });
 
     const old = new Date("2001-01-01T00:00:00Z");
-    chmodSync(join(dist, "z.js"), 0o755);
-    utimesSync(join(dist, "z.js"), old, old);
+    chmodSync(join(dist, "Z.js"), 0o755);
+    utimesSync(join(dist, "Z.js"), old, old);
     expect(measureCanonicalDistGzip(dist)).toEqual(first);
   });
 
@@ -82,8 +100,27 @@ describe("package size policy", () => {
     expect(result.results.engine.bytes).toBeLessThanOrEqual(policy.packages.engine.budgetBytes);
     expect(result.exitCode).toBe(0);
     expect(JSON.parse(JSON.stringify(result))).toEqual(result);
-    expect(renderPackageSizeSummary(result)).toContain("193998");
+    expect(renderPackageSizeSummary(result)).toContain("193984");
     expect(renderPackageSizeSummary(result)).toContain("blocking");
+  });
+
+  it("cleans managed outputs and incremental caches before the authoritative build recipe", () => {
+    const root = mkdtempSync(join(tmpdir(), "gis-engine-size-build-"));
+    const policy = loadPackageSizePolicy(policyPath);
+    for (const path of policy.buildRecipe.cleanPaths) {
+      writeFixture(join(root, path, "stale.txt"), "stale");
+    }
+    const calls: Array<{ command: string; args: string[] }> = [];
+
+    preparePackageSizeArtifacts(policy, {
+      rootDir: root,
+      runCommand(command, args) {
+        expect(policy.buildRecipe.cleanPaths.every((path) => !existsSync(join(root, path)))).toBe(true);
+        calls.push({ command, args });
+      },
+    });
+
+    expect(calls).toEqual(policy.buildRecipe.commands);
   });
 
   it("fails closed for malformed policy and missing dist directories", () => {
@@ -95,11 +132,17 @@ describe("package size policy", () => {
         packages: { ...policy.packages, engine: { ...policy.packages.engine, semantics: "maybe" } },
       }),
     ).toThrow(/semantics/);
+    expect(() => validatePackageSizePolicy({ ...policy, packages: { engine: policy.packages.engine } })).toThrow(
+      /packages\.cli/,
+    );
 
     const missing = checkPackageSizes(
       {
         ...policy,
-        packages: { engine: { ...policy.packages.engine, distPath: "does-not-exist" } },
+        packages: {
+          engine: { ...policy.packages.engine, distPath: "does-not-exist" },
+          cli: policy.packages.cli,
+        },
       },
       { rootDir: repoRoot },
     );
@@ -109,8 +152,8 @@ describe("package size policy", () => {
 
   it("blocks over-budget packages but reports advisory packages without failing", () => {
     const root = mkdtempSync(join(tmpdir(), "gis-engine-size-semantics-"));
-    writeFixture(join(root, "blocking/dist/a.js"), "large payload".repeat(100));
-    writeFixture(join(root, "advisory/dist/a.js"), "large payload".repeat(100));
+    writeFixture(join(root, "packages/engine/dist/a.js"), "large payload".repeat(100));
+    writeFixture(join(root, "packages/cli/dist/a.js"), "large payload".repeat(100));
     const basePolicy = loadPackageSizePolicy(policyPath);
     const packageRule = {
       ...basePolicy.packages.engine,
@@ -124,22 +167,29 @@ describe("package size policy", () => {
       {
         ...basePolicy,
         packages: {
-          blocking: { ...packageRule, distPath: "blocking/dist", semantics: "blocking" },
-          advisory: { ...packageRule, distPath: "advisory/dist", semantics: "advisory" },
+          engine: { ...packageRule, distPath: "packages/engine/dist", semantics: "blocking" },
+          cli: { ...packageRule, distPath: "packages/cli/dist", semantics: "advisory" },
         },
       },
       { rootDir: root },
     );
 
-    expect(result.results.blocking.status).toBe("fail");
-    expect(result.results.advisory.status).toBe("warning");
+    expect(result.results.engine.status).toBe("fail");
+    expect(result.results.cli.status).toBe("warning");
     expect(result.exitCode).toBe(1);
 
     const advisoryOnly = checkPackageSizes(
-      { ...basePolicy, packages: { advisory: { ...packageRule, distPath: "advisory/dist", semantics: "advisory" } } },
+      {
+        ...basePolicy,
+        packages: {
+          engine: { ...packageRule, distPath: "packages/engine/dist", semantics: "advisory" },
+          cli: { ...packageRule, distPath: "packages/cli/dist", semantics: "advisory" },
+        },
+      },
       { rootDir: root },
     );
-    expect(advisoryOnly.results.advisory.status).toBe("warning");
+    expect(advisoryOnly.results.engine.status).toBe("warning");
+    expect(advisoryOnly.results.cli.status).toBe("warning");
     expect(advisoryOnly.exitCode).toBe(0);
   });
 
@@ -152,8 +202,9 @@ describe("package size policy", () => {
       "docs/website/guide/performance.md",
     ].map((path) => readFileSync(join(repoRoot, path), "utf8"));
 
-    expect(packageJson.scripts["size:check"]).toBe("node scripts/check-package-size.mjs");
+    expect(packageJson.scripts["size:check"]).toBe("node scripts/check-package-size.mjs --build");
     expect(workflow).toContain("pnpm size:check");
+    expect(workflow).not.toMatch(/^\s*run:\s*pnpm build\s*$/m);
     expect(workflow).toContain("config/package-size-budgets.json");
     expect(workflow).toContain("scripts/package-size-policy.mjs");
     expect(workflow).toContain("tests/framework/package-size-policy.test.ts");

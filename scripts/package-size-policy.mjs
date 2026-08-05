@@ -1,9 +1,16 @@
-import { existsSync, lstatSync, readdirSync, readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { existsSync, lstatSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { relative, resolve, sep } from "node:path";
 import { gzipSync } from "node:zlib";
 
 const MAGIC = Buffer.from("gis-engine-dist-gzip-v1\0");
-const TOP_LEVEL_KEYS = new Set(["schemaVersion", "measurement", "advisoryRegressionPercent", "packages"]);
+const TOP_LEVEL_KEYS = new Set([
+  "schemaVersion",
+  "measurement",
+  "buildRecipe",
+  "advisoryRegressionPercent",
+  "packages",
+]);
 const MEASUREMENT_KEYS = new Set([
   "algorithm",
   "scope",
@@ -18,10 +25,24 @@ const PACKAGE_KEYS = new Set([
   "budgetBytes",
   "semantics",
   "baselineBytes",
+  "baselineRawBytes",
+  "baselineFileCount",
   "baselineRevision",
   "measuredAt",
   "rationale",
 ]);
+const BUILD_RECIPE_KEYS = new Set(["cleanPaths", "commands"]);
+const BUILD_COMMAND_KEYS = new Set(["command", "args"]);
+const REQUIRED_CLEAN_PATHS = [
+  "packages/engine/dist",
+  "packages/engine/.tsbuildinfo",
+  "packages/cli/dist",
+  "packages/cli/.tsbuildinfo",
+];
+const REQUIRED_BUILD_COMMANDS = [
+  { command: "pnpm", args: ["build:schema"] },
+  { command: "pnpm", args: ["build"] },
+];
 
 export function loadPackageSizePolicy(policyPath = "config/package-size-budgets.json") {
   let parsed;
@@ -44,7 +65,7 @@ export function validatePackageSizePolicy(policy) {
     algorithm: "canonical-dist-gzip-v1",
     scope: "complete-dist",
     fileType: "regular-files-only",
-    pathOrder: "relative-posix-locale-en",
+    pathOrder: "relative-posix-utf8-bytewise",
     framing: "magic-nul-path-nul-byte-length-nul-content-nul",
     gzipLevel: 9,
   };
@@ -58,12 +79,15 @@ export function validatePackageSizePolicy(policy) {
       policy.measurement.excludedMetadata[1] === "permissions",
     'policy.measurement.excludedMetadata must equal ["mtime", "permissions"]',
   );
+  validateBuildRecipe(policy.buildRecipe);
   assert(
     Number.isFinite(policy.advisoryRegressionPercent) && policy.advisoryRegressionPercent >= 0,
     "policy.advisoryRegressionPercent must be a non-negative number",
   );
   assertPlainObject(policy.packages, "policy.packages");
   assert(Object.keys(policy.packages).length > 0, "policy.packages must contain at least one package");
+  assertPlainObject(policy.packages.engine, "policy.packages.engine");
+  assertPlainObject(policy.packages.cli, "policy.packages.cli");
 
   for (const [name, rule] of Object.entries(policy.packages)) {
     assert(/^[a-z0-9-]+$/.test(name), `policy.packages.${name} has an invalid package key`);
@@ -77,6 +101,8 @@ export function validatePackageSizePolicy(policy) {
     assertPositiveInteger(rule.budgetBytes, `${name}.budgetBytes`);
     assert(rule.semantics === "blocking" || rule.semantics === "advisory", `${name}.semantics is invalid`);
     assertPositiveInteger(rule.baselineBytes, `${name}.baselineBytes`);
+    assertPositiveInteger(rule.baselineRawBytes, `${name}.baselineRawBytes`);
+    assertPositiveInteger(rule.baselineFileCount, `${name}.baselineFileCount`);
     assert(
       typeof rule.baselineRevision === "string" && rule.baselineRevision.length > 0,
       `${name}.baselineRevision is required`,
@@ -102,20 +128,39 @@ export function measureCanonicalDistGzip(distPath) {
   }
 
   const files = collectRegularFiles(root).sort((left, right) =>
-    toPosix(relative(root, left)).localeCompare(toPosix(relative(root, right)), "en"),
+    Buffer.compare(Buffer.from(toPosix(relative(root, left))), Buffer.from(toPosix(relative(root, right)))),
   );
   const parts = [MAGIC];
+  let rawBytes = 0;
   for (const filePath of files) {
     const path = toPosix(relative(root, filePath));
     const content = readFileSync(filePath);
+    rawBytes += content.length;
     parts.push(Buffer.from(`${path}\0${content.length}\0`), content, Buffer.from("\0"));
   }
 
   return {
     algorithm: "canonical-dist-gzip-v1",
     bytes: gzipSync(Buffer.concat(parts), { level: 9 }).byteLength,
+    rawBytes,
     fileCount: files.length,
   };
+}
+
+export function preparePackageSizeArtifacts(
+  policyInput,
+  { rootDir = process.cwd(), runCommand = runBuildCommand } = {},
+) {
+  const policy = validatePackageSizePolicy(policyInput);
+  const root = resolve(rootDir);
+  for (const cleanPath of policy.buildRecipe.cleanPaths) {
+    const target = resolve(root, cleanPath);
+    assert(target.startsWith(`${root}${sep}`), `buildRecipe clean path escapes root: ${cleanPath}`);
+    rmSync(target, { recursive: true, force: true });
+  }
+  for (const { command, args } of policy.buildRecipe.commands) {
+    runCommand(command, [...args], { cwd: root });
+  }
 }
 
 export function checkPackageSizes(policyInput, { rootDir = process.cwd() } = {}) {
@@ -150,6 +195,8 @@ export function checkPackageSizes(policyInput, { rootDir = process.cwd() } = {})
         ...measurement,
         budgetBytes: rule.budgetBytes,
         baselineBytes: rule.baselineBytes,
+        baselineRawBytes: rule.baselineRawBytes,
+        baselineFileCount: rule.baselineFileCount,
         regressionPercent: Number(regressionPercent.toFixed(2)),
         semantics: rule.semantics,
         status,
@@ -162,6 +209,8 @@ export function checkPackageSizes(policyInput, { rootDir = process.cwd() } = {})
         fileCount: null,
         budgetBytes: rule.budgetBytes,
         baselineBytes: rule.baselineBytes,
+        baselineRawBytes: rule.baselineRawBytes,
+        baselineFileCount: rule.baselineFileCount,
         regressionPercent: null,
         semantics: rule.semantics,
         status: "error",
@@ -187,12 +236,12 @@ export function renderPackageSizeSummary(report) {
     "",
     `Algorithm: \`${report.algorithm}\` (complete \`dist\`, deterministic gzip).`,
     "",
-    "| Package | Bytes | Files | Baseline | Budget | Semantics | Regression | Status |",
-    "| --- | ---: | ---: | ---: | ---: | --- | ---: | --- |",
+    "| Package | Raw bytes | Gzip bytes | Files | Baseline | Budget | Semantics | Regression | Status |",
+    "| --- | ---: | ---: | ---: | ---: | ---: | --- | ---: | --- |",
   ];
   for (const [name, result] of Object.entries(report.results)) {
     lines.push(
-      `| @gis-engine/${name} | ${result.bytes ?? "n/a"} | ${result.fileCount ?? "n/a"} | ${result.baselineBytes} | ${result.budgetBytes} | ${result.semantics} | ${result.regressionPercent ?? "n/a"}% | ${result.status} |`,
+      `| @gis-engine/${name} | ${result.rawBytes ?? "n/a"} | ${result.bytes ?? "n/a"} | ${result.fileCount ?? "n/a"} | ${result.baselineBytes} | ${result.budgetBytes} | ${result.semantics} | ${result.regressionPercent ?? "n/a"}% | ${result.status} |`,
     );
   }
   if (report.warnings.length > 0) {
@@ -233,6 +282,39 @@ function collectRegularFiles(directory) {
     }
   }
   return files;
+}
+
+function validateBuildRecipe(recipe) {
+  assertPlainObject(recipe, "policy.buildRecipe");
+  assertOnlyKeys(recipe, BUILD_RECIPE_KEYS, "policy.buildRecipe");
+  assert(
+    JSON.stringify(recipe.cleanPaths) === JSON.stringify(REQUIRED_CLEAN_PATHS),
+    `policy.buildRecipe.cleanPaths must equal ${JSON.stringify(REQUIRED_CLEAN_PATHS)}`,
+  );
+  assert(Array.isArray(recipe.commands), "policy.buildRecipe.commands must be an array");
+  for (const [index, item] of recipe.commands.entries()) {
+    assertPlainObject(item, `policy.buildRecipe.commands[${index}]`);
+    assertOnlyKeys(item, BUILD_COMMAND_KEYS, `policy.buildRecipe.commands[${index}]`);
+    assert(typeof item.command === "string" && item.command.length > 0, `build command ${index} is invalid`);
+    assert(
+      Array.isArray(item.args) && item.args.every((arg) => typeof arg === "string"),
+      `build command ${index} args are invalid`,
+    );
+  }
+  assert(
+    JSON.stringify(recipe.commands) === JSON.stringify(REQUIRED_BUILD_COMMANDS),
+    `policy.buildRecipe.commands must equal ${JSON.stringify(REQUIRED_BUILD_COMMANDS)}`,
+  );
+}
+
+function runBuildCommand(command, args, { cwd }) {
+  const result = spawnSync(command, args, { cwd, encoding: "utf8", stdio: "inherit" });
+  if (result.error) {
+    throw new Error(`PACKAGE_SIZE.BUILD_FAILED: ${command} ${args.join(" ")}: ${result.error.message}`);
+  }
+  if (result.status !== 0) {
+    throw new Error(`PACKAGE_SIZE.BUILD_FAILED: ${command} ${args.join(" ")} exited ${result.status}`);
+  }
 }
 
 function toPosix(path) {

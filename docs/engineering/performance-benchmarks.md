@@ -44,11 +44,16 @@ pnpm test:perf:nightly
 
 `config/package-size-budgets.json` is the only authority for these byte limits,
 their baselines, and their rationale. `canonical-dist-gzip-v1` measures every
-regular file in the complete `dist` tree with sorted relative paths,
-path/length/content framing, and gzip level 9; timestamps and permissions do
-not affect the result. The checked baseline is 193998 bytes for engine and
-60730 bytes for CLI. A measurement more than 5% above its baseline is an
-advisory; crossing a blocking budget fails `pnpm size:check`.
+regular file in the complete `dist` tree with UTF-8 bytewise relative-path
+ordering, path/length/content framing, and gzip level 9; timestamps,
+permissions, and host ICU behavior do not affect the result. The clean
+`c176f317` baseline is 1,984,108 raw / 193,984 gzip bytes / 210 files for engine
+and 296,932 raw / 60,730 gzip bytes / 44 files for CLI.
+
+`pnpm size:check` is the shared local/CI entry point. It removes only the
+managed engine/CLI `dist` and `.tsbuildinfo` paths, runs `pnpm build:schema`,
+runs `pnpm build`, and then measures. A result more than 5% above its baseline
+is advisory; crossing a blocking budget fails the command.
 
 MapLibre GL JS remains an optional peer dependency and therefore is not present
 in the engine `dist` tree measured by this policy.
