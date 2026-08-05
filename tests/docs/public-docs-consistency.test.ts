@@ -334,7 +334,7 @@ describe("public docs consistency", () => {
 
     expect(audit).toMatch(/declar(?:e|es) `maplibre-gl`\s+as `\^5\.0\.0 \|\| \^6\.0\.0`/);
     expect(audit).toMatch(/lockfile resolves the release baseline to\s+`5\.24\.0`/);
-    expect(audit).not.toContain('declares `maplibre-gl` as `^5.24.0`');
+    expect(audit).not.toContain("declares `maplibre-gl` as `^5.24.0`");
   });
 
   it("keeps generated engine and AI references off the legacy GeoParquet shape", () => {

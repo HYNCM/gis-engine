@@ -1,245 +1,139 @@
 ---
 agent: orchestrator
-period: 2026-W29
-generated_at: 2026-07-21T16:37:55.453Z
-repo_revision: "f3c7a62259acc946376cf9a679a72f2f8becda63"
+period: 2026-W32-W34
+generated_at: 2026-08-05T16:20:00Z
+repo_revision: "5800a6d034898a17a94eb46a621ac52943d5919d"
 inputs:
-  - docs/research/competitor-updates-2026-W29.md
+  - docs/research/competitor-updates-2026-W32.md
   - docs/research/capability-scorecard.md
-  - docs/reviews/quality-gate-planning-input-2026-07-13.md
-  - https://github.com/HYNCM/gis-engine/issues/27
-  - https://github.com/HYNCM/gis-engine/issues/28
-  - https://github.com/HYNCM/gis-engine/issues/29
-  - https://github.com/HYNCM/gis-engine/issues/30
-  - https://github.com/HYNCM/gis-engine/pull/36
-  - docs/reviews/pmtiles-capability-truth-quality-decision-2026-07-20.md
-  - docs/reviews/maplibre-v5-v6-compatibility-quality-decision-2026-07-21.md
-  - docs/reviews/fail-closed-agent-evidence-quality-decision-2026-07-21.md
+  - docs/planning/issues-snapshot.md
+  - docs/reviews/release-truth-quality-decision-2026-08-03.md
+  - docs/reviews/evidence-integrity-quality-decision-2026-08-03.md
+  - docs/reviews/mcp-2026-07-28-quality-decision-2026-08-03.md
+  - docs/reviews/maplibre-6.1-quality-decision-2026-08-03.md
+  - docs/reviews/geoparquet-version-boundary-quality-decision-2026-08-03.md
+  - docs/reviews/package-size-budget-quality-decision-2026-08-05.md
+  - docs/reviews/documentation-audit-2026-08-06.md
+  - https://github.com/HYNCM/gis-engine/issues/38
+  - https://github.com/HYNCM/gis-engine/issues/39
+  - https://github.com/HYNCM/gis-engine/issues/40
+  - https://github.com/HYNCM/gis-engine/issues/41
+  - https://github.com/HYNCM/gis-engine/issues/42
+  - https://github.com/HYNCM/gis-engine/issues/43
 owner: "@orchestrator"
 decision_level: advisory
 evidence_kind: specialist
 ---
 
-# Next Stage Plan: Contract Convergence
+# Next Stage Plan: Compatibility And Evidence Integrity
 
 ## Outcome
 
-From 2026-W29 through W30, close the gaps between public contracts, runtime
-behavior, and product claims before adding another renderer, hosted surface, or
-data-format badge. The stage milestone is
-[2026 W29-W30 Contract Convergence](https://github.com/HYNCM/gis-engine/milestone/1),
-due 2026-07-26.
+Close milestone 2 by proving current compatibility and evidence boundaries
+without silently promoting a new protocol, renderer default, data runtime, or
+hosted product claim. The implementation branch is complete; remote delivery
+and post-merge reconciliation remain the only stage-exit work.
 
-The ordering consumes the W29 HOC-N1 product handoff and the 2026-07-13 HOC-N3
-quality input. Quality found no P0 or release blocker that must interrupt
-roadmap work, so the product priority formula controls the execution order.
+## Execution Results
 
-Implementation closure was recorded on 2026-07-20/21. All four bounded tasks
-have code, focused verification, independent quality decisions, and main-branch
-delivery through PR #36 at `f3c7a62`. GitHub issues #27-#30 are closed; this
-document records the post-merge state rather than local-only completion.
+| Order | Issue | Implemented result | Quality | Remaining closure |
+| ---: | --- | --- | --- | --- |
+| 1 | #41 | v1.5 release truth and ordered 14-tool inventory aligned | PASS | final-head CI, merge, close issue |
+| 2 | #43 | specialist freshness, fail-closed timestamps, incident deduplication, recovery reconciliation, and bounded push retry | PASS for code; current cadence blocked until merge | run recovery on merged main, reconcile #32-#35 |
+| 3 | #40 | executable MCP 2026-07-28 matrix with default unchanged | PASS, adoption No-go | merge and close issue |
+| 4 | #38 | real MapLibre 5.24.0/6.1.0 browser/query/worker/visual matrix | PASS, keep 5.24.0 | merge and close issue |
+| 5 | #42 | TypeBox/policy parity for exact GeoParquet 1.1/2.0-RC metadata and diagnostics | PASS, runtime No-go | merge and close issue |
+| 6 | #39 | reproducible clean-build gzip budgets from one structured policy | PASS | merge and close issue |
 
-## Execution Closure
+## Acceptance Evidence
 
-| Issue | Branch result | Quality decision | Merge state |
-| --- | --- | --- | --- |
-| #27 | Canonical 14-tool MCP 2025-11-25 contract and structured results implemented | PASS | closed via PR #36 |
-| #28 | PMTiles display/load-plan Go; runtime archive load/query No-go and fail closed | PASS | closed via PR #36 |
-| #29 | Exact 5.24.0/6.0.0-22 matrix passed; keep 5.24.0 and do not bump prerelease | PASS | closed via PR #36 |
-| #30 | Auth failure preserves planning artifacts; template evidence cannot satisfy HOC/freshness | PASS | closed via PR #36 |
+### Public release truth (#41)
 
-## Decisions
+- [x] v1.5 release entry lists the exact 14 MCP tools in canonical order.
+- [x] Hosted Workbench, stable SceneView3D, and PMTiles runtime query remain
+      explicit No-go claims.
+- [x] Node 22 release preflight passes with pnpm 11.9.0 and Chromium.
 
-| Rank | Direction | Score | Evidence | Impact | Action | Confidence |
-| ---: | --- | ---: | --- | --- | --- | --- |
-| 1 | MCP stable-spec and public-tool contract convergence | 8.60 | W29 research; runtime has 14 tools while the operating contract names seven; declared `outputSchema` results are text-only | Public AI interoperability and release correctness | Complete [#27](https://github.com/HYNCM/gis-engine/issues/27) before any MCP expansion or package-release claim | high |
-| 2 | PMTiles capability-truth gate | 7.40 | Exported caller-supplied range-IO loader conflicts with the active runtime-query No-go | Product trust, resource security, and cloud-native workflow value | Complete [#28](https://github.com/HYNCM/gis-engine/issues/28) after #27 and issue an explicit Go/No-go per capability | high |
-| 3 | MapLibre v5-v6 compatibility matrix | 6.50 | v6 prereleases change event/camera and missing-image APIs while the engine advertises a v5/v6 peer range | Primary renderer compatibility and TypeScript consumer stability | Complete [#29](https://github.com/HYNCM/gis-engine/issues/29) after #27; do not upgrade in the evidence task | high |
-| infrastructure | Agent planning evidence integrity | reserved 20% | Green automation produced template-only evidence and an unauthenticated issue snapshot | Prevents stale task and gate state from steering future plans | Complete [#30](https://github.com/HYNCM/gis-engine/issues/30) within the stage capacity | high |
+### Evidence integrity (#43)
 
-Hosted Workbench launch work (score 6.10) and real SceneView3D renderer evidence
-(score 5.75) remain separately gated follow-ups. Neither is approved for hosted
-GA or stable runtime promotion by this plan.
+- [x] Template artifacts cannot satisfy specialist SLA or HOC checks.
+- [x] Missing, invalid, or future `generated_at` values fail closed.
+- [x] Recovery identity is deterministic per workflow/failed-run marker and
+      updates or reopens a canonical issue instead of creating duplicates.
+- [x] Scheduled planning push uses bounded fetch/rebase/push retry without
+      force push.
+- [ ] Merged-main manual workflow run proves no new duplicate incident and
+      permits #32-#35 reconciliation.
 
-## Phase 1: Public AI Contract
+### MCP compatibility (#40)
 
-### Task 1: MCP stable-spec convergence (#27)
+- [x] Official stable 2026-07-28 lifecycle differences are represented in a
+      checked fixture and live-server conformance test.
+- [x] The canonical 14 descriptors still validate through the MCP SDK.
+- [x] `GIS_ENGINE_MCP_PROTOCOL_VERSION` remains 2025-11-25; adoption is No-go.
 
-**Description:** Freeze one supported public tool inventory and make every
-declared output schema truthful under the stable MCP 2025-11-25 result contract.
+### MapLibre compatibility (#38)
 
-**Acceptance criteria:**
+- [x] Exact 5.24.0 and 6.1.0 native installs build and run in Chromium.
+- [x] Worker/resource paths, vector query identity, console health, pixels,
+      and per-version artifacts are verified.
+- [x] Strict aggregate fails closed and keeps 5.24.0 as the default.
 
-- [x] One approved inventory is enforced across AGENTS, the Phase 1 spec,
-      descriptors, package docs, and tests; no undocumented aliases remain.
-- [x] Tools with `outputSchema` return schema-conforming `structuredContent`
-      and a backwards-compatible JSON text block.
-- [x] Protocol and schema-conformance tests cover every approved tool without
-      adding a mutation path or expanding tool scope.
+### GeoParquet boundary (#42)
 
-**Verification:**
+- [x] TypeBox and policy validation distinguish exact 1.1 and reviewed 2.0 RC
+      metadata, including version-specific bbox widths.
+- [x] Missing, unsupported, mismatched, ambiguous, or invalid evidence returns
+      stable diagnostics.
+- [x] Public types/docs/migration align, and a breaking changeset marks the
+      contract unreleased from v1.5.0.
+- [x] Fetch, parser, range IO, WASM execution, worker, display, and query remain
+      blocked.
+
+### Package budgets (#39)
+
+- [x] One JSON policy owns build recipe, baseline provenance, measurement,
+      budgets, and severity semantics.
+- [x] Clean checkout reproduction passes at engine 200 KiB and CLI 64 KiB
+      blocking gzip limits.
+- [x] Local and CI use the same `pnpm size:check` entry point.
+
+## Integrated Gate Evidence
 
 - [x] `pnpm build:schema`
-- [x] `pnpm test:ai`
-- [x] `pnpm test:docs`
 - [x] `pnpm check`
-
-**Dependencies:** None
-
-**Files likely touched:**
-
-- `packages/ai/src/mcp/server.ts`
-- `tests/ai/mcp-integration.test.ts`
-- `AGENTS.md`
-- `docs/spec/phase-1-ai-map-authoring.md`
-- `packages/ai/README.md`
-
-**Estimated scope:** M, split implementation from public-contract documentation
-if the diff grows beyond one reviewable change.
-
-### Checkpoint: Contract Freeze
-
-- [x] @quality accepts the public inventory and structured-result conformance.
-- [x] No package release or new public MCP tool proceeds before this checkpoint.
-
-## Phase 2: Capability Truth
-
-### Task 2: PMTiles runtime capability decision (#28)
-
-**Description:** Align loader behavior, resource-policy evidence, AI readiness
-summaries, and public claims on one explicit PMTiles support level.
-
-**Acceptance criteria:**
-
-- [x] The accepted No-go decision records archive metadata/directory lookup,
-      cancellation, budgets, cache behavior, and deterministic negative paths.
-- [x] Package exports, docs, generated-app evidence, and AI summaries express
-      the same accepted or blocked state without hidden IO.
-- [x] @quality records separate Go/No-go decisions for display, load, and
-      feature-query claims; other cloud-native formats stay out of scope.
-
-**Verification:**
-
-- [x] `pnpm test:schema`
-- [x] `pnpm test:resources`
-- [x] `pnpm test:runtime`
-- [x] `pnpm test:adapter`
-- [x] `pnpm test:ai`
-- [x] `pnpm check`
-
-**Dependencies:** Task 1
-
-**Files likely touched:**
-
-- `packages/engine/src/sources/pmtiles-loader.ts`
-- `packages/engine/src/sources/pmtiles-query.ts`
-- `tests/resources/*pmtiles*`
-- `tests/runtime/*pmtiles*`
-- `docs/planning/feature-specs/pmtiles-runtime-query-promotion-boundary.md`
-
-**Estimated scope:** M per slice; split fixtures/policy from any parser or query
-promotion implementation.
-
-### Task 3: MapLibre compatibility matrix (#29)
-
-**Description:** Produce executable compatibility evidence for MapLibre 5.24
-and the latest checked v6 prerelease without changing the release baseline.
-
-**Acceptance criteria:**
-
-- [x] A repeatable matrix compiles and tests public adapter APIs against both
-      versions and records exact checked versions plus event/type/ESM drift.
-- [x] Generated examples load in both entries and smoke/strict visual evidence
-      records any divergence.
-- [x] @quality issues a separate keep/bump decision; this task does not upgrade
-      the default dependency or public version claim.
-
-**Verification:**
-
-- [x] `pnpm test:adapter`
+- [x] `pnpm test:compat:mcp`
+- [x] `pnpm test:compat:maplibre`
 - [x] `pnpm test:e2e:browser`
-- [x] `pnpm test:snapshot:smoke`
 - [x] `GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual`
-- [x] `pnpm check`
+- [x] `pnpm test:release:scene3d`
+- [x] `pnpm size:check`
+- [x] `pnpm test:docs`
+- [x] Node 22 `scripts/release-preflight.mjs`
+- [ ] Final-head GitHub Actions checks
+- [ ] Authenticated post-merge planning evidence
 
-**Dependencies:** Task 1; may run in parallel with Task 2 after the checkpoint.
+`pnpm knip` correctly remains red on classified repository inventory debt; it
+is not hidden or broadened into this milestone. [#44](https://github.com/HYNCM/gis-engine/issues/44)
+owns its bounded resolution. [#45](https://github.com/HYNCM/gis-engine/issues/45)
+owns the independent retention-policy mismatch.
 
-**Files likely touched:**
+## Stage Exit Sequence
 
-- `packages/engine/src/renderer/maplibre/adapter.ts`
-- `packages/engine/src/renderer/maplibre/v6-audit.ts`
-- `tests/adapter/*maplibre*`
-- `tests/e2e/render-pipeline.spec.ts`
-- `.github/workflows/ci.yml`
+1. Commit the synchronized specialist and planning evidence.
+2. Push `codex/w32-w34-completion` and open one PR closing #38-#43.
+3. Wait for every final-head GitHub Actions check and fix real failures without
+   weakening gates.
+4. Merge, then run Agent Failure Recovery manually on merged `main`.
+5. Reconcile #32-#35 from the workflow evidence and close milestone 2 only at
+   zero open milestone issues.
+6. Generate one authenticated issue snapshot, HOC ledger, and dashboard, then
+   publish the post-merge closeout through a small planning PR.
 
-**Estimated scope:** M
+## Guardrails
 
-### Checkpoint: Capability Claims
-
-- [x] PMTiles support wording matches accepted runtime evidence exactly.
-- [x] MapLibre v6 remains evidence-only unless a separate bump decision passes.
-- [x] `pnpm check` and all path-aware resource/visual gates pass.
-
-## Phase 3: Planning Evidence Integrity
-
-### Task 4: Fail-closed agent evidence (#30)
-
-**Description:** Keep template generation, specialist decisions, HOC
-consumption, and GitHub issue snapshots distinguishable and current.
-
-**Acceptance criteria:**
-
-- [x] Authenticated issue state reaches snapshot generation, and unavailable
-      state cannot overwrite a newer valid snapshot.
-- [x] Framework tests prove template-only artifacts cannot satisfy HOC-N1,
-      HOC-N3, or specialist freshness.
-- [x] Dashboard, handoff ledger, and issue snapshot agree in a fixture-driven
-      workflow test that does not require live secrets.
-
-**Verification:**
-
-- [x] `pnpm test:agent-framework`
-- [x] `node scripts/issues-snapshot.mjs --dry-run` (expected fail-closed exit 2 locally; snapshot preserved)
-- [x] `node scripts/handoff-ledger.mjs --dry-run`
-- [x] `node scripts/dashboard-generator.mjs --dry-run --period 2026-07-21`
-- [x] `node scripts/planning-evidence.mjs --period 2026-07-22` (authenticated post-merge run `planning-evidence-20260721T163755453Z`)
-- [x] `node scripts/doc-generator.mjs links`
-- [x] `pnpm check`
-
-**Dependencies:** None; reserve 20% of stage capacity and do not delay Task 1
-unless planning evidence becomes untrustworthy.
-
-**Files likely touched:**
-
-- `.github/workflows/agent-daily.yml`
-- `.github/workflows/agent-weekly.yml`
-- `scripts/issues-snapshot.mjs`
-- `scripts/handoff-ledger.mjs`
-- `scripts/dashboard-generator.mjs`
-- `tests/framework/*`
-
-**Estimated scope:** M, split workflow plumbing from fail-closed framework tests.
-
-## Completion Gate
-
-- [x] #27 is closed with a current @quality pass before capability work claims
-      the reconciled MCP behavior.
-- [x] #28 and #29 each have independent quality decisions and exact public
-      wording; one cannot supply evidence for the other.
-- [x] #30 makes the next weekly run preserve current specialist evidence.
-- [x] `pnpm check` passes on the final code-bearing head, with strict visual and
-      resource gates where required.
-- [x] Planning snapshots, HOC ledger, dashboard, and GitHub Issues agree on the
-      post-merge state through evidence run
-      `planning-evidence-20260721T163755453Z`; unrelated open escalation issues
-      #32-#35 remain explicitly visible and outside this milestone.
-
-## Risks and Mitigations
-
-| Risk | Impact | Mitigation |
-| --- | --- | --- |
-| Tool-inventory reconciliation becomes an accidental breaking removal | high | Decide and document the supported inventory first; require compatibility and package-doc evidence before changing exposure. |
-| PMTiles fixture work is mistaken for runtime promotion | high | Require separate display/load/query decisions and preserve No-go wording until @quality accepts each claim. |
-| A prerelease MapLibre matrix is treated as an upgrade approval | medium | Pin exact matrix versions and make the keep/bump decision a separate quality output. |
-| Infrastructure work expands into a workflow rewrite | medium | Keep #30 to evidence preservation, authenticated snapshots, and fail-closed tests within the 20% allocation. |
-| Hosted or 3D work bypasses higher-priority contract debt | high | Keep both outside this milestone and require fresh product/quality inputs before opening promotion issues. |
+- Compatibility is not adoption.
+- Metadata readiness is not runtime support.
+- Branch quality evidence is not merged-main or published-package evidence.
+- A pending changeset is not authorization to publish a major release.
+- #44 may not use broad ignore rules; #45 authorizes no deletion.
