@@ -11,6 +11,7 @@ import { AGENT_REGISTRY, HANDOFF_FLOWS } from "./agent-registry.mjs";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
 const LEDGER_PATH = "docs/planning/handoff-ledger.json";
+export const EVIDENCE_CLOCK_SKEW_TOLERANCE_MS = 5 * 60 * 1000;
 
 function getRepoRevision(root = ROOT) {
   try {
@@ -24,18 +25,24 @@ function getRepoRevision(root = ROOT) {
   }
 }
 
-function extractGeneratedAt(content) {
-  const frontMatter = extractFrontMatter(content);
-  if (!frontMatter?.generated_at) return null;
-  const date = new Date(String(frontMatter.generated_at).replace(/^"|"$/g, ""));
-  return Number.isNaN(date.getTime()) ? null : date;
+function parseGeneratedAt(frontMatter) {
+  const rawValue = frontMatter?.generated_at;
+  if (rawValue === undefined || rawValue === null || String(rawValue).trim() === "") {
+    return { generatedAt: null, timestampCode: "EVIDENCE.GENERATED_AT_MISSING" };
+  }
+
+  const generatedAt = new Date(String(rawValue).replace(/^"|"$/g, ""));
+  if (Number.isNaN(generatedAt.getTime())) {
+    return { generatedAt: null, timestampCode: "EVIDENCE.GENERATED_AT_INVALID" };
+  }
+  return { generatedAt, timestampCode: null };
 }
 
-export function findLatestReport(agentName, root = ROOT) {
+function discoverReports(agentName, root = ROOT) {
   const agentDef = AGENT_REGISTRY[agentName];
-  if (!agentDef?.reportSearch) return null;
+  if (!agentDef?.reportSearch) return [];
 
-  let latest = null;
+  const reports = [];
   for (const search of agentDef.reportSearch) {
     const dir = join(root, search.dir);
     if (!existsSync(dir)) continue;
@@ -46,27 +53,193 @@ export function findLatestReport(agentName, root = ROOT) {
       const stats = statSync(fullPath);
       const content = readFileSync(fullPath, "utf-8");
       const frontMatter = extractFrontMatter(content);
-      const generatedAt = extractGeneratedAt(content) ?? stats.mtime;
+      const evidenceKind = classifyReportEvidence(content, frontMatter);
+      const timestamp = parseGeneratedAt(frontMatter);
+      // Templates remain traceable by mtime; specialist proof never inherits filesystem time.
+      const generatedAt = timestamp.generatedAt ?? (evidenceKind === "specialist" ? null : stats.mtime);
       const item = {
         agent: agentName,
         path: relative(root, fullPath),
         generatedAt,
+        sortAt: generatedAt ?? stats.mtime,
+        timestampCode: timestamp.timestampCode,
         mtime: stats.mtime,
         sha256: createHash("sha256").update(content).digest("hex"),
         content,
+        frontMatter,
         inputs: Array.isArray(frontMatter?.inputs) ? frontMatter.inputs : [],
-        evidenceKind: classifyReportEvidence(content, frontMatter),
+        evidenceKind,
       };
-      if (!latest || item.generatedAt > latest.generatedAt) {
-        latest = item;
-      }
+      reports.push(item);
     }
   }
 
-  return latest;
+  return reports.sort((left, right) => right.sortAt.getTime() - left.sortAt.getTime());
 }
 
-export function classifyFlow(flow, upstream, downstream) {
+const DECISION_LEVELS = new Set(["info", "advisory", "blocking", "emergency"]);
+const GATE_RESULTS = new Set(["pass", "conditional-pass", "block", "waiver"]);
+const BUILDER_FOCUS_AREAS = new Set(["engine", "ai", "adapter", "qa"]);
+
+function hasValue(value) {
+  return value !== undefined && value !== null && String(value).trim() !== "";
+}
+
+function contractDiagnostic(flow, side, report) {
+  if (!report) return null;
+
+  const expectedAgent = side === "upstream" ? flow.from : flow.to;
+  const frontMatter = report.frontMatter ?? {};
+  const missing = [];
+  const invalid = [];
+  const requiredSharedFields = [
+    "agent",
+    "period",
+    "generated_at",
+    "repo_revision",
+    "inputs",
+    "owner",
+    "decision_level",
+  ];
+
+  for (const field of requiredSharedFields) {
+    if (field === "inputs") {
+      if (!Array.isArray(frontMatter.inputs) || frontMatter.inputs.length === 0) missing.push(field);
+    } else if (!hasValue(frontMatter[field])) {
+      missing.push(field);
+    }
+  }
+
+  if (hasValue(frontMatter.agent) && frontMatter.agent !== expectedAgent) invalid.push("agent");
+  if (hasValue(frontMatter.decision_level) && !DECISION_LEVELS.has(frontMatter.decision_level)) {
+    invalid.push("decision_level");
+  }
+
+  if (flow.id === "HOC-N1" && side === "upstream") {
+    if (!hasValue(frontMatter.status)) missing.push("status");
+    else if (!["ready-for-planning", "requires-escalation"].includes(frontMatter.status)) invalid.push("status");
+  }
+
+  if (flow.id === "HOC-N2" && side === "upstream") {
+    for (const field of ["focus_area", "feature", "status"]) {
+      if (!hasValue(frontMatter[field])) missing.push(field);
+    }
+    if (hasValue(frontMatter.focus_area) && !BUILDER_FOCUS_AREAS.has(frontMatter.focus_area))
+      invalid.push("focus_area");
+    if (hasValue(frontMatter.decision_level) && frontMatter.decision_level !== "advisory") {
+      invalid.push("decision_level");
+    }
+    if (hasValue(frontMatter.status) && !["ready-for-review", "blocked"].includes(frontMatter.status)) {
+      invalid.push("status");
+    }
+  }
+
+  if ((flow.id === "HOC-N2" && side === "downstream") || (flow.id === "HOC-N3" && side === "upstream")) {
+    if (!hasValue(frontMatter.gate_result)) missing.push("gate_result");
+    else if (!GATE_RESULTS.has(frontMatter.gate_result)) invalid.push("gate_result");
+  }
+
+  const fields = missing.length > 0 ? missing : invalid;
+  if (fields.length === 0) return null;
+  const code = missing.length > 0 ? "HOC.CONTRACT_FIELD_MISSING" : "HOC.CONTRACT_FIELD_INVALID";
+  const problem = missing.length > 0 ? "is missing required" : "has invalid";
+  return {
+    code,
+    message: `${expectedAgent} specialist evidence ${problem} ${flow.id} field(s): ${fields.join(", ")}`,
+    action: `@${expectedAgent} must publish ${flow.id} evidence with valid front matter before the handoff can be consumed`,
+  };
+}
+
+function isFutureEvidence(report, now) {
+  return report.generatedAt && report.generatedAt.getTime() > now.getTime() + EVIDENCE_CLOCK_SKEW_TOLERANCE_MS;
+}
+
+function timestampDiagnostic(agentName, report, now) {
+  const code = report.timestampCode ?? (isFutureEvidence(report, now) ? "EVIDENCE.GENERATED_AT_FUTURE" : null);
+  if (!code) return null;
+
+  const detail = {
+    "EVIDENCE.GENERATED_AT_MISSING": "is missing generated_at",
+    "EVIDENCE.GENERATED_AT_INVALID": "has an invalid generated_at",
+    "EVIDENCE.GENERATED_AT_FUTURE": `has generated_at beyond the ${EVIDENCE_CLOCK_SKEW_TOLERANCE_MS / 60000}-minute clock-skew tolerance`,
+  }[code];
+  return {
+    code,
+    message: `${agentName} specialist evidence ${detail}`,
+    action: `@${agentName} must publish specialist evidence with a valid generated_at timestamp`,
+    observedAt: report.generatedAt,
+  };
+}
+
+export function findLatestReport(agentName, root = ROOT, options = {}) {
+  const reports = discoverReports(agentName, root);
+  if (!options.evidenceKind) return reports[0] ?? null;
+  if (options.evidenceKind !== "specialist") {
+    return reports.find((report) => report.evidenceKind === options.evidenceKind) ?? null;
+  }
+
+  const now = options.now ?? new Date();
+  const candidate = reports.find((report) => report.evidenceKind === "specialist") ?? null;
+  if (!candidate || candidate.timestampCode || !candidate.generatedAt || isFutureEvidence(candidate, now)) return null;
+  return candidate;
+}
+
+export function inspectSpecialistEvidence(agentName, root = ROOT, now = new Date()) {
+  const reports = discoverReports(agentName, root);
+  const specialistReports = reports.filter((report) => report.evidenceKind === "specialist");
+  const specialistCandidate = specialistReports[0] ?? null;
+  const candidateDiagnostic = specialistCandidate ? timestampDiagnostic(agentName, specialistCandidate, now) : null;
+  const specialist = candidateDiagnostic ? null : specialistCandidate;
+  const latestTemplate = reports.find((report) => report.evidenceKind === "template") ?? null;
+  const slaMaxHours = AGENT_REGISTRY[agentName]?.slaMaxHours ?? null;
+  const ageHours = specialist ? (now - specialist.generatedAt) / 3600000 : null;
+  let diagnostic = null;
+
+  if (candidateDiagnostic) {
+    diagnostic = candidateDiagnostic;
+  } else if (!specialist && latestTemplate) {
+    diagnostic = {
+      code: "EVIDENCE.TEMPLATE_NOT_SPECIALIST",
+      message: `${agentName} latest artifact is template-only, not specialist evidence`,
+      action: `@${agentName} must publish evidence_kind: specialist with evidence-backed analysis`,
+      observedAt: latestTemplate.generatedAt,
+    };
+  } else if (!specialist) {
+    diagnostic = {
+      code: "EVIDENCE.SPECIALIST_MISSING",
+      message: `${agentName} has no specialist evidence`,
+      action: `@${agentName} must publish evidence_kind: specialist with evidence-backed analysis`,
+      observedAt: null,
+    };
+  } else if (slaMaxHours && ageHours > slaMaxHours) {
+    diagnostic = {
+      code: "EVIDENCE.SPECIALIST_STALE",
+      message: `${agentName} specialist evidence is ${ageHours.toFixed(1)}h old (SLA: ${slaMaxHours}h)`,
+      action: `@${agentName} must refresh specialist evidence before the SLA or handoff can pass`,
+      observedAt: specialist.generatedAt,
+    };
+  }
+
+  return {
+    report: specialist,
+    latestArtifact: reports[0] ?? null,
+    latestTemplate,
+    ageHours,
+    diagnostic,
+  };
+}
+
+export function classifyFlow(flow, upstream, downstream, options = {}) {
+  if (options.upstreamDiagnostic) {
+    return {
+      status: "invalid-upstream",
+      severity: flow.required ? "error" : "warning",
+      code: options.upstreamDiagnostic.code,
+      note: options.upstreamDiagnostic.message ?? `${flow.from} specialist evidence cannot satisfy ${flow.id}`,
+      action: options.upstreamDiagnostic.action,
+    };
+  }
+
   if (!upstream) {
     return flow.required
       ? {
@@ -90,6 +263,15 @@ export function classifyFlow(flow, upstream, downstream) {
   }
 
   if (!downstream) {
+    if (options.downstreamDiagnostic) {
+      return {
+        status: "pending",
+        severity: flow.required ? "error" : "warning",
+        code: options.downstreamDiagnostic.code,
+        note: options.downstreamDiagnostic.message ?? `${flow.to} specialist evidence cannot consume ${flow.id}`,
+        action: options.downstreamDiagnostic.action,
+      };
+    }
     return {
       status: "pending",
       severity: flow.required ? "error" : "warning",
@@ -102,6 +284,16 @@ export function classifyFlow(flow, upstream, downstream) {
       status: "pending",
       severity: flow.required ? "error" : "warning",
       note: `${flow.to} latest report is template-only and cannot consume ${flow.id}`,
+    };
+  }
+
+  if (options.downstreamDiagnostic) {
+    return {
+      status: "pending",
+      severity: flow.required ? "error" : "warning",
+      code: options.downstreamDiagnostic.code,
+      note: options.downstreamDiagnostic.message ?? `${flow.to} specialist evidence cannot consume ${flow.id}`,
+      action: options.downstreamDiagnostic.action,
     };
   }
 
@@ -130,11 +322,19 @@ export function classifyFlow(flow, upstream, downstream) {
 }
 
 export function buildHandoffLedger(root = ROOT, options = {}) {
-  const generatedAt = (options.generatedAt ?? new Date()).toISOString();
+  const generatedDate = options.generatedAt ?? new Date();
+  const generatedAt = generatedDate.toISOString();
   const flows = HANDOFF_FLOWS.map((flow) => {
-    const upstream = findLatestReport(flow.from, root);
-    const downstream = findLatestReport(flow.to, root);
-    const state = classifyFlow(flow, upstream, downstream);
+    const upstreamEvidence = inspectSpecialistEvidence(flow.from, root, generatedDate);
+    const downstreamEvidence = inspectSpecialistEvidence(flow.to, root, generatedDate);
+    const upstream = upstreamEvidence.report;
+    const downstream = downstreamEvidence.report;
+    const upstreamContractDiagnostic = contractDiagnostic(flow, "upstream", upstream);
+    const downstreamContractDiagnostic = contractDiagnostic(flow, "downstream", downstream);
+    const state = classifyFlow(flow, upstream, downstream, {
+      upstreamDiagnostic: upstreamContractDiagnostic ?? upstreamEvidence.diagnostic,
+      downstreamDiagnostic: downstreamContractDiagnostic ?? downstreamEvidence.diagnostic,
+    });
 
     return {
       id: flow.id,
@@ -144,7 +344,9 @@ export function buildHandoffLedger(root = ROOT, options = {}) {
       required: flow.required,
       status: state.status,
       severity: state.severity,
+      code: state.code ?? null,
       note: state.note,
+      action: state.action ?? null,
       upstream: upstream
         ? {
             path: upstream.path,
@@ -157,6 +359,20 @@ export function buildHandoffLedger(root = ROOT, options = {}) {
             path: downstream.path,
             generated_at: downstream.generatedAt.toISOString(),
             sha256: downstream.sha256,
+          }
+        : null,
+      latest_upstream_template: upstreamEvidence.latestTemplate
+        ? {
+            path: upstreamEvidence.latestTemplate.path,
+            generated_at: upstreamEvidence.latestTemplate.generatedAt.toISOString(),
+            sha256: upstreamEvidence.latestTemplate.sha256,
+          }
+        : null,
+      latest_downstream_template: downstreamEvidence.latestTemplate
+        ? {
+            path: downstreamEvidence.latestTemplate.path,
+            generated_at: downstreamEvidence.latestTemplate.generatedAt.toISOString(),
+            sha256: downstreamEvidence.latestTemplate.sha256,
           }
         : null,
     };

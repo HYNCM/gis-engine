@@ -130,7 +130,10 @@ export {
 export type {
   FlatGeobufPolicy,
   FlatGeobufSourceSpec,
+  GeoParquet11Metadata,
+  GeoParquet20Rc1Metadata,
   GeoParquetPolicy,
+  GeoParquetSourceMetadata,
   GeoParquetSourceSpec,
   GeoTiffPolicy,
   GeoTiffSourceSpec,
@@ -142,6 +145,10 @@ export {
   defaultGeoParquetPolicy,
   defaultGeoTiffPolicy,
   defaultPMTilesArchivePolicy,
+  GeoParquet11MetadataSchema,
+  GeoParquet20Rc1MetadataSchema,
+  GeoParquetSourceMetadataSchema,
+  GeoParquetSourceSchema,
 } from "./spec/cloud-native/index.js";
 export {
   validateFlatGeobufPolicy,

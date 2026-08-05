@@ -31,6 +31,10 @@ permissions:
   issues: write
   actions: read
 
+concurrency:
+  group: agent-failure-recovery
+  cancel-in-progress: false
+
 jobs:
   check-and-recover:
     name: "故障检测与恢复"
@@ -46,6 +50,8 @@ jobs:
         run: |
           set -euo pipefail
           FAILED=0
+          FAILED_RUNS_FILE="${RUNNER_TEMP}/failed-agent-runs.tsv"
+          : > "${FAILED_RUNS_FILE}"
           {
             echo "## Agent Workflow Health"
             echo ""
@@ -60,12 +66,19 @@ jobs:
 
             echo "checking ${WF}..." >> "$GITHUB_STEP_SUMMARY"
 
-            RUN_INFO=$(gh run list --workflow="${WF}" --limit 1 --json conclusion,status,databaseId 2>/dev/null || echo "[]")
-            CONCLUSION=$(echo "${RUN_INFO}" | jq -r '.[0].conclusion // ""' 2>/dev/null || echo "")
+            RUN_INFO=$(gh run list --workflow="${WF}" --limit 1 --json conclusion,status,databaseId,url)
+            CONCLUSION=$(echo "${RUN_INFO}" | jq -r '.[0].conclusion // ""')
 
             if [ "${CONCLUSION}" = "failure" ]; then
               FAILED=$((FAILED + 1))
-              echo "- [FAIL] ${WF}" >> "$GITHUB_STEP_SUMMARY"
+              RUN_ID=$(echo "${RUN_INFO}" | jq -r '.[0].databaseId // ""')
+              RUN_URL=$(echo "${RUN_INFO}" | jq -r '.[0].url // ""')
+              if [ -z "${RUN_ID}" ]; then
+                echo "::error::Failed run for ${WF} did not include databaseId."
+                exit 1
+              fi
+              printf '%s\t%s\t%s\n' "${WF}" "${RUN_ID}" "${RUN_URL}" >> "${FAILED_RUNS_FILE}"
+              echo "- [FAIL] ${WF} (run ${RUN_ID})" >> "$GITHUB_STEP_SUMMARY"
             elif [ "${CONCLUSION}" = "success" ]; then
               echo "- [OK] ${WF}" >> "$GITHUB_STEP_SUMMARY"
             else
@@ -75,6 +88,7 @@ jobs:
 
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "failed=${FAILED}" >> "$GITHUB_OUTPUT"
+          echo "failed_runs_file=${FAILED_RUNS_FILE}" >> "$GITHUB_OUTPUT"
 
           if [ "${FAILED}" -eq 0 ]; then
             echo "All agent workflows healthy" >> "$GITHUB_STEP_SUMMARY"
@@ -104,42 +118,23 @@ jobs:
           pnpm build:schema && pnpm check
           echo "✅ 核心门禁通过"
 
-      - name: 创建 escalation issue
-        if: ${{ steps.health.outputs.failed > 0 }}
+      - name: Reconcile escalation incidents
+        if: ${{ always() && steps.health.outputs.failed > 0 }}
         env:
           GH_TOKEN: ${{ github.token }}
+          FAILED_RUNS_FILE: ${{ steps.health.outputs.failed_runs_file }}
         run: |
-          LABEL_ARGS=()
-          if gh label create agent-escalation --description "Agent workflow escalation" --color D73A4A --force >/dev/null 2>&1; then
-            LABEL_ARGS+=(--label agent-escalation)
-          else
-            echo "::warning::Could not create or update agent-escalation label; creating issue without it."
+          set -euo pipefail
+          RECOVERY_FAILURES=0
+          while IFS=$'\t' read -r WORKFLOW_NAME RUN_ID RUN_URL; do
+            [ -n "${RUN_ID}" ] || continue
+            if ! node scripts/recovery-incident.mjs --workflow "${WORKFLOW_NAME}" --run-id "${RUN_ID}" --run-url "${RUN_URL}"; then
+              RECOVERY_FAILURES=$((RECOVERY_FAILURES + 1))
+              echo "::error::Recovery reconciliation failed for ${WORKFLOW_NAME} run ${RUN_ID}."
+            fi
+          done < "${FAILED_RUNS_FILE}"
+
+          if [ "${RECOVERY_FAILURES}" -gt 0 ]; then
+            echo "::error::${RECOVERY_FAILURES} recovery reconciliation(s) failed."
+            exit 1
           fi
-          if gh label create automation --description "Automation infrastructure" --color 5319E7 --force >/dev/null 2>&1; then
-            LABEL_ARGS+=(--label automation)
-          else
-            echo "::warning::Could not create or update automation label; creating issue without it."
-          fi
-
-          BODY=$(cat <<'ISSUE_BODY'
-          ## Agent Workflow Failure Detected
-
-          The automated health check detected one or more agent workflow failures.
-
-          **Actions required:**
-          - @orchestrator reviews the Actions tab
-          - Identify root cause and assign owner
-          - Run \`pnpm build:schema && pnpm check\` locally to verify
-
-          **Recovery steps:**
-          1. Check the failed workflow logs
-          2. Apply fix and push to main
-          3. Monitor the next scheduled run
-          4. Close this issue when resolved
-          ISSUE_BODY
-          )
-
-          gh issue create \
-            --title "Agent Escalation: Workflow failure detected" \
-            --body "${BODY}" \
-            "${LABEL_ARGS[@]}"

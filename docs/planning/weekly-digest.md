@@ -1,18 +1,21 @@
 ---
 agent: orchestrator
-period: 2026-W29
-generated_at: 2026-07-21T16:37:55.453Z
-repo_revision: "f3c7a62259acc946376cf9a679a72f2f8becda63"
+period: 2026-W32
+generated_at: 2026-08-05T16:20:00Z
+repo_revision: "5800a6d034898a17a94eb46a621ac52943d5919d"
 inputs:
-  - docs/research/competitor-updates-2026-W29.md
+  - docs/research/competitor-updates-2026-W32.md
   - docs/research/capability-scorecard.md
-  - docs/reviews/quality-gate-planning-input-2026-07-13.md
+  - docs/reviews/maplibre-6.1-quality-decision-2026-08-03.md
+  - docs/reviews/mcp-2026-07-28-quality-decision-2026-08-03.md
+  - docs/reviews/geoparquet-version-boundary-quality-decision-2026-08-03.md
+  - docs/reviews/package-size-budget-quality-decision-2026-08-05.md
+  - docs/reviews/evidence-integrity-quality-decision-2026-08-03.md
+  - docs/reviews/release-truth-quality-decision-2026-08-03.md
+  - docs/reviews/documentation-audit-2026-08-06.md
   - docs/planning/issues-snapshot.md
   - docs/planning/next-step-plan.md
-  - docs/reviews/maplibre-v5-v6-compatibility-quality-decision-2026-07-21.md
-  - docs/reviews/fail-closed-agent-evidence-quality-decision-2026-07-21.md
-  - https://github.com/HYNCM/gis-engine/pull/36
-  - docs/reviews/contract-convergence-closeout-2026-07-22.md
+  - https://github.com/HYNCM/gis-engine/milestone/2
 owner: "@orchestrator"
 decision_level: advisory
 evidence_kind: specialist
@@ -20,42 +23,51 @@ evidence_kind: specialist
 
 # Weekly Digest
 
-## W29-W30 Closure Decision
+## W32-W34 Gate Decision
 
-The contract-convergence implementation is complete on `main` at `f3c7a62`.
-Each bounded task has independent quality evidence, PR #36 passed all required
-remote checks, and GitHub issues #27-#30 closed on merge.
+Implementation for issues #38 through #43 is complete on
+`codex/w32-w34-completion`. Each issue has bounded builder evidence, an
+independent quality PASS, and the required local deterministic or browser
+gate. This is a **pre-merge decision**: the issues and milestone remain open
+until the final branch head passes GitHub Actions and lands on `main`.
 
-| Topic | Current reading | Evidence |
+| Issue | Accepted branch outcome | Promotion decision |
 | --- | --- | --- |
-| P0 | Canonical 14-tool MCP 2025-11-25 descriptors and schema-conforming structured results pass | [#27](https://github.com/HYNCM/gis-engine/issues/27) |
-| PMTiles | Display/load-plan Go; runtime archive load and feature query remain explicit No-go | [#28 decision](../reviews/pmtiles-capability-truth-quality-decision-2026-07-20.md) |
-| MapLibre | Exact 5.24.0/6.0.0-22 matrix passes; keep 5.24.0, v6 bump No-go | [#29 decision](../reviews/maplibre-v5-v6-compatibility-quality-decision-2026-07-21.md) |
-| Infrastructure | Auth failures preserve planning evidence; templates cannot satisfy HOC or freshness | [#30 decision](../reviews/fail-closed-agent-evidence-quality-decision-2026-07-21.md) |
-| Quality | All four bounded tasks have current PASS decisions; PR #36 remote gate passed | [closeout](../reviews/contract-convergence-closeout-2026-07-22.md) |
-| Hosted Workbench | Candidate route only; hosted GA remains No-go | [Workbench gate](./feature-specs/review-console-workbench-go-gate.md) |
-| SceneView3D | Experimental and adapter-local; stable mode remains blocked | [stable renderer contract](./feature-specs/sceneview3d-stable-renderer-contract.md) |
+| #38 | Exact MapLibre 5.24.0/6.1.0 native install, type, worker/resource, query, browser, and strict visual matrix passes | Keep 5.24.0 as default; 6.1.0 adoption remains No-go |
+| #39 | One structured source owns clean-build package baselines, 200 KiB engine and 64 KiB CLI blocking limits, and CI/local semantics | Package-size gate PASS |
+| #40 | MCP 2026-07-28 compatibility matrix covers the new lifecycle and fails closed | Keep MCP 2025-11-25 as default; v2 migration remains No-go |
+| #41 | Public v1.5 release notes expose the ordered 14-tool contract and explicit hosted/3D/PMTiles exclusions | Release-truth gate PASS |
+| #42 | GeoParquet 1.1 and reviewed 2.0 RC metadata are version-discriminated with stable diagnostics | Metadata gate PASS; fetch/parse/WASM/display/query remain No-go |
+| #43 | Specialist evidence, HOC freshness, incident identity, recovery deduplication, and bounded push retry are fail closed | Merge-ready; scheduled recovery proof is required on merged `main` |
 
-## External Signals Checked 2026-07-13
+## Current External Signals
 
-- MCP `2025-11-25` is the stable baseline; declared output schemas require
-  conforming structured results. The `2026-07-28-RC` is watch-only.
-- MapLibre stable remains 5.24 while v6 prereleases continue compatibility
-  changes; Mapbox 3.26 advances the commercial benchmark.
-- OpenLayers 10.9 raises the browser cloud-native IO benchmark, while Cesium,
-  Three.js, and 3DTilesRendererJS reinforce future 3D evidence requirements.
+Official sources were checked on 2026-08-06 in
+[competitor-updates-2026-W32.md](../research/competitor-updates-2026-W32.md).
+MapLibre 6.1.0 and MCP 2026-07-28 are now stable upstream releases, but both
+require separate adoption programs. GeoParquet has no final 2.0 tag, and the
+PMTiles v3 archive/query obligations are unchanged.
 
-Full dated URLs, package metadata, factor scores, and confidence are in
-[competitor-updates-2026-W29.md](../research/competitor-updates-2026-W29.md).
+The product priority formula ranks MCP v2 conformance research first at 7.75,
+followed by GeoParquet final-watch at 6.50, PMTiles runtime promotion at 6.40,
+and MapLibre default adoption at 6.00. None of these advisory scores overrides
+the explicit No-go boundaries above.
+
+## Residual Work
+
+- [#44](https://github.com/HYNCM/gis-engine/issues/44) owns the real `knip`
+  inventory debt: 56 file findings, two unlisted MapLibre test dependencies,
+  unused exports/types/dependencies, one duplicate export, and config hints.
+- [#45](https://github.com/HYNCM/gis-engine/issues/45) owns the pre-existing
+  seven-days versus seven-files report-retention mismatch. It authorizes no
+  deletion.
+- Issues #32-#35 remain open historical recovery duplicates until the repaired
+  workflow is manually exercised on merged `main` and proves one canonical
+  incident identity.
 
 ## Next Checkpoint
 
-The W29-W30 stage is closed on `main`. The next planning run should preserve
-the authenticated issue snapshot and separately triage unrelated escalation
-issues #32-#35, whose recovery workflow currently rediscovers one historical
-failure on repeated schedules.
-
-## Maintenance
-
-Keep this file short. GitHub Issues are canonical task state; dated evidence
-belongs in research and quality reports.
+Publish the implementation PR, require final-head remote checks, merge, run the
+manual recovery workflow, reconcile #32-#35, close #38-#43 and milestone 2,
+then generate one authenticated post-merge planning evidence run. Until those
+steps complete, branch evidence must not be described as main-branch delivery.

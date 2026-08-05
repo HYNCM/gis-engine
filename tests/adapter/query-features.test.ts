@@ -190,8 +190,12 @@ it("reports unsupported diagnostics for GeoParquet URL sources in headless query
       geoparquet: {
         type: "geoparquet",
         url: "./data/geoparquet.parquet",
-        crs: { authority: "EPSG", code: "4326" },
-        encoding: "WKB",
+        metadata: {
+          releaseIdentity: "1.1.0",
+          geoVersion: "1.1.0",
+          encoding: "WKB",
+          crs: { type: "GeographicCRS", name: "WGS 84 longitude-latitude" },
+        },
       },
     },
     layers: [{ id: "geoparquet-layer", type: "circle", source: "geoparquet" }],

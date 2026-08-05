@@ -69,7 +69,20 @@ const PMTILES_ARCHIVE_CONTRACT_SUMMARY: SourceArchiveContractSummary = {
 const GEOPARQUET_SOURCE_CONTRACT_SUMMARY: SourceContractSummary = {
   kind: "schema",
   state: "explicit",
-  metadataFields: ["type", "url", "crs", "encoding", "bbox", "rowCount", "fileBytes", "parquetVersion"],
+  metadataFields: [
+    "type",
+    "url",
+    "metadata.releaseIdentity",
+    "metadata.geoVersion",
+    "metadata.encoding",
+    "metadata.crs",
+    "metadata.bbox",
+    "metadata.covering",
+    "metadata.logicalType",
+    "metadata.rowGroupStatistics",
+    "rowCount",
+    "fileBytes",
+  ],
   policyFields: ["maxFileBytes", "maxRowCount", "allowRemoteUrls", "timeoutMs", "workerBudget"],
 };
 

@@ -27,9 +27,11 @@ not claim that MapLibre has been upgraded, and it must not be used as release
 evidence until the upgrade run records the proposed version, source URLs, checked
 dates, package diff, test output, and reviewer decision.
 
-Current package evidence: `package.json` declares `maplibre-gl` as `^5.24.0`.
-Before changing that range or the lockfile, run this checklist against the exact
-candidate version and keep the evidence with the PR or gate report.
+Current package evidence: the root and engine manifests declare `maplibre-gl`
+as `^5.0.0 || ^6.0.0`, while the lockfile resolves the release baseline to
+`5.24.0`. Before changing that range or the lockfile, run this checklist
+against the exact candidate version and keep the evidence with the PR or gate
+report.
 
 2026-06-01 closure note: `MLD-002` through `MLD-004` closed the current drift
 audit without package movement. PMTiles/vector delivery boundaries remain
@@ -37,7 +39,14 @@ readiness/evidence-only, `SourceLoader` remains contract-only, and package
 movement is no-go until a future task refreshes official package/changelog
 evidence and accepts strict visual evidence in the same dependency state.
 
-> **Post-audit note (2026-06-03):** Phase 1a of the SDK+CLI productization plan added `maplibre-gl` as an optional `peerDependency` (`^5.0.0 || ^6.0.0`) to `@gis-engine/engine`. This is a peer-dependency broadening with no runtime impact; the full drift audit checklist is deferred until MapLibre v6 reaches stable release.
+> **Stable-v6 audit note (checked 2026-08-04):** MapLibre GL JS `6.1.0`
+> is the exact stable candidate in the executable compatibility matrix. The
+> release baseline remains `5.24.0`, the optional peer range remains
+> `^5.0.0 || ^6.0.0`, and no workspace default or lockfile was changed. Stable
+> dual-version compatibility evidence for `5.24.0` and `6.1.0` completed on
+> 2026-08-04. Default v6 adoption remains a separate No-go / keep-baseline
+> decision and requires an explicit package-movement task plus `@quality` bump
+> approval.
 
 Owner names below follow the current 5-agent model. Runtime or schema-level
 waiver terminology may still use legacy `coordinator` wording until the

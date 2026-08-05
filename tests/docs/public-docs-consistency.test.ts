@@ -54,10 +54,14 @@ function normalizeContractText(text: string): string {
     .trim();
 }
 
-function expectCanonicalMcpOrder(file: string): void {
-  expect(normalizeContractText(readText(file)), `${file} should list the canonical tools/list order`).toContain(
+function expectCanonicalMcpOrderInText(text: string, source: string): void {
+  expect(normalizeContractText(text), `${source} should list the canonical tools/list order`).toContain(
     canonicalMcpInventory,
   );
+}
+
+function expectCanonicalMcpOrder(file: string): void {
+  expectCanonicalMcpOrderInText(readText(file), file);
 }
 
 describe("public docs consistency", () => {
@@ -77,6 +81,7 @@ describe("public docs consistency", () => {
       "docs/mcp-server-description.md",
       "docs/website/guide/quick-start.md",
       "docs/website/index.md",
+      "docs/website/release-notes.md",
     ];
 
     for (const file of files) {
@@ -118,6 +123,7 @@ describe("public docs consistency", () => {
       "docs/website/api/ai.md",
       "docs/website/mcp/overview.md",
       "docs/website/mcp/setup-guides.md",
+      "docs/website/release-notes.md",
       "packages/ai/README.md",
       "examples/mcp-server-setup/README.md",
       "skills/gis-engine-mcp-setup/SKILL.md",
@@ -131,6 +137,26 @@ describe("public docs consistency", () => {
       }
       expectCanonicalMcpOrder(file);
     }
+  });
+
+  it("keeps the current release section on v1.5 truth and explicit No-go boundaries", () => {
+    const releaseNotes = readText("docs/website/release-notes.md");
+    const currentHeading = releaseNotes.match(/^## (v\d+\.\d+\.\d+)$/m);
+
+    expect(currentHeading?.[1]).toBe("v1.5.0");
+
+    const currentStart = currentHeading?.index ?? -1;
+    const nextReleaseStart = releaseNotes.indexOf("\n## v", currentStart + 1);
+    const currentRelease = releaseNotes.slice(currentStart, nextReleaseStart);
+
+    expect(currentRelease).toContain("14 MCP tools");
+    for (const tool of currentMcpTools) {
+      expect(currentRelease, `current release notes should list ${tool}`).toContain(tool);
+    }
+    expectCanonicalMcpOrderInText(currentRelease, "current v1.5 release section");
+    expect(currentRelease).toContain("- **Hosted Workbench GA**: No-go.");
+    expect(currentRelease).toContain("- **Stable SceneView3D**: No-go.");
+    expect(currentRelease).toContain("- **PMTiles runtime query support**: No-go.");
   });
 
   it("documents the stable MCP protocol and descriptor schema dialect at public setup surfaces", () => {
@@ -148,6 +174,13 @@ describe("public docs consistency", () => {
       expect(text, `${file} should name the stable MCP protocol`).toContain("2025-11-25");
       expect(text, `${file} should name the descriptor schema dialect`).toContain("draft-07");
     }
+  });
+
+  it("documents GeoParquet bbox widths per reviewed version", () => {
+    const migration = readText("docs/migration/geoparquet-versioned-metadata.md");
+
+    expect(migration).toContain("GeoParquet 1.1 bbox accepts exactly 4 or 6 numbers");
+    expect(migration).toContain("GeoParquet 2.0 RC bbox accepts 4, 6, or 8 numbers");
   });
 
   it("keeps both AI-native SDK research copies on the complete grouped 14-tool inventory", () => {
@@ -263,6 +296,63 @@ describe("public docs consistency", () => {
 
     expect(migrationIndex).toContain("./v0.x-to-v1.0.md");
     expect(migrationIndex).toContain("./v1.4-to-v1.5.md");
+    expect(migrationIndex).toContain("./geoparquet-versioned-metadata.md");
+  });
+
+  it("documents the breaking GeoParquet versioned-metadata migration", () => {
+    const migration = readText("docs/migration/geoparquet-versioned-metadata.md");
+
+    expect(migration).toContain("parquetVersion");
+    expect(migration).toContain("metadata.releaseIdentity");
+    expect(migration).toContain("metadata.geoVersion");
+    expect(migration).toContain("sourceMetadata");
+    expect(migration).toMatch(/runtime.*(?:blocked|No-go)/is);
+    expect(migration).toContain("GeoParquet 1.1 bbox accepts exactly 4 or 6 numbers");
+    expect(migration).toContain("GeoParquet 2.0 RC bbox accepts 4, 6, or 8 numbers");
+    expect(migration).toMatch(/antimeridian/i);
+  });
+
+  it("marks the breaking GeoParquet contract as unreleased and records its release vehicle", () => {
+    const migration = readText("docs/migration/geoparquet-versioned-metadata.md");
+    const releaseNotes = readText("docs/website/release-notes.md");
+    const engineApi = readText("docs/website/api/reference/engine/index.md");
+    const changesetPath = resolve(repoRoot, ".changeset/geoparquet-versioned-metadata.md");
+
+    expect(migration).toContain("Unreleased");
+    expect(migration).toContain("not part of the published v1.5.0 package");
+    expect(releaseNotes).toContain("## Unreleased");
+    expect(releaseNotes).toContain("GeoParquet versioned metadata");
+    expect(engineApi).toContain("Unreleased current-source API");
+    expect(releaseNotes).not.toContain("main-branch contract");
+    expect(existsSync(changesetPath), "breaking GeoParquet contract should have a changeset").toBe(true);
+    if (existsSync(changesetPath)) {
+      expect(readText(".changeset/geoparquet-versioned-metadata.md")).toContain('"@gis-engine/engine": major');
+    }
+  });
+
+  it("distinguishes the MapLibre peer range from the resolved release baseline", () => {
+    const audit = readText("docs/engineering/maplibre-version-drift-audit.md");
+
+    expect(audit).toMatch(/declar(?:e|es) `maplibre-gl`\s+as `\^5\.0\.0 \|\| \^6\.0\.0`/);
+    expect(audit).toMatch(/lockfile resolves the release baseline to\s+`5\.24\.0`/);
+    expect(audit).not.toContain("declares `maplibre-gl` as `^5.24.0`");
+  });
+
+  it("keeps generated engine and AI references off the legacy GeoParquet shape", () => {
+    const apiReferences = collectMarkdownFiles(["docs/website/api/reference/engine", "docs/website/api/reference/ai"]);
+
+    for (const file of apiReferences) {
+      const text = readText(file);
+      expect(text, `${file} should not expose legacy parquetVersion`).not.toContain("parquetVersion");
+      expect(text, `${file} should not expose legacy geoarrow-* encoding names`).not.toContain("geoarrow-point");
+    }
+
+    const sourceSpec = readText("docs/website/api/reference/engine/type-aliases/GeoParquetSourceSpec.md");
+    expect(sourceSpec).toContain("GeoParquetSourceSchema");
+
+    const sourceSchema = readText("docs/website/api/reference/engine/variables/GeoParquetSourceSchema.md");
+    expect(sourceSchema).toContain("releaseIdentity");
+    expect(sourceSchema).toContain("geoVersion");
   });
 
   it("keeps generated API reference entry points visible", () => {

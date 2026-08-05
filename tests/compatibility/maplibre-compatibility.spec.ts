@@ -21,11 +21,14 @@ const contentTypes: Record<string, string> = {
 
 let server: Server;
 let baseUrl: string;
+const requestedPaths = new Set<string>();
 
 test.beforeAll(async () => {
   const root = resolve(distRoot);
+  requestedPaths.clear();
   server = createServer((request, response) => {
     const requestPath = request.url === "/" ? "/index.html" : (request.url ?? "/index.html").split("?")[0];
+    requestedPaths.add(requestPath);
     const candidate = normalize(join(root, requestPath));
     if (relative(root, candidate).startsWith("..")) {
       response.writeHead(403).end("Forbidden");
@@ -55,11 +58,41 @@ test.afterAll(async () => {
 });
 
 test(`loads generated example and records strict visual/event evidence for MapLibre ${expectedVersion}`, async ({
+  browser,
   page,
 }) => {
   const consoleErrors: string[] = [];
+  const consoleDiagnosticTasks = new Set<Promise<void>>();
+  const drainConsoleDiagnostics = async (): Promise<void> => {
+    let stablePasses = 0;
+    while (stablePasses < 2) {
+      await Promise.allSettled([...consoleDiagnosticTasks]);
+      await new Promise<void>((resolveWait) => setTimeout(resolveWait, 25));
+      stablePasses = consoleDiagnosticTasks.size === 0 ? stablePasses + 1 : 0;
+    }
+  };
   page.on("console", (message) => {
-    if (message.type() === "error") consoleErrors.push(message.text());
+    if (message.type() !== "error") return;
+    const errorIndex = consoleErrors.push(message.text()) - 1;
+    let diagnosticTask: Promise<void>;
+    diagnosticTask = Promise.all(
+      message
+        .args()
+        .map((argument) =>
+          argument
+            .evaluate((value) =>
+              value instanceof Error ? { name: value.name, message: value.message, stack: value.stack } : value,
+            )
+            .catch(() => argument.toString()),
+        ),
+    )
+      .then((values) => {
+        consoleErrors[errorIndex] = `${message.text()} ${JSON.stringify(values)}`;
+      })
+      .finally(() => {
+        consoleDiagnosticTasks.delete(diagnosticTask);
+      });
+    consoleDiagnosticTasks.add(diagnosticTask);
   });
   page.on("pageerror", (error) => consoleErrors.push(error.message));
 
@@ -72,12 +105,15 @@ test(`loads generated example and records strict visual/event evidence for MapLi
 
   let terminalStateReached = true;
   try {
-    await page.waitForFunction(() => window.__GIS_MATRIX_RESULT__?.status !== "loading", undefined, {
-      timeout: 8_000,
-    });
+    await page.waitForFunction(
+      () => Boolean(window.__GIS_MATRIX_RESULT__) && window.__GIS_MATRIX_RESULT__?.status !== "loading",
+      undefined,
+      { timeout: 15_000 },
+    );
   } catch {
     terminalStateReached = false;
   }
+  await drainConsoleDiagnostics();
   const browserState = await page.evaluate(() => ({
     result: window.__GIS_MATRIX_RESULT__,
     canvasCount: document.querySelectorAll("#map canvas").length,
@@ -96,28 +132,58 @@ test(`loads generated example and records strict visual/event evidence for MapLi
           styleLoaded: window.__GIS_MATRIX_RAW_MAP__.isStyleLoaded(),
           tilesLoaded: window.__GIS_MATRIX_RAW_MAP__.areTilesLoaded(),
           moving: window.__GIS_MATRIX_RAW_MAP__.isMoving(),
+          overscaledSourcePresent: Boolean(window.__GIS_MATRIX_RAW_MAP__.getSource("overscaled")),
+          overscaledSourceLoaded: window.__GIS_MATRIX_RAW_MAP__.isSourceLoaded("overscaled"),
+          overscaledSourceFeatureCount: window.__GIS_MATRIX_RAW_MAP__.querySourceFeatures("overscaled", {
+            sourceLayer: "matrix",
+          }).length,
         }
       : null,
     resources: performance.getEntriesByType("resource").map((entry) => entry.name),
   }));
-  const screenshotPath = test.info().outputPath(`maplibre-${expectedVersion}.png`);
-  const screenshot = await page.locator("#map").screenshot({ path: screenshotPath });
-
+  const serverRequestedPaths = [...requestedPaths].sort();
   if (!terminalStateReached) {
     throw new Error(
-      `Generated example did not reach strict readiness: ${JSON.stringify({ browserState, consoleErrors })}`,
+      `Generated example did not reach strict readiness: ${JSON.stringify({ browserState, consoleErrors, serverRequestedPaths })}`,
     );
   }
+  const screenshotPath = test.info().outputPath(`maplibre-${expectedVersion}.png`);
+  const screenshot = await page.locator("#map").screenshot({ path: screenshotPath });
   const result = await page.evaluate(() => window.__GIS_MATRIX_RESULT__);
   expect(result).toMatchObject({ status: "ready", version: expectedVersion, snapshotPassed: true });
   expect(result?.events).toEqual(expect.arrayContaining(["load", "idle", "moveend"]));
-  expect(result?.rawEvents).toEqual(expect.arrayContaining(["load", "idle"]));
+  expect(result?.rawEvents).toEqual(expect.arrayContaining(["load", "idle", "styleimagemissing"]));
+  expect(result?.missingStyleImageHandled).toBe(true);
+  expect(
+    result?.overscaledQueryPassed,
+    `Overscaled query evidence failed: ${JSON.stringify({ result, browserState, consoleErrors })}`,
+  ).toBe(true);
+  expect(result?.queryRenderedFeaturesCount).toBeGreaterThan(0);
+  expect(result?.adapterQueryFeaturesCount).toBeGreaterThan(0);
+  expect(
+    result?.adapterQueryPassed,
+    `Adapter query evidence failed: ${JSON.stringify({ result, browserState, consoleErrors })}`,
+  ).toBe(true);
+  expect(result?.adapterQueryDiagnostics).toEqual([]);
+  expect(result?.adapterQueryFeatureIdentity).toEqual({
+    properties: { name: "matrix" },
+    layer: { id: "matrix-point" },
+    source: "points",
+  });
+  expect(result?.renderDurationMs).toBeGreaterThan(0);
+  expect(result?.queryDurationMs).toBeGreaterThanOrEqual(0);
   expect(browserState.canvasCount).toBe(1);
   expect(browserState.rawCanvasCount).toBe(1);
   expect(browserState.map).toMatchObject({ styleLoaded: true, tilesLoaded: true, moving: false });
-  expect(browserState.rawMap).toEqual({ loaded: true, styleLoaded: true, tilesLoaded: true, moving: false });
-  expect(consoleErrors).toEqual([]);
-
+  expect(browserState.rawMap).toMatchObject({ loaded: true, styleLoaded: true, tilesLoaded: true, moving: false });
+  expect(browserState.rawMap?.overscaledSourcePresent).toBe(true);
+  expect(browserState.rawMap?.overscaledSourceLoaded).toBe(true);
+  expect(browserState.rawMap?.overscaledSourceFeatureCount).toBeGreaterThan(0);
+  expect(requestedPaths.has("/tiles/0/0/0.pbf")).toBe(true);
+  if (expectedVersion === "6.1.0") {
+    expect(requestedPaths.has("/maplibre-gl-worker.mjs")).toBe(true);
+    expect(requestedPaths.has("/maplibre-gl-shared.mjs")).toBe(true);
+  }
   const visual = await page.evaluate(async (screenshotBase64) => {
     const image = new Image();
     image.src = `data:image/png;base64,${screenshotBase64}`;
@@ -184,6 +250,9 @@ test(`loads generated example and records strict visual/event evidence for MapLi
   expect(visual.nonBackgroundSamples).toBeGreaterThan(0);
   expect(visual.featureRegionSamples).toBeGreaterThan(500);
   expect(visual.lightBackgroundSamples).toBeGreaterThan(500);
+  await page.close();
+  await drainConsoleDiagnostics();
+  expect(consoleErrors).toEqual([]);
   writeFileSync(
     browserResultPath,
     `${JSON.stringify(
@@ -192,7 +261,25 @@ test(`loads generated example and records strict visual/event evidence for MapLi
         version: expectedVersion,
         eventsStatus: "passed",
         visualStatus: "passed",
+        browserEngine: {
+          name: browser.browserType().name(),
+          version: browser.version(),
+        },
+        importForm: "named-esm",
+        workerPath: expectedVersion === "6.1.0" ? "/maplibre-gl-worker.mjs" : "package-default-blob-worker",
+        cspWorkerSource: expectedVersion === "6.1.0" ? "'self'" : "blob:",
+        cspScriptSource: "'self' 'unsafe-eval'",
+        missingStyleImageHandled: result?.missingStyleImageHandled ?? false,
+        overscaledQueryPassed: result?.overscaledQueryPassed ?? false,
+        queryRenderedFeaturesCount: result?.queryRenderedFeaturesCount ?? 0,
+        adapterQueryFeaturesCount: result?.adapterQueryFeaturesCount ?? 0,
+        adapterQueryPassed: result?.adapterQueryPassed ?? false,
+        adapterQueryDiagnostics: result?.adapterQueryDiagnostics ?? [],
+        adapterQueryFeatureIdentity: result?.adapterQueryFeatureIdentity ?? null,
+        renderDurationMs: result?.renderDurationMs ?? null,
+        queryDurationMs: result?.queryDurationMs ?? null,
         browserState,
+        serverRequestedPaths,
         consoleErrors,
         visual,
       },
@@ -212,6 +299,19 @@ declare global {
       events: string[];
       rawEvents?: string[];
       snapshotPassed?: boolean;
+      missingStyleImageHandled?: boolean;
+      overscaledQueryPassed?: boolean;
+      queryRenderedFeaturesCount?: number;
+      adapterQueryFeaturesCount?: number;
+      adapterQueryPassed?: boolean;
+      adapterQueryDiagnostics?: unknown[];
+      adapterQueryFeatureIdentity?: {
+        properties: { name: string | null };
+        layer: { id: string | null };
+        source: string | null;
+      };
+      renderDurationMs?: number;
+      queryDurationMs?: number;
       error?: string;
     };
   }

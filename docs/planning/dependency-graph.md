@@ -1,51 +1,57 @@
 ---
 agent: orchestrator
-period: 2026-W29
-generated_at: 2026-07-13T16:06:22Z
-repo_revision: "bdd71e24a6cacc88cef578211943685a23890e38"
+period: 2026-W32
+generated_at: 2026-08-05T16:20:00Z
+repo_revision: "5800a6d034898a17a94eb46a621ac52943d5919d"
 inputs:
-  - docs/research/competitor-updates-2026-W29.md
-  - docs/reviews/quality-gate-planning-input-2026-07-13.md
+  - docs/research/competitor-updates-2026-W32.md
+  - docs/reviews/package-size-budget-quality-decision-2026-08-05.md
   - docs/planning/next-step-plan.md
   - docs/planning/issues-snapshot.md
 owner: "@orchestrator"
 decision_level: info
+evidence_kind: specialist
 ---
 
 # Dependency Graph
 
 ```mermaid
 flowchart LR
-  H1["W29 HOC-N1 product evidence"] --> P0["#27 MCP contract convergence"]
-  H3["2026-07-13 HOC-N3 planning pass"] --> P0
-  P0 --> D1["#28 PMTiles capability truth"]
-  P0 --> D2["#29 MapLibre compatibility matrix"]
-  GOV["#30 Agent evidence integrity"] -. "20% capacity" .-> P0
-  D1 --> EXIT["W30 stage quality checkpoint"]
-  D2 --> EXIT
-  GOV --> EXIT
-  EXIT --> HOSTED["Future hosted Workbench launch gate"]
-  EXIT --> SCENE["Future real SceneView3D evidence slice"]
+  H1["W32 HOC-N1 product evidence"] --> PLAN["Milestone 2 branch decision"]
+  H3["Current HOC-N3 quality passes"] --> PLAN
+  R["#41 release truth"] --> PR["Final-head implementation PR"]
+  E["#43 evidence and recovery integrity"] --> PR
+  M["#40 MCP compatibility"] --> PR
+  L["#38 MapLibre compatibility"] --> PR
+  G["#42 GeoParquet metadata boundary"] --> PR
+  S["#39 package budgets"] --> PR
+  PLAN --> PR
+  PR --> MERGE["Merge to main"]
+  MERGE --> RECOVERY["Manual recovery workflow proof"]
+  RECOVERY --> INCIDENTS["Reconcile #32-#35"]
+  INCIDENTS --> CLOSE["Close #38-#43 and milestone 2"]
+  CLOSE --> SNAPSHOT["Authenticated post-merge planning evidence"]
+  CLOSE --> K["#44 static inventory"]
+  CLOSE --> T["#45 retention policy"]
+  SNAPSHOT --> FUTURE["Future MCP v2 / data / renderer adoption gates"]
 ```
 
 ## Execution Rules
 
 | Dependency | Rule | Evidence |
 | --- | --- | --- |
-| HOC inputs -> #27 | Product evidence is current and quality permits planning; public AI contract is first | [W29 research](../research/competitor-updates-2026-W29.md), [quality input](../reviews/quality-gate-planning-input-2026-07-13.md) |
-| #27 -> #28/#29 | Freeze AI-facing public tool/result behavior before capability claims use it | [next-stage plan](./next-step-plan.md) |
-| #28 and #29 | May run in parallel after #27; neither supplies evidence for the other | [issues snapshot](./issues-snapshot.md) |
-| #30 | Runs independently within 20% infrastructure capacity; blocks planning only if evidence becomes untrustworthy | [#30](https://github.com/HYNCM/gis-engine/issues/30) |
-| stage exit -> hosted/3D | New product/renderer promotion needs fresh product and quality gates | [roadmap](./monthly-roadmap.md) |
+| HOC-N1 + HOC-N3 -> plan | Product priorities are advisory and must be merged with current quality decisions | [W32 research](../research/competitor-updates-2026-W32.md), [package-size HOC-N3](../reviews/package-size-budget-quality-decision-2026-08-05.md) |
+| #38-#43 -> PR | All six bounded slices travel together only after their independent quality decisions pass | [next-stage plan](./next-step-plan.md) |
+| PR -> merge | Final-head remote checks must pass; local gates cannot substitute | [implementation plan](../superpowers/plans/2026-08-03-w32-w34-completion.md) |
+| merge -> recovery | Deduplication must execute from default-branch workflow code | [#43 quality](../reviews/evidence-integrity-quality-decision-2026-08-03.md) |
+| recovery -> incident closure | Close #32-#35 only from deterministic marker/readback evidence | [incident triage](../reviews/agent-recovery-incident-triage-2026-08-03.md) |
+| milestone close -> snapshot | Planning artifacts must consume canonical post-merge Issue state together | [planning evidence script](../../scripts/planning-evidence.mjs) |
+| #44/#45 | Follow-ups do not weaken current gates or authorize deletion | [weekly digest](./weekly-digest.md) |
 
 ## Boundaries
 
-- SDK + CLI remains the primary stable adoption surface.
-- PMTiles display, load, and query are separate promotion decisions.
-- MapLibre v6 matrix evidence is not an upgrade approval.
+- MapLibre 6.1.0 and MCP 2026-07-28 compatibility are not default adoption.
+- GeoParquet version evidence is not parser, IO, renderer, or query support.
 - Hosted Workbench GA and stable SceneView3D remain outside this milestone.
-
-## Maintenance
-
-GitHub Issues and milestone 1 are canonical execution state. This file records
-dependency policy only.
+- A pending major changeset records release intent but does not publish a
+  package or authorize a major release.

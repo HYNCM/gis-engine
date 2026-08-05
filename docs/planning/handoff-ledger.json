@@ -1,9 +1,14 @@
 {
-  "generated_at": "2026-08-05T01:14:24.785Z",
-  "repo_revision": "1c254bd",
+  "generated_at": "2026-08-05T16:41:20.196Z",
+  "repo_revision": "661967f",
   "source": "scripts/handoff-ledger.mjs",
-  "evidence_run_id": null,
-  "issue_snapshot": null,
+  "evidence_run_id": "planning-evidence-20260805T164120196Z",
+  "issue_snapshot": {
+    "source": "authenticated",
+    "open": 12,
+    "closed": 25,
+    "total": 37
+  },
   "flows": [
     {
       "id": "HOC-N1",
@@ -13,17 +18,21 @@
       "required": true,
       "status": "consumed",
       "severity": "info",
-      "note": "orchestrator report cites docs/research/competitor-updates-2026-W29.md",
+      "code": null,
+      "note": "orchestrator report cites docs/research/competitor-updates-2026-W32.md",
+      "action": null,
       "upstream": {
-        "path": "docs/research/competitor-updates-2026-W29.md",
-        "generated_at": "2026-07-13T15:54:58.000Z",
-        "sha256": "5a4d2badfb688b7fc0fc078a46be530e23d76c35db50db4e5e2781b67fe7cc9f"
+        "path": "docs/research/competitor-updates-2026-W32.md",
+        "generated_at": "2026-08-05T16:11:14.000Z",
+        "sha256": "58855140d9eb997eb95eea850f574dead3a64d07709f91ab5a924b1e30b13c19"
       },
       "downstream": {
         "path": "docs/planning/weekly-digest.md",
-        "generated_at": "2026-07-21T16:37:55.453Z",
-        "sha256": "2592692f2ecf45f857469ad940b9e12328645a1971a72c8fd9976bc5a9dedf37"
-      }
+        "generated_at": "2026-08-05T16:20:00.000Z",
+        "sha256": "3236d337215487f9a87328beb5705d1ba61d8e881d8a8e9c517ef7d28e0d498e"
+      },
+      "latest_upstream_template": null,
+      "latest_downstream_template": null
     },
     {
       "id": "HOC-N2",
@@ -33,16 +42,24 @@
       "required": false,
       "status": "consumed",
       "severity": "info",
-      "note": "quality report cites docs/reviews/maplibre-v5-v6-compatibility-builder-evidence-2026-07-21.md",
+      "code": null,
+      "note": "quality report cites docs/reviews/package-size-budget-builder-evidence-2026-08-05.md",
+      "action": null,
       "upstream": {
-        "path": "docs/reviews/maplibre-v5-v6-compatibility-builder-evidence-2026-07-21.md",
-        "generated_at": "2026-07-20T16:51:28.000Z",
-        "sha256": "fd6adb670aa45f479d91f780202baad8f9982e84f52ceea32f6e8cda3da1a33b"
+        "path": "docs/reviews/package-size-budget-builder-evidence-2026-08-05.md",
+        "generated_at": "2026-08-05T15:42:37.000Z",
+        "sha256": "3000a5c129ed7509a960c655182da62643a494e35f2be1afcf7b18954bb868a1"
       },
       "downstream": {
-        "path": "docs/reviews/maplibre-v5-v6-compatibility-quality-decision-2026-07-21.md",
-        "generated_at": "2026-07-20T16:57:56.000Z",
-        "sha256": "95d7fd23e5da2c2e6263d06f59dd67b39142f90d10f637622682741ad710512b"
+        "path": "docs/reviews/package-size-budget-quality-decision-2026-08-05.md",
+        "generated_at": "2026-08-05T15:42:37.000Z",
+        "sha256": "4be3513468b7ef7d813b5f695ba3b1ad0da7c01922cb29619cab6f56971cf6cb"
+      },
+      "latest_upstream_template": null,
+      "latest_downstream_template": {
+        "path": "docs/reviews/quality-gate-2026-07-06.md",
+        "generated_at": "2026-07-06T15:47:19.000Z",
+        "sha256": "f78b8c4d159b595f8ba983964ad6de20e16edd56597159d6e1fb8c310a945571"
       }
     },
     {
@@ -53,17 +70,25 @@
       "required": true,
       "status": "consumed",
       "severity": "info",
-      "note": "orchestrator report cites docs/reviews/maplibre-v5-v6-compatibility-quality-decision-2026-07-21.md",
+      "code": null,
+      "note": "orchestrator report cites docs/reviews/package-size-budget-quality-decision-2026-08-05.md",
+      "action": null,
       "upstream": {
-        "path": "docs/reviews/maplibre-v5-v6-compatibility-quality-decision-2026-07-21.md",
-        "generated_at": "2026-07-20T16:57:56.000Z",
-        "sha256": "95d7fd23e5da2c2e6263d06f59dd67b39142f90d10f637622682741ad710512b"
+        "path": "docs/reviews/package-size-budget-quality-decision-2026-08-05.md",
+        "generated_at": "2026-08-05T15:42:37.000Z",
+        "sha256": "4be3513468b7ef7d813b5f695ba3b1ad0da7c01922cb29619cab6f56971cf6cb"
       },
       "downstream": {
         "path": "docs/planning/weekly-digest.md",
-        "generated_at": "2026-07-21T16:37:55.453Z",
-        "sha256": "2592692f2ecf45f857469ad940b9e12328645a1971a72c8fd9976bc5a9dedf37"
-      }
+        "generated_at": "2026-08-05T16:20:00.000Z",
+        "sha256": "3236d337215487f9a87328beb5705d1ba61d8e881d8a8e9c517ef7d28e0d498e"
+      },
+      "latest_upstream_template": {
+        "path": "docs/reviews/quality-gate-2026-07-06.md",
+        "generated_at": "2026-07-06T15:47:19.000Z",
+        "sha256": "f78b8c4d159b595f8ba983964ad6de20e16edd56597159d6e1fb8c310a945571"
+      },
+      "latest_downstream_template": null
     }
   ]
 }

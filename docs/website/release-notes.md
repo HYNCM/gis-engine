@@ -1,5 +1,53 @@
 # Release Notes
 
+## Unreleased
+
+GeoParquet versioned metadata now requires explicit `1.1.0` or reviewed
+`2.0.0-rc.1` evidence and has a breaking `@gis-engine/engine` changeset. This
+current-source contract is not part of the published v1.5.0 package. It does not
+promote GeoParquet fetch, parsing, WASM execution, display, or feature query;
+all runtime paths remain No-go until a separate quality-approved release gate.
+
+## v1.5.0
+
+GIS Engine v1.5.0 is the current public SDK and CLI release line. It extends
+the schema-first, command-only workflow with a complete AI-facing contract while
+keeping experimental product, renderer, and cloud-native runtime claims behind
+their promotion gates.
+
+### MCP Contract
+
+The [MCP overview](/mcp/overview) documents the canonical 14 MCP tools in the
+exact `tools/list` order:
+
+`apply_commands`, `validate_spec`, `export_spec`, `get_context_summary`,
+`snapshot_spec`, `explain_spec`, `export_example_app`, `diff_specs`,
+`generate_spec`, `inspect_data`, `edit_spec`, `query_features`,
+`style_recommend`, `transform_data`
+
+The first seven tools form the Core lifecycle group. `diff_specs`,
+`generate_spec`, and `edit_spec` are Authoring extensions. `inspect_data`,
+`query_features`, `style_recommend`, and `transform_data` are Data intelligence
+tools. Public descriptors include both `inputSchema` and `outputSchema`, and
+successful calls return schema-conforming `structuredContent`.
+
+### Release Boundaries
+
+- **Hosted Workbench GA**: No-go.
+- **Stable SceneView3D**: No-go.
+- **PMTiles runtime query support**: No-go.
+
+The AI Map Workbench remains a local reference implementation, stable
+`view.mode: "scene3d"` remains blocked, and PMTiles runtime archive loading and
+feature query remain blocked. Fixture evidence, IO-free preflight, and
+adapter-local evidence do not promote those capabilities.
+
+### Historical Record
+
+The complete v1.0.0 release record follows. Package versions and npm tags in
+that section describe the v1.0.0 release at that time; they are not statements
+about current registry tags.
+
 ## v1.0.0
 
 First stable release of GIS Engine — a schema-first, AI-native map rendering SDK.

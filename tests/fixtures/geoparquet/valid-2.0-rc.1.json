@@ -1,0 +1,22 @@
+{
+  "type": "geoparquet",
+  "url": "./data/parcels-2.0-rc.1.parquet",
+  "metadata": {
+    "releaseIdentity": "2.0.0-rc.1",
+    "geoVersion": "2.0.0",
+    "encoding": "WKB",
+    "logicalType": "GEOMETRY",
+    "crs": {
+      "$schema": "https://proj.org/schemas/v0.7/projjson.schema.json",
+      "type": "GeographicCRS",
+      "name": "WGS 84 longitude-latitude"
+    },
+    "bbox": [-123, 37, -122, 38],
+    "rowGroupStatistics": {
+      "bbox": true,
+      "geometryTypes": true
+    }
+  },
+  "rowCount": 1000,
+  "fileBytes": 1000000
+}

@@ -1431,10 +1431,14 @@ describe("generation evidence bundle", () => {
         parcels: {
           type: "geoparquet",
           url: "./data/parcels.parquet",
-          crs: { authority: "EPSG", code: "4326" },
-          encoding: "WKB",
+          metadata: {
+            releaseIdentity: "1.1.0",
+            geoVersion: "1.1.0",
+            encoding: "WKB",
+            crs: { type: "GeographicCRS", name: "WGS 84 longitude-latitude" },
+            bbox: [-123, 37, -122, 38],
+          },
           rowCount: 42,
-          bbox: [-123, 37, -122, 38],
         },
       },
       layers: [{ id: "parcel-points", type: "circle", source: "parcels" }],
@@ -1488,7 +1492,14 @@ describe("generation evidence bundle", () => {
         sourceContract: expect.objectContaining({
           kind: "schema",
           state: "explicit",
-          metadataFields: expect.arrayContaining(["type", "url", "crs", "encoding", "rowCount"]),
+          metadataFields: expect.arrayContaining([
+            "type",
+            "url",
+            "metadata.releaseIdentity",
+            "metadata.geoVersion",
+            "metadata.encoding",
+            "rowCount",
+          ]),
           policyFields: expect.arrayContaining(["maxFileBytes", "maxRowCount", "workerBudget"]),
         }),
       }),

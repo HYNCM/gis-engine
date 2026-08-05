@@ -17,7 +17,7 @@ permissions:
   issues: read
 
 concurrency:
-  group: agent-weekly-${{ github.ref }}
+  group: agent-artifact-writers-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -173,6 +173,8 @@ jobs:
       - perf-trend
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Download weekly artifacts
         uses: actions/download-artifact@v8
@@ -191,6 +193,11 @@ jobs:
         run: |
           PERIOD="$(date -u +%Y-%m-%d)"
           node scripts/planning-evidence.mjs --period "${PERIOD}"
+
+      - name: Gate specialist evidence health
+        run: |
+          node scripts/sla-checker.mjs --period "$(date -u +%Y-%m-%d)" --dry-run
+          node scripts/handoff-ledger.mjs --check --dry-run
 
       - name: Commit weekly artifacts
         env:
@@ -225,4 +232,4 @@ jobs:
           fi
 
           git commit -m "${COMMIT_MESSAGE}"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+          node scripts/git-push-retry.mjs --remote origin --branch "${GITHUB_REF_NAME}" --max-attempts 3

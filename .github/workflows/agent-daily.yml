@@ -27,7 +27,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: agent-daily-${{ github.ref }}
+  group: agent-artifact-writers-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -113,6 +113,8 @@ jobs:
       - docs
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Download daily artifacts
         uses: actions/download-artifact@v8
@@ -145,11 +147,33 @@ jobs:
           git diff --check
           pnpm test:agent-framework
           node scripts/doc-generator.mjs links
+          node scripts/sla-checker.mjs --period "$(date -u +%Y-%m-%d)" --dry-run
+          node scripts/handoff-ledger.mjs --check --dry-run
 
       - name: Commit daily artifacts
-        uses: stefanzweifel/git-auto-commit-action@v7
-        with:
-          commit_message: "docs: daily agent artifacts"
-          file_pattern: "docs/reviews/daily-audit-*.md docs/reviews/quality-gate-*.md docs/reviews/documentation-audit-*.md docs/planning/AGENT_HEALTH_DASHBOARD.md docs/planning/handoff-ledger.json"
-          commit_user_name: "orchestrator[bot]"
-          commit_user_email: "orchestrator[bot]@gis-engine.dev"
+        run: |
+          set -euo pipefail
+          git config user.name "orchestrator[bot]"
+          git config user.email "orchestrator[bot]@gis-engine.dev"
+
+          shopt -s nullglob
+          files=(
+            docs/reviews/daily-audit-*.md
+            docs/reviews/quality-gate-*.md
+            docs/reviews/documentation-audit-*.md
+            docs/planning/AGENT_HEALTH_DASHBOARD.md
+            docs/planning/handoff-ledger.json
+          )
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No daily artifacts matched."
+            exit 0
+          fi
+
+          git add -- "${files[@]}"
+          if git diff --cached --quiet; then
+            echo "No daily artifact changes to commit."
+            exit 0
+          fi
+
+          git commit -m "docs: daily agent artifacts"
+          node scripts/git-push-retry.mjs --remote origin --branch "${GITHUB_REF_NAME}" --max-attempts 3

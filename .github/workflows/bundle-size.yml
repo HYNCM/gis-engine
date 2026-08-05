@@ -1,8 +1,8 @@
-# Bundle Size Check — SDK 体积监控
+# Bundle Size Check - SDK 体积监控
 #
-# 每次 PR 和 push main 时检查各包体积
-# 硬预算: engine <= 170KB gzipped, cli <= 70KB gzipped
-# 体积增大超过 5% 时告警
+# `config/package-size-budgets.json` is the only budget authority. The checker
+# reports canonical complete-dist gzip bytes and treats 5% baseline growth as
+# advisory while package budget breaches remain blocking.
 
 name: Bundle Size
 
@@ -10,14 +10,28 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - "packages/**/src/**"
-      - "packages/**/package.json"
+      - "packages/**"
+      - "tsconfig*.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "config/package-size-budgets.json"
+      - "scripts/check-package-size.mjs"
+      - "scripts/package-size-policy.mjs"
+      - "tests/framework/package-size-policy.test.ts"
+      - "package.json"
       - ".github/workflows/bundle-size.yml"
   push:
     branches: [main]
     paths:
-      - "packages/**/src/**"
-      - "packages/**/package.json"
+      - "packages/**"
+      - "tsconfig*.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "config/package-size-budgets.json"
+      - "scripts/check-package-size.mjs"
+      - "scripts/package-size-policy.mjs"
+      - "tests/framework/package-size-policy.test.ts"
+      - "package.json"
       - ".github/workflows/bundle-size.yml"
 
 permissions:
@@ -42,99 +56,5 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: 构建所有包
-        run: pnpm build
-
-      - name: 测量各包体积
-        run: |
-          echo "## 📦 SDK Bundle Sizes" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Package | Raw (KB) | Gzip (KB) | Budget |" >> $GITHUB_STEP_SUMMARY
-          echo "| --- | ---: | ---: | --- |" >> $GITHUB_STEP_SUMMARY
-
-          BUDGET_FAILED=0
-
-          for pkg in engine ai cli scene3d scene3d-three-adapter; do
-            DIST_DIR="packages/${pkg}/dist"
-            if [ -d "$DIST_DIR" ]; then
-              RAW=$(du -sk "$DIST_DIR" | cut -f1)
-              GZIP=$(tar -czf - -C "$DIST_DIR" . 2>/dev/null | wc -c | awk '{printf "%.1f", $1/1024}')
-
-              # 硬预算检查
-              BUDGET=""
-              case "$pkg" in
-                engine)
-                  BUDGET_LIMIT=170
-                  BUDGET="≤ ${BUDGET_LIMIT}KB gz"
-                  GZIP_INT=$(echo "$GZIP" | awk '{printf "%d", $1}')
-                  if [ "$GZIP_INT" -gt "$BUDGET_LIMIT" ]; then
-                    echo "::error::@gis-engine/${pkg} gzip ${GZIP}KB 超过预算 ${BUDGET_LIMIT}KB"
-                    BUDGET_FAILED=1
-                  fi
-                  ;;
-                cli)
-                  BUDGET_LIMIT=70
-                  BUDGET="≤ ${BUDGET_LIMIT}KB gz"
-                  GZIP_INT=$(echo "$GZIP" | awk '{printf "%d", $1}')
-                  if [ "$GZIP_INT" -gt "$BUDGET_LIMIT" ]; then
-                    echo "::error::@gis-engine/${pkg} gzip ${GZIP}KB 超过预算 ${BUDGET_LIMIT}KB"
-                    BUDGET_FAILED=1
-                  fi
-                  ;;
-                *)
-                  BUDGET="—"
-                  ;;
-              esac
-
-              echo "| @gis-engine/${pkg} | ${RAW} | ${GZIP} | ${BUDGET} |" >> $GITHUB_STEP_SUMMARY
-            fi
-          done
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "📊 核心包总体积 (engine + ai + cli): $(du -sk packages/engine/dist packages/ai/dist packages/cli/dist 2>/dev/null | awk '{s+=$1}END{print s}') KB raw" >> $GITHUB_STEP_SUMMARY
-
-          if [ "$BUDGET_FAILED" -eq 1 ]; then
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "❌ **硬预算超标**：请减小包体积或更新预算阈值。" >> $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
-
-      - name: 体积回归检查
-        if: github.event_name == 'pull_request'
-        run: |
-          echo "🔍 对比 base 分支体积..."
-
-          # 保存当前体积
-          for pkg in engine ai cli; do
-            DIST_DIR="packages/${pkg}/dist"
-            if [ -d "$DIST_DIR" ]; then
-              du -sk "$DIST_DIR" | cut -f1 > "/tmp/${pkg}-size-pr.txt"
-            fi
-          done
-
-          # Checkout base 并测量
-          git fetch origin ${{ github.base_ref }}
-          git checkout origin/${{ github.base_ref }} -- packages/engine/dist packages/ai/dist packages/cli/dist 2>/dev/null || true
-
-          for pkg in engine ai cli; do
-            DIST_DIR="packages/${pkg}/dist"
-            if [ -d "$DIST_DIR" ]; then
-              du -sk "$DIST_DIR" | cut -f1 > "/tmp/${pkg}-size-base.txt"
-            fi
-          done
-
-          # 对比
-          for pkg in engine ai cli; do
-            PR_SIZE=$(cat "/tmp/${pkg}-size-pr.txt" 2>/dev/null || echo "0")
-            BASE_SIZE=$(cat "/tmp/${pkg}-size-base.txt" 2>/dev/null || echo "0")
-            if [ "$PR_SIZE" != "0" ] && [ "$BASE_SIZE" != "0" ]; then
-              CHANGE=$(( (PR_SIZE - BASE_SIZE) * 100 / BASE_SIZE ))
-              if [ $CHANGE -gt 5 ]; then
-                echo "::warning::@gis-engine/${pkg} 体积增大 ${CHANGE}% (${BASE_SIZE}KB → ${PR_SIZE}KB)"
-              elif [ $CHANGE -gt 0 ]; then
-                echo "📈 @gis-engine/${pkg}: +${CHANGE}% (${BASE_SIZE}KB → ${PR_SIZE}KB)"
-              else
-                echo "✅ @gis-engine/${pkg}: 体积未增大"
-              fi
-            fi
-          done
+      - name: 按权威构建配方执行体积门禁
+        run: pnpm size:check -- --github-summary

@@ -17,7 +17,9 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 export const MAPLIBRE_RELEASE_BASELINE = "5.24.0";
-export const MAPLIBRE_COMPATIBILITY_VERSIONS = Object.freeze([MAPLIBRE_RELEASE_BASELINE, "6.0.0-22"]);
+export const MAPLIBRE_COMPATIBILITY_VERSIONS = Object.freeze([MAPLIBRE_RELEASE_BASELINE, "6.1.0"]);
+
+const OVERSCALED_VECTOR_TILE_BASE64 = "Gjd4AQoGbWF0cml4KIAgEg0SAgAAGAEiBQmAIIAgGgRuYW1lIhMKEW92ZXJzY2FsZWQtbWF0cml4";
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(scriptDirectory, "..");
@@ -25,6 +27,124 @@ const repoRoot = resolve(scriptDirectory, "..");
 function parseOption(args, name) {
   const index = args.indexOf(name);
   return index === -1 ? null : (args[index + 1] ?? null);
+}
+
+function timingDelta(baseline, candidate) {
+  const delta = candidate - baseline;
+  return {
+    baseline,
+    candidate,
+    delta,
+    deltaPercent: baseline === 0 ? null : Math.round((delta / baseline) * 100_000) / 1_000,
+  };
+}
+
+export function buildPerformanceDelta(results) {
+  const baseline = results.find((result) => result.version === MAPLIBRE_RELEASE_BASELINE);
+  const candidate = results.find((result) => result.version === "6.1.0");
+  if (!baseline || !candidate) return null;
+  return {
+    baselineVersion: baseline.version,
+    candidateVersion: candidate.version,
+    renderDurationMs: timingDelta(baseline.renderDurationMs, candidate.renderDurationMs),
+    queryDurationMs: timingDelta(baseline.queryDurationMs, candidate.queryDurationMs),
+  };
+}
+
+function aggregateError(code, message) {
+  return new Error(`[${code}] ${message}`);
+}
+
+export function aggregateMatrixSummaries(summaries, generatedAt = new Date().toISOString()) {
+  if (!Array.isArray(summaries)) {
+    throw aggregateError("MAPLIBRE_AGGREGATE_INVALID_ENTRY", "Aggregate inputs must be an array of summaries.");
+  }
+
+  const resultsByVersion = new Map();
+  for (const summary of summaries) {
+    if (!Array.isArray(summary?.checkedVersions) || !Array.isArray(summary?.results)) {
+      throw aggregateError(
+        "MAPLIBRE_AGGREGATE_INVALID_ENTRY",
+        "Each aggregate input must contain checkedVersions and results arrays.",
+      );
+    }
+    if (summary.checkedVersions.length !== 1 || summary.results.length !== 1) {
+      throw aggregateError(
+        "MAPLIBRE_AGGREGATE_INVALID_ENTRY",
+        "Each aggregate input must contain exactly one checked version and one result.",
+      );
+    }
+
+    const checkedVersion = summary.checkedVersions[0];
+    const result = summary.results[0];
+    if (checkedVersion !== result?.version) {
+      throw aggregateError(
+        "MAPLIBRE_AGGREGATE_VERSION_MISMATCH",
+        `Summary checked version ${checkedVersion ?? "unknown"} does not match result version ${result?.version ?? "unknown"}.`,
+      );
+    }
+    if (!MAPLIBRE_COMPATIBILITY_VERSIONS.includes(checkedVersion)) {
+      throw aggregateError(
+        "MAPLIBRE_AGGREGATE_VERSION_MISMATCH",
+        `Aggregate entry version ${checkedVersion} is outside ${MAPLIBRE_COMPATIBILITY_VERSIONS.join(", ")}.`,
+      );
+    }
+    if (resultsByVersion.has(checkedVersion)) {
+      throw aggregateError("MAPLIBRE_AGGREGATE_DUPLICATE_VERSION", `Duplicate aggregate entry for ${checkedVersion}.`);
+    }
+    if (result.status !== "passed") {
+      throw aggregateError(
+        "MAPLIBRE_AGGREGATE_ENTRY_FAILED",
+        `Aggregate entry ${checkedVersion} has non-passing status ${result.status ?? "unknown"}.`,
+      );
+    }
+    if (!Number.isFinite(result.renderDurationMs) || !Number.isFinite(result.queryDurationMs)) {
+      throw aggregateError(
+        "MAPLIBRE_AGGREGATE_INVALID_ENTRY",
+        `Aggregate entry ${checkedVersion} is missing finite render/query timings.`,
+      );
+    }
+    resultsByVersion.set(checkedVersion, result);
+  }
+
+  const missingVersions = MAPLIBRE_COMPATIBILITY_VERSIONS.filter((version) => !resultsByVersion.has(version));
+  if (missingVersions.length > 0) {
+    throw aggregateError(
+      "MAPLIBRE_AGGREGATE_MISSING_VERSION",
+      `Missing exact compatibility result(s): ${missingVersions.join(", ")}.`,
+    );
+  }
+
+  const results = MAPLIBRE_COMPATIBILITY_VERSIONS.map((version) => resultsByVersion.get(version));
+  return {
+    generatedAt,
+    releaseBaseline: MAPLIBRE_RELEASE_BASELINE,
+    checkedVersions: [...MAPLIBRE_COMPATIBILITY_VERSIONS],
+    defaultDependencyChanged: false,
+    performanceDelta: buildPerformanceDelta(results),
+    results,
+  };
+}
+
+function findSummaryFiles(directory) {
+  const summaries = [];
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) {
+      summaries.push(...findSummaryFiles(path));
+    } else if (entry.isFile() && entry.name === "summary.json") {
+      summaries.push(path);
+    }
+  }
+  return summaries;
+}
+
+function writeMatrixSummary(outputDirectory, summary) {
+  mkdirSync(outputDirectory, { recursive: true });
+  for (const result of summary.results) {
+    writeFileSync(join(outputDirectory, `${result.version}.json`), `${JSON.stringify(result, null, 2)}\n`);
+  }
+  writeFileSync(join(outputDirectory, "summary.json"), `${JSON.stringify(summary, null, 2)}\n`);
 }
 
 export function createConsumerFixture(version, engineTarball) {
@@ -37,6 +157,10 @@ export function createConsumerFixture(version, engineTarball) {
   const usesExplicitWorker = version.startsWith("6.");
   return {
     workerDelivery: usesExplicitWorker ? "explicit-module-worker" : "package-default",
+    workerPath: usesExplicitWorker ? "/maplibre-gl-worker.mjs" : "package-default-blob-worker",
+    cspWorkerSource: usesExplicitWorker ? "'self'" : "blob:",
+    cspScriptSource: "'self' 'unsafe-eval'",
+    importForm: "named-esm",
     packageJson: {
       name: `gis-engine-maplibre-${version.replaceAll(".", "-")}`,
       version: "0.0.0",
@@ -59,7 +183,7 @@ export function createConsumerFixture(version, engineTarball) {
       },
       include: ["src/**/*.ts"],
     },
-    html: '<!doctype html><html><head><meta charset="UTF-8" /></head><body><div id="map"></div><div id="raw-map"></div><script type="module" src="/src/main.ts"></script></body></html>\n',
+    html: '<!doctype html><html><head><meta charset="UTF-8" /><meta http-equiv="Content-Security-Policy" content="default-src \'self\'; script-src \'self\' \'unsafe-eval\'; style-src \'self\' \'unsafe-inline\'; worker-src \'self\' blob:; img-src \'self\' data: blob:; connect-src \'self\'" /></head><body><div id="map" style="width:320px;height:200px"></div><div id="raw-map" style="width:320px;height:200px"></div><script type="module" src="/src/main.ts"></script></body></html>\n',
     source: `import "maplibre-gl/dist/maplibre-gl.css";
 import { Map as RawMap, ${usesExplicitWorker ? "setWorkerUrl, " : ""}type StyleSpecification } from "maplibre-gl";
 import {
@@ -78,6 +202,19 @@ declare global {
       events: string[];
       rawEvents?: string[];
       snapshotPassed?: boolean;
+      missingStyleImageHandled?: boolean;
+      overscaledQueryPassed?: boolean;
+      queryRenderedFeaturesCount?: number;
+      adapterQueryFeaturesCount?: number;
+      adapterQueryPassed?: boolean;
+      adapterQueryDiagnostics?: unknown[];
+      adapterQueryFeatureIdentity?: {
+        properties: { name: string | null };
+        layer: { id: string | null };
+        source: string | null;
+      };
+      renderDurationMs?: number;
+      queryDurationMs?: number;
       error?: string;
     };
   }
@@ -87,6 +224,12 @@ const version = ${JSON.stringify(version)};
 ${usesExplicitWorker ? 'setWorkerUrl(new URL("./maplibre-gl-worker.mjs", window.location.href).href);' : ""}
 const events: string[] = [];
 const rawEvents: string[] = [];
+const renderStartedAt = performance.now();
+let adapterIdle = false;
+let adapterMoved = false;
+let rawIdle = false;
+let missingStyleImageHandled = false;
+let completing = false;
 window.__GIS_MATRIX_RESULT__ = { status: "loading", version, events, rawEvents };
 
 const rawStyle: StyleSpecification = {
@@ -105,10 +248,23 @@ const rawStyle: StyleSpecification = {
         ],
       },
     },
+    overscaled: {
+      type: "vector",
+      tiles: [\`\${window.location.origin}/tiles/{z}/{x}/{y}.pbf\`],
+      minzoom: 0,
+      maxzoom: 0,
+    },
   },
   layers: [
     { id: "background", type: "background", paint: { "background-color": "#f7f8fa" } },
     { id: "matrix-point", type: "circle", source: "points", paint: { "circle-radius": 28 } },
+    {
+      id: "overscaled-point",
+      type: "circle",
+      source: "overscaled",
+      "source-layer": "matrix",
+      paint: { "circle-radius": 20, "circle-color": "#197a5b" },
+    },
   ],
 };
 
@@ -153,18 +309,15 @@ function recordInteraction(event: InteractionBridgeEvent): void {
 
 const adapter = new MapLibreAdapter();
 adapter.on("load", () => events.push("load"));
-adapter.on("moveend", (event) => recordInteraction(event as InteractionBridgeEvent));
+adapter.on("moveend", (event) => {
+  recordInteraction(event as InteractionBridgeEvent);
+  adapterMoved = true;
+  void completeEvidence();
+});
 adapter.on("idle", async () => {
-  if (window.__GIS_MATRIX_RESULT__?.status !== "loading") return;
   events.push("idle");
-  const snapshot = await adapter.snapshot({ format: "png", width: 320, height: 200 });
-  window.__GIS_MATRIX_RESULT__ = {
-    status: "ready",
-    version,
-    events: [...events],
-    rawEvents: [...rawEvents],
-    snapshotPassed: snapshot.passed,
-  };
+  adapterIdle = true;
+  void completeEvidence();
 });
 adapter.on("error", (event) => {
   window.__GIS_MATRIX_RESULT__ = {
@@ -175,6 +328,84 @@ adapter.on("error", (event) => {
     error: event instanceof Error ? event.message : JSON.stringify(event),
   };
 });
+
+async function completeEvidence(): Promise<void> {
+  if (completing || !adapterIdle || !adapterMoved || !rawIdle || window.__GIS_MATRIX_RESULT__?.status !== "loading") {
+    return;
+  }
+  completing = true;
+  try {
+    const map = adapter.getMapInstance();
+    const rawMap = window.__GIS_MATRIX_RAW_MAP__;
+    if (!map || !rawMap) throw new Error("Compatibility maps were not ready for evidence collection.");
+
+    const queryStartedAt = performance.now();
+    const rawFeatures = rawMap.queryRenderedFeatures(rawMap.project([0, 0]), { layers: ["overscaled-point"] });
+    const adapterFeatures = await adapter.queryFeatures({ point: [0, 0], layers: ["matrix-point"] });
+    const queryDurationMs = performance.now() - queryStartedAt;
+    const snapshot = await adapter.snapshot({ format: "png", width: 320, height: 200 });
+    const adapterFeature = adapterFeatures.features[0];
+    const adapterFeatureRecord =
+      adapterFeature && typeof adapterFeature === "object" && !Array.isArray(adapterFeature)
+        ? (adapterFeature as Record<string, unknown>)
+        : {};
+    const adapterProperties =
+      adapterFeatureRecord.properties &&
+      typeof adapterFeatureRecord.properties === "object" &&
+      !Array.isArray(adapterFeatureRecord.properties)
+        ? (adapterFeatureRecord.properties as Record<string, unknown>)
+        : {};
+    const adapterLayer =
+      adapterFeatureRecord.layer &&
+      typeof adapterFeatureRecord.layer === "object" &&
+      !Array.isArray(adapterFeatureRecord.layer)
+        ? (adapterFeatureRecord.layer as Record<string, unknown>)
+        : {};
+    const adapterQueryFeatureIdentity = {
+      properties: { name: typeof adapterProperties.name === "string" ? adapterProperties.name : null },
+      layer: { id: typeof adapterLayer.id === "string" ? adapterLayer.id : null },
+      source: typeof adapterFeatureRecord.source === "string" ? adapterFeatureRecord.source : null,
+    };
+    const expectedAdapterFeatureIdentity = {
+      properties: { name: "matrix" },
+      layer: { id: "matrix-point" },
+      source: "points",
+    };
+    const adapterQueryPassed =
+      adapterFeatures.diagnostics.length === 0 &&
+      adapterFeatures.features.length > 0 &&
+      adapterQueryFeatureIdentity.properties.name === expectedAdapterFeatureIdentity.properties.name &&
+      adapterQueryFeatureIdentity.layer.id === expectedAdapterFeatureIdentity.layer.id &&
+      adapterQueryFeatureIdentity.source === expectedAdapterFeatureIdentity.source;
+    const overscaledQueryPassed = rawFeatures.some(
+      (feature) => feature.properties?.name === "overscaled-matrix" && feature.layer.id === "overscaled-point",
+    );
+    window.__GIS_MATRIX_RESULT__ = {
+      status: "ready",
+      version,
+      events: [...events],
+      rawEvents: [...rawEvents],
+      snapshotPassed: snapshot.passed,
+      missingStyleImageHandled,
+      overscaledQueryPassed,
+      queryRenderedFeaturesCount: rawFeatures.length,
+      adapterQueryFeaturesCount: adapterFeatures.features.length,
+      adapterQueryPassed,
+      adapterQueryDiagnostics: adapterFeatures.diagnostics,
+      adapterQueryFeatureIdentity,
+      renderDurationMs: performance.now() - renderStartedAt,
+      queryDurationMs,
+    };
+  } catch (error) {
+    window.__GIS_MATRIX_RESULT__ = {
+      status: "error",
+      version,
+      events: [...events],
+      rawEvents: [...rawEvents],
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
 
 async function start(): Promise<void> {
   const container = document.querySelector<HTMLElement>("#map");
@@ -190,18 +421,37 @@ async function start(): Promise<void> {
     container: rawContainer,
     style: rawStyle,
     center: [0, 0],
-    zoom: 1,
+    zoom: 4,
     interactive: false,
   });
   window.__GIS_MATRIX_RAW_MAP__ = rawMap;
-  rawMap.on("load", () => rawEvents.push("load"));
-  rawMap.on("idle", () => rawEvents.push("idle"));
+  rawMap.on("styleimagemissing", (event) => {
+    rawEvents.push("styleimagemissing");
+    if (event.id === "matrix-missing-icon" && !rawMap.hasImage(event.id)) {
+      rawMap.addImage(event.id, { width: 1, height: 1, data: new Uint8Array([25, 122, 91, 255]) });
+      missingStyleImageHandled = true;
+    }
+  });
+  rawMap.on("load", () => {
+    rawEvents.push("load");
+    rawMap.addLayer({
+      id: "missing-image-symbol",
+      type: "symbol",
+      source: "points",
+      layout: { "icon-image": "matrix-missing-icon", "icon-size": 2 },
+    });
+  });
+  rawMap.on("idle", () => {
+    rawEvents.push("idle");
+    rawIdle = true;
+    void completeEvidence();
+  });
 
   await adapter.load(spec, { container });
   const map = adapter.getMapInstance();
   if (!map) throw new Error("MapLibreAdapter did not expose a live Map instance.");
   window.__GIS_MATRIX_MAP__ = map;
-  map.once("idle", () => map.jumpTo({ center: [0.1, 0.1] }));
+  map.jumpTo({ center: [0, 0], zoom: 2 });
 }
 
 void start().catch((error: unknown) => {
@@ -251,16 +501,25 @@ function attemptNativePeerInstall(directory) {
   }
 }
 
-function installConsumerDependencies(directory) {
-  const nativePeerInstall = attemptNativePeerInstall(directory);
-  if (nativePeerInstall.status === "rejected") {
-    run("npm", [...NPM_INSTALL_ARGS, "--legacy-peer-deps"], { cwd: directory });
+export function requireNativePeerInstall(version, nativePeerInstall) {
+  if (nativePeerInstall.status !== "passed") {
+    throw new Error(
+      `[MAPLIBRE_NATIVE_INSTALL_REJECTED] Native npm install rejected exact MapLibre ${version}: ${nativePeerInstall.error ?? "unknown error"}. The stable compatibility matrix requires native peer resolution; update the engine peer range or select a compatible exact version before rerunning.`,
+    );
   }
   return {
     nativePeerInstall,
-    peerRangeSatisfied: nativePeerInstall.status === "passed",
-    peerResolution: nativePeerInstall.status === "passed" ? "native" : "forced-evidence-only",
+    peerRangeSatisfied: true,
+    peerResolution: "native",
   };
+}
+
+function installConsumerDependencies(directory, version) {
+  return requireNativePeerInstall(version, attemptNativePeerInstall(directory));
+}
+
+export function adapterQueryStageStatus(browserEvidence) {
+  return browserEvidence.adapterQueryPassed === true ? "passed" : "failed";
 }
 
 function writeFixture(directory, fixture) {
@@ -269,6 +528,9 @@ function writeFixture(directory, fixture) {
   writeFileSync(join(directory, "tsconfig.json"), `${JSON.stringify(fixture.tsconfig, null, 2)}\n`);
   writeFileSync(join(directory, "index.html"), fixture.html);
   writeFileSync(join(directory, "src", "main.ts"), fixture.source);
+  const tileDirectory = join(directory, "public", "tiles", "0", "0");
+  mkdirSync(tileDirectory, { recursive: true });
+  writeFileSync(join(tileDirectory, "0.pbf"), Buffer.from(OVERSCALED_VECTOR_TILE_BASE64, "base64"));
 }
 
 function inspectInstalledMapLibre(directory, checkedVersion) {
@@ -287,6 +549,7 @@ function inspectInstalledMapLibre(directory, checkedVersion) {
     mainEntry: manifest.main ?? null,
     typeEntry: manifest.types ?? manifest.typings ?? null,
     exportsDeclared: Boolean(manifest.exports),
+    importForm: "named-esm",
     esmEntry: esmCandidates.find((candidate) => existsSync(join(packageRoot, candidate))) ?? null,
     umdEntry: existsSync(join(packageRoot, "dist", "maplibre-gl.js")) ? "dist/maplibre-gl.js" : null,
     packageJsonSha256: createHash("sha256").update(readFileSync(packageJsonPath)).digest("hex"),
@@ -324,10 +587,13 @@ function executeEntry(version, engineTarball, tempRoot) {
   const fixture = createConsumerFixture(version, engineTarball);
   writeFixture(fixtureDirectory, fixture);
 
-  const peerEvidence = installConsumerDependencies(fixtureDirectory);
+  const peerEvidence = installConsumerDependencies(fixtureDirectory, version);
   prepareMapLibreWorker(fixtureDirectory, fixture);
   const packageEvidence = inspectInstalledMapLibre(fixtureDirectory, version);
   packageEvidence.workerDelivery = fixture.workerDelivery;
+  packageEvidence.workerPath = fixture.workerPath;
+  packageEvidence.cspWorkerSource = fixture.cspWorkerSource;
+  packageEvidence.cspScriptSource = fixture.cspScriptSource;
   run(join(repoRoot, "node_modules", ".bin", "tsc"), ["--project", "tsconfig.json"], {
     cwd: fixtureDirectory,
   });
@@ -354,11 +620,21 @@ function executeEntry(version, engineTarball, tempRoot) {
     peerRangeSatisfied: peerEvidence.peerRangeSatisfied,
     peerResolution: peerEvidence.peerResolution,
     nativePeerInstall: peerEvidence.nativePeerInstall,
+    browserEngine: browserEvidence.browserEngine,
+    importForm: browserEvidence.importForm,
+    workerPath: browserEvidence.workerPath,
+    cspWorkerSource: browserEvidence.cspWorkerSource,
+    cspScriptSource: browserEvidence.cspScriptSource,
+    renderDurationMs: browserEvidence.renderDurationMs,
+    queryDurationMs: browserEvidence.queryDurationMs,
     stages: {
       publicTypes: "passed",
       esmBrowserBuild: "passed",
       adapterEvents: browserEvidence.eventsStatus,
       strictVisual: browserEvidence.visualStatus,
+      missingStyleImage: browserEvidence.missingStyleImageHandled ? "passed" : "failed",
+      overscaledVectorQuery: browserEvidence.overscaledQueryPassed ? "passed" : "failed",
+      queryRenderedFeatures: adapterQueryStageStatus(browserEvidence),
     },
     packageEvidence,
     browserEvidence,
@@ -368,6 +644,23 @@ function executeEntry(version, engineTarball, tempRoot) {
 
 export function main(args = process.argv.slice(2)) {
   const requestedVersion = parseOption(args, "--version");
+  const aggregateInput = parseOption(args, "--aggregate-input");
+  const outputDirectory = resolve(repoRoot, parseOption(args, "--output") ?? "test-results/maplibre-compatibility");
+  if (args.includes("--aggregate-input")) {
+    if (!aggregateInput) {
+      throw aggregateError("MAPLIBRE_AGGREGATE_INVALID_ENTRY", "--aggregate-input requires a directory.");
+    }
+    if (requestedVersion) {
+      throw aggregateError("MAPLIBRE_AGGREGATE_INVALID_ENTRY", "--aggregate-input cannot be combined with --version.");
+    }
+    const inputDirectory = resolve(repoRoot, aggregateInput);
+    const summaries = findSummaryFiles(inputDirectory).map((path) => JSON.parse(readFileSync(path, "utf8")));
+    const summary = aggregateMatrixSummaries(summaries);
+    writeMatrixSummary(outputDirectory, summary);
+    process.stdout.write(`${JSON.stringify(summary, null, 2)}\n`);
+    return;
+  }
+
   const versions = requestedVersion ? [requestedVersion] : [...MAPLIBRE_COMPATIBILITY_VERSIONS];
   for (const version of versions) {
     if (!MAPLIBRE_COMPATIBILITY_VERSIONS.includes(version)) {
@@ -375,25 +668,21 @@ export function main(args = process.argv.slice(2)) {
     }
   }
 
-  const outputDirectory = resolve(repoRoot, parseOption(args, "--output") ?? "test-results/maplibre-compatibility");
   const tempRoot = mkdtempSync(join(tmpdir(), "gis-engine-maplibre-matrix-"));
   const keepTemp = args.includes("--keep-temp");
 
   try {
     const engineTarball = packEngine(tempRoot);
     const results = versions.map((version) => executeEntry(version, engineTarball, tempRoot));
-    mkdirSync(outputDirectory, { recursive: true });
-    for (const result of results) {
-      writeFileSync(join(outputDirectory, `${result.version}.json`), `${JSON.stringify(result, null, 2)}\n`);
-    }
     const summary = {
       generatedAt: new Date().toISOString(),
       releaseBaseline: MAPLIBRE_RELEASE_BASELINE,
       checkedVersions: versions,
       defaultDependencyChanged: false,
+      performanceDelta: buildPerformanceDelta(results),
       results,
     };
-    writeFileSync(join(outputDirectory, "summary.json"), `${JSON.stringify(summary, null, 2)}\n`);
+    writeMatrixSummary(outputDirectory, summary);
     process.stdout.write(`${JSON.stringify(summary, null, 2)}\n`);
   } finally {
     if (keepTemp) {

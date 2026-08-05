@@ -1,19 +1,19 @@
 ---
 agent: orchestrator
-period: 2026-07
-generated_at: 2026-07-21T16:37:55.453Z
-repo_revision: "f3c7a62259acc946376cf9a679a72f2f8becda63"
+period: 2026-08
+generated_at: 2026-08-05T16:20:00Z
+repo_revision: "5800a6d034898a17a94eb46a621ac52943d5919d"
 inputs:
-  - docs/research/competitor-updates-2026-W29.md
+  - docs/research/competitor-updates-2026-W32.md
   - docs/research/capability-scorecard.md
-  - docs/reviews/quality-gate-planning-input-2026-07-13.md
   - docs/planning/next-step-plan.md
   - docs/planning/issues-snapshot.md
-  - docs/reviews/pmtiles-capability-truth-quality-decision-2026-07-20.md
-  - docs/reviews/maplibre-v5-v6-compatibility-quality-decision-2026-07-21.md
-  - docs/reviews/fail-closed-agent-evidence-quality-decision-2026-07-21.md
-  - https://github.com/HYNCM/gis-engine/pull/36
-  - docs/reviews/contract-convergence-closeout-2026-07-22.md
+  - docs/reviews/package-size-budget-quality-decision-2026-08-05.md
+  - docs/reviews/geoparquet-version-boundary-quality-decision-2026-08-03.md
+  - docs/reviews/maplibre-6.1-quality-decision-2026-08-03.md
+  - docs/reviews/mcp-2026-07-28-quality-decision-2026-08-03.md
+  - docs/reviews/documentation-audit-2026-08-06.md
+  - https://github.com/HYNCM/gis-engine/milestone/2
 owner: "@orchestrator"
 decision_level: advisory
 evidence_kind: specialist
@@ -23,59 +23,64 @@ evidence_kind: specialist
 
 ## Current Product State
 
-| Surface | Decision | Evidence |
+| Surface | August decision | Evidence |
 | --- | --- | --- |
-| SDK + CLI | Primary stable adoption surface; packages are at v1.5.0 | [CHANGELOG](../../CHANGELOG.md) |
-| MCP | Canonical 14-tool MCP 2025-11-25 contract delivered on `main` | [closeout](../reviews/contract-convergence-closeout-2026-07-22.md) |
-| PMTiles | Display/load-plan Go; runtime archive load/query remain fail-closed No-go | [quality decision](../reviews/pmtiles-capability-truth-quality-decision-2026-07-20.md) |
-| MapLibre | Exact-version matrix passes; keep 5.24.0 and do not adopt 6.0.0-22 | [quality decision](../reviews/maplibre-v5-v6-compatibility-quality-decision-2026-07-21.md) |
-| Workbench | Feature-flagged candidate route only; hosted GA remains No-go | [Workbench gate](./feature-specs/review-console-workbench-go-gate.md) |
-| SceneView3D | Experimental adapter evidence only; stable `view.mode: "scene3d"` remains blocked | [stable renderer contract](./feature-specs/sceneview3d-stable-renderer-contract.md) |
+| SDK + CLI | Stable v1.5.0 remains the published adoption line | [release notes](../website/release-notes.md) |
+| MCP | Ordered 14-tool 2025-11-25 contract is the default; 2026-07-28 adoption is No-go | [quality decision](../reviews/mcp-2026-07-28-quality-decision-2026-08-03.md) |
+| MapLibre | 5.24.0 and 6.1.0 compatibility passes; keep 5.24.0 as default | [quality decision](../reviews/maplibre-6.1-quality-decision-2026-08-03.md) |
+| GeoParquet | Exact 1.1/2.0-RC metadata readiness passes with a breaking unreleased changeset | [quality decision](../reviews/geoparquet-version-boundary-quality-decision-2026-08-03.md) |
+| PMTiles | URL display/load-plan Go; archive load and feature query remain No-go | [quality decision](../reviews/pmtiles-capability-truth-quality-decision-2026-07-20.md) |
+| SceneView3D | Experimental adapter-local evidence only; stable mode remains blocked | [stable contract](./feature-specs/sceneview3d-stable-renderer-contract.md) |
+| Workbench | Local reference/candidate route only; hosted GA remains No-go | [Workbench gate](./feature-specs/review-console-workbench-go-gate.md) |
 
-## W29-W30 Stage
+## W32-W34 Milestone
 
-Milestone: [2026 W29-W30 Contract Convergence](https://github.com/HYNCM/gis-engine/milestone/1).
+Milestone: [2026 W32-W34 Compatibility and Evidence Integrity](https://github.com/HYNCM/gis-engine/milestone/2).
 
-| Order | Issue | Target outcome | Gate |
+| Priority | Issue | Branch result | Remote exit condition |
+| --- | --- | --- | --- |
+| P0 | #41 release truth | PASS | PR merged and issue closed |
+| P0 | #43 evidence/recovery integrity | PASS | merged-main manual recovery proves deduplication |
+| P1 | #38 MapLibre 6.1 matrix | PASS, keep baseline | PR merged and issue closed |
+| P1 | #40 MCP 2026-07-28 matrix | PASS, keep baseline | PR merged and issue closed |
+| P2 | #39 package budgets | PASS | PR merged and issue closed |
+| P2 | #42 GeoParquet version boundary | PASS, runtime No-go | PR merged and issue closed |
+
+The stage exit is intentionally not checked off in this pre-merge snapshot.
+Local quality evidence cannot substitute for final-head CI, merged-main
+recovery behavior, canonical Issue state, or authenticated planning evidence.
+
+## Next Queue
+
+| Rank | Direction | State | Owner / gate |
 | ---: | --- | --- | --- |
-| P0 | [#27 MCP contract convergence](https://github.com/HYNCM/gis-engine/issues/27) | Implemented, quality-passed, and closed via PR #36 | remote gate passed |
-| P1 | [#28 PMTiles capability truth](https://github.com/HYNCM/gis-engine/issues/28) | Bounded Go/No-go decision, quality pass, and closed via PR #36 | remote gate passed |
-| P1 | [#29 MapLibre compatibility](https://github.com/HYNCM/gis-engine/issues/29) | Exact entries pass, keep 5.24.0, and closed via PR #36 | remote gate passed |
-| P2 | [#30 Agent evidence integrity](https://github.com/HYNCM/gis-engine/issues/30) | Fail-closed implementation, quality pass, and closed via PR #36 | remote gate passed |
+| 1 | #44 static inventory and dependency declarations | Open P1 follow-up | @builder / @quality |
+| 2 | #45 report-retention unit | Open P2 follow-up | @orchestrator + @builder + @docs / @quality |
+| advisory | MCP 2026-07-28 v2 discovery/transport intake | Do not open implementation until milestone 2 closes and scope is approved | @product -> @orchestrator |
+| watch | GeoParquet 2.0 final contract delta | Trigger only when an official final tag exists | @product |
+| gated | PMTiles runtime or MapLibre default adoption | Separate issues only; no implicit promotion | @orchestrator / @quality |
 
-Tasks #28 and #29 may proceed in parallel only after #27 freezes the AI-facing
-public contract. Reserve 20% of capacity for #30, consistent with the repository
-infrastructure allocation rule.
+Reserve at least 20% of the next sprint for #44/#45 and other verified
+infrastructure debt. Do not let the higher-scored MCP research bypass current
+release, security, schema, or evidence-integrity gates.
 
-## Deferred Directions
+## August Exit Requirements
 
-| Direction | Current score | Evidence | Impact | Action | Confidence |
-| --- | ---: | --- | --- | --- | --- |
-| Hosted Workbench launch gate | 6.10 | Candidate route exists, but auth, deployment, monitoring, and support evidence do not | High security and operational risk if promoted early | Keep hosted GA No-go; reassess after this milestone with a separate launch issue | high |
-| Real SceneView3D renderer evidence | 5.75 | Adapter package has no renderer dependency or graphics context | High delivery and resource-policy risk for limited current AI-loop gain | Keep adapter-local; define a later browser slice with picking, snapshot, cleanup, and blocked-resource evidence | high |
-| Additional cloud-native runtimes | below PMTiles gate | GeoParquet, FlatGeobuf, and GeoTIFF remain independently bounded | Mixing formats would hide capability-specific failure semantics | Do not combine them with #28; open separate promotion gates after PMTiles truth is settled | high |
-
-## Stage Exit Requirements
-
-- [x] Close #27 before any new MCP tool or package-release claim.
-- [x] Record independent, current quality decisions for #28 and #29; open
-      issues are not promotion evidence.
-- [x] Confirm the next weekly automation preserves specialist reports and
-      canonical issue state without treating templates as decisions.
-- [x] Pass full path-aware gates on every code-bearing PR; keep visual/resource
-      waivers limited to genuinely non-rendering changes.
+- [ ] Merge final-head-green implementation PR for #38-#43.
+- [ ] Prove recovery incident deduplication on merged `main`, then reconcile
+      historical duplicate issues #32-#35.
+- [ ] Close milestone 2 only when it has zero open issues.
+- [ ] Generate an authenticated post-merge issue snapshot, HOC ledger, and
+      health dashboard from one evidence run.
+- [ ] Keep #44/#45 open with explicit owners and no broad suppression or data
+      deletion.
 
 ## Risks
 
 | Risk | Status | Mitigation |
 | --- | --- | --- |
-| Public tool contract drift | **contained; delivered** | #27 freezes inventory and structured results before expansion. |
-| PMTiles claims exceed evidence | **contained; runtime No-go** | #28 separates display, load, and query decisions. |
-| MapLibre peer range exceeds proven compatibility | **contained; bump No-go** | #29 gates exact versions and keeps 5.24.0. |
-| Green automation masks stale specialist evidence | **contained; delivered** | #30 makes evidence preservation and HOC freshness fail closed. |
-| Hosted/3D promotion pressure bypasses gates | **blocked by plan** | Keep these directions outside the milestone and preserve explicit No-go wording. |
-
-## Maintenance
-
-GitHub Issues are the canonical task state. Keep this file as a compact decision
-snapshot and regenerate issue status before changing completion claims.
+| Stable upstream release is mistaken for default adoption | contained | Keep MapLibre 5.24.0 and MCP 2025-11-25 defaults explicit. |
+| GeoParquet metadata docs are mistaken for published v1.5/runtime support | contained | Breaking changeset plus unreleased notices; runtime remains blocked. |
+| Green branch evidence is mistaken for merged delivery | active until merge | Require final-head CI, merged-main workflow proof, and issue closure. |
+| Static inventory debt is hidden by ignore rules | tracked in #44 | Classify findings and forbid broad suppression. |
+| Retention cleanup deletes evidence under ambiguous policy | tracked in #45 | No deletion until the unit and boundary tests are approved. |

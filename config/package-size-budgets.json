@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "measurement": {
+    "algorithm": "canonical-dist-gzip-v1",
+    "scope": "complete-dist",
+    "fileType": "regular-files-only",
+    "pathOrder": "relative-posix-utf8-bytewise",
+    "framing": "magic-nul-path-nul-byte-length-nul-content-nul",
+    "gzipLevel": 9,
+    "excludedMetadata": ["mtime", "permissions"]
+  },
+  "buildRecipe": {
+    "cleanPaths": [
+      "packages/engine/dist",
+      "packages/engine/.tsbuildinfo",
+      "packages/cli/dist",
+      "packages/cli/.tsbuildinfo"
+    ],
+    "commands": [
+      {
+        "command": "pnpm",
+        "args": ["build:schema"]
+      },
+      {
+        "command": "pnpm",
+        "args": ["build"]
+      }
+    ]
+  },
+  "advisoryRegressionPercent": 5,
+  "packages": {
+    "engine": {
+      "distPath": "packages/engine/dist",
+      "budgetBytes": 204800,
+      "semantics": "blocking",
+      "baselineBytes": 193984,
+      "baselineRawBytes": 1984108,
+      "baselineFileCount": 210,
+      "baselineRevision": "4465943af6279c4a2a9b3dc140ba13fab0deb040",
+      "measuredAt": "2026-08-05T15:23:33Z",
+      "rationale": "A 200 KiB complete-dist canonical gzip limit replaces the stale 130 KB active-doc claim and the workflow-only 170 KB tar estimate; it retains measured headroom without changing the measured artifact scope."
+    },
+    "cli": {
+      "distPath": "packages/cli/dist",
+      "budgetBytes": 65536,
+      "semantics": "blocking",
+      "baselineBytes": 60730,
+      "baselineRawBytes": 296932,
+      "baselineFileCount": 44,
+      "baselineRevision": "4465943af6279c4a2a9b3dc140ba13fab0deb040",
+      "measuredAt": "2026-08-05T15:23:33Z",
+      "rationale": "A 64 KiB complete-dist canonical gzip limit replaces the stale 35 KB active-doc claim and the workflow-only 70 KB tar estimate; the lower canonical value comes from deterministic framing rather than a narrower artifact scope."
+    }
+  }
+}
