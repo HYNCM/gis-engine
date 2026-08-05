@@ -10,8 +10,10 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - "packages/**/src/**"
-      - "packages/**/package.json"
+      - "packages/**"
+      - "tsconfig*.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
       - "config/package-size-budgets.json"
       - "scripts/check-package-size.mjs"
       - "scripts/package-size-policy.mjs"
@@ -21,8 +23,10 @@ on:
   push:
     branches: [main]
     paths:
-      - "packages/**/src/**"
-      - "packages/**/package.json"
+      - "packages/**"
+      - "tsconfig*.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
       - "config/package-size-budgets.json"
       - "scripts/check-package-size.mjs"
       - "scripts/package-size-policy.mjs"

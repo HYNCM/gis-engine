@@ -90,17 +90,32 @@ describe("package size policy", () => {
     expect(measureCanonicalDistGzip(dist)).toEqual(first);
   });
 
-  it("measures the current dist against the checked-in baselines", () => {
-    const policy = loadPackageSizePolicy(policyPath);
-    const result = checkPackageSizes(policy, { rootDir: repoRoot });
+  it("renders a serializable report without relying on prebuilt workspace artifacts", () => {
+    const root = mkdtempSync(join(tmpdir(), "gis-engine-size-report-"));
+    writeFixture(join(root, "packages/engine/dist/index.js"), "export const engine = true;\n");
+    writeFixture(join(root, "packages/cli/dist/index.js"), "export const cli = true;\n");
+    const basePolicy = loadPackageSizePolicy(policyPath);
+    const packages = Object.fromEntries(
+      Object.entries(basePolicy.packages).map(([name, rule]) => {
+        const measurement = measureCanonicalDistGzip(join(root, rule.distPath));
+        return [
+          name,
+          {
+            ...rule,
+            budgetBytes: measurement.bytes + 1,
+            baselineBytes: measurement.bytes,
+            baselineRawBytes: measurement.rawBytes,
+            baselineFileCount: measurement.fileCount,
+          },
+        ];
+      }),
+    );
+    const result = checkPackageSizes({ ...basePolicy, packages }, { rootDir: root });
 
-    expect(result.results.engine).toMatchObject({ fileCount: 210, status: "pass" });
-    expect(result.results.cli).toMatchObject({ bytes: 60_730, fileCount: 44, status: "pass" });
-    expect(result.results.engine.bytes).toBeGreaterThanOrEqual(policy.packages.engine.baselineBytes);
-    expect(result.results.engine.bytes).toBeLessThanOrEqual(policy.packages.engine.budgetBytes);
+    expect(result.results.engine).toMatchObject({ fileCount: 1, regressionPercent: 0, status: "pass" });
+    expect(result.results.cli).toMatchObject({ fileCount: 1, regressionPercent: 0, status: "pass" });
     expect(result.exitCode).toBe(0);
     expect(JSON.parse(JSON.stringify(result))).toEqual(result);
-    expect(renderPackageSizeSummary(result)).toContain("193984");
     expect(renderPackageSizeSummary(result)).toContain("blocking");
   });
 
@@ -208,6 +223,10 @@ describe("package size policy", () => {
     expect(workflow).toContain("config/package-size-budgets.json");
     expect(workflow).toContain("scripts/package-size-policy.mjs");
     expect(workflow).toContain("tests/framework/package-size-policy.test.ts");
+    expect(workflow).toContain('- "packages/**"');
+    expect(workflow).toContain('- "tsconfig*.json"');
+    expect(workflow).toContain('- "pnpm-lock.yaml"');
+    expect(workflow).toContain('- "pnpm-workspace.yaml"');
     expect(workflow).not.toMatch(/BUDGET_LIMIT|170\s*KB|70\s*KB/);
 
     for (const content of docs) {
