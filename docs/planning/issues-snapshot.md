@@ -1,15 +1,15 @@
 ---
 agent: orchestrator
 period: issue-snapshot
-generated_at: 2026-08-05T16:23:34.892Z
-repo_revision: "5800a6d"
+generated_at: 2026-08-05T16:41:20.196Z
+repo_revision: "661967f"
 inputs:
   - GitHub Issues API
 owner: "@orchestrator"
 decision_level: info
 issue_source: authenticated
 source_updated_at: 2026-08-05T16:17:25Z
-evidence_run_id: planning-evidence-20260805T162334892Z
+evidence_run_id: planning-evidence-20260805T164120196Z
 ---
 
 # GitHub Issues Planning Snapshot

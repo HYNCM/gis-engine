@@ -6,6 +6,15 @@ import { computeHealthMetrics, generateDashboard } from "../../scripts/dashboard
 import { collectSlaViolations } from "../../scripts/sla-checker.mjs";
 
 describe("agent dashboard evidence freshness", () => {
+  it("emits the shared artifact front matter contract", () => {
+    const dashboard = generateDashboard([], [], "2026-08-06", {
+      generatedAt: new Date("2026-08-05T16:30:00Z"),
+    });
+
+    expect(dashboard).toContain("inputs:\n  - scripts/dashboard-generator.mjs\n  - docs/planning/handoff-ledger.json");
+    expect(dashboard).toContain('owner: "@orchestrator"');
+  });
+
   it("does not report a recent template-only specialist artifact as fresh", () => {
     const root = mkdtempSync(join(tmpdir(), "gis-engine-dashboard-"));
     const reportPath = join(root, "docs/research/competitor-updates-2026-W30.md");

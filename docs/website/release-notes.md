@@ -4,7 +4,7 @@
 
 GeoParquet versioned metadata now requires explicit `1.1.0` or reviewed
 `2.0.0-rc.1` evidence and has a breaking `@gis-engine/engine` changeset. This
-main-branch contract is not part of the published v1.5.0 package. It does not
+current-source contract is not part of the published v1.5.0 package. It does not
 promote GeoParquet fetch, parsing, WASM execution, display, or feature query;
 all runtime paths remain No-go until a separate quality-approved release gate.
 

@@ -540,6 +540,58 @@ exit 0
     });
   });
 
+  it.each([
+    { label: "missing", gateResultLine: "", code: "HOC.CONTRACT_FIELD_MISSING" },
+    { label: "invalid", gateResultLine: "gate_result: green\n", code: "HOC.CONTRACT_FIELD_INVALID" },
+  ])("fails HOC-N3 closed when gate_result is $label", ({ gateResultLine, code }) => {
+    const root = mkdtempSync(join(tmpdir(), "gis-engine-hoc-n3-contract-"));
+    const qualityPath = "docs/reviews/feature-quality-decision-2026-07-21.md";
+    const quality = evidenceReport("quality", "specialist", "2026-07-21T02:30:00Z").replace(
+      "evidence_kind: specialist\n",
+      `${gateResultLine}evidence_kind: specialist\n`,
+    );
+    writeReport(root, qualityPath, quality);
+    writeReport(
+      root,
+      "docs/planning/weekly-digest.md",
+      evidenceReport("orchestrator", "specialist", "2026-07-21T02:45:00Z", [qualityPath]),
+    );
+
+    const hocN3 = buildHandoffLedger(root, { generatedAt: new Date("2026-07-21T03:00:00Z") }).flows.find(
+      (flow) => flow.id === "HOC-N3",
+    );
+    expect(hocN3).toMatchObject({
+      status: "invalid-upstream",
+      severity: "error",
+      code,
+    });
+    expect(hocN3?.note).toContain("gate_result");
+  });
+
+  it("does not consume HOC-N2 when builder contract fields are missing", () => {
+    const root = mkdtempSync(join(tmpdir(), "gis-engine-hoc-n2-contract-"));
+    const builderPath = "docs/reviews/feature-builder-evidence-2026-07-21.md";
+    writeReport(root, builderPath, evidenceReport("builder", "specialist", "2026-07-21T02:30:00Z"));
+    writeReport(
+      root,
+      "docs/reviews/feature-quality-decision-2026-07-21.md",
+      evidenceReport("quality", "specialist", "2026-07-21T02:45:00Z", [builderPath]).replace(
+        "evidence_kind: specialist\n",
+        "gate_result: pass\nevidence_kind: specialist\n",
+      ),
+    );
+
+    const hocN2 = buildHandoffLedger(root, { generatedAt: new Date("2026-07-21T03:00:00Z") }).flows.find(
+      (flow) => flow.id === "HOC-N2",
+    );
+    expect(hocN2).toMatchObject({
+      status: "invalid-upstream",
+      severity: "warning",
+      code: "HOC.CONTRACT_FIELD_MISSING",
+    });
+    expect(hocN2?.note).toMatch(/focus_area|feature|status/);
+  });
+
   it("fails required HOC with stable actionable diagnostics for template-only or stale evidence", () => {
     const flow = {
       id: "HOC-N1",
@@ -621,7 +673,7 @@ inputs:
 ${inputs.map((input) => `  - ${input}`).join("\n")}
 owner: "@${agent}"
 decision_level: ${evidenceKind === "template" ? "info" : agent === "quality" ? "blocking" : "advisory"}
-evidence_kind: ${evidenceKind}
+${agent === "product" && evidenceKind === "specialist" ? "status: ready-for-planning\n" : ""}evidence_kind: ${evidenceKind}
 ---
 
 # ${evidenceKind} evidence

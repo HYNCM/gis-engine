@@ -121,6 +121,10 @@ export function generateDashboard(metrics, anomalies, period, options = {}) {
   lines.push(`repo_revision: "${getGitSha(root)}"`);
   lines.push(`period: ${period}`);
   lines.push("agent: orchestrator");
+  lines.push("inputs:");
+  lines.push("  - scripts/dashboard-generator.mjs");
+  lines.push("  - docs/planning/handoff-ledger.json");
+  lines.push('owner: "@orchestrator"');
   lines.push("decision_level: info");
   if (evidenceRunId) lines.push(`evidence_run_id: ${evidenceRunId}`);
   lines.push("---");

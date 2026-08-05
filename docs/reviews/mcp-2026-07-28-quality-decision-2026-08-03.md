@@ -12,6 +12,7 @@ inputs:
   - packages/ai/src/mcp/server.ts
 owner: "@quality"
 decision_level: blocking
+gate_result: pass
 evidence_kind: specialist
 ---
 

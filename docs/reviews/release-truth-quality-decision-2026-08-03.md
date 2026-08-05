@@ -11,6 +11,7 @@ inputs:
   - docs/engineering/release-wording-guardrails.md
 owner: "@quality"
 decision_level: blocking
+gate_result: pass
 evidence_kind: specialist
 ---
 

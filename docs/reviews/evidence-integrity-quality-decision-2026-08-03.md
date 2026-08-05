@@ -19,6 +19,7 @@ inputs:
   - tests/framework/git-push-retry.test.ts
 owner: "@quality"
 decision_level: blocking
+gate_result: conditional-pass
 evidence_kind: specialist
 ---
 

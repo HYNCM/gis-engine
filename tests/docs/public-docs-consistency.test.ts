@@ -322,7 +322,8 @@ describe("public docs consistency", () => {
     expect(migration).toContain("not part of the published v1.5.0 package");
     expect(releaseNotes).toContain("## Unreleased");
     expect(releaseNotes).toContain("GeoParquet versioned metadata");
-    expect(engineApi).toContain("Unreleased main-branch API");
+    expect(engineApi).toContain("Unreleased current-source API");
+    expect(releaseNotes).not.toContain("main-branch contract");
     expect(existsSync(changesetPath), "breaking GeoParquet contract should have a changeset").toBe(true);
     if (existsSync(changesetPath)) {
       expect(readText(".changeset/geoparquet-versioned-metadata.md")).toContain('"@gis-engine/engine": major');

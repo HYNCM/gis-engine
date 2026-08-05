@@ -66,6 +66,7 @@ function discoverReports(agentName, root = ROOT) {
         mtime: stats.mtime,
         sha256: createHash("sha256").update(content).digest("hex"),
         content,
+        frontMatter,
         inputs: Array.isArray(frontMatter?.inputs) ? frontMatter.inputs : [],
         evidenceKind,
       };
@@ -74,6 +75,79 @@ function discoverReports(agentName, root = ROOT) {
   }
 
   return reports.sort((left, right) => right.sortAt.getTime() - left.sortAt.getTime());
+}
+
+const DECISION_LEVELS = new Set(["info", "advisory", "blocking", "emergency"]);
+const GATE_RESULTS = new Set(["pass", "conditional-pass", "block", "waiver"]);
+const BUILDER_FOCUS_AREAS = new Set(["engine", "ai", "adapter", "qa"]);
+
+function hasValue(value) {
+  return value !== undefined && value !== null && String(value).trim() !== "";
+}
+
+function contractDiagnostic(flow, side, report) {
+  if (!report) return null;
+
+  const expectedAgent = side === "upstream" ? flow.from : flow.to;
+  const frontMatter = report.frontMatter ?? {};
+  const missing = [];
+  const invalid = [];
+  const requiredSharedFields = [
+    "agent",
+    "period",
+    "generated_at",
+    "repo_revision",
+    "inputs",
+    "owner",
+    "decision_level",
+  ];
+
+  for (const field of requiredSharedFields) {
+    if (field === "inputs") {
+      if (!Array.isArray(frontMatter.inputs) || frontMatter.inputs.length === 0) missing.push(field);
+    } else if (!hasValue(frontMatter[field])) {
+      missing.push(field);
+    }
+  }
+
+  if (hasValue(frontMatter.agent) && frontMatter.agent !== expectedAgent) invalid.push("agent");
+  if (hasValue(frontMatter.decision_level) && !DECISION_LEVELS.has(frontMatter.decision_level)) {
+    invalid.push("decision_level");
+  }
+
+  if (flow.id === "HOC-N1" && side === "upstream") {
+    if (!hasValue(frontMatter.status)) missing.push("status");
+    else if (!["ready-for-planning", "requires-escalation"].includes(frontMatter.status)) invalid.push("status");
+  }
+
+  if (flow.id === "HOC-N2" && side === "upstream") {
+    for (const field of ["focus_area", "feature", "status"]) {
+      if (!hasValue(frontMatter[field])) missing.push(field);
+    }
+    if (hasValue(frontMatter.focus_area) && !BUILDER_FOCUS_AREAS.has(frontMatter.focus_area))
+      invalid.push("focus_area");
+    if (hasValue(frontMatter.decision_level) && frontMatter.decision_level !== "advisory") {
+      invalid.push("decision_level");
+    }
+    if (hasValue(frontMatter.status) && !["ready-for-review", "blocked"].includes(frontMatter.status)) {
+      invalid.push("status");
+    }
+  }
+
+  if ((flow.id === "HOC-N2" && side === "downstream") || (flow.id === "HOC-N3" && side === "upstream")) {
+    if (!hasValue(frontMatter.gate_result)) missing.push("gate_result");
+    else if (!GATE_RESULTS.has(frontMatter.gate_result)) invalid.push("gate_result");
+  }
+
+  const fields = missing.length > 0 ? missing : invalid;
+  if (fields.length === 0) return null;
+  const code = missing.length > 0 ? "HOC.CONTRACT_FIELD_MISSING" : "HOC.CONTRACT_FIELD_INVALID";
+  const problem = missing.length > 0 ? "is missing required" : "has invalid";
+  return {
+    code,
+    message: `${expectedAgent} specialist evidence ${problem} ${flow.id} field(s): ${fields.join(", ")}`,
+    action: `@${expectedAgent} must publish ${flow.id} evidence with valid front matter before the handoff can be consumed`,
+  };
 }
 
 function isFutureEvidence(report, now) {
@@ -156,10 +230,10 @@ export function inspectSpecialistEvidence(agentName, root = ROOT, now = new Date
 }
 
 export function classifyFlow(flow, upstream, downstream, options = {}) {
-  if (flow.required && options.upstreamDiagnostic) {
+  if (options.upstreamDiagnostic) {
     return {
       status: "invalid-upstream",
-      severity: "error",
+      severity: flow.required ? "error" : "warning",
       code: options.upstreamDiagnostic.code,
       note: options.upstreamDiagnostic.message ?? `${flow.from} specialist evidence cannot satisfy ${flow.id}`,
       action: options.upstreamDiagnostic.action,
@@ -189,10 +263,10 @@ export function classifyFlow(flow, upstream, downstream, options = {}) {
   }
 
   if (!downstream) {
-    if (flow.required && options.downstreamDiagnostic) {
+    if (options.downstreamDiagnostic) {
       return {
         status: "pending",
-        severity: "error",
+        severity: flow.required ? "error" : "warning",
         code: options.downstreamDiagnostic.code,
         note: options.downstreamDiagnostic.message ?? `${flow.to} specialist evidence cannot consume ${flow.id}`,
         action: options.downstreamDiagnostic.action,
@@ -213,10 +287,10 @@ export function classifyFlow(flow, upstream, downstream, options = {}) {
     };
   }
 
-  if (flow.required && options.downstreamDiagnostic) {
+  if (options.downstreamDiagnostic) {
     return {
       status: "pending",
-      severity: "error",
+      severity: flow.required ? "error" : "warning",
       code: options.downstreamDiagnostic.code,
       note: options.downstreamDiagnostic.message ?? `${flow.to} specialist evidence cannot consume ${flow.id}`,
       action: options.downstreamDiagnostic.action,
@@ -255,9 +329,11 @@ export function buildHandoffLedger(root = ROOT, options = {}) {
     const downstreamEvidence = inspectSpecialistEvidence(flow.to, root, generatedDate);
     const upstream = upstreamEvidence.report;
     const downstream = downstreamEvidence.report;
+    const upstreamContractDiagnostic = contractDiagnostic(flow, "upstream", upstream);
+    const downstreamContractDiagnostic = contractDiagnostic(flow, "downstream", downstream);
     const state = classifyFlow(flow, upstream, downstream, {
-      upstreamDiagnostic: upstreamEvidence.diagnostic,
-      downstreamDiagnostic: downstreamEvidence.diagnostic,
+      upstreamDiagnostic: upstreamContractDiagnostic ?? upstreamEvidence.diagnostic,
+      downstreamDiagnostic: downstreamContractDiagnostic ?? downstreamEvidence.diagnostic,
     });
 
     return {
