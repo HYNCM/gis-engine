@@ -1,8 +1,8 @@
 ---
 agent: quality
 period: 2026-08-04
-generated_at: 2026-08-05T15:04:00Z
-repo_revision: "11716b35c96d566cad9d7bfd0f0759b8a0fb049f"
+generated_at: 2026-08-05T15:16:41Z
+repo_revision: "323877d366b21f777c9a48503be3db5e03479ebd"
 inputs:
   - docs/reviews/geoparquet-version-boundary-builder-evidence-2026-08-03.md
   - docs/planning/feature-specs/cloud-native-source-readiness.md
@@ -29,7 +29,9 @@ The final review fixes also validate a recognizable PROJJSON CRS structure,
 require affirmative 2.0 RC statistics evidence, avoid unsupported CRS/range
 assumptions for bbox values, enforce 4D/6D for 1.1 versus 4D/6D/8D for the 2.0
 RC in both policy and TypeBox validation, and align tracked public API plus
-WASM-stub types with the versioned source metadata contract.
+WASM-stub types with the versioned source metadata contract. The public policy
+entry point also executes the complete source shape and selected version
+metadata schema, so callers cannot bypass TypeBox through policy-only use.
 
 **No-go for runtime promotion.** The change does not approve archive fetch,
 Parquet parsing, range IO, WASM execution, workers, renderer integration,
@@ -42,12 +44,12 @@ issue is required before that boundary can be reconsidered.
 | Gate | Result | Evidence |
 | --- | --- | --- |
 | Schema build | PASS | `pnpm build:schema` compiled engine/Scene3D/AI schemas |
-| Schema contract | PASS | 132 schema tests; 16 schema-sync/Ajv tests; rebuilt public engine output confirms policy/schema bbox parity for both versions |
+| Schema contract | PASS | 137 schema tests; 16 schema-sync/Ajv tests; public policy/schema parity covers versioned bbox and complete source shape |
 | Deterministic checks | PASS | unrestricted `pnpm check` completed all builds and test layers |
 | Resource policy | PASS | 23/23; GeoParquet file URL remains explicit at `/sources/{id}/url` |
 | Adapter boundary | PASS | 74/74; MapLibre/headless query stays unsupported |
 | AI/MCP boundary | PASS | 302/302; capability fields updated, canonical MCP contract unchanged |
-| Docs | PASS | 37/37; official URLs, checked date, migration guide, generated API shape, diagnostics, and No-go recorded |
+| Docs | PASS | 38/38; official URLs, checked date, version-specific bbox migration, generated API shape, diagnostics, and No-go recorded |
 | Examples | PASS | unrestricted 142/142; review-console capability reporting aligned |
 | Smoke snapshot | PASS | full check includes 15/15 deterministic smoke snapshot tests |
 | Strict visual | PASS | unrestricted strict visual run passed 5/5 scenarios |
@@ -70,7 +72,7 @@ issue is required before that boundary can be reconsidered.
 
 No Critical, Important, or Minor finding remains in the bounded diff.
 
-Review required seven corrections before this pass:
+Review required nine corrections before this pass:
 
 1. The initial proposed WASM execution contract changes were removed. A later
    type-only alignment replaced the stub's contradictory numeric version and
@@ -94,6 +96,12 @@ Review required seven corrections before this pass:
    TypeBox: 1.1 rejects 8-number evidence while 2.0 RC accepts it. Paired
    positive and negative regressions prevent the two validation layers from
    drifting again.
+8. `validateGeoParquetPolicy()` now reuses the complete source and selected
+   version metadata schemas. Invalid covering paths, extra fields, negative
+   row/file budgets, and a wrong source type return stable error diagnostics
+   instead of policy-only false positives.
+9. The migration guide and docs regression state the bbox widths separately:
+   1.1 accepts 4/6 numbers and the reviewed 2.0 RC accepts 4/6/8.
 
 ## Recommendations
 

@@ -3,8 +3,8 @@ agent: builder
 focus_area: engine
 feature: issue-42-geoparquet-version-boundary
 period: 2026-08-04
-generated_at: 2026-08-05T15:04:00Z
-repo_revision: "11716b35c96d566cad9d7bfd0f0759b8a0fb049f"
+generated_at: 2026-08-05T15:16:41Z
+repo_revision: "323877d366b21f777c9a48503be3db5e03479ebd"
 inputs:
   - https://github.com/opengeospatial/geoparquet/releases/tag/v2.0.0-rc.1
   - https://github.com/opengeospatial/geoparquet/blob/v1.1.0/format-specs/schema.json
@@ -103,6 +103,15 @@ adds no execution behavior.
   the full schema suite passes 132/132, public type compilation remains green,
   and a rebuilt public engine artifact reproduces the stable 1.1 diagnostic
   while accepting the equivalent 2.0 RC case.
+- Independent code-review RED: five schema-invalid inputs were still accepted
+  by the public policy entry point: invalid 1.1 covering, extra metadata, two
+  negative budget fields, and the wrong source type. The migration guide also
+  described 8-number bbox evidence without limiting it to the 2.0 RC.
+- Independent code-review GREEN: the policy entry point now reuses the TypeBox
+  source and selected version metadata schemas, preserves specific semantic
+  diagnostics, and fails closed with stable paths. The migration guide and docs
+  regression name 1.1 4D/6D versus 2.0 RC 4D/6D/8D explicitly. Cloud-native
+  policy passes 58/58, full schema 137/137, and docs 38/38.
 
 ## HOC-N2 Evidence Summary
 
@@ -128,10 +137,10 @@ adds no execution behavior.
 - `pnpm build:schema`: pass.
 - `pnpm test:types`: pass for the versioned source and WASM-stub metadata
   public type contract.
-- `pnpm test:schema`: 4 files / 132 tests pass.
+- `pnpm test:schema`: 4 files / 137 tests pass.
 - `pnpm test:schema-sync`: 1 file / 16 tests pass.
 - `pnpm test:resources`: 4 files / 23 tests pass.
-- `pnpm test:docs`: 5 files / 37 tests pass.
+- `pnpm test:docs`: 5 files / 38 tests pass.
 - `pnpm test:adapter`: 11 files / 74 tests pass.
 - `pnpm test:ai`: 14 files / 302 tests pass.
 - Unrestricted `pnpm test:examples`: 7 files / 142 tests pass.
@@ -154,5 +163,5 @@ adds no execution behavior.
 | Runtime remains `CAPABILITY.UNSUPPORTED` and no IO path changed | Users cannot load or query GeoParquet through this work | Keep all runtime claims No-go | high |
 | The reviewed 2.0 artifact is still an RC | Final semantics may change | Revisit only after 2.0 final or a separately approved implementation issue | high |
 
-HOC-N2 is ready for `@quality`. Planning state remains owned by
-`@orchestrator`.
+HOC-N2 was independently accepted by `@quality` at `323877d`. Planning state
+remains owned by `@orchestrator`.
