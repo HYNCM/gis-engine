@@ -504,6 +504,53 @@ describe("CNS-002: GeoParquet policy validation", () => {
     );
   });
 
+  it.each([
+    [
+      "an invalid 1.1 covering",
+      {
+        ...validGeoParquet11,
+        metadata: {
+          ...validGeoParquet11.metadata,
+          covering: {
+            bbox: {
+              ...validGeoParquet11.metadata.covering.bbox,
+              xmin: ["bbox", "wrong"],
+            },
+          },
+        },
+      },
+      "GEOPARQUET.METADATA_INCOMPATIBLE",
+      "/sources/geoparquet/metadata/covering/bbox/xmin/1",
+    ],
+    [
+      "an extra metadata field",
+      {
+        ...validGeoParquet11,
+        metadata: { ...validGeoParquet11.metadata, unexpected: true },
+      },
+      "GEOPARQUET.METADATA_INCOMPATIBLE",
+      "/sources/geoparquet/metadata/unexpected",
+    ],
+    ["a negative row count", { ...validGeoParquet11, rowCount: -1 }, "SCHEMA.INVALID", "/sources/geoparquet/rowCount"],
+    [
+      "a negative file size",
+      { ...validGeoParquet11, fileBytes: -1 },
+      "SCHEMA.INVALID",
+      "/sources/geoparquet/fileBytes",
+    ],
+    ["the wrong source type", { ...validGeoParquet11, type: "geojson" }, "SCHEMA.INVALID", "/sources/geoparquet/type"],
+  ])("fails closed for %s when the public source schema rejects it", (_name, source, code, path) => {
+    expect(validateGeoParquetPolicy(source)).toContainEqual(expect.objectContaining({ code, path, severity: "error" }));
+    expect(
+      validateSpec({
+        version: "0.1",
+        view: { center: [0, 0], zoom: 1 },
+        sources: { data: source },
+        layers: [],
+      }).valid,
+    ).toBe(false);
+  });
+
   it("rejects row count exceeding limit", () => {
     const source: GeoParquetSourceSpec = {
       ...validGeoParquet11,

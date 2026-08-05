@@ -176,6 +176,13 @@ describe("public docs consistency", () => {
     }
   });
 
+  it("documents GeoParquet bbox widths per reviewed version", () => {
+    const migration = readText("docs/migration/geoparquet-versioned-metadata.md");
+
+    expect(migration).toContain("GeoParquet 1.1 bbox accepts exactly 4 or 6 numbers");
+    expect(migration).toContain("GeoParquet 2.0 RC bbox accepts 4, 6, or 8 numbers");
+  });
+
   it("keeps both AI-native SDK research copies on the complete grouped 14-tool inventory", () => {
     for (const file of [
       "docs/research/ai-native-map-sdk-design.md",
@@ -300,7 +307,8 @@ describe("public docs consistency", () => {
     expect(migration).toContain("metadata.geoVersion");
     expect(migration).toContain("sourceMetadata");
     expect(migration).toMatch(/runtime.*(?:blocked|No-go)/is);
-    expect(migration).toMatch(/4-, 6-, or 8-number/);
+    expect(migration).toContain("GeoParquet 1.1 bbox accepts exactly 4 or 6 numbers");
+    expect(migration).toContain("GeoParquet 2.0 RC bbox accepts 4, 6, or 8 numbers");
     expect(migration).toMatch(/antimeridian/i);
   });
 

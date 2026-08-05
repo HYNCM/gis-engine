@@ -1,3 +1,4 @@
+import { Value } from "@sinclair/typebox/value";
 import { DiagnosticCodes } from "../../diagnostics/codes.js";
 import type { Diagnostic } from "../../types.js";
 import { escapePathSegment } from "../patch/path.js";
@@ -6,6 +7,9 @@ import { defaultFlatGeobufPolicy } from "./flatgeobuf-source.js";
 import type { GeoParquetPolicy } from "./geoparquet-source.js";
 import {
   defaultGeoParquetPolicy,
+  GeoParquet11MetadataSchema,
+  GeoParquet20Rc1MetadataSchema,
+  GeoParquetSourceSchema,
   hasGeoParquet20Rc1RowGroupStatistics,
   isGeoParquetBbox,
   isGeoParquetProjJsonCrs,
@@ -163,6 +167,46 @@ export function validateGeoParquetPolicy(
         path: `${sourcePath}/rowCount`,
       });
     }
+  }
+
+  for (const diagnostic of validateGeoParquetSourceShape(source, sourcePath, releaseIdentity)) {
+    if (!diagnostics.some((existing) => existing.code === diagnostic.code && existing.path === diagnostic.path)) {
+      diagnostics.push(diagnostic);
+    }
+  }
+
+  return diagnostics;
+}
+
+function validateGeoParquetSourceShape(source: unknown, sourcePath: string, releaseIdentity: unknown): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+  const metadataSchema =
+    releaseIdentity === "1.1.0"
+      ? GeoParquet11MetadataSchema
+      : releaseIdentity === "2.0.0-rc.1"
+        ? GeoParquet20Rc1MetadataSchema
+        : undefined;
+
+  if (metadataSchema) {
+    const metadata = asRecord(asRecord(source)?.metadata);
+    for (const error of Value.Errors(metadataSchema, metadata)) {
+      diagnostics.push({
+        severity: "error",
+        code: DiagnosticCodes.GeoParquetMetadataIncompatible,
+        message: `GeoParquet ${releaseIdentity} metadata is incompatible: ${error.message}.`,
+        path: `${sourcePath}/metadata${error.path}`,
+      });
+    }
+  }
+
+  for (const error of Value.Errors(GeoParquetSourceSchema, source)) {
+    if (metadataSchema && (error.path === "/metadata" || error.path.startsWith("/metadata/"))) continue;
+    diagnostics.push({
+      severity: "error",
+      code: DiagnosticCodes.SchemaInvalid,
+      message: `GeoParquet source schema is invalid: ${error.message}.`,
+      path: `${sourcePath}${error.path}`,
+    });
   }
 
   return diagnostics;

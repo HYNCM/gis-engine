@@ -79,11 +79,14 @@ diagnostics.
 An inline CRS is either `null` or a PROJJSON CRS object with a recognized CRS
 `type` and a nonempty `name`. Additional PROJJSON properties are retained.
 
-A GeoParquet bbox is a 4-, 6-, or 8-number dimensional extent. Validation does
-not assume WGS84 bounds, coordinate order, or minimum-before-maximum semantics:
-projected coordinates and an antimeridian-crossing extent such as
-`[170, -10, -170, 10]` are valid metadata evidence. Interpret coordinates only
-with the associated CRS and versioned GeoParquet metadata.
+GeoParquet 1.1 bbox accepts exactly 4 or 6 numbers.
+GeoParquet 2.0 RC bbox accepts 4, 6, or 8 numbers.
+
+Validation does not assume WGS84 bounds, coordinate order, or
+minimum-before-maximum semantics: projected coordinates and an
+antimeridian-crossing extent such as `[170, -10, -170, 10]` are valid metadata
+evidence. Interpret coordinates only with the associated CRS and versioned
+GeoParquet metadata.
 
 ## WASM Stub Type Migration
 
