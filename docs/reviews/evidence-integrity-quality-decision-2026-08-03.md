@@ -2,7 +2,7 @@
 agent: quality
 period: 2026-08-03
 generated_at: 2026-08-03T16:56:05Z
-repo_revision: "ec9921f9"
+repo_revision: "64dca5a7"
 inputs:
   - https://github.com/HYNCM/gis-engine/issues/43
   - scripts/handoff-ledger.mjs

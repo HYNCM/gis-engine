@@ -2,7 +2,7 @@
 agent: quality
 period: 2026-08-03
 generated_at: 2026-08-03T17:19:22Z
-repo_revision: "24fe0af5d3d1ff30f2df903f6414adb9ef88b6b8"
+repo_revision: "f40449301877ca185d80d07b2b59c55af10acccb"
 inputs:
   - https://github.com/HYNCM/gis-engine/issues/40
   - docs/planning/feature-specs/mcp-2026-07-28-compatibility.md
@@ -55,10 +55,10 @@ and conformance gaps are the blocking evidence.
 | `pnpm test:ai` | PASS, 14 files / 302 tests |
 | `pnpm test:docs` | PASS, 5 files / 35 tests |
 | `pnpm check` (this agent, restricted sandbox) | Environment-limited: all workspace builds and preceding deterministic suites passed; `tests/examples/ai-map-workbench.test.ts` then failed 23 localhost cases only with `listen EPERM: operation not permitted 127.0.0.1` |
-| `pnpm check` (independent root-agent rerun at `057bdb2`, unrestricted environment) | PASS; all suites completed, including 77/77 Workbench tests and the downstream deterministic suites |
+| `pnpm check` (independent root-agent rerun at `dc0351fe`, unrestricted environment) | PASS; all suites completed, including 77/77 Workbench tests and the downstream deterministic suites |
 
 The restricted run remains recorded to distinguish an environment limitation
-from a regression. The independent unrestricted rerun at `057bdb2` satisfies
+from a regression. The independent unrestricted rerun at `dc0351fe` satisfies
 the full-check evidence, including the localhost Workbench cases. The focused
 MCP, schema, AI, and documentation results above are this agent's evidence.
 

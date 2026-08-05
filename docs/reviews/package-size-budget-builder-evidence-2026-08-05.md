@@ -4,7 +4,7 @@ focus_area: qa
 feature: issue-39-package-size-budget-convergence
 period: 2026-08-05
 generated_at: 2026-08-05T15:42:37Z
-repo_revision: "343862ae792de1cfa9d5f4cd767215591429124b"
+repo_revision: "b8a6ab6df269f6e3b6d6f0ad17dd7de126286405"
 inputs:
   - config/package-size-budgets.json
   - scripts/package-size-policy.mjs
@@ -26,14 +26,14 @@ Issue #39 now has one structured package-size authority:
 130/35 KB claims, the workflow-only 170/70 KB thresholds, and the previous
 `du`-only local command without narrowing the artifact scope.
 
-This report supersedes the first candidate committed at `d2ad409`. That
+This report supersedes the first candidate committed at `84aa1559`. That
 candidate used a stale shared `dist`, locale-aware ordering, and a build recipe
 that did not clear TypeScript incremental state. Its 193998-byte engine
 baseline and 194524-byte final measurement are invalid and must not be consumed
 as HOC evidence.
 
 The blocking complete-`dist` budgets are 204800 bytes (200 KiB) for engine and
-65536 bytes (64 KiB) for CLI. Two detached clean `c176f317` worktrees using the
+65536 bytes (64 KiB) for CLI. Two detached clean `4465943a` worktrees using the
 same recipe independently reproduced the baselines: engine 1,984,108 raw /
 193,984 gzip bytes / 210 files and CLI 296,932 raw / 60,730 gzip bytes / 44
 files at `2026-08-05T15:23:33Z`. Growth above a baseline by more than 5% is
@@ -80,7 +80,7 @@ stderr, and appends the same summary to `GITHUB_STEP_SUMMARY` when invoked with
   cleaning `dist` without `.tsbuildinfo` suppresses TypeScript emit.
 - Clean-CI review GREEN: the policy-owned clean/schema/full-build recipe and
   UTF-8 bytewise ordering reproduce 193984/60730-byte baselines in two detached
-  `c176f317` worktrees. The focused suite now passes 8/8.
+  `4465943a` worktrees. The focused suite now passes 8/8.
 - Independent-quality RED: three Important findings reproduced a clean-checkout
   framework failure caused by reading absent `dist`, incomplete workflow path
   triggers for real build inputs, and a stale 30 KB CLI budget in an active
@@ -101,7 +101,7 @@ stderr, and appends the same summary to `GITHUB_STEP_SUMMARY` when invoked with
 | Biome + Node syntax | PASS | both scripts and the focused test are formatted; both `.mjs` files parse |
 | `git diff --check` | PASS | no whitespace errors |
 
-Engine is 525 gzip bytes (+0.27%) above the recorded `c176f317` baseline because
+Engine is 525 gzip bytes (+0.27%) above the recorded `4465943a` baseline because
 the final branch also contains the subsequent GeoParquet fail-closed source
 shape fix. It remains 10291 bytes below the blocking budget and does not cross
 the 5% advisory threshold. CLI exactly reproduces its baseline.
@@ -133,5 +133,5 @@ the 5% advisory threshold. CLI exactly reproduces its baseline.
 | Canonical bytes exclude archive metadata | Linux/macOS tar headers cannot create false regressions | Retain the framing mutation tests | high |
 | Current engine is +0.27% and CLI is unchanged | Final branch remains below both advisory and blocking thresholds | `@quality` should independently rerun focused, framework, docs, and the recipe-owning size gate | high |
 
-HOC-N2 was independently accepted by `@quality` at `343862a`. Planning state
+HOC-N2 was independently accepted by `@quality` at `b8a6ab6d`. Planning state
 remains owned by `@orchestrator`.

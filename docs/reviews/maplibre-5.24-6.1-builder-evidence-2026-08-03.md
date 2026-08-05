@@ -4,7 +4,7 @@ focus_area: qa
 feature: issue-38-maplibre-stable-compatibility
 period: 2026-08-04
 generated_at: 2026-08-03T18:15:31Z
-repo_revision: "6e48d6b92db679c71f43a568d7e148ae94416a63"
+repo_revision: "d672f3f20d1fdb8fccb09e0af0bca532b0aba22c"
 inputs:
   - https://github.com/maplibre/maplibre-gl-js/releases/tag/v6.1.0
   - https://www.npmjs.com/package/maplibre-gl/v/5.24.0
@@ -25,7 +25,7 @@ evidence_kind: specialist
 ## Outcome
 
 The exact-version compatibility matrix passes for MapLibre GL JS `5.24.0`
-and stable `6.1.0` at revision `2f437e7c`. An independent unrestricted root run
+and stable `6.1.0` at revision `3b10a6ba`. An independent unrestricted root run
 of `pnpm test:compat:maplibre` exited `0`. Both isolated consumers installed
 the requested version natively, compiled the packed public engine API under
 strict TypeScript, built the generated ESM application, and passed real
@@ -36,7 +36,7 @@ Chromium `148.0.7778.96`. Both entries record `status: "passed"`,
 `peerRangeSatisfied: true`, `peerResolution: "native"`, and
 `nativePeerInstall: { status: "passed", error: null }`.
 
-Revision `6e48d6b9` closes the follow-up evidence-integrity findings without
+Revision `d672f3f2` closes the follow-up evidence-integrity findings without
 rerunning either browser matrix: CI keeps the two exact-version jobs, downloads
 their per-version JSON artifacts, and runs a strict aggregation-only mode. The
 aggregator fails closed on a missing version, mismatched version label,
@@ -109,7 +109,7 @@ assets.
   resource-policy gate for the URL, local tile, and worker evidence surfaces.
 - `pnpm --filter @gis-engine/engine build`, Biome, and `git diff --check`
   passed.
-- Independent unrestricted `pnpm test:compat:maplibre` at `2f437e7c` passed
+- Independent unrestricted `pnpm test:compat:maplibre` at `3b10a6ba` passed
   both exact entries and produced the evidence summarized above. The runner
   fails closed on native install rejection; neither exact entry used a
   fallback install in this successful run.
@@ -134,7 +134,7 @@ assets.
   or diagnostics envelope changed.
 - Known limitation: the full network/browser matrix was not rerun after the
   aggregation and console-harness-only hardening. The exact matrix evidence at
-  `2f437e7c` remains the runtime evidence; the next remote CI run will exercise
+  `3b10a6ba` remains the runtime evidence; the next remote CI run will exercise
   both version jobs and publish the new aggregate artifact.
 
 ## Recommendations

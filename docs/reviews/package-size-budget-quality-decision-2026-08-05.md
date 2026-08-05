@@ -2,7 +2,7 @@
 agent: quality
 period: 2026-08-05
 generated_at: 2026-08-05T15:42:37Z
-repo_revision: "343862ae792de1cfa9d5f4cd767215591429124b"
+repo_revision: "b8a6ab6df269f6e3b6d6f0ad17dd7de126286405"
 inputs:
   - docs/reviews/package-size-budget-builder-evidence-2026-08-05.md
   - config/package-size-budgets.json
@@ -27,10 +27,10 @@ baselines, byte budgets, provenance, rationale, and blocking/advisory
 semantics. Local verification and the Bundle Size workflow invoke the same
 `pnpm size:check` entry point.
 
-This decision supersedes the `d2ad409` candidate, whose stale shared `dist`,
+This decision supersedes the `84aa1559` candidate, whose stale shared `dist`,
 locale-aware ordering, and incomplete incremental-cache cleanup produced
 non-reproducible numbers. The accepted evidence is the UTF-8 bytewise recipe at
-`343862a`, with clean baseline provenance from `c176f317` rebuilt at
+`b8a6ab6d`, with clean baseline provenance from `4465943a` rebuilt at
 `2026-08-05T15:23:33Z`.
 
 ## Gate Status
@@ -39,7 +39,7 @@ non-reproducible numbers. The accepted evidence is the UTF-8 bytewise recipe at
 | --- | --- | --- |
 | Focused policy contract | PASS | clean HEAD archive with no `dist`: 8/8 |
 | Package-size command | PASS | engine 194509/204800 bytes (+0.27%); CLI 60730/65536 bytes (0%); exit 0 |
-| Clean baseline reproduction | PASS | `c176f317`: engine 193984 gzip / 1984108 raw / 210 files; CLI 60730 / 296932 / 44 |
+| Clean baseline reproduction | PASS | `4465943a`: engine 193984 gzip / 1984108 raw / 210 files; CLI 60730 / 296932 / 44 |
 | Agent framework | PASS | 9 files / 69 tests, including checkout-safe temporary fixture reporting |
 | Documentation | PASS | 5 files / 38 tests; all active package-budget consumers aligned |
 | Resource policy | Not applicable | no URL, tile, worker, host, or example resource changed |

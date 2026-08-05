@@ -2,7 +2,7 @@
 agent: quality
 period: 2026-08-04
 generated_at: 2026-08-03T18:15:31Z
-repo_revision: "6e48d6b92db679c71f43a568d7e148ae94416a63"
+repo_revision: "d672f3f20d1fdb8fccb09e0af0bca532b0aba22c"
 inputs:
   - https://github.com/maplibre/maplibre-gl-js/releases/tag/v6.1.0
   - docs/reviews/maplibre-5.24-6.1-builder-evidence-2026-08-03.md
@@ -22,7 +22,7 @@ evidence_kind: specialist
 ## HOC-N3 Decision
 
 **PASS for the bounded #38 runtime-compatibility slice.** An independent
-unrestricted root run of `pnpm test:compat:maplibre` at revision `2f437e7c`
+unrestricted root run of `pnpm test:compat:maplibre` at revision `3b10a6ba`
 passed exact MapLibre versions `5.24.0` and `6.1.0`. Both entries passed native
 installation, strict public types, generated ESM build, lifecycle events,
 missing-image recovery, overscaled vector query, adapter
@@ -36,7 +36,7 @@ and the adapter result records `adapterQueryPassed: true`,
 `adapterQueryDiagnostics: []`, plus exact identity `name=matrix`,
 `layer.id=matrix-point`, `source=points`.
 
-Revision `6e48d6b9` resolves the final quality-review blocks: per-version CI
+Revision `d672f3f2` resolves the final quality-review blocks: per-version CI
 evidence is combined into a remotely retained cross-version summary without
 installing dependencies or rerunning a browser in the aggregation job, and
 console errors cannot arrive asynchronously after the final assertion but

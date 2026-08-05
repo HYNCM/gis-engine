@@ -49,7 +49,7 @@ describe("package size policy", () => {
           baselineBytes: 193_984,
           baselineRawBytes: 1_984_108,
           baselineFileCount: 210,
-          baselineRevision: "c176f317227991781ab35b13b08bcf12923329d2",
+          baselineRevision: "4465943af6279c4a2a9b3dc140ba13fab0deb040",
         },
         cli: {
           distPath: "packages/cli/dist",
@@ -58,7 +58,7 @@ describe("package size policy", () => {
           baselineBytes: 60_730,
           baselineRawBytes: 296_932,
           baselineFileCount: 44,
-          baselineRevision: "c176f317227991781ab35b13b08bcf12923329d2",
+          baselineRevision: "4465943af6279c4a2a9b3dc140ba13fab0deb040",
         },
       },
     });

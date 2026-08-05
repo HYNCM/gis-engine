@@ -36,7 +36,7 @@
       "baselineBytes": 193984,
       "baselineRawBytes": 1984108,
       "baselineFileCount": 210,
-      "baselineRevision": "c176f317227991781ab35b13b08bcf12923329d2",
+      "baselineRevision": "4465943af6279c4a2a9b3dc140ba13fab0deb040",
       "measuredAt": "2026-08-05T15:23:33Z",
       "rationale": "A 200 KiB complete-dist canonical gzip limit replaces the stale 130 KB active-doc claim and the workflow-only 170 KB tar estimate; it retains measured headroom without changing the measured artifact scope."
     },
@@ -47,7 +47,7 @@
       "baselineBytes": 60730,
       "baselineRawBytes": 296932,
       "baselineFileCount": 44,
-      "baselineRevision": "c176f317227991781ab35b13b08bcf12923329d2",
+      "baselineRevision": "4465943af6279c4a2a9b3dc140ba13fab0deb040",
       "measuredAt": "2026-08-05T15:23:33Z",
       "rationale": "A 64 KiB complete-dist canonical gzip limit replaces the stale 35 KB active-doc claim and the workflow-only 70 KB tar estimate; the lower canonical value comes from deterministic framing rather than a narrower artifact scope."
     }

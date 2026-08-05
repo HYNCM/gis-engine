@@ -2,7 +2,7 @@
 agent: quality
 period: 2026-08-04
 generated_at: 2026-08-05T15:16:41Z
-repo_revision: "323877d366b21f777c9a48503be3db5e03479ebd"
+repo_revision: "b35a32604cb87bda9dcdc504b92fc56f65dd77dc"
 inputs:
   - docs/reviews/geoparquet-version-boundary-builder-evidence-2026-08-03.md
   - docs/planning/feature-specs/cloud-native-source-readiness.md

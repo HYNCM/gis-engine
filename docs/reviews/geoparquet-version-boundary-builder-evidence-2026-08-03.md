@@ -4,7 +4,7 @@ focus_area: engine
 feature: issue-42-geoparquet-version-boundary
 period: 2026-08-04
 generated_at: 2026-08-05T15:16:41Z
-repo_revision: "323877d366b21f777c9a48503be3db5e03479ebd"
+repo_revision: "b35a32604cb87bda9dcdc504b92fc56f65dd77dc"
 inputs:
   - https://github.com/opengeospatial/geoparquet/releases/tag/v2.0.0-rc.1
   - https://github.com/opengeospatial/geoparquet/blob/v1.1.0/format-specs/schema.json
@@ -150,7 +150,7 @@ adds no execution behavior.
   test:snapshot:visual`: 5/5 pass.
 - `pnpm docs:api` output was filtered by generated-file content to the 38
   GeoParquet-bearing source, API, migration, and regression files in
-  `2404aeb`; unrelated A2A, PMTiles, MapLibre, and TypeDoc classification
+  `b8fa6475`; unrelated A2A, PMTiles, MapLibre, and TypeDoc classification
   backlog was explicitly reverted.
 - Biome and `git diff --check`: pass.
 
@@ -163,5 +163,5 @@ adds no execution behavior.
 | Runtime remains `CAPABILITY.UNSUPPORTED` and no IO path changed | Users cannot load or query GeoParquet through this work | Keep all runtime claims No-go | high |
 | The reviewed 2.0 artifact is still an RC | Final semantics may change | Revisit only after 2.0 final or a separately approved implementation issue | high |
 
-HOC-N2 was independently accepted by `@quality` at `323877d`. Planning state
+HOC-N2 was independently accepted by `@quality` at `b35a3260`. Planning state
 remains owned by `@orchestrator`.
