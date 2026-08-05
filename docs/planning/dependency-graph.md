@@ -1,8 +1,9 @@
 ---
 agent: orchestrator
 period: 2026-W32
-generated_at: 2026-08-05T17:13:00Z
+generated_at: 2026-08-05T17:28:00Z
 repo_revision: "23472d8050cad0178c49f85f045f488bd5aaaf41"
+evidence_run_id: planning-evidence-20260805T171819860Z
 inputs:
   - docs/research/competitor-updates-2026-W32.md
   - docs/reviews/package-size-budget-quality-decision-2026-08-05.md
