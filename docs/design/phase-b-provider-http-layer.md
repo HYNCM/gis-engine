@@ -495,5 +495,10 @@ Bump: `0.2.0` → `0.3.0` (new feature: real provider HTTP call).
 | AI model returns non-JSON or unexpected schema | Medium | Low | Comprehensive error diagnostics; fence stripping; strict validation before pipeline entry |
 | `hashPrompt` format change breaks downstream | Low | Low | CLI is pre-1.0; only internal consumers (delivery-summary.json); update tests |
 | API key accidentally logged | Low | High | `hasUnsafeIntent` + `sanitizeConfidence` gates; never included in output files; `providerError()` factory excludes secrets |
-| Bundle size growth from HTTP utilities | Low | Medium | Current CLI dist is ~5.9 KB gzipped (30 KB budget). Adding ~100 lines of HTTP utilities adds ~1-2 KB gzipped, reaching ~7-8 KB total. Well within budget. |
+| Bundle size growth from HTTP utilities | Low | Medium | The current CLI baseline is 60,730 canonical gzip bytes against a 64 KiB blocking budget. Any HTTP utility growth must pass `pnpm size:check`; no fixed line-count estimate is accepted as size evidence. |
 | System prompt produces low-quality intent for complex prompts | Medium | Medium | Confidence signal surfaces quality; users can iterate with `--prompt`; future: few-shot examples in prompt |
+
+The current package-size authority is `config/package-size-budgets.json`.
+`canonical-dist-gzip-v1` applies a 200 KiB blocking engine budget and a 64 KiB
+blocking CLI budget over complete clean-built `dist` trees. Growth more than 5%
+above the recorded baseline is advisory until a blocking byte limit is crossed.

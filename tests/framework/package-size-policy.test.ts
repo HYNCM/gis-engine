@@ -215,6 +215,7 @@ describe("package size policy", () => {
       "docs/engineering/contract-freeze.md",
       "docs/engineering/performance-benchmarks.md",
       "docs/website/guide/performance.md",
+      "docs/design/phase-b-provider-http-layer.md",
     ].map((path) => readFileSync(join(repoRoot, path), "utf8"));
 
     expect(packageJson.scripts["size:check"]).toBe("node scripts/check-package-size.mjs --build");
