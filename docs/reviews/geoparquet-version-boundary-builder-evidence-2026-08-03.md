@@ -3,8 +3,8 @@ agent: builder
 focus_area: engine
 feature: issue-42-geoparquet-version-boundary
 period: 2026-08-04
-generated_at: 2026-08-03T18:41:48Z
-repo_revision: "588252afcd0a957bf9a136f0e56c8254083c45cf"
+generated_at: 2026-08-05T14:48:18Z
+repo_revision: "2404aebfda21d10d43645cb46d59aaf71d594bbd"
 inputs:
   - https://github.com/opengeospatial/geoparquet/releases/tag/v2.0.0-rc.1
   - https://github.com/opengeospatial/geoparquet/blob/v1.1.0/format-specs/schema.json
@@ -41,6 +41,14 @@ This distinction follows the official RC tag, whose metadata JSON Schema uses
 `const: "2.0.0"`. It prevents callers from serializing `2.0.0-rc.1` as the raw
 file metadata version or treating the candidate as 2.0 final.
 
+Specification review then closed four fail-open or drift paths. CRS objects now
+require a recognized PROJJSON CRS `type` and non-empty `name`; 2.0 RC row-group
+statistics require both accepted flags to be `true`; bbox validation checks only
+the versioned numeric tuple shape instead of assuming WGS84 ranges or rejecting
+RFC 7946 antimeridian boxes; and tracked API references plus the exported WASM
+stub metadata type now derive from the same source metadata contract. The WASM
+change is type-only and adds no execution behavior.
+
 ## Version Contract
 
 | Evidence | `1.1.0` | `2.0.0-rc.1` readiness pin |
@@ -48,8 +56,8 @@ file metadata version or treating the candidate as 2.0 final.
 | Raw `geo.version` | `1.1.0` | `2.0.0` |
 | Encoding | WKB or 1.1 GeoArrow single-geometry layout | WKB only |
 | Parquet type | Existing 1.1 physical layouts | Native `GEOMETRY` or `GEOGRAPHY` |
-| CRS | Inline PROJJSON or `null` in `geo` metadata | Native Parquet CRS is source of truth; `geo` restatement remains inline PROJJSON or `null` |
-| Spatial evidence | Optional metadata bbox and `covering.bbox` paths | Metadata bbox plus explicit row-group bbox/geometry-type statistics evidence |
+| CRS | Basic PROJJSON CRS structure (`type` + `name`) or `null` in `geo` metadata | Native Parquet CRS is source of truth; an optional `geo` restatement must use the same checked structure or `null` |
+| Spatial evidence | Optional 4D/6D numeric bbox and `covering.bbox` paths | Optional 4D/6D/8D numeric bbox plus required `bbox: true` and `geometryTypes: true` row-group statistics evidence |
 | Covering | Allowed | Rejected |
 
 ## Diagnostics And Failure Boundary
@@ -80,12 +88,19 @@ file metadata version or treating the candidate as 2.0 final.
   missing and unknown releases, mismatched raw version, mixed metadata,
   cross-version encodings/fields, legacy shape, invalid CRS, metadata budgets,
   URL validation, and unknown input.
+- Specification-review RED: four Important findings reproduced arbitrary CRS
+  objects, false/partial statistics, projected and antimeridian bbox false
+  negatives, and stale public API/WASM metadata shapes.
+- Specification-review GREEN: cloud-native policy now passes 51/51 and the
+  combined policy/docs regression set passes 92/92. Public type compilation
+  proves the WASM stub metadata surface consumes `GeoParquetSourceMetadata`.
 
 ## HOC-N2 Evidence Summary
 
 - What changed: TypeBox now owns the version-discriminated source metadata
-  type; public hand-written types derive from it; capability summaries expose
-  both release and raw version fields.
+  type; public hand-written and WASM-stub metadata types derive from it;
+  capability summaries and generated API pages expose both release and raw
+  version fields.
 - Test coverage: three deterministic fixtures plus policy, MapSpec schema,
   resource policy, readiness, adapter, AI context/generation, example, and
   full-repository gates.
@@ -94,17 +109,20 @@ file metadata version or treating the candidate as 2.0 final.
 - MCP implications: no tool name, order, input/output descriptor, protocol
   version, structured content, or failure envelope changed. AI summaries only
   report the corrected metadata field names.
-- Known limitation: this is metadata evidence only. It adds no fetch, range
-  request, parser, archive reader, WASM behavior, worker, renderer path,
-  snapshot implementation, or feature query.
+- Known limitation: this is metadata evidence only. The WASM surface received
+  a breaking type alignment and migration guide, but no fetch, range request,
+  parser, archive reader, WASM execution, worker, renderer path, snapshot
+  implementation, or feature query was added.
 
 ## Verification
 
 - `pnpm build:schema`: pass.
-- `pnpm test:schema`: 4 files / 114 tests pass.
+- `pnpm test:types`: pass for the versioned source and WASM-stub metadata
+  public type contract.
+- `pnpm test:schema`: 4 files / 130 tests pass.
 - `pnpm test:schema-sync`: 1 file / 16 tests pass.
 - `pnpm test:resources`: 4 files / 23 tests pass.
-- `pnpm test:docs`: 5 files / 35 tests pass.
+- `pnpm test:docs`: 5 files / 37 tests pass.
 - `pnpm test:adapter`: 11 files / 74 tests pass.
 - `pnpm test:ai`: 14 files / 302 tests pass.
 - Unrestricted `pnpm test:examples`: 7 files / 142 tests pass.
@@ -112,6 +130,10 @@ file metadata version or treating the candidate as 2.0 final.
   performance, smoke snapshot, and Studio suites.
 - Unrestricted `GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm
   test:snapshot:visual`: 5/5 pass.
+- `pnpm docs:api` output was filtered by generated-file content to the 38
+  GeoParquet-bearing source, API, migration, and regression files in
+  `2404aeb`; unrelated A2A, PMTiles, MapLibre, and TypeDoc classification
+  backlog was explicitly reverted.
 - Biome and `git diff --check`: pass.
 
 ## Recommendations

@@ -1,8 +1,8 @@
 ---
 agent: quality
 period: 2026-08-04
-generated_at: 2026-08-03T18:41:48Z
-repo_revision: "588252afcd0a957bf9a136f0e56c8254083c45cf"
+generated_at: 2026-08-05T14:48:18Z
+repo_revision: "2404aebfda21d10d43645cb46d59aaf71d594bbd"
 inputs:
   - docs/reviews/geoparquet-version-boundary-builder-evidence-2026-08-03.md
   - docs/planning/feature-specs/cloud-native-source-readiness.md
@@ -25,6 +25,11 @@ and policy now distinguish GeoParquet `1.1.0` from the reviewed
 missing, unsupported, mismatched, legacy, and mixed-version metadata with
 stable diagnostics, and retain explicit URL resource policy.
 
+The final review fixes also validate a recognizable PROJJSON CRS structure,
+require affirmative 2.0 RC statistics evidence, avoid unsupported CRS/range
+assumptions for bbox values, and align tracked public API plus WASM-stub types
+with the versioned source metadata contract.
+
 **No-go for runtime promotion.** The change does not approve archive fetch,
 Parquet parsing, range IO, WASM execution, workers, renderer integration,
 snapshot behavior, or feature query. `CAPABILITY.UNSUPPORTED` remains the
@@ -36,42 +41,54 @@ issue is required before that boundary can be reconsidered.
 | Gate | Result | Evidence |
 | --- | --- | --- |
 | Schema build | PASS | `pnpm build:schema` compiled engine/Scene3D/AI schemas |
-| Schema contract | PASS | 114 schema tests; 16 schema-sync/Ajv tests |
+| Schema contract | PASS | 130 schema tests; 16 schema-sync/Ajv tests |
 | Deterministic checks | PASS | unrestricted `pnpm check` completed all builds and test layers |
 | Resource policy | PASS | 23/23; GeoParquet file URL remains explicit at `/sources/{id}/url` |
 | Adapter boundary | PASS | 74/74; MapLibre/headless query stays unsupported |
 | AI/MCP boundary | PASS | 302/302; capability fields updated, canonical MCP contract unchanged |
-| Docs | PASS | 35/35; official URLs, checked date, field matrix, diagnostics, and No-go recorded |
+| Docs | PASS | 37/37; official URLs, checked date, migration guide, generated API shape, diagnostics, and No-go recorded |
 | Examples | PASS | unrestricted 142/142; review-console capability reporting aligned |
 | Smoke snapshot | PASS | full check includes 15/15 deterministic smoke snapshot tests |
 | Strict visual | PASS | unrestricted strict visual run passed 5/5 scenarios |
-| TypeScript | PASS | workspace builds pass; public GeoParquet type derives from TypeBox without `any` widening |
+| TypeScript | PASS | workspace builds and `pnpm test:types` pass; source and WASM-stub metadata types derive from TypeBox without `any` widening |
 
 ## Review Checklist
 
 | Area | Result | Evidence |
 | --- | --- | --- |
-| Architecture | PASS | Metadata readiness stays in core schema/policy; no renderer dependency or runtime loader added |
+| Architecture | PASS | Metadata readiness stays in core schema/policy; the existing fail-closed WASM stub receives type-only alignment, with no renderer dependency or loader behavior added |
 | AI operability | PASS | Exact release/raw version identity and stable pointer diagnostics are deterministic and auditable |
 | Commands | PASS | No mutation path changed; state mutation remains command-only |
 | Diagnostics | PASS | Four stable `GEOPARQUET.*` codes cover required, unsupported, ambiguous, and incompatible cases; runtime warning retained |
-| Tests | PASS | Versioned valid/invalid fixtures, RED/GREEN evidence, full check, and strict visual are recorded |
-| Docs | PASS | Official 1.1 and RC sources, checked date, semantic differences, and revisit gate are explicit |
-| Security | PASS | No hidden IO, host exception, worker, WASM behavior, or policy relaxation; URL tests pass |
+| Tests | PASS | Versioned valid/invalid fixtures, CRS/statistics/bbox/API drift regressions, public type compilation, full check, and strict visual are recorded |
+| Docs | PASS | Official 1.1 and RC sources, checked date, generated API surface, breaking migration, semantic differences, and revisit gate are explicit |
+| Security | PASS | No hidden IO, host exception, worker, WASM execution, or policy relaxation; URL tests pass |
 | TypeScript | PASS | Schema-derived public source type and strict builds pass without widening |
 
 ## Findings
 
 No Critical, Important, or Minor finding remains in the bounded diff.
 
-Review required two corrections before this pass:
+Review required six corrections before this pass:
 
-1. The fail-closed WASM stub was returned to its prior public contract; Issue
-   #42 does not touch the runtime/WASM path.
+1. The initial proposed WASM execution contract changes were removed. A later
+   type-only alignment replaced the stub's contradictory numeric version and
+   legacy encoding fields with `GeoParquetSourceMetadata`; runtime behavior is
+   unchanged and remains fail closed.
 2. `releaseIdentity` and raw `geoVersion` are separate required fields, so the
    RC tag cannot be mistaken for the embedded metadata constant. Legacy
    top-level fields now receive both a required-version diagnostic and an
    explicit ambiguity/migration diagnostic.
+3. CRS metadata requires a recognized PROJJSON CRS type and non-empty name;
+   arbitrary objects fail both schema and policy validation.
+4. The 2.0 RC branch requires `rowGroupStatistics.bbox` and
+   `rowGroupStatistics.geometryTypes` to be literal `true`; false, partial, and
+   non-object evidence fails closed.
+5. Bbox validation accepts projected coordinates and antimeridian-crossing
+   geographic boxes because this boundary does not interpret CRS axes; it
+   validates only the 4D/6D/8D numeric tuple contract.
+6. A narrowed generated API update, public type test, and migration guide
+   remove the legacy shape without importing unrelated TypeDoc backlog.
 
 ## Recommendations
 
