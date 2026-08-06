@@ -1,6 +1,6 @@
 ---
-generated_at: 2026-08-05T17:29:28.506Z
-repo_revision: "3d0e809"
+generated_at: 2026-08-06T01:12:55.433Z
+repo_revision: "b2ddaab"
 period: 2026-08-06
 agent: orchestrator
 inputs:
@@ -8,19 +8,12 @@ inputs:
   - docs/planning/handoff-ledger.json
 owner: "@orchestrator"
 decision_level: info
-evidence_run_id: planning-evidence-20260805T171819860Z
 ---
 
 # Agent Health Dashboard (as of 2026-08-06)
 
 > ⚠️ 本 Dashboard 由 `scripts/dashboard-generator.mjs` 自动生成。
 > 状态为自动化推断，需 orchestrator 审查后确认。
-
-## Planning Evidence
-
-| Issue Source | Open | Closed | Total | Required Handoffs |
-| --- | ---: | ---: | ---: | --- |
-| authenticated | 3 | 35 | 38 | 2/2 consumed |
 
 ## Execution Health
 
@@ -56,4 +49,4 @@ evidence_run_id: planning-evidence-20260805T171819860Z
 - **健康 agent**: 5/5
 - **问题 agent**: 0/5
 - **数据流异常**: 0
-- **生成时间**: 2026-08-05T17:29:28.506Z
+- **生成时间**: 2026-08-06T01:12:55.433Z
