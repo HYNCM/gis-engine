@@ -99,7 +99,24 @@ describe("canonical boundary copy", () => {
     for (const expected of expectedOutputs) {
       const actual = extractGeneratedBlock(readText(expected.file), expected.marker);
       expect(actual, `${expected.file} should match generated boundary matrix source`).toBe(expected.content);
+      expect(actual, `${expected.file} should identify the Workbench product consumer`).toContain("`apps/workbench`");
+      expect(actual, `${expected.file} should preserve the Phase 1 example boundary`).toContain(
+        "`examples/ai-map-workbench`",
+      );
+      expect(actual, `${expected.file} should prevent Workbench from redefining shared contracts`).toMatch(
+        /(?:不得重定义|must not redefine)[\s\S]{0,80}(?:core|`RendererAdapter`)/i,
+      );
     }
+  });
+
+  it("marks the prior current-product snapshot as superseded by the canonical Workbench definition", () => {
+    const historicalDefinition = readText("docs/planning/feature-specs/current-product-definition.md");
+
+    expect(historicalDefinition).toMatch(/^Status: Superseded$/m);
+    expect(historicalDefinition).toContain("Historical Snapshot");
+    expect(historicalDefinition).toContain(
+      "[canonical Workbench product definition](../../intent/project-definition.md)",
+    );
   });
 
   it("keeps Workbench as the local-first primary product with an independently gated 2D v1", () => {
@@ -132,5 +149,15 @@ describe("canonical boundary copy", () => {
         previousToolIndex = toolIndex;
       }
     }
+  });
+
+  it("makes Workbench export and telemetry privacy exclusions unconditional", () => {
+    const definition = readText("docs/intent/project-definition.md");
+
+    expect(definition).toMatch(/Export never includes credentials or raw provider\s+responses\./);
+    expect(definition).toMatch(
+      /Telemetry never includes raw prompts, data, `MapSpec`, file paths,\s+credentials, or raw provider responses\./,
+    );
+    expect(definition).not.toContain("telemetry by default");
   });
 });

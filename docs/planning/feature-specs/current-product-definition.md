@@ -17,9 +17,18 @@ owner: "@product"
 decision_level: advisory
 ---
 
-# Current Product Definition
+# Historical Product Definition
 
-## Objective
+Status: Superseded
+
+> [!IMPORTANT]
+> **Historical Snapshot.** This 2026-06-14 product view is retained as decision
+> evidence and is superseded by the
+> [canonical Workbench product definition](../../intent/project-definition.md).
+> The SDK, AI, CLI, and MCP surfaces described below are now the shared
+> foundation of GIS Engine Workbench, not parallel primary products.
+
+## Historical Objective
 
 GIS Engine is an AI-native, schema-first map SDK + CLI product line. The
 current product surface is the developer adoption path: validate a `MapSpec`,
@@ -30,7 +39,7 @@ This repo does not currently define itself as a hosted Workbench product, a
 stable SceneView3D runtime, or a full cloud-native data runtime. Those remain
 bounded by explicit no-go or promotion-gate docs.
 
-## Current Product Surface
+## Historical Product Surface
 
 | Surface | Status | What It Is For | What It Is Not For |
 | --- | --- | --- | --- |

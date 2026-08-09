@@ -52,9 +52,9 @@ The golden path is:
 - Project files are the source of truth: `gis-engine.project.json`,
   `mapspec.json`, project data, and export evidence. SQLite may index or cache
   state but may not be the only durable representation.
-- AI credentials remain server-side. Raw provider responses, credentials,
-  prompts, data, `MapSpec`, and file paths are excluded from export and
-  telemetry by default.
+- AI credentials remain server-side. Export never includes credentials or raw provider
+  responses. Telemetry never includes raw prompts, data, `MapSpec`, file paths,
+  credentials, or raw provider responses.
 - Anonymous telemetry is minimal, opt-in, and disabled until the user gives
   explicit consent.
 
