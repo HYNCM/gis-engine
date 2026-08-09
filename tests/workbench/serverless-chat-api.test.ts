@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import chatHandler from "../../api/chat";
 import providersHandler from "../../api/providers";
-import appChatHandler from "../../apps/studio/api/chat";
-import appProvidersHandler from "../../apps/studio/api/providers";
+import appChatHandler from "../../apps/workbench/api/chat";
+import appProvidersHandler from "../../apps/workbench/api/providers";
 
 type MockReq = {
   body?: unknown;
@@ -120,7 +120,7 @@ async function withEnv<T>(values: Record<string, string | undefined>, callback: 
   }
 }
 
-describe("serverless Studio chat API guardrails", () => {
+describe("serverless Workbench chat API guardrails", () => {
   it("applies mock edits through command evidence with traces on the root route", async () => {
     const res = createRes();
 

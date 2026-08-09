@@ -17,11 +17,11 @@ export const STUDIO_REVIEW_BYTE_CAP = REVIEW_DECISION_BYTE_CAP;
 export function createReviewDecision(input) {
   return createWorkbenchReviewDecision({
     ...input,
-    evidence: normalizeStudioEvidence(input?.evidence),
+    evidence: normalizeWorkbenchEvidence(input?.evidence),
   });
 }
 
-function normalizeStudioEvidence(evidence) {
+function normalizeWorkbenchEvidence(evidence) {
   if (!evidence || typeof evidence !== "object") return evidence;
   return {
     ...evidence,

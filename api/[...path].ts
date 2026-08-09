@@ -215,7 +215,7 @@ async function handleTileRequest(pathParts: string[], req: Req, res: Res): Promi
     const upstreamUrl = await tileProvider.resolveUrl(coords);
     const upstream = await fetch(upstreamUrl, {
       headers: {
-        "User-Agent": "GIS Engine Studio/0.1 (explicit user-selected basemap proxy)",
+        "User-Agent": "GIS Engine Workbench/0.1 (explicit user-selected basemap proxy)",
       },
     });
 

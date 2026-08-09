@@ -7,7 +7,7 @@ inputs:
   - docs/planning/feature-specs/ai-map-workbench-promotion-scope.md
   - docs/reviews/prod-010-ai-map-workbench-promotion-intake-2026-06-10.md
   - docs/reviews/quality-waiver-amw-p2-intake-2026-06-10.md
-  - apps/studio/README.md
+  - apps/workbench/README.md
   - examples/ai-map-workbench/README.md
   - https://github.com/HYNCM/gis-engine/issues/13
 owner: "@product @quality"
@@ -30,7 +30,7 @@ The W25 product surface remains SDK+CLI first.
 | Surface | Current Status | Allowed Use | Blocked Until Future Go |
 | --- | --- | --- | --- |
 | `packages/cli` | Primary adoption surface | SDK+CLI generation, preflight, artifact verification, provider smoke | None for W25 adoption evidence |
-| `apps/studio` | Local developer surface | Local inspection and development workflows | Hosted route, durable storage, auth, product support promise |
+| `apps/workbench` | Local developer surface | Local inspection and development workflows | Hosted route, durable storage, auth, product support promise |
 | `examples/ai-map-workbench` | Local/reference example | Provider profile, audit, review-action, and evidence-reference behavior | Product route, browser-visible provider credentials, durable audit store |
 
 ## Go Checklist

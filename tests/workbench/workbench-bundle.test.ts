@@ -9,33 +9,33 @@ function readRepoFile(path: string): string {
   return readFileSync(join(rootDir, path), "utf8");
 }
 
-describe("AI Map Studio bundle", () => {
+describe("GIS Engine Workbench bundle", () => {
   it("keeps MapLibre out of the initial HTML preload chain", () => {
-    const html = readRepoFile("apps/studio/dist/index.html");
+    const html = readRepoFile("apps/workbench/dist/index.html");
     expect(html).not.toMatch(/modulepreload[^>]+maplibre/i);
     expect(html).not.toMatch(/stylesheet[^>]+maplibre/i);
 
     const entryMatch = html.match(/src="\/assets\/([^"]+\.js)"/);
     expect(entryMatch?.[1]).toBeTruthy();
 
-    const entrySource = readRepoFile(`apps/studio/dist/assets/${entryMatch?.[1]}`);
+    const entrySource = readRepoFile(`apps/workbench/dist/assets/${entryMatch?.[1]}`);
     expect(entrySource).not.toMatch(/import\s*["']\.\/maplibre/i);
     expect(entrySource).toMatch(/import\("\.\/maplibre-gl-/);
   });
 
   it("keeps the MapStage renderer import runtime-only", () => {
-    const mapStageSource = readRepoFile("apps/studio/src/components/MapStage.tsx");
+    const mapStageSource = readRepoFile("apps/workbench/src/components/MapStage.tsx");
     expect(mapStageSource).not.toMatch(/^import\s+(?!type\b).*from "maplibre-gl";$/m);
     expect(mapStageSource).not.toMatch(/^import\s+"maplibre-gl\/dist\/maplibre-gl\.css";$/m);
     expect(mapStageSource).toContain('import("maplibre-gl")');
   });
 
   it("keeps the Playground components and integration wiring intact", () => {
-    const mapSpecEditorSource = readRepoFile("apps/studio/src/components/MapSpecEditor.tsx");
-    const aiAssistantSource = readRepoFile("apps/studio/src/components/AIAssistant.tsx");
-    const templateBarSource = readRepoFile("apps/studio/src/components/TemplateBar.tsx");
-    const templatesSource = readRepoFile("apps/studio/src/templates/index.ts");
-    const appSource = readRepoFile("apps/studio/src/App.tsx");
+    const mapSpecEditorSource = readRepoFile("apps/workbench/src/components/MapSpecEditor.tsx");
+    const aiAssistantSource = readRepoFile("apps/workbench/src/components/AIAssistant.tsx");
+    const templateBarSource = readRepoFile("apps/workbench/src/components/TemplateBar.tsx");
+    const templatesSource = readRepoFile("apps/workbench/src/templates/index.ts");
+    const appSource = readRepoFile("apps/workbench/src/App.tsx");
 
     // ── MapSpecEditor: JSON editor with diagnostics ──
     expect(mapSpecEditorSource).toContain("MAPSPEC");
@@ -71,7 +71,7 @@ describe("AI Map Studio bundle", () => {
     expect(templatesSource).toContain("MapSpecTemplate");
 
     // ── App.tsx: Playground integration wiring ──
-    expect(appSource).toContain("MapSpec Playground");
+    expect(appSource).toContain("GIS Engine Workbench");
     expect(appSource).toContain("GIS ENGINE");
     expect(appSource).toContain('fetch("/api/state")');
     expect(appSource).toContain('fetch("/api/chat"');

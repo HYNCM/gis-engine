@@ -39,13 +39,13 @@ fixtures -> schema validation -> command replay -> renderer adapter -> snapshot 
     "test:perf:nightly": "vitest run tests/nightly-perf",
     "test:resources": "vitest run tests/resources",
     "test:docs": "vitest run tests/docs",
-    "test:studio": "vitest run tests/studio",
+    "test:workbench": "vitest run tests/workbench",
     "test:release:scene3d": "vitest run tests/snapshot/smoke/scene3d-release-visual-gate.test.ts",
     "test:release:rc": "pnpm build:schema && pnpm check && pnpm test:snapshot:visual",
     "test:release:strict": "pnpm build:schema && pnpm check && GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual",
     "release:preflight": "node scripts/release-preflight.mjs",
     "release:verify": "node scripts/release-verify.mjs",
-    "check": "pnpm build && pnpm test && pnpm test:studio",
+    "check": "pnpm build && pnpm test && pnpm test:workbench",
     "smoke:first-run": "node scripts/first-run-acceptance.mjs",
     "smoke:cli-install": "node scripts/cli-install-smoke.mjs"
   }

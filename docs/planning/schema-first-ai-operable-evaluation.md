@@ -141,12 +141,12 @@ GIS Engine 在 Schema-First + AI-Operable 维度上已是**行业领先级项目
 **目标**：缓解报告提到的"学习曲线"劣势
 
 **具体行动**：
-- 基于现有 `apps/studio/` 扩展在线 MapSpec Playground
+- 基于现有 `apps/workbench/` 扩展 GIS Engine Workbench
 - 三栏布局：Schema 编辑 + 实时预览 + AI 对话（利用 MCP 工具）
 - 支持从示例模板快速启动，降低新用户认知负担
 
 **关键文件**：
-- `apps/studio/src/`
+- `apps/workbench/src/`
 - `packages/ai/src/mcp/`
 
 ### Task 8: 工具调用准确率基准测试（P2，1周）

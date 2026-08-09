@@ -52,7 +52,7 @@ gis-engine/
 │   ├── scene3d/    # SceneView3D package boundary (experimental)
 │   └── scene3d-three-adapter/  # Three.js adapter (experimental spike)
 ├── apps/
-│   └── studio/     # Studio web application
+│   └── workbench/  # Local-first Workbench application
 ├── examples/       # Runnable examples and MapSpec fixtures
 ├── tests/          # Integration and unit tests
 └── docs/           # Documentation and VitePress site
@@ -65,8 +65,8 @@ gis-engine/
 | `pnpm build` | Build all packages |
 | `pnpm build:schema` | Generate TypeBox schemas (run before tests) |
 | `pnpm test` | Run full test suite (13 test runners) |
-| `pnpm test:studio` | Run studio-specific tests |
-| `pnpm check` | Full build + test + studio tests |
+| `pnpm test:workbench` | Run Workbench-specific tests |
+| `pnpm check` | Full build + test + Workbench tests |
 | `pnpm lint` | Run Biome linter |
 | `pnpm lint:fix` | Run Biome with auto-fix |
 | `pnpm format` | Format code with Biome |

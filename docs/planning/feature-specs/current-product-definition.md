@@ -46,7 +46,7 @@ bounded by explicit no-go or promotion-gate docs.
 | `@gis-engine/engine` | primary | schema-first runtime, command application, diagnostics, snapshots, adapter contracts | renderer replacement, hidden state mutation, ad hoc runtime edits |
 | `@gis-engine/ai` | primary | MCP tools, generation evidence, structured handoff data | new tool aliases, renderer internals, free-form prompt parsing |
 | `@gis-engine/cli` | primary | scaffold, generate, preflight, artifact verification, first-run acceptance | hosted product route, opaque generate output, unverified artifact delivery |
-| `apps/studio` / `examples/ai-map-workbench` | reference | local example and review surface | hosted/product promotion in the current cycle |
+| `apps/workbench` / `examples/ai-map-workbench` | reference | local example and review surface | hosted/product promotion in the current cycle |
 | `scene3d` / PMTiles query / cloud-native data runtime | bounded | evidence and promotion gates | stable runtime claims without a dedicated future issue |
 
 ## Success Criteria

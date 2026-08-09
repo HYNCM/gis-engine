@@ -10,8 +10,8 @@
 
 import { Type } from "@sinclair/typebox";
 import Ajv from "ajv";
-import { applyProviderOutput, emptyCommandEvidence } from "../../../api/studio-command-apply";
-import { type DeepSeekProviderProfile, resolveDeepSeekProvider } from "../../../api/studio-provider-guardrails";
+import { applyProviderOutput, emptyCommandEvidence } from "../../../api/workbench-command-apply";
+import { type DeepSeekProviderProfile, resolveDeepSeekProvider } from "../../../api/workbench-provider-guardrails";
 
 export const runtime = "edge";
 

@@ -5,12 +5,12 @@ import { describe, expect, it } from "vitest";
 import {
   buildMapLibreCapabilityPrompt,
   MAPLIBRE_CAPABILITY_REGISTRY,
-} from "../../apps/studio/server/maplibre-capabilities.mjs";
-import { callOpenAiCompatibleProvider } from "../../apps/studio/server/provider.mjs";
+} from "../../apps/workbench/server/maplibre-capabilities.mjs";
+import { callOpenAiCompatibleProvider } from "../../apps/workbench/server/provider.mjs";
 
 const rootDir = fileURLToPath(new URL("../..", import.meta.url));
 
-describe("Studio MapLibre capability registry", () => {
+describe("Workbench MapLibre capability registry", () => {
   it("tracks the installed MapLibre package version and broad renderer surface", () => {
     const packageJson = JSON.parse(readFileSync(join(rootDir, "node_modules/maplibre-gl/package.json"), "utf8"));
     const registry = MAPLIBRE_CAPABILITY_REGISTRY;

@@ -18,7 +18,7 @@ const config: KnipConfig = {
     "packages/cli": {},
     "packages/scene3d": {},
     "packages/scene3d-three-adapter": {},
-    "apps/studio": {
+    "apps/workbench": {
       ignoreDependencies: [
         "@gis-engine/engine", // workspace dep used via alias
         "@gis-engine/ai", // workspace dep used via alias

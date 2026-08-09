@@ -8,7 +8,7 @@ inputs:
   - docs/planning/feature-specs/ai-map-workbench-promotion-scope.md
   - docs/planning/feature-specs/studio-workbench-product-go-no-go.md
   - examples/ai-map-workbench/audit-contract.mjs
-  - apps/studio/server/index.mjs
+  - apps/workbench/server/index.mjs
   - docs/reviews/quality-gate-workbench-product-route-2026-07-10.md
 owner: "@product @builder @quality @orchestrator"
 decision_level: blocking
@@ -54,13 +54,13 @@ for @quality to issue a Go/No-go decision after implementation evidence lands.
 - Workbench compatibility wrappers:
   `examples/ai-map-workbench/audit-contract.mjs` and
   `examples/ai-map-workbench/review-decisions.mjs`.
-- Studio route and export evidence: `apps/studio/server/index.mjs`.
-- Studio contract wrappers: `apps/studio/server/audit.mjs` and
-  `apps/studio/server/review-decisions.mjs`.
+- Studio route and export evidence: `apps/workbench/server/index.mjs`.
+- Studio contract wrappers: `apps/workbench/server/audit.mjs` and
+  `apps/workbench/server/review-decisions.mjs`.
 - Regression tests:
   `tests/examples/workbench-hardening.test.ts`,
   `tests/examples/ai-map-workbench.test.ts`, and
-  `tests/studio/studio-server.test.ts`.
+  `tests/workbench/studio-server.test.ts`.
 
 ## Blocking Guardrails
 

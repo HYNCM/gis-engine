@@ -5,7 +5,7 @@ generated_at: 2026-08-09T05:00:00Z
 repo_revision: "ca106dae"
 inputs:
   - docs/intent/project-definition.md
-  - apps/studio
+  - apps/workbench
   - packages/engine
   - packages/ai
   - packages/cli
@@ -22,11 +22,11 @@ user-facing product. Preserve the engine, AI, CLI, MCP, and generated-project
 contracts as its foundation. Do not imply hosted, 3D, or autonomous-agent
 readiness.
 
-Evidence: `apps/studio`, `packages/engine`, `packages/ai`, `packages/cli`, and
+Evidence: `apps/workbench`, `packages/engine`, `packages/ai`, `packages/cli`, and
 the repository gate suite at revision `ca106dae`.
 
 Impact: WebGIS engineers receive one coherent product path instead of separate
-SDK, MCP, CLI, Playground, Studio, and review-console narratives.
+SDK, MCP, CLI, Playground, and review-console narratives.
 
 Action: `@builder` implements the contracts and local workflow; `@quality`
 validates deterministic, security, visual, and delivery gates;

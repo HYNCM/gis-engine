@@ -112,9 +112,9 @@ export function buildPlan(files) {
     addGate(gates, "pnpm test:cli", "CLI behavior");
   }
 
-  if (files.some((file) => /^apps\/studio\//.test(file))) {
-    addGate(gates, "pnpm studio:build", "Studio bundle");
-    addGate(gates, "pnpm test:studio", "Studio behavior");
+  if (files.some((file) => /^apps\/workbench\//.test(file))) {
+    addGate(gates, "pnpm workbench:build", "Workbench bundle");
+    addGate(gates, "pnpm test:workbench", "Workbench behavior");
   }
 
   if (

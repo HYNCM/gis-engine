@@ -2,7 +2,7 @@
  * GET /api/providers — Return available AI provider profiles.
  */
 
-import { publicProviderProfiles } from "../../../api/studio-provider-guardrails";
+import { publicProviderProfiles } from "../../../api/workbench-provider-guardrails";
 
 export const runtime = "edge";
 

@@ -2,23 +2,23 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createInitialSpec } from "../../apps/studio/server/index.mjs";
-import { deleteMap, listMaps, loadMap, resetStoreForTests, saveMap } from "../../apps/studio/server/store.mjs";
+import { createInitialSpec } from "../../apps/workbench/server/index.mjs";
+import { deleteMap, listMaps, loadMap, resetStoreForTests, saveMap } from "../../apps/workbench/server/store.mjs";
 
 let tempDir = "";
 let dbPath = "";
 
-describe("Studio store persistence", () => {
+describe("Workbench store persistence", () => {
   beforeEach(async () => {
     tempDir = await mkdtemp(join(tmpdir(), "studio-store-"));
     dbPath = join(tempDir, "studio.sqlite");
-    process.env.STUDIO_DB_PATH = dbPath;
+    process.env.WORKBENCH_DB_PATH = dbPath;
     resetStoreForTests();
   });
 
   afterEach(async () => {
     resetStoreForTests();
-    delete process.env.STUDIO_DB_PATH;
+    delete process.env.WORKBENCH_DB_PATH;
     await rm(tempDir, { recursive: true, force: true });
   });
 
@@ -64,7 +64,7 @@ describe("Studio store persistence", () => {
 
     await saveMap({
       id: spec.id,
-      name: "Durable Studio Map",
+      name: "Durable Workbench Map",
       spec,
       revision: spec.revision,
       basemapId: "osm",
@@ -76,7 +76,7 @@ describe("Studio store persistence", () => {
     const loaded = await loadMap(spec.id);
     expect(loaded).toMatchObject({
       id: spec.id,
-      name: "Durable Studio Map",
+      name: "Durable Workbench Map",
       revision: "7",
       basemapId: "osm",
       auditRecordCount: 1,
@@ -93,7 +93,7 @@ describe("Studio store persistence", () => {
     expect(maps).toEqual([
       expect.objectContaining({
         id: spec.id,
-        name: "Durable Studio Map",
+        name: "Durable Workbench Map",
         revision: "7",
         basemapId: "osm",
         auditRecordCount: 1,

@@ -6,7 +6,7 @@ import TemplateBar from "./components/TemplateBar";
 import { ALL_TEMPLATES, basicMapTemplate, type MapSpecTemplate } from "./templates";
 
 // ────────────────────────────────────────────────────────────────────────────
-// Types (kept from original Studio for server compatibility)
+// Types (kept from original Workbench for server compatibility)
 // ────────────────────────────────────────────────────────────────────────────
 
 export interface ServerState {
@@ -132,7 +132,7 @@ export default function App() {
   const isTypingRef = useRef(false);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ── Server fetch helpers (same as original Studio) ────────────────────────
+  // ── Server fetch helpers (same as original Workbench) ────────────────────────
 
   const fetchState = useCallback(async () => {
     try {
@@ -179,7 +179,7 @@ export default function App() {
       {
         role: "assistant",
         content:
-          "Welcome to the MapSpec Playground!\n\nEdit the JSON spec on the left, see the live map in the center, or ask me to make changes using the AI assistant.\n\nTry selecting a template below to get started.",
+          "Welcome to the GIS Engine Workbench!\n\nEdit the JSON spec on the left, see the live map in the center, or ask me to make changes using the AI assistant.\n\nTry selecting a template below to get started.",
       },
     ]);
   }, [fetchBasemaps, fetchProviders, fetchState]);
@@ -327,7 +327,7 @@ export default function App() {
     ]);
   }, []);
 
-  // ── AI chat (same protocol as original Studio) ────────────────────────────
+  // ── AI chat (same protocol as original Workbench) ────────────────────────────
   const sendMessage = async (text: string): Promise<ServerState | null> => {
     setMessages((previous) => [...previous, { role: "user", content: text }]);
     setStatus("thinking");
@@ -400,7 +400,7 @@ export default function App() {
         <div className="flex items-center gap-3">
           <div>
             <p className="text-[11px] text-blue-400 font-medium tracking-wide leading-none">GIS ENGINE</p>
-            <h1 className="text-sm font-semibold leading-tight">MapSpec Playground</h1>
+            <h1 className="text-sm font-semibold leading-tight">GIS Engine Workbench</h1>
           </div>
           <select
             value={currentBasemap}

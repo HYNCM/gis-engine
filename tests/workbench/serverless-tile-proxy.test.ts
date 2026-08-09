@@ -74,7 +74,7 @@ describe("serverless tile proxy catch-all route", () => {
 
     expect(fetchMock).toHaveBeenCalledWith("https://tile.openstreetmap.org/0/0/0.png", {
       headers: {
-        "User-Agent": "GIS Engine Studio/0.1 (explicit user-selected basemap proxy)",
+        "User-Agent": "GIS Engine Workbench/0.1 (explicit user-selected basemap proxy)",
       },
     });
     expect(res.statusCode).toBe(200);

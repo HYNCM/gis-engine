@@ -195,7 +195,7 @@ export const MAPLIBRE_CAPABILITY_REGISTRY = {
       ],
       aiInvocation: {
         status: "partially-implemented",
-        implementedVia: ["addSource", "removeSource", "Studio basemap proxy"],
+        implementedVia: ["addSource", "removeSource", "Workbench basemap proxy"],
         requiresContractFor: [
           "raster-dem",
           "image",

@@ -1,8 +1,8 @@
 {
-  "name": "@gis-engine/studio",
+  "name": "@gis-engine/workbench",
   "version": "0.1.0",
   "private": true,
-  "description": "AI Map Studio — natural language map editing powered by GIS Engine",
+  "description": "GIS Engine Workbench — natural language map editing powered by GIS Engine",
   "type": "module",
   "scripts": {
     "dev": "vite",

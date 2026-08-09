@@ -22,7 +22,7 @@ export interface ProviderOutput {
   confidence?: { score: number; level: string };
 }
 
-export interface StudioCommandApplyResult {
+export interface WorkbenchCommandApplyResult {
   nextSpec: Record<string, unknown>;
   status: string;
   diagnostics: Array<Record<string, unknown>>;
@@ -61,7 +61,7 @@ const BASEMAPS: Record<
   },
 };
 
-export function applyProviderOutput(spec: Record<string, unknown>, output: ProviderOutput): StudioCommandApplyResult {
+export function applyProviderOutput(spec: Record<string, unknown>, output: ProviderOutput): WorkbenchCommandApplyResult {
   if (output.action === "unsupported") {
     return {
       nextSpec: spec,
@@ -73,7 +73,7 @@ export function applyProviderOutput(spec: Record<string, unknown>, output: Provi
           path: "/providerOutput/action",
           message:
             output.message ||
-            "The requested MapLibre capability is known, but Studio does not have a safe command contract for it yet.",
+            "The requested MapLibre capability is known, but Workbench does not have a safe command contract for it yet.",
         },
       ],
       evidence: emptyCommandEvidence(),

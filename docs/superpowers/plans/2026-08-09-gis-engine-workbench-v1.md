@@ -26,8 +26,8 @@
 ## Task 2: Rename Studio To Workbench With Compatibility Entry Points
 
 **Files:**
-- Move: `apps/studio` to `apps/workbench`
-- Move: `tests/studio` to `tests/workbench`
+- Move: `apps/workbench` to `apps/workbench`
+- Move: `tests/workbench` to `tests/workbench`
 - Modify: `apps/workbench/package.json`
 - Modify: `package.json`, `pnpm-lock.yaml`, `knip.ts`, `vercel.json`
 - Modify: `scripts/gate-plan.mjs`, relevant framework tests and public docs

@@ -1,5 +1,5 @@
 /**
- * MapSpec Playground Templates
+ * GIS Engine Workbench Templates
  *
  * Each template provides a complete, valid MapSpec with a name and description
  * so users can quickly start exploring different map configurations.

@@ -1,6 +1,6 @@
 import * as engine from "@gis-engine/engine";
 import { describe, expect, it } from "vitest";
-import { appendAuditRecord } from "../../apps/studio/server/audit.mjs";
+import { appendAuditRecord } from "../../apps/workbench/server/audit.mjs";
 import {
   applyLegacyIntent,
   applyProviderCommands,
@@ -19,14 +19,14 @@ import {
   publicProviderProfiles,
   savedWorkspaceHandoffStatus,
   statePayload,
-} from "../../apps/studio/server/index.mjs";
-import { createReviewDecision } from "../../apps/studio/server/review-decisions.mjs";
+} from "../../apps/workbench/server/index.mjs";
+import { createReviewDecision } from "../../apps/workbench/server/review-decisions.mjs";
 
 function layerById(spec: ReturnType<typeof createInitialSpec>, layerId: string) {
   return spec.layers.find((layer: { id: string }) => layer.id === layerId);
 }
 
-describe("AI Map Studio server state", () => {
+describe("GIS Engine Workbench server state", () => {
   it("serves a policy-safe default style without remote basemap diagnostics", () => {
     const payload = statePayload(engine, "ready", createInitialSpec());
 
@@ -78,7 +78,7 @@ describe("AI Map Studio server state", () => {
     expect(serialized).not.toContain("baseUrl");
   });
 
-  it("keeps remote basemap sources behind policy-safe Studio proxy URLs", () => {
+  it("keeps remote basemap sources behind policy-safe Workbench proxy URLs", () => {
     for (const [basemapId, tilePath] of [
       ["osm", "/api/tiles/osm/{z}/{x}/{y}.png"],
       ["arcgis-imagery", "/api/tiles/arcgis-imagery/{z}/{x}/{y}.jpg"],
@@ -319,7 +319,7 @@ describe("AI Map Studio server state", () => {
     expect(denied).toMatchObject({ enabled: true, access: "denied", productReadiness: "disabled" });
   });
 
-  it("detects the active basemap from saved Studio specs", () => {
+  it("detects the active basemap from saved Workbench specs", () => {
     expect(detectBasemapFromSpec(createInitialSpec("none"))).toBe("none");
     expect(detectBasemapFromSpec(createInitialSpec("osm"))).toBe("osm");
     expect(detectBasemapFromSpec(createInitialSpec("arcgis-imagery"))).toBe("arcgis-imagery");
@@ -333,11 +333,11 @@ describe("AI Map Studio server state", () => {
     );
   });
 
-  it("builds a compact Studio local handoff envelope", () => {
+  it("builds a compact Workbench local handoff envelope", () => {
     const spec = createInitialSpec("osm");
     const handoff = buildSavedMapHandoff({
       id: "map-1",
-      name: "Studio Handoff",
+      name: "Workbench Handoff",
       revision: "4",
       basemapId: "osm",
       createdAt: "2026-06-03T00:00:00Z",
@@ -368,7 +368,7 @@ describe("AI Map Studio server state", () => {
       handoffVersion: "studio.local-handoff.v1",
       workspace: {
         mapId: "map-1",
-        name: "Studio Handoff",
+        name: "Workbench Handoff",
         revision: "4",
         basemapId: "osm",
         sourceCount: 2,
@@ -387,10 +387,10 @@ describe("AI Map Studio server state", () => {
     });
   });
 
-  it("builds a compact Studio local review ledger", () => {
+  it("builds a compact Workbench local review ledger", () => {
     const ledger = buildSavedMapReviewLedger({
       id: "map-1",
-      name: "Studio Ledger",
+      name: "Workbench Ledger",
       revision: "4",
       basemapId: "osm",
       createdAt: "2026-06-03T00:00:00Z",
@@ -436,7 +436,7 @@ describe("AI Map Studio server state", () => {
       reviewLedgerVersion: "studio.review-ledger.v1",
       workspace: {
         mapId: "map-1",
-        name: "Studio Ledger",
+        name: "Workbench Ledger",
         revision: "4",
         basemapId: "osm",
       },
@@ -482,11 +482,11 @@ describe("AI Map Studio server state", () => {
     });
   });
 
-  it("filters Studio local review ledger records by audit status and review outcome", () => {
+  it("filters Workbench local review ledger records by audit status and review outcome", () => {
     const ledger = buildSavedMapReviewLedger(
       {
         id: "map-1",
-        name: "Studio Ledger",
+        name: "Workbench Ledger",
         revision: "4",
         basemapId: "osm",
         createdAt: "2026-06-03T00:00:00Z",
@@ -591,11 +591,11 @@ describe("AI Map Studio server state", () => {
     });
   });
 
-  it("builds a paginated Studio local review export envelope", () => {
+  it("builds a paginated Workbench local review export envelope", () => {
     const exportEnvelope = buildSavedMapReviewExport(
       {
         id: "map-1",
-        name: "Studio Export",
+        name: "Workbench Export",
         revision: "4",
         basemapId: "osm",
         createdAt: "2026-06-03T00:00:00Z",
@@ -650,7 +650,7 @@ describe("AI Map Studio server state", () => {
       reviewExportVersion: "studio.review-export.v1",
       workspace: {
         mapId: "map-1",
-        name: "Studio Export",
+        name: "Workbench Export",
         revision: "4",
         basemapId: "osm",
       },
@@ -729,11 +729,11 @@ describe("AI Map Studio server state", () => {
     expect(JSON.stringify(receipt)).not.toMatch(/rawPrompt|providerRawBody|apiKey|mapSpec|commandBody|patch/i);
   });
 
-  it("filters Studio local review export timelines by kind and status", () => {
+  it("filters Workbench local review export timelines by kind and status", () => {
     const exportEnvelope = buildSavedMapReviewExport(
       {
         id: "map-1",
-        name: "Studio Export",
+        name: "Workbench Export",
         revision: "4",
         basemapId: "osm",
         createdAt: "2026-06-03T00:00:00Z",
@@ -835,7 +835,7 @@ describe("AI Map Studio server state", () => {
     const exportEnvelope = buildSavedMapReviewExport(
       {
         id: "map-1",
-        name: "Studio Export",
+        name: "Workbench Export",
         revision: "4",
         basemapId: "osm",
         createdAt: "2026-06-03T00:00:00Z",
@@ -985,7 +985,7 @@ describe("AI Map Studio server state", () => {
     ]);
   });
 
-  it("creates compact Studio audit records for command evidence", () => {
+  it("creates compact Workbench audit records for command evidence", () => {
     const records: unknown[] = [];
     const record = appendAuditRecord(records, {
       sessionId: "studio.test",
@@ -1022,7 +1022,7 @@ describe("AI Map Studio server state", () => {
     expect(serialized).not.toMatch(/make points red|West Lake|MapSpec|commandBody|patch|baseUrl|apiKey/i);
   });
 
-  it("records Studio review decisions without mutating map state", () => {
+  it("records Workbench review decisions without mutating map state", () => {
     const auditRecord = appendAuditRecord([], {
       sessionId: "studio.test",
       status: "applied",
@@ -1067,7 +1067,7 @@ describe("AI Map Studio server state", () => {
     expect(JSON.stringify(review.decision)).not.toMatch(/MapSpec|commandBody|patch|rawPrompt|West Lake/i);
   });
 
-  it("rejects accepted Studio review decisions without real delivery readiness evidence", () => {
+  it("rejects accepted Workbench review decisions without real delivery readiness evidence", () => {
     const auditRecord = appendAuditRecord([], {
       sessionId: "studio.test",
       status: "applied",
@@ -1128,7 +1128,7 @@ describe("AI Map Studio server state", () => {
     );
   });
 
-  it("deduplicates multi-select Studio review reasons for blocked and follow-up decisions", () => {
+  it("deduplicates multi-select Workbench review reasons for blocked and follow-up decisions", () => {
     const auditRecord = appendAuditRecord([], {
       sessionId: "studio.test",
       status: "applied",
@@ -1162,7 +1162,7 @@ describe("AI Map Studio server state", () => {
     });
   });
 
-  it("blocks Studio review decisions that attempt direct map mutation", () => {
+  it("blocks Workbench review decisions that attempt direct map mutation", () => {
     const auditRecord = appendAuditRecord([], {
       sessionId: "studio.test",
       status: "applied",

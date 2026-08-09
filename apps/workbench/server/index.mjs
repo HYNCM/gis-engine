@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * AI Map Studio Server
+ * GIS Engine Workbench Server
  *
  * Production-ready server combining:
  * - GIS Engine command execution
@@ -10,8 +10,8 @@
  * - Static SPA serving (production mode)
  *
  * Usage:
- *   node apps/studio/server/index.mjs
- *   STUDIO_DB_PATH=./data/maps.db node apps/studio/server/index.mjs
+ *   node apps/workbench/server/index.mjs
+ *   WORKBENCH_DB_PATH=./data/maps.db node apps/workbench/server/index.mjs
  */
 
 import { createHash, randomUUID } from "node:crypto";
@@ -223,13 +223,13 @@ function basemapUnavailableResult(spec, basemapId) {
         severity: "error",
         path: "/basemap",
         message: missing
-          ? `${basemap.label} requires ${missing} before Studio can proxy its tiles.`
+          ? `${basemap.label} requires ${missing} before Workbench can proxy its tiles.`
           : `${basemap.label} is not available.`,
         fix: missing
           ? {
               kind: "manual",
               confidence: "high",
-              message: `Set ${missing} on the Studio server, then retry the basemap change.`,
+              message: `Set ${missing} on the Workbench server, then retry the basemap change.`,
             }
           : undefined,
       },
@@ -412,7 +412,7 @@ export function applyProviderCommands(engine, output, spec) {
             path: "/providerOutput/action",
             message:
               message ||
-              "The requested MapLibre capability is known, but Studio does not have a safe command contract for it yet.",
+              "The requested MapLibre capability is known, but Workbench does not have a safe command contract for it yet.",
           },
         ],
         evidence: emptyCommandEvidence(),
@@ -1501,7 +1501,7 @@ async function proxyBasemapTile(res, providerId, zValue, xValue, yValue) {
     const upstreamUrl = await tileProvider.resolveUrl(coords);
     const upstream = await fetch(upstreamUrl, {
       headers: {
-        "user-agent": "GIS Engine Studio/0.1 (explicit user-selected basemap proxy)",
+        "user-agent": "GIS Engine Workbench/0.1 (explicit user-selected basemap proxy)",
       },
     });
     if (!upstream.ok) {
@@ -1603,7 +1603,7 @@ function collectGeoJsonPropertyKeys(source) {
   return Array.from(new Set(features.flatMap((feature) => Object.keys(feature?.properties || {})))).sort();
 }
 
-function appendStudioAudit(input) {
+function appendWorkbenchAudit(input) {
   const deliveryStatus = studioDeliveryStatus(input.status, input.diagnostics ?? []);
   return appendAuditRecord(auditRecords, {
     sessionId,
@@ -1840,7 +1840,7 @@ async function main() {
                 message: "DeepSeek API key not configured. Set DEEPSEEK_API_KEY.",
               },
             ];
-            appendStudioAudit({
+            appendWorkbenchAudit({
               providerId: "deepseek",
               status: "blocked",
               commandEvidence: emptyCommandEvidence(),
@@ -1887,7 +1887,7 @@ async function main() {
                 message: result.error || "Provider error",
               },
             ];
-            appendStudioAudit({
+            appendWorkbenchAudit({
               providerId: "deepseek",
               status: "blocked",
               commandEvidence: emptyCommandEvidence(),
@@ -1910,7 +1910,7 @@ async function main() {
           const status = commandResult.status;
           if (status === "applied") replaceActiveSpec(nextSpec);
           const diagnostics = commandResult.diagnostics;
-          appendStudioAudit({
+          appendWorkbenchAudit({
             providerId: "deepseek",
             status,
             promptHash: result.providerOutput.promptHash,
@@ -1941,7 +1941,7 @@ async function main() {
           replaceActiveSpec(legacyResult.nextSpec);
         }
         const promptHash = hashPrompt(message);
-        appendStudioAudit({
+        appendWorkbenchAudit({
           providerId: "mock-ai",
           status: legacyResult.status,
           promptHash,
@@ -2091,7 +2091,7 @@ async function main() {
   });
 
   server.listen(PORT, HOST, () => {
-    console.log("\n🚀 AI Map Studio Server");
+    console.log("\n🚀 GIS Engine Workbench Server");
     console.log(`   http://${HOST}:${PORT}`);
     console.log(`   DB: ${store.resolveStorePath()}`);
     console.log(`   API: http://${HOST}:${PORT}/api/state`);

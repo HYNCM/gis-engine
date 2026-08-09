@@ -1,5 +1,5 @@
 /**
- * Studio Store — map persistence via sql.js (WASM SQLite).
+ * Workbench Store — compatibility persistence via sql.js (WASM SQLite).
  * Zero native dependencies, works on all platforms.
  */
 
@@ -32,8 +32,10 @@ const REQUIRED_COLUMNS = [
 ];
 
 export function resolveStorePath(env = process.env) {
-  const configuredPath = env.STUDIO_DB_PATH?.trim();
-  return configuredPath ? resolve(configuredPath) : join(homedir(), ".gis-engine", "studio", "studio.sqlite");
+  const configuredPath = env.WORKBENCH_DB_PATH?.trim() || env.STUDIO_DB_PATH?.trim();
+  return configuredPath
+    ? resolve(configuredPath)
+    : join(homedir(), ".gis-engine", "workbench", "workbench.sqlite");
 }
 
 export function resetStoreForTests() {
