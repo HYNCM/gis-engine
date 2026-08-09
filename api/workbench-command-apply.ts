@@ -61,7 +61,10 @@ const BASEMAPS: Record<
   },
 };
 
-export function applyProviderOutput(spec: Record<string, unknown>, output: ProviderOutput): WorkbenchCommandApplyResult {
+export function applyProviderOutput(
+  spec: Record<string, unknown>,
+  output: ProviderOutput,
+): WorkbenchCommandApplyResult {
   if (output.action === "unsupported") {
     return {
       nextSpec: spec,

@@ -33,9 +33,7 @@ const REQUIRED_COLUMNS = [
 
 export function resolveStorePath(env = process.env) {
   const configuredPath = env.WORKBENCH_DB_PATH?.trim() || env.STUDIO_DB_PATH?.trim();
-  return configuredPath
-    ? resolve(configuredPath)
-    : join(homedir(), ".gis-engine", "workbench", "workbench.sqlite");
+  return configuredPath ? resolve(configuredPath) : join(homedir(), ".gis-engine", "workbench", "workbench.sqlite");
 }
 
 export function resetStoreForTests() {
