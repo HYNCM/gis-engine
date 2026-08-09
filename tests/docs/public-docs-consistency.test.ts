@@ -138,6 +138,20 @@ describe("public docs consistency", () => {
     }
   });
 
+  it("keeps the Workbench product contract on the frozen MCP inventory without aliases", () => {
+    for (const file of [
+      "docs/intent/project-definition.md",
+      "docs/planning/feature-specs/gis-engine-workbench-v1.md",
+    ]) {
+      const text = readText(file);
+      expect(text, `${file} should identify the 14-tool inventory`).toMatch(/14(?:-tool| MCP tool| tools|\s+tools)/i);
+      expectCanonicalMcpOrderInText(text, file);
+      expect(text, `${file} should reject Workbench-specific aliases`).toMatch(
+        /(?:does not add|No) (?:Workbench )?aliases|No Workbench aliases/i,
+      );
+    }
+  });
+
   it("keeps the current release section on v1.5 truth and explicit No-go boundaries", () => {
     const releaseNotes = readText("docs/website/release-notes.md");
     const currentHeading = releaseNotes.match(/^## (v\d+\.\d+\.\d+)$/m);

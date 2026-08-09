@@ -12,7 +12,9 @@ The current direction is sound only if the core stays small and generic:
 
 - `MapSpec` should be a **core + extensions** base model, not a map model frozen
   around the current 2D path.
-- `examples/ai-map-workbench` is a **reference implementation**, not the product shape.
+- `examples/ai-map-workbench` is the historical Phase 1 **reference
+  implementation**, not the product shape. The current product direction is
+  defined separately in `docs/intent/project-definition.md`.
 - `validate -> apply -> snapshot -> export` is a **composable minimum closed loop**,
   not the one required workflow for every consumer.
 - 3D, scene, and vertical-domain capability should live behind **extension namespaces**
@@ -75,7 +77,7 @@ flowchart LR
   Ext --> Scene3D["3D / scene capabilities"]
   Ext --> Domain["Vertical-domain capabilities"]
   Ext --> Adapter["Renderer adapters"]
-  Ref["Workbench reference implementation"] --> Core
+  Ref["Phase 1 example reference implementation"] --> Core
 ```
 
 The core should define the stable language. Extensions should carry
@@ -90,7 +92,8 @@ That means:
 
 - keep the 2D path stable first
 - keep 3D as extension-only evidence until promoted separately
-- keep the workbench as the clearest runnable reference, not as a product claim
+- keep `examples/ai-map-workbench` as Phase 1 reference evidence without using
+  its demo workflow to constrain the GIS Engine Workbench product
 - keep the evidence chain composable so other workflows can reuse it later
 
 ## Non-Goals
