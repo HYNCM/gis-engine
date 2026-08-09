@@ -47,25 +47,6 @@ function getDate() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function findFiles(dir, pattern) {
-  const results = [];
-  try {
-    const entries = readdirSync(join(ROOT, dir), { recursive: true });
-    for (const entry of entries) {
-      if (entry.match(pattern)) {
-        results.push(join(dir, entry));
-      }
-    }
-  } catch {
-    // directory might not exist
-  }
-  return results;
-}
-
-function isArchivedDocIssue(issue) {
-  return issue.source.includes("/archive/");
-}
-
 // ── Changelog 生成器 ──
 
 function generateChangelog() {
@@ -238,21 +219,34 @@ function generateApiDocSkeleton() {
 
 // ── 文档交叉引用检查 ──
 
+export function extractRelativeMarkdownLinks(content) {
+  const links = [];
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  let match;
+
+  while ((match = linkRegex.exec(content)) !== null) {
+    const label = match[1];
+    const rawTarget = match[2].trim().replace(/^<|>$/g, "");
+    if (!rawTarget.startsWith("./") && !rawTarget.startsWith("../")) continue;
+
+    const target = rawTarget.split("#", 1)[0].split("?", 1)[0];
+    links.push({ label, target });
+  }
+
+  return links;
+}
+
 function checkDocLinks() {
   console.log("🔗 检查文档交叉引用...");
 
   const issues = [];
-  const docFiles = findFiles("docs", /\.md$/);
+  const docFiles = run("git ls-files '*.md'").split("\n").filter(Boolean);
 
   for (const docFile of docFiles) {
     const fullPath = join(ROOT, docFile);
     const content = readFileSync(fullPath, "utf-8");
 
-    // 查找相对链接 [...](./path)
-    const linkRegex = /\[([^\]]+)\]\(\.\/([^)]+)\)/g;
-    let match;
-    while ((match = linkRegex.exec(content)) !== null) {
-      const [_fullMatch, label, target] = match;
+    for (const { label, target } of extractRelativeMarkdownLinks(content)) {
       const docDir = dirname(docFile);
       const resolvedPath = join(ROOT, docDir, target);
 
@@ -270,25 +264,13 @@ function checkDocLinks() {
   let report = "## 文档交叉引用完整性报告\n\n";
   report += `> 自动生成于 ${getDate()}\n\n`;
 
-  const activeIssues = issues.filter((issue) => !isArchivedDocIssue(issue));
-  const archiveIssues = issues.filter(isArchivedDocIssue);
-
-  if (activeIssues.length === 0) {
+  if (issues.length === 0) {
     report += "✅ 所有活动文档交叉引用完整。\n";
   } else {
-    report += `❌ 发现 ${activeIssues.length} 个活动文档损坏引用：\n\n`;
+    report += `❌ 发现 ${issues.length} 个活动文档损坏引用：\n\n`;
     report += "| 源文件 | 标签 | 目标 |\n";
     report += "| --- | --- | --- |\n";
-    for (const issue of activeIssues) {
-      report += `| ${issue.source} | ${issue.label} | ${issue.target} |\n`;
-    }
-  }
-
-  if (archiveIssues.length > 0) {
-    report += `\n⚠️ 忽略 ${archiveIssues.length} 个归档文档历史引用：\n\n`;
-    report += "| 归档源文件 | 标签 | 目标 |\n";
-    report += "| --- | --- | --- |\n";
-    for (const issue of archiveIssues) {
+    for (const issue of issues) {
       report += `| ${issue.source} | ${issue.label} | ${issue.target} |\n`;
     }
   }
@@ -342,22 +324,9 @@ async function main() {
       description: "文档引用审计",
     });
 
-    // Separate active docs issues from archive issues
-    const activeBrokenLinks = issues.filter((issue) => !isArchivedDocIssue(issue));
-    const archiveBrokenLinks = issues.filter(isArchivedDocIssue);
-
-    // Archive broken links are warnings only
-    if (archiveBrokenLinks.length > 0) {
-      console.warn(`\n⚠️  ${archiveBrokenLinks.length} broken links in archive (ignored):`);
-      for (const l of archiveBrokenLinks) {
-        console.warn(`  ${l.source} → ${l.target}`);
-      }
-    }
-
-    // Active docs broken links are errors
-    if (activeBrokenLinks.length > 0) {
-      console.error(`\n❌ ${activeBrokenLinks.length} broken links in active docs (non-archive):`);
-      for (const l of activeBrokenLinks) {
+    if (issues.length > 0) {
+      console.error(`\n❌ ${issues.length} broken links in active docs:`);
+      for (const l of issues) {
         console.error(`  ${l.source} → ${l.target}`);
       }
       // Write the audit report before exiting
@@ -390,7 +359,9 @@ async function main() {
   process.exit(0);
 }
 
-main().catch((err) => {
-  console.error("❌ Doc Generator 异常:", err.message);
-  process.exit(1);
-});
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  main().catch((err) => {
+    console.error("❌ Doc Generator 异常:", err.message);
+    process.exit(1);
+  });
+}

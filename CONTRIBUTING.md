@@ -10,14 +10,14 @@ participating, you are expected to uphold this code.
 
 ## How to Report a Bug
 
-1. Check [existing issues](../../issues) to avoid duplicates.
+1. Check [existing issues](https://github.com/HYNCM/gis-engine/issues) to avoid duplicates.
 2. Open a new issue using the **Bug Report** template.
 3. Include: a clear description, steps to reproduce, expected vs actual
    behavior, and your environment (Node version, OS, package version).
 
 ## How to Suggest a Feature
 
-1. Check [existing issues](../../issues) for similar suggestions.
+1. Check [existing issues](https://github.com/HYNCM/gis-engine/issues) for similar suggestions.
 2. Open a new issue using the **Feature Request** template.
 3. Describe the use case, proposed API (if applicable), and alternatives
    considered.

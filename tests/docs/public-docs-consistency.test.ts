@@ -119,7 +119,6 @@ describe("public docs consistency", () => {
       "docs/engineering/contract-freeze.md",
       "docs/engineering/supported-feature-matrix.md",
       "docs/migration/v1.4-to-v1.5.md",
-      "docs/blog/2026-07-ai-native-map-sdk.md",
       "docs/website/api/ai.md",
       "docs/website/mcp/overview.md",
       "docs/website/mcp/setup-guides.md",
@@ -183,19 +182,15 @@ describe("public docs consistency", () => {
     expect(migration).toContain("GeoParquet 2.0 RC bbox accepts 4, 6, or 8 numbers");
   });
 
-  it("keeps both AI-native SDK research copies on the complete grouped 14-tool inventory", () => {
-    for (const file of [
-      "docs/research/ai-native-map-sdk-design.md",
-      "docs/website/research/ai-native-map-sdk-design.md",
-    ]) {
-      const text = readText(file);
-      expect(text, `${file} should describe all 14 MCP tools`).toContain("14 MCP tools");
-      expect(text, `${file} should not retain the seven-tool claim`).not.toContain("exposes 7 MCP tools");
-      expect(text, `${file} should name the Core lifecycle group`).toContain("Core lifecycle");
-      expect(text, `${file} should name the Authoring extensions group`).toContain("Authoring extensions");
-      expect(text, `${file} should name the Data intelligence group`).toContain("Data intelligence");
-      expectCanonicalMcpOrder(file);
-    }
+  it("keeps the canonical AI-native SDK research page on the complete grouped 14-tool inventory", () => {
+    const file = "docs/website/research/ai-native-map-sdk-design.md";
+    const text = readText(file);
+    expect(text, `${file} should describe all 14 MCP tools`).toContain("14 MCP tools");
+    expect(text, `${file} should not retain the seven-tool claim`).not.toContain("exposes 7 MCP tools");
+    expect(text, `${file} should name the Core lifecycle group`).toContain("Core lifecycle");
+    expect(text, `${file} should name the Authoring extensions group`).toContain("Authoring extensions");
+    expect(text, `${file} should name the Data intelligence group`).toContain("Data intelligence");
+    expectCanonicalMcpOrder(file);
   });
 
   it("keeps MCP overview summaries aligned with the public descriptors", () => {
@@ -275,7 +270,6 @@ describe("public docs consistency", () => {
 
   it("does not retain superseded MCP inventory claims in active public guides", () => {
     const files = [
-      "docs/blog/2026-07-rendering-milestone.md",
       "docs/website/guide/mcp-server.md",
       "docs/website/guide/core-concepts.md",
       "docs/website/guide/what-is-gis-engine.md",

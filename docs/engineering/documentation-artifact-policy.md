@@ -21,6 +21,7 @@ that still act as current evidence.
 
 ## Cleanup Rules
 
+- Historical prose belongs in Git history; do not recreate `docs/archive`.
 - Do not add these files to `.gitignore` without a matching update to
   `docs/README.md`, the generating script, and any tests that read the output.
 - A generated file can become CI-only only after its current documentation

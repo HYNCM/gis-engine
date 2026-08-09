@@ -404,7 +404,7 @@ async function main() {
   console.log("");
 
   // 扫描多个目录（当月 + 上月）
-  const scanDirs = ["docs/reviews", "docs/planning/feature-specs", "docs/archive"];
+  const scanDirs = ["docs/reviews", "docs/planning/feature-specs"];
   const monthFilter = (reportMonth) => reportMonth === options.month || reportMonth === prevMonth;
 
   const allResults = { patterns: [], pitfalls: [] };
