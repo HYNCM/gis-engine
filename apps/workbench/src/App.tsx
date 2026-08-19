@@ -54,6 +54,15 @@ export interface ChatMessage {
   };
 }
 
+interface ProviderProfile {
+  id: string;
+  label: string;
+  protocol: string;
+  model?: string;
+  enabled: boolean;
+  missingCredential: boolean;
+}
+
 const SAMPLE_GEOJSON = JSON.stringify(
   {
     type: "FeatureCollection",
@@ -71,6 +80,10 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [projectName, setProjectName] = useState("My first GIS project");
+  const [providers, setProviders] = useState<ProviderProfile[]>([
+    { id: "mock-ai", label: "Mock AI", protocol: "mock", enabled: true, missingCredential: false },
+  ]);
+  const [providerId, setProviderId] = useState("mock-ai");
   const [centerTab, setCenterTab] = useState<CenterTab>("map");
   const [inspectorTab, setInspectorTab] = useState<InspectorTab>("plan");
   const [dataText, setDataText] = useState(SAMPLE_GEOJSON);
@@ -105,6 +118,12 @@ export default function App() {
     void loadCurrentProject();
   }, [loadCurrentProject]);
 
+  useEffect(() => {
+    void request<{ providers: ProviderProfile[] }>("/api/providers")
+      .then((response) => setProviders(response.providers))
+      .catch(() => undefined);
+  }, []);
+
   const run = useCallback(async (operation: () => Promise<void>) => {
     setBusy(true);
     setDiagnostics([]);
@@ -127,9 +146,22 @@ export default function App() {
       const initialSources = initialSpec.sources as Record<string, Record<string, unknown>>;
       const initialSource = Object.values(initialSources)[0];
       if (initialSource?.type === "geojson") initialSource.data = JSON.parse(SAMPLE_GEOJSON);
+      const selectedProvider = providers.find((profile) => profile.id === providerId);
       const created = await request<WorkbenchProjectState>("/api/projects", {
         method: "POST",
-        body: JSON.stringify({ id: "project-1", name: projectName.trim(), initialSpec }),
+        body: JSON.stringify({
+          id: "project-1",
+          name: projectName.trim(),
+          initialSpec,
+          provider:
+            selectedProvider?.protocol === "mock"
+              ? { kind: "mock" }
+              : {
+                  kind: "openai-compatible",
+                  profileId: selectedProvider?.id,
+                  model: selectedProvider?.model,
+                },
+        }),
       });
       setState(created);
     });
@@ -287,6 +319,15 @@ export default function App() {
           </div>
           <label htmlFor="project-name">Project name</label>
           <input id="project-name" value={projectName} onChange={(event) => setProjectName(event.target.value)} />
+          <label htmlFor="project-provider">AI provider</label>
+          <select id="project-provider" value={providerId} onChange={(event) => setProviderId(event.target.value)}>
+            {providers.map((profile) => (
+              <option disabled={!profile.enabled} key={profile.id} value={profile.id}>
+                {profile.label}
+                {profile.missingCredential ? " (credential not configured)" : ""}
+              </option>
+            ))}
+          </select>
           <button
             className="primary-button"
             type="button"
@@ -345,6 +386,12 @@ export default function App() {
           exportPath={exportPath}
           exportPreview={exportPreview}
           exportReceipt={exportReceipt}
+          providerLabel={
+            state.project.provider.kind === "mock"
+              ? "Mock provider"
+              : (providers.find((profile) => profile.id === state.project.provider.profileId)?.label ??
+                "OpenAI-compatible provider")
+          }
           busy={busy}
           onTabChange={(tab) => startTransition(() => setInspectorTab(tab))}
           onPromptChange={setPrompt}

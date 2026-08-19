@@ -45,6 +45,7 @@ body {
 
 button,
 input,
+select,
 textarea {
   font: inherit;
 }
@@ -55,6 +56,7 @@ button {
 
 button:focus-visible,
 input:focus-visible,
+select:focus-visible,
 textarea:focus-visible,
 a:focus-visible {
   outline: 2px solid var(--accent);
@@ -921,9 +923,19 @@ a:focus-visible {
   font-size: 10px;
 }
 
-.create-project-panel input {
+.create-project-panel input,
+.create-project-panel select {
+  width: 100%;
   height: 36px;
   padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  background: var(--surface);
+}
+
+.create-project-panel select {
+  margin-bottom: 10px;
 }
 
 .create-project-panel .primary-button {

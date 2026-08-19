@@ -4,6 +4,7 @@ export const WorkbenchDiagnosticCodes = {
   SchemaInvalid: "WORKBENCH.SCHEMA_INVALID",
   ProjectInvalid: "WORKBENCH.PROJECT_INVALID",
   PlanInvalid: "WORKBENCH.PLAN_INVALID",
+  ProviderUnavailable: "WORKBENCH.PROVIDER_UNAVAILABLE",
   PlanHashMismatch: "WORKBENCH.PLAN_HASH_MISMATCH",
   RevisionConflict: "WORKBENCH.REVISION_CONFLICT",
   UnsafePath: "WORKBENCH.UNSAFE_PATH",

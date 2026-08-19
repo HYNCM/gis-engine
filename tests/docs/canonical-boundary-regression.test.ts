@@ -12,7 +12,12 @@ function readText(path: string): string {
 const canonicalBoundaryDocs = [
   {
     file: "README.md",
-    required: [/core \+ extensions model/i, /reference implementation/i, /minimum\s+closed\s+loop/i],
+    required: [
+      /GIS Engine Workbench[\s\S]{0,160}local-first/i,
+      /core \+ extensions model/i,
+      /reference implementation/i,
+      /minimum\s+closed\s+loop/i,
+    ],
   },
   {
     file: "AGENTS.md",
@@ -159,5 +164,17 @@ describe("canonical boundary copy", () => {
       /Telemetry never includes raw prompts, data, `MapSpec`, file paths,\s+credentials, or raw provider responses\./,
     );
     expect(definition).not.toContain("telemetry by default");
+  });
+
+  it("keeps the public entrypoint and migration guide aligned with the independent Workbench release", () => {
+    const readme = readText("README.md");
+    const migration = readText("docs/migration/workbench-0.1.md");
+    const changelog = readText("CHANGELOG.md");
+
+    expect(readme).toMatch(/Workbench release line is an independent `0\.x` local preview/);
+    expect(readme).toContain("gis-engine-workbench ./my-map");
+    expect(migration).toContain("workbench:migrate:export");
+    expect(migration).toMatch(/never deletes the source/);
+    expect(changelog).toMatch(/PR #47[\s\S]{0,180}does not promote Workbench/);
   });
 });

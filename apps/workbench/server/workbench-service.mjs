@@ -246,9 +246,11 @@ export function createWorkbenchApiRouter(options) {
       }
       if (request.method === "POST" && route.action === "plan") {
         const result =
-          typeof request.body?.prompt === "string"
-            ? createMockWorkbenchPlan(request.body.prompt, state, { now })
-            : createWorkbenchPlan(request.body, { now });
+          typeof request.body?.prompt !== "string"
+            ? createWorkbenchPlan(request.body, { now })
+            : state.project.provider.kind === "openai-compatible"
+              ? await createProviderWorkbenchPlan(request.body.prompt, state, options)
+              : createMockWorkbenchPlan(request.body.prompt, state, { now });
         if (result.ok) plans.set(result.result.planHash, result.result.plan);
         return response(result.ok ? 201 : 422, result);
       }
@@ -562,6 +564,140 @@ function createMockWorkbenchPlan(prompt, state, options) {
     },
     { now: options.now },
   );
+}
+
+async function createProviderWorkbenchPlan(prompt, state, options) {
+  const normalizedPrompt = prompt.trim();
+  if (!normalizedPrompt) {
+    return failure(WorkbenchDiagnosticCodes.PlanInvalid, "A non-empty prompt is required.", "/prompt");
+  }
+  const configured = options.openAiProvider;
+  if (
+    !configured?.profile ||
+    typeof configured.call !== "function" ||
+    !configured.apiKey ||
+    configured.profile.id !== state.project.provider.profileId
+  ) {
+    return failure(
+      WorkbenchDiagnosticCodes.ProviderUnavailable,
+      "The selected server-held provider credential is not configured.",
+      "/provider",
+    );
+  }
+
+  const providerResult = await configured.call({
+    profile: configured.profile,
+    apiKey: configured.apiKey,
+    message: normalizedPrompt,
+    summary: summarizeProjectForProvider(state.spec),
+    capabilityPrompt: options.capabilityPrompt ?? "",
+  });
+  if (!providerResult?.ok) {
+    return failure(
+      WorkbenchDiagnosticCodes.ProviderUnavailable,
+      "The configured provider could not produce a plan.",
+      "/provider",
+    );
+  }
+
+  const promptHash = createWorkbenchPromptHash(normalizedPrompt);
+  const command = providerOutputToCommand(providerResult.providerOutput, promptHash, configured.profile.id);
+  if (!command) {
+    return failure(
+      WorkbenchDiagnosticCodes.PlanInvalid,
+      "The provider response did not map to a supported Workbench command.",
+      "/providerResponse/action",
+    );
+  }
+  return createWorkbenchPlan(
+    {
+      goal: `Review ${command.type} for the current map`,
+      baseRevision: state.project.currentRevision,
+      promptHash,
+      commands: [command],
+      affectedPaths: ["mapspec.json"],
+      resourceRequests: [],
+      unsupportedIntents: [],
+      diagnostics: [],
+    },
+    { now: options.now },
+  );
+}
+
+function summarizeProjectForProvider(spec) {
+  return {
+    sources: Object.keys(spec.sources ?? {}),
+    layers: spec.layers?.length ?? 0,
+    layerIds: (spec.layers ?? []).map((layer) => layer.id),
+    layerDetails: (spec.layers ?? []).map((layer) => ({
+      id: layer.id,
+      type: layer.type,
+      source: layer.source,
+      filter: layer.filter,
+      minzoom: layer.minzoom,
+      maxzoom: layer.maxzoom,
+    })),
+    view: spec.view,
+  };
+}
+
+function providerOutputToCommand(output, promptHash, providerId) {
+  if (!isRecord(output) || typeof output.action !== "string") return null;
+  const command = {
+    id: `provider-${randomUUID()}`,
+    version: "0.1",
+    author: { type: "agent", id: providerId },
+    sourcePromptHash: promptHash,
+  };
+  if (output.action === "setPaint" && typeof output.layerId === "string" && isRecord(output.paint)) {
+    return { ...command, type: "setPaint", layerId: output.layerId, paint: output.paint };
+  }
+  if (output.action === "setLayout" && typeof output.layerId === "string" && isRecord(output.layout)) {
+    return { ...command, type: "setLayout", layerId: output.layerId, layout: output.layout };
+  }
+  if (output.action === "setFilter" && typeof output.layerId === "string") {
+    return { ...command, type: "setFilter", layerId: output.layerId, filter: output.filter ?? null };
+  }
+  if (
+    output.action === "setLayerZoomRange" &&
+    typeof output.layerId === "string" &&
+    typeof output.minzoom === "number" &&
+    typeof output.maxzoom === "number"
+  ) {
+    return {
+      ...command,
+      type: "setLayerZoomRange",
+      layerId: output.layerId,
+      minzoom: output.minzoom,
+      maxzoom: output.maxzoom,
+    };
+  }
+  if (output.action === "reorderLayer" && typeof output.layerId === "string") {
+    return {
+      ...command,
+      type: "reorderLayer",
+      layerId: output.layerId,
+      ...(typeof output.beforeLayerId === "string" ? { beforeLayerId: output.beforeLayerId } : {}),
+    };
+  }
+  if (output.action === "fitBounds" && Array.isArray(output.bounds)) {
+    return { ...command, type: "fitBounds", bounds: output.bounds };
+  }
+  if (output.action === "setView" && isRecord(output.view)) {
+    return { ...command, type: "setView", view: output.view };
+  }
+  if (output.action === "addLayer" && isRecord(output.layer)) {
+    return {
+      ...command,
+      type: "addLayer",
+      layer: output.layer,
+      ...(typeof output.beforeLayerId === "string" ? { beforeLayerId: output.beforeLayerId } : {}),
+    };
+  }
+  if (output.action === "removeLayer" && typeof output.layerId === "string") {
+    return { ...command, type: "removeLayer", layerId: output.layerId };
+  }
+  return null;
 }
 
 function missingPlan(planHash) {

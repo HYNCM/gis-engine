@@ -83,6 +83,8 @@ const requiredGuardrails: Array<{
       /`export_example_app` returns manifest and file metadata/,
       /GeoParquet, FlatGeobuf, and GeoTIFF are public `MapSpec` source contracts with runtime blocked/,
       /advanced geoprocessing as available capability/,
+      /Workbench is a local-first `0\.x` product preview/,
+      /Engine PR #47 is a GeoParquet metadata-contract release only/,
     ],
   },
 ];

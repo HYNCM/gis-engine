@@ -35,7 +35,12 @@ export function writeMapProjectDelivery(options: WriteMapProjectDeliveryOptions)
     provider,
     cliVersion: options.cliVersion ?? "1.5.0",
   })) {
-    const content = file.path === "src/main.ts" ? renderMapEntry(options.projectName) : file.content;
+    const content =
+      file.path === "src/main.ts"
+        ? renderMapEntry(options.projectName)
+        : file.path === "package.json"
+          ? renderDeliveryPackage(file.content)
+          : file.content;
     write(outputDir, file.path, content);
     files.push(file.path);
   }
@@ -110,6 +115,14 @@ Credentials, raw provider responses, and raw prompts are not included.
   files.push("artifact-manifest.json");
 
   return { outputDir, files, preflight };
+}
+
+function renderDeliveryPackage(content: string) {
+  const packageJson = JSON.parse(content) as {
+    dependencies?: Record<string, string>;
+  };
+  if (packageJson.dependencies) delete packageJson.dependencies["@gis-engine/ai"];
+  return `${JSON.stringify(packageJson, null, 2)}\n`;
 }
 
 function write(outputDir: string, path: string, content: string) {

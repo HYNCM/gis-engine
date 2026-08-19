@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { buildPlan } from "../../scripts/gate-plan.mjs";
 
 function readJson(path: string): Record<string, unknown> {
   return JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
@@ -36,7 +37,15 @@ describe("Workbench application convergence", () => {
     const gatePlan = readFileSync("scripts/gate-plan.mjs", "utf8");
     expect(gatePlan).toContain('addGate(gates, "pnpm workbench:build", "Workbench bundle")');
     expect(gatePlan).toContain('addGate(gates, "pnpm test:workbench", "Workbench behavior")');
+    expect(gatePlan).toContain('addGate(gates, "pnpm test:workbench:security"');
+    expect(gatePlan).toContain('addGate(gates, "pnpm test:workbench:e2e"');
+    expect(gatePlan).toContain('addGate(gates, "pnpm test:workbench:delivery"');
+    expect(gatePlan).toContain('"GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual"');
     expect(gatePlan).not.toContain('addGate(gates, "pnpm studio:build"');
     expect(gatePlan).not.toContain('addGate(gates, "pnpm test:studio"');
+
+    const deliveryPlan = [...buildPlan(["packages/cli/src/delivery.ts"]).keys()];
+    expect(deliveryPlan).toContain("pnpm test:workbench:delivery");
+    expect(deliveryPlan).toContain("pnpm test:workbench:security");
   });
 });

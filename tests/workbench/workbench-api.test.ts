@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createWorkbenchProject, openWorkbenchProject } from "../../apps/workbench/server/project-store.mjs";
 import {
   applyWorkbenchPlan,
@@ -405,5 +405,90 @@ describe("Workbench project API router", () => {
       },
     });
     expect(JSON.stringify(result)).not.toContain("private customer locations");
+  });
+
+  it("turns a server-held OpenAI-compatible response into a structured plan", async () => {
+    const root = await mkdtemp(join(tmpdir(), "gis-engine-workbench-provider-"));
+    roots.push(root);
+    await createWorkbenchProject(
+      {
+        root,
+        id: "project-1",
+        name: "Places",
+        initialSpec: initialSpec(),
+        provider: { kind: "openai-compatible", profileId: "deepseek", model: "fixture-model" },
+      },
+      { now: () => createdAt },
+    );
+    const call = vi.fn(async () => ({
+      ok: true,
+      providerOutput: {
+        providerId: "deepseek",
+        action: "setPaint",
+        layerId: "places",
+        paint: { "circle-color": "#dc2626" },
+        providerBody: "must-not-be-retained",
+      },
+    }));
+    const router = createWorkbenchApiRouter({
+      projectRoot: root,
+      now: () => createdAt,
+      openAiProvider: {
+        profile: { id: "deepseek", baseUrl: "https://example.invalid", model: "fixture-model" },
+        apiKey: "sk-test",
+        call,
+      },
+    });
+
+    const result = await router({
+      method: "POST",
+      pathname: "/api/projects/project-1/plans",
+      body: { prompt: "make the private customer locations red" },
+    });
+
+    expect(call).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "make the private customer locations red", apiKey: "sk-test" }),
+    );
+    expect(result).toMatchObject({
+      status: 201,
+      body: {
+        result: {
+          plan: {
+            promptHash: expect.stringMatching(/^sha256:[a-f0-9]{64}$/),
+            commands: [expect.objectContaining({ type: "setPaint", layerId: "places" })],
+          },
+        },
+      },
+    });
+    expect(JSON.stringify(result)).not.toContain("private customer locations");
+    expect(JSON.stringify(result)).not.toContain("must-not-be-retained");
+    expect(JSON.stringify(result)).not.toContain("sk-test");
+  });
+
+  it("blocks an unconfigured server-held provider with a stable diagnostic", async () => {
+    const root = await mkdtemp(join(tmpdir(), "gis-engine-workbench-provider-missing-"));
+    roots.push(root);
+    await createWorkbenchProject(
+      {
+        root,
+        id: "project-1",
+        name: "Places",
+        initialSpec: initialSpec(),
+        provider: { kind: "openai-compatible", profileId: "deepseek", model: "fixture-model" },
+      },
+      { now: () => createdAt },
+    );
+    const router = createWorkbenchApiRouter({ projectRoot: root, now: () => createdAt });
+
+    expect(
+      await router({
+        method: "POST",
+        pathname: "/api/projects/project-1/plans",
+        body: { prompt: "make the points red" },
+      }),
+    ).toMatchObject({
+      status: 422,
+      body: { ok: false, diagnostics: [{ code: "WORKBENCH.PROVIDER_UNAVAILABLE", path: "/provider" }] },
+    });
   });
 });

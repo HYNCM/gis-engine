@@ -7,14 +7,28 @@ readiness.
 ## Run
 
 ```bash
-pnpm workbench:server
-pnpm workbench:dev
+pnpm workbench:build
+pnpm exec gis-engine-workbench [project-directory]
 ```
 
-Set `WORKBENCH_DB_PATH` when review state must live outside the default local
-SQLite path. `STUDIO_DB_PATH` remains a compatibility fallback. Provider
-credentials are optional; deterministic mock flows remain the verification
-baseline.
+The default address is `http://127.0.0.1:4321`. `project-directory` is the
+selected root for `gis-engine.project.json`, `mapspec.json`, data, revisions,
+and confirmed exports.
+
+The Mock provider is always available. Configure the server-held
+OpenAI-compatible profile with `DEEPSEEK_API_KEY` and optional
+`DEEPSEEK_BASE_URL` / `DEEPSEEK_MODEL`; credentials and base URLs are never
+returned to the browser or written into the project. Workbench always produces
+a structured plan that must be previewed before apply.
+
+Legacy SQLite remains read-only migration input:
+
+```bash
+pnpm workbench:migrate:export -- ~/.gis-engine/workbench/workbench.sqlite ./legacy-workbench-export.json
+```
+
+The command never mutates or deletes the source database and refuses to
+overwrite the selected JSON export.
 
 ## Signposts
 

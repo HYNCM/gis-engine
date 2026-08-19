@@ -18,6 +18,7 @@ interface Props {
   exportPath: string;
   exportPreview: ExportPreview | null;
   exportReceipt: ExportReceipt | null;
+  providerLabel: string;
   busy: boolean;
   onTabChange: (tab: InspectorTab) => void;
   onPromptChange: (value: string) => void;
@@ -73,7 +74,7 @@ function PlanPanel(props: Props) {
         <Sparkles size={15} aria-hidden="true" />
         <div>
           <h2>Describe the map change</h2>
-          <span>Mock provider · preview required</span>
+          <span>{props.providerLabel} · preview required</span>
         </div>
       </div>
       <textarea

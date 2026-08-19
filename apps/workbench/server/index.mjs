@@ -3,10 +3,10 @@
 /**
  * GIS Engine Workbench Server
  *
- * Production-ready server combining:
+ * Local Workbench server combining:
  * - GIS Engine command execution
  * - Mock AI + DeepSeek provider support
- * - SQLite map persistence
+ * - File-backed Workbench projects plus legacy SQLite compatibility
  * - Static SPA serving (production mode)
  *
  * Usage:
@@ -1684,7 +1684,17 @@ export async function main() {
   console.log("✅ Engine loaded");
 
   const projectRoot = resolve(process.env.WORKBENCH_PROJECT_ROOT || process.argv[2] || process.cwd());
-  const workbenchApi = createWorkbenchApiRouter({ projectRoot });
+  const configuredProviders = buildProviders();
+  const deepseekProfile = configuredProviders.find((profile) => profile.id === "deepseek");
+  const workbenchApi = createWorkbenchApiRouter({
+    projectRoot,
+    capabilityPrompt: maplibreCapabilities.buildMapLibreCapabilityPrompt(),
+    openAiProvider: {
+      profile: deepseekProfile,
+      apiKey: process.env.DEEPSEEK_API_KEY?.trim(),
+      call: provider.callOpenAiCompatibleProvider,
+    },
+  });
 
   let ai;
   try {
