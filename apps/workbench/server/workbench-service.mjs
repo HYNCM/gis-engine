@@ -14,6 +14,7 @@ import {
   validateWorkbenchPlan,
   WorkbenchDiagnosticCodes,
 } from "../dist/contracts/index.js";
+import { commitWorkbenchExport, previewWorkbenchExport } from "./export-service.mjs";
 import {
   applyWorkbenchProject,
   createWorkbenchProject,
@@ -206,6 +207,7 @@ export function createWorkbenchApiRouter(options) {
   const projectRoot = options?.projectRoot;
   const now = options?.now;
   const plans = new Map();
+  const exportPreviews = new Map();
 
   return async function routeWorkbenchApi(request) {
     const route = parseProjectApiRoute(request.pathname);
@@ -263,6 +265,26 @@ export function createWorkbenchApiRouter(options) {
           { baseRevision: request.body?.baseRevision, targetRevision: route.revision },
           { now },
         );
+        return response(result.ok ? 200 : 409, result);
+      }
+      if (request.method === "POST" && route.action === "export-preview") {
+        const result = await previewWorkbenchExport(projectRoot, request.body, { ...options, now });
+        if (result.ok) exportPreviews.set(result.result.previewHash, result.result);
+        return response(result.ok ? 200 : 422, result);
+      }
+      if (request.method === "POST" && route.action === "export-commit") {
+        const preview = exportPreviews.get(request.body?.previewHash);
+        if (!preview) {
+          return response(
+            404,
+            failure(
+              WorkbenchDiagnosticCodes.ExportPreviewMismatch,
+              "The confirmed export preview is not available.",
+              "/previewHash",
+            ),
+          );
+        }
+        const result = await commitWorkbenchExport(projectRoot, preview, request.body, { now });
         return response(result.ok ? 200 : 409, result);
       }
       return response(405, failure(WorkbenchDiagnosticCodes.ProjectInvalid, "Method is not allowed.", "/method"));
@@ -454,10 +476,21 @@ function parseProjectApiRoute(pathname) {
     /^\/api\/projects\/([A-Za-z0-9][A-Za-z0-9_-]{0,199})\/plans\/(sha256:[a-f0-9]{64})\/preview$/,
   );
   if (preview) return { action: "preview", projectId: preview[1], planHash: preview[2] };
-  const action = pathname.match(/^\/api\/projects\/([A-Za-z0-9][A-Za-z0-9_-]{0,199})\/(data\/inspect|plans|apply)$/);
+  const action = pathname.match(
+    /^\/api\/projects\/([A-Za-z0-9][A-Za-z0-9_-]{0,199})\/(data\/inspect|plans|apply|export\/preview|export\/commit)$/,
+  );
   if (action) {
     return {
-      action: action[2] === "data/inspect" ? "inspect" : action[2] === "plans" ? "plan" : "apply",
+      action:
+        action[2] === "data/inspect"
+          ? "inspect"
+          : action[2] === "plans"
+            ? "plan"
+            : action[2] === "export/preview"
+              ? "export-preview"
+              : action[2] === "export/commit"
+                ? "export-commit"
+                : "apply",
       projectId: action[1],
     };
   }

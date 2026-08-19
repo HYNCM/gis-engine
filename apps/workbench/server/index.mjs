@@ -1679,7 +1679,7 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
-async function main() {
+export async function main() {
   const engine = await loadEngine();
   console.log("✅ Engine loaded");
 

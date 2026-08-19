@@ -341,6 +341,28 @@ describe("Workbench project API router", () => {
       body: { result: { revision: expect.stringMatching(/^[2-9][0-9]*$/) } },
     });
 
+    const exportPreview = await router({
+      method: "POST",
+      pathname: "/api/projects/project-1/export/preview",
+      body: { targetRelativePath: "exports/delivery" },
+    });
+    expect(exportPreview).toMatchObject({
+      handled: true,
+      status: 200,
+      body: { result: { previewHash: expect.stringMatching(/^sha256:/) } },
+    });
+    const previewHash = exportPreview.body.result.previewHash;
+    const exportCommit = await router({
+      method: "POST",
+      pathname: "/api/projects/project-1/export/commit",
+      body: { previewHash },
+    });
+    expect(exportCommit).toMatchObject({
+      handled: true,
+      status: 200,
+      body: { result: { previewHash, targetRelativePath: "exports/delivery" } },
+    });
+
     expect(await router({ method: "GET", pathname: "/api/not-workbench" })).toEqual({ handled: false });
   });
 });

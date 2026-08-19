@@ -62,6 +62,9 @@ importers:
       '@gis-engine/ai':
         specifier: workspace:*
         version: link:../../packages/ai
+      '@gis-engine/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
       '@gis-engine/engine':
         specifier: workspace:*
         version: link:../../packages/engine

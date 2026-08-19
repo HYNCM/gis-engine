@@ -7,6 +7,9 @@
   "main": "./dist/contracts/index.js",
   "types": "./dist/contracts/index.d.ts",
   "sideEffects": false,
+  "bin": {
+    "gis-engine-workbench": "./bin/gis-engine-workbench.mjs"
+  },
   "exports": {
     ".": {
       "types": "./dist/contracts/index.d.ts",
@@ -18,7 +21,9 @@
     }
   },
   "files": [
-    "dist/contracts"
+    "bin",
+    "dist",
+    "server"
   ],
   "scripts": {
     "dev": "vite",
@@ -30,6 +35,7 @@
   "dependencies": {
     "@gis-engine/engine": "workspace:*",
     "@gis-engine/ai": "workspace:*",
+    "@gis-engine/cli": "workspace:*",
     "@sinclair/typebox": "^0.34.0",
     "ajv": "^8.17.0",
     "sql.js": "^1.12.0",
