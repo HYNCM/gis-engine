@@ -1,6 +1,6 @@
 ---
 agent: builder
-focus_area: engine-ai-qa
+focus_area: qa
 feature: gis-engine-workbench-v1
 period: 2026-08-19
 generated_at: 2026-08-19T14:44:10Z
@@ -51,6 +51,7 @@ MapSpec, path, and credential content when enabled.
 | `GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual` | PASS | 5 real browser visual snapshots |
 | `pnpm docs:build` | PASS | VitePress build completed; TypeDoc reported 0 errors and existing reference warnings |
 | `git diff --check` + Biome focused check | PASS | no whitespace or formatting failures |
+| clean-checkout launcher regression | PASS after RED | PR #67 quality run 32266115545 exposed eager server loading without CLI `dist`; `5be1b14` defers the import and passes with `packages/cli/dist` physically absent |
 
 Manual browser inspection also covered desktop and 390x844 mobile layouts,
 nonblank MapLibre canvas pixels, create/inspect/plan/abandon/replan/preview/apply,
@@ -73,6 +74,11 @@ confirmed export, reload, and a clean browser console.
 
 ## Residual Evidence
 
+The first PR #67 quality run failed correctly because the launcher eagerly
+loaded the server even for `--help`, which required a prebuilt CLI package. The
+bounded fix at `5be1b14` defers that import until the actual start path and adds
+a regression assertion; this is retained as clean-checkout RED/GREEN evidence.
+
 The delivery smoke's `npm install` completed but npm reported two dependency
 advisories: one moderate and one high. This did not invalidate the install,
 build, preflight, or artifact verification result, but it requires package-level
@@ -86,4 +92,3 @@ MapLibre bundles also retain the existing greater-than-500-KiB chunk warning.
 | All deterministic, security, E2E, delivery, resource, and strict visual gates pass | The implementation candidate is reviewable as one coherent local workflow | `@quality` should accept the bounded code candidate while keeping product promotion separate | high |
 | User-study metrics have not been collected | Automated closure cannot prove the 30-minute product outcome | `@orchestrator` must keep Alpha and local-v1 success gates open | high |
 | npm reported one high and one moderate advisory in the generated project | Release risk is not yet classified | `@builder` must capture package-level audit evidence and remediate or document an accepted exception before promotion | high |
-

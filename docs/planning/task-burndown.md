@@ -1,15 +1,13 @@
 ---
 agent: orchestrator
-period: 2026-W32
-generated_at: 2026-08-05T17:28:00Z
-repo_revision: "23472d8050cad0178c49f85f045f488bd5aaaf41"
-evidence_run_id: planning-evidence-20260805T171819860Z
+period: 2026-W34
+generated_at: 2026-08-19T15:28:05Z
+repo_revision: "5be1b147"
 inputs:
   - docs/planning/issues-snapshot.md
-  - docs/planning/next-step-plan.md
-  - docs/research/competitor-updates-2026-W32.md
-  - docs/reviews/package-size-budget-quality-decision-2026-08-05.md
-  - docs/reviews/documentation-audit-2026-08-06.md
+  - docs/reviews/workbench-v1-quality-decision-2026-08-19.md
+  - https://github.com/HYNCM/gis-engine/issues/66
+  - https://github.com/HYNCM/gis-engine/pull/67
 owner: "@orchestrator"
 decision_level: info
 evidence_kind: specialist
@@ -17,32 +15,25 @@ evidence_kind: specialist
 
 # Task Burndown
 
-GitHub Issues are canonical task state. Authenticated evidence run
-`planning-evidence-20260805T171819860Z` records the final post-merge state.
+GitHub Issues are canonical task state. The authenticated 2026-08-19 snapshot
+records Issue #66 open in the independent Workbench v1 milestone.
 
-## Milestone 2
+## Workbench Milestone 3
 
-| Priority | Issue | Delivered state | Owner / gate | Remote state |
-| --- | --- | --- | --- | --- |
-| P0 | [#41 release truth](https://github.com/HYNCM/gis-engine/issues/41) | main + quality PASS | @docs + @builder / @quality | CLOSED |
-| P0 | [#43 evidence integrity](https://github.com/HYNCM/gis-engine/issues/43) | main + recovery PASS | @builder QA / @quality | CLOSED |
-| P1 | [#38 MapLibre 6.1 compatibility](https://github.com/HYNCM/gis-engine/issues/38) | main + quality PASS; keep 5.24.0 | @builder adapter+QA / @quality | CLOSED |
-| P1 | [#40 MCP 2026-07-28 compatibility](https://github.com/HYNCM/gis-engine/issues/40) | main + quality PASS; keep 2025-11-25 | @builder AI / @quality | CLOSED |
-| P2 | [#39 package budget policy](https://github.com/HYNCM/gis-engine/issues/39) | main + quality PASS | @builder QA / @quality | CLOSED |
-| P2 | [#42 GeoParquet version boundary](https://github.com/HYNCM/gis-engine/issues/42) | main + quality PASS; runtime No-go | @builder engine / @quality | CLOSED |
+| Scope | State | Evidence / remaining gate |
+| --- | --- | --- |
+| Definition, v1 specification, boundary matrix | DONE | branch docs and regression tests |
+| `apps/workbench` / package convergence | DONE | PR #67 candidate |
+| Public contracts and file-backed history | DONE | 106 Workbench tests |
+| Plan preview, atomic apply, restore | DONE | contract/state/E2E evidence |
+| Confirmed export and read-only migration | DONE | delivery + migration tests |
+| Mock + server-held provider, opt-in telemetry | DONE | 27 security tests |
+| Final-head remote CI | IN PROGRESS | clean-checkout fix `5be1b14` pushed |
+| Dependency advisory triage | TODO | npm: 1 high, 1 moderate |
+| Five-person Alpha | TODO | >=80% within 30 minutes; all exports build; no leaks |
+| Ten-person local v1 | TODO | >=80%, P90 <=30 minutes, release install/upgrade/recovery |
 
-Milestone 2 closed on 2026-08-06 with 0 open and 6 closed issues.
+## Existing Follow-Ups
 
-## Follow-Up Queue
-
-| Priority | Issue | State | Boundary |
-| --- | --- | --- | --- |
-| P1 | [#44 static inventory](https://github.com/HYNCM/gis-engine/issues/44) | OPEN | no broad ignore or evidence-free deletion |
-| P2 | [#45 report retention](https://github.com/HYNCM/gis-engine/issues/45) | OPEN | no deletion until unit and tests are approved |
-| P2 | [#48 Release action runtime](https://github.com/HYNCM/gis-engine/issues/48) | OPEN | no package versioning or publication |
-
-## Historical Recovery Incidents
-
-Issue #32 is the closed canonical historical incident. Issues #33-#35 are
-closed duplicates. Merged-main recovery run 31028265187 completed successfully
-and created no new agent-escalation issue.
+Issues #44, #45, and #48 remain independent infrastructure work. PR #47
+remains unmerged and is not part of Workbench milestone completion.

@@ -42,6 +42,7 @@ audit findings.
 | Documentation | PASS with warnings | VitePress build succeeds; TypeDoc emits 0 errors and existing missing-reference warnings |
 | MCP contract | PASS unchanged | full AI suite in `pnpm check`; canonical 14-tool order unchanged |
 | 3D promotion | NOT AUTHORIZED | Workbench v1 remains MapLibre 2D; stable `scene3d` gate is unchanged |
+| Clean-checkout launcher | PASS after review fix | run 32266115545 caught eager server import; `5be1b14` passes focused/full Workbench tests and `--help` with CLI `dist` absent |
 
 ## Review Checklist
 
@@ -71,8 +72,10 @@ audit findings.
 4. Obtain final-head remote CI evidence after the branch is published. Local
    green evidence is not merged-main or released-package evidence.
 
-No automated gate failure remains in the bounded implementation diff. This
+The first remote quality run supplied useful clean-checkout RED evidence and is
+superseded only for this launcher defect by `5be1b14`; final-head remote checks
+must still complete before merge review. No known automated gate failure remains
+in the bounded implementation diff. This
 decision authorizes review and target-user Alpha validation only. It does not
 authorize Workbench v1 release, PR #47 expansion, hosted/cloud claims, or 3D
 promotion.
-
