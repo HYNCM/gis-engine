@@ -9,9 +9,11 @@ describe("gis-engine-workbench launcher", () => {
   it("is exposed as a package binary while create-gis-map remains unchanged", () => {
     const workbenchPackage = JSON.parse(readFileSync(join(root, "apps/workbench/package.json"), "utf8"));
     const cliPackage = JSON.parse(readFileSync(join(root, "packages/cli/package.json"), "utf8"));
+    const rootPackage = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
 
     expect(workbenchPackage.bin).toEqual({ "gis-engine-workbench": "./bin/gis-engine-workbench.mjs" });
     expect(cliPackage.bin).toEqual({ "create-gis-map": "./dist/bin.js" });
+    expect(rootPackage.scripts["test:workbench:e2e"]).toContain("pnpm --filter @gis-engine/cli build");
   });
 
   it("documents the optional project directory without starting the server", () => {

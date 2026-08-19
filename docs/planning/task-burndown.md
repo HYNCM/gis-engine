@@ -28,7 +28,7 @@ records Issue #66 open in the independent Workbench v1 milestone.
 | Plan preview, atomic apply, restore | DONE | contract/state/E2E evidence |
 | Confirmed export and read-only migration | DONE | delivery + migration tests |
 | Mock + server-held provider, opt-in telemetry | DONE | 27 security tests |
-| Final-head remote CI | IN PROGRESS | clean-checkout fix `5be1b14` pushed |
+| Final-head remote CI | IN PROGRESS | clean-checkout fixes `5be1b14` + explicit CLI E2E build pushed |
 | Dependency advisory triage | TODO | npm: 1 high, 1 moderate |
 | Five-person Alpha | TODO | >=80% within 30 minutes; all exports build; no leaks |
 | Ten-person local v1 | TODO | >=80%, P90 <=30 minutes, release install/upgrade/recovery |

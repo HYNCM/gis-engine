@@ -41,9 +41,10 @@ metrics, generated dependency advisory triage, and final-head remote CI.
 - `pnpm build:schema`, `pnpm check`, 27 security tests, browser E2E, delivery
   install/build/preflight/hash verification, resource policy, strict visual 5/5,
   and documentation build pass locally.
-- The first clean-checkout PR quality run caught eager server loading in the
-  launcher help path. Commit `5be1b14` defers the import and passes with CLI
-  `dist` absent; final-head CI is being rerun.
+- Clean-checkout PR quality runs caught eager launcher loading and an E2E
+  server dependency on implicit CLI `dist`. Commit `5be1b14` defers launcher
+  import and `test:workbench:e2e` now builds CLI explicitly; final-head CI is
+  being rerun.
 - Delivery succeeds but npm reports one high and one moderate dependency
   advisory. This is a release blocker until the exact chain is triaged.
 

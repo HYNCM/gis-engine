@@ -51,7 +51,7 @@ MapSpec, path, and credential content when enabled.
 | `GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual` | PASS | 5 real browser visual snapshots |
 | `pnpm docs:build` | PASS | VitePress build completed; TypeDoc reported 0 errors and existing reference warnings |
 | `git diff --check` + Biome focused check | PASS | no whitespace or formatting failures |
-| clean-checkout launcher regression | PASS after RED | PR #67 quality run 32266115545 exposed eager server loading without CLI `dist`; `5be1b14` defers the import and passes with `packages/cli/dist` physically absent |
+| clean-checkout launcher and E2E regressions | PASS after RED | PR #67 quality runs exposed eager server loading without CLI `dist` in `--help` and E2E; `5be1b14` defers launcher import and the follow-up makes `test:workbench:e2e` build CLI explicitly |
 
 Manual browser inspection also covered desktop and 390x844 mobile layouts,
 nonblank MapLibre canvas pixels, create/inspect/plan/abandon/replan/preview/apply,
@@ -74,10 +74,11 @@ confirmed export, reload, and a clean browser console.
 
 ## Residual Evidence
 
-The first PR #67 quality run failed correctly because the launcher eagerly
-loaded the server even for `--help`, which required a prebuilt CLI package. The
-bounded fix at `5be1b14` defers that import until the actual start path and adds
-a regression assertion; this is retained as clean-checkout RED/GREEN evidence.
+The PR #67 quality runs supplied clean-checkout RED evidence: the first caught
+eager server loading for `--help`, and the second caught the E2E server's
+implicit CLI `dist` dependency. `5be1b14` defers the launcher import and the
+explicit CLI build in `test:workbench:e2e` addresses both paths; these are
+retained as RED/GREEN evidence.
 
 The delivery smoke's `npm install` completed but npm reported two dependency
 advisories: one moderate and one high. This did not invalidate the install,

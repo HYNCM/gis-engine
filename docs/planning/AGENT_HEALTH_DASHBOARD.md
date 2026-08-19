@@ -1,6 +1,6 @@
 ---
-generated_at: 2026-08-19T15:31:16.729Z
-repo_revision: "5be1b14"
+generated_at: 2026-08-19T15:42:21.335Z
+repo_revision: "b48287d"
 period: 2026-08-19
 agent: orchestrator
 inputs:
@@ -29,7 +29,7 @@ decision_level: info
 
 | Flow | Issue | Severity |
 | --- | --- | --- |
-| product → orchestrator<br/>*competitor signals and priority recommendations (HOC-N1)* | product specialist evidence is 335.3h old (SLA: 48h) | 🔴 error |
+| product → orchestrator<br/>*competitor signals and priority recommendations (HOC-N1)* | product specialist evidence is 335.5h old (SLA: 48h) | 🔴 error |
 
 ## SLA Compliance
 
@@ -46,11 +46,11 @@ decision_level: info
 
 - [ ] **@product**: 报告逾期 14 天 → 手动触发或检查 cron
 - [ ] **@docs**: 报告逾期 14 天 → 手动触发或检查 cron
-- [ ] **product → orchestrator**: product specialist evidence is 335.3h old (SLA: 48h) → 检查 handoff 时序
+- [ ] **product → orchestrator**: product specialist evidence is 335.5h old (SLA: 48h) → 检查 handoff 时序
 
 ## Summary
 
 - **健康 agent**: 3/5
 - **问题 agent**: 2/5
 - **数据流异常**: 1
-- **生成时间**: 2026-08-19T15:31:16.729Z
+- **生成时间**: 2026-08-19T15:42:21.335Z
