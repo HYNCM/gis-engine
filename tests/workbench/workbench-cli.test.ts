@@ -15,6 +15,10 @@ describe("gis-engine-workbench launcher", () => {
   });
 
   it("documents the optional project directory without starting the server", () => {
+    const launcher = readFileSync(join(root, "apps/workbench/bin/gis-engine-workbench.mjs"), "utf8");
+    expect(launcher).not.toMatch(/^import .*server\/index\.mjs/m);
+    expect(launcher).toContain('await import("../server/index.mjs")');
+
     const output = execFileSync(process.execPath, ["apps/workbench/bin/gis-engine-workbench.mjs", "--help"], {
       cwd: root,
       encoding: "utf8",

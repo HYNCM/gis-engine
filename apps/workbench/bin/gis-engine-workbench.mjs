@@ -2,7 +2,6 @@
 
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { main } from "../server/index.mjs";
 
 const HELP = `Usage: gis-engine-workbench [project-directory]
 
@@ -17,6 +16,7 @@ export async function runWorkbench(argv = process.argv.slice(2)) {
   }
   const projectDirectory = argv.find((arg) => !arg.startsWith("-")) ?? process.cwd();
   process.env.WORKBENCH_PROJECT_ROOT = resolve(projectDirectory);
+  const { main } = await import("../server/index.mjs");
   await main();
 }
 
