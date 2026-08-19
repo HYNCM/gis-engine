@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": false,
+    "incremental": false,
+    "rootDir": "contracts",
+    "outDir": "dist/contracts"
+  },
+  "include": ["contracts/**/*.ts"]
+}

@@ -4,9 +4,25 @@
   "private": true,
   "description": "GIS Engine Workbench — natural language map editing powered by GIS Engine",
   "type": "module",
+  "main": "./dist/contracts/index.js",
+  "types": "./dist/contracts/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/contracts/index.d.ts",
+      "import": "./dist/contracts/index.js"
+    },
+    "./contracts": {
+      "types": "./dist/contracts/index.d.ts",
+      "import": "./dist/contracts/index.js"
+    }
+  },
+  "files": [
+    "dist/contracts"
+  ],
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && tsc -p tsconfig.contracts.json",
     "preview": "vite preview",
     "server": "node server/index.mjs",
     "start": "npm run build && npm run server"
@@ -14,6 +30,8 @@
   "dependencies": {
     "@gis-engine/engine": "workspace:*",
     "@gis-engine/ai": "workspace:*",
+    "@sinclair/typebox": "^0.34.0",
+    "ajv": "^8.17.0",
     "sql.js": "^1.12.0",
     "maplibre-gl": "^5.24.0",
     "react": "^18.3.0",
