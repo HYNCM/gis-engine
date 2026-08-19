@@ -278,6 +278,18 @@ describe("Workbench plan preview and application", () => {
 });
 
 describe("Workbench project API router", () => {
+  it("returns an empty current-project state before a project is created", async () => {
+    const root = await mkdtemp(join(tmpdir(), "gis-engine-workbench-router-empty-"));
+    roots.push(root);
+    const router = createWorkbenchApiRouter({ projectRoot: root, now: () => createdAt });
+
+    expect(await router({ method: "GET", pathname: "/api/projects/current" })).toEqual({
+      handled: true,
+      status: 200,
+      body: null,
+    });
+  });
+
   it("runs create, read, inspect, plan, preview, apply, and restore as project routes", async () => {
     const root = await mkdtemp(join(tmpdir(), "gis-engine-workbench-router-"));
     roots.push(root);
@@ -292,6 +304,11 @@ describe("Workbench project API router", () => {
 
     const read = await router({ method: "GET", pathname: "/api/projects/project-1" });
     expect(read).toMatchObject({ handled: true, status: 200, body: { project: { currentRevision: "0" } } });
+    expect(await router({ method: "GET", pathname: "/api/projects/current" })).toMatchObject({
+      handled: true,
+      status: 200,
+      body: { project: { id: "project-1" } },
+    });
 
     const inspected = await router({
       method: "POST",
@@ -364,5 +381,29 @@ describe("Workbench project API router", () => {
     });
 
     expect(await router({ method: "GET", pathname: "/api/not-workbench" })).toEqual({ handled: false });
+  });
+
+  it("turns a transient mock prompt into a structured plan without retaining the prompt", async () => {
+    const root = await projectRoot();
+    const router = createWorkbenchApiRouter({ projectRoot: root, now: () => createdAt });
+    const result = await router({
+      method: "POST",
+      pathname: "/api/projects/project-1/plans",
+      body: { prompt: "make the private customer locations red" },
+    });
+
+    expect(result).toMatchObject({
+      status: 201,
+      body: {
+        result: {
+          plan: {
+            goal: "Update layer styling for places",
+            promptHash: expect.stringMatching(/^sha256:/),
+            commands: [expect.objectContaining({ type: "setPaint", layerId: "places" })],
+          },
+        },
+      },
+    });
+    expect(JSON.stringify(result)).not.toContain("private customer locations");
   });
 });

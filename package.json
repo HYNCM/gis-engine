@@ -22,6 +22,7 @@
     "test:adapter": "vitest run tests/adapter",
     "test:examples": "vitest run tests/examples",
     "test:workbench": "vitest run tests/workbench",
+    "test:workbench:e2e": "pnpm workbench:build && playwright test tests/workbench/workbench-e2e.spec.ts --workers=1",
     "test:studio": "pnpm test:workbench",
     "test:docs": "vitest run tests/docs",
     "test:agent-framework": "vitest run tests/framework",

@@ -30,10 +30,8 @@ describe("GIS Engine Workbench bundle", () => {
     expect(mapStageSource).toContain('import("maplibre-gl")');
   });
 
-  it("keeps the Playground components and integration wiring intact", () => {
+  it("keeps the MapSpec and renderer foundations available to Workbench", () => {
     const mapSpecEditorSource = readRepoFile("apps/workbench/src/components/MapSpecEditor.tsx");
-    const aiAssistantSource = readRepoFile("apps/workbench/src/components/AIAssistant.tsx");
-    const templateBarSource = readRepoFile("apps/workbench/src/components/TemplateBar.tsx");
     const templatesSource = readRepoFile("apps/workbench/src/templates/index.ts");
     const appSource = readRepoFile("apps/workbench/src/App.tsx");
 
@@ -46,22 +44,6 @@ describe("GIS Engine Workbench bundle", () => {
     expect(mapSpecEditorSource).toContain("warningCount");
     expect(mapSpecEditorSource).toContain("line-numbers");
 
-    // ── AIAssistant: chat panel with quick actions ──
-    expect(aiAssistantSource).toContain("AI ASSISTANT");
-    expect(aiAssistantSource).toContain("QUICK_ACTIONS");
-    expect(aiAssistantSource).toContain("Validate");
-    expect(aiAssistantSource).toContain("Explain");
-    expect(aiAssistantSource).toContain("Optimize");
-    expect(aiAssistantSource).toContain("Diagnostics");
-    expect(aiAssistantSource).toContain("Send");
-    expect(aiAssistantSource).toContain("Ask AI about your map");
-
-    // ── TemplateBar: template selector strip ──
-    expect(templateBarSource).toContain("Templates");
-    expect(templateBarSource).toContain("MapSpecTemplate");
-    expect(templateBarSource).toContain("activeTemplateId");
-    expect(templateBarSource).toContain("onSelect");
-
     // ── Templates registry: all built-in templates ──
     expect(templatesSource).toContain("basicMapTemplate");
     expect(templatesSource).toContain("choroplethMapTemplate");
@@ -70,22 +52,43 @@ describe("GIS Engine Workbench bundle", () => {
     expect(templatesSource).toContain("ALL_TEMPLATES");
     expect(templatesSource).toContain("MapSpecTemplate");
 
-    // ── App.tsx: Playground integration wiring ──
-    expect(appSource).toContain("GIS Engine Workbench");
-    expect(appSource).toContain("GIS ENGINE");
-    expect(appSource).toContain('fetch("/api/state")');
-    expect(appSource).toContain('fetch("/api/chat"');
-    expect(appSource).toContain('fetch("/api/providers")');
-    expect(appSource).toContain('fetch("/api/basemaps")');
-    expect(appSource).toContain("MapSpecEditor");
-    expect(appSource).toContain("AIAssistant");
-    expect(appSource).toContain("TemplateBar");
-    expect(appSource).toContain("MapStage");
-    expect(appSource).toContain("ALL_TEMPLATES");
-    expect(appSource).toContain("handleSelectTemplate");
-    expect(appSource).toContain("sendMessage");
-    expect(appSource).toContain("previewSpec");
-    expect(appSource).toContain("editorDiagnostics");
-    expect(appSource).toContain("chatMode");
+    expect(appSource).toContain("Workbench");
+    expect(appSource).toContain("CenterWorkspace");
+    expect(appSource).toContain("ProjectRail");
+    expect(appSource).toContain("TaskInspector");
+    expect(appSource).toContain("preview");
+  });
+
+  it("ships the Workbench engineering workspace and reviewed golden path", () => {
+    const appSource = readRepoFile("apps/workbench/src/App.tsx");
+    const projectRail = readRepoFile("apps/workbench/src/components/ProjectRail.tsx");
+    const centerWorkspace = readRepoFile("apps/workbench/src/components/CenterWorkspace.tsx");
+    const taskInspector = readRepoFile("apps/workbench/src/components/TaskInspector.tsx");
+    const progressTrack = readRepoFile("apps/workbench/src/components/ProgressTrack.tsx");
+
+    expect(projectRail).toContain("Data sources");
+    expect(projectRail).toContain("Layers");
+    expect(projectRail).toContain("History");
+    expect(centerWorkspace).toContain("MapSpec");
+    expect(centerWorkspace).toContain("Files");
+    expect(taskInspector).toContain("AI plan");
+    expect(taskInspector).toContain("Diff");
+    expect(taskInspector).toContain("Diagnostics");
+    expect(taskInspector).toContain("Export");
+    expect(progressTrack).toContain("Create project");
+    expect(progressTrack).toContain("Inspect data");
+    expect(progressTrack).toContain("Review plan");
+    expect(progressTrack).toContain("Export app");
+
+    expect(appSource).toContain("/api/projects/current");
+    expect(appSource).toContain("/data/inspect");
+    expect(appSource).toContain("/plans");
+    expect(appSource).toContain("/preview");
+    expect(appSource).toContain("/apply");
+    expect(appSource).toContain("/restore");
+    expect(appSource).toContain("/export/preview");
+    expect(appSource).toContain("/export/commit");
+    expect(taskInspector).toContain("Abandon plan");
+    expect(taskInspector).toContain("Apply plan");
   });
 });

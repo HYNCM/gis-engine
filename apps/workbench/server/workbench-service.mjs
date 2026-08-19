@@ -10,6 +10,7 @@ import {
 import {
   createWorkbenchCanonicalHash,
   createWorkbenchPlanHash,
+  createWorkbenchPromptHash,
   validateWorkbenchApplyRequest,
   validateWorkbenchPlan,
   WorkbenchDiagnosticCodes,
@@ -230,6 +231,7 @@ export function createWorkbenchApiRouter(options) {
       }
 
       const state = await openWorkbenchProject(projectRoot);
+      if (request.method === "GET" && route.action === "current") return response(200, state);
       if (route.projectId !== state.project.id) {
         return response(
           404,
@@ -243,7 +245,10 @@ export function createWorkbenchApiRouter(options) {
         return response(result.ok ? 200 : 422, result);
       }
       if (request.method === "POST" && route.action === "plan") {
-        const result = createWorkbenchPlan(request.body, { now });
+        const result =
+          typeof request.body?.prompt === "string"
+            ? createMockWorkbenchPlan(request.body.prompt, state, { now })
+            : createWorkbenchPlan(request.body, { now });
         if (result.ok) plans.set(result.result.planHash, result.result.plan);
         return response(result.ok ? 201 : 422, result);
       }
@@ -289,12 +294,23 @@ export function createWorkbenchApiRouter(options) {
       }
       return response(405, failure(WorkbenchDiagnosticCodes.ProjectInvalid, "Method is not allowed.", "/method"));
     } catch (error) {
+      if (isMissingProjectFile(error)) {
+        if (request.method === "GET" && route.action === "current") return response(200, null);
+        return response(
+          404,
+          failure(WorkbenchDiagnosticCodes.ProjectInvalid, "Workbench project was not found.", "/project"),
+        );
+      }
       if (error instanceof WorkbenchProjectStoreError) {
         return response(422, { ok: false, diagnostics: error.diagnostics });
       }
       throw error;
     }
   };
+}
+
+function isMissingProjectFile(error) {
+  return error && typeof error === "object" && error.code === "ENOENT";
 }
 
 function inspectGeoJson(value) {
@@ -470,6 +486,7 @@ function topLevelPath(path) {
 
 function parseProjectApiRoute(pathname) {
   if (pathname === "/api/projects") return { action: "create" };
+  if (pathname === "/api/projects/current") return { action: "current" };
   const revision = pathname.match(/^\/api\/projects\/([A-Za-z0-9][A-Za-z0-9_-]{0,199})\/revisions\/([^/]+)\/restore$/);
   if (revision) return { action: "restore", projectId: revision[1], revision: decodeURIComponent(revision[2]) };
   const preview = pathname.match(
@@ -496,6 +513,55 @@ function parseProjectApiRoute(pathname) {
   }
   const read = pathname.match(/^\/api\/projects\/([A-Za-z0-9][A-Za-z0-9_-]{0,199})$/);
   return read ? { action: "read", projectId: read[1] } : null;
+}
+
+function createMockWorkbenchPlan(prompt, state, options) {
+  const normalizedPrompt = prompt.trim();
+  if (!normalizedPrompt) {
+    return failure(WorkbenchDiagnosticCodes.PlanInvalid, "A non-empty prompt is required.", "/prompt");
+  }
+  const layer = state.spec.layers?.[0];
+  if (!layer) {
+    return failure(WorkbenchDiagnosticCodes.PlanInvalid, "The project has no editable layer.", "/prompt");
+  }
+  const currentPaint = isRecord(layer.paint) ? layer.paint : {};
+  const color = normalizedPrompt.match(/\b(red|blue|green|orange|purple)\b/i)?.[1]?.toLowerCase();
+  const colorValues = {
+    red: "#dc2626",
+    blue: "#2563eb",
+    green: "#16a34a",
+    orange: "#ea580c",
+    purple: "#9333ea",
+  };
+  const paint = { ...currentPaint };
+  if (color) paint[`${layer.type}-color`] = colorValues[color];
+  if (/\b(larger|bigger|increase|large)\b/i.test(normalizedPrompt) && layer.type === "circle") {
+    paint["circle-radius"] = typeof currentPaint["circle-radius"] === "number" ? currentPaint["circle-radius"] + 2 : 8;
+  }
+  if (Object.keys(paint).length === Object.keys(currentPaint).length && !color) {
+    paint[`${layer.type}-color`] = "#dc2626";
+  }
+  return createWorkbenchPlan(
+    {
+      goal: `Update layer styling for ${layer.id}`,
+      baseRevision: state.project.currentRevision,
+      promptHash: createWorkbenchPromptHash(normalizedPrompt),
+      commands: [
+        {
+          id: `mock-style-${randomUUID()}`,
+          version: "0.1",
+          type: "setPaint",
+          layerId: layer.id,
+          paint,
+        },
+      ],
+      affectedPaths: ["mapspec.json"],
+      resourceRequests: [],
+      unsupportedIntents: [],
+      diagnostics: [],
+    },
+    { now: options.now },
+  );
 }
 
 function missingPlan(planHash) {

@@ -1,13 +1,19 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import AIAssistant from "./components/AIAssistant";
-import MapSpecEditor, { type ValidationDiagnostic } from "./components/MapSpecEditor";
-import MapStage from "./components/MapStage";
-import TemplateBar from "./components/TemplateBar";
-import { ALL_TEMPLATES, basicMapTemplate, type MapSpecTemplate } from "./templates";
-
-// ────────────────────────────────────────────────────────────────────────────
-// Types (kept from original Workbench for server compatibility)
-// ────────────────────────────────────────────────────────────────────────────
+import { Boxes, ChevronDown, CircleDot, Github, LoaderCircle } from "lucide-react";
+import { startTransition, useCallback, useEffect, useMemo, useState } from "react";
+import CenterWorkspace, { type CenterTab } from "./components/CenterWorkspace";
+import ProgressTrack from "./components/ProgressTrack";
+import ProjectRail from "./components/ProjectRail";
+import TaskInspector, { type InspectorTab } from "./components/TaskInspector";
+import { basicMapTemplate } from "./templates";
+import type {
+  DataInspection,
+  Diagnostic,
+  ExportPreview,
+  ExportReceipt,
+  WorkbenchPlanResult,
+  WorkbenchPreviewResult,
+  WorkbenchProjectState,
+} from "./workbench-types";
 
 export interface ServerState {
   status: "ready" | "loading" | "blocked" | "applied" | "reviewed";
@@ -20,14 +26,8 @@ export interface ServerState {
     layerCount: number;
     center: [number, number] | null;
     zoom: number | null;
-    bounds?: [number, number, number, number] | null;
   };
-  diagnostics: Array<{
-    code: string;
-    severity: string;
-    path?: string;
-    message: string;
-  }>;
+  diagnostics: Diagnostic[];
   commandEvidence?: {
     commandCount?: number;
     committed: boolean;
@@ -50,441 +50,373 @@ export interface ChatMessage {
   evidence?: {
     commandEvidence?: ServerState["commandEvidence"];
     provider?: ServerState["provider"];
-    diagnostics?: ServerState["diagnostics"];
+    diagnostics?: Diagnostic[];
   };
 }
 
-export interface BasemapOption {
-  id: string;
-  label: string;
-  enabled: boolean;
-  missingCredential?: string;
-}
-
-export interface ProviderProfile {
-  id: string;
-  label: string;
-  protocol: string;
-  model?: string;
-  enabled: boolean;
-  missingCredential?: boolean;
-}
-
-export interface AuditRecord {
-  recordVersion: string;
-  id: string;
-  sessionId: string;
-  timestamp: string;
-  status: "applied" | "blocked" | "ready" | "reviewed";
-  providerId: string;
-  promptHash?: string;
-  traceId?: string;
-  commandCount: number;
-  diagnosticCounts: { error: number; warning: number; info: number };
-  diagnosticCodes?: Array<{ code: string; path: string }>;
-  fromRevision: string;
-  toRevision: string;
-}
-
-export interface ReviewDecision {
-  recordVersion: string;
-  decisionId: string;
-  createdAt: string;
-  projectId: string;
-  sessionId: string;
-  auditRecordId: string;
-  outcome: "accepted" | "blocked" | "follow-up-required";
-  providerId: string;
-  promptHash?: string;
-  traceId?: string;
-  deliveryStatus: string;
-  commandEvidence: NonNullable<ServerState["commandEvidence"]>;
-  diagnosticCounts: { error: number; warning: number; info: number };
-  diagnosticCodes?: Array<{ code: string; path: string }>;
-  reasonCodes: string[];
-  followUpTaskIds?: string[];
-}
-
-// ────────────────────────────────────────────────────────────────────────────
-// App
-// ────────────────────────────────────────────────────────────────────────────
+const SAMPLE_GEOJSON = JSON.stringify(
+  {
+    type: "FeatureCollection",
+    features: [
+      { type: "Feature", geometry: { type: "Point", coordinates: [121.47, 31.23] }, properties: { category: "A" } },
+      { type: "Feature", geometry: { type: "Point", coordinates: [120.16, 30.25] }, properties: { category: "B" } },
+    ],
+  },
+  null,
+  2,
+);
 
 export default function App() {
-  // ── Server state ──────────────────────────────────────────────────────────
-  const [serverState, setServerState] = useState<ServerState | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [status, setStatus] = useState("Connecting...");
-  const [providerId, setProviderId] = useState("mock-ai");
-  const [providers, setProviders] = useState<ProviderProfile[]>([]);
-  const [basemaps, setBasemaps] = useState<BasemapOption[]>([]);
-  const [currentBasemap, setCurrentBasemap] = useState("none");
-  const [chatMode, setChatMode] = useState<"standard" | "agent">("standard");
+  const [state, setState] = useState<WorkbenchProjectState | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [projectName, setProjectName] = useState("My first GIS project");
+  const [centerTab, setCenterTab] = useState<CenterTab>("map");
+  const [inspectorTab, setInspectorTab] = useState<InspectorTab>("plan");
+  const [dataText, setDataText] = useState(SAMPLE_GEOJSON);
+  const [inspection, setInspection] = useState<DataInspection | null>(null);
+  const [prompt, setPrompt] = useState("Make the points red and easier to see");
+  const [plan, setPlan] = useState<WorkbenchPlanResult | null>(null);
+  const [preview, setPreview] = useState<WorkbenchPreviewResult | null>(null);
+  const [appliedOnce, setAppliedOnce] = useState(false);
+  const [exportPath, setExportPath] = useState("exports/map-app");
+  const [exportPreview, setExportPreview] = useState<ExportPreview | null>(null);
+  const [exportReceipt, setExportReceipt] = useState<ExportReceipt | null>(null);
+  const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
 
-  // ── Playground-specific state ─────────────────────────────────────────────
-  const [specText, setSpecText] = useState<string>(() => JSON.stringify(basicMapTemplate.spec, null, 2));
-  const [editorDiagnostics, setEditorDiagnostics] = useState<ValidationDiagnostic[]>([]);
-  const [activeTemplateId, setActiveTemplateId] = useState<string | null>(basicMapTemplate.id);
-  // The parsed spec that the map preview should render (updated from the editor)
-  const [previewSpec, setPreviewSpec] = useState<ServerState | null>(null);
-
-  // Track the last synced revision so we don't loop editor <-> server
-  const lastSyncedRevisionRef = useRef<string>("__initial__");
-  const isTypingRef = useRef(false);
-  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // ── Server fetch helpers (same as original Workbench) ────────────────────────
-
-  const fetchState = useCallback(async () => {
+  const loadCurrentProject = useCallback(async () => {
     try {
-      const response = await fetch("/api/state");
-      const data: ServerState = await response.json();
-      setServerState(data);
-      setStatus(data.status);
+      const current = await request<WorkbenchProjectState | null>("/api/projects/current");
+      if (!current) {
+        setState(null);
+        setAppliedOnce(false);
+        return;
+      }
+      setState(current);
+      setAppliedOnce(current.history.length > 1);
     } catch {
-      setStatus("disconnected");
+      setState(null);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
-  const fetchProviders = useCallback(async () => {
-    try {
-      const response = await fetch("/api/providers");
-      const data = await response.json();
-      const list = data.providers || [];
-      setProviders(list);
-      // Auto-select best available provider (first non-mock enabled provider)
-      const bestProvider = list.find((p: ProviderProfile) => p.enabled && p.id !== "mock-ai");
-      if (bestProvider) {
-        setProviderId(bestProvider.id);
-      }
-    } catch {
-      // keep last known
-    }
-  }, []);
-
-  const fetchBasemaps = useCallback(async () => {
-    try {
-      const response = await fetch("/api/basemaps");
-      const data = await response.json();
-      setBasemaps(data.options || []);
-      setCurrentBasemap(data.current || "none");
-    } catch {
-      // keep last known
-    }
-  }, []);
-
-  // ── Initial load ──────────────────────────────────────────────────────────
   useEffect(() => {
-    void Promise.all([fetchState(), fetchProviders(), fetchBasemaps()]);
-    setMessages([
-      {
-        role: "assistant",
-        content:
-          "Welcome to the GIS Engine Workbench!\n\nEdit the JSON spec on the left, see the live map in the center, or ask me to make changes using the AI assistant.\n\nTry selecting a template below to get started.",
-      },
-    ]);
-  }, [fetchBasemaps, fetchProviders, fetchState]);
+    void loadCurrentProject();
+  }, [loadCurrentProject]);
 
-  // ── Sync server state → editor (only when server pushes a new revision) ──
-  useEffect(() => {
-    if (!serverState?.spec) return;
-    const revision = serverState.summary.revision ?? "";
-    if (revision === lastSyncedRevisionRef.current) return;
-    // Only sync if the user hasn't been typing recently
-    if (!isTypingRef.current) {
-      lastSyncedRevisionRef.current = revision;
-      setSpecText(JSON.stringify(serverState.spec, null, 2));
-      // Also update previewSpec so the map picks up server-driven changes
-      setPreviewSpec(serverState);
-    }
-  }, [serverState]);
-
-  // ── Validate spec text on every keystroke ─────────────────────────────────
-  useEffect(() => {
-    const diags: ValidationDiagnostic[] = [];
-
-    // JSON syntax check
-    let parsed: Record<string, unknown> | null = null;
+  const run = useCallback(async (operation: () => Promise<void>) => {
+    setBusy(true);
+    setDiagnostics([]);
     try {
-      parsed = JSON.parse(specText);
-    } catch (e) {
-      diags.push({
-        code: "JSON.SYNTAX_ERROR",
-        severity: "error",
-        message: e instanceof Error ? e.message : "Invalid JSON",
-      });
-      setEditorDiagnostics(diags);
-      return;
-    }
-
-    // Basic MapSpec structure checks
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-      diags.push({
-        code: "MAPSPEC.ROOT_TYPE",
-        severity: "error",
-        message: "MapSpec root must be a JSON object.",
-        path: "/",
-      });
-    } else {
-      if (!parsed.version) {
-        diags.push({
-          code: "MAPSPEC.MISSING_VERSION",
-          severity: "warning",
-          message: "MapSpec should have a 'version' field.",
-          path: "/version",
-        });
-      }
-      if (!parsed.sources || typeof parsed.sources !== "object") {
-        diags.push({
-          code: "MAPSPEC.MISSING_SOURCES",
-          severity: "warning",
-          message: "MapSpec should have a 'sources' object.",
-          path: "/sources",
-        });
-      }
-      if (!Array.isArray(parsed.layers)) {
-        diags.push({
-          code: "MAPSPEC.MISSING_LAYERS",
-          severity: "warning",
-          message: "MapSpec should have a 'layers' array.",
-          path: "/layers",
-        });
-      }
-    }
-
-    setEditorDiagnostics(diags);
-
-    // If valid, update preview spec (debounced to avoid thrashing the renderer)
-    if (diags.filter((d) => d.severity === "error").length === 0 && parsed) {
-      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
-      typingTimerRef.current = setTimeout(() => {
-        setPreviewSpec({
-          status: "ready",
-          spec: parsed as Record<string, unknown>,
-          style: null,
-          summary: {
-            mapId: String((parsed as Record<string, unknown>).id ?? "preview"),
-            revision: String((parsed as Record<string, unknown>).revision ?? "0"),
-            sourceCount: Object.keys(((parsed as Record<string, unknown>).sources as Record<string, unknown>) ?? {})
-              .length,
-            layerCount: Array.isArray((parsed as Record<string, unknown>).layers)
-              ? ((parsed as Record<string, unknown>).layers as unknown[]).length
-              : 0,
-            center:
-              (((parsed as Record<string, unknown>).view as Record<string, unknown> | undefined)?.center as
-                | [number, number]
-                | null) ?? null,
-            zoom:
-              (((parsed as Record<string, unknown>).view as Record<string, unknown> | undefined)?.zoom as
-                | number
-                | null) ?? null,
-          },
-          diagnostics: [],
-        });
-      }, 600);
-    }
-
-    return () => {
-      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
-    };
-  }, [specText]);
-
-  // ── Track when the user is typing to suppress server → editor sync ────────
-  const handleSpecTextChange = useCallback((value: string) => {
-    isTypingRef.current = true;
-    setSpecText(value);
-    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
-    typingTimerRef.current = setTimeout(() => {
-      isTypingRef.current = false;
-    }, 2000);
-  }, []);
-
-  // ── Template selection ────────────────────────────────────────────────────
-  const handleSelectTemplate = useCallback((template: MapSpecTemplate) => {
-    setActiveTemplateId(template.id);
-    const freshSpec = JSON.parse(JSON.stringify(template.spec)) as Record<string, unknown>;
-    const specStr = JSON.stringify(freshSpec, null, 2);
-    setSpecText(specStr);
-    lastSyncedRevisionRef.current = String(freshSpec.revision ?? "__template__");
-    isTypingRef.current = false;
-    // Push to preview immediately
-    setPreviewSpec({
-      status: "ready",
-      spec: freshSpec,
-      style: null,
-      summary: {
-        mapId: String(freshSpec.id ?? "template"),
-        revision: String(freshSpec.revision ?? "0"),
-        sourceCount: Object.keys((freshSpec.sources as Record<string, unknown>) ?? {}).length,
-        layerCount: Array.isArray(freshSpec.layers) ? (freshSpec.layers as unknown[]).length : 0,
-        center: ((freshSpec.view as Record<string, unknown> | undefined)?.center as [number, number] | null) ?? null,
-        zoom: ((freshSpec.view as Record<string, unknown> | undefined)?.zoom as number | null) ?? null,
-      },
-      diagnostics: [],
-    });
-    setMessages((prev) => [
-      ...prev,
-      { role: "assistant", content: `Loaded template: ${template.name}. ${template.description}` },
-    ]);
-  }, []);
-
-  // ── AI chat (same protocol as original Workbench) ────────────────────────────
-  const sendMessage = async (text: string): Promise<ServerState | null> => {
-    setMessages((previous) => [...previous, { role: "user", content: text }]);
-    setStatus("thinking");
-
-    try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, providerId, mode: chatMode, spec: serverState?.spec }),
-      });
-      const data: ServerState = await response.json();
-      const commandEvidence = data.commandEvidence;
-      const diagnostics = data.diagnostics || [];
-      const errorCount = diagnostics.filter((d) => d.severity === "error").length;
-      const reply =
-        data.status === "applied"
-          ? `Done. ${commandEvidence?.changedPathCount ?? 0} path(s) changed.`
-          : data.status === "blocked"
-            ? `Blocked${errorCount ? `: ${errorCount} error(s)` : ""}. See evidence.`
-            : `Status: ${data.status}.`;
-
-      setMessages((previous) => [
-        ...previous,
-        {
-          role: "assistant",
-          content: reply,
-          status: data.status,
-          evidence: { commandEvidence, provider: data.provider, diagnostics },
-        },
-      ]);
-      setServerState(data);
-      setStatus(data.status);
-      await fetchBasemaps();
-      return data;
+      await operation();
     } catch (error) {
-      setMessages((previous) => [
-        ...previous,
-        {
-          role: "assistant",
-          content: `Error: ${error instanceof Error ? error.message : "Is the server running?"}`,
-        },
-      ]);
-      setStatus("blocked");
-      return null;
+      setDiagnostics(diagnosticsFromError(error));
+      setInspectorTab("diagnostics");
+    } finally {
+      setBusy(false);
     }
-  };
+  }, []);
 
-  const changeBasemap = async (basemapId: string) => {
-    setCurrentBasemap(basemapId);
-    await sendMessage(`switch to ${basemapId} basemap`);
-    await fetchBasemaps();
-  };
+  const createProject = () =>
+    run(async () => {
+      const initialSpec = structuredClone(basicMapTemplate.spec) as Record<string, unknown>;
+      initialSpec.id = "workbench-map";
+      initialSpec.revision = "0";
+      initialSpec.view = { mode: "map2d", center: [120.8, 30.75], zoom: 6 };
+      const initialSources = initialSpec.sources as Record<string, Record<string, unknown>>;
+      const initialSource = Object.values(initialSources)[0];
+      if (initialSource?.type === "geojson") initialSource.data = JSON.parse(SAMPLE_GEOJSON);
+      const created = await request<WorkbenchProjectState>("/api/projects", {
+        method: "POST",
+        body: JSON.stringify({ id: "project-1", name: projectName.trim(), initialSpec }),
+      });
+      setState(created);
+    });
 
-  // ── Derived state for the map preview ─────────────────────────────────────
-  // Use previewSpec (from editor) if available; otherwise fall back to serverState
-  const mapPreviewState = previewSpec ?? serverState;
+  const inspectData = () =>
+    run(async () => {
+      if (!state) return;
+      let value: unknown;
+      try {
+        value = JSON.parse(dataText);
+      } catch {
+        throw new ApiError([
+          {
+            severity: "error",
+            code: "WORKBENCH.DATA_UNSUPPORTED",
+            path: "/value",
+            message: "GeoJSON must be valid JSON.",
+          },
+        ]);
+      }
+      const response = await request<{ ok: true; result: DataInspection }>(
+        `/api/projects/${state.project.id}/data/inspect`,
+        { method: "POST", body: JSON.stringify({ kind: "geojson", value }) },
+      );
+      setInspection(response.result);
+    });
 
-  const statusBadgeColor =
-    status === "ready" || status === "applied" || status === "reviewed"
-      ? "bg-green-900/50 text-green-400"
-      : status === "thinking"
-        ? "bg-yellow-900/50 text-yellow-400"
-        : "bg-red-900/50 text-red-400";
+  const generatePlan = () =>
+    run(async () => {
+      if (!state) return;
+      const response = await request<{ ok: true; result: WorkbenchPlanResult }>(
+        `/api/projects/${state.project.id}/plans`,
+        { method: "POST", body: JSON.stringify({ prompt }) },
+      );
+      setPlan(response.result);
+      setPreview(null);
+      setInspectorTab("plan");
+    });
 
-  // ── Render ────────────────────────────────────────────────────────────────
-  return (
-    <div className="flex h-screen flex-col overflow-hidden bg-gray-950">
-      {/* Top bar */}
-      <header className="flex items-center justify-between border-b border-gray-800 bg-gray-900 px-4 py-2 shrink-0">
-        <div className="flex items-center gap-3">
-          <div>
-            <p className="text-[11px] text-blue-400 font-medium tracking-wide leading-none">GIS ENGINE</p>
-            <h1 className="text-sm font-semibold leading-tight">GIS Engine Workbench</h1>
+  const previewPlan = () =>
+    run(async () => {
+      if (!state || !plan) return;
+      const response = await request<{ ok: true; result: WorkbenchPreviewResult }>(
+        `/api/projects/${state.project.id}/plans/${plan.planHash}/preview`,
+        { method: "POST" },
+      );
+      setPreview(response.result);
+      setInspectorTab("diff");
+      setCenterTab("map");
+    });
+
+  const abandonPlan = useCallback(() => {
+    setPlan(null);
+    setPreview(null);
+    setInspectorTab("plan");
+  }, []);
+
+  const applyPlan = () =>
+    run(async () => {
+      if (!state || !plan) return;
+      await request(`/api/projects/${state.project.id}/apply`, {
+        method: "POST",
+        body: JSON.stringify({
+          schemaVersion: "gis-engine.workbench.apply-request.v1",
+          projectId: state.project.id,
+          planHash: plan.planHash,
+          baseRevision: plan.plan.baseRevision,
+        }),
+      });
+      setAppliedOnce(true);
+      setPlan(null);
+      setPreview(null);
+      await loadCurrentProject();
+    });
+
+  const restoreRevision = (revision: string) =>
+    run(async () => {
+      if (!state) return;
+      await request(`/api/projects/${state.project.id}/revisions/${revision}/restore`, {
+        method: "POST",
+        body: JSON.stringify({ baseRevision: state.project.currentRevision }),
+      });
+      setPlan(null);
+      setPreview(null);
+      await loadCurrentProject();
+    });
+
+  const previewExport = () =>
+    run(async () => {
+      if (!state) return;
+      const response = await request<{ ok: true; result: ExportPreview }>(
+        `/api/projects/${state.project.id}/export/preview`,
+        { method: "POST", body: JSON.stringify({ targetRelativePath: exportPath }) },
+      );
+      setExportPreview(response.result);
+      setExportReceipt(null);
+      setInspectorTab("export");
+      if (response.result.diagnostics.length > 0) setDiagnostics(response.result.diagnostics);
+    });
+
+  const commitExport = () =>
+    run(async () => {
+      if (!state || !exportPreview) return;
+      const response = await request<{ ok: true; result: ExportReceipt }>(
+        `/api/projects/${state.project.id}/export/commit`,
+        { method: "POST", body: JSON.stringify({ previewHash: exportPreview.previewHash }) },
+      );
+      setExportReceipt(response.result);
+    });
+
+  const progress = useMemo(() => {
+    if (!state) return 0;
+    if (!inspection) return 1;
+    if (!preview && !appliedOnce) return 2;
+    if (!appliedOnce) return 3;
+    if (!exportReceipt) return 4;
+    return 5;
+  }, [appliedOnce, exportReceipt, inspection, preview, state]);
+
+  const taskDiagnostics = useMemo(
+    () => [
+      ...diagnostics,
+      ...(plan?.plan.diagnostics ?? []),
+      ...(preview?.diagnostics ?? []),
+      ...(exportPreview?.diagnostics ?? []),
+    ],
+    [diagnostics, exportPreview, plan, preview],
+  );
+
+  if (loading) {
+    return (
+      <div className="loading-screen">
+        <LoaderCircle className="spin" size={22} />
+        <span>Opening Workbench</span>
+      </div>
+    );
+  }
+
+  if (!state) {
+    return (
+      <div className="first-run-shell">
+        <header className="brand-bar">
+          <Brand />
+          <a href="https://github.com/HYNCM/gis-engine" aria-label="Open source repository">
+            <Github size={16} />
+          </a>
+        </header>
+        <main className="create-project-panel">
+          <div className="create-project-title">
+            <Boxes size={24} />
+            <div>
+              <h1>Create project</h1>
+              <p>Start from a local MapSpec and sample GeoJSON.</p>
+            </div>
           </div>
-          <select
-            value={currentBasemap}
-            onChange={(e) => changeBasemap(e.target.value)}
-            className="rounded border border-gray-700 bg-gray-800 px-2 py-1 text-xs text-gray-300 focus:border-blue-500 focus:outline-none"
+          <label htmlFor="project-name">Project name</label>
+          <input id="project-name" value={projectName} onChange={(event) => setProjectName(event.target.value)} />
+          <button
+            className="primary-button"
+            type="button"
+            disabled={busy || !projectName.trim()}
+            onClick={createProject}
           >
-            {basemaps.map((b) => (
-              <option key={b.id} value={b.id} disabled={!b.enabled}>
-                {b.missingCredential ? `${b.label} (${b.missingCredential})` : b.label}
-              </option>
-            ))}
-          </select>
-          <select
-            value={providerId}
-            onChange={(e) => setProviderId(e.target.value)}
-            className="rounded border border-gray-700 bg-gray-800 px-2 py-1 text-xs text-gray-300 focus:border-blue-500 focus:outline-none"
-          >
-            {providers
-              .filter((p) => p.enabled)
-              .map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.label}
-                  {p.model ? ` / ${p.model}` : ""}
-                </option>
-              ))}
-          </select>
-          <div className="flex overflow-hidden rounded border border-gray-700">
-            <button
-              onClick={() => setChatMode("standard")}
-              className={`px-2 py-1 text-xs transition ${
-                chatMode === "standard" ? "bg-blue-900/50 text-blue-100" : "bg-gray-900 text-gray-400 hover:bg-gray-800"
-              }`}
-            >
-              Std
-            </button>
-            <button
-              onClick={() => setChatMode("agent")}
-              className={`px-2 py-1 text-xs transition ${
-                chatMode === "agent" ? "bg-blue-900/50 text-blue-100" : "bg-gray-900 text-gray-400 hover:bg-gray-800"
-              }`}
-            >
-              Agent
-            </button>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          {serverState && (
-            <p className="font-mono text-[11px] text-gray-500">
-              v{serverState.summary.revision} · {serverState.summary.layerCount} layers ·{" "}
-              {serverState.summary.sourceCount} sources
+            {busy ? <LoaderCircle className="spin" size={15} /> : <Boxes size={15} />} Create project
+          </button>
+          {diagnostics.map((item) => (
+            <p className="create-error" key={item.code}>
+              {item.message}
             </p>
-          )}
-          <span className={`rounded-full px-2 py-0.5 text-xs ${statusBadgeColor}`}>{status}</span>
+          ))}
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="workbench-shell">
+      <header className="brand-bar">
+        <Brand />
+        <button className="project-switcher" type="button" title="Current local project">
+          <span>{state.project.name}</span>
+          <ChevronDown size={13} />
+        </button>
+        <div className="header-status">
+          <CircleDot size={13} />
+          <span>Local</span>
+          <code>rev {state.project.currentRevision}</code>
         </div>
       </header>
-
-      {/* Main 3-column area */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* LEFT — MapSpec Editor */}
-        <div className="flex w-[30%] min-w-[280px] max-w-[480px] flex-col border-r border-gray-800 overflow-hidden">
-          <MapSpecEditor value={specText} onChange={handleSpecTextChange} diagnostics={editorDiagnostics} />
-        </div>
-
-        {/* CENTER — Live Map Preview */}
-        <div className="relative flex-1 overflow-hidden">
-          <MapStage
-            serverState={mapPreviewState}
-            status={status}
-            onSave={() => {}}
-            savedMsg=""
-            basemaps={basemaps}
-            currentBasemap={currentBasemap}
-            onChangeBasemap={changeBasemap}
-          />
-        </div>
-
-        {/* RIGHT — AI Assistant */}
-        <div className="flex w-[28%] min-w-[240px] max-w-[400px] flex-col border-l border-gray-800 overflow-hidden">
-          <AIAssistant messages={messages} status={status} onSend={sendMessage} />
-        </div>
+      <ProgressTrack completed={progress} />
+      <div className="workspace-grid">
+        <ProjectRail
+          state={state}
+          dataText={dataText}
+          inspection={inspection}
+          busy={busy}
+          onDataTextChange={setDataText}
+          onInspectData={inspectData}
+          onRestore={restoreRevision}
+        />
+        <CenterWorkspace
+          tab={centerTab}
+          state={state}
+          previewSpec={preview?.spec ?? null}
+          onTabChange={(tab) => startTransition(() => setCenterTab(tab))}
+        />
+        <TaskInspector
+          tab={inspectorTab}
+          prompt={prompt}
+          plan={plan}
+          preview={preview}
+          diagnostics={taskDiagnostics}
+          exportPath={exportPath}
+          exportPreview={exportPreview}
+          exportReceipt={exportReceipt}
+          busy={busy}
+          onTabChange={(tab) => startTransition(() => setInspectorTab(tab))}
+          onPromptChange={setPrompt}
+          onGeneratePlan={generatePlan}
+          onPreviewPlan={previewPlan}
+          onAbandonPlan={abandonPlan}
+          onApplyPlan={applyPlan}
+          onExportPathChange={setExportPath}
+          onPreviewExport={previewExport}
+          onCommitExport={commitExport}
+        />
       </div>
-
-      {/* BOTTOM — Template Bar */}
-      <TemplateBar templates={ALL_TEMPLATES} activeTemplateId={activeTemplateId} onSelect={handleSelectTemplate} />
+      {busy ? (
+        <div className="operation-indicator" role="status">
+          <LoaderCircle className="spin" size={14} /> Working
+        </div>
+      ) : null}
     </div>
   );
+}
+
+function Brand() {
+  return (
+    <div className="brand">
+      <span className="brand-mark">
+        <Boxes size={15} />
+      </span>
+      <div>
+        <strong>GIS Engine</strong>
+        <span className="brand-product">Workbench</span>
+      </div>
+    </div>
+  );
+}
+
+class ApiError extends Error {
+  diagnostics: Diagnostic[];
+
+  constructor(diagnostics: Diagnostic[]) {
+    super(diagnostics[0]?.message ?? "Workbench request failed.");
+    this.diagnostics = diagnostics;
+  }
+}
+
+async function request<T = unknown>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(path, {
+    ...init,
+    headers: { "Content-Type": "application/json", ...init?.headers },
+  });
+  const body = await response.json();
+  if (!response.ok || body?.ok === false) {
+    throw new ApiError(
+      body?.diagnostics ?? [
+        {
+          severity: "error",
+          code: "WORKBENCH.REQUEST_FAILED",
+          message: "Workbench request failed.",
+          path,
+        },
+      ],
+    );
+  }
+  return body as T;
+}
+
+function diagnosticsFromError(error: unknown): Diagnostic[] {
+  if (error instanceof ApiError) return error.diagnostics;
+  return [
+    {
+      severity: "error",
+      code: "WORKBENCH.REQUEST_FAILED",
+      message: error instanceof Error ? error.message : "Workbench request failed.",
+    },
+  ];
 }

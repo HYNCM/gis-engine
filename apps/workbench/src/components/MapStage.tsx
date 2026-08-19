@@ -1,6 +1,6 @@
 import { createMap, type MapRuntime, type MapSpec } from "@gis-engine/engine";
 import { useEffect, useRef, useState } from "react";
-import type { BasemapOption, ServerState } from "../App";
+import type { ServerState } from "../App";
 
 const EMPTY_SPEC: MapSpec = {
   version: "0.1",
@@ -11,12 +11,6 @@ const EMPTY_SPEC: MapSpec = {
 
 interface Props {
   serverState: ServerState | null;
-  status: string;
-  onSave: () => void;
-  savedMsg: string;
-  basemaps: BasemapOption[];
-  currentBasemap: string;
-  onChangeBasemap: (id: string) => void;
 }
 
 export default function MapStage({ serverState }: Props) {
@@ -97,9 +91,7 @@ export default function MapStage({ serverState }: Props) {
       {mapLoadError && (
         <div className="absolute inset-0 grid place-items-center bg-gray-950 text-xs text-red-300">{mapLoadError}</div>
       )}
-      <div className="absolute bottom-4 left-4 rounded bg-gray-900/80 px-3 py-1.5 font-mono text-xs text-gray-400 backdrop-blur">
-        MapSpec v0.1 · MapLibre GL
-      </div>
+      <div className="map-attribution">MapSpec v0.1 · MapLibre GL</div>
     </div>
   );
 }

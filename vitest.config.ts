@@ -7,6 +7,7 @@ const root = dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   test: {
     environment: "node",
+    exclude: ["tests/workbench/**/*.spec.ts", "tests/e2e/**/*.spec.ts", "node_modules/**", "dist/**"],
     coverage: {
       provider: "v8",
       include: ["packages/*/src/**/*.ts"],
