@@ -18,7 +18,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { createRequire } from "node:module";
-import { dirname, extname, join } from "node:path";
+import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   AUDIT_DELETION_RECEIPT_VERSION,
@@ -30,6 +30,7 @@ import {
 } from "@gis-engine/ai";
 import { appendAuditRecord, STUDIO_AUDIT_RECORD_CAP } from "./audit.mjs";
 import { createReviewDecision, STUDIO_REVIEW_DECISION_CAP } from "./review-decisions.mjs";
+import { createWorkbenchApiRouter } from "./workbench-service.mjs";
 
 const provider = await import("./provider.mjs");
 const maplibreCapabilities = await import("./maplibre-capabilities.mjs");
@@ -1682,6 +1683,9 @@ async function main() {
   const engine = await loadEngine();
   console.log("✅ Engine loaded");
 
+  const projectRoot = resolve(process.env.WORKBENCH_PROJECT_ROOT || process.argv[2] || process.cwd());
+  const workbenchApi = createWorkbenchApiRouter({ projectRoot });
+
   let ai;
   try {
     ai = await loadAi();
@@ -1693,6 +1697,15 @@ async function main() {
   const server = createServer(async (req, res) => {
     try {
       const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
+
+      if (url.pathname === "/api/projects" || url.pathname.startsWith("/api/projects/")) {
+        const result = await workbenchApi({
+          method: req.method,
+          pathname: url.pathname,
+          body: req.method === "POST" ? await readJsonBody(req) : undefined,
+        });
+        if (result.handled) return sendJson(res, result.body, result.status);
+      }
 
       if (req.method === "GET" && url.pathname === "/api/state") {
         return sendJson(res, statePayload(engine, "ready", activeSpec));

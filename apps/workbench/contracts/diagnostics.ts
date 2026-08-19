@@ -8,6 +8,7 @@ export const WorkbenchDiagnosticCodes = {
   RevisionConflict: "WORKBENCH.REVISION_CONFLICT",
   UnsafePath: "WORKBENCH.UNSAFE_PATH",
   NetworkConfirmationRequired: "WORKBENCH.NETWORK_CONFIRMATION_REQUIRED",
+  DataTooLarge: "WORKBENCH.DATA_TOO_LARGE",
   DataUnsupported: "WORKBENCH.DATA_UNSUPPORTED",
   TransactionFailed: "WORKBENCH.TRANSACTION_FAILED",
   ExportPreviewMismatch: "WORKBENCH.EXPORT_PREVIEW_MISMATCH",
