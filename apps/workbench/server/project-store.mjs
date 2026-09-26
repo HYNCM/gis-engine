@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readdir, readFile, realpath, rename, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { diffSpecsTool } from "@gis-engine/ai";
 import { applyCommands, validateSpec } from "@gis-engine/engine";
 import initSqlJs from "sql.js";
 import {
   createWorkbenchCanonicalHash,
+  validateWorkbenchExportReceipt,
   validateWorkbenchProject,
   WorkbenchDiagnosticCodes,
 } from "../dist/contracts/index.js";
@@ -14,6 +15,12 @@ const PROJECT_FILE = "gis-engine.project.json";
 const MAP_SPEC_FILE = "mapspec.json";
 const REVISION_DIRECTORY = join(".gis-engine", "revisions");
 const REVISION_SCHEMA_VERSION = "gis-engine.workbench.revision.v1";
+const COMMIT_JOURNAL_FILE = join(".gis-engine", "commit-journal.json");
+const PROJECT_LOCK_DIRECTORY = join(".gis-engine", "project.lock");
+const PROJECT_LOCK_RETRY_MS = 10;
+const PROJECT_LOCK_RETRY_LIMIT = 500;
+const PROJECT_LOCK_STALE_MS = 5 * 60 * 1000;
+const activeProjectLocks = new Set();
 
 export class WorkbenchProjectStoreError extends Error {
   constructor(message, diagnostics) {
@@ -80,15 +87,21 @@ export async function createWorkbenchProject(input, options = {}) {
   });
   await commitProjectState(root, project, initialSpec, receipt, { create: true });
 
-  return { root, project, spec: initialSpec, history: [receipt] };
+  return { root, project, spec: initialSpec, history: [receipt], exportReceipts: [] };
 }
 
 export async function openWorkbenchProject(projectRoot) {
   const root = await resolveExistingProjectRoot(projectRoot);
-  const [project, spec, history] = await Promise.all([
+  if (activeProjectLocks.has(root)) {
+    await recoverPendingCommit(root);
+  } else {
+    await withProjectLock(root, () => recoverPendingCommit(root));
+  }
+  const [project, spec, history, exportReceipts] = await Promise.all([
     readJson(join(root, PROJECT_FILE)),
     readJson(join(root, MAP_SPEC_FILE)),
     readRevisionHistory(root),
+    readExportReceipts(root),
   ]);
   assertProject(project);
 
@@ -115,61 +128,67 @@ export async function openWorkbenchProject(projectRoot) {
     ]);
   }
 
-  return { root, project, spec, history };
+  return { root, project, spec, history, exportReceipts };
 }
 
 export async function applyWorkbenchProject(projectRoot, input, options = {}) {
-  const state = await openWorkbenchProject(projectRoot);
-  return applyProjectTransaction(state, input, {
-    now: options.now,
-    kind: "apply",
+  return withProjectLock(projectRoot, async () => {
+    const state = await openWorkbenchProject(projectRoot);
+    return applyProjectTransaction(state, input, {
+      now: options.now,
+      kind: "apply",
+      commitOptions: options.commitOptions,
+    });
   });
 }
 
 export async function restoreWorkbenchRevision(projectRoot, input, options = {}) {
-  const state = await openWorkbenchProject(projectRoot);
-  if (state.project.currentRevision !== input.baseRevision) {
-    return revisionConflict(state.project.currentRevision, input.baseRevision);
-  }
+  return withProjectLock(projectRoot, async () => {
+    const state = await openWorkbenchProject(projectRoot);
+    if (state.project.currentRevision !== input.baseRevision) {
+      return revisionConflict(state.project.currentRevision, input.baseRevision);
+    }
 
-  const target = state.history.find((receipt) => receipt.revision === input.targetRevision);
-  if (!target) {
-    return failure(
-      WorkbenchDiagnosticCodes.RevisionConflict,
-      `Revision "${input.targetRevision}" does not exist in this project.`,
-      "/targetRevision",
-    );
-  }
+    const target = state.history.find((receipt) => receipt.revision === input.targetRevision);
+    if (!target) {
+      return failure(
+        WorkbenchDiagnosticCodes.RevisionConflict,
+        `Revision "${input.targetRevision}" does not exist in this project.`,
+        "/targetRevision",
+      );
+    }
 
-  const diff = diffSpecsTool({ before: state.spec, after: target.spec });
-  if (!diff.ok || diff.result.commands.length === 0) {
-    return failure(
-      WorkbenchDiagnosticCodes.TransactionFailed,
-      "The target revision cannot be restored through the current command contract.",
-      "/targetRevision",
-      diff.diagnostics,
-    );
-  }
+    const diff = diffSpecsTool({ before: state.spec, after: target.spec });
+    if (!diff.ok || diff.result.commands.length === 0) {
+      return failure(
+        WorkbenchDiagnosticCodes.TransactionFailed,
+        "The target revision cannot be restored through the current command contract.",
+        "/targetRevision",
+        diff.diagnostics,
+      );
+    }
 
-  return applyProjectTransaction(
-    state,
-    {
-      baseRevision: input.baseRevision,
-      planHash: createWorkbenchCanonicalHash({
-        operation: "restore",
-        projectId: state.project.id,
+    return applyProjectTransaction(
+      state,
+      {
         baseRevision: input.baseRevision,
-        targetRevision: input.targetRevision,
-      }),
-      commands: diff.result.commands,
-    },
-    {
-      now: options.now,
-      kind: "restore",
-      restoredFromRevision: input.targetRevision,
-      expectedSpec: target.spec,
-    },
-  );
+        planHash: createWorkbenchCanonicalHash({
+          operation: "restore",
+          projectId: state.project.id,
+          baseRevision: input.baseRevision,
+          targetRevision: input.targetRevision,
+        }),
+        commands: diff.result.commands,
+      },
+      {
+        now: options.now,
+        kind: "restore",
+        restoredFromRevision: input.targetRevision,
+        expectedSpec: target.spec,
+        commitOptions: options.commitOptions,
+      },
+    );
+  });
 }
 
 export async function replayWorkbenchProject(projectRoot) {
@@ -295,7 +314,7 @@ async function applyProjectTransaction(state, input, options) {
     commandResults: applied.results,
     spec: applied.spec,
   });
-  await commitProjectState(state.root, nextProject, applied.spec, receipt);
+  await commitProjectState(state.root, nextProject, applied.spec, receipt, options.commitOptions);
 
   return {
     ok: true,
@@ -356,9 +375,23 @@ async function commitProjectState(root, project, spec, receipt, options = {}) {
   const stagedReceipt = await stageJson(receiptPath, receipt);
   const stagedSpec = await stageJson(join(root, MAP_SPEC_FILE), spec);
   const stagedProject = await stageJson(join(root, PROJECT_FILE), project);
-  await rename(stagedReceipt, receiptPath);
-  await rename(stagedSpec, join(root, MAP_SPEC_FILE));
-  await rename(stagedProject, join(root, PROJECT_FILE));
+  const journal = {
+    schemaVersion: "gis-engine.workbench.commit-journal.v1",
+    entries: [
+      { stagedPath: stagedReceipt, targetPath: receiptPath },
+      { stagedPath: stagedSpec, targetPath: join(root, MAP_SPEC_FILE) },
+      { stagedPath: stagedProject, targetPath: join(root, PROJECT_FILE) },
+    ],
+  };
+  const journalPath = join(root, COMMIT_JOURNAL_FILE);
+  const stagedJournal = await stageJson(journalPath, journal);
+  await rename(stagedJournal, journalPath);
+
+  for (const [index, entry] of journal.entries.entries()) {
+    await rename(entry.stagedPath, entry.targetPath);
+    await options.afterRename?.(index, entry);
+  }
+  await rm(journalPath, { force: true });
 }
 
 async function stageJson(targetPath, value) {
@@ -374,9 +407,176 @@ async function readRevisionHistory(root) {
   const receipts = await Promise.all(
     entries
       .filter((entry) => entry.isFile() && entry.name.endsWith(".json"))
-      .map((entry) => readJson(join(directory, entry.name))),
+      .map(async (entry) => {
+        try {
+          return await readJson(join(directory, entry.name));
+        } catch (error) {
+          if (error instanceof SyntaxError) {
+            throw invalidHistory(`Revision receipt "${entry.name}" is not valid JSON.`);
+          }
+          throw error;
+        }
+      }),
   );
-  return receipts.sort((left, right) => left.sequence - right.sequence);
+  const history = receipts.sort((left, right) => left.sequence - right.sequence);
+  assertRevisionHistory(history);
+  return history;
+}
+
+async function readExportReceipts(root) {
+  const directory = join(root, ".gis-engine", "exports");
+  let entries;
+  try {
+    entries = await readdir(directory, { withFileTypes: true });
+  } catch (error) {
+    if (error && typeof error === "object" && error.code === "ENOENT") return [];
+    throw error;
+  }
+  const receipts = await Promise.all(
+    entries
+      .filter((entry) => entry.isFile() && entry.name.endsWith(".receipt.json"))
+      .map(async (entry) => {
+        try {
+          return await readJson(join(directory, entry.name));
+        } catch (error) {
+          if (error instanceof SyntaxError) {
+            throw invalidExportReceipt(`Export receipt "${entry.name}" is not valid JSON.`);
+          }
+          throw error;
+        }
+      }),
+  );
+  for (const receipt of receipts) {
+    const validation = validateWorkbenchExportReceipt(receipt);
+    if (!validation.valid) throw invalidExportReceipt("An export receipt failed its contract.");
+  }
+  return receipts.sort((left, right) => String(left.committedAt).localeCompare(String(right.committedAt)));
+}
+
+async function withProjectLock(projectRoot, operation) {
+  const root = await resolveExistingProjectRoot(projectRoot);
+  const lockPath = join(root, PROJECT_LOCK_DIRECTORY);
+  await mkdir(dirname(lockPath), { recursive: true });
+  let acquired = false;
+  for (let attempt = 0; attempt < PROJECT_LOCK_RETRY_LIMIT; attempt += 1) {
+    try {
+      await mkdir(lockPath);
+      acquired = true;
+      break;
+    } catch (error) {
+      if (!error || typeof error !== "object" || error.code !== "EEXIST") throw error;
+      try {
+        const lockStat = await stat(lockPath);
+        if (Date.now() - lockStat.mtimeMs > PROJECT_LOCK_STALE_MS) {
+          await rm(lockPath, { recursive: true, force: true });
+          continue;
+        }
+      } catch (lockError) {
+        if (!lockError || typeof lockError !== "object" || lockError.code !== "ENOENT") throw lockError;
+      }
+      await new Promise((resolveWait) => setTimeout(resolveWait, PROJECT_LOCK_RETRY_MS));
+    }
+  }
+  if (!acquired) {
+    throw new WorkbenchProjectStoreError("The Workbench project is busy.", [
+      diagnostic(
+        WorkbenchDiagnosticCodes.ProjectBusy,
+        "Another project transaction is still in progress; retry this request.",
+        "/project",
+      ),
+    ]);
+  }
+
+  try {
+    activeProjectLocks.add(root);
+    return await operation();
+  } finally {
+    activeProjectLocks.delete(root);
+    await rm(lockPath, { recursive: true, force: true });
+  }
+}
+
+async function recoverPendingCommit(root) {
+  const journalPath = join(root, COMMIT_JOURNAL_FILE);
+  const encoded = await readOptional(journalPath);
+  if (encoded === null) return;
+
+  let journal;
+  try {
+    journal = JSON.parse(encoded);
+  } catch {
+    throw invalidJournal("The pending commit journal is not valid JSON.");
+  }
+  if (
+    journal?.schemaVersion !== "gis-engine.workbench.commit-journal.v1" ||
+    !Array.isArray(journal.entries) ||
+    journal.entries.some(
+      (entry) =>
+        !entry ||
+        typeof entry.stagedPath !== "string" ||
+        typeof entry.targetPath !== "string" ||
+        !isPathInside(root, entry.stagedPath) ||
+        !isPathInside(root, entry.targetPath),
+    )
+  ) {
+    throw invalidJournal("The pending commit journal is invalid or points outside the project.");
+  }
+
+  for (const entry of journal.entries) {
+    if ((await readOptional(entry.stagedPath)) !== null) {
+      await rename(entry.stagedPath, entry.targetPath);
+    }
+  }
+  await rm(journalPath, { force: true });
+}
+
+function assertRevisionHistory(history) {
+  if (history.length === 0) throw invalidHistory("The project has no revision receipts.");
+  let previous = null;
+  for (const [index, receipt] of history.entries()) {
+    if (
+      !receipt ||
+      receipt.schemaVersion !== REVISION_SCHEMA_VERSION ||
+      receipt.sequence !== index ||
+      typeof receipt.revision !== "string" ||
+      receipt.previousRevision !== previous ||
+      !Array.isArray(receipt.commands) ||
+      !Array.isArray(receipt.commandResults) ||
+      !receipt.spec ||
+      receipt.spec.revision !== receipt.revision ||
+      typeof receipt.receiptHash !== "string"
+    ) {
+      throw invalidHistory(`Revision receipt at sequence ${index} is invalid or disconnected.`);
+    }
+    const { receiptHash, ...hashInput } = receipt;
+    if (receiptHash !== createWorkbenchCanonicalHash(hashInput)) {
+      throw invalidHistory(`Revision receipt "${receipt.revision}" failed its integrity hash.`);
+    }
+    previous = receipt.revision;
+  }
+}
+
+function invalidHistory(message) {
+  return new WorkbenchProjectStoreError(message, [
+    diagnostic(WorkbenchDiagnosticCodes.TransactionFailed, message, "/history"),
+  ]);
+}
+
+function invalidJournal(message) {
+  return new WorkbenchProjectStoreError(message, [
+    diagnostic(WorkbenchDiagnosticCodes.CommitJournalInvalid, message, "/commitJournal"),
+  ]);
+}
+
+function invalidExportReceipt(message) {
+  return new WorkbenchProjectStoreError(message, [
+    diagnostic(WorkbenchDiagnosticCodes.ExportReceiptInvalid, message, "/exportReceipts"),
+  ]);
+}
+
+function isPathInside(root, candidate) {
+  const relative = resolve(candidate).slice(resolve(root).length);
+  return relative.startsWith("/") && !relative.startsWith("/../");
 }
 
 async function prepareProjectRoot(projectRoot) {

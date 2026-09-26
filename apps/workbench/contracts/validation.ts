@@ -4,6 +4,8 @@ import { type WorkbenchContractDiagnostic, WorkbenchDiagnosticCodes } from "./di
 import {
   WorkbenchApplyRequestSchema,
   WorkbenchApplyResultSchema,
+  WorkbenchDataAttachmentRequestSchema,
+  WorkbenchDataAttachmentResultSchema,
   WorkbenchExportPreviewSchema,
   WorkbenchExportReceiptSchema,
   WorkbenchPlanSchema,
@@ -68,6 +70,10 @@ export const validateWorkbenchApplyRequest = (value: unknown) =>
   validateWorkbenchSchema(WorkbenchApplyRequestSchema, value);
 export const validateWorkbenchApplyResult = (value: unknown) =>
   validateWorkbenchSchema(WorkbenchApplyResultSchema, value);
+export const validateWorkbenchDataAttachmentRequest = (value: unknown) =>
+  validateWorkbenchSchema(WorkbenchDataAttachmentRequestSchema, value);
+export const validateWorkbenchDataAttachmentResult = (value: unknown) =>
+  validateWorkbenchSchema(WorkbenchDataAttachmentResultSchema, value);
 export const validateWorkbenchExportPreview = (value: unknown) =>
   validateWorkbenchSchema(WorkbenchExportPreviewSchema, value);
 export const validateWorkbenchExportReceipt = (value: unknown) =>

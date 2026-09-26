@@ -1,7 +1,7 @@
 ---
 agent: orchestrator
 period: 2026-08-09
-generated_at: 2026-08-09T05:00:00Z
+generated_at: 2026-09-05T00:00:00Z
 repo_revision: "ca106dae"
 inputs:
   - docs/intent/project-definition.md
@@ -23,7 +23,7 @@ contracts as its foundation. Do not imply hosted, 3D, or autonomous-agent
 readiness.
 
 Evidence: `apps/workbench`, `packages/engine`, `packages/ai`, `packages/cli`, and
-the repository gate suite at revision `ca106dae`.
+the repository gate suite at candidate revision `031129e3`.
 
 Impact: WebGIS engineers receive one coherent product path instead of separate
 SDK, MCP, CLI, Playground, and review-console narratives.
@@ -47,8 +47,8 @@ demand.
 | --- | --- | --- |
 | Workbench | Local-first open-source desktop-browser workspace | Independent `0.x` version until product gates pass |
 | Rendering | MapLibre 2D authoring and preview | 3D stays behind its promotion gate |
-| Data | GeoJSON file/paste, approved URL, vector/raster tiles, existing `MapSpec` | No cloud-native runtime breadth commitment |
-| AI | Mock and one configurable BYOK provider | Server-held credential, preview before apply |
+| Data | GeoJSON file/paste attachment, approved URL/tile/MapSpec descriptors after confirmation | Remote URL/tile inspection is policy/readiness evidence until bounded fetch budgets are promoted |
+| AI | Mock and one server-configured OpenAI-compatible BYOK provider | Local environment configuration, bounded timeout, preview before apply |
 | State | Human-readable project files and append-only revision evidence | SQLite is cache/index/migration source only |
 | Delivery | Confirmed export of a buildable TypeScript Web project | No implicit writes outside the selected root |
 | MCP | Existing 14 tools in canonical order | No Workbench aliases |
@@ -151,8 +151,13 @@ breaking change is engine-contract-only and does not promote Workbench, 3D, or
 hosted capabilities.
 
 Alpha and local-v1 user-study thresholds are product gates, not automated test
-substitutes. Until recorded evidence meets them, release language must say
-alpha or local preview as appropriate.
+substitutes. The timing, intervention, exclusion, leakage, P90, and delivery
+evidence rules are fixed in
+[`workbench-v1-acceptance-protocol.md`](workbench-v1-acceptance-protocol.md).
+Until recorded evidence meets them, release language must say alpha or local
+preview as appropriate. The current source-checkout distribution is a source
+preview; a local-v1 release still requires a clean-machine install, upgrade,
+and rollback artifact.
 
 ## Verification Matrix
 

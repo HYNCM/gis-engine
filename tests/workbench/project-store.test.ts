@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -238,5 +238,127 @@ describe("Workbench file-backed project store", () => {
       expect.objectContaining({ id: "legacy-1", name: "Legacy map", revision: "0", spec: initialSpec() }),
     ]);
     expect(await fileDigest(dbPath)).toBe(before);
+  });
+
+  it("serializes concurrent applies and rejects the stale transaction", async () => {
+    const root = await createTempRoot();
+    await createWorkbenchProject(
+      { root, id: "project-1", name: "Earthquake review", initialSpec: initialSpec() },
+      { now: () => createdAt },
+    );
+
+    const results = await Promise.all(
+      ["#dc2626", "#16a34a"].map((color) =>
+        applyWorkbenchProject(root, {
+          baseRevision: "0",
+          planHash,
+          commands: [
+            {
+              id: `paint-${color.slice(1)}`,
+              version: "0.1",
+              type: "setPaint",
+              layerId: "earthquakes",
+              paint: { "circle-color": color },
+            },
+          ],
+        }),
+      ),
+    );
+
+    expect(results.filter((result) => result.ok)).toHaveLength(1);
+    expect(results.filter((result) => !result.ok)).toHaveLength(1);
+    expect(results.find((result) => !result.ok)).toMatchObject({
+      diagnostics: [expect.objectContaining({ code: "WORKBENCH.REVISION_CONFLICT" })],
+    });
+    expect((await openWorkbenchProject(root)).project.currentRevision).toBe("1");
+  });
+
+  it("recovers an interrupted multi-file commit from its journal", async () => {
+    const root = await createTempRoot();
+    await createWorkbenchProject(
+      { root, id: "project-1", name: "Earthquake review", initialSpec: initialSpec() },
+      { now: () => createdAt },
+    );
+
+    await expect(
+      applyWorkbenchProject(
+        root,
+        {
+          baseRevision: "0",
+          planHash,
+          commands: [
+            {
+              id: "paint-red",
+              version: "0.1",
+              type: "setPaint",
+              layerId: "earthquakes",
+              paint: { "circle-color": "#dc2626" },
+            },
+          ],
+        },
+        {
+          commitOptions: {
+            afterRename(index) {
+              if (index === 0) throw new Error("simulated process interruption");
+            },
+          },
+        },
+      ),
+    ).rejects.toThrow("simulated process interruption");
+
+    const recovered = await openWorkbenchProject(root);
+    expect(recovered.project.currentRevision).toBe("1");
+    expect(recovered.spec.layers[0]?.paint).toEqual({ "circle-color": "#dc2626" });
+    await expect(readFile(join(root, ".gis-engine", "commit-journal.json"), "utf8")).rejects.toMatchObject({
+      code: "ENOENT",
+    });
+  });
+
+  it("fails closed when a revision receipt is tampered with", async () => {
+    const root = await createTempRoot();
+    await createWorkbenchProject(
+      { root, id: "project-1", name: "Earthquake review", initialSpec: initialSpec() },
+      { now: () => createdAt },
+    );
+    const receiptPath = join(root, ".gis-engine", "revisions", "0.json");
+    const receipt = JSON.parse(await readFile(receiptPath, "utf8"));
+    receipt.spec.layers[0].paint["circle-color"] = "#dc2626";
+    await writeFile(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, "utf8");
+
+    await expect(openWorkbenchProject(root)).rejects.toMatchObject({
+      diagnostics: [expect.objectContaining({ code: "WORKBENCH.TRANSACTION_FAILED", path: "/history" })],
+    });
+  });
+
+  it("names the pending journal when it cannot be replayed", async () => {
+    const root = await createTempRoot();
+    await createWorkbenchProject(
+      { root, id: "project-1", name: "Earthquake review", initialSpec: initialSpec() },
+      { now: () => createdAt },
+    );
+    await writeFile(join(root, ".gis-engine", "commit-journal.json"), '{"schemaVersion": ', "utf8");
+
+    await expect(openWorkbenchProject(root)).rejects.toMatchObject({
+      diagnostics: [expect.objectContaining({ code: "WORKBENCH.COMMIT_JOURNAL_INVALID", path: "/commitJournal" })],
+    });
+  });
+
+  it("separates an invalid export receipt from revision history damage", async () => {
+    const root = await createTempRoot();
+    await createWorkbenchProject(
+      { root, id: "project-1", name: "Earthquake review", initialSpec: initialSpec() },
+      { now: () => createdAt },
+    );
+    const exportsDirectory = join(root, ".gis-engine", "exports");
+    await mkdir(exportsDirectory, { recursive: true });
+    await writeFile(
+      join(exportsDirectory, `${"b".repeat(64)}.receipt.json`),
+      JSON.stringify({ schemaVersion: "gis-engine.workbench.export-receipt.v1" }),
+      "utf8",
+    );
+
+    await expect(openWorkbenchProject(root)).rejects.toMatchObject({
+      diagnostics: [expect.objectContaining({ code: "WORKBENCH.EXPORT_RECEIPT_INVALID", path: "/exportReceipts" })],
+    });
   });
 });

@@ -1,4 +1,6 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import { diffSpecsTool, inspectDataTool } from "@gis-engine/ai";
 import {
   applyCommands,
@@ -11,7 +13,11 @@ import {
   createWorkbenchCanonicalHash,
   createWorkbenchPlanHash,
   createWorkbenchPromptHash,
+  DATA_FILE_NAME_PATTERN,
+  SOURCE_ID_PATTERN,
   validateWorkbenchApplyRequest,
+  validateWorkbenchDataAttachmentRequest,
+  validateWorkbenchDataAttachmentResult,
   validateWorkbenchPlan,
   WorkbenchDiagnosticCodes,
 } from "../dist/contracts/index.js";
@@ -25,6 +31,12 @@ import {
 } from "./project-store.mjs";
 
 const DEFAULT_MAX_DATA_BYTES = 5 * 1024 * 1024;
+// Defense in depth for the schema patterns; both must stay sourced from contracts.
+const SAFE_DATA_FILE_PATTERN = new RegExp(DATA_FILE_NAME_PATTERN);
+const SAFE_SOURCE_ID_PATTERN = new RegExp(SOURCE_ID_PATTERN);
+const ARTIFACT_HASH_PATTERN = /^(?:sha256:)?([a-f0-9]{64})$/;
+const PLAN_ARTIFACT_DIRECTORY = join(".gis-engine", "plans");
+const EXPORT_ARTIFACT_DIRECTORY = join(".gis-engine", "exports");
 const PLAN_INPUT_FIELDS = new Set([
   "goal",
   "baseRevision",
@@ -61,6 +73,164 @@ export function inspectWorkbenchData(input, options = {}) {
     `Data kind "${input.kind}" is not supported by Workbench v1.`,
     "/kind",
   );
+}
+
+export async function attachWorkbenchData(projectRoot, input, options = {}) {
+  if (!isRecord(input) || typeof input.kind !== "string") {
+    return failure(WorkbenchDiagnosticCodes.DataUnsupported, "A supported data kind is required.", "/kind");
+  }
+  if (!["geojson", "url", "tiles", "mapspec"].includes(input.kind)) {
+    return failure(
+      WorkbenchDiagnosticCodes.DataUnsupported,
+      `Data kind "${input.kind}" is not supported by Workbench v1.`,
+      "/kind",
+    );
+  }
+  if (input.kind !== "geojson" && input.confirmed !== true) return confirmationRequired("/confirmed");
+  if (typeof input.sourceId !== "string" || !SAFE_SOURCE_ID_PATTERN.test(input.sourceId)) {
+    return failure(
+      WorkbenchDiagnosticCodes.UnsafePath,
+      "Source id must contain only letters, numbers, underscores, and hyphens.",
+      "/sourceId",
+    );
+  }
+
+  const fileName = input.fileName ?? defaultAttachmentFileName(input.sourceId, input.kind);
+  if (typeof fileName !== "string" || !SAFE_DATA_FILE_PATTERN.test(fileName) || fileName === "." || fileName === "..") {
+    return failure(
+      WorkbenchDiagnosticCodes.UnsafePath,
+      "Data filename must be a single safe filename without directories.",
+      "/fileName",
+    );
+  }
+
+  const inspected = inspectWorkbenchData(input, options);
+  if (!inspected.ok) return inspected;
+  const state = await openWorkbenchProject(projectRoot);
+  if (input.baseRevision !== state.project.currentRevision) {
+    return revisionConflict(state.project.currentRevision, input.baseRevision);
+  }
+  if (Object.hasOwn(state.spec.sources ?? {}, input.sourceId)) {
+    return failure(
+      WorkbenchDiagnosticCodes.RevisionConflict,
+      `Source "${input.sourceId}" already exists in this project.`,
+      "/sourceId",
+    );
+  }
+
+  const attachment = buildAttachment(input);
+  if (!attachment.ok) return attachment;
+  const persisted = `${JSON.stringify(attachment.fileValue, null, 2)}\n`;
+  const maxBytes = positiveInteger(options.maxBytes) ?? DEFAULT_MAX_DATA_BYTES;
+  const bytes = Buffer.byteLength(persisted);
+  if (bytes > maxBytes) {
+    return failure(
+      WorkbenchDiagnosticCodes.DataTooLarge,
+      `Data contains ${bytes} bytes, exceeding the ${maxBytes} byte attachment limit.`,
+      "/value",
+    );
+  }
+
+  const dataDirectory = join(state.root, state.project.paths.dataDirectory);
+  const dataPath = join(dataDirectory, fileName);
+  await mkdir(dataDirectory, { recursive: true });
+  try {
+    await writeFile(dataPath, persisted, { encoding: "utf8", flag: "wx" });
+  } catch (error) {
+    if (error && typeof error === "object" && error.code === "EEXIST") {
+      return failure(
+        WorkbenchDiagnosticCodes.RevisionConflict,
+        `Data file "${fileName}" already exists and will not be overwritten.`,
+        "/fileName",
+      );
+    }
+    throw error;
+  }
+
+  const attachedAt = (options.now ?? (() => new Date().toISOString()))();
+  const sha256 = `sha256:${createHash("sha256").update(persisted).digest("hex")}`;
+  const attachmentEvidence = {
+    schemaVersion: "gis-engine.workbench.data-attachment.v1",
+    projectId: state.project.id,
+    kind: input.kind,
+    sourceId: input.sourceId,
+    path: `data/${fileName}`,
+    bytes,
+    sha256,
+    attachedAt,
+    diagnostics: [],
+  };
+  const evidenceValidation = validateWorkbenchDataAttachmentResult({
+    ...attachmentEvidence,
+    previousRevision: state.project.currentRevision,
+    revision: state.project.currentRevision,
+  });
+  if (!evidenceValidation.valid) {
+    await rm(dataPath, { force: true });
+    return { ok: false, diagnostics: evidenceValidation.diagnostics };
+  }
+
+  const attachmentHash = createWorkbenchCanonicalHash({
+    projectId: state.project.id,
+    baseRevision: input.baseRevision,
+    sourceId: input.sourceId,
+    fileName,
+    sha256,
+  });
+  let committed = false;
+  try {
+    const applied = await applyWorkbenchProject(
+      projectRoot,
+      {
+        baseRevision: input.baseRevision,
+        planHash: attachmentHash,
+        commands: [
+          {
+            id: `attach-data-${randomUUID()}`,
+            version: "0.1",
+            type: "addSource",
+            sourceId: input.sourceId,
+            source: attachment.source,
+            baseRevision: input.baseRevision,
+            author: { type: "human", id: "workbench-local-user" },
+            reason: `Attach data/${fileName}`,
+            createdAt: attachedAt,
+          },
+        ],
+      },
+      { now: options.now },
+    );
+    if (!applied.ok) {
+      await rm(dataPath, { force: true });
+      return applied;
+    }
+    committed = true;
+    if (applied.result.previousRevision !== input.baseRevision || applied.result.revision === input.baseRevision) {
+      return failure(
+        WorkbenchDiagnosticCodes.TransactionFailed,
+        "The attachment committed with an unexpected revision sequence; review the project history before continuing.",
+        "/revision",
+      );
+    }
+    const attachmentRecord = {
+      ...attachmentEvidence,
+      previousRevision: applied.result.previousRevision,
+      revision: applied.result.revision,
+    };
+    const resultValidation = validateWorkbenchDataAttachmentResult(attachmentRecord);
+    if (!resultValidation.valid) {
+      return failure(
+        WorkbenchDiagnosticCodes.TransactionFailed,
+        "The committed attachment failed its result contract; the data file stays because the project references it.",
+        "/revision",
+        resultValidation.diagnostics,
+      );
+    }
+    return { ok: true, result: attachmentRecord, diagnostics: [] };
+  } catch (error) {
+    if (!committed) await rm(dataPath, { force: true });
+    throw error;
+  }
 }
 
 export function createWorkbenchPlan(input, options = {}) {
@@ -244,6 +414,37 @@ export function createWorkbenchApiRouter(options) {
         const result = inspectWorkbenchData(request.body, options);
         return response(result.ok ? 200 : 422, result);
       }
+      if (request.method === "POST" && route.action === "attach") {
+        const attachmentRequest = {
+          ...request.body,
+          schemaVersion: request.body?.schemaVersion ?? "gis-engine.workbench.data-attachment-request.v1",
+          projectId: state.project.id,
+        };
+        const requestValidation = validateWorkbenchDataAttachmentRequest(attachmentRequest);
+        if (!requestValidation.valid) {
+          const unsafeField = requestValidation.diagnostics.find(
+            (item) => item.path === "/fileName" || item.path === "/sourceId",
+          );
+          return response(422, {
+            ok: false,
+            diagnostics: unsafeField
+              ? [
+                  {
+                    severity: "error",
+                    code: WorkbenchDiagnosticCodes.UnsafePath,
+                    path: unsafeField.path,
+                    message:
+                      unsafeField.path === "/sourceId"
+                        ? "Source id must contain only letters, numbers, underscores, and hyphens."
+                        : "Data filename must be a single safe filename without directories.",
+                  },
+                ]
+              : requestValidation.diagnostics,
+          });
+        }
+        const result = await attachWorkbenchData(projectRoot, attachmentRequest, { ...options, now });
+        return response(result.ok ? 200 : 409, result);
+      }
       if (request.method === "POST" && route.action === "plan") {
         const result =
           typeof request.body?.prompt !== "string"
@@ -251,18 +452,35 @@ export function createWorkbenchApiRouter(options) {
             : state.project.provider.kind === "openai-compatible"
               ? await createProviderWorkbenchPlan(request.body.prompt, state, options)
               : createMockWorkbenchPlan(request.body.prompt, state, { now });
-        if (result.ok) plans.set(result.result.planHash, result.result.plan);
+        if (result.ok) {
+          plans.set(result.result.planHash, result.result.plan);
+          await persistJsonArtifact(
+            projectRoot,
+            PLAN_ARTIFACT_DIRECTORY,
+            artifactFileName(result.result.planHash, "json"),
+            result.result.plan,
+          );
+        }
         return response(result.ok ? 201 : 422, result);
       }
       if (request.method === "POST" && route.action === "preview") {
-        const plan = plans.get(route.planHash);
+        const planArtifact = artifactFileName(route.planHash, "json");
+        if (!planArtifact) return response(422, unsafeArtifactDiagnostic("/planHash"));
+        const plan =
+          plans.get(route.planHash) ?? (await readJsonArtifact(projectRoot, PLAN_ARTIFACT_DIRECTORY, planArtifact));
         if (!plan) return response(404, missingPlan(route.planHash));
+        plans.set(route.planHash, plan);
         const result = await previewWorkbenchPlan(projectRoot, plan);
         return response(result.ok ? 200 : 409, result);
       }
       if (request.method === "POST" && route.action === "apply") {
-        const plan = plans.get(request.body?.planHash);
+        const planHash = request.body?.planHash;
+        const planArtifact = artifactFileName(planHash, "json");
+        if (!planArtifact) return response(422, unsafeArtifactDiagnostic("/planHash"));
+        const plan =
+          plans.get(planHash) ?? (await readJsonArtifact(projectRoot, PLAN_ARTIFACT_DIRECTORY, planArtifact));
         if (!plan) return response(404, missingPlan(request.body?.planHash));
+        plans.set(planHash, plan);
         const result = await applyWorkbenchPlan(projectRoot, plan, request.body, { now });
         return response(result.ok ? 200 : 409, result);
       }
@@ -280,7 +498,12 @@ export function createWorkbenchApiRouter(options) {
         return response(result.ok ? 200 : 422, result);
       }
       if (request.method === "POST" && route.action === "export-commit") {
-        const preview = exportPreviews.get(request.body?.previewHash);
+        const previewHash = request.body?.previewHash;
+        const previewArtifact = artifactFileName(previewHash, "preview.json");
+        if (!previewArtifact) return response(422, unsafeArtifactDiagnostic("/previewHash"));
+        const preview =
+          exportPreviews.get(previewHash) ??
+          (await readJsonArtifact(projectRoot, EXPORT_ARTIFACT_DIRECTORY, previewArtifact));
         if (!preview) {
           return response(
             404,
@@ -291,6 +514,7 @@ export function createWorkbenchApiRouter(options) {
             ),
           );
         }
+        exportPreviews.set(previewHash, preview);
         const result = await commitWorkbenchExport(projectRoot, preview, request.body, { now });
         return response(result.ok ? 200 : 409, result);
       }
@@ -342,6 +566,51 @@ function inspectGeoJson(value) {
     },
     diagnostics: [],
   };
+}
+
+function buildAttachment(input) {
+  if (input.kind === "geojson") {
+    const parsed = parseJsonValue(input.value);
+    if (!parsed.ok || !isGeoJsonObject(parsed.value)) {
+      return failure(WorkbenchDiagnosticCodes.DataUnsupported, "GeoJSON must be valid JSON.", "/value");
+    }
+    return { ok: true, fileValue: parsed.value, source: { type: "geojson", data: parsed.value } };
+  }
+  if (input.kind === "url") {
+    const sourceType = input.sourceType ?? "geojson";
+    if (!["geojson", "vector", "pmtiles"].includes(sourceType)) {
+      return failure(
+        WorkbenchDiagnosticCodes.DataUnsupported,
+        "URL sources support geojson, vector, or pmtiles sourceType values.",
+        "/sourceType",
+      );
+    }
+    const source =
+      sourceType === "geojson" ? { type: "geojson", data: input.value } : { type: sourceType, url: input.value };
+    return { ok: true, fileValue: { kind: "url", source }, source };
+  }
+  if (input.kind === "tiles") {
+    const source = structuredClone(input.value);
+    return { ok: true, fileValue: { kind: "tiles", source }, source };
+  }
+
+  const parsed = parseJsonValue(input.value);
+  const sourceEntries = parsed.ok && isRecord(parsed.value?.sources) ? Object.entries(parsed.value.sources) : [];
+  const selected = input.mapSpecSourceId
+    ? sourceEntries.find(([sourceId]) => sourceId === input.mapSpecSourceId)
+    : sourceEntries[0];
+  if (!selected) {
+    return failure(
+      WorkbenchDiagnosticCodes.DataUnsupported,
+      "The MapSpec does not contain the requested source.",
+      "/mapSpecSourceId",
+    );
+  }
+  return { ok: true, fileValue: parsed.value, source: structuredClone(selected[1]) };
+}
+
+function defaultAttachmentFileName(sourceId, kind) {
+  return kind === "geojson" ? `${sourceId}.geojson` : `${sourceId}.${kind}.json`;
 }
 
 function inspectMapSpec(value, confirmed, policy = defaultResourcePolicy) {
@@ -496,20 +765,22 @@ function parseProjectApiRoute(pathname) {
   );
   if (preview) return { action: "preview", projectId: preview[1], planHash: preview[2] };
   const action = pathname.match(
-    /^\/api\/projects\/([A-Za-z0-9][A-Za-z0-9_-]{0,199})\/(data\/inspect|plans|apply|export\/preview|export\/commit)$/,
+    /^\/api\/projects\/([A-Za-z0-9][A-Za-z0-9_-]{0,199})\/(data\/(?:inspect|attach)|plans|apply|export\/preview|export\/commit)$/,
   );
   if (action) {
     return {
       action:
         action[2] === "data/inspect"
           ? "inspect"
-          : action[2] === "plans"
-            ? "plan"
-            : action[2] === "export/preview"
-              ? "export-preview"
-              : action[2] === "export/commit"
-                ? "export-commit"
-                : "apply",
+          : action[2] === "data/attach"
+            ? "attach"
+            : action[2] === "plans"
+              ? "plan"
+              : action[2] === "export/preview"
+                ? "export-preview"
+                : action[2] === "export/commit"
+                  ? "export-commit"
+                  : "apply",
       projectId: action[1],
     };
   }
@@ -710,4 +981,37 @@ function missingPlan(planHash) {
 
 function response(status, body) {
   return { handled: true, status, body };
+}
+
+function artifactFileName(hash, suffix) {
+  if (typeof hash !== "string") return null;
+  const matched = ARTIFACT_HASH_PATTERN.exec(hash);
+  return matched ? `${matched[1]}.${suffix}` : null;
+}
+
+function unsafeArtifactDiagnostic(path) {
+  return failure(WorkbenchDiagnosticCodes.UnsafePath, "The artifact identifier must be a sha256 hash.", path);
+}
+
+async function persistJsonArtifact(projectRoot, directory, fileName, value) {
+  const artifactDirectory = join(projectRoot, directory);
+  await mkdir(artifactDirectory, { recursive: true });
+  try {
+    await writeFile(join(artifactDirectory, fileName), `${JSON.stringify(value, null, 2)}\n`, {
+      encoding: "utf8",
+      flag: "wx",
+    });
+  } catch (error) {
+    if (!error || typeof error !== "object" || error.code !== "EEXIST") throw error;
+  }
+}
+
+async function readJsonArtifact(projectRoot, directory, fileName) {
+  try {
+    return JSON.parse(await readFile(join(projectRoot, directory, fileName), "utf8"));
+  } catch (error) {
+    if (error instanceof SyntaxError) return null;
+    if (error && typeof error === "object" && (error.code === "ENOENT" || error.code === "ENOTDIR")) return null;
+    throw error;
+  }
 }

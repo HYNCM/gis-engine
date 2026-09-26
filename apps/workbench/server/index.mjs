@@ -42,6 +42,23 @@ const _require = createRequire(import.meta.url);
 
 const HOST = process.env.HOST || "127.0.0.1";
 const PORT = parseInt(process.env.PORT || "4321", 10);
+export const MAX_JSON_BODY_BYTES = 6 * 1024 * 1024;
+
+export class WorkbenchRequestBodyError extends Error {
+  constructor(message = "The request body exceeds the Workbench limit.") {
+    super(message);
+    this.name = "WorkbenchRequestBodyError";
+    this.status = 413;
+    this.diagnostics = [
+      {
+        severity: "error",
+        code: "WORKBENCH.DATA_TOO_LARGE",
+        path: "/body",
+        message,
+      },
+    ];
+  }
+}
 
 async function loadEngine() {
   const enginePath = join(ROOT, "packages/engine/dist/src/index.js");
@@ -102,20 +119,46 @@ function sendJson(res, payload, status = 200) {
   res.end(body);
 }
 
-async function readJsonBody(req) {
+export async function readJsonBody(req, maxBytes = MAX_JSON_BODY_BYTES) {
+  const contentLength = Number(req.headers?.["content-length"]);
+  if (Number.isFinite(contentLength) && contentLength > maxBytes) {
+    req.resume?.();
+    throw new WorkbenchRequestBodyError(`Request body exceeds the ${maxBytes} byte Workbench limit.`);
+  }
   return new Promise((resolve, reject) => {
     let data = "";
-    req.on("data", (chunk) => {
+    let receivedBytes = 0;
+    let settled = false;
+    const fail = (error) => {
+      if (settled) return;
+      settled = true;
+      req.removeListener?.("data", onData);
+      req.removeListener?.("end", onEnd);
+      req.removeListener?.("error", onError);
+      req.resume?.();
+      reject(error);
+    };
+    const onData = (chunk) => {
+      receivedBytes += Buffer.byteLength(chunk);
+      if (receivedBytes > maxBytes) {
+        fail(new WorkbenchRequestBodyError(`Request body exceeds the ${maxBytes} byte Workbench limit.`));
+        return;
+      }
       data += chunk;
-    });
-    req.on("end", () => {
+    };
+    const onEnd = () => {
+      if (settled) return;
+      settled = true;
       try {
         resolve(data ? JSON.parse(data) : {});
       } catch (error) {
         reject(error);
       }
-    });
-    req.on("error", reject);
+    };
+    const onError = (error) => fail(error);
+    req.on("data", onData);
+    req.on("end", onEnd);
+    req.on("error", onError);
   });
 }
 
@@ -2108,6 +2151,9 @@ export async function main() {
       res.end("Not Found");
     } catch (error) {
       console.error("Server error:", error);
+      if (error instanceof WorkbenchRequestBodyError) {
+        return sendJson(res, { ok: false, diagnostics: error.diagnostics }, error.status);
+      }
       res.writeHead(500);
       res.end("Internal Server Error");
     }

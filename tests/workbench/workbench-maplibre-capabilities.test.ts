@@ -261,4 +261,27 @@ describe("Workbench MapLibre capability registry", () => {
       },
     });
   });
+
+  it("bounds a hung provider request with a stable provider error", async () => {
+    const fetchImpl = async (_url: string, init: { signal?: AbortSignal }) =>
+      await new Promise<never>((_resolve, reject) => {
+        init.signal?.addEventListener("abort", () => {
+          const error = new Error("aborted");
+          error.name = "AbortError";
+          reject(error);
+        });
+      });
+
+    await expect(
+      callOpenAiCompatibleProvider({
+        profile: { id: "fixture-provider", baseUrl: "https://example.invalid", model: "fixture-model" },
+        apiKey: "sk-test",
+        message: "make the points red",
+        summary: { sources: [], layers: 0, layerIds: [], view: {} },
+        capabilityPrompt: "",
+        fetchImpl,
+        timeoutMs: 5,
+      }),
+    ).resolves.toMatchObject({ ok: false, error: "fixture-provider: Provider request timed out." });
+  });
 });

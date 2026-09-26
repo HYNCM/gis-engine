@@ -20,6 +20,7 @@ export interface WorkbenchProjectState {
     kind: "create" | "apply" | "restore";
     createdAt: string;
   }>;
+  exportReceipts?: ExportReceipt[];
 }
 
 export interface WorkbenchPlanResult {
@@ -66,6 +67,9 @@ export interface ExportPreview {
 }
 
 export interface ExportReceipt {
+  projectId?: string;
+  baseRevision?: string;
+  specHash?: string;
   previewHash: string;
   targetRelativePath: string;
   writtenFiles: Array<{ path: string; bytes: number; sha256: string }>;

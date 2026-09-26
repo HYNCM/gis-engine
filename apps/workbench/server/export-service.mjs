@@ -1,5 +1,17 @@
 import { createHash, randomUUID } from "node:crypto";
-import { access, lstat, mkdir, mkdtemp, readdir, readFile, realpath, rename, rm, stat } from "node:fs/promises";
+import {
+  access,
+  lstat,
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  realpath,
+  rename,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { verifyArtifacts, writeMapProjectDelivery } from "@gis-engine/cli";
@@ -51,6 +63,8 @@ export async function previewWorkbenchExport(projectRoot, input, options = {}) {
     const previewBase = {
       schemaVersion: "gis-engine.workbench.export-preview.v1",
       projectId: state.project.id,
+      baseRevision: state.project.currentRevision,
+      specHash: createWorkbenchCanonicalHash(state.spec),
       targetRelativePath: target.relativePath,
       files,
       preflightCommands: ["pnpm install", "pnpm build"],
@@ -63,6 +77,7 @@ export async function previewWorkbenchExport(projectRoot, input, options = {}) {
     };
     const validation = validateWorkbenchExportPreview(preview);
     if (!validation.valid) return { ok: false, diagnostics: validation.diagnostics };
+    await persistExportArtifact(projectRoot, `${preview.previewHash}.preview.json`, preview);
     return { ok: true, result: preview, diagnostics: [] };
   } finally {
     await rm(stagingRoot, { recursive: true, force: true });
@@ -76,6 +91,14 @@ export async function commitWorkbenchExport(projectRoot, preview, confirmation, 
     return failure(
       WorkbenchDiagnosticCodes.ExportPreviewMismatch,
       "Export confirmation does not match the reviewed preview.",
+      "/previewHash",
+    );
+  }
+  const { previewHash: statedHash, ...previewBody } = preview;
+  if (createWorkbenchCanonicalHash(previewBody) !== statedHash) {
+    return failure(
+      WorkbenchDiagnosticCodes.ExportPreviewMismatch,
+      "The export preview does not match its content hash.",
       "/previewHash",
     );
   }
@@ -103,6 +126,20 @@ export async function commitWorkbenchExport(projectRoot, preview, confirmation, 
       WorkbenchDiagnosticCodes.ProjectInvalid,
       "The export preview belongs to another project.",
       "/projectId",
+    );
+  }
+  if (preview.baseRevision !== state.project.currentRevision) {
+    return failure(
+      WorkbenchDiagnosticCodes.ExportPreviewMismatch,
+      "The project revision changed after export preview; create a new preview before confirming.",
+      "/baseRevision",
+    );
+  }
+  if (preview.specHash !== createWorkbenchCanonicalHash(state.spec)) {
+    return failure(
+      WorkbenchDiagnosticCodes.ExportPreviewMismatch,
+      "The MapSpec changed after export preview; create a new preview before confirming.",
+      "/specHash",
     );
   }
 
@@ -142,6 +179,8 @@ export async function commitWorkbenchExport(projectRoot, preview, confirmation, 
     const receipt = {
       schemaVersion: "gis-engine.workbench.export-receipt.v1",
       projectId: state.project.id,
+      baseRevision: state.project.currentRevision,
+      specHash: createWorkbenchCanonicalHash(state.spec),
       previewHash: preview.previewHash,
       targetRelativePath: target.relativePath,
       writtenFiles: stagedFiles.map(({ path, bytes, sha256 }) => ({ path, bytes, sha256 })),
@@ -151,9 +190,24 @@ export async function commitWorkbenchExport(projectRoot, preview, confirmation, 
     };
     const validation = validateWorkbenchExportReceipt(receipt);
     if (!validation.valid) return { ok: false, diagnostics: validation.diagnostics };
+    await persistExportArtifact(projectRoot, `${receipt.previewHash}.receipt.json`, receipt);
     return { ok: true, result: receipt, diagnostics: [] };
   } finally {
     await rm(stagingRoot, { recursive: true, force: true });
+  }
+}
+
+async function persistExportArtifact(projectRoot, fileName, value) {
+  const directory = join(resolve(projectRoot), ".gis-engine", "exports");
+  const normalizedFileName = fileName.replace(/^sha256:/, "");
+  await mkdir(directory, { recursive: true });
+  try {
+    await writeFile(join(directory, normalizedFileName), `${JSON.stringify(value, null, 2)}\n`, {
+      encoding: "utf8",
+      flag: "wx",
+    });
+  } catch (error) {
+    if (!error || typeof error !== "object" || error.code !== "EEXIST") throw error;
   }
 }
 

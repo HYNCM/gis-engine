@@ -25,7 +25,7 @@ COPY --from=build /app/packages/ai/dist ./node_modules/@gis-engine/ai/dist
 COPY --from=build /app/packages/scene3d/dist ./node_modules/@gis-engine/scene3d/dist
 COPY --from=build /app/node_modules ./node_modules
 
-ENV NODE_ENV=production HOST=0.0.0.0 PORT=4321 WORKBENCH_DB_PATH=/data/maps.db
+ENV NODE_ENV=production HOST=0.0.0.0 PORT=4321 WORKBENCH_DB_PATH=/data/maps.db WORKBENCH_PROJECT_ROOT=/data/project
 RUN mkdir -p /data
 VOLUME ["/data"]
 EXPOSE 4321

@@ -10,10 +10,16 @@ export {
   createWorkbenchPromptHash,
 } from "./hash.js";
 export {
+  DATA_FILE_NAME_PATTERN,
+  SOURCE_ID_PATTERN,
   type WorkbenchApplyRequest,
   WorkbenchApplyRequestSchema,
   type WorkbenchApplyResult,
   WorkbenchApplyResultSchema,
+  type WorkbenchDataAttachmentRequest,
+  WorkbenchDataAttachmentRequestSchema,
+  type WorkbenchDataAttachmentResult,
+  WorkbenchDataAttachmentResultSchema,
   type WorkbenchExportPreview,
   WorkbenchExportPreviewSchema,
   type WorkbenchExportReceipt,
@@ -28,6 +34,8 @@ export {
 export {
   validateWorkbenchApplyRequest,
   validateWorkbenchApplyResult,
+  validateWorkbenchDataAttachmentRequest,
+  validateWorkbenchDataAttachmentResult,
   validateWorkbenchExportPreview,
   validateWorkbenchExportReceipt,
   validateWorkbenchPlan,

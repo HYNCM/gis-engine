@@ -1,5 +1,5 @@
 import { type ChildProcess, spawn } from "node:child_process";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -58,8 +58,33 @@ test("completes the local Workbench golden path with explicit preview and write 
   await expect(page.locator("canvas")).toHaveCount(1);
   expect(await page.locator("canvas").evaluate((canvas) => canvas.width)).toBeGreaterThan(0);
 
+  await page.locator("#data-file").setInputFiles({
+    name: "cities.geojson",
+    mimeType: "application/geo+json",
+    buffer: Buffer.from(
+      JSON.stringify({
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            geometry: { type: "Point", coordinates: [121.47, 31.23] },
+            properties: { name: "Shanghai" },
+          },
+          {
+            type: "Feature",
+            geometry: { type: "Point", coordinates: [120.16, 30.25] },
+            properties: { name: "Hangzhou" },
+          },
+        ],
+      }),
+    ),
+  });
   await page.getByRole("button", { name: "Inspect data", exact: true }).click();
   await expect(page.getByText("2 features", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Attach source", exact: true }).click();
+  await expect(page.locator("header code")).toHaveText("rev 1");
+  await expect(projectExplorer.getByText("cities", { exact: true })).toBeVisible();
+  expect(JSON.parse(await readFile(join(projectRoot, "data/cities.geojson"), "utf8")).features).toHaveLength(2);
 
   await page.getByRole("button", { name: "Generate plan", exact: true }).click();
   await expect(page.getByText("Reviewed input", { exact: true })).toBeVisible();
@@ -69,14 +94,14 @@ test("completes the local Workbench golden path with explicit preview and write 
 
   await page.getByRole("button", { name: "AI plan", exact: true }).click();
   await page.getByRole("button", { name: "Abandon plan", exact: true }).click();
-  await expect(page.locator("header code")).toHaveText("rev 0");
+  await expect(page.locator("header code")).toHaveText("rev 1");
 
   await page.getByRole("button", { name: "Generate plan", exact: true }).click();
   await page.getByRole("button", { name: "Preview changes", exact: true }).click();
   await page.getByRole("button", { name: "AI plan", exact: true }).click();
   await page.getByRole("button", { name: "Apply plan", exact: true }).click();
-  await expect(page.locator("header code")).toHaveText("rev 1");
-  await expect(projectExplorer.getByText("Revision 1", { exact: true })).toBeVisible();
+  await expect(page.locator("header code")).toHaveText("rev 2");
+  await expect(projectExplorer.getByText("Revision 2", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Export", exact: true }).click();
   await page.getByRole("button", { name: "Preview export", exact: true }).click();
@@ -85,8 +110,9 @@ test("completes the local Workbench golden path with explicit preview and write 
   await expect(page.getByText("Export verified", { exact: true })).toBeVisible();
 
   await page.reload();
-  await expect(page.locator("header code")).toHaveText("rev 1");
-  await expect(projectExplorer.getByText("Revision 1", { exact: true })).toBeVisible();
+  await expect(page.locator("header code")).toHaveText("rev 2");
+  await expect(projectExplorer.getByText("Revision 2", { exact: true })).toBeVisible();
+  await expect(projectExplorer.getByText("cities", { exact: true })).toBeVisible();
   expect(consoleErrors, serverOutput).toEqual([]);
 });
 

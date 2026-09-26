@@ -1,9 +1,11 @@
 import { createHash, randomUUID } from "node:crypto";
 
 export async function callOpenAiCompatibleProvider(input) {
-  const { profile, apiKey, message, summary, capabilityPrompt, fetchImpl = fetch } = input;
+  const { profile, apiKey, message, summary, capabilityPrompt, fetchImpl = fetch, timeoutMs = 30_000 } = input;
   if (!apiKey) return providerError(profile, "Provider credential is not configured.");
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetchImpl(`${trimTrailingSlash(profile.baseUrl)}/chat/completions`, {
       method: "POST",
@@ -20,6 +22,7 @@ export async function callOpenAiCompatibleProvider(input) {
         ],
         response_format: { type: "json_object" },
       }),
+      signal: controller.signal,
     });
 
     if (!response.ok) {
@@ -61,8 +64,13 @@ export async function callOpenAiCompatibleProvider(input) {
         confidence: sanitizeConfidence(parsed.value.confidence),
       },
     };
-  } catch {
-    return providerError(profile, "Provider request failed.");
+  } catch (error) {
+    return providerError(
+      profile,
+      error?.name === "AbortError" ? "Provider request timed out." : "Provider request failed.",
+    );
+  } finally {
+    clearTimeout(timeout);
   }
 }
 

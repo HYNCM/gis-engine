@@ -9,6 +9,8 @@ import {
   validateWorkbenchTelemetryEvent,
   WorkbenchApplyRequestSchema,
   WorkbenchApplyResultSchema,
+  WorkbenchDataAttachmentRequestSchema,
+  WorkbenchDataAttachmentResultSchema,
   WorkbenchDiagnosticCodes,
   WorkbenchExportPreviewSchema,
   WorkbenchExportReceiptSchema,
@@ -73,6 +75,8 @@ const applyResultFixture = {
 const exportPreviewFixture = {
   schemaVersion: "gis-engine.workbench.export-preview.v1",
   projectId: "project-1",
+  baseRevision: "0",
+  specHash: digest,
   targetRelativePath: "exports/earthquake-map",
   files: [
     {
@@ -109,6 +113,30 @@ const telemetryFixture = {
   properties: { durationMs: 1200, commandCount: 2, outcome: "success" },
 };
 
+const dataAttachmentRequestFixture = {
+  schemaVersion: "gis-engine.workbench.data-attachment-request.v1",
+  projectId: "project-1",
+  kind: "geojson",
+  sourceId: "cities",
+  fileName: "cities.geojson",
+  baseRevision: "0",
+  value: { type: "FeatureCollection", features: [] },
+};
+
+const dataAttachmentResultFixture = {
+  schemaVersion: "gis-engine.workbench.data-attachment.v1",
+  projectId: "project-1",
+  kind: "geojson",
+  sourceId: "cities",
+  path: "data/cities.geojson",
+  bytes: 42,
+  sha256: digest,
+  previousRevision: "0",
+  revision: "1",
+  attachedAt: timestamp,
+  diagnostics: [],
+};
+
 describe("Workbench public contracts", () => {
   it("compiles every public schema with strict Ajv settings", () => {
     for (const schema of [
@@ -116,6 +144,8 @@ describe("Workbench public contracts", () => {
       WorkbenchPlanSchema,
       WorkbenchApplyRequestSchema,
       WorkbenchApplyResultSchema,
+      WorkbenchDataAttachmentRequestSchema,
+      WorkbenchDataAttachmentResultSchema,
       WorkbenchExportPreviewSchema,
       WorkbenchExportReceiptSchema,
       WorkbenchTelemetryEventSchema,
@@ -129,6 +159,8 @@ describe("Workbench public contracts", () => {
     ["plan", WorkbenchPlanSchema, planFixture],
     ["apply request", WorkbenchApplyRequestSchema, applyRequestFixture],
     ["apply result", WorkbenchApplyResultSchema, applyResultFixture],
+    ["data attachment request", WorkbenchDataAttachmentRequestSchema, dataAttachmentRequestFixture],
+    ["data attachment result", WorkbenchDataAttachmentResultSchema, dataAttachmentResultFixture],
     ["export preview", WorkbenchExportPreviewSchema, exportPreviewFixture],
     ["export receipt", WorkbenchExportReceiptSchema, exportReceiptFixture],
     ["telemetry event", WorkbenchTelemetryEventSchema, telemetryFixture],
@@ -158,6 +190,49 @@ describe("Workbench public contracts", () => {
     expect(validateWorkbenchApplyRequest(withoutPlanHash).valid).toBe(false);
     expect(validateWorkbenchApplyRequest(withoutBaseRevision).valid).toBe(false);
     expect(validateWorkbenchApplyRequest(applyRequestFixture).valid).toBe(true);
+  });
+
+  it("keeps data attachment identities inside the project data directory", () => {
+    expect(
+      validateWorkbenchSchema(WorkbenchDataAttachmentRequestSchema, {
+        ...dataAttachmentRequestFixture,
+        fileName: "../cities.geojson",
+      }).valid,
+    ).toBe(false);
+    expect(
+      validateWorkbenchSchema(WorkbenchDataAttachmentRequestSchema, {
+        ...dataAttachmentRequestFixture,
+        sourceId: "../cities",
+      }).valid,
+    ).toBe(false);
+    expect(
+      validateWorkbenchSchema(WorkbenchDataAttachmentRequestSchema, {
+        ...dataAttachmentRequestFixture,
+        sourceId: "_leading_underscore",
+      }).valid,
+    ).toBe(false);
+    expect(
+      validateWorkbenchSchema(WorkbenchDataAttachmentRequestSchema, {
+        ...dataAttachmentRequestFixture,
+        sourceType: "shapefile",
+      }).valid,
+    ).toBe(false);
+    expect(
+      validateWorkbenchSchema(WorkbenchDataAttachmentRequestSchema, {
+        ...dataAttachmentRequestFixture,
+        providerBody: { messages: [] },
+      }).valid,
+    ).toBe(false);
+  });
+
+  it("requires export previews to bind the revision and MapSpec they were reviewed against", () => {
+    const { baseRevision: _baseRevision, ...withoutBaseRevision } = exportPreviewFixture;
+    const { specHash: _specHash, ...withoutSpecHash } = exportPreviewFixture;
+
+    expect(validateWorkbenchSchema(WorkbenchExportPreviewSchema, withoutBaseRevision).valid).toBe(false);
+    expect(validateWorkbenchSchema(WorkbenchExportPreviewSchema, withoutSpecHash).valid).toBe(false);
+    // A receipt is historical evidence, so it stays readable without those fields.
+    expect(validateWorkbenchSchema(WorkbenchExportReceiptSchema, exportReceiptFixture).valid).toBe(true);
   });
 
   it("accepts stable Workbench diagnostics in public result contracts", () => {

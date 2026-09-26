@@ -79,3 +79,7 @@ as success, and stable 2D visual and export gates.
 
 The detailed v1 contract and acceptance matrix live in
 [`docs/planning/feature-specs/gis-engine-workbench-v1.md`](../planning/feature-specs/gis-engine-workbench-v1.md).
+The executable study, delivery, and leakage protocol lives in
+[`docs/planning/feature-specs/workbench-v1-acceptance-protocol.md`](../planning/feature-specs/workbench-v1-acceptance-protocol.md).
+Legacy Studio identifiers are compatibility-only and are tracked in
+[`docs/migration/workbench-compatibility.md`](../migration/workbench-compatibility.md).

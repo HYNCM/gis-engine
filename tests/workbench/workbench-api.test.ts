@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -160,6 +160,82 @@ describe("Workbench data inspection", () => {
     expect(unsupported).toMatchObject({
       ok: false,
       diagnostics: [{ code: "WORKBENCH.DATA_UNSUPPORTED", path: "/kind" }],
+    });
+  });
+
+  it("attaches inspected GeoJSON into data/ and reopens it as a MapSpec source", async () => {
+    const root = await projectRoot();
+    const router = createWorkbenchApiRouter({ projectRoot: root, now: () => createdAt });
+    const value = initialSpec().sources.places.data;
+    const attached = await router({
+      method: "POST",
+      pathname: "/api/projects/project-1/data/attach",
+      body: {
+        kind: "geojson",
+        value,
+        sourceId: "cities",
+        fileName: "cities.geojson",
+        baseRevision: "0",
+      },
+    });
+
+    expect(attached).toMatchObject({
+      handled: true,
+      status: 200,
+      body: {
+        result: {
+          sourceId: "cities",
+          path: "data/cities.geojson",
+          bytes: expect.any(Number),
+          sha256: expect.stringMatching(/^sha256:[a-f0-9]{64}$/),
+          revision: "1",
+        },
+      },
+    });
+    const file = await readFile(join(root, "data/cities.geojson"), "utf8");
+    expect(JSON.parse(file)).toEqual(value);
+    const reopened = await openWorkbenchProject(root);
+    expect(reopened.spec.sources.cities).toEqual({ type: "geojson", data: value });
+
+    const restartedRouter = createWorkbenchApiRouter({ projectRoot: root, now: () => createdAt });
+    const current = await restartedRouter({ method: "GET", pathname: "/api/projects/current" });
+    expect(current).toMatchObject({
+      body: { project: { currentRevision: "1" }, spec: { sources: { cities: expect.anything() } } },
+    });
+  });
+
+  it("rejects unsafe attachment filenames, oversize data, and unconfirmed remote sources", async () => {
+    const root = await projectRoot();
+    const router = createWorkbenchApiRouter({ projectRoot: root, now: () => createdAt, maxBytes: 10 });
+    const value = initialSpec().sources.places.data;
+    const unsafe = await router({
+      method: "POST",
+      pathname: "/api/projects/project-1/data/attach",
+      body: { kind: "geojson", value, sourceId: "cities", fileName: "../cities.geojson", baseRevision: "0" },
+    });
+    expect(unsafe).toMatchObject({ status: 422, body: { diagnostics: [{ code: "WORKBENCH.UNSAFE_PATH" }] } });
+
+    const tooLarge = await router({
+      method: "POST",
+      pathname: "/api/projects/project-1/data/attach",
+      body: { kind: "geojson", value, sourceId: "cities", fileName: "cities.geojson", baseRevision: "0" },
+    });
+    expect(tooLarge).toMatchObject({ status: 409, body: { diagnostics: [{ code: "WORKBENCH.DATA_TOO_LARGE" }] } });
+
+    const remote = await router({
+      method: "POST",
+      pathname: "/api/projects/project-1/data/attach",
+      body: {
+        kind: "url",
+        value: "https://example.com/cities.geojson",
+        sourceId: "remote",
+        fileName: "remote.json",
+        baseRevision: "0",
+      },
+    });
+    expect(remote).toMatchObject({
+      status: 409,
+      body: { diagnostics: [{ code: "WORKBENCH.NETWORK_CONFIRMATION_REQUIRED" }] },
     });
   });
 });
@@ -405,6 +481,135 @@ describe("Workbench project API router", () => {
       },
     });
     expect(JSON.stringify(result)).not.toContain("private customer locations");
+  });
+
+  it("reopens reviewed plans and export previews after the API router is recreated", async () => {
+    const root = await projectRoot();
+    const firstRouter = createWorkbenchApiRouter({ projectRoot: root, now: () => createdAt });
+    const planned = await firstRouter({
+      method: "POST",
+      pathname: "/api/projects/project-1/plans",
+      body: { prompt: "make the places red" },
+    });
+    const planHash = planned.body.result.planHash;
+
+    const secondRouter = createWorkbenchApiRouter({ projectRoot: root, now: () => createdAt });
+    const previewed = await secondRouter({
+      method: "POST",
+      pathname: `/api/projects/project-1/plans/${planHash}/preview`,
+    });
+    expect(previewed).toMatchObject({ status: 200, body: { result: { planHash } } });
+
+    const exportPreview = await secondRouter({
+      method: "POST",
+      pathname: "/api/projects/project-1/export/preview",
+      body: { targetRelativePath: "exports/reopen-check" },
+    });
+    const previewHash = exportPreview.body.result.previewHash;
+
+    const thirdRouter = createWorkbenchApiRouter({ projectRoot: root, now: () => createdAt });
+    const committed = await thirdRouter({
+      method: "POST",
+      pathname: "/api/projects/project-1/export/commit",
+      body: { previewHash },
+    });
+    expect(committed).toMatchObject({ status: 200, body: { result: { previewHash } } });
+    expect(
+      await readFile(join(root, ".gis-engine", "exports", `${previewHash.slice(7)}.receipt.json`), "utf8"),
+    ).toContain(previewHash);
+  });
+
+  it("rejects malformed artifact identifiers before reading project artifacts", async () => {
+    const root = await projectRoot();
+    const router = createWorkbenchApiRouter({ projectRoot: root, now: () => createdAt });
+    const traversal = "../.gis-engine/exports/foreign";
+
+    const apply = await router({
+      method: "POST",
+      pathname: "/api/projects/project-1/apply",
+      body: {
+        schemaVersion: "gis-engine.workbench.apply-request.v1",
+        projectId: "project-1",
+        planHash: traversal,
+        baseRevision: "0",
+      },
+    });
+    expect(apply).toMatchObject({
+      status: 422,
+      body: { diagnostics: [{ code: "WORKBENCH.UNSAFE_PATH", path: "/planHash" }] },
+    });
+
+    const commit = await router({
+      method: "POST",
+      pathname: "/api/projects/project-1/export/commit",
+      body: { previewHash: traversal },
+    });
+    expect(commit).toMatchObject({
+      status: 422,
+      body: { diagnostics: [{ code: "WORKBENCH.UNSAFE_PATH", path: "/previewHash" }] },
+    });
+
+    // A well-formed but unknown identifier still takes the missing-artifact path.
+    const unknown = await router({
+      method: "POST",
+      pathname: "/api/projects/project-1/apply",
+      body: {
+        schemaVersion: "gis-engine.workbench.apply-request.v1",
+        projectId: "project-1",
+        planHash: sha256("absent-plan"),
+        baseRevision: "0",
+      },
+    });
+    expect(unknown).toMatchObject({
+      status: 404,
+      body: { diagnostics: [{ code: "WORKBENCH.PLAN_HASH_MISMATCH" }] },
+    });
+  });
+
+  it("rejects a persisted export preview whose content no longer matches its hash", async () => {
+    const root = await projectRoot();
+    const router = createWorkbenchApiRouter({ projectRoot: root, now: () => createdAt });
+    const previewed = await router({
+      method: "POST",
+      pathname: "/api/projects/project-1/export/preview",
+      body: { targetRelativePath: "exports/tamper-check" },
+    });
+    const previewHash = String((previewed.body as { result: { previewHash: string } }).result.previewHash);
+    const artifactPath = join(root, ".gis-engine", "exports", `${previewHash.slice(7)}.preview.json`);
+    const tampered = JSON.parse(await readFile(artifactPath, "utf8"));
+    tampered.baseRevision = "9";
+    await writeFile(artifactPath, `${JSON.stringify(tampered, null, 2)}\n`, "utf8");
+
+    const reopened = createWorkbenchApiRouter({ projectRoot: root, now: () => createdAt });
+    const committed = await reopened({
+      method: "POST",
+      pathname: "/api/projects/project-1/export/commit",
+      body: { previewHash },
+    });
+
+    expect(committed).toMatchObject({
+      status: 409,
+      body: { diagnostics: [{ code: "WORKBENCH.EXPORT_PREVIEW_MISMATCH", path: "/previewHash" }] },
+    });
+    await expect(readFile(join(root, "exports", "tamper-check", "package.json"), "utf8")).rejects.toMatchObject({
+      code: "ENOENT",
+    });
+  });
+
+  it("validates attachment evidence before the project or data directory can change", async () => {
+    const root = await projectRoot();
+    const router = createWorkbenchApiRouter({ projectRoot: root, now: () => "not-an-iso-timestamp" });
+    const value = initialSpec().sources.places.data;
+
+    const attached = await router({
+      method: "POST",
+      pathname: "/api/projects/project-1/data/attach",
+      body: { kind: "geojson", value, sourceId: "cities", fileName: "cities.geojson", baseRevision: "0" },
+    });
+
+    expect(attached.status).toBe(409);
+    expect((await openWorkbenchProject(root)).project.currentRevision).toBe("0");
+    await expect(readFile(join(root, "data", "cities.geojson"), "utf8")).rejects.toMatchObject({ code: "ENOENT" });
   });
 
   it("turns a server-held OpenAI-compatible response into a structured plan", async () => {

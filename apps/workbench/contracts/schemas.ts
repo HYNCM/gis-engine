@@ -5,12 +5,16 @@ import { WorkbenchContractDiagnosticSchema } from "./diagnostics.js";
 const SHA256_PATTERN = "^sha256:[a-f0-9]{64}$";
 const TIMESTAMP_PATTERN = "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{3})?Z$";
 const RELATIVE_PATH_PATTERN = "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\\\u0000-\\u001f]+$";
+export const SOURCE_ID_PATTERN = "^[A-Za-z0-9][A-Za-z0-9_-]{0,199}$";
+export const DATA_FILE_NAME_PATTERN = "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$";
 
 const IdSchema = Type.String({ minLength: 1, maxLength: 200 });
 const RevisionSchema = Type.String({ minLength: 1, maxLength: 200 });
 const Sha256Schema = Type.String({ pattern: SHA256_PATTERN });
 const TimestampSchema = Type.String({ pattern: TIMESTAMP_PATTERN });
 const RelativePathSchema = Type.String({ minLength: 1, maxLength: 1024, pattern: RELATIVE_PATH_PATTERN });
+const SourceIdSchema = Type.String({ minLength: 1, maxLength: 200, pattern: SOURCE_ID_PATTERN });
+const DataFileNameSchema = Type.String({ minLength: 1, maxLength: 128, pattern: DATA_FILE_NAME_PATTERN });
 
 function withoutSchemaId<T extends TSchema>(schema: T): Omit<T, "$id"> {
   const { $id: _id, ...definition } = schema;
@@ -121,6 +125,45 @@ export const WorkbenchApplyResultSchema = Type.Object(
   },
 );
 
+export const WorkbenchDataAttachmentRequestSchema = Type.Object(
+  {
+    schemaVersion: Type.Literal("gis-engine.workbench.data-attachment-request.v1"),
+    projectId: IdSchema,
+    kind: Type.Union([Type.Literal("geojson"), Type.Literal("url"), Type.Literal("tiles"), Type.Literal("mapspec")]),
+    sourceId: SourceIdSchema,
+    fileName: Type.Optional(DataFileNameSchema),
+    baseRevision: RevisionSchema,
+    confirmed: Type.Optional(Type.Boolean()),
+    sourceType: Type.Optional(Type.Union([Type.Literal("geojson"), Type.Literal("vector"), Type.Literal("pmtiles")])),
+    mapSpecSourceId: Type.Optional(IdSchema),
+    value: Type.Unknown(),
+  },
+  {
+    $id: "https://gis-engine.dev/schemas/workbench/data-attachment-request.v1.schema.json",
+    additionalProperties: false,
+  },
+);
+
+export const WorkbenchDataAttachmentResultSchema = Type.Object(
+  {
+    schemaVersion: Type.Literal("gis-engine.workbench.data-attachment.v1"),
+    projectId: IdSchema,
+    kind: Type.Union([Type.Literal("geojson"), Type.Literal("url"), Type.Literal("tiles"), Type.Literal("mapspec")]),
+    sourceId: SourceIdSchema,
+    path: RelativePathSchema,
+    bytes: Type.Integer({ minimum: 0 }),
+    sha256: Sha256Schema,
+    previousRevision: RevisionSchema,
+    revision: RevisionSchema,
+    attachedAt: TimestampSchema,
+    diagnostics: Type.Array(WorkbenchResultDiagnosticSchema),
+  },
+  {
+    $id: "https://gis-engine.dev/schemas/workbench/data-attachment.v1.schema.json",
+    additionalProperties: false,
+  },
+);
+
 const WorkbenchExportFileSchema = Type.Object(
   {
     path: RelativePathSchema,
@@ -158,6 +201,8 @@ export const WorkbenchExportPreviewSchema = Type.Object(
   {
     schemaVersion: Type.Literal("gis-engine.workbench.export-preview.v1"),
     projectId: IdSchema,
+    baseRevision: RevisionSchema,
+    specHash: Sha256Schema,
     targetRelativePath: RelativePathSchema,
     files: Type.Array(WorkbenchExportFileSchema),
     preflightCommands: Type.Array(WorkbenchPreflightCommandSchema, { uniqueItems: true }),
@@ -175,6 +220,9 @@ export const WorkbenchExportReceiptSchema = Type.Object(
   {
     schemaVersion: Type.Literal("gis-engine.workbench.export-receipt.v1"),
     projectId: IdSchema,
+    // Receipts are historical evidence: artifacts written before these fields existed must stay readable.
+    baseRevision: Type.Optional(RevisionSchema),
+    specHash: Type.Optional(Sha256Schema),
     previewHash: Sha256Schema,
     targetRelativePath: RelativePathSchema,
     writtenFiles: Type.Array(WorkbenchWrittenFileSchema),
@@ -240,6 +288,8 @@ export type WorkbenchProject = Static<typeof WorkbenchProjectSchema>;
 export type WorkbenchPlan = Static<typeof WorkbenchPlanSchema>;
 export type WorkbenchApplyRequest = Static<typeof WorkbenchApplyRequestSchema>;
 export type WorkbenchApplyResult = Static<typeof WorkbenchApplyResultSchema>;
+export type WorkbenchDataAttachmentRequest = Static<typeof WorkbenchDataAttachmentRequestSchema>;
+export type WorkbenchDataAttachmentResult = Static<typeof WorkbenchDataAttachmentResultSchema>;
 export type WorkbenchExportPreview = Static<typeof WorkbenchExportPreviewSchema>;
 export type WorkbenchExportReceipt = Static<typeof WorkbenchExportReceiptSchema>;
 export type WorkbenchTelemetryEvent = Static<typeof WorkbenchTelemetryEventSchema>;

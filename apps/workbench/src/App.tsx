@@ -15,6 +15,14 @@ import type {
   WorkbenchProjectState,
 } from "./workbench-types";
 
+interface DataAttachmentReceipt {
+  path: string;
+  sourceId: string;
+  sha256: string;
+  bytes: number;
+  revision: string;
+}
+
 export interface ServerState {
   status: "ready" | "loading" | "blocked" | "applied" | "reviewed";
   spec: Record<string, unknown>;
@@ -87,7 +95,10 @@ export default function App() {
   const [centerTab, setCenterTab] = useState<CenterTab>("map");
   const [inspectorTab, setInspectorTab] = useState<InspectorTab>("plan");
   const [dataText, setDataText] = useState(SAMPLE_GEOJSON);
+  const [dataFileName, setDataFileName] = useState("sample.geojson");
+  const [dataSourceId, setDataSourceId] = useState("sample-data");
   const [inspection, setInspection] = useState<DataInspection | null>(null);
+  const [attachment, setAttachment] = useState<DataAttachmentReceipt | null>(null);
   const [prompt, setPrompt] = useState("Make the points red and easier to see");
   const [plan, setPlan] = useState<WorkbenchPlanResult | null>(null);
   const [preview, setPreview] = useState<WorkbenchPreviewResult | null>(null);
@@ -103,10 +114,13 @@ export default function App() {
       if (!current) {
         setState(null);
         setAppliedOnce(false);
+        setAttachment(null);
+        setExportReceipt(null);
         return;
       }
       setState(current);
       setAppliedOnce(current.history.length > 1);
+      setExportReceipt(current.exportReceipts?.at(-1) ?? null);
     } catch {
       setState(null);
     } finally {
@@ -164,7 +178,52 @@ export default function App() {
         }),
       });
       setState(created);
+      setAttachment(null);
     });
+
+  const handleDataTextChange = (value: string) => {
+    setDataText(value);
+    setInspection(null);
+    setAttachment(null);
+  };
+
+  const handleDataFileNameChange = (value: string) => {
+    setDataFileName(value);
+    setAttachment(null);
+  };
+
+  const handleDataSourceIdChange = (value: string) => {
+    setDataSourceId(value);
+    setAttachment(null);
+  };
+
+  const selectDataFile = (file: File | null) => {
+    if (!file) return;
+    void file
+      .text()
+      .then((content) => {
+        const stem = file.name
+          .replace(/\.[^.]+$/, "")
+          .replace(/[^A-Za-z0-9_-]/g, "-")
+          .replace(/^-+/, "");
+        setDataText(content);
+        setDataFileName(file.name);
+        setDataSourceId(stem || "uploaded-data");
+        setInspection(null);
+        setAttachment(null);
+      })
+      .catch(() => {
+        setDiagnostics([
+          {
+            severity: "error",
+            code: "WORKBENCH.DATA_UNSUPPORTED",
+            path: "/file",
+            message: "The selected file could not be read.",
+          },
+        ]);
+        setInspectorTab("diagnostics");
+      });
+  };
 
   const inspectData = () =>
     run(async () => {
@@ -187,6 +246,39 @@ export default function App() {
         { method: "POST", body: JSON.stringify({ kind: "geojson", value }) },
       );
       setInspection(response.result);
+    });
+
+  const attachData = () =>
+    run(async () => {
+      if (!state || !inspection) return;
+      let value: unknown;
+      try {
+        value = JSON.parse(dataText);
+      } catch {
+        throw new ApiError([
+          {
+            severity: "error",
+            code: "WORKBENCH.DATA_UNSUPPORTED",
+            path: "/value",
+            message: "GeoJSON must be valid JSON.",
+          },
+        ]);
+      }
+      const response = await request<{ ok: true; result: DataAttachmentReceipt }>(
+        `/api/projects/${state.project.id}/data/attach`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            kind: "geojson",
+            value,
+            sourceId: dataSourceId,
+            fileName: dataFileName,
+            baseRevision: state.project.currentRevision,
+          }),
+        },
+      );
+      setAttachment(response.result);
+      await loadCurrentProject();
     });
 
   const generatePlan = () =>
@@ -365,10 +457,17 @@ export default function App() {
         <ProjectRail
           state={state}
           dataText={dataText}
+          dataFileName={dataFileName}
+          dataSourceId={dataSourceId}
           inspection={inspection}
+          attachedPath={attachment?.path ?? null}
           busy={busy}
-          onDataTextChange={setDataText}
+          onDataTextChange={handleDataTextChange}
+          onDataFileNameChange={handleDataFileNameChange}
+          onDataSourceIdChange={handleDataSourceIdChange}
+          onFileSelect={selectDataFile}
           onInspectData={inspectData}
+          onAttachData={attachData}
           onRestore={restoreRevision}
         />
         <CenterWorkspace

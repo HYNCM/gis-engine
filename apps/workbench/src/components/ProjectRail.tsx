@@ -1,23 +1,37 @@
-import { Database, FileJson, History, Layers3, RotateCcw } from "lucide-react";
+import { Database, FileJson, FileUp, History, Layers3, Plus, RotateCcw } from "lucide-react";
 import type { DataInspection, WorkbenchProjectState } from "../workbench-types";
 
 interface Props {
   state: WorkbenchProjectState;
   dataText: string;
+  dataFileName: string;
+  dataSourceId: string;
   inspection: DataInspection | null;
+  attachedPath: string | null;
   busy: boolean;
   onDataTextChange: (value: string) => void;
+  onDataFileNameChange: (value: string) => void;
+  onDataSourceIdChange: (value: string) => void;
+  onFileSelect: (file: File | null) => void;
   onInspectData: () => void;
+  onAttachData: () => void;
   onRestore: (revision: string) => void;
 }
 
 export default function ProjectRail({
   state,
   dataText,
+  dataFileName,
+  dataSourceId,
   inspection,
+  attachedPath,
   busy,
   onDataTextChange,
+  onDataFileNameChange,
+  onDataSourceIdChange,
+  onFileSelect,
   onInspectData,
+  onAttachData,
   onRestore,
 }: Props) {
   const sources = Object.entries((state.spec.sources as Record<string, { type?: string }>) ?? {});
@@ -45,15 +59,47 @@ export default function ProjectRail({
             <div className="rail-row" key={id}>
               <span className="source-mark" aria-hidden="true" />
               <span>{id}</span>
-              <small>{source.type ?? "unknown"}</small>
+              <small>{source.type ?? "unknown"} · ready</small>
             </div>
           ))}
         </div>
+        <label className="field-label" htmlFor="data-file">
+          GeoJSON file
+        </label>
+        <input
+          id="data-file"
+          className="text-input"
+          type="file"
+          accept=".geojson,.json,application/geo+json,application/json"
+          disabled={busy}
+          onChange={(event) => onFileSelect(event.target.files?.[0] ?? null)}
+        />
+        <label className="field-label" htmlFor="data-source-id">
+          Source id
+        </label>
+        <input
+          id="data-source-id"
+          className="text-input"
+          value={dataSourceId}
+          disabled={busy}
+          onChange={(event) => onDataSourceIdChange(event.target.value)}
+        />
+        <label className="field-label" htmlFor="data-file-name">
+          Project filename
+        </label>
+        <input
+          id="data-file-name"
+          className="text-input"
+          value={dataFileName}
+          disabled={busy}
+          onChange={(event) => onDataFileNameChange(event.target.value)}
+        />
         <textarea
+          id="data-paste"
           className="data-input"
           value={dataText}
           onChange={(event) => onDataTextChange(event.target.value)}
-          aria-label="GeoJSON data"
+          aria-label="Paste GeoJSON data"
           spellCheck={false}
         />
         <button className="secondary-button full-width" type="button" disabled={busy} onClick={onInspectData}>
@@ -65,6 +111,18 @@ export default function ProjectRail({
             <span>{inspection.featureCount ?? 0} features</span>
             <span>{inspection.geometryTypes?.join(", ") || inspection.kind}</span>
             <span>{inspection.bytes} bytes</span>
+          </div>
+        ) : null}
+        {inspection ? (
+          <button className="primary-button full-width" type="button" disabled={busy} onClick={onAttachData}>
+            <Plus size={14} aria-hidden="true" />
+            Attach source
+          </button>
+        ) : null}
+        {attachedPath ? (
+          <div className="inspection-summary" role="status">
+            <FileUp size={14} aria-hidden="true" />
+            <span>Attached {attachedPath}</span>
           </div>
         ) : null}
       </section>
