@@ -56,6 +56,7 @@ type ArtifactManifestShape = {
 };
 
 const MANIFEST_FILE = "artifact-manifest.json";
+const EVIDENCE_FILE = "evidence.json";
 const SHA256_PATTERN = /^sha256:[a-f0-9]{64}$/i;
 
 export function verifyArtifacts(options: VerifyArtifactsOptions): VerifyArtifactsResult {
@@ -129,7 +130,106 @@ export function verifyArtifacts(options: VerifyArtifactsOptions): VerifyArtifact
     }
   }
 
+  crossCheckEvidenceRecord(projectDir, files, diagnostics);
+
   return buildVerifyResult(projectDir, manifestPath, files, diagnostics);
+}
+
+/**
+ * The exported manifest is the byte-level anchor for the whole package, and `evidence.json` is a third
+ * party's authoritative file list. Neither is compared to the other by the per-entry pass above, so a
+ * record can quietly attest less — or more — than the manifest hashes: the manifest still verifies every
+ * path it lists, and the standalone verifier still returns `ok: true` for its own shorter list, so no
+ * existing check notices that the evidence surface shrank. This is the audit-side half of constraint 5's
+ * "reject, never truncate" duty applied to the artifact set itself.
+ *
+ * Runs only when `evidence.json` itself verified against the manifest, so the record being read is the
+ * one the manifest endorses. `evidence.json` is excluded from the comparison because a record cannot
+ * attest itself, and the manifest is excluded because it is the anchor rather than an attested leaf.
+ * Nothing here recomputes a hash: every value compared was produced by `verifyManifestFileEntry`.
+ */
+function crossCheckEvidenceRecord(
+  projectDir: string,
+  files: VerifyArtifactFileResult[],
+  diagnostics: VerifyArtifactDiagnostic[],
+): void {
+  const evidence = files.find((entry) => entry.path === EVIDENCE_FILE && entry.status === "verified");
+  if (!evidence) return;
+
+  let record: unknown;
+  try {
+    record = JSON.parse(readFileSync(join(projectDir, EVIDENCE_FILE), "utf-8"));
+  } catch (error) {
+    diagnostics.push({
+      severity: "error",
+      code: "ARTIFACT_MANIFEST.EVIDENCE_RECORD_UNREADABLE",
+      path: EVIDENCE_FILE,
+      message: `Could not read the evidence record: ${error instanceof Error ? error.message : String(error)}`,
+    });
+    return;
+  }
+
+  const artifacts = (record as { artifacts?: unknown } | null)?.artifacts;
+  if (!Array.isArray(artifacts)) {
+    diagnostics.push({
+      severity: "error",
+      code: "ARTIFACT_MANIFEST.EVIDENCE_RECORD_INVALID",
+      path: `${EVIDENCE_FILE}/artifacts`,
+      message: "evidence.json must contain an artifacts array.",
+    });
+    return;
+  }
+
+  const attested = new Map<string, { bytes: unknown; sha256: unknown }>();
+  artifacts.forEach((entry, index) => {
+    if (typeof entry !== "object" || entry === null || typeof (entry as { path?: unknown }).path !== "string") {
+      diagnostics.push({
+        severity: "error",
+        code: "ARTIFACT_MANIFEST.EVIDENCE_RECORD_INVALID",
+        path: `${EVIDENCE_FILE}/artifacts[${index}]`,
+        message: "Evidence record artifact entries must be objects with a string path.",
+      });
+      return;
+    }
+    const artifact = entry as { path: string; bytes?: unknown; sha256?: unknown };
+    attested.set(artifact.path, { bytes: artifact.bytes, sha256: artifact.sha256 });
+  });
+
+  for (const entry of files) {
+    if (entry.path === EVIDENCE_FILE || entry.path === MANIFEST_FILE) continue;
+    const fact = attested.get(entry.path);
+    if (!fact) {
+      if (entry.status === "verified") {
+        diagnostics.push({
+          severity: "error",
+          code: "ARTIFACT_MANIFEST.EVIDENCE_ARTIFACT_MISSING",
+          path: entry.path,
+          message: `Generated file "${entry.path}" is hashed by the manifest but not attested by evidence.json.`,
+        });
+      }
+      continue;
+    }
+    attested.delete(entry.path);
+    if (entry.status !== "verified") continue;
+    if (fact.bytes !== entry.expectedBytes || fact.sha256 !== entry.expectedSha256) {
+      diagnostics.push({
+        severity: "error",
+        code: "ARTIFACT_MANIFEST.EVIDENCE_ARTIFACT_MISMATCH",
+        path: entry.path,
+        message: `evidence.json does not record the manifest's byte count or sha256 for "${entry.path}".`,
+      });
+    }
+  }
+
+  for (const path of attested.keys()) {
+    if (path === MANIFEST_FILE) continue;
+    diagnostics.push({
+      severity: "error",
+      code: "ARTIFACT_MANIFEST.EVIDENCE_ARTIFACT_UNLISTED",
+      path,
+      message: `evidence.json attests "${path}", which artifact-manifest.json does not hash.`,
+    });
+  }
 }
 
 export function formatVerifyArtifactsText(result: VerifyArtifactsResult): string {
