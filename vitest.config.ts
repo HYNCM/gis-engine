@@ -6,6 +6,8 @@ const root = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   test: {
+    // Only this checkout owns tests; nested worktrees and package stores do not.
+    include: ["tests/**/*.test.ts"],
     environment: "node",
     coverage: {
       provider: "v8",
