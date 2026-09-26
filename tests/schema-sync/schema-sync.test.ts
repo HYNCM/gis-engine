@@ -708,6 +708,17 @@ describe("evidence record schema/validator alignment", () => {
     // the same set, or a code silently disappears from the Ajv-enforced diagnostic enum.
     expect([...issueCodes].sort()).toEqual([...diagnosticEvidenceCodes].sort());
   });
+
+  // Task 5 verifier-side lock: every EVIDENCE.* code verifyEvidenceRecord can emit must be a
+  // registered DiagnosticCodes entry, or a diagnostic would fall outside the Ajv diagnostic enum.
+  // (EvidenceIssueCode is imported as a value from the `@gis-engine/engine/evidence` subpath: the
+  // root barrel deliberately re-exports only its type, so a runtime `await import("@gis-engine/engine")`
+  // cannot yield the value.)
+  it("locks EvidenceIssueCode literals into DiagnosticCodes", () => {
+    for (const code of Object.values(EvidenceIssueCode)) {
+      expect(Object.values(DiagnosticCodes)).toContain(code);
+    }
+  });
 });
 
 // Review I-3: one public contract, three encodings — the engine TS interface `EngineCapabilityMatrix`,

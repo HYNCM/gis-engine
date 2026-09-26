@@ -11,7 +11,9 @@ export {
   buildEvidenceRecord,
   canonicalHash,
   EVIDENCE_RECORD_SCHEMA_VERSION,
+  type EvidenceAssertion,
   EvidenceAssertionId,
+  type EvidenceAssertionStatus,
   EvidenceExclusionId,
   EvidenceIssueCode,
   type EvidenceRecord,
@@ -19,7 +21,10 @@ export {
   type EvidenceRecordCapabilities,
   type EvidenceRecordCommand,
   type EvidenceRecordInput,
+  type EvidenceVerificationResult,
   MAX_EVIDENCE_RECORD_BYTES,
+  type VerifyEvidenceRecordOptions,
+  verifyEvidenceRecord,
 } from "./record.js";
 export {
   EngineCapabilityBlockerSchema,

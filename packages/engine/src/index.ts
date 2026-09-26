@@ -27,9 +27,13 @@ export {
 } from "./evidence/capability-matrix.js";
 // Types only: `./evidence/record.js` value-imports `node:crypto` and must stay off the
 // browser-facing runtime graph (see tests/evidence/canonical-hash.test.ts reachability guard).
+// `verifyEvidenceRecord` itself is a runtime value and is therefore exported only through the
+// `@gis-engine/engine/evidence` subpath, never from this root barrel.
 export type {
   BuildEvidenceRecordResult,
+  EvidenceAssertion,
   EvidenceAssertionId,
+  EvidenceAssertionStatus,
   EvidenceExclusionId,
   EvidenceIssueCode,
   EvidenceRecord,
@@ -37,6 +41,8 @@ export type {
   EvidenceRecordCapabilities,
   EvidenceRecordCommand,
   EvidenceRecordInput,
+  EvidenceVerificationResult,
+  VerifyEvidenceRecordOptions,
 } from "./evidence/record.js";
 export {
   EngineCapabilityBlockerSchema,

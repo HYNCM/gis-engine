@@ -135,8 +135,19 @@ export function buildEvidenceRecord(input: EvidenceRecordInput): BuildEvidenceRe
 
   // Hash the exact bytes a consumer will re-parse, not the in-memory object: JSON.stringify drops
   // undefined-valued keys while canonicalStringify renders them as null (review I-4). Task 5's
-  // verification must reuse this same normalisation expression.
-  const payload = JSON.parse(JSON.stringify({ ...record, recordId: undefined }));
+  // verification reuses this single `normaliseEvidencePayload` expression — two spellings of the
+  // same hash contract is how honest records start reporting CHAIN_BROKEN.
+  const payload = normaliseEvidencePayload({ ...record, recordId: undefined });
+  // Constraint 7: an unserialisable payload (cyclic graph, BigInt leaf) yields `undefined` rather
+  // than throwing, and surfaces as a structured diagnostic instead of a natural-language crash.
+  if (payload === undefined) {
+    return {
+      ok: false,
+      diagnostics: [
+        issue("Evidence record payload is not JSON-serialisable; refusing to hash a non-portable record.", "/"),
+      ],
+    };
+  }
   record.recordId = canonicalHash(payload);
 
   if (Buffer.byteLength(canonicalStringify(record), "utf8") > MAX_EVIDENCE_RECORD_BYTES) {
@@ -322,4 +333,296 @@ function structuralIssues(input: EvidenceRecordInput): Diagnostic[] {
   }
 
   return diagnostics;
+}
+
+export type EvidenceAssertionStatus = "passed" | "failed" | "not-covered";
+
+export interface EvidenceAssertion {
+  id: EvidenceAssertionId;
+  status: EvidenceAssertionStatus;
+  detail: string;
+}
+
+export interface EvidenceVerificationResult {
+  ok: boolean;
+  assertions: EvidenceAssertion[];
+  diagnostics: Diagnostic[];
+}
+
+export interface VerifyEvidenceRecordOptions {
+  readArtifact: (path: string) => Promise<Uint8Array>;
+  expectedCapabilities?: EvidenceRecordCapabilities;
+}
+
+const UNSUPPORTED_VERSION_MESSAGE = "Evidence record schemaVersion is newer than this verifier supports.";
+
+/**
+ * The one normalisation expression both builder and verifier hash: a JSON round trip reproduces
+ * exactly what the transport does with `undefined`-valued keys (Task 4 review I-4). `buildEvidenceRecord`
+ * calls this too — two spellings of the same hash contract is how honest records start
+ * reporting CHAIN_BROKEN. Unserialisable input (cyclic graph, BigInt leaf) yields `undefined`
+ * instead of throwing: constraint 7 requires failures to be structured diagnostics, and Task 4's
+ * round-2 ruling totalises it here once rather than in two try/catch sites.
+ */
+export function normaliseEvidencePayload<T>(value: T): T | undefined {
+  try {
+    return JSON.parse(JSON.stringify(value)) as T;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Recomputes every trust-tier assertion from the record's own fields. It never executes commands and
+ * never throws (constraint 7): malformed, hostile, cyclic or `undefined`-laden input comes back as a
+ * structured diagnostic and/or a `failed`/`not-covered` assertion, so a third party can re-verify a
+ * record without trusting anything except the bytes in it.
+ */
+export async function verifyEvidenceRecord(
+  record: EvidenceRecord,
+  options: VerifyEvidenceRecordOptions,
+): Promise<EvidenceVerificationResult> {
+  const diagnostics: Diagnostic[] = [];
+
+  if (!record || typeof record !== "object") {
+    diagnostics.push({
+      severity: "error",
+      code: EvidenceIssueCode.RecordInvalid,
+      message: "Evidence record must be an object before it can be verified.",
+      path: "/",
+    });
+    return { ok: false, assertions: unverifiableAssertions(), diagnostics };
+  }
+
+  if (record.schemaVersion !== EVIDENCE_RECORD_SCHEMA_VERSION) {
+    diagnostics.push({
+      severity: "error",
+      code: EvidenceIssueCode.SchemaVersionUnsupported,
+      message: `${UNSUPPORTED_VERSION_MESSAGE} Found ${String(record.schemaVersion)}.`,
+      path: "/schemaVersion",
+    });
+  }
+
+  const chainPayload = normaliseEvidencePayload({ ...record, recordId: undefined });
+  const chainClosed =
+    chainPayload !== undefined &&
+    typeof record.recordId === "string" &&
+    record.recordId === canonicalHash(chainPayload);
+  if (!chainClosed) {
+    diagnostics.push({
+      severity: "error",
+      code: EvidenceIssueCode.ChainBroken,
+      message: "recordId does not match the recomputed canonical hash of the record body.",
+      path: "/recordId",
+    });
+  }
+
+  const artifactEntries = Array.isArray(record.artifacts) ? record.artifacts : [];
+  const artifactIssues: Diagnostic[] = [];
+  let matched = 0;
+  for (const [index, artifact] of artifactEntries.entries()) {
+    const path = `/artifacts/${index}`;
+    const declaredPath = artifact && typeof artifact.path === "string" ? artifact.path : "";
+    const declaredSha = artifact && typeof artifact.sha256 === "string" ? artifact.sha256 : "";
+    const declaredBytes = artifact && typeof artifact.bytes === "number" ? artifact.bytes : Number.NaN;
+    let bytes: Uint8Array;
+    try {
+      bytes = await options.readArtifact(declaredPath);
+    } catch (error) {
+      artifactIssues.push({
+        severity: "error",
+        code: EvidenceIssueCode.ArtifactMismatch,
+        message: `Artifact "${declaredPath}" could not be read: ${error instanceof Error ? error.message : String(error)}`,
+        path,
+      });
+      continue;
+    }
+    const actual = `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
+    if (actual === declaredSha && bytes.byteLength === declaredBytes) {
+      matched += 1;
+      continue;
+    }
+    artifactIssues.push({
+      severity: "error",
+      code: EvidenceIssueCode.ArtifactMismatch,
+      message: `Artifact "${declaredPath}" hash or size does not match the evidence record.`,
+      path,
+      relatedResources: [{ kind: "source", path: declaredPath }],
+    });
+  }
+  diagnostics.push(...artifactIssues);
+
+  const lineageIssue = checkLineage(record);
+  if (lineageIssue) diagnostics.push(lineageIssue);
+
+  const inverseIssue = checkInversePatchHashes(record);
+  if (inverseIssue) diagnostics.push(inverseIssue);
+
+  if (options.expectedCapabilities) {
+    const driftIssue = checkCapabilityDrift(record.capabilities, options.expectedCapabilities);
+    if (driftIssue) diagnostics.push(driftIssue);
+  }
+
+  const toolchain = record.toolchain;
+  const toolchainRecorded =
+    !!toolchain &&
+    (["engineVersion", "nodeMajor", "pnpmVersion"] as const).every(
+      (key) => typeof toolchain[key] === "string" && toolchain[key].length > 0,
+    );
+
+  const assertions: EvidenceAssertion[] = [
+    {
+      id: EvidenceAssertionId.ArtifactsMatch,
+      // The builder guarantees a non-empty artifact list, so "0 of 0 matched" only ever describes a
+      // hand-forged record with nothing to verify — a vacuous pass would smuggle it toward `ok`.
+      status: artifactEntries.length > 0 && artifactIssues.length === 0 ? "passed" : "failed",
+      detail: `${matched} of ${artifactEntries.length} artifacts matched`,
+    },
+    {
+      id: EvidenceAssertionId.ChainClosed,
+      status: chainClosed ? "passed" : "failed",
+      detail: chainClosed ? "recordId matches the canonical body" : "recordId does not match the canonical body",
+    },
+    {
+      id: EvidenceAssertionId.DerivationClosed,
+      status: lineageIssue || inverseIssue ? "failed" : "passed",
+      detail: lineageIssue ? lineageIssue.message : inverseIssue ? inverseIssue.message : "revision lineage closed",
+    },
+    exclusionAssertion(
+      EvidenceAssertionId.OfflineReplay,
+      record.exclusions,
+      "excluded: requires referenced replay outside the trust tier",
+    ),
+    {
+      id: EvidenceAssertionId.ToolchainRecorded,
+      status: toolchainRecorded ? "passed" : "failed",
+      detail: toolchain
+        ? `engine ${toolchain.engineVersion} / node ${toolchain.nodeMajor} / pnpm ${toolchain.pnpmVersion}`
+        : "engine / node / pnpm",
+    },
+    exclusionAssertion(
+      EvidenceAssertionId.VisualConsistency,
+      record.exclusions,
+      "excluded: visual consistency is deferred",
+    ),
+  ];
+  // Sorted as a separate statement (not chained onto the literal) so `EvidenceAssertion[]` stays the
+  // contextual type of each element — a chained `.sort()` would widen the `status` literals to `string`.
+  assertions.sort((left, right) => left.id.localeCompare(right.id));
+
+  return {
+    ok: assertions.every((entry) => entry.status !== "failed"),
+    assertions,
+    diagnostics,
+  };
+}
+
+/**
+ * The two trust-tier claims a data-only verifier can never check (replay needs execution, visual
+ * consistency needs a renderer). They are honest `not-covered` rows ONLY when the record itself
+ * declares the exclusion; otherwise the claim was supposed to run and cannot be backed up, so the
+ * row is `failed` and holds `ok` down — a `not-covered` verdict must never smuggle an assertion that
+ * should have executed into a green result.
+ */
+function exclusionAssertion(id: EvidenceAssertionId, exclusions: unknown, excludedDetail: string): EvidenceAssertion {
+  const declared = Array.isArray(exclusions) && (exclusions as readonly string[]).includes(id);
+  return declared
+    ? { id, status: "not-covered", detail: excludedDetail }
+    : {
+        id,
+        status: "failed",
+        detail: `${id} is not declared as an exclusion, but this data-only verifier cannot check it.`,
+      };
+}
+
+function unverifiableAssertions(): EvidenceAssertion[] {
+  return (Object.values(EvidenceAssertionId) as EvidenceAssertionId[])
+    .map((id) => ({ id, status: "failed" as const, detail: "record is not a verifiable object" }))
+    .sort((left, right) => left.id.localeCompare(right.id));
+}
+
+function checkLineage(record: EvidenceRecord): Diagnostic | undefined {
+  const path = "/commands";
+  const failed = (message: string): Diagnostic => ({
+    severity: "error",
+    code: EvidenceIssueCode.DerivationFailed,
+    message,
+    path,
+  });
+  const commands = Array.isArray(record.commands) ? record.commands : [];
+  const project = record.project;
+  const baseRevision = project && typeof project.baseRevision === "string" ? project.baseRevision : undefined;
+  const revision = project && typeof project.revision === "string" ? project.revision : undefined;
+
+  for (const [index, entry] of commands.entries()) {
+    const expected = index === 0 ? baseRevision : previousRevision(record, index);
+    if (entry && typeof entry.baseRevision === "string" && entry.baseRevision !== expected) {
+      return failed(`commands[${index}].baseRevision does not continue the revision lineage.`);
+    }
+  }
+  const last = commands[commands.length - 1];
+  if (!last) return failed("Evidence records must carry at least one command.");
+  if (typeof last.nextRevision === "string" && last.nextRevision !== revision) {
+    return failed("The final command revision does not match project.revision.");
+  }
+  return undefined;
+}
+
+function previousRevision(record: EvidenceRecord, index: number): string | undefined {
+  const commands = Array.isArray(record.commands) ? record.commands : [];
+  const prev = commands[index - 1];
+  return prev && typeof prev.nextRevision === "string" ? prev.nextRevision : undefined;
+}
+
+function checkInversePatchHashes(record: EvidenceRecord): Diagnostic | undefined {
+  const commands = Array.isArray(record.commands) ? record.commands : [];
+  for (const [index, entry] of commands.entries()) {
+    // Narrow shape read only for record-internal consistency: MapCommand's discriminated union puts
+    // the patch field in different places, and the public schema already bounds it via MapCommandSchema.
+    const patch = (entry?.command as { inversePatch?: unknown } | undefined)?.inversePatch;
+    if (patch === undefined) continue;
+    const recomputed = safeCanonicalHash(patch);
+    if (recomputed === undefined || recomputed !== entry?.inversePatchHash) {
+      return {
+        severity: "error",
+        code: EvidenceIssueCode.DerivationFailed,
+        message: `commands[${index}].inversePatchHash does not match the canonical hash of its inverse patch.`,
+        path: `/commands/${index}/inversePatchHash`,
+      };
+    }
+  }
+  return undefined;
+}
+
+function safeCanonicalHash(value: unknown): string | undefined {
+  try {
+    return canonicalHash(value);
+  } catch {
+    return undefined;
+  }
+}
+
+function checkCapabilityDrift(
+  recorded: EvidenceRecordCapabilities,
+  expected: EvidenceRecordCapabilities,
+): Diagnostic | undefined {
+  const recordedCodes = blockedCodes(recorded);
+  const expectedCodes = blockedCodes(expected);
+  if (
+    recordedCodes.length === expectedCodes.length &&
+    recordedCodes.every((code, index) => code === expectedCodes[index])
+  ) {
+    return undefined;
+  }
+  return {
+    severity: "error",
+    code: EvidenceIssueCode.CapabilityDrift,
+    message: "Recorded capability blockers differ from the engine's current blockers.",
+    path: "/capabilities/blocked",
+  };
+}
+
+function blockedCodes(capabilities: EvidenceRecordCapabilities): string[] {
+  const blocked = capabilities && Array.isArray(capabilities.blocked) ? capabilities.blocked : [];
+  return blocked.map((entry) => (entry && typeof entry.code === "string" ? entry.code : "")).sort();
 }
