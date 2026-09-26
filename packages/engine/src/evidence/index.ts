@@ -22,7 +22,9 @@ export {
   type EvidenceRecordCommand,
   type EvidenceRecordInput,
   type EvidenceVerificationResult,
+  type EvidenceVerifierCliDependencies,
   MAX_EVIDENCE_RECORD_BYTES,
+  runEvidenceVerifierCli,
   type VerifyEvidenceRecordOptions,
   verifyEvidenceRecord,
 } from "./record.js";

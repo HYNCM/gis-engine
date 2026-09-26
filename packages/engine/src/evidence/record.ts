@@ -628,9 +628,12 @@ function checkLineage(record: EvidenceRecord): Diagnostic | undefined {
 
   if (applied.length === 0) {
     // Nothing claims a state change, so lineage is closed only if the project revision stood still.
+    // Single quotes around the revisions, not double: build-evidence-verifier.ts scans these compiled
+    // bytes for module specifiers, and a double-quoted word after `from` reads as an import and fails
+    // the build.
     return baseRevision === revision
       ? undefined
-      : failed(`project revision moved from "${baseRevision}" to "${revision}" without any applied command.`);
+      : failed(`project revision moved from '${baseRevision}' to '${revision}' without any applied command.`);
   }
 
   let expected = baseRevision;
@@ -719,4 +722,79 @@ function sameNames(left: string[], right: string[]): boolean {
 function blockedCodes(capabilities: EvidenceRecordCapabilities): string[] {
   const blocked = capabilities && Array.isArray(capabilities.blocked) ? capabilities.blocked : [];
   return blocked.map((entry) => (entry && typeof entry.code === "string" ? entry.code : "")).sort();
+}
+
+export interface EvidenceVerifierCliDependencies {
+  /** Must return raw bytes: the record hashes are over file bytes, so decoding to a
+   *  JS string and re-encoding would break on any non-UTF8-clean artifact. */
+  readFile: (path: string) => Promise<Uint8Array>;
+  log: (line: string) => void;
+}
+
+/**
+ * A record is untrusted input and this CLI is run by the party auditing it, so an artifact path that
+ * walks outside `--root` is a finding, not a file to open. Pure string work on purpose: constraint 3
+ * keeps `record.js`'s value imports at `node:` builtins, and `node:path`'s judgement about platform
+ * separators is exactly what a cross-machine evidence file must not depend on.
+ */
+function isInsideRoot(root: string, path: string): boolean {
+  const normalised = path.replace(/\\/g, "/");
+  if (normalised.startsWith("/") || /^\s*[A-Za-z]:/.test(normalised) || normalised.includes("\0")) return false;
+  if (normalised.split("/").includes("..")) return false;
+  // The root is supplied by the operator, but a `..` in it would defeat the check trivially.
+  return !root.replace(/\\/g, "/").split("/").includes("..");
+}
+
+/**
+ * Prefixes `--root` onto a path without pulling in `node:path`. An absolute `path` wins unchanged: the
+ * only absolute argument this CLI accepts is the evidence file named by the operator, and
+ * `isInsideRoot` has already refused every absolute artifact before it gets here.
+ */
+function resolveUnderRoot(root: string, path: string): string {
+  return root !== "" && !path.startsWith("/") ? `${root}${path}` : path;
+}
+
+/**
+ * Entry point of the standalone zero-dependency verifier: parse argv, read the record, recompute, and
+ * map the verdict onto exit codes (0 = ok, 2 = at least one failed assertion, 1 = usage or IO error).
+ * Every filesystem touch is injected, so this function stays inside `record.js`'s `node:`-only value
+ * import budget and Task 7/8 can drive the same wiring from a test.
+ */
+export async function runEvidenceVerifierCli(argv: string[], deps: EvidenceVerifierCliDependencies): Promise<number> {
+  const [recordPath, ...flags] = argv;
+  if (!recordPath) {
+    deps.log("usage: evidence-verifier <evidence.json> [--root <dir>] [--json]");
+    return 1;
+  }
+
+  const rootIndex = flags.indexOf("--root");
+  if (rootIndex >= 0 && !flags[rootIndex + 1]) {
+    deps.log("--root requires a directory.");
+    return 1;
+  }
+  const rawRoot = rootIndex >= 0 ? (flags[rootIndex + 1] as string) : "";
+  const root = rawRoot.endsWith("/") || rawRoot === "" ? rawRoot : `${rawRoot}/`;
+
+  const recordFile = resolveUnderRoot(root, recordPath);
+  let record: EvidenceRecord;
+  try {
+    const bytes = await deps.readFile(recordFile);
+    record = JSON.parse(new TextDecoder().decode(bytes)) as EvidenceRecord;
+  } catch (error) {
+    deps.log(`Could not read ${recordFile}: ${error instanceof Error ? error.message : String(error)}`);
+    return 1;
+  }
+
+  const result = await verifyEvidenceRecord(record, {
+    readArtifact: (path) => {
+      if (!isInsideRoot(root, path)) {
+        throw new Error(`artifact path escapes --root: ${path}`);
+      }
+      return deps.readFile(resolveUnderRoot(root, path));
+    },
+  });
+
+  const summary = result.ok && !flags.includes("--json");
+  deps.log(summary ? JSON.stringify({ ok: true, assertions: result.assertions }) : JSON.stringify(result, null, 2));
+  return result.ok ? 0 : 2;
 }
