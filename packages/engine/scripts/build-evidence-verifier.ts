@@ -4,6 +4,10 @@ import { dirname, resolve } from "node:path";
 // Dependency order: callees first. Append new closure members in this order.
 // One-argument lambda rather than a bare `.map(resolve)`: `resolve`'s rest parameters make `Array.map`'s
 // index argument a type error under strict mode.
+// This list and `BUNDLE_MODULES` in tests/evidence/standalone-verifier.test.ts are the same set in the
+// same order, and each names the other. The "verbatim embedding" lock only covers what the test lists:
+// append a member here without appending it there and the guard silently narrows to a smaller closure
+// instead of failing.
 const BUNDLE = ["dist/src/evidence/canonical-stringify.js", "dist/src/evidence/record.js"].map((source) =>
   resolve(source),
 );

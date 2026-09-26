@@ -736,6 +736,11 @@ export interface EvidenceVerifierCliDependencies {
  * walks outside `--root` is a finding, not a file to open. Pure string work on purpose: constraint 3
  * keeps `record.js`'s value imports at `node:` builtins, and `node:path`'s judgement about platform
  * separators is exactly what a cross-machine evidence file must not depend on.
+ *
+ * Residual, by design: being a pure string test, a symlink inside `--root` that points outside it is
+ * still followed by `readFile`. See docs/engineering/evidence-record.md (threat model) — `--root` is
+ * supplied by the auditing party, so links inside the root are inside that party's own trust domain,
+ * and adding `fs.realpath` would cost the shipped bundle its zero-dependency closure.
  */
 function isInsideRoot(root: string, path: string): boolean {
   const normalised = path.replace(/\\/g, "/");
@@ -757,6 +762,8 @@ function resolveUnderRoot(root: string, path: string): string {
 /**
  * Entry point of the standalone zero-dependency verifier: parse argv, read the record, recompute, and
  * map the verdict onto exit codes (0 = ok, 2 = at least one failed assertion, 1 = usage or IO error).
+ * A record file larger than MAX_EVIDENCE_RECORD_BYTES is a `1`: the byte budget is refused before
+ * parsing, so an over-budget file never produces an assertion verdict at all.
  * Every filesystem touch is injected, so this function stays inside `record.js`'s `node:`-only value
  * import budget and Task 7/8 can drive the same wiring from a test.
  */
@@ -779,6 +786,18 @@ export async function runEvidenceVerifierCli(argv: string[], deps: EvidenceVerif
   let record: EvidenceRecord;
   try {
     const bytes = await deps.readFile(recordFile);
+    // Constraint 5 (reject, never truncate) has an audit-side half the builder cannot cover: the file
+    // this CLI opens is untrusted input handed to whoever chose to run it, and `buildEvidenceRecord`
+    // already refuses to emit anything above the budget — so a larger file on disk is forged or
+    // corrupt, and must be refused on its byte count before JSON.parse allocates against it.
+    // Strict `>` because the builder's own check is `>` too: a record landing exactly on the cap is
+    // legal output and must stay verifiable.
+    if (bytes.byteLength > MAX_EVIDENCE_RECORD_BYTES) {
+      deps.log(
+        `Refusing ${recordFile}: ${bytes.byteLength} bytes exceeds the ${MAX_EVIDENCE_RECORD_BYTES} byte evidence-record budget; nothing was verified.`,
+      );
+      return 1;
+    }
     record = JSON.parse(new TextDecoder().decode(bytes)) as EvidenceRecord;
   } catch (error) {
     deps.log(`Could not read ${recordFile}: ${error instanceof Error ? error.message : String(error)}`);

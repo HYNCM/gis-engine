@@ -6,6 +6,7 @@ import { DiagnosticCodes } from "@gis-engine/engine";
 import {
   canonicalHash,
   EvidenceIssueCode,
+  MAX_EVIDENCE_RECORD_BYTES,
   runEvidenceVerifierCli,
   verifyEvidenceRecord,
 } from "@gis-engine/engine/evidence";
@@ -13,6 +14,12 @@ import { describe, expect, it } from "vitest";
 import { buildFixture, MAP_JSON, sha256Of, validRecord } from "./fixtures/record.js";
 
 const DIST_VERIFIER = resolve("packages/engine/dist/evidence-verifier.mjs");
+// This list and `BUNDLE` in packages/engine/scripts/build-evidence-verifier.ts are the same set in the
+// same order, and each names the other: the strip-and-embed lock below only proves anything about the
+// modules this test actually lists, so a closure member added to the build script without being added
+// here would narrow the guard's coverage in silence. The "same set, same order" claim is re-derived
+// from the build script's own source instead of being left to the comment.
+const BUILD_SCRIPT = "packages/engine/scripts/build-evidence-verifier.ts";
 const BUNDLE_MODULES = [
   resolve("packages/engine/dist/src/evidence/canonical-stringify.js"),
   resolve("packages/engine/dist/src/evidence/record.js"),
@@ -31,6 +38,16 @@ describe("standalone evidence verifier", () => {
     for (const specifier of specifiers) {
       expect(specifier.startsWith("node:")).toBe(true);
     }
+  });
+
+  it("keeps the build script's embedded closure list identical to this test's list", () => {
+    const script = readFileSync(resolve(BUILD_SCRIPT), "utf-8");
+    const declared = script.match(/const BUNDLE = \[([\s\S]*?)\]/);
+    expect(declared, "build-evidence-verifier.ts must keep declaring BUNDLE as a single array literal").not.toBeNull();
+    const members = [...declared![1].matchAll(/"([^"]+)"/g)].map((match) => resolve("packages/engine", match[1]!));
+    // Same members AND same order: the strip-and-embed lock below iterates this list, so an appended
+    // closure member that never reaches it is a silently unguarded member.
+    expect(members).toEqual(BUNDLE_MODULES);
   });
 
   it("ships the compiled engine hashing modules verbatim inside the standalone file", () => {
@@ -134,6 +151,83 @@ describe("standalone evidence verifier", () => {
       expect(Object.values(DiagnosticCodes)).toContain(code);
     }
     expect(canonicalHash({ a: 1 })).toBe(canonicalHash({ a: 1 }));
+  });
+
+  describe("read-side byte budget", () => {
+    /**
+     * Constraint 5's reject-not-truncate duty has two ends: the builder refuses to emit an
+     * over-budget record, and the audit entry point refuses to parse one. `evidence.json` is untrusted
+     * input handed to the auditing party, so an arbitrarily large file must be refused on byte count
+     * before `JSON.parse` gets a chance to allocate against it.
+     */
+    it("refuses an oversized untrusted record before parsing it and reports no assertion verdict", async () => {
+      const root = mkdtempSync(join(tmpdir(), "evidence-oversize-"));
+      try {
+        const oversized = `${JSON.stringify({ ...validRecord, padding: "x".repeat(MAX_EVIDENCE_RECORD_BYTES) })}\n`;
+        expect(Buffer.byteLength(oversized, "utf8")).toBeGreaterThan(MAX_EVIDENCE_RECORD_BYTES);
+        writeFileSync(join(root, "evidence.json"), oversized);
+        writeFileSync(join(root, "map.json"), MAP_JSON);
+
+        const lines: string[] = [];
+        const code = await runEvidenceVerifierCli([join(root, "evidence.json"), "--root", root, "--json"], {
+          readFile: async (path) => new Uint8Array(readFileSync(path)),
+          log: (line) => {
+            lines.push(line);
+          },
+        });
+
+        expect(code).toBe(1);
+        const output = lines.join("\n");
+        expect(output).toContain(String(Buffer.byteLength(oversized, "utf8")));
+        expect(output).toContain(String(MAX_EVIDENCE_RECORD_BYTES));
+        // "不产出任何断言结论": exit 1 is a usage/IO refusal, so no verdict object is ever logged.
+        expect(lines.some((line) => line.includes('"assertions"'))).toBe(false);
+        expect(() => JSON.parse(output)).toThrow();
+
+        // The guard has to survive verbatim embedding into the shipped single file, not only the module
+        // form: the auditing party runs `evidence-verifier.mjs`, not the engine package.
+        let status = 0;
+        let stdout = "";
+        try {
+          stdout = execFileSync("node", [DIST_VERIFIER, join(root, "evidence.json"), "--root", root, "--json"], {
+            encoding: "utf-8",
+          });
+        } catch (error) {
+          status = (error as { status?: number }).status ?? 0;
+          stdout = String((error as { stdout?: string }).stdout ?? "");
+        }
+        expect(status).toBe(1);
+        expect(stdout).toContain(String(MAX_EVIDENCE_RECORD_BYTES));
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    });
+
+    it("still parses a record that sits exactly on the byte budget", async () => {
+      const root = mkdtempSync(join(tmpdir(), "evidence-at-budget-"));
+      try {
+        // The guard is `>`, not `>=`: a record exactly at MAX_EVIDENCE_RECORD_BYTES must still be read.
+        const baseBytes = Buffer.byteLength(JSON.stringify({ ...validRecord, padding: "" }), "utf8");
+        const text = `${JSON.stringify({ ...validRecord, padding: "x".repeat(MAX_EVIDENCE_RECORD_BYTES - baseBytes - 1) })}\n`;
+        expect(Buffer.byteLength(text, "utf8")).toBe(MAX_EVIDENCE_RECORD_BYTES);
+        writeFileSync(join(root, "evidence.json"), text);
+        writeFileSync(join(root, "map.json"), MAP_JSON);
+
+        const lines: string[] = [];
+        await runEvidenceVerifierCli([join(root, "evidence.json"), "--root", root, "--json"], {
+          readFile: async (path) => new Uint8Array(readFileSync(path)),
+          log: (line) => {
+            lines.push(line);
+          },
+        });
+
+        // `padding` is not a record field, so the point here is only that a verdict was produced
+        // instead of a byte-budget refusal.
+        expect(JSON.parse(lines.join("\n")).assertions).toBeDefined();
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    });
   });
 
   describe("artifact path containment (spec §6 decision 4)", () => {
