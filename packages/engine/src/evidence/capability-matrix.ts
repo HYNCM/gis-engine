@@ -1,5 +1,6 @@
 import { DiagnosticCodes, Scene3DStableRuntimeBlockerCodes } from "../diagnostics/codes.js";
 import type { SourceReadinessEntry } from "../sources/readiness.js";
+import { escapePathSegment } from "../spec/patch/path.js";
 import { DEFAULT_SCENE3D_PROMOTION_GATE, type Scene3DPromotionGate } from "../spec/scene3d-promotion-gate.js";
 
 export const ENGINE_CAPABILITY_MATRIX_SCHEMA_VERSION = "engine-capabilities.v0.1";
@@ -22,6 +23,11 @@ export interface BuildEngineCapabilityMatrixInput {
 }
 
 const BASE_AVAILABLE = ["mapspec.validate", "commands.apply", "export.spec", "snapshot.smoke-mock"] as const;
+
+function compareIds(a: string, b: string): number {
+  if (a === b) return 0;
+  return a < b ? -1 : 1;
+}
 
 const SCENE3D_BLOCKERS: ReadonlyArray<{ code: string; path: string; reason: string }> = [
   {
@@ -52,7 +58,14 @@ export function buildEngineCapabilityMatrix(input: BuildEngineCapabilityMatrixIn
     available.add("scene3d.experimental-gate");
   }
 
-  for (const entry of input.readiness ?? []) {
+  // Readiness rows arrive in the spec's `sources` key order; sort them so the same blocked
+  // set derives the same array however the spec is written. Task 4 hashes this array into
+  // EvidenceRecord.recordId, and canonical hashing preserves array order.
+  const readiness = [...(input.readiness ?? [])].sort(
+    (a, b) => compareIds(a.sourceId, b.sourceId) || compareIds(a.type, b.type),
+  );
+
+  for (const entry of readiness) {
     if (entry.state === "supported") {
       available.add(`source.${entry.type}`);
       continue;
@@ -61,7 +74,7 @@ export function buildEngineCapabilityMatrix(input: BuildEngineCapabilityMatrixIn
       blocked.push({
         code: DiagnosticCodes.CapabilityUnsupported,
         reason: `source "${entry.sourceId}" of type "${entry.type}" is ${entry.state} at runtime.`,
-        path: `/sources/${entry.sourceId}`,
+        path: `/sources/${escapePathSegment(entry.sourceId)}`,
       });
     }
   }

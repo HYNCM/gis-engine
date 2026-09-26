@@ -116,11 +116,25 @@
 创建 `tests/evidence/capability-matrix.test.ts`：
 
 ```ts
-import { buildEngineCapabilityMatrix } from "@gis-engine/engine";
+import { buildEngineCapabilityMatrix, type SourceReadinessEntry } from "@gis-engine/engine";
 import { describe, expect, it } from "vitest";
 
-function blockedSourceEntry(sourceId: string) {
-  return { sourceId, type: "pmtiles", state: "blocked" } as never;
+function readinessEntry(sourceId: string, type: string, state: SourceReadinessEntry["state"]): SourceReadinessEntry {
+  return {
+    sourceId,
+    type,
+    state,
+    displayReady: state === "supported",
+    queryReady: state === "supported",
+    resourcePolicy: "passed",
+    diagnostics: [],
+    limitations: [],
+    nextAction: "none",
+  };
+}
+
+function blockedSourceEntry(sourceId: string): SourceReadinessEntry {
+  return readinessEntry(sourceId, "pmtiles", "blocked");
 }
 
 describe("buildEngineCapabilityMatrix", () => {
@@ -151,7 +165,7 @@ describe("buildEngineCapabilityMatrix", () => {
   it("marks a blocked source as blocked and a supported source as available", () => {
     const matrix = buildEngineCapabilityMatrix({
       scene3dPromotionGate: "stable",
-      readiness: [blockedSourceEntry("parcels"), { sourceId: "roads", type: "geojson", state: "supported" } as never],
+      readiness: [blockedSourceEntry("parcels"), readinessEntry("roads", "geojson", "supported")],
     });
 
     expect(matrix.blocked).toContainEqual(
@@ -159,6 +173,39 @@ describe("buildEngineCapabilityMatrix", () => {
     );
     expect(matrix.available).toContain("source.geojson");
     expect(matrix.available).not.toContain("source.pmtiles");
+  });
+
+  it("does not list a readiness-only source in either set", () => {
+    const matrix = buildEngineCapabilityMatrix({
+      scene3dPromotionGate: "stable",
+      readiness: [readinessEntry("tiles", "raster", "readiness-only")],
+    });
+
+    expect(matrix.available).not.toContain("source.raster");
+    expect(matrix.blocked).toEqual([]);
+  });
+
+  it("orders blocked sources by source id, not by the order they were passed in", () => {
+    const forward = buildEngineCapabilityMatrix({
+      scene3dPromotionGate: "stable",
+      readiness: [blockedSourceEntry("alpha"), blockedSourceEntry("zeta")],
+    });
+    const reversed = buildEngineCapabilityMatrix({
+      scene3dPromotionGate: "stable",
+      readiness: [blockedSourceEntry("zeta"), blockedSourceEntry("alpha")],
+    });
+
+    expect(forward.blocked.map((entry) => entry.path)).toEqual(["/sources/alpha", "/sources/zeta"]);
+    expect(reversed.blocked).toEqual(forward.blocked);
+  });
+
+  it("escapes source ids in blocker paths the way diagnostics do", () => {
+    const matrix = buildEngineCapabilityMatrix({
+      scene3dPromotionGate: "stable",
+      readiness: [blockedSourceEntry("a/b~c")],
+    });
+
+    expect(matrix.blocked[0]?.path).toBe("/sources/a~1b~0c");
   });
 
   it("lists only capabilities with a truth source behind them, in canonical order", () => {
@@ -189,6 +236,7 @@ Expected: FAIL — `buildEngineCapabilityMatrix is not a function`（或 import 
 ```ts
 import { DiagnosticCodes, Scene3DStableRuntimeBlockerCodes } from "../diagnostics/codes.js";
 import type { SourceReadinessEntry } from "../sources/readiness.js";
+import { escapePathSegment } from "../spec/patch/path.js";
 import { DEFAULT_SCENE3D_PROMOTION_GATE, type Scene3DPromotionGate } from "../spec/scene3d-promotion-gate.js";
 
 export const ENGINE_CAPABILITY_MATRIX_SCHEMA_VERSION = "engine-capabilities.v0.1";
@@ -211,6 +259,11 @@ export interface BuildEngineCapabilityMatrixInput {
 }
 
 const BASE_AVAILABLE = ["mapspec.validate", "commands.apply", "export.spec", "snapshot.smoke-mock"] as const;
+
+function compareIds(a: string, b: string): number {
+  if (a === b) return 0;
+  return a < b ? -1 : 1;
+}
 
 const SCENE3D_BLOCKERS: ReadonlyArray<{ code: string; path: string; reason: string }> = [
   {
@@ -241,7 +294,14 @@ export function buildEngineCapabilityMatrix(input: BuildEngineCapabilityMatrixIn
     available.add("scene3d.experimental-gate");
   }
 
-  for (const entry of input.readiness ?? []) {
+  // Readiness rows arrive in the spec's `sources` key order; sort them so the same blocked
+  // set derives the same array however the spec is written. Task 4 hashes this array into
+  // EvidenceRecord.recordId, and canonical hashing preserves array order.
+  const readiness = [...(input.readiness ?? [])].sort(
+    (a, b) => compareIds(a.sourceId, b.sourceId) || compareIds(a.type, b.type),
+  );
+
+  for (const entry of readiness) {
     if (entry.state === "supported") {
       available.add(`source.${entry.type}`);
       continue;
@@ -250,7 +310,7 @@ export function buildEngineCapabilityMatrix(input: BuildEngineCapabilityMatrixIn
       blocked.push({
         code: DiagnosticCodes.CapabilityUnsupported,
         reason: `source "${entry.sourceId}" of type "${entry.type}" is ${entry.state} at runtime.`,
-        path: `/sources/${entry.sourceId}`,
+        path: `/sources/${escapePathSegment(entry.sourceId)}`,
       });
     }
   }
