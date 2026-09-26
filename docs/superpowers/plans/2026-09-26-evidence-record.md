@@ -1926,7 +1926,8 @@ function checkCapabilityDrift(
 
 - [ ] **Step 4b: 导出 verify 面**
 
-`packages/engine/src/evidence/index.ts` 追加（`record.js` 那一批导出里补进以下符号，`packages/engine/src/index.ts` 的 evidence 块同样补齐）：
+`packages/engine/src/evidence/index.ts` 追加（`record.js` 那一批导出里补进以下符号；
+`packages/engine/src/index.ts` 的 evidence 块**只补类型**）：
 
 ```ts
   type EvidenceAssertion,
@@ -1936,7 +1937,12 @@ function checkCapabilityDrift(
   verifyEvidenceRecord,
 ```
 
-Task 6/7/8 全部通过 `@gis-engine/engine` 消费 `verifyEvidenceRecord`，所以这一步不做完，Task 6 的第一个 import 就编译不过。
+> **修正（Task 5 实现轮）：原文写的是「Task 6/7/8 全部通过 `@gis-engine/engine` 消费
+> `verifyEvidenceRecord`」，那与 Task 3 立的模块边界契约冲突。** `verifyEvidenceRecord` 是运行时值，
+> 住在 `record.ts` 里，而 `record.ts` 值导入 `node:crypto`；从根 barrel 值导出它会把 `node:` 说明符
+> 拖进浏览器可达图，直接被 `tests/evidence/canonical-hash.test.ts` 的 BFS 守卫判红。
+> 因此根 barrel 只导出这四个类型，**Task 6/7/8 一律从 `@gis-engine/engine/evidence` 子路径导入
+> `verifyEvidenceRecord`**（Task 4 之后这三个任务的导入位已统一改成子路径）。
 
 - [ ] **Step 5: 跑测试**
 
