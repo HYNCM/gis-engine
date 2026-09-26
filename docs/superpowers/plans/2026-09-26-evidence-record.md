@@ -354,7 +354,7 @@ export {
 - [ ] **Step 5: 跑测试确认通过**
 
 Run: `pnpm vitest run tests/evidence/capability-matrix.test.ts`
-Expected: PASS（5 passed）
+Expected: PASS（8 passed）
 
 - [ ] **Step 6: 接线 test:evidence 与 path-aware gate**
 
