@@ -2470,6 +2470,20 @@ git add packages/engine/scripts/build-evidence-verifier.ts packages/engine/packa
 git commit -m "feat(evidence): ship a standalone zero-dependency evidence verifier"
 ```
 
+**Task 6 落地后的计划同步（controller 裁定，`e4e42df` + `99a902a`；后续 task 以本节为准，别再照上面的草图写）：**
+
+| 草图位置 | 草图文本 | 实际落地 | 裁定 |
+| --- | --- | --- | --- |
+| `checkLineage` 诊断文案 | `moved from "${baseRevision}" to "${revision}"` | 同一句话改用单引号 | 保留 `MODULE_SPECIFIER` 的**过近似**语义（宁可误报也不能漏报），把输入改成 scanner-clean；精确化正则会漏掉 `import {…}\nfrom "…"` 的多行形态，正是 Task 3 暴露的假阴性方向。无测试钉过双引号形态（`tests/evidence/record-verify.test.ts:298` 只钉 `stringContaining("without any applied command")`）。 |
+| Step 3 `readFile(\`${root}${recordPath}\`)` / `readArtifact` | 无条件前缀拼接 | `resolveUnderRoot()`：绝对路径只对**操作者点名的记录文件**生效，artifact 路径先过 `isInsideRoot` 才可能进入拼接 | 必须偏离：Step 1 的两条测试用绝对记录路径 + `--root`，照草图必然 ENOENT。评审已确认这条不会给 artifact 开后门（绝对分支对 artifact 不可达，因为 `isInsideRoot` 先拒绝对路径）。 |
+| Step 4 `const BUNDLE = […].map(resolve)` | `.map(resolve)` | `.map((source) => resolve(source))` | strict 模式 TS2345：`Array.map` 会把 index 传进 `resolve` 的 rest 形参。 |
+| Step 1 containment 用例 | 四条 | 五条 | 第六条覆盖 `isInsideRoot` 自己的「root 含 `..`」分支——未测的守卫分支等于没有守卫（Task 3 同类）。 |
+| Step 6 Expected | 6 passed | 11 passed | 上面两条用例集扩大的直接结果。 |
+
+`packages/engine/scripts/**` 里两处 `console.*` 是 Biome `noConsole` **warning**（根目录 override 只覆盖顶层
+`scripts/**`），`biome check` 仍 exit 0；这是构建脚本的必要输出，不动配置。
+
+
 ---
 
 ## Task 7: CLI 导出包落盘 `evidence.json` + manifest 角色（spec 第 3 步 U4）
@@ -2484,6 +2498,30 @@ git commit -m "feat(evidence): ship a standalone zero-dependency evidence verifi
 - Modify: `skills/gis-engine-generation-pipeline/SKILL.md:105`、`:310`
 - Modify: `README.md` / `CHANGELOG.md`（公开契约新增）
 - Conditional: `config/package-size-budgets.json`（仅当 Step 5 实测超预算，理由写进 PR）
+
+**从 Task 6 结转、必须由本 task 闭合的三项（评审裁定的前置条件，不是可选项）：**
+
+1. **读侧字节上限。** `buildEvidenceRecord` 有 `MAX_EVIDENCE_RECORD_BYTES`，但
+   `runEvidenceVerifierCli` 会对任意大的不受信任 `evidence.json` 直接 `JSON.parse`。约束 5 的
+   reject-not-truncate 在**生产侧**，审计侧的入口同样是攻击面：读到盘的字节数超过
+   `MAX_EVIDENCE_RECORD_BYTES` 时必须拒绝（退出码 1，文案点名实际字节数与上限），不得截断、不得解析。
+   加一条测试：写入一份超限的 `evidence.json` ⇒ CLI 失败且不产出任何断言结论。
+2. **`BUNDLE` / `BUNDLE_MODULES` 两处清单互相指认。** 构建脚本的 `BUNDLE` 与
+   `tests/evidence/standalone-verifier.test.ts` 的 `BUNDLE_MODULES` 必须同序同集，否则「逐字内嵌」锁的
+   覆盖面会在闭包增长时静默缩小。两边的注释各点名对方一次。
+3. **spec §6 决定 4 的残余面要写进文档。** `isInsideRoot` 是纯字符串判断，root 内一个指向外部的
+   **符号链接**照样会被 `readFile` 跟随。这是刻意选择的代价（引入 `node:fs` 的 `realpath` 判断会破坏
+   零依赖闭包），必须在 `docs/engineering/evidence-record.md` 的威胁模型里写明白：`--root` 由审计方自己
+   提供，root 内的符号链接属于审计方自己的信任域。
+
+**实测体积（供 Step 5 判定，`canonical-dist-gzip-v1` / complete-dist，`99a902a` 干净构建）：**
+engine 现状 236,057 B，预算 204,800 B（blocking），基线 193,984 B @ `4465943`（2026-08-05 实测 194,509 B 通过）。
+逐件归因：`dist/src/evidence/**` 23,384 B、`dist/schema/evidence-record*.json` 5,239 B、
+`dist/evidence-verifier.mjs` 9,898 B ⇒ 证据子系统合计 **+38,703 B**，扣掉后为 197,354 B（仍在新预算之下）。
+也就是说：**超预算完全由本 spec 引入，且删掉 verifier 单文件也回不到预算内（226,159 B）。**
+本 task 的 Step 5 因此按既有约定更新预算与基线，并把上面这组数字与理由写进 PR——不得静默调高，
+也不得以「缩小证据面」为名绕开门禁。另外 `pnpm check` 不含 `size:check`，`bundle-size.yml` 只在
+`packages/**` 变更时跑：本分支是第一例会真正触发它的分支，这个盲区一并记进 PR。
 
 **Interfaces:**
 - Consumes: `buildEvidenceRecord`、`verifyEvidenceRecord`、`canonicalHash`、Task 2 的 capability matrix、`applied.results`、`applied.spec`、`skeleton.baseSpec`、`skeleton.commands`、`promptHash`、`traceId`、`files`。
