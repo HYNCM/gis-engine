@@ -1,13 +1,16 @@
 import {
+  buildEngineCapabilityMatrix,
   type CapabilityReport,
   createSourceReadinessReport,
   type Diagnostic,
+  type EngineCapabilityMatrix,
   type MapSpec,
   type PMTilesCapabilityDecision,
   type PMTilesFixtureEvidenceStatus,
   type SceneLayer,
   type SceneResourcePolicy,
   type SceneView3DExtension,
+  type SourceReadinessEntry,
   type SourceRuntimeReadinessSummary,
   validateSpec,
 } from "@gis-engine/engine";
@@ -147,6 +150,7 @@ export interface ContextSummary {
     diagnosticCounts: Record<Diagnostic["severity"], number>;
   };
   capabilitySummary: CapabilitySummary;
+  capabilityMatrix: EngineCapabilityMatrix;
   capabilities?: CapabilityReport;
   scene3d?: Scene3DContextSummary;
 }
@@ -208,6 +212,8 @@ export interface Scene3DContextSummary {
 export function getContextSummary(input: ContextSummaryInput): ContextSummary {
   const report = validateSpec(input.spec);
   const scene3d = scene3dContext(input.spec);
+  // One readiness derivation feeds both the per-source summary rows and the capability matrix.
+  const sourceReadinessEntries = createSourceReadinessReport(input.spec).sources;
   return {
     ...(input.spec.id ? { id: input.spec.id } : {}),
     ...(input.spec.revision ? { revision: input.spec.revision } : {}),
@@ -220,7 +226,7 @@ export function getContextSummary(input: ContextSummaryInput): ContextSummary {
         ...(sourceContract ? { sourceContract } : {}),
       };
     }),
-    sourceReadiness: summarizeSourceReadiness(input.spec),
+    sourceReadiness: summarizeSourceReadiness(input.spec, sourceReadinessEntries),
     layers: input.spec.layers.map((layer) => ({
       id: layer.id,
       type: layer.type,
@@ -232,6 +238,7 @@ export function getContextSummary(input: ContextSummaryInput): ContextSummary {
       diagnosticCounts: countDiagnostics(report.diagnostics),
     },
     capabilitySummary: buildCapabilitySummary(input.spec, report.diagnostics, input.capabilities, scene3d.scene3d),
+    capabilityMatrix: buildEngineCapabilityMatrix({ readiness: sourceReadinessEntries }),
     ...scene3d,
     ...(input.capabilities ? { capabilities: input.capabilities } : {}),
   };
@@ -455,8 +462,11 @@ function summarizeSourceContract(source: MapSpec["sources"][string]): SourceCont
   return undefined;
 }
 
-function summarizeSourceReadiness(spec: MapSpec): ContextSummary["sourceReadiness"] {
-  return createSourceReadinessReport(spec).sources.map((source) => {
+function summarizeSourceReadiness(
+  spec: MapSpec,
+  sources: readonly SourceReadinessEntry[],
+): ContextSummary["sourceReadiness"] {
+  return sources.map((source) => {
     const sourceSpec = spec.sources[source.sourceId];
     const sourceContract = sourceSpec ? summarizeSourceContract(sourceSpec) : undefined;
     return {

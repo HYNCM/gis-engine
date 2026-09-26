@@ -6,6 +6,7 @@ export {
   createGisEngineMcpServer,
   DiffSpecsToolResultSchema,
   EditSpecToolResultSchema,
+  EngineCapabilityMatrixContractSchema,
   ExplainSpecToolResultSchema,
   ExportExampleAppToolResultSchema,
   ExportSpecToolInputSchema,

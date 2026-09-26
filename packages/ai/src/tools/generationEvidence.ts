@@ -39,7 +39,7 @@ import { type GisEngineToolName, GisEngineToolNameSchema } from "../internal/mcp
 import {
   ContextSummaryToolResultSchema,
   SnapshotSpecToolResultSchema,
-  ValidateSpecToolResultSchema,
+  ValidationReportSchema,
 } from "../mcp/server.js";
 import { applyCommandsTool } from "./applyCommands.js";
 import { type ContextSummary, getContextSummary } from "./contextSummary.js";
@@ -65,7 +65,7 @@ import { SnapshotSpecToolInputSchema, snapshotSpecTool } from "./snapshotSpec.js
 const DiagnosticContractSchema = stripNestedIds(DiagnosticSchema);
 const ContextSummaryContractSchema = stripNestedIds(ContextSummaryToolResultSchema);
 const SnapshotSpecContractSchema = stripNestedIds(SnapshotSpecToolResultSchema);
-const ValidationReportContractSchema = stripNestedIds(ValidateSpecToolResultSchema);
+const ValidationReportContractSchema = stripNestedIds(ValidationReportSchema);
 type Scene3DStableRuntimeBlockerCode =
   (typeof Scene3DStableRuntimeBlockerCodes)[keyof typeof Scene3DStableRuntimeBlockerCodes];
 
