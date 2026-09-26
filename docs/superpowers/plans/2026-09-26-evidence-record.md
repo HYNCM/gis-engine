@@ -1694,6 +1694,11 @@ export const validRecord: EvidenceRecord = buildFixture();
 > fix round 1 之后按 L-1 的五条子句、L-2 的 `ok` 规则、`available` drift 与"没有 options 对象也不能
 > 抛"逐条铺开；artifact 字节改用**每个测试自己的** reader（不再有模块级可变 `Map`），并且不留
 > `commands[0]!` 这类 `noNonNullAssertion` 警告。
+>
+> 同一意义下，**Step 4 的代码块也是示意而非全文**：`packages/engine/src/evidence/record.ts` 里
+> 已落地的实现才是权威——它额外含 `unverifiableAssertions()`（记录根本不是对象时六行全 `failed`、
+> 不抛异常）、`exclusionAssertion()`（约束 4）、`checkLineage` 的 applied-only 五条款，以及 options
+> 缺失时的 nullish 探针。后续任务只消费导出的 `verifyEvidenceRecord`，不要按 Step 4 骨架重抄一份。
 
 - [ ] **Step 3: 跑测试确认失败**
 
@@ -1845,8 +1850,10 @@ export async function verifyEvidenceRecord(
   const assertions: EvidenceAssertion[] = [
     {
       id: EvidenceAssertionId.ArtifactsMatch,
-      status: artifactIssues.length === 0 ? "passed" : "failed",
-      detail: `${matched} of ${record.artifacts.length} artifacts matched`,
+      // builder 保证 artifacts 非空，所以 "0 of 0 matched" 只可能出现在手工伪造的记录上——
+      // 空集合判 passed 会把它 smuggling 进 `ok`（Task 5 评审 D1）。
+      status: artifactEntries.length > 0 && artifactIssues.length === 0 ? "passed" : "failed",
+      detail: `${matched} of ${artifactEntries.length} artifacts matched`,
     },
     {
       id: EvidenceAssertionId.ChainClosed,
@@ -1858,22 +1865,28 @@ export async function verifyEvidenceRecord(
       status: lineageIssue || inverseIssue ? "failed" : "passed",
       detail: lineageIssue ? lineageIssue.message : inverseIssue ? inverseIssue.message : "revision lineage closed",
     },
-    {
-      id: EvidenceAssertionId.OfflineReplay,
-      status: "not-covered",
-      detail: "excluded: requires referenced replay outside the trust tier",
-    },
+    // 约束 4：`not-covered` 只在记录自己声明了排除时成立；未声明却跑不了的断言必须是 `failed`
+    // 并把 `ok` 按住（`exclusionAssertion`，不得写死 status）。
+    exclusionAssertion(
+      EvidenceAssertionId.OfflineReplay,
+      record.exclusions,
+      "excluded: requires referenced replay outside the trust tier",
+    ),
     {
       id: EvidenceAssertionId.ToolchainRecorded,
       status: toolchainRecorded ? "passed" : "failed",
-      detail: `engine ${record.toolchain.engineVersion} / node ${record.toolchain.nodeMajor} / pnpm ${record.toolchain.pnpmVersion}`,
+      detail: toolchain
+        ? `engine ${toolchain.engineVersion} / node ${toolchain.nodeMajor} / pnpm ${toolchain.pnpmVersion}`
+        : "engine / node / pnpm",
     },
-    {
-      id: EvidenceAssertionId.VisualConsistency,
-      status: "not-covered",
-      detail: "excluded: visual consistency is deferred",
-    },
-  ].sort((left, right) => left.id.localeCompare(right.id));
+    exclusionAssertion(
+      EvidenceAssertionId.VisualConsistency,
+      record.exclusions,
+      "excluded: visual consistency is deferred",
+    ),
+  ];
+  // 单独一句排序，不接在字面量后面：链式 `.sort()` 会让 `status` 的字面量类型被推宽成 `string`。
+  assertions.sort((left, right) => left.id.localeCompare(right.id));
 
   // L-2：`ok` 不只由六行断言决定。断言全绿但 verifier 自己说了"读不懂这条记录"
   // （SCHEMA_VERSION_UNSUPPORTED / RECORD_INVALID / CAPABILITY_DRIFT）时，`ok` 必须是 false。
