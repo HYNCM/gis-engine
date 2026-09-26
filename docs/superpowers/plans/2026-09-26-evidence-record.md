@@ -1697,7 +1697,12 @@ Expected: FAIL — `verifyEvidenceRecord is not a function`。
 
 - [ ] **Step 4: 实现 verify**
 
-`record.ts` 追加（保持"value import 只有 `node:crypto`"）：
+`record.ts` 追加（保持"value import 只有 `node:crypto`"）。同一 commit 里必须把
+`buildEvidenceRecord` 现有的
+`const payload = JSON.parse(JSON.stringify({ ...record, recordId: undefined }));` 换成
+`const payload = normaliseEvidencePayload({ ...record, recordId: undefined });`，并在
+`payload === undefined` 时 `return { ok: false, diagnostics: [issue(<约束 7 文案>, "/")] }`——
+builder 与 verifier 只能共用这一个归一化表达式：
 
 ```ts
 export type EvidenceAssertionStatus = "passed" | "failed" | "not-covered";
@@ -1721,6 +1726,22 @@ export interface VerifyEvidenceRecordOptions {
 
 const UNSUPPORTED_VERSION_MESSAGE = "Evidence record schemaVersion is newer than this verifier supports.";
 
+/**
+ * The one normalisation expression both builder and verifier hash: a JSON round trip reproduces
+ * exactly what the transport does with `undefined`-valued keys (Task 4 review I-4). `buildEvidenceRecord`
+ * must call this too — two spellings of the same hash contract is how honest records start
+ * reporting CHAIN_BROKEN. Unserialisable input (cyclic graph, BigInt leaf) yields `undefined`
+ * instead of throwing: constraint 7 requires failures to be structured diagnostics, and Task 4's
+ * round-2 ruling totalises it here once rather than in two try/catch sites.
+ */
+export function normaliseEvidencePayload<T>(value: T): T | undefined {
+  try {
+    return JSON.parse(JSON.stringify(value)) as T;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function verifyEvidenceRecord(
   record: EvidenceRecord,
   options: VerifyEvidenceRecordOptions,
@@ -1736,8 +1757,11 @@ export async function verifyEvidenceRecord(
     });
   }
 
-  const chainExpected = canonicalHash(JSON.parse(JSON.stringify({ ...record, recordId: undefined })));
-  const chainClosed = typeof record.recordId === "string" && record.recordId === chainExpected;
+  const chainPayload = normaliseEvidencePayload({ ...record, recordId: undefined });
+  const chainClosed =
+    chainPayload !== undefined &&
+    typeof record.recordId === "string" &&
+    record.recordId === canonicalHash(chainPayload);
   if (!chainClosed) {
     diagnostics.push({
       severity: "error",
