@@ -100,9 +100,14 @@ const DEFAULT_EXCLUSIONS: EvidenceExclusionId[] = [
 ];
 
 export function buildEvidenceRecord(input: EvidenceRecordInput): BuildEvidenceRecordResult {
-  const diagnostics = structuralIssues(input);
-  if (diagnostics.length > 0) return { ok: false, diagnostics };
+  // Constraint 7: failures are structured diagnostics, never natural-language throws.
+  if (!input || typeof input !== "object") {
+    return { ok: false, diagnostics: [issue("/ must be an object.", "/")] };
+  }
 
+  // Materialise the builder-derived defaults first, then structurally validate the candidate:
+  // `issuedAt`/`exclusions` are optional on the input but required on the record, and the
+  // exclusions canonicalisation below is part of the hash contract.
   const record: EvidenceRecord = {
     schemaVersion: EVIDENCE_RECORD_SCHEMA_VERSION,
     recordId: "sha256:" + "0".repeat(64),
@@ -115,34 +120,64 @@ export function buildEvidenceRecord(input: EvidenceRecordInput): BuildEvidenceRe
     toolchain: input.toolchain,
     issuedAt: input.issuedAt ?? new Date().toISOString(),
     issuer: input.issuer,
-    exclusions: input.exclusions ?? [...DEFAULT_EXCLUSIONS],
+    // Sorted + de-duplicated: canonical hashing preserves array order, so a caller passing the same
+    // exclusion set in a different order must not get a different recordId (same ruling as Task 1's
+    // `available`/`blocked` sort).
+    exclusions: [...new Set(input.exclusions ?? DEFAULT_EXCLUSIONS)].sort(),
   };
 
-  record.recordId = canonicalHash({ ...record, recordId: undefined });
+  const diagnostics = structuralIssues(record);
+  if (diagnostics.length > 0) return { ok: false, diagnostics };
+
+  // Hash the exact bytes a consumer will re-parse, not the in-memory object: JSON.stringify drops
+  // undefined-valued keys while canonicalStringify renders them as null (review I-4). Task 5's
+  // verification must reuse this same normalisation expression.
+  const payload = JSON.parse(JSON.stringify({ ...record, recordId: undefined }));
+  record.recordId = canonicalHash(payload);
 
   if (Buffer.byteLength(canonicalStringify(record), "utf8") > MAX_EVIDENCE_RECORD_BYTES) {
-    return {
-      ok: false,
-      diagnostics: [
-        {
-          severity: "error",
-          code: EvidenceIssueCode.RecordInvalid,
-          message: `Evidence record exceeds the ${MAX_EVIDENCE_RECORD_BYTES} byte budget; refusing to export rather than truncating evidence fields.`,
-          path: "/commands",
-        },
-      ],
-    };
+    return { ok: false, diagnostics: [oversizeDiagnostic(record)] };
   }
 
   return { ok: true, record };
 }
 
+/**
+ * The oversize rejection names what actually crossed the byte budget: the single top-level
+ * section that on its own exceeds MAX_EVIDENCE_RECORD_BYTES, or `/` when only the record as a
+ * whole does (review Minor: the old hardcoded `/commands` pointed at the wrong field).
+ */
+function oversizeDiagnostic(record: EvidenceRecord): Diagnostic {
+  const message = `Evidence record exceeds the ${MAX_EVIDENCE_RECORD_BYTES} byte budget; refusing to export rather than truncating evidence fields.`;
+  for (const [key, value] of Object.entries(record)) {
+    if (Buffer.byteLength(canonicalStringify(value), "utf8") > MAX_EVIDENCE_RECORD_BYTES) {
+      return { severity: "error", code: EvidenceIssueCode.RecordInvalid, message, path: `/${key}` };
+    }
+  }
+  return { severity: "error", code: EvidenceIssueCode.RecordInvalid, message, path: "/" };
+}
+
 const SHA256_PATTERN = /^sha256:[a-f0-9]{64}$/;
+// Mirror of `Iso8601Utc` in evidence/schema.ts. record.ts may not value-import TypeBox (zero-dep
+// closure for Task 6's standalone verifier), so this literal duplication is the one the plan
+// allows; the shared semantics are pinned by the bidirectional violation table in
+// tests/schema-sync/schema-sync.test.ts.
+const ISO8601_UTC_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/;
+// Mirror of capability-matrix.ts's ENGINE_CAPABILITY_MATRIX_SCHEMA_VERSION and the Type.Literal in
+// evidence/schema.ts, pinned by the same schema-sync table plus record-build's producer test.
+const ENGINE_CAPABILITY_MATRIX_SCHEMA_VERSION = "engine-capabilities.v0.1";
 
 function issue(message: string, path: string): Diagnostic {
   return { severity: "error", code: EvidenceIssueCode.RecordInvalid, message, path };
 }
 
+/**
+ * Zero-dependency structural check (no Ajv, no TypeBox). Scope per the review I-1/I-2 ruling: it
+ * pins exactly the fields Task 5's recomputation reads (`recordId`, `exclusions`,
+ * `capabilities.*`, `issuedAt`, `artifacts[].sha256/bytes`, `commands[].inversePatchHash/outcome`).
+ * It deliberately does NOT deep-validate `MapCommand`/`MapSpec` shapes — that is Ajv's public
+ * contract, and re-spelling it here would create a second truth source.
+ */
 function structuralIssues(input: EvidenceRecordInput): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
   const requireObject = (value: unknown, path: string): value is Record<string, unknown> => {
@@ -218,12 +253,43 @@ function structuralIssues(input: EvidenceRecordInput): Diagnostic[] {
     });
   }
   if (requireObject(input.capabilities, "/capabilities")) {
-    if (!Array.isArray(input.capabilities.available))
+    if (input.capabilities.schemaVersion !== ENGINE_CAPABILITY_MATRIX_SCHEMA_VERSION) {
+      diagnostics.push(
+        issue(
+          `/capabilities/schemaVersion must be "${ENGINE_CAPABILITY_MATRIX_SCHEMA_VERSION}".`,
+          "/capabilities/schemaVersion",
+        ),
+      );
+    }
+    if (Array.isArray(input.capabilities.available)) {
+      input.capabilities.available.forEach((entry, index) => {
+        if (typeof entry !== "string" || entry.length === 0) {
+          diagnostics.push(
+            issue(`/capabilities/available/${index} must be a non-empty string.`, `/capabilities/available/${index}`),
+          );
+        }
+      });
+    } else {
       diagnostics.push(issue("/capabilities/available must be an array.", "/capabilities/available"));
-    if (!Array.isArray(input.capabilities.blocked))
+    }
+    if (Array.isArray(input.capabilities.blocked)) {
+      input.capabilities.blocked.forEach((entry, index) => {
+        const path = `/capabilities/blocked/${index}`;
+        if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+          diagnostics.push(issue(`${path} must be an object.`, path));
+          return;
+        }
+        for (const key of ["code", "reason"] as const) {
+          if (typeof entry[key] !== "string" || entry[key].length === 0) {
+            diagnostics.push(issue(`${path}/${key} must be a non-empty string.`, `${path}/${key}`));
+          }
+        }
+        if (entry.path !== undefined && typeof entry.path !== "string") {
+          diagnostics.push(issue(`${path}/path must be a string when present.`, `${path}/path`));
+        }
+      });
+    } else {
       diagnostics.push(issue("/capabilities/blocked must be an array.", "/capabilities/blocked"));
-    if (typeof input.capabilities.schemaVersion !== "string" || input.capabilities.schemaVersion.length === 0) {
-      diagnostics.push(issue("/capabilities/schemaVersion is required.", "/capabilities/schemaVersion"));
     }
   }
   if (requireObject(input.toolchain, "/toolchain")) {
@@ -235,6 +301,20 @@ function structuralIssues(input: EvidenceRecordInput): Diagnostic[] {
   }
   if (typeof input.issuer !== "string" || input.issuer.length === 0) {
     diagnostics.push(issue("/issuer must be a non-empty string.", "/issuer"));
+  }
+  // Task 5 reads exclusions to decide "not-covered" rows, so an out-of-vocabulary or absent member
+  // would silently delete an assertion from the verdict instead of failing the record.
+  if (!Array.isArray(input.exclusions) || input.exclusions.length === 0) {
+    diagnostics.push(issue("/exclusions must be a non-empty array.", "/exclusions"));
+  } else {
+    input.exclusions.forEach((entry, index) => {
+      if (!Object.values(EvidenceExclusionId).includes(entry)) {
+        diagnostics.push(issue(`/exclusions/${index} is not a known exclusion id.`, `/exclusions/${index}`));
+      }
+    });
+  }
+  if (typeof input.issuedAt !== "string" || !ISO8601_UTC_PATTERN.test(input.issuedAt)) {
+    diagnostics.push(issue("/issuedAt must be an ISO-8601 UTC timestamp.", "/issuedAt"));
   }
 
   return diagnostics;

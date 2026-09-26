@@ -824,6 +824,16 @@ function runtimeDependencies(file: string): string[] {
 Run: `pnpm vitest run tests/evidence/canonical-hash.test.ts && pnpm test:schema && pnpm test:ai && pnpm test:runtime && pnpm test:resources`
 Expected: PASS（Step 1 基线里记录的 diff 全部有结论后才算过）。守卫需自证有效：临时往 `packages/engine/src/index.ts` 加一行 `import { createHash } from "node:crypto";`，确认该用例变红后再撤掉。
 
+- [ ] **Step 7b: 三份能力矩阵编码对齐（pre-flight 锁，评审 I-3）**
+
+同一个能力矩阵现在有三份编码：engine 的 `EngineCapabilityMatrix` 类型、engine 的 TypeBox
+`EngineCapabilityMatrixSchema`、AI 侧手写的 `EngineCapabilityMatrixContractSchema`（MCP `outputSchema`）。
+在 `tests/schema-sync/schema-sync.test.ts` 加一条比较测试：对 `properties` 的键集合、`required`、
+`additionalProperties`，以及 `properties.capabilities`/`schemaVersion`/`available`/`blocked` 逐项比较两份
+schema 的归一化描述（TypeBox 侧先 `JSON.parse(JSON.stringify(schema))` 再剥掉 `$id`/`$schema`/`definitions`
+等生成元数据）。**必须自证有效**：临时把 AI 侧的 `required` 改一项，测试转红后还原。两侧符号都已经在该文件
+的 import 列表里（`@gis-engine/engine` 与 `@gis-engine/ai/mcp`），不需要新依赖。
+
 - [ ] **Step 8: Commit（本 task 的产物必须同属一个提交）**
 
 ```bash
@@ -913,7 +923,13 @@ describe("buildEvidenceRecord", () => {
     if (!result.ok) return;
     const { record } = result;
     expect(record.schemaVersion).toBe(EVIDENCE_RECORD_SCHEMA_VERSION);
-    expect(record.recordId).toBe(canonicalHash({ ...record, recordId: undefined }));
+    expect(record.recordId).toBe(
+      canonicalHash(JSON.parse(JSON.stringify({ ...record, recordId: undefined }))),
+    );
+    // The record must survive the transport it is actually delivered over, byte for byte.
+    expect(canonicalHash(JSON.parse(JSON.stringify({ ...JSON.parse(JSON.stringify(record)), recordId: undefined })))).toBe(
+      record.recordId,
+    );
     expect(validate(record)).toBe(true);
   });
 
@@ -1083,9 +1099,14 @@ export type BuildEvidenceRecordResult =
 const DEFAULT_EXCLUSIONS: EvidenceExclusionId[] = [EvidenceExclusionId.OfflineReplay, EvidenceExclusionId.VisualConsistency];
 
 export function buildEvidenceRecord(input: EvidenceRecordInput): BuildEvidenceRecordResult {
-  const diagnostics = structuralIssues(input);
-  if (diagnostics.length > 0) return { ok: false, diagnostics };
+  // 约束 7：入口 nullish 守卫（评审 I-2），失败必须是结构化诊断，不得抛 TypeError。
+  if (!input || typeof input !== "object") {
+    return { ok: false, diagnostics: [issue("/ must be an object.", "/")] };
+  }
 
+  // 先物化 builder 派生默认值、再对候选记录做结构校验：`issuedAt`/`exclusions` 在 input 上可选、
+  // 在 record 上必填，Step 4 的必填式检查若按原样跑在裸 input 上，会把 Step 1 里合法的默认输入
+  // 也拒掉（Task 4 修复轮对 brief 的执行次序修正）。
   const record: EvidenceRecord = {
     schemaVersion: EVIDENCE_RECORD_SCHEMA_VERSION,
     recordId: "sha256:" + "0".repeat(64),
@@ -1098,30 +1119,40 @@ export function buildEvidenceRecord(input: EvidenceRecordInput): BuildEvidenceRe
     toolchain: input.toolchain,
     issuedAt: input.issuedAt ?? new Date().toISOString(),
     issuer: input.issuer,
-    exclusions: input.exclusions ?? [...DEFAULT_EXCLUSIONS],
+    // Sorted + de-duplicated: canonical hashing preserves array order, so a caller passing the same
+    // exclusion set in a different order must not get a different recordId (same ruling as Task 1).
+    exclusions: [...new Set(input.exclusions ?? DEFAULT_EXCLUSIONS)].sort(),
   };
 
-  record.recordId = canonicalHash({ ...record, recordId: undefined });
+  const diagnostics = structuralIssues(record);
+  if (diagnostics.length > 0) return { ok: false, diagnostics };
+
+  // Hash the exact bytes a consumer will re-parse, not the in-memory object: JSON.stringify drops
+  // undefined-valued keys while canonicalStringify renders them as null.
+  const payload = JSON.parse(JSON.stringify({ ...record, recordId: undefined }));
+  record.recordId = canonicalHash(payload);
 
   if (Buffer.byteLength(canonicalStringify(record), "utf8") > MAX_EVIDENCE_RECORD_BYTES) {
-    return {
-      ok: false,
-      diagnostics: [
-        {
-          severity: "error",
-          code: EvidenceIssueCode.RecordInvalid,
-          message: `Evidence record exceeds the ${MAX_EVIDENCE_RECORD_BYTES} byte budget; refusing to export rather than truncating evidence fields.`,
-          path: "/commands",
-        },
-      ],
-    };
+    return { ok: false, diagnostics: [oversizeDiagnostic(record)] };
   }
 
   return { ok: true, record };
 }
+
+// 体积诊断必须指向真正越过预算的部分（Task 4 修复轮 Minor）：单个顶层 section 自己超预算时报
+// `/<key>`；只有整条记录合计超预算、没有任何单 section 超时才报 `/`。不得写死 `/commands`。
+function oversizeDiagnostic(record: EvidenceRecord): Diagnostic {
+  const message = `Evidence record exceeds the ${MAX_EVIDENCE_RECORD_BYTES} byte budget; refusing to export rather than truncating evidence fields.`;
+  for (const [key, value] of Object.entries(record)) {
+    if (Buffer.byteLength(canonicalStringify(value), "utf8") > MAX_EVIDENCE_RECORD_BYTES) {
+      return { severity: "error", code: EvidenceIssueCode.RecordInvalid, message, path: `/${key}` };
+    }
+  }
+  return { severity: "error", code: EvidenceIssueCode.RecordInvalid, message, path: "/" };
+}
 ```
 
-**`recordId` 的自指处理**：先把 `recordId` 置为占位、再对 `{ ...record, recordId: undefined }` 求哈希。`canonicalStringify` 会把 `undefined` 归一化为 `null`，因此任何实现者改写键序或删除该键都不会改变哈希输入。verify 侧必须用**同一个**表达式重算。
+**`recordId` 的自指处理**：先把 `recordId` 置为占位，再对 **`JSON.parse(JSON.stringify(...))` 归一化后的**对象求哈希。归一化这一步是契约的一部分，不是风格问题：`canonicalStringify` 把 `undefined` 值渲染成 `null`，而 `JSON.stringify` 会直接丢掉值为 `undefined` 的键——两侧口径不同，落盘再读回的诚实记录必然 `CHAIN_BROKEN`（Task 4 评审 I-4，已用 `{a: undefined}` 反证）。键序无关性由 `canonicalHash` 自己保证。verify 侧（Task 5）必须用**同一个**归一化表达式重算。
 
 - [ ] **Step 4: 写结构校验（零依赖，不用 Ajv）**
 
@@ -1129,6 +1160,10 @@ export function buildEvidenceRecord(input: EvidenceRecordInput): BuildEvidenceRe
 
 ```ts
 const SHA256_PATTERN = /^sha256:[a-f0-9]{64}$/;
+// 与 schema.ts 的 Iso8601Utc / Type.Literal 各自硬抄同一字面量（record.ts 不得 value-import TypeBox），
+// 语义由 Step 7 的双向违规表钉死。
+const ISO8601_UTC_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/;
+const ENGINE_CAPABILITY_MATRIX_SCHEMA_VERSION = "engine-capabilities.v0.1";
 
 function issue(message: string, path: string): Diagnostic {
   return { severity: "error", code: EvidenceIssueCode.RecordInvalid, message, path };
@@ -1203,10 +1238,38 @@ function structuralIssues(input: EvidenceRecordInput): Diagnostic[] {
     });
   }
   if (requireObject(input.capabilities, "/capabilities")) {
-    if (!Array.isArray(input.capabilities.available)) diagnostics.push(issue("/capabilities/available must be an array.", "/capabilities/available"));
-    if (!Array.isArray(input.capabilities.blocked)) diagnostics.push(issue("/capabilities/blocked must be an array.", "/capabilities/blocked"));
-    if (typeof input.capabilities.schemaVersion !== "string" || input.capabilities.schemaVersion.length === 0) {
-      diagnostics.push(issue("/capabilities/schemaVersion is required.", "/capabilities/schemaVersion"));
+    if (input.capabilities.schemaVersion !== ENGINE_CAPABILITY_MATRIX_SCHEMA_VERSION) {
+      diagnostics.push(
+        issue(`/capabilities/schemaVersion must be "${ENGINE_CAPABILITY_MATRIX_SCHEMA_VERSION}".`, "/capabilities/schemaVersion"),
+      );
+    }
+    if (Array.isArray(input.capabilities.available)) {
+      input.capabilities.available.forEach((entry, index) => {
+        if (typeof entry !== "string" || entry.length === 0) {
+          diagnostics.push(issue(`/capabilities/available/${index} must be a non-empty string.`, `/capabilities/available/${index}`));
+        }
+      });
+    } else {
+      diagnostics.push(issue("/capabilities/available must be an array.", "/capabilities/available"));
+    }
+    if (Array.isArray(input.capabilities.blocked)) {
+      input.capabilities.blocked.forEach((entry, index) => {
+        const path = `/capabilities/blocked/${index}`;
+        if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+          diagnostics.push(issue(`${path} must be an object.`, path));
+          return;
+        }
+        for (const key of ["code", "reason"] as const) {
+          if (typeof entry[key] !== "string" || entry[key].length === 0) {
+            diagnostics.push(issue(`${path}/${key} must be a non-empty string.`, `${path}/${key}`));
+          }
+        }
+        if (entry.path !== undefined && typeof entry.path !== "string") {
+          diagnostics.push(issue(`${path}/path must be a string when present.`, `${path}/path`));
+        }
+      });
+    } else {
+      diagnostics.push(issue("/capabilities/blocked must be an array.", "/capabilities/blocked"));
     }
   }
   if (requireObject(input.toolchain, "/toolchain")) {
@@ -1219,12 +1282,40 @@ function structuralIssues(input: EvidenceRecordInput): Diagnostic[] {
   if (typeof input.issuer !== "string" || input.issuer.length === 0) {
     diagnostics.push(issue("/issuer must be a non-empty string.", "/issuer"));
   }
+  // Task 5 reads exclusions to decide "not-covered" rows, so an out-of-vocabulary or absent member
+  // would silently delete an assertion from the verdict instead of failing the record.
+  if (!Array.isArray(input.exclusions) || input.exclusions.length === 0) {
+    diagnostics.push(issue("/exclusions must be a non-empty array.", "/exclusions"));
+  } else {
+    input.exclusions.forEach((entry, index) => {
+      if (!Object.values(EvidenceExclusionId).includes(entry)) {
+        diagnostics.push(issue(`/exclusions/${index} is not a known exclusion id.`, `/exclusions/${index}`));
+      }
+    });
+  }
+  if (typeof input.issuedAt !== "string" || !ISO8601_UTC_PATTERN.test(input.issuedAt)) {
+    diagnostics.push(issue("/issuedAt must be an ISO-8601 UTC timestamp.", "/issuedAt"));
+  }
 
   return diagnostics;
 }
 ```
 
 `exactOptionalPropertyTypes: true` 下不得写 `{ issuedAt: undefined }`——所有可选字段一律用 `?? ` 或条件展开，代码里已按此写法。
+
+`ISO8601_UTC_PATTERN` 必须与 Step 5b 的 TypeBox 常量同源（本仓库不引 `ajv-formats`，时间戳就是正则）：
+`/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/`，即 `schema.ts` 的 `Iso8601Utc`；两侧各自硬抄
+同一串字面量是本 task 允许的**唯一**重复，因为 `record.ts` 不得 value-import TypeBox。exclusion 词汇表同理：
+结构校验用 `Object.values(EvidenceExclusionId)`，TypeBox 用 `Type.Union([Type.Literal…])`，两者由 Step 7 的
+双向违规表钉在一起。
+
+> **评审 I-1/I-2 裁定（覆盖面的边界，必须照做）：** 零依赖结构校验器**不负责**复刻 `MapCommandSchema` /
+> `MapSpec` 的深层形状——那是 Ajv 侧的公开契约，重抄一份只会制造第二真相源。它的职责边界是：**凡 Task 5
+> 的复算结论会直接读到的字段，必须在这里被钉住**（`recordId`、`exclusions`、`capabilities.*`、`issuedAt`、
+> `artifacts[].sha256/bytes`、`commands[].inversePatchHash/outcome`）。因此：
+> 1. `buildEvidenceRecord` 的入口先做 nullish 守卫：`if (!input || typeof input !== "object") return { ok: false, diagnostics: [issue("/ must be an object.", "/")] }`（`strict` 下禁止抛 `TypeError`，见约束 7）。
+> 2. Step 7 的 schema-sync 锁必须**双向**：违规表里每一行同时断言 `!ajvValid(record)` **且** `structuralIssues` 非空——只锁一个方向等于没锁（Task 4 评审原文："Only one direction is locked"）。
+> 3. 评审探针里那批「Ajv 拒、结构校验放」的用例必须逐条进违规表：`exclusions: []`、`exclusions` 含未知成员、`capabilities.schemaVersion` 改成 `…v0.2`、`capabilities.available` 含非字符串、`capabilities.blocked` 成员形状非法、`issuedAt` 非 ISO。
 
 - [ ] **Step 5: TypeBox 公开契约**
 
@@ -1442,7 +1533,7 @@ git commit -m "feat(evidence): add EvidenceRecord contract and hash-chained buil
 
 - [ ] **Step 1: 加诊断码**
 
-`packages/engine/src/diagnostics/codes.ts` 在 `SchemaInvalid: "SCHEMA.INVALID",` 之后插入：
+**状态更新（Task 4 已提前落）**：这六个 `EVIDENCE.*` 码已由 Task 4 按本文件逐字插入 `packages/engine/src/diagnostics/codes.ts`（Task 4 的 `issue(): Diagnostic` 在 `strict` 下必须它们存在才能编译）。本步改为**核对存在且值一致**，不要再插一遍——重复键是 TS1117 编译错误。
 
 ```ts
   EvidenceRecordInvalid: "EVIDENCE.RECORD_INVALID",
@@ -1641,7 +1732,7 @@ export async function verifyEvidenceRecord(
     });
   }
 
-  const chainExpected = canonicalHash({ ...record, recordId: undefined });
+  const chainExpected = canonicalHash(JSON.parse(JSON.stringify({ ...record, recordId: undefined })));
   const chainClosed = typeof record.recordId === "string" && record.recordId === chainExpected;
   if (!chainClosed) {
     diagnostics.push({
