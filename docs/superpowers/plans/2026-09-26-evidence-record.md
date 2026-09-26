@@ -16,7 +16,7 @@
 
 1. **不新增 MCP 工具**：`GIS_ENGINE_TOOL_NAMES` 14 个名字与顺序不得变化（`tests/schema-sync/schema-sync.test.ts:190` 的 "keeps MCP tool names snake_case" 断言是硬门禁）。能力自描述只能扩现有工具的 `outputSchema`。
 2. **可信层只允许纯数据复算**（spec §6 决定 4）：`verifyEvidenceRecord()` 与单文件 verifier **不得调用 `applyCommands`、不得渲染、不得联网**。
-3. **`record.ts` 的 value import 只允许 `node:` 内置模块**（`import type` 不限）——这是单文件 verifier 成立的前提，由 `scripts/build-evidence-verifier` 静态守卫。
+3. **`record.ts` 的 value import 只允许 `node:` 内置模块，或 Task 6 verifier 闭包（`BUNDLE`）里已声明的同目录模块**（`import type` 不限）——这是单文件 verifier 成立的前提，由 `scripts/build-evidence-verifier` 静态守卫：闭包外的非 `node:` 依赖一律 `exit 1`，不允许静默剥除。Task 3 拆出的 `./canonical-stringify.js` 是闭包成员，因此合法。
 4. **`exclusions` 必须显式存在且默认非空**；被主动排除的能力（`VISUAL_CONSISTENCY`、`OFFLINE_REPLAY`）在复算结论里必须以 `status: "not-covered"` 出现，不得静默缺席。
 5. **超限拒绝导出，不截断字段**（spec §5）：`MAX_EVIDENCE_RECORD_BYTES = 1_048_576`。
 6. **`evidence.json` 只被引用、不被二次修改**：下游（manifest、receipt）只能追加自己的哈希绑定。
@@ -49,7 +49,7 @@
 
 | 文件 | 单一职责 |
 | --- | --- |
-| `packages/engine/src/evidence/record.ts` | `canonicalStringify` / `canonicalHash` / `EvidenceRecord` 类型与结构校验 / `buildEvidenceRecord` / `verifyEvidenceRecord` / verifier CLI 入口。**value import 只有 `node:crypto`** |
+| `packages/engine/src/evidence/canonical-stringify.ts` + `record.ts` | `canonicalStringify`（纯函数，零 import）/ `canonicalHash` / `EvidenceRecord` 类型与结构校验 / `buildEvidenceRecord` / `verifyEvidenceRecord` / verifier CLI 入口。**value import 只有 `node:crypto` 与闭包内的 `./canonical-stringify.js`** |
 | `packages/engine/src/evidence/capability-matrix.ts` | 从两处真相源（promotion gate + source readiness）生成 `EngineCapabilityMatrix`，不新造第三份清单 |
 | `packages/engine/src/evidence/schema.ts` | `EvidenceRecordSchema` / `EngineCapabilityMatrixSchema`（TypeBox，公开契约） |
 | `packages/engine/src/evidence/index.ts` | evidence 面唯一导出点 |
@@ -800,10 +800,12 @@ describe("browser-facing engine surface", () => {
   });
 });
 
-/** 运行期真正加载的 specifier：`import type` / `export type` 会被 TS 擦除，不计。 */
+/** 运行期真正加载的 specifier：`import type` / `export type` 会被 TS 擦除，不计；
+ * 动态 `import(...)` 是表达式不是语句，单独扫一遍——那是浏览器包里唯一非语句的泄漏口。 */
 function runtimeDependencies(file: string): string[] {
+  const text = readFileSync(file, "utf-8");
   const specifiers: string[] = [];
-  for (const chunk of readFileSync(file, "utf-8").split(/;\n/)) {
+  for (const chunk of text.split(/;\n/)) {
     const statement = chunk.trim();
     if (!/^(?:import|export)\b/.test(statement)) continue;
     if (/^(?:import|export)\s+type\b/.test(statement)) continue;
@@ -811,6 +813,9 @@ function runtimeDependencies(file: string): string[] {
     const bare = /^import\s+"([^"]+)"/.exec(statement);
     if (from?.[1]) specifiers.push(from[1]);
     else if (bare?.[1]) specifiers.push(bare[1]);
+  }
+  for (const dynamic of text.matchAll(/\bimport\s*\(\s*"([^"]+)"/g)) {
+    if (dynamic[1]) specifiers.push(dynamic[1]);
   }
   return specifiers;
 }
@@ -984,7 +989,7 @@ Expected: FAIL — 导入符号不存在。
 
 - [ ] **Step 3: `record.ts` 加类型与构造函数**
 
-在 `packages/engine/src/evidence/record.ts` 追加（**只允许 `import type`，value import 仍只有 `node:crypto`**）：
+在 `packages/engine/src/evidence/record.ts` 追加（**只允许 `import type`；value import 仍只有 `node:crypto` 与闭包内的 `./canonical-stringify.js`**）：
 
 ```ts
 import type { Diagnostic, MapCommand } from "../types.js";

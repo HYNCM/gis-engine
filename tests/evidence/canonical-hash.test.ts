@@ -69,17 +69,23 @@ describe("browser-facing engine surface", () => {
   });
 });
 
-/** Specifiers a module loads at runtime, i.e. every import/export statement minus `type`-only ones. */
+/** Specifiers a module loads at runtime: every import/export statement minus `type`-only ones,
+ * plus dynamic `import(...)` expressions, which are the one browser-visible leak that is not a statement. */
 function runtimeDependencies(file: string): string[] {
+  const text = readFileSync(file, "utf-8");
   const specifiers: string[] = [];
-  for (const chunk of readFileSync(file, "utf-8").split(/;\n/)) {
+  for (const chunk of text.split(/;\n/)) {
     const statement = chunk.trim();
     if (!/^(?:import|export)\b/.test(statement)) continue;
     if (/^(?:import|export)\s+type\b/.test(statement)) continue;
-    const from = /\bfrom\s+"([^"]+)"(?:\s+async)?/.exec(statement);
+    const from = /\bfrom\s+"([^"]+)"/.exec(statement);
     const bare = /^import\s+"([^"]+)"/.exec(statement);
     if (from?.[1]) specifiers.push(from[1]);
     else if (bare?.[1]) specifiers.push(bare[1]);
+  }
+  // Dynamic imports are expressions, not statements, so the statement scan above misses them.
+  for (const dynamic of text.matchAll(/\bimport\s*\(\s*"([^"]+)"/g)) {
+    if (dynamic[1]) specifiers.push(dynamic[1]);
   }
   return specifiers;
 }
