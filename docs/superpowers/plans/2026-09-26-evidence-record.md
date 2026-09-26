@@ -1690,6 +1690,11 @@ export function buildFixture(overrides: Partial<EvidenceRecordInput> = {}): Evid
 export const validRecord: EvidenceRecord = buildFixture();
 ```
 
+> 实现轮的最终测试面以 `tests/evidence/record-verify.test.ts` 为准：Task 5 Step 2 的初稿骨架在
+> fix round 1 之后按 L-1 的五条子句、L-2 的 `ok` 规则、`available` drift 与"没有 options 对象也不能
+> 抛"逐条铺开；artifact 字节改用**每个测试自己的** reader（不再有模块级可变 `Map`），并且不留
+> `commands[0]!` 这类 `noNonNullAssertion` 警告。
+
 - [ ] **Step 3: 跑测试确认失败**
 
 Run: `pnpm vitest run tests/evidence/record-verify.test.ts`
@@ -1748,6 +1753,10 @@ export async function verifyEvidenceRecord(
 ): Promise<EvidenceVerificationResult> {
   const diagnostics: Diagnostic[] = [];
 
+  // L-2：复算之前先重跑一次同文件的零依赖 `structuralIssues`（不新增依赖，约束 3 不变）。
+  // 否则一条字节自洽、`recordId` 重算闭合但字段是垃圾的伪造记录，可以一路绿到 `ok`。
+  diagnostics.push(...structuralIssues(record));
+
   if (record.schemaVersion !== EVIDENCE_RECORD_SCHEMA_VERSION) {
     diagnostics.push({
       severity: "error",
@@ -1771,34 +1780,49 @@ export async function verifyEvidenceRecord(
     });
   }
 
+  // 约束 7 的 options 形态：没有 options 对象 ⇒ 不得在读 `expectedCapabilities` 时抛 TypeError。
+  // 缺 `readArtifact` 时 artifact 比对根本没法跑，必须诚实地让 ARTIFACTS_MATCH `failed` + 诊断，
+  // 而不是假装通过；缺 `expectedCapabilities` 就是"调用方没给期望矩阵"，drift 不跑。
+  const readArtifact = options && typeof options.readArtifact === "function" ? options.readArtifact : undefined;
+  const expectedCapabilities = options ? options.expectedCapabilities : undefined;
+
   const artifactIssues: Diagnostic[] = [];
   let matched = 0;
-  for (const [index, artifact] of record.artifacts.entries()) {
-    const path = `/artifacts/${index}`;
-    let bytes: Uint8Array;
-    try {
-      bytes = await options.readArtifact(artifact.path);
-    } catch (error) {
-      artifactIssues.push({
-        severity: "error",
-        code: EvidenceIssueCode.ArtifactMismatch,
-        message: `Artifact "${artifact.path}" could not be read: ${error instanceof Error ? error.message : String(error)}`,
-        path,
-      });
-      continue;
-    }
-    const actual = `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
-    if (actual === artifact.sha256 && bytes.byteLength === artifact.bytes) {
-      matched += 1;
-      continue;
-    }
+  if (!readArtifact) {
     artifactIssues.push({
       severity: "error",
       code: EvidenceIssueCode.ArtifactMismatch,
-      message: `Artifact "${artifact.path}" hash or size does not match the evidence record.`,
-      path,
-      relatedResources: [{ kind: "source", path: artifact.path }],
+      message: "options.readArtifact was not supplied, so no artifact byte could be re-hashed.",
+      path: "/artifacts",
     });
+  } else {
+    for (const [index, artifact] of record.artifacts.entries()) {
+      const path = `/artifacts/${index}`;
+      let bytes: Uint8Array;
+      try {
+        bytes = await readArtifact(artifact.path);
+      } catch (error) {
+        artifactIssues.push({
+          severity: "error",
+          code: EvidenceIssueCode.ArtifactMismatch,
+          message: `Artifact "${artifact.path}" could not be read: ${error instanceof Error ? error.message : String(error)}`,
+          path,
+        });
+        continue;
+      }
+      const actual = `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
+      if (actual === artifact.sha256 && bytes.byteLength === artifact.bytes) {
+        matched += 1;
+        continue;
+      }
+      artifactIssues.push({
+        severity: "error",
+        code: EvidenceIssueCode.ArtifactMismatch,
+        message: `Artifact "${artifact.path}" hash or size does not match the evidence record.`,
+        path,
+        relatedResources: [{ kind: "source", path: artifact.path }],
+      });
+    }
   }
   diagnostics.push(...artifactIssues);
 
@@ -1808,8 +1832,8 @@ export async function verifyEvidenceRecord(
   const inverseIssue = checkInversePatchHashes(record);
   if (inverseIssue) diagnostics.push(inverseIssue);
 
-  if (options.expectedCapabilities) {
-    const driftIssue = checkCapabilityDrift(record.capabilities, options.expectedCapabilities);
+  if (expectedCapabilities) {
+    const driftIssue = checkCapabilityDrift(record.capabilities, expectedCapabilities);
     if (driftIssue) diagnostics.push(driftIssue);
   }
 
@@ -1851,41 +1875,99 @@ export async function verifyEvidenceRecord(
     },
   ].sort((left, right) => left.id.localeCompare(right.id));
 
+  // L-2：`ok` 不只由六行断言决定。断言全绿但 verifier 自己说了"读不懂这条记录"
+  // （SCHEMA_VERSION_UNSUPPORTED / RECORD_INVALID / CAPABILITY_DRIFT）时，`ok` 必须是 false。
+  // 用 severity 判定而不是 `diagnostics.length === 0`，这样未来的 informational 诊断不会误伤。
+  const blockingDiagnostic = diagnostics.some((entry) => entry.severity === "error");
+
   return {
-    ok: assertions.every((entry) => entry.status !== "failed"),
+    ok: assertions.every((entry) => entry.status !== "failed") && !blockingDiagnostic,
     assertions,
     diagnostics,
   };
 }
 ```
 
+> **消费者契约（Task 6/7/8 必读）**：`ok === true` 的含义是"**六行断言无一 `failed`，且不存在任何
+> `severity: "error"` 的诊断**"。因此 Task 7 的 CLI、Task 8 的第三方复算与 Task 6 的单文件 verifier
+> **必须分支在 `result.ok` 上**，不能只看 `assertions` 数组——`SCHEMA_VERSION_UNSUPPORTED` 与
+> `CAPABILITY_DRIFT` 这两类推不出断言行、只能落在诊断里的失败，正是靠 `ok` 传出来的。断言 id 集合是
+> spec §8 冻结契约，不会新增第七行来承载它们。
+
 追加三个纯数据核对函数（**不做任何 patch 执行**，这是 spec §6 决定 4 的落点）：
 
 ```ts
+/**
+ * L-1：`baseRevision` / `nextRevision` 在 `EvidenceRecordCommand` 上是**可选**字段，而
+ * `structuralIssues` 从不要求它们——所以按"数组下标 + 字段存在才比"的旧写法，一条命令里完全不带
+ * revision 数据的记录会走成"检查过了"的空真通过。真实语义是：**只有 `applied` 条目改过运行时状态**，
+ * 链就只在它们之间、按记录顺序闭合。
+ */
 function checkLineage(record: EvidenceRecord): Diagnostic | undefined {
-  const path = "/commands";
-  const failed = (message: string): Diagnostic => ({
+  const failed = (message: string, path = "/commands"): Diagnostic => ({
     severity: "error",
     code: EvidenceIssueCode.DerivationFailed,
     message,
     path,
   });
-
-  for (const [index, entry] of record.commands.entries()) {
-    if (typeof entry.baseRevision === "string" && entry.baseRevision !== (index === 0 ? record.project.baseRevision : previousRevision(record, index))) {
-      return failed(`commands[${index}].baseRevision does not continue the revision lineage.`);
-    }
+  const commands = Array.isArray(record.commands) ? record.commands : [];
+  const project = record.project;
+  const baseRevision = project ? project.baseRevision : undefined;
+  const revision = project ? project.revision : undefined;
+  // 验证器不再跑 validation（伪造记录），锚点本身不是字符串 ⇒ 失败，不是"看不见就算过"。
+  if (typeof baseRevision !== "string") {
+    return failed(
+      "project.baseRevision must be a string: the revision lineage has no starting point.",
+      "/project/baseRevision",
+    );
   }
-  const last = record.commands[record.commands.length - 1];
-  if (!last) return failed("Evidence records must carry at least one command.");
-  if (typeof last.nextRevision === "string" && last.nextRevision !== record.project.revision) {
-    return failed("The final command revision does not match project.revision.");
+  if (typeof revision !== "string") {
+    return failed("project.revision must be a string: the revision lineage has no end point.", "/project/revision");
+  }
+
+  const applied: Array<{ index: number; base: string; next: string }> = [];
+  for (const [index, entry] of commands.entries()) {
+    const base = entry?.baseRevision;
+    const next = entry?.nextRevision;
+    // 任何条目（含 skipped/failed）只要**提供了**非字符串的 revision，就是畸形数据。
+    if ((base !== undefined && typeof base !== "string") || (next !== undefined && typeof next !== "string")) {
+      return failed(
+        `commands[${index}] carries a revision field that is not a string; refusing to infer lineage from malformed data.`,
+        `/commands/${index}`,
+      );
+    }
+    if (entry?.outcome !== "applied") continue; // 未应用的命令没有 before/after，允许两个字段都不带。
+    if (typeof base !== "string" || typeof next !== "string") {
+      return failed(
+        `commands[${index}] is applied but carries no string baseRevision/nextRevision pair, so its revision step is unverifiable.`,
+        `/commands/${index}`,
+      );
+    }
+    applied.push({ index, base, next });
+  }
+
+  if (applied.length === 0) {
+    // 没有任何命令改过状态 ⇒ 唯一诚实的主张是项目修订号没动。
+    return baseRevision === revision
+      ? undefined
+      : failed(`project revision moved from "${baseRevision}" to "${revision}" without any applied command.`);
+  }
+
+  // 链只走在 applied 之间：起始 = project.baseRevision，逐条 next→后继 base，末端 = project.revision。
+  // 故意不按 `commands` 数组下标取前驱——开头一条 `skipped` 记录不该污染期望值。
+  let expected = baseRevision;
+  let finalIndex = 0;
+  for (const step of applied) {
+    if (step.base !== expected) {
+      return failed(`commands[${step.index}].baseRevision does not continue the revision lineage.`, `/commands/${step.index}`);
+    }
+    expected = step.next;
+    finalIndex = step.index;
+  }
+  if (expected !== revision) {
+    return failed("The final command revision does not match project.revision.", `/commands/${finalIndex}`);
   }
   return undefined;
-}
-
-function previousRevision(record: EvidenceRecord, index: number): string | undefined {
-  return record.commands[index - 1]?.nextRevision;
 }
 
 function checkInversePatchHashes(record: EvidenceRecord): Diagnostic | undefined {
@@ -1904,21 +1986,44 @@ function checkInversePatchHashes(record: EvidenceRecord): Diagnostic | undefined
   return undefined;
 }
 
+/**
+ * 能力 drift 比较**两侧都按 sorted set**：引擎多/少了 available 能力，与 blocker 变了，同样是 drift。
+ * 只在调用方给了 `expectedCapabilities` 时才跑——这里没有第二真相源。
+ */
 function checkCapabilityDrift(
   recorded: EvidenceRecordCapabilities,
   expected: EvidenceRecordCapabilities,
 ): Diagnostic | undefined {
-  const recordedCodes = recorded.blocked.map((entry) => entry.code).sort();
-  const expectedCodes = expected.blocked.map((entry) => entry.code).sort();
-  if (recordedCodes.length === expectedCodes.length && recordedCodes.every((code, index) => code === expectedCodes[index])) {
-    return undefined;
-  }
-  return {
+  const drift = (message: string, path: string): Diagnostic => ({
     severity: "error",
     code: EvidenceIssueCode.CapabilityDrift,
-    message: "Recorded capability blockers differ from the engine's current blockers.",
-    path: "/capabilities/blocked",
-  };
+    message,
+    path,
+  });
+  if (!sameNames(availableNames(recorded), availableNames(expected))) {
+    return drift(
+      "Recorded capability available list differs from the engine's current available capabilities.",
+      "/capabilities/available",
+    );
+  }
+  if (!sameNames(blockedCodes(recorded), blockedCodes(expected))) {
+    return drift("Recorded capability blockers differ from the engine's current blockers.", "/capabilities/blocked");
+  }
+  return undefined;
+}
+
+function availableNames(capabilities: EvidenceRecordCapabilities): string[] {
+  const available = capabilities && Array.isArray(capabilities.available) ? capabilities.available : [];
+  return available.map((entry) => (typeof entry === "string" ? entry : "")).sort();
+}
+
+function sameNames(left: string[], right: string[]): boolean {
+  return left.length === right.length && left.every((name, index) => name === right[index]);
+}
+
+function blockedCodes(capabilities: EvidenceRecordCapabilities): string[] {
+  const blocked = capabilities && Array.isArray(capabilities.blocked) ? capabilities.blocked : [];
+  return blocked.map((entry) => (entry && typeof entry.code === "string" ? entry.code : "")).sort();
 }
 ```
 
@@ -2374,6 +2479,8 @@ describe("CLI evidence export", () => {
         readArtifact: async (path) => new Uint8Array(readFileSync(join(projectDir, path))),
       });
 
+      // 消费者契约见 Task 5 Step 4：绿与否只看 `result.ok`（断言全绿 **且** 无 error 诊断）。
+      expect(result.ok).toBe(true);
       expect(result.assertions.filter((entry) => entry.status === "failed")).toEqual([]);
       expect(result.assertions.map((entry) => entry.status)).toContain("not-covered");
     } finally {

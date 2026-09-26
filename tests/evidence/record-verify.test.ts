@@ -1,13 +1,71 @@
 import { readFileSync } from "node:fs";
-import { type EvidenceRecord, verifyEvidenceRecord } from "@gis-engine/engine/evidence";
+import {
+  canonicalHash,
+  type EvidenceAssertionId,
+  type EvidenceRecord,
+  type EvidenceRecordCapabilities,
+  type EvidenceRecordCommand,
+  type EvidenceVerificationResult,
+  verifyEvidenceRecord,
+} from "@gis-engine/engine/evidence";
 import { describe, expect, it } from "vitest";
 import { buildFixture, MAP_JSON, validRecord } from "./fixtures/record.js";
 
-const artifacts = new Map<string, Uint8Array>([["map.json", new TextEncoder().encode(`${MAP_JSON}`)]]);
-const readArtifact = async (path: string) => {
-  const bytes = artifacts.get(path);
-  if (!bytes) throw new Error(`missing artifact ${path}`);
-  return bytes;
+/**
+ * Artifact bytes are supplied by a per-test reader instead of a module-level mutable map: a failed
+ * expectation must never leak a poisoned entry into the tests that run after it.
+ */
+function artifactReader(files: Record<string, string> = { "map.json": MAP_JSON }) {
+  const store = new Map(Object.entries(files).map(([path, text]) => [path, new TextEncoder().encode(text)] as const));
+  return async (path: string) => {
+    const bytes = store.get(path);
+    if (!bytes) throw new Error(`missing artifact ${path}`);
+    return bytes;
+  };
+}
+
+const readArtifact = artifactReader();
+
+/**
+ * Re-seals a hand-forged record so `CHAIN_CLOSED` stays green and whatever the chain hash cannot see
+ * (a malformed field, an unsupported schema version) has to be caught by the checks themselves.
+ * Same JSON round trip + canonical hash the builder uses for `recordId`.
+ */
+function reseal(record: EvidenceRecord): EvidenceRecord {
+  const payload = JSON.parse(JSON.stringify({ ...record, recordId: undefined }));
+  return { ...record, recordId: canonicalHash(payload) };
+}
+
+const [fixtureCommand] = validRecord.commands;
+if (!fixtureCommand) throw new Error("the evidence fixture must carry at least one command");
+
+function command(overrides: Partial<EvidenceRecordCommand> = {}): EvidenceRecordCommand {
+  return { ...fixtureCommand, ...overrides };
+}
+
+/** Drops the optional revision fields the way a real builder-emitted entry would omit them. */
+function withoutRevisions(entry: EvidenceRecordCommand): EvidenceRecordCommand {
+  const copy = { ...entry };
+  delete copy.baseRevision;
+  delete copy.nextRevision;
+  return copy;
+}
+
+function statusOf(result: EvidenceVerificationResult, id: EvidenceAssertionId) {
+  const row = result.assertions.find((entry) => entry.id === id);
+  if (!row) throw new Error(`assertion ${id} is missing from the verdict`);
+  return row.status;
+}
+
+function codes(result: EvidenceVerificationResult): string[] {
+  return result.diagnostics.map((entry) => entry.code);
+}
+
+/** Capabilities that match the fixture's own matrix, so a drift test isolates exactly one list. */
+const matchingCapabilities: EvidenceRecordCapabilities = {
+  schemaVersion: validRecord.capabilities.schemaVersion,
+  available: [...validRecord.capabilities.available],
+  blocked: validRecord.capabilities.blocked.map((entry) => ({ code: entry.code, reason: entry.reason })),
 };
 
 describe("verifyEvidenceRecord", () => {
@@ -15,6 +73,7 @@ describe("verifyEvidenceRecord", () => {
     const result = await verifyEvidenceRecord(validRecord, { readArtifact });
 
     expect(result.ok).toBe(true);
+    expect(result.diagnostics).toEqual([]);
     expect(result.assertions).toEqual([
       { id: "ARTIFACTS_MATCH", status: "passed", detail: "1 of 1 artifacts matched" },
       { id: "CHAIN_CLOSED", status: "passed", detail: "recordId matches the canonical body" },
@@ -39,22 +98,20 @@ describe("verifyEvidenceRecord", () => {
   });
 
   it("reports EVIDENCE.ARTIFACT_MISMATCH naming the replaced file", async () => {
-    artifacts.set("map.json", new TextEncoder().encode(`{"view":{"zoom":99}}\n`));
-
-    const result = await verifyEvidenceRecord(validRecord, { readArtifact });
+    const result = await verifyEvidenceRecord(validRecord, {
+      readArtifact: artifactReader({ "map.json": `{"view":{"zoom":99}}\n` }),
+    });
 
     expect(result.ok).toBe(false);
     expect(result.diagnostics).toContainEqual(
       expect.objectContaining({ code: "EVIDENCE.ARTIFACT_MISMATCH", path: "/artifacts/0" }),
     );
-    artifacts.set("map.json", new TextEncoder().encode(`${MAP_JSON}`));
+    expect(statusOf(result, "ARTIFACTS_MATCH")).toBe("failed");
   });
 
   it("reports EVIDENCE.DERIVATION_FAILED on a broken revision lineage", async () => {
     // Rebuilt through the fixture so recordId stays valid and only lineage fails.
-    const broken = buildFixture({
-      commands: [{ ...validRecord.commands[0]!, nextRevision: "r9" }],
-    });
+    const broken = buildFixture({ commands: [command({ nextRevision: "r9" })] });
 
     const result = await verifyEvidenceRecord(broken, { readArtifact });
 
@@ -81,7 +138,273 @@ describe("verifyEvidenceRecord", () => {
       expectedCapabilities: { schemaVersion: "engine-capabilities.v0.1", available: ["mapspec.validate"], blocked: [] },
     });
 
-    expect(result.diagnostics).toContainEqual(expect.objectContaining({ code: "EVIDENCE.CAPABILITY_DRIFT" }));
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: "EVIDENCE.CAPABILITY_DRIFT",
+        path: "/capabilities/blocked",
+        message: expect.stringContaining("blockers"),
+      }),
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it("reports EVIDENCE.CAPABILITY_DRIFT for `available` drift, naming the list that moved", async () => {
+    const result = await verifyEvidenceRecord(validRecord, {
+      readArtifact,
+      expectedCapabilities: { ...matchingCapabilities, available: ["mapspec.validate", "mapspec.snapshot"] },
+    });
+
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: "EVIDENCE.CAPABILITY_DRIFT",
+        path: "/capabilities/available",
+        message: expect.stringContaining("available"),
+      }),
+    );
+    expect(statusOf(result, "DERIVATION_CLOSED")).toBe("passed");
+    expect(result.ok).toBe(false);
+  });
+
+  it("stays green when the live capability matrix matches both recorded lists", async () => {
+    const result = await verifyEvidenceRecord(validRecord, {
+      readArtifact,
+      expectedCapabilities: matchingCapabilities,
+    });
+
+    expect(codes(result)).not.toContain("EVIDENCE.CAPABILITY_DRIFT");
+    expect(result.diagnostics).toEqual([]);
+    expect(result.ok).toBe(true);
+  });
+});
+
+// L-1: DERIVATION_CLOSED must never report a vacuous pass. Only `applied` entries move runtime state,
+// so only they form the chain — and every revision the verifier cannot read is a failure it must say
+// out loud.
+describe("verifyEvidenceRecord revision lineage (L-1)", () => {
+  it("fails when an applied entry omits its revision fields", async () => {
+    const record = buildFixture({ commands: [withoutRevisions(command())] });
+
+    const result = await verifyEvidenceRecord(record, { readArtifact });
+
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: "EVIDENCE.DERIVATION_FAILED",
+        path: "/commands/0",
+        message: expect.stringContaining("commands[0]"),
+      }),
+    );
+    expect(statusOf(result, "DERIVATION_CLOSED")).toBe("failed");
+    expect(statusOf(result, "CHAIN_CLOSED")).toBe("passed");
+    expect(result.ok).toBe(false);
+  });
+
+  it("fails when an applied entry carries a non-string revision field", async () => {
+    const record = buildFixture({
+      commands: [command({ baseRevision: 7 as unknown as string })],
+    });
+
+    const result = await verifyEvidenceRecord(record, { readArtifact });
+
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: "EVIDENCE.DERIVATION_FAILED",
+        path: "/commands/0",
+        message: expect.stringContaining("commands[0]"),
+      }),
+    );
+    expect(statusOf(result, "DERIVATION_CLOSED")).toBe("failed");
+    expect(result.ok).toBe(false);
+  });
+
+  it("fails on a gap between two applied entries, naming the successor", async () => {
+    const record = buildFixture({
+      commands: [
+        command({ baseRevision: "r0", nextRevision: "r1" }),
+        command({ baseRevision: "r7", nextRevision: "r8" }),
+      ],
+    });
+
+    const result = await verifyEvidenceRecord(record, { readArtifact });
+
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: "EVIDENCE.DERIVATION_FAILED",
+        path: "/commands/1",
+        message: expect.stringContaining("commands[1]"),
+      }),
+    );
+    expect(statusOf(result, "DERIVATION_CLOSED")).toBe("failed");
+    expect(result.ok).toBe(false);
+  });
+
+  it("keeps the chain anchored to the applied entries, not their array indexes", async () => {
+    // A leading `skipped` entry has no before/after and must not become the expected predecessor.
+    const record = buildFixture({
+      commands: [
+        withoutRevisions(command({ outcome: "skipped" })),
+        command({ baseRevision: "r0", nextRevision: "r1" }),
+      ],
+    });
+
+    const result = await verifyEvidenceRecord(record, { readArtifact });
+
+    expect(result.diagnostics).toEqual([]);
+    expect(statusOf(result, "DERIVATION_CLOSED")).toBe("passed");
+    expect(result.ok).toBe(true);
+  });
+
+  it("tolerates a skipped entry that carries no revisions", async () => {
+    const record = buildFixture({
+      commands: [command({ baseRevision: "r0", nextRevision: "r1" }), withoutRevisions(command({ outcome: "failed" }))],
+    });
+
+    const result = await verifyEvidenceRecord(record, { readArtifact });
+
+    expect(codes(result)).not.toContain("EVIDENCE.DERIVATION_FAILED");
+    expect(statusOf(result, "DERIVATION_CLOSED")).toBe("passed");
+    expect(result.ok).toBe(true);
+  });
+
+  it("fails when a non-applied entry supplies a non-string revision", async () => {
+    const record = buildFixture({
+      commands: [
+        command({ baseRevision: "r0", nextRevision: "r1" }),
+        command({ outcome: "skipped", baseRevision: true as unknown as string }),
+      ],
+    });
+
+    const result = await verifyEvidenceRecord(record, { readArtifact });
+
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: "EVIDENCE.DERIVATION_FAILED",
+        path: "/commands/1",
+        message: expect.stringContaining("commands[1]"),
+      }),
+    );
+    expect(statusOf(result, "DERIVATION_CLOSED")).toBe("failed");
+    expect(result.ok).toBe(false);
+  });
+
+  it("fails when the project revision moved without any applied command", async () => {
+    const record = buildFixture({ commands: [withoutRevisions(command({ outcome: "skipped" }))] });
+
+    const result = await verifyEvidenceRecord(record, { readArtifact });
+
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: "EVIDENCE.DERIVATION_FAILED",
+        path: "/commands",
+        message: expect.stringContaining("without any applied command"),
+      }),
+    );
+    expect(statusOf(result, "DERIVATION_CLOSED")).toBe("failed");
+    expect(result.ok).toBe(false);
+  });
+
+  it("closes lineage for zero applied commands only when the project revision did not move", async () => {
+    const record = buildFixture({
+      project: { id: "proj-a", baseRevision: "r0", revision: "r0" },
+      commands: [withoutRevisions(command({ outcome: "skipped" }))],
+    });
+
+    const result = await verifyEvidenceRecord(record, { readArtifact });
+
+    expect(result.diagnostics).toEqual([]);
+    expect(statusOf(result, "DERIVATION_CLOSED")).toBe("passed");
+    expect(result.ok).toBe(true);
+  });
+
+  it("fails when project.revision is not a string, even on a chain-closed forged record", async () => {
+    const forged = reseal({
+      ...validRecord,
+      project: { ...validRecord.project, revision: 42 as unknown as string },
+    });
+
+    const result = await verifyEvidenceRecord(forged, { readArtifact });
+
+    expect(statusOf(result, "CHAIN_CLOSED")).toBe("passed");
+    expect(statusOf(result, "DERIVATION_CLOSED")).toBe("failed");
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({ code: "EVIDENCE.DERIVATION_FAILED", path: "/project/revision" }),
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it("fails when project.baseRevision is not a string, even on a chain-closed forged record", async () => {
+    const forged = reseal({
+      ...validRecord,
+      project: { ...validRecord.project, baseRevision: null as unknown as string },
+    });
+
+    const result = await verifyEvidenceRecord(forged, { readArtifact });
+
+    expect(statusOf(result, "CHAIN_CLOSED")).toBe("passed");
+    expect(statusOf(result, "DERIVATION_CLOSED")).toBe("failed");
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({ code: "EVIDENCE.DERIVATION_FAILED", path: "/project/baseRevision" }),
+    );
+    expect(result.ok).toBe(false);
+  });
+});
+
+// L-2: `ok` is the flag Tasks 7/8 branch on, so it must stay down whenever the verifier itself says
+// it cannot read the record — an unsupported schema version or a structurally malformed field — even
+// when all six assertion rows happen to be green.
+describe("verifyEvidenceRecord ok gate (L-2)", () => {
+  it("holds ok down on an unsupported schema version whose assertions are otherwise green", async () => {
+    const newer = reseal({ ...validRecord, schemaVersion: "evidence-record.v0.2" });
+
+    const result = await verifyEvidenceRecord(newer, { readArtifact });
+
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: "EVIDENCE.SCHEMA_VERSION_UNSUPPORTED",
+        path: "/schemaVersion",
+        severity: "error",
+      }),
+    );
+    expect(result.assertions.filter((entry) => entry.status === "failed")).toEqual([]);
+    expect(result.ok).toBe(false);
+  });
+
+  it("rejects a forged, chain-closed record whose spec hash is not a sha256 digest", async () => {
+    const forged = reseal({
+      ...validRecord,
+      spec: { ...validRecord.spec, beforeHash: "not-a-hash" },
+    });
+
+    const result = await verifyEvidenceRecord(forged, { readArtifact });
+
+    expect(statusOf(result, "CHAIN_CLOSED")).toBe("passed");
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({ code: "EVIDENCE.RECORD_INVALID", path: "/spec/beforeHash", severity: "error" }),
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it("rejects a forged, chain-closed record with a malformed issuedAt", async () => {
+    const forged = reseal({ ...validRecord, issuedAt: "yesterday" });
+
+    const result = await verifyEvidenceRecord(forged, { readArtifact });
+
+    expect(statusOf(result, "CHAIN_CLOSED")).toBe("passed");
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({ code: "EVIDENCE.RECORD_INVALID", path: "/issuedAt", severity: "error" }),
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it("treats an error-only diagnostic as blocking and keeps informational ones out of the gate", async () => {
+    // The drift row is the only failure here: every assertion is green, the diagnostic is an error.
+    const result = await verifyEvidenceRecord(validRecord, {
+      readArtifact,
+      expectedCapabilities: { ...matchingCapabilities, blocked: [] },
+    });
+
+    expect(result.assertions.filter((entry) => entry.status === "failed")).toEqual([]);
+    expect(codes(result)).toContain("EVIDENCE.CAPABILITY_DRIFT");
+    expect(result.ok).toBe(false);
   });
 });
 
@@ -136,5 +459,25 @@ describe("verifyEvidenceRecord hostile input", () => {
       "failed",
       "failed",
     ]);
+  });
+
+  it("never throws when the options object itself is missing", async () => {
+    for (const options of [undefined, null]) {
+      const result = await verifyEvidenceRecord(
+        validRecord,
+        options as unknown as Parameters<typeof verifyEvidenceRecord>[1],
+      );
+
+      // Artifact matching cannot run, so the row must say so instead of pretending or crashing.
+      expect(statusOf(result, "ARTIFACTS_MATCH")).toBe("failed");
+      expect(result.diagnostics).toContainEqual(
+        expect.objectContaining({ code: "EVIDENCE.ARTIFACT_MISMATCH", path: "/artifacts", severity: "error" }),
+      );
+      // Missing options mean "no expected capabilities supplied", never a crash on the read.
+      expect(codes(result)).not.toContain("EVIDENCE.CAPABILITY_DRIFT");
+      expect(statusOf(result, "CHAIN_CLOSED")).toBe("passed");
+      expect(statusOf(result, "DERIVATION_CLOSED")).toBe("passed");
+      expect(result.ok).toBe(false);
+    }
   });
 });

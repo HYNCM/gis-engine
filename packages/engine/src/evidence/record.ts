@@ -344,6 +344,12 @@ export interface EvidenceAssertion {
 }
 
 export interface EvidenceVerificationResult {
+  /**
+   * Green only when no assertion failed AND no `severity: "error"` diagnostic exists — i.e. the six
+   * rows say the record holds up and the verifier never had to say "I cannot read this" (unsupported
+   * schema version, malformed field, capability drift). Consumers must branch on `ok`, not on the
+   * assertions array alone.
+   */
   ok: boolean;
   assertions: EvidenceAssertion[];
   diagnostics: Diagnostic[];
@@ -373,10 +379,11 @@ export function normaliseEvidencePayload<T>(value: T): T | undefined {
 }
 
 /**
- * Recomputes every trust-tier assertion from the record's own fields. It never executes commands and
- * never throws (constraint 7): malformed, hostile, cyclic or `undefined`-laden input comes back as a
- * structured diagnostic and/or a `failed`/`not-covered` assertion, so a third party can re-verify a
- * record without trusting anything except the bytes in it.
+ * Recomputes every trust-tier assertion from the record's own fields, after re-running the structural
+ * check the builder applied. It never executes commands and never throws (constraint 7): malformed,
+ * hostile, cyclic or `undefined`-laden input comes back as a structured diagnostic and/or a
+ * `failed`/`not-covered` assertion, so a third party can re-verify a record without trusting anything
+ * except the bytes in it.
  */
 export async function verifyEvidenceRecord(
   record: EvidenceRecord,
@@ -393,6 +400,12 @@ export async function verifyEvidenceRecord(
     });
     return { ok: false, assertions: unverifiableAssertions(), diagnostics };
   }
+
+  // The verifier never assumes `buildEvidenceRecord` ran: it re-applies the same zero-dependency
+  // structural check that lives in this file (constraint 3 untouched) and folds the result in. Without
+  // this a hand-forged record whose fields are garbage but whose bytes are self-consistent would sail
+  // through every recomputation below.
+  diagnostics.push(...structuralIssues(record));
 
   if (record.schemaVersion !== EVIDENCE_RECORD_SCHEMA_VERSION) {
     diagnostics.push({
@@ -417,38 +430,52 @@ export async function verifyEvidenceRecord(
     });
   }
 
+  // Constraint 7 in its options form, too: a caller that passes no options object must get an honest
+  // "artifact matching could not run" verdict, not a TypeError halfway through the recomputation.
+  const readArtifact = options && typeof options.readArtifact === "function" ? options.readArtifact : undefined;
+  const expectedCapabilities = options ? options.expectedCapabilities : undefined;
+
   const artifactEntries = Array.isArray(record.artifacts) ? record.artifacts : [];
   const artifactIssues: Diagnostic[] = [];
   let matched = 0;
-  for (const [index, artifact] of artifactEntries.entries()) {
-    const path = `/artifacts/${index}`;
-    const declaredPath = artifact && typeof artifact.path === "string" ? artifact.path : "";
-    const declaredSha = artifact && typeof artifact.sha256 === "string" ? artifact.sha256 : "";
-    const declaredBytes = artifact && typeof artifact.bytes === "number" ? artifact.bytes : Number.NaN;
-    let bytes: Uint8Array;
-    try {
-      bytes = await options.readArtifact(declaredPath);
-    } catch (error) {
-      artifactIssues.push({
-        severity: "error",
-        code: EvidenceIssueCode.ArtifactMismatch,
-        message: `Artifact "${declaredPath}" could not be read: ${error instanceof Error ? error.message : String(error)}`,
-        path,
-      });
-      continue;
-    }
-    const actual = `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
-    if (actual === declaredSha && bytes.byteLength === declaredBytes) {
-      matched += 1;
-      continue;
-    }
+  if (!readArtifact) {
     artifactIssues.push({
       severity: "error",
       code: EvidenceIssueCode.ArtifactMismatch,
-      message: `Artifact "${declaredPath}" hash or size does not match the evidence record.`,
-      path,
-      relatedResources: [{ kind: "source", path: declaredPath }],
+      message: "options.readArtifact was not supplied, so no artifact byte could be re-hashed.",
+      path: "/artifacts",
     });
+  } else {
+    for (const [index, artifact] of artifactEntries.entries()) {
+      const path = `/artifacts/${index}`;
+      const declaredPath = artifact && typeof artifact.path === "string" ? artifact.path : "";
+      const declaredSha = artifact && typeof artifact.sha256 === "string" ? artifact.sha256 : "";
+      const declaredBytes = artifact && typeof artifact.bytes === "number" ? artifact.bytes : Number.NaN;
+      let bytes: Uint8Array;
+      try {
+        bytes = await readArtifact(declaredPath);
+      } catch (error) {
+        artifactIssues.push({
+          severity: "error",
+          code: EvidenceIssueCode.ArtifactMismatch,
+          message: `Artifact "${declaredPath}" could not be read: ${error instanceof Error ? error.message : String(error)}`,
+          path,
+        });
+        continue;
+      }
+      const actual = `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
+      if (actual === declaredSha && bytes.byteLength === declaredBytes) {
+        matched += 1;
+        continue;
+      }
+      artifactIssues.push({
+        severity: "error",
+        code: EvidenceIssueCode.ArtifactMismatch,
+        message: `Artifact "${declaredPath}" hash or size does not match the evidence record.`,
+        path,
+        relatedResources: [{ kind: "source", path: declaredPath }],
+      });
+    }
   }
   diagnostics.push(...artifactIssues);
 
@@ -458,8 +485,8 @@ export async function verifyEvidenceRecord(
   const inverseIssue = checkInversePatchHashes(record);
   if (inverseIssue) diagnostics.push(inverseIssue);
 
-  if (options.expectedCapabilities) {
-    const driftIssue = checkCapabilityDrift(record.capabilities, options.expectedCapabilities);
+  if (expectedCapabilities) {
+    const driftIssue = checkCapabilityDrift(record.capabilities, expectedCapabilities);
     if (driftIssue) diagnostics.push(driftIssue);
   }
 
@@ -510,8 +537,14 @@ export async function verifyEvidenceRecord(
   // contextual type of each element — a chained `.sort()` would widen the `status` literals to `string`.
   assertions.sort((left, right) => left.id.localeCompare(right.id));
 
+  // L-2: the six assertion rows are not the whole verdict. `ok` is the flag Task 7's CLI and Task 8's
+  // third-party recompute branch on, so it must stay down whenever the verifier itself says it cannot
+  // read the record (SCHEMA_VERSION_UNSUPPORTED, RECORD_INVALID, CAPABILITY_DRIFT …). The severity test
+  // rather than `diagnostics.length === 0` so a future informational diagnostic cannot block by accident.
+  const blockingDiagnostic = diagnostics.some((entry) => entry.severity === "error");
+
   return {
-    ok: assertions.every((entry) => entry.status !== "failed"),
+    ok: assertions.every((entry) => entry.status !== "failed") && !blockingDiagnostic,
     assertions,
     diagnostics,
   };
@@ -541,9 +574,19 @@ function unverifiableAssertions(): EvidenceAssertion[] {
     .sort((left, right) => left.id.localeCompare(right.id));
 }
 
+/**
+ * L-1: the lineage claim is about runtime state, and only `applied` entries move runtime state, so the
+ * chain is recomputed over exactly those entries — in record order, anchored at `project.baseRevision`
+ * and required to end at `project.revision`. Deliberately not keyed to the `commands` array indexes: a
+ * leading `skipped` entry has no before/after and must not become the expected predecessor.
+ *
+ * Every unreadable piece of lineage data is a `DerivationFailed` diagnostic rather than a silent skip:
+ * a missing/non-string revision pair on an applied entry, a malformed revision on a non-applied one, a
+ * non-string project anchor, or a project revision that moved while nothing was applied. The old shape
+ * skipped absent fields and could report "revision lineage closed" having checked nothing.
+ */
 function checkLineage(record: EvidenceRecord): Diagnostic | undefined {
-  const path = "/commands";
-  const failed = (message: string): Diagnostic => ({
+  const failed = (message: string, path = "/commands"): Diagnostic => ({
     severity: "error",
     code: EvidenceIssueCode.DerivationFailed,
     message,
@@ -551,27 +594,61 @@ function checkLineage(record: EvidenceRecord): Diagnostic | undefined {
   });
   const commands = Array.isArray(record.commands) ? record.commands : [];
   const project = record.project;
-  const baseRevision = project && typeof project.baseRevision === "string" ? project.baseRevision : undefined;
-  const revision = project && typeof project.revision === "string" ? project.revision : undefined;
-
-  for (const [index, entry] of commands.entries()) {
-    const expected = index === 0 ? baseRevision : previousRevision(record, index);
-    if (entry && typeof entry.baseRevision === "string" && entry.baseRevision !== expected) {
-      return failed(`commands[${index}].baseRevision does not continue the revision lineage.`);
-    }
+  const baseRevision = project ? project.baseRevision : undefined;
+  const revision = project ? project.revision : undefined;
+  if (typeof baseRevision !== "string") {
+    return failed(
+      "project.baseRevision must be a string: the revision lineage has no starting point.",
+      "/project/baseRevision",
+    );
   }
-  const last = commands[commands.length - 1];
-  if (!last) return failed("Evidence records must carry at least one command.");
-  if (typeof last.nextRevision === "string" && last.nextRevision !== revision) {
-    return failed("The final command revision does not match project.revision.");
+  if (typeof revision !== "string") {
+    return failed("project.revision must be a string: the revision lineage has no end point.", "/project/revision");
+  }
+
+  const applied: Array<{ index: number; base: string; next: string }> = [];
+  for (const [index, entry] of commands.entries()) {
+    const base = entry?.baseRevision;
+    const next = entry?.nextRevision;
+    if ((base !== undefined && typeof base !== "string") || (next !== undefined && typeof next !== "string")) {
+      return failed(
+        `commands[${index}] carries a revision field that is not a string; refusing to infer lineage from malformed data.`,
+        `/commands/${index}`,
+      );
+    }
+    if (entry?.outcome !== "applied") continue;
+    if (typeof base !== "string" || typeof next !== "string") {
+      return failed(
+        `commands[${index}] is applied but carries no string baseRevision/nextRevision pair, so its revision step is unverifiable.`,
+        `/commands/${index}`,
+      );
+    }
+    applied.push({ index, base, next });
+  }
+
+  if (applied.length === 0) {
+    // Nothing claims a state change, so lineage is closed only if the project revision stood still.
+    return baseRevision === revision
+      ? undefined
+      : failed(`project revision moved from "${baseRevision}" to "${revision}" without any applied command.`);
+  }
+
+  let expected = baseRevision;
+  let finalIndex = 0;
+  for (const step of applied) {
+    if (step.base !== expected) {
+      return failed(
+        `commands[${step.index}].baseRevision does not continue the revision lineage.`,
+        `/commands/${step.index}`,
+      );
+    }
+    expected = step.next;
+    finalIndex = step.index;
+  }
+  if (expected !== revision) {
+    return failed("The final command revision does not match project.revision.", `/commands/${finalIndex}`);
   }
   return undefined;
-}
-
-function previousRevision(record: EvidenceRecord, index: number): string | undefined {
-  const commands = Array.isArray(record.commands) ? record.commands : [];
-  const prev = commands[index - 1];
-  return prev && typeof prev.nextRevision === "string" ? prev.nextRevision : undefined;
 }
 
 function checkInversePatchHashes(record: EvidenceRecord): Diagnostic | undefined {
@@ -602,24 +679,41 @@ function safeCanonicalHash(value: unknown): string | undefined {
   }
 }
 
+/**
+ * Compares BOTH capability lists as sorted sets, not only the blockers: an engine that gained a
+ * capability the record still claims is unavailable is just as much drift as a blocker that moved, and
+ * a record that over-claims `available` is the one a downstream consumer would act on. Only runs when
+ * the caller supplies `expectedCapabilities` — there is no second truth source here.
+ */
 function checkCapabilityDrift(
   recorded: EvidenceRecordCapabilities,
   expected: EvidenceRecordCapabilities,
 ): Diagnostic | undefined {
-  const recordedCodes = blockedCodes(recorded);
-  const expectedCodes = blockedCodes(expected);
-  if (
-    recordedCodes.length === expectedCodes.length &&
-    recordedCodes.every((code, index) => code === expectedCodes[index])
-  ) {
-    return undefined;
-  }
-  return {
+  const drift = (message: string, path: string): Diagnostic => ({
     severity: "error",
     code: EvidenceIssueCode.CapabilityDrift,
-    message: "Recorded capability blockers differ from the engine's current blockers.",
-    path: "/capabilities/blocked",
-  };
+    message,
+    path,
+  });
+  if (!sameNames(availableNames(recorded), availableNames(expected))) {
+    return drift(
+      "Recorded capability available list differs from the engine's current available capabilities.",
+      "/capabilities/available",
+    );
+  }
+  if (!sameNames(blockedCodes(recorded), blockedCodes(expected))) {
+    return drift("Recorded capability blockers differ from the engine's current blockers.", "/capabilities/blocked");
+  }
+  return undefined;
+}
+
+function availableNames(capabilities: EvidenceRecordCapabilities): string[] {
+  const available = capabilities && Array.isArray(capabilities.available) ? capabilities.available : [];
+  return available.map((entry) => (typeof entry === "string" ? entry : "")).sort();
+}
+
+function sameNames(left: string[], right: string[]): boolean {
+  return left.length === right.length && left.every((name, index) => name === right[index]);
 }
 
 function blockedCodes(capabilities: EvidenceRecordCapabilities): string[] {
