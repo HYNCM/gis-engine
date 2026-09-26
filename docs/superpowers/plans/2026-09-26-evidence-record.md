@@ -2308,6 +2308,47 @@ export async function runEvidenceVerifierCli(
 }
 ```
 
+**必须补的 containment 守卫（Task 6 预检发现；spec §6 决定 4 的威胁模型要求）：**
+Step 3 草图里 `readArtifact` 那一行只是把 `root` 和记录里的路径首尾拼接。一条不受信任的
+`evidence.json` 只要把 `artifacts[].path` 写成 `../../etc/passwd`、绝对路径，或 Windows 盘符/反斜杠
+形态，就能把「审计员在自己机器上跑的复算器」变成读任意文件的 oracle（它会把读到的字节哈希回报）。
+所以 CLI 侧必须拒绝 root 之外的路径——这是数据面守卫，不改变 `verifyEvidenceRecord` 的纯度：
+
+```ts
+/**
+ * A record is untrusted input and this CLI is run by the party auditing it, so an artifact path that
+ * walks outside `--root` is a finding, not a file to open. Pure string work on purpose: constraint 3
+ * keeps `record.js`'s value imports at `node:` builtins, and `node:path`'s judgement about platform
+ * separators is exactly what a cross-machine evidence file must not depend on.
+ */
+function isInsideRoot(root: string, path: string): boolean {
+  const normalised = path.replace(/\\/g, "/");
+  if (normalised.startsWith("/") || /^\s*[A-Za-z]:/.test(normalised) || normalised.includes("\0")) return false;
+  if (normalised.split("/").includes("..")) return false;
+  // The root is supplied by the operator, but a `..` in it would defeat the check trivially.
+  return !root.replace(/\\/g, "/").split("/").includes("..");
+}
+```
+
+`readArtifact` 先过这道判断：不在 root 内时**不去读**，直接按该 artifact 失败处理
+（`ARTIFACT_MISMATCH` 诊断 + `ARTIFACTS_MATCH` `failed` ⇒ 退出码 2），诊断文案点名越界路径但绝不回传
+文件内容或大小。落地方式是把 Step 3 草图那一行换成先判断再读，越界时由注入的 reader 抛出带路径的
+错误，让 verifier 已有的 catch 分支收敛成诊断——约束 7 禁止的是 verifier 自己抛，注入边界的失败本来
+就走 `ARTIFACT_MISMATCH`，不要为此再改 verifier 的签名或断言形状：
+
+```ts
+readArtifact: (path) => {
+  if (!isInsideRoot(root, path)) {
+    throw new Error(`artifact path escapes --root: ${path}`);
+  }
+  return deps.readFile(`${root}${path}`);
+},
+```
+
+Step 1 的测试面相应加四条：`"../secret"`、绝对 `"/etc/passwd"`、Windows 形态 `"C:\shares\x"`
+三种都必须 `ok:false`，并且用一个记录调用次数的 spy 断言 `readFile` 对这些路径**一次都没被调用**；
+最后一条是合法的两级相对路径 `data/nested/map.json` 必须照常通过——防止守卫被写成「见斜杠就拒」。
+
 > 默认 `--root` 为空字符串时 `readFile(recordPath)` 即按 cwd 解析，与 Step 1 测试里 `cwd: directory` 的用法一致；传 `--root` 时统一以 `/` 结尾拼接，避免 `join`/`path` 再引入 `node:path`。
 
 同一批导出里补进 `evidence/index.ts`：`type EvidenceVerifierCliDependencies`、`runEvidenceVerifierCli`（Task 7/8 的集成测试直接调它，不重复实现 CLI 装配）。**不要**加进根 barrel `packages/engine/src/index.ts`——`record.ts` 带 `node:crypto`，会被 `tests/evidence/canonical-hash.test.ts` 的浏览器面守卫挡红。
