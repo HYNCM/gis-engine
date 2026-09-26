@@ -10,7 +10,7 @@ inputs:
   - packages/engine/src/sources/{pmtiles-query.ts,readiness.ts}
   - packages/engine/src/spec/scene3d-promotion-gate.ts
   - packages/ai/src/tools/generationEvidence.ts
-  - apps/workbench/server/export-service.mjs
+  - apps/workbench/server/export-service.mjs (仅存在于 codex/workbench-v1 @ 41c340e；main 上无此路径)
   - scripts/first-run-acceptance.mjs
   - scripts/release-preflight.mjs
 owner: "@builder(engine/ai) 实现，@quality 门禁判定，@orchestrator 记录状态"
@@ -27,7 +27,7 @@ status: design-approved-pending-spec-review
 
 目标读者：**WebGIS 工程师**。可信的交付对象：**外部尽调 / 客户验收**。
 
-竞品事实（2026-09-26 联网核对，来源见 §10）：上游已在占"给 AI agent 的地图知识入口"（MapLibre 官方 agent-skills，含
+竞品事实（2026-09-26 联网核对，来源见 §11）：上游已在占"给 AI agent 的地图知识入口"（MapLibre 官方 agent-skills，含
 `maplibre-pmtiles-patterns`，2026-07-29 更新）。因此本项目的差异化不能建立在"AI 也能用地图引擎"，只能建立在
 "AI 的改动可被第三方独立复算"。
 
@@ -72,8 +72,8 @@ status: design-approved-pending-spec-review
 | U3 AI 面 | `packages/ai` | `GenerationEvidenceBundle` 改为 `EvidenceRecord` 视图；`export_spec` 返回记录；`get_context_summary` 输出 capability 矩阵；`validate_spec` 返回 blocked 清单 | 消费 U1，工具名与数量不变 |
 | U4 CLI / 导出落盘 | `packages/cli` | `evidence.json` 写入导出包并纳入 manifest 角色 | 消费 U1 |
 | U5 Workbench | `apps/workbench/server` | 导出包与 receipt 绑定 `recordId`；不自行定义证据字段 | 消费 U1 |
-| V 可信层 | U1 内纯函数 + 零依赖单文件 verifier | 只复算哈希链闭合与 `plan→commands→specHash` 推导一致；不渲染、不联网 | 无外部依赖 |
-| V 深核层 | 现有 `applyCommands` 重放 + 视觉快照 | 显式标注"需引用条件"，不在可信层承诺 | 消费 U1 |
+| V 可信层 | U1 内纯函数 + 零依赖单文件 verifier | 只复算哈希链闭合、逐文件哈希一致、记录内推导链衔接（见 §6 决定 4，不执行命令）；不渲染、不联网 | 无外部依赖 |
+| V 深核层 | 现有 `applyCommands` 重放 + 视觉快照 | 显式标注"需引用条件"，不在可信层承诺；`OFFLINE_REPLAY` 即此层 | 消费 U1 |
 
 边界规则：**证据契约只存在于 engine，其余四方都是消费者。** 因此 Workbench 分支是否合并（当前 PR #67 / #112
 的合并顺序仍未定）不阻塞对外交付。
@@ -126,6 +126,10 @@ receipt / 导出结论绑定 recordId
    代价：同一逻辑两份实现，必须有结论一致性测试。
 2. **capability 矩阵从既有真相源生成**（promotion gate + readiness），不新造清单，避免第三处漂移源。
 3. **D3 PMTiles 走 protocol 适配**，不引入渲染分支，保持 `RendererAdapter` 边界；依赖引入需过资源策略与体积门禁。
+4. **可信层独立性硬约束（不可协商）**：可信层的每一条断言只能做**纯数据复算**——字节级哈希、集合相等、
+   路径/角色匹配、记录内字段衔接。**任何需要 `MapSpec` 语义或 `applyCommands` 执行的断言一律归深核层。**
+   原因：可信层一旦调用 engine 语义，零依赖单文件 verifier 就被迫打包 `@gis-engine/engine`，§6 决定 1 的独立性
+   当场失效，T1 退化为 A1 引用型。这条约束由 §8 断言 7 做机器检查，不靠约定。
 
 ## 7. 错误处理
 
@@ -136,7 +140,7 @@ receipt / 导出结论绑定 recordId
 | `EVIDENCE.RECORD_INVALID` | 记录不过自身 schema | 构造期错误 |
 | `EVIDENCE.CHAIN_BROKEN` | `recordId` 与正文复算不符 | 篡改与损坏必须可区分：前者是安全事件，后者是实现缺陷 |
 | `EVIDENCE.ARTIFACT_MISMATCH` | 文件哈希与记录不一致 | 尽调方需能定位到具体文件 |
-| `EVIDENCE.DERIVATION_FAILED` | `plan→commands→specHash` 推导不闭合 | T2 专属失败 |
+| `EVIDENCE.DERIVATION_FAILED` | 记录内推导链不衔接：命令的 `baseRevision/nextRevision` 逐级不接、命令结果哈希与记录正文不符、或包内 spec 文件正文与 `spec.afterHash` 不符 | T2 专属失败；**判定不执行 `applyCommands`**，真正重放属深核层 |
 | `EVIDENCE.SCHEMA_VERSION_UNSUPPORTED` | verifier 遇到更新的 `schemaVersion` | verifier 版本会先于记录老化 |
 | `EVIDENCE.CAPABILITY_DRIFT` | 记录内 capability 与 engine gate 实际值不一致 | 防止 gate 变更后记录仍声称 blocked |
 
@@ -155,12 +159,17 @@ receipt / 导出结论绑定 recordId
 实现前必须落成可执行测试，禁止"做完再定义成功"：
 
 1. 对合法记录改动任意一个字节 ⇒ `EVIDENCE.CHAIN_BROKEN`。
-2. 记录中 `spec.afterHash` 与命令序列重算结果不符 ⇒ `EVIDENCE.DERIVATION_FAILED`。
+2. 人为让记录内推导链断裂——命令 `nextRevision` 与下一条 `baseRevision` 不衔接，或包内 spec 文件正文与
+   `spec.afterHash` 不符 ⇒ `EVIDENCE.DERIVATION_FAILED`。该测试必须**同时断言 `applyCommands` 未被调用**
+   （ spying 或调用计数），否则可信层独立性会在无人注意时被实现成重放。
 3. manifest 内某文件被替换 ⇒ `EVIDENCE.ARTIFACT_MISMATCH`，且路径指向该文件。
 4. engine 版 `verifyEvidenceRecord()` 与零依赖单文件 verifier 对同一 fixture 输出**序列化后完全相同**的
    `{ ok, assertions, diagnostics }`（比较字符串，不做深度宽松相等）。
 5. 一个 PMTiles 源项目导出的包内，数据文件哈希入链，且复算不访问任何网络端点。
 6. 记录缺 `exclusions` 或缺任一根骨架字段（`recordId`/`project`/`commands`/`spec`/`artifacts`）⇒ schema invalid。
+7. 构建产物 `evidence-verifier.mjs` **不含任何 `@gis-engine/*` 或第三方 import**：CI 静态解析其依赖图，并在
+   **无 `node_modules` 的临时目录**里对 fixture 实跑一次复算。任一条件不满足 ⇒ 构建失败。
+   这是 §6 决定 4 的唯一机器守卫；没有它，可信层独立性只是一句意愿。
 
 ## 9. 测试与门禁
 
@@ -170,6 +179,7 @@ receipt / 导出结论绑定 recordId
 | 单元 | `tests/evidence/`：canonicalHash 键序无关性、recordId 复算 |
 | 负向 | §8 断言 1–3 的破坏性实验；必须验证测试是承重的（把实现替换成旧行为时测试应失败） |
 | 双实现 | §8 断言 4 |
+| 可信层独立性 | §8 断言 7：依赖图静态解析 + 无 `node_modules` 目录实跑；并入 `gate-plan.mjs`，改动 `packages/engine/src/evidence/` 即触发 |
 | MCP 契约 | 14 工具名字与数量不变，仅 `export_spec` / `get_context_summary` / `validate_spec` 的 `outputSchema` 变化；**是否算 breaking change 由 @quality 判定，实现方不自行放行** |
 | 体积 | `evidence.json` 与 verifier 单文件计入 `体积检查` / package-size policy |
 | 上游漂移 | MapLibre 兼容矩阵保持不变；D3 不新增渲染路径 |
@@ -192,7 +202,7 @@ capability 放最前，是因为它的字段被 `EvidenceRecord.capabilities` �
 **本设计包含两个可独立交付的子项目，需各自成 plan：**
 
 - 子项目 A（第 0–3 步）：证据契约与可信层复算。这是本 spec 的主体。
-- 子项目 B（第 4 步）：PMTiles 运行时接入。它有自己的依赖引入、资源策略与体积评估面，且不参与 §8 的 1–4、6 断言；
+- 子项目 B（第 4 步）：PMTiles 运行时接入。它有自己的依赖引入、资源策略与体积评估面，且不参与 §8 的 1–4、6、7 断言；
   只有断言 5 依赖它。把它并进同一个 plan 会让 A 的交付被 B 的依赖决策拖住。
 
 本设计不解决、且明确留给后续的问题：
@@ -215,3 +225,20 @@ capability 放最前，是因为它的字段被 `EvidenceRecord.capabilities` �
 - https://www.maplibre.org/maplibre-gl-js/docs/examples/pmtiles-source-and-protocol/
 - https://docs.protomaps.com/pmtiles/maplibre
 - https://modelcontextprotocol.io/specification/2026-07-28
+
+### 11.1 外部事实的核对方式与强度（2026-09-26）
+
+上一轮评审指出本文只列了链接、没写"核对到什么程度"，且个别表述超出了来源实际内容。补上口径：
+
+| 事实 | 核对方式 | 强度 |
+| --- | --- | --- |
+| MapLibre GL JS v6.11.2 发布于 2026-09-24 | GitHub API `gh release view v6.11.2`，`publishedAt: 2026-09-24T12:42:04Z` | **硬事实**（API 字段） |
+| `pmtiles` npm 最新版 4.5.0；`deck.gl` npm 最新版 9.4.0 | `npm view <pkg> version` | **硬事实**（registry） |
+| 9 月连发 v6.5 → v6.11.2 共 7 版 | 抓取 releases 页列表 | 中高：列表页可见，但逐版日期未二次核对 |
+| deck.gl v9.4 "WebGPU 实验 / elevation-aware controller / `pickable:'3d'`" | What's New 页摘要 | 中：**页面对照 npm 版本标签的对应关系未逐项核对**，仅作方向性依据 |
+| Felt AI 于 2026-06-02 宣布对话式建图，且公告未声明配置版本化 | 抓取博客正文 | 中：「未声明」是就该文而言，不等于 Felt 全局无版本化 |
+| CARTO 直连四大云仓并提供 MCP 接入 | 抓取产品页 | 中：营销页，未验证接入形态与计费边界 |
+| MapLibre 官方 org 已发 agent-skills（`maplibre-pmtiles-patterns`，2026-07-29） | GitHub 文件路径 + 搜索结果日期 | 中高：**这是 §1 战略判断的唯一支撑**，若需精确日期应核 commit 历史 |
+
+本文**不引用** Mapbox BUILD 2026 博客作为任何结论的依据：该页在抓取时只返回了框架文本与片段，
+未能稳定提取正文内容，"location-intelligent AI assistant" 这一表述的证据强度不足以支撑架构决策。
