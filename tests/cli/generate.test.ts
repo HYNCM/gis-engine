@@ -194,8 +194,17 @@ describe("cli-generate-delivery-summary", () => {
         blocked: summary.delivery.sourceReadiness.sources.filter(
           (source: { state: string }) => source.state === "blocked",
         ).length,
-        sources: summary.delivery.sourceReadiness.sources,
       });
+      // The list must not be asserted against itself — `sources: ….sources` can never fail. Two anchors
+      // that can: it has to stay the readiness array, and it has to be the list the shipped spec derives.
+      // `buildSourceReadiness` emits exactly one row per `map.json` source and the deterministic mock plan
+      // declares none, so an empty spec pins an empty list: a fabricated or re-pointed row turns this red
+      // even while the self-consistent count legs above stay green.
+      expect(summary.delivery.sourceReadiness.sources).toBeInstanceOf(Array);
+      expect(summary.delivery.sourceReadiness.sources).toEqual([]);
+      expect(
+        summary.delivery.sourceReadiness.sources.map((source: { sourceId: string }) => source.sourceId).sort(),
+      ).toEqual(Object.keys((specOf(mapBytes) as { sources: Record<string, unknown> }).sources ?? {}).sort());
       // `evidence.json` is an `EvidenceRecord` now, so the assertions here are about the record, not
       // about a second delivery view.
       expect(evidence).toMatchObject({

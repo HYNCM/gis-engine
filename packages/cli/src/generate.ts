@@ -767,10 +767,12 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
       };
     }
 
-    // The ai-side bundle stays the tool-facing view of this record; `recordId` is the one link between
-    // them. It cannot reach `delivery-summary.json`: that file is hashed into the record, so the link
-    // must point from the bundle to the record, never the other way round.
-    if (evidenceResult.ok) evidenceResult.result.recordId = evidenceRecord.record.recordId;
+    // The record↔bundle link is deliberately not written here: `generate()` returns `GenerateResult`,
+    // which carries no bundle, and `delivery-summary.json` was already hashed into the record, so a
+    // bundle field set at this point would be unreachable by every consumer. The link lives in
+    // `evidence.json`'s own `recordId`, which `artifact-manifest.json` hashes byte-for-byte and
+    // `verifyArtifacts` cross-checks against the file set. A producer that holds both objects (the AI
+    // path, Task 9's workbench receipt) sets the bundle's optional `recordId` itself.
 
     const evidencePath = join(outDir, "evidence.json");
     writeFileSync(evidencePath, `${JSON.stringify(evidenceRecord.record, null, 2)}\n`, "utf-8");

@@ -206,6 +206,135 @@ describe("CLI evidence export rejects a record that under-attests the package", 
   });
 });
 
+describe("CLI evidence export cross-check diagnostic codes", () => {
+  /**
+   * `evidence.json`'s on-disk shape before Task 7 replaced it with the `EvidenceRecord`: a
+   * `GenerationEvidenceBundle` tool view, whose `delivery` block carries exactly the fields the retired
+   * `summary.delivery` cross-check used to pull against the published bundle. Any package exported before
+   * the format swap parses as JSON but has no `artifacts` array, so this is the record the
+   * `EVIDENCE_RECORD_INVALID` branch exists for — pinned as behaviour, not as reasoning.
+   */
+  function legacyBundleShape(promptHash: string): Record<string, unknown> {
+    return {
+      promptHash,
+      status: "ready",
+      targetDomains: ["map"],
+      toolSequence: ["get_context_summary", "export_example_app"],
+      summary: {},
+      validation: { valid: true, stats: { sourceCount: 1, layerCount: 1 }, diagnostics: [] },
+      commandEvidence: { usedApplyCommands: true, commandCount: 1, committed: 1, rolledBack: 0 },
+      plannerEvidence: { provided: true, retainedRawPrompt: false, acceptedIntentFields: [] },
+      spatialQueryEvidence: { requested: false, checks: [] },
+      snapshotEvidence: { requested: false },
+      exportEvidence: { ready: true },
+      delivery: {
+        status: "ready",
+        acceptance: { state: "ready" },
+        sections: [{ id: "map", state: "ready" }],
+        sourceReadiness: [],
+        spatialQueryReadiness: [],
+        confirmationRequired: false,
+        confirmations: [],
+        followUps: [],
+      },
+      exampleEvidence: { exampleId: "ai-map-workbench", writesFiles: false, fileCount: 0 },
+      diagnostics: [],
+    };
+  }
+
+  it("reports EVIDENCE_RECORD_UNREADABLE for an endorsed evidence.json that is not parseable", async () => {
+    const { dir, projectDir } = await generateInto("evidence-unreadable");
+    try {
+      const recordPath = join(projectDir, "evidence.json");
+      // Truncated JSON: the manifest hash matches the bytes on disk, so the per-entry pass stays green and
+      // only the cross-check's read side can see this.
+      writeFileSync(recordPath, '{"schemaVersion": "evidence-record.v0.1", "artifacts": [', "utf-8");
+      reanchorManifest(projectDir);
+
+      // Constraint 7: a corrupt record is answered with a diagnostic, never with a thrown error.
+      const result = verifyArtifacts({ projectDir });
+      expect(result.ok).toBe(false);
+      expect(result.diagnostics).toEqual([
+        expect.objectContaining({
+          severity: "error",
+          code: "ARTIFACT_MANIFEST.EVIDENCE_RECORD_UNREADABLE",
+          path: "evidence.json",
+          message: expect.stringContaining("Could not read the evidence record"),
+        }),
+      ]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("reports EVIDENCE_RECORD_INVALID for a package still exporting the pre-Task-7 bundle", async () => {
+    const { dir, projectDir } = await generateInto("evidence-legacy-bundle");
+    try {
+      const recordPath = join(projectDir, "evidence.json");
+      const generated = JSON.parse(readFileSync(recordPath, "utf-8")) as { origin: { promptHash: string } };
+      writeFileSync(
+        recordPath,
+        `${JSON.stringify(legacyBundleShape(generated.origin.promptHash), null, 2)}\n`,
+        "utf-8",
+      );
+      reanchorManifest(projectDir);
+
+      const result = verifyArtifacts({ projectDir });
+      expect(result.ok).toBe(false);
+      expect(result.diagnostics).toEqual([
+        expect.objectContaining({
+          severity: "error",
+          code: "ARTIFACT_MANIFEST.EVIDENCE_RECORD_INVALID",
+          path: "evidence.json/artifacts",
+          message: expect.stringContaining("artifacts array"),
+        }),
+      ]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("reports EVIDENCE_ARTIFACT_MISMATCH when the record's byte facts disagree with the manifest", async () => {
+    const { dir, projectDir } = await generateInto("evidence-fact-mismatch");
+    try {
+      const recordPath = join(projectDir, "evidence.json");
+      const record = JSON.parse(readFileSync(recordPath, "utf-8"));
+      const wrongSha = `sha256:${"0".repeat(64)}`;
+      record.artifacts = (record.artifacts as Array<{ path: string; bytes: number; sha256: string }>).map(
+        (artifact) => {
+          // Both legs of the fact comparison: a well-formed sha256 pointing at other content, and a byte
+          // count off by one. The manifest still matches both files on disk, so nothing else can see it.
+          if (artifact.path === "map.json") return { ...artifact, sha256: wrongSha };
+          if (artifact.path === "preflight.json") return { ...artifact, bytes: artifact.bytes + 1 };
+          return artifact;
+        },
+      );
+      writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`, "utf-8");
+      reanchorManifest(projectDir);
+
+      const result = verifyArtifacts({ projectDir });
+      expect(result.ok).toBe(false);
+      expect(result.diagnostics).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            severity: "error",
+            code: "ARTIFACT_MANIFEST.EVIDENCE_ARTIFACT_MISMATCH",
+            path: "map.json",
+          }),
+          expect.objectContaining({
+            severity: "error",
+            code: "ARTIFACT_MANIFEST.EVIDENCE_ARTIFACT_MISMATCH",
+            path: "preflight.json",
+          }),
+        ]),
+      );
+      expect(result.diagnostics).toHaveLength(2);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
 describe("CLI evidence export rejection path", () => {
   /**
    * `buildEvidenceRecord` already rejects an over-budget record (Task 4). What this pins is the CLI

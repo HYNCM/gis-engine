@@ -158,6 +158,9 @@ function crossCheckEvidenceRecord(
 
   let record: unknown;
   try {
+    // No `MAX_EVIDENCE_RECORD_BYTES` cap on this read: the bytes just matched the manifest's sha256, so
+    // they are endorsed, not untrusted. That cap guards the standalone verifier, which parses a record
+    // nobody vouched for.
     record = JSON.parse(readFileSync(join(projectDir, EVIDENCE_FILE), "utf-8"));
   } catch (error) {
     diagnostics.push({
