@@ -101,9 +101,15 @@ export default function AIAssistant({ messages, status, onSend }: Props) {
                     <div className="mt-1.5 text-[11px] text-gray-500">
                       <span className="font-mono">{msg.evidence.commandEvidence.commandCount ?? 0} cmd</span>
                       <span className="mx-1">·</span>
-                      <span className={msg.evidence.commandEvidence.committed ? "text-green-400" : "text-red-400"}>
-                        {msg.evidence.commandEvidence.committed ? "committed" : "pending"}
-                      </span>
+                      {msg.evidence.commandEvidence.sessionReplaced ? (
+                        <span>new session</span>
+                      ) : (msg.evidence.commandEvidence.commandCount ?? 0) === 0 ? (
+                        <span>no commands</span>
+                      ) : (
+                        <span className={msg.evidence.commandEvidence.committed ? "text-green-400" : "text-red-400"}>
+                          {msg.evidence.commandEvidence.committed ? "committed" : "pending"}
+                        </span>
+                      )}
                       <span className="mx-1">·</span>
                       <span>{msg.evidence.commandEvidence.changedPathCount} paths</span>
                     </div>
@@ -114,7 +120,7 @@ export default function AIAssistant({ messages, status, onSend }: Props) {
               {msg.status && msg.role === "assistant" && (
                 <span
                   className={`mt-1 inline-block text-xs ${
-                    msg.status === "applied"
+                    msg.status === "applied" || msg.status === "reset"
                       ? "text-green-400"
                       : msg.status === "blocked"
                         ? "text-red-400"
