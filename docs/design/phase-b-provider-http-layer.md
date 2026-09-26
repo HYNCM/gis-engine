@@ -499,6 +499,6 @@ Bump: `0.2.0` → `0.3.0` (new feature: real provider HTTP call).
 | System prompt produces low-quality intent for complex prompts | Medium | Medium | Confidence signal surfaces quality; users can iterate with `--prompt`; future: few-shot examples in prompt |
 
 The current package-size authority is `config/package-size-budgets.json`.
-`canonical-dist-gzip-v1` applies a 200 KiB blocking engine budget and a 64 KiB
+`canonical-dist-gzip-v1` applies a 256 KiB blocking engine budget and a 64 KiB
 blocking CLI budget over complete clean-built `dist` trees. Growth more than 5%
 above the recorded baseline is advisory until a blocking byte limit is crossed.

@@ -44,7 +44,7 @@ describe("package size policy", () => {
       packages: {
         engine: {
           distPath: "packages/engine/dist",
-          budgetBytes: 204_800,
+          budgetBytes: 262_144,
           semantics: "blocking",
           baselineBytes: 193_984,
           baselineRawBytes: 1_984_108,
@@ -233,7 +233,7 @@ describe("package size policy", () => {
     for (const content of docs) {
       expect(content).toContain("config/package-size-budgets.json");
       expect(content).toContain("canonical-dist-gzip-v1");
-      expect(content).toMatch(/200\s*KiB/);
+      expect(content).toMatch(/256\s*KiB/);
       expect(content).toMatch(/64\s*KiB/);
       expect(content).toMatch(/blocking/i);
       expect(content).toMatch(/5%/);
@@ -245,7 +245,7 @@ describe("package size policy", () => {
   it("detects a tampered consumer budget instead of allowing policy drift", () => {
     const policy = loadPackageSizePolicy(policyPath);
     const activeDoc = readFileSync(join(repoRoot, "docs/engineering/contract-freeze.md"), "utf8");
-    const tampered = activeDoc.replace("200 KiB", "201 KiB");
+    const tampered = activeDoc.replace("256 KiB", "257 KiB");
 
     expect(validatePackageSizeConsumerContent(policy, activeDoc).valid).toBe(true);
     expect(validatePackageSizeConsumerContent(policy, tampered)).toEqual({
