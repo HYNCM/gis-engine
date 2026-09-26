@@ -43,15 +43,17 @@ describe("buildEngineCapabilityMatrix", () => {
     expect(matrix.available).not.toContain("source.pmtiles");
   });
 
-  it("never lists a capability that has no truth source behind it", () => {
+  it("lists only capabilities with a truth source behind them, in canonical order", () => {
     const matrix = buildEngineCapabilityMatrix();
 
+    // Sorted order is part of the contract: EvidenceRecord.recordId hashes this array, and
+    // canonical hashing preserves array order.
     expect(matrix.available).toEqual([
-      "mapspec.validate",
       "commands.apply",
-      "export.spec",
-      "snapshot.smoke-mock",
       "evidence.build",
+      "export.spec",
+      "mapspec.validate",
+      "snapshot.smoke-mock",
     ]);
   });
 });

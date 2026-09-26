@@ -68,7 +68,9 @@ export function buildEngineCapabilityMatrix(input: BuildEngineCapabilityMatrixIn
 
   return {
     schemaVersion: ENGINE_CAPABILITY_MATRIX_SCHEMA_VERSION,
-    available: [...available],
+    // Sorted: the matrix is hashed into EvidenceRecord.recordId, so membership must not
+    // depend on Set insertion order (which tracks the input spec's source key order).
+    available: [...available].sort(),
     blocked,
   };
 }
