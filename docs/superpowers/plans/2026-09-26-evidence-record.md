@@ -35,7 +35,7 @@
 
 | # | spec 原文 | 计划采用 | 原因 |
 | --- | --- | --- | --- |
-| D1 | §6 决定 1：「同一逻辑两份实现，必须有结论一致性测试」 | **一份实现**：单文件 verifier = `dist/src/evidence/record.js` 的字节拷贝 + shebang | `record.ts` 只 value-import `node:crypto`，编译产物本身就是零依赖单文件。双实现是纯粹的额外负担 |
+| D1 | §6 决定 1：「同一逻辑两份实现，必须有结论一致性测试」 | **一份实现**：单文件 verifier = `dist/src/evidence/canonical-stringify.js` + `dist/src/evidence/record.js` 编译闭包内联（剥掉二者互相引用的 import 行）+ shebang | 哈希实现只有一份，双实现是纯粹的额外负担。Task 3 为把 `node:crypto` 挡在浏览器 barrel 外拆出纯函数文件，故闭包是两个文件而非一个 |
 | D2 | §5：`spec: { beforeHash, afterHash, diff }` | `spec: { beforeHash, afterHash, diffHash }`，`diffHash = canonicalHash(changedPaths 有序数组)` | 完整 diff 与 `commands[].command.patch` 是同一事实的两份副本，会各自漂移；且 `DERIVATION_CLOSED` 在可信层只能做记录内链式核对，不放 exec 语义 |
 | D3 | §8 断言 1：「改动任意一个字节 ⇒ `EVIDENCE.CHAIN_BROKEN`」 | 语义字节 ⇒ `CHAIN_BROKEN`；格式字节（空白/键序）⇒ 由 `artifact-manifest.json` 的 `sha256` 兜住 | `recordId` 覆盖的是数据模型而非文件字节。只改缩进的记录在密码学上确实未被篡改，把它报成 `CHAIN_BROKEN` 是错的；字节级完整性本来就是 manifest 的职责 |
 
@@ -595,20 +595,26 @@ git commit -m "feat(ai): surface engine capability matrix through validate_spec 
 ## Task 3: `canonicalHash` 唯一实现 + 三处哈希收敛（spec 第 1 步，必须同一提交）
 
 **Files:**
-- Create: `packages/engine/src/evidence/record.ts`
+- Create: `packages/engine/src/evidence/canonical-stringify.ts`（纯函数，零 import）
+- Create: `packages/engine/src/evidence/record.ts`（`node:crypto` + 上面的纯函数）
 - Create: `tests/evidence/canonical-hash.test.ts`
 - Modify: `packages/engine/src/sources/pmtiles-query.ts:750-770`
 - Modify: `packages/ai/src/tools/generationEvidence.ts:1281-1296`
-- Modify: `packages/engine/src/evidence/index.ts`
+- Modify: `packages/engine/src/evidence/index.ts`、`packages/engine/src/index.ts`
+- Modify: `packages/engine/package.json`（新增 `./evidence` 子路径导出）
+- Modify: `vitest.config.ts`（子路径 alias，必须排在 `@gis-engine/engine` 前面）
 
 **Interfaces:**
-- Consumes: 无（`record.ts` 不 value-import 任何 engine 模块）。
+- Consumes: 无。
 - Produces:
   ```ts
+  // @gis-engine/engine/evidence
   export function canonicalStringify(value: unknown): string;
   export function canonicalHash(value: unknown): string; // "sha256:<64 hex>"
   ```
-  Task 4/5 用 `canonicalHash` 算 `recordId` 与所有链式哈希；Task 6 的 verifier 就是本文件的编译产物。
+  Task 4/5 用 `canonicalHash` 算 `recordId` 与所有链式哈希；Task 6 的 verifier = 这两个文件编译产物的内联闭包。
+
+**模块边界（不得回退）：** `canonicalHash` 依赖 `node:crypto`，只能挂在 `@gis-engine/engine/evidence` 子路径上，**不得**从根 barrel `packages/engine/src/index.ts` 再导出。根 barrel 被 `apps/studio` 与 `examples/*` 打进浏览器包，`node:crypto` 一旦进入其可达图，Vite 只能靠 `rollupOptions.external` 掩盖（`pnpm build` 里 studio 构建会失败，这是真实门禁，不是假想风险）。`canonicalStringify` 是纯函数，`pmtiles-query.ts` 必须从 `canonical-stringify.ts` 取，不得取 `record.ts`。
 
 - [ ] **Step 1: 先采基线**
 
@@ -620,7 +626,7 @@ Purpose: 记录哪些测试钉住了 `fnv1a32:` 或 `sha256:` 字面量。收敛
 创建 `tests/evidence/canonical-hash.test.ts`：
 
 ```ts
-import { canonicalHash, canonicalStringify } from "@gis-engine/engine";
+import { canonicalHash, canonicalStringify } from "@gis-engine/engine/evidence";
 import { describe, expect, it } from "vitest";
 
 describe("canonicalStringify", () => {
@@ -655,11 +661,9 @@ Expected: FAIL — `canonicalHash is not a function`。
 
 - [ ] **Step 4: 写实现**
 
-创建 `packages/engine/src/evidence/record.ts`：
+创建 `packages/engine/src/evidence/canonical-stringify.ts`（零 import，浏览器可打包）：
 
 ```ts
-import { createHash } from "node:crypto";
-
 export function canonicalStringify(value: unknown): string {
   if (value === null || typeof value !== "object") return JSON.stringify(value) ?? "null";
   if (Array.isArray(value)) return `[${value.map((entry) => canonicalStringify(entry)).join(",")}]`;
@@ -670,16 +674,41 @@ export function canonicalStringify(value: unknown): string {
     .map((key) => `${JSON.stringify(key)}:${canonicalStringify(record[key])}`)
     .join(",")}}`;
 }
+```
+
+创建 `packages/engine/src/evidence/record.ts`（Node 侧唯一 `node:crypto` 入口）：
+
+```ts
+import { createHash } from "node:crypto";
+import { canonicalStringify } from "./canonical-stringify.js";
 
 export function canonicalHash(value: unknown): string {
   return `sha256:${createHash("sha256").update(canonicalStringify(value)).digest("hex")}`;
 }
 ```
 
-`packages/engine/src/evidence/index.ts` 追加：
+`packages/engine/src/evidence/index.ts` 追加（子路径 barrel，同时导出矩阵与哈希）：
 
 ```ts
-export { canonicalHash, canonicalStringify } from "./record.js";
+export { canonicalStringify } from "./canonical-stringify.js";
+export { canonicalHash } from "./record.js";
+```
+
+`packages/engine/src/index.ts` 根 barrel：矩阵符号改为直接从 `./evidence/capability-matrix.js` 取，**不要**再导出 `canonicalHash` / `canonicalStringify`。
+
+`packages/engine/package.json` 的 `exports`：
+
+```json
+    "./evidence": {
+      "types": "./dist/src/evidence/index.d.ts",
+      "import": "./dist/src/evidence/index.js"
+    }
+```
+
+`vitest.config.ts` 的 alias（子路径条目必须在前，否则被 `@gis-engine/engine` 前缀吞掉）：
+
+```ts
+      "@gis-engine/engine/evidence": resolve(root, "packages/engine/src/evidence/index.ts"),
 ```
 
 - [ ] **Step 5: 收敛站点 1 —— `pmtiles-query.ts`**
@@ -698,7 +727,7 @@ function digestStableValue(value: unknown): string {
 }
 ```
 
-文件顶部加 `import { canonicalStringify } from "../evidence/record.js";`。
+文件顶部加 `import { canonicalStringify } from "../evidence/canonical-stringify.js";`（不是 `record.js`：那条路径会把 `node:crypto` 拖进浏览器包）。
 
 > 行为差异必须核对：旧私有实现用 `JSON.stringify(value)` 且**没有** `?? "null"` 兜底，`undefined` 会被序列化成 JS 的 `undefined` 字面量拼进字符串。若某条 fixture 的输入含 `undefined`，其 `fnv1a32` 值会变。Step 6 若出现此类 diff，逐个确认输入是否真含 `undefined`；真含则更新期望值并在 PR 里说明，不含则说明改动越界了。
 
@@ -710,7 +739,11 @@ function digestStableValue(value: unknown): string {
   return canonicalHash(fixture);
 ```
 
-顶部从 `@gis-engine/engine` 补 `canonicalHash`，删掉因此不再使用的 `createHash` import（`sha256:` 前缀格式不变）。
+把 `canonicalHash` 改为从 `@gis-engine/engine/evidence` 单独 import（不能留在 `@gis-engine/engine` 的具名 import 列表里：根 barrel 不再导出它），并删掉因此不再使用的 `createHash` import（`sha256:` 前缀格式不变）：
+
+```ts
+import { canonicalHash } from "@gis-engine/engine/evidence";
+```
 
 - [ ] **Step 7: 跑测试 + 钉死收敛**
 
@@ -736,13 +769,62 @@ describe("hash convergence", () => {
 });
 ```
 
+同一条命令里再补一道边界守卫（钉住「根 barrel 不得触到 `node:` 内置」这条契约，Task 4/5 往根 barrel 加导出时会被它拦住）。在 `tests/evidence/canonical-hash.test.ts` 追加：
+
+```ts
+const ENGINE_SRC = "packages/engine/src";
+
+describe("browser-facing engine surface", () => {
+  it("keeps node builtins out of every module the public root barrel reaches at runtime", () => {
+    const queue = ["index.ts"];
+    const visited = new Set<string>();
+    const offenders: string[] = [];
+
+    while (queue.length > 0) {
+      const relativePath = queue.shift() as string;
+      if (visited.has(relativePath)) continue;
+      visited.add(relativePath);
+      const file = resolve(ENGINE_SRC, relativePath);
+      for (const specifier of runtimeDependencies(file)) {
+        if (specifier.startsWith("node:")) {
+          offenders.push(`${relativePath} -> ${specifier}`);
+          continue;
+        }
+        if (!specifier.startsWith(".")) continue;
+        const target = relative(ENGINE_SRC, resolve(dirname(file), specifier)).replace(/\.js$/, ".ts");
+        if (!target.startsWith("..")) queue.push(target);
+      }
+    }
+
+    expect(offenders).toEqual([]);
+  });
+});
+
+/** 运行期真正加载的 specifier：`import type` / `export type` 会被 TS 擦除，不计。 */
+function runtimeDependencies(file: string): string[] {
+  const specifiers: string[] = [];
+  for (const chunk of readFileSync(file, "utf-8").split(/;\n/)) {
+    const statement = chunk.trim();
+    if (!/^(?:import|export)\b/.test(statement)) continue;
+    if (/^(?:import|export)\s+type\b/.test(statement)) continue;
+    const from = /\bfrom\s+"([^"]+)"/.exec(statement);
+    const bare = /^import\s+"([^"]+)"/.exec(statement);
+    if (from?.[1]) specifiers.push(from[1]);
+    else if (bare?.[1]) specifiers.push(bare[1]);
+  }
+  return specifiers;
+}
+```
+
 Run: `pnpm vitest run tests/evidence/canonical-hash.test.ts && pnpm test:schema && pnpm test:ai && pnpm test:runtime && pnpm test:resources`
-Expected: PASS（Step 1 基线里记录的 diff 全部有结论后才算过）
+Expected: PASS（Step 1 基线里记录的 diff 全部有结论后才算过）。守卫需自证有效：临时往 `packages/engine/src/index.ts` 加一行 `import { createHash } from "node:crypto";`，确认该用例变红后再撤掉。
 
 - [ ] **Step 8: Commit（本 task 的产物必须同属一个提交）**
 
 ```bash
-git add packages/engine/src/evidence packages/engine/src/sources/pmtiles-query.ts packages/ai/src/tools/generationEvidence.ts tests/evidence
+git add packages/engine/src/evidence packages/engine/src/index.ts packages/engine/package.json \
+  vitest.config.ts packages/engine/src/sources/pmtiles-query.ts \
+  packages/ai/src/tools/generationEvidence.ts tests/evidence
 git commit -m "refactor(evidence): converge canonical hashing into one implementation"
 ```
 
@@ -760,8 +842,8 @@ git commit -m "refactor(evidence): converge canonical hashing into one implement
 - Modify: `tests/schema-sync/schema-sync.test.ts`
 
 **Interfaces:**
-- Consumes: `canonicalHash`（Task 3）、`MapCommandSchema` / `DiagnosticSchema`（`spec/schemas/`）、`stripNestedIds`（`spec/schemas/generation.schema.ts`）、`EngineCapabilityMatrix`（Task 1）。
-- Produces（`@gis-engine/engine` 公开面）:
+- Consumes: `canonicalHash`（Task 3，从 `@gis-engine/engine/evidence` 取）、`MapCommandSchema` / `DiagnosticSchema`（`spec/schemas/`）、`stripNestedIds`（`spec/schemas/generation.schema.ts`）、`EngineCapabilityMatrix`（Task 1）。
+- Produces（`@gis-engine/engine/evidence` 公开面；根 barrel 只放类型与 schema 等无 `node:` 依赖的符号）:
   ```ts
   export const EVIDENCE_RECORD_SCHEMA_VERSION = "evidence-record.v0.1";
   export const MAX_EVIDENCE_RECORD_BYTES = 1_048_576;
@@ -791,7 +873,7 @@ import {
   buildEngineCapabilityMatrix,
   buildEvidenceRecord,
   canonicalHash,
-} from "@gis-engine/engine";
+} from "@gis-engine/engine/evidence";
 import Ajv from "ajv";
 import { describe, expect, it } from "vitest";
 
@@ -1374,7 +1456,7 @@ git commit -m "feat(evidence): add EvidenceRecord contract and hash-chained buil
 
 ```ts
 import { readFileSync } from "node:fs";
-import { type EvidenceRecord, verifyEvidenceRecord } from "@gis-engine/engine";
+import { type EvidenceRecord, verifyEvidenceRecord } from "@gis-engine/engine/evidence";
 import { describe, expect, it } from "vitest";
 import { MAP_JSON, buildFixture, validRecord } from "./fixtures/record.js";
 
@@ -1461,7 +1543,7 @@ import {
   canonicalHash,
   type EvidenceRecord,
   type EvidenceRecordInput,
-} from "@gis-engine/engine";
+} from "@gis-engine/engine/evidence";
 import { createHash } from "node:crypto";
 
 export function sha256Of(value: string | Uint8Array): string {
@@ -1794,12 +1876,16 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { canonicalHash, DiagnosticCodes, EvidenceIssueCode, verifyEvidenceRecord } from "@gis-engine/engine";
+import { DiagnosticCodes } from "@gis-engine/engine";
+import { canonicalHash, EvidenceIssueCode, verifyEvidenceRecord } from "@gis-engine/engine/evidence";
 import { describe, expect, it } from "vitest";
 import { MAP_JSON, buildFixture, sha256Of, validRecord } from "./fixtures/record.js";
 
 const DIST_VERIFIER = resolve("packages/engine/dist/evidence-verifier.mjs");
-const RECORD_MODULE = resolve("packages/engine/dist/src/evidence/record.js");
+const BUNDLE_MODULES = [
+  resolve("packages/engine/dist/src/evidence/canonical-stringify.js"),
+  resolve("packages/engine/dist/src/evidence/record.js"),
+];
 
 describe("standalone evidence verifier", () => {
   it("emits a single file whose only runtime imports are node builtins", () => {
@@ -1811,11 +1897,14 @@ describe("standalone evidence verifier", () => {
     }
   });
 
-  it("ships the compiled engine record module verbatim inside the standalone file", () => {
+  it("ships the compiled engine hashing modules verbatim inside the standalone file", () => {
     const verifier = readFileSync(DIST_VERIFIER, "utf-8");
-    const compiledModule = readFileSync(RECORD_MODULE, "utf-8");
 
-    expect(verifier).toContain(compiledModule);
+    for (const module of BUNDLE_MODULES) {
+      // 构建脚本只剥掉「非 node: 的顶层 import 行」，其余逐字内嵌；这里用同一套剥除规则复算。
+      const inlined = readFileSync(module, "utf-8").replace(/^import[^\n]*from\s+"(?!node:)[^"]+";[^\n]*\n/gm, "");
+      expect(verifier).toContain(inlined.trimEnd());
+    }
   });
 
   it("agrees with the engine implementation on the same fixture", async () => {
@@ -1958,11 +2047,13 @@ export async function runEvidenceVerifierCli(
 
 > 默认 `--root` 为空字符串时 `readFile(recordPath)` 即按 cwd 解析，与 Step 1 测试里 `cwd: directory` 的用法一致；传 `--root` 时统一以 `/` 结尾拼接，避免 `join`/`path` 再引入 `node:path`。
 
-同一批导出里补进 `evidence/index.ts` 与 `packages/engine/src/index.ts`：`type EvidenceVerifierCliDependencies`、`runEvidenceVerifierCli`（Task 7/8 的集成测试直接调它，不重复实现 CLI 装配）。
+同一批导出里补进 `evidence/index.ts`：`type EvidenceVerifierCliDependencies`、`runEvidenceVerifierCli`（Task 7/8 的集成测试直接调它，不重复实现 CLI 装配）。**不要**加进根 barrel `packages/engine/src/index.ts`——`record.ts` 带 `node:crypto`，会被 `tests/evidence/canonical-hash.test.ts` 的浏览器面守卫挡红。
 
 - [ ] **Step 4: 写构建脚本（守卫 + 尾注入口）**
 
-单文件 = `shebang` + **编译产物逐字内嵌** + 一段读盘尾注。ESM 的 `import` 声明可以出现在模块顶层任意位置（会被提升），因此尾注里再写一条 `import` 合法，且 `runEvidenceVerifierCli` 已在同一文件内，无需再 import 自己。这样"两份实现"彻底不存在，Task 6 Step 1 的"逐字内嵌"断言就是防漂移的那道锁。
+单文件 = `shebang` + **编译产物逐字内嵌（依赖闭包）** + 一段读盘尾注。闭包就是 Task 3 拆出来的两个文件：`canonical-stringify.js`（零 import）在前、`record.js` 在后，内嵌时剥掉 `record.js` 指向 `canonical-stringify.js` 的那条 import 行。ESM 的 `import` 声明可以出现在模块顶层任意位置（会被提升），因此尾注里再写一条 `import` 合法，且 `runEvidenceVerifierCli` 已在同一文件内，无需再 import 自己。这样"两份实现"彻底不存在，Task 6 Step 1 的"逐字内嵌"断言就是防漂移的那道锁。
+
+出现闭包外的非 `node:` 依赖时**必须失败**，不允许静默剥除——否则以后 `record.ts` 引入 `diagnostics/codes.js` 这类运行期依赖时，会悄悄产出打不开的包。
 
 创建 `packages/engine/scripts/build-evidence-verifier.ts`：
 
@@ -1970,27 +2061,39 @@ export async function runEvidenceVerifierCli(
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
-const source = resolve("dist/src/evidence/record.js");
+// Dependency order: callees first. Append new closure members in this order.
+const BUNDLE = ["dist/src/evidence/canonical-stringify.js", "dist/src/evidence/record.js"].map(resolve);
 const target = resolve("dist/evidence-verifier.mjs");
-const compiled = readFileSync(source, "utf-8");
+const ANY_IMPORT = /^import[^\n]*from\s+"([^"]+)"[^\n]*\n/gm;
 
-const offenders = [...compiled.matchAll(/^import[^\n]*from\s+"([^"]+)"/gm)]
-  .map((match) => match[1] as string)
-  .filter((specifier) => !specifier.startsWith("node:"));
+const sources = BUNDLE.map((source) => {
+  const compiled = readFileSync(source, "utf-8");
+  const offenders = [...compiled.matchAll(ANY_IMPORT)]
+    .map((match) => match[1] as string)
+    .filter((specifier) => !specifier.startsWith("node:"))
+    .map((specifier) => resolve(dirname(source), specifier))
+    .filter((dependency) => !BUNDLE.includes(dependency));
 
-if (offenders.length > 0) {
-  console.error(
-    `evidence-verifier must stay dependency-free. Offending imports in ${source}:\n${offenders
-      .map((offender) => `  ${offender}`)
-      .join("\n")}`,
-  );
-  process.exitCode = 1;
-} else {
+  if (offenders.length > 0) {
+    console.error(
+      `evidence-verifier must stay dependency-free. Offending imports in ${source}:\n${offenders
+        .map((offender) => `  ${offender}`)
+        .join("\n")}`,
+    );
+    process.exitCode = 1;
+    return "";
+  }
+
+  // Strip only intra-bundle imports; node: builtins stay and are asserted by the guard test.
+  return compiled.replace(/^import[^\n]*from\s+"(?!node:)[^"]+";[^\n]*\n/gm, "");
+});
+
+if (process.exitCode !== 1) {
   mkdirSync(dirname(target), { recursive: true });
   writeFileSync(
     target,
     `#!/usr/bin/env node
-${compiled}
+${sources.join("\n")}
 import { readFile } from "node:fs/promises";
 
 process.exitCode = await runEvidenceVerifierCli(process.argv.slice(2), {
@@ -2017,6 +2120,13 @@ process.exitCode = await runEvidenceVerifierCli(process.argv.slice(2), {
 ```json
     "build": "tsc -p tsconfig.json && node dist/scripts/build-evidence-verifier.js",
     "build:schema": "tsc -p tsconfig.json && node dist/scripts/build-schema.js && node dist/scripts/build-evidence-verifier.js"
+```
+
+同一文件再加两条 `exports`。Task 7/8 的消费方用 `createRequire(...).resolve("@gis-engine/engine/…")` 取 verifier 与 package.json，而包一旦声明了 `exports`，未列出的深路径会直接 `ERR_PACKAGE_PATH_NOT_EXPORTED`：
+
+```json
+    "./evidence-verifier.mjs": "./dist/evidence-verifier.mjs",
+    "./package.json": "./package.json"
 ```
 
 - [ ] **Step 6: 跑门禁**
@@ -2082,7 +2192,7 @@ git commit -m "feat(evidence): ship a standalone zero-dependency evidence verifi
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { EvidenceRecordSchema, verifyEvidenceRecord } from "@gis-engine/engine";
+import { EvidenceRecordSchema, verifyEvidenceRecord } from "@gis-engine/engine/evidence";
 import { main, verifyArtifacts } from "@gis-engine/cli";
 import Ajv from "ajv";
 import { describe, expect, it, vi } from "vitest";
@@ -2274,7 +2384,7 @@ function readPackageManagerVersion(): string {
 ```ts
 function resolveVerifierPath(): string {
   try {
-    return createRequire(import.meta.url).resolve("@gis-engine/engine/dist/evidence-verifier.mjs");
+    return createRequire(import.meta.url).resolve("@gis-engine/engine/evidence-verifier.mjs");
   } catch {
     // Workspace runs resolve through the source tree before the package is packed.
     return fileURLToPath(new URL("../../engine/dist/evidence-verifier.mjs", import.meta.url));
@@ -2351,7 +2461,7 @@ function resolveVerifierPath(): string {
       expect(canonicalHash(specOf(mapBytes))).toBe(evidence.spec.afterHash);
 ```
 
-并在该文件顶部 import 块补 `import { canonicalHash } from "@gis-engine/engine";`。`specOf` 不必新造：`map.json` 落盘时已含完整 spec（`generate.ts:591` 用 `JSON.stringify(applied.spec, null, 2)`），而 `canonicalStringify` 与键序无关，所以 `JSON.parse(mapBytes)` 直接可用作输入：
+并在该文件顶部 import 块补 `import { canonicalHash } from "@gis-engine/engine/evidence";`。`specOf` 不必新造：`map.json` 落盘时已含完整 spec（`generate.ts:591` 用 `JSON.stringify(applied.spec, null, 2)`），而 `canonicalStringify` 与键序无关，所以 `JSON.parse(mapBytes)` 直接可用作输入：
 
 ```ts
 function specOf(mapBytes: Buffer): unknown {
@@ -2563,7 +2673,7 @@ git commit -m "test(acceptance): rehearse third-party evidence recomputation end
 追加到 `tests/workbench/workbench-contracts.test.ts`（该文件已有 Workbench contract 层用例，沿用它的 import 风格）：
 
 ```ts
-import { canonicalHash } from "@gis-engine/engine";
+import { canonicalHash } from "@gis-engine/engine/evidence";
 import { describe, expect, it } from "vitest";
 import { createWorkbenchCanonicalHash } from "../../apps/workbench/contracts/hash.ts";
 
@@ -2623,7 +2733,7 @@ Expected: FAIL（receipt 无 `recordId`；两处哈希实现在 undefined 键序
 `apps/workbench/contracts/hash.ts` 把实现改为委托：
 
 ```ts
-import { canonicalHash } from "@gis-engine/engine";
+import { canonicalHash } from "@gis-engine/engine/evidence";
 
 export function createWorkbenchCanonicalHash(value: unknown): string {
   return canonicalHash(value);

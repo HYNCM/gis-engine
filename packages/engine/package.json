@@ -16,6 +16,10 @@
     ".": {
       "types": "./dist/src/index.d.ts",
       "import": "./dist/src/index.js"
+    },
+    "./evidence": {
+      "types": "./dist/src/evidence/index.d.ts",
+      "import": "./dist/src/evidence/index.js"
     }
   },
   "files": [

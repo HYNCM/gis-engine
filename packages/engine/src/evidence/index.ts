@@ -1,3 +1,4 @@
+export { canonicalStringify } from "./canonical-stringify.js";
 export {
   type BuildEngineCapabilityMatrixInput,
   buildEngineCapabilityMatrix,
@@ -5,4 +6,4 @@ export {
   type EngineCapabilityBlocker,
   type EngineCapabilityMatrix,
 } from "./capability-matrix.js";
-export { canonicalHash, canonicalStringify } from "./record.js";
+export { canonicalHash } from "./record.js";

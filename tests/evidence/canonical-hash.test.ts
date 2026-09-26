@@ -1,7 +1,9 @@
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
-import { canonicalHash, canonicalStringify } from "@gis-engine/engine";
+import { dirname, relative, resolve } from "node:path";
+import { canonicalHash, canonicalStringify } from "@gis-engine/engine/evidence";
 import { describe, expect, it } from "vitest";
+
+const ENGINE_SRC = "packages/engine/src";
 
 describe("canonicalStringify", () => {
   it("is independent of key insertion order", () => {
@@ -38,3 +40,46 @@ describe("hash convergence", () => {
     }
   });
 });
+
+describe("browser-facing engine surface", () => {
+  it("keeps node builtins out of every module the public root barrel reaches at runtime", () => {
+    const queue = ["index.ts"];
+    const visited = new Set<string>();
+    const offenders: string[] = [];
+
+    while (queue.length > 0) {
+      const relativePath = queue.shift() as string;
+      if (visited.has(relativePath)) continue;
+      visited.add(relativePath);
+      const file = resolve(ENGINE_SRC, relativePath);
+      for (const specifier of runtimeDependencies(file)) {
+        if (specifier.startsWith("node:")) {
+          offenders.push(`${relativePath} -> ${specifier}`);
+          continue;
+        }
+        if (!specifier.startsWith(".")) continue;
+        const target = relative(ENGINE_SRC, resolve(dirname(file), specifier)).replace(/\.js$/, ".ts");
+        if (!target.startsWith("..")) queue.push(target);
+      }
+    }
+
+    // apps/studio and examples/* bundle the root barrel; record.ts is the Node-only hashing
+    // entry and must stay reachable only through the ./evidence subpath export.
+    expect(offenders).toEqual([]);
+  });
+});
+
+/** Specifiers a module loads at runtime, i.e. every import/export statement minus `type`-only ones. */
+function runtimeDependencies(file: string): string[] {
+  const specifiers: string[] = [];
+  for (const chunk of readFileSync(file, "utf-8").split(/;\n/)) {
+    const statement = chunk.trim();
+    if (!/^(?:import|export)\b/.test(statement)) continue;
+    if (/^(?:import|export)\s+type\b/.test(statement)) continue;
+    const from = /\bfrom\s+"([^"]+)"(?:\s+async)?/.exec(statement);
+    const bare = /^import\s+"([^"]+)"/.exec(statement);
+    if (from?.[1]) specifiers.push(from[1]);
+    else if (bare?.[1]) specifiers.push(bare[1]);
+  }
+  return specifiers;
+}

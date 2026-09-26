@@ -1,7 +1,6 @@
 import {
   type CapabilityReport,
   CapabilityReportSchema,
-  canonicalHash,
   createPMTilesQueryEvidence,
   createSourceReadinessReport,
   type Diagnostic,
@@ -34,6 +33,7 @@ import {
   type ValidationReport,
   validateSpec,
 } from "@gis-engine/engine";
+import { canonicalHash } from "@gis-engine/engine/evidence";
 import { Ajv } from "ajv/dist/ajv.js";
 import { type GisEngineToolName, GisEngineToolNameSchema } from "../internal/mcpToolNames.js";
 import { ContextSummaryToolResultSchema, SnapshotSpecToolResultSchema, ValidationReportSchema } from "../mcp/server.js";

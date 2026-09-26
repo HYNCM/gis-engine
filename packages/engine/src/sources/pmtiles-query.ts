@@ -1,5 +1,5 @@
 import { DiagnosticCodes } from "../diagnostics/codes.js";
-import { canonicalStringify } from "../evidence/record.js";
+import { canonicalStringify } from "../evidence/canonical-stringify.js";
 import { manualFix } from "../internal/shared.js";
 import { escapePathSegment } from "../spec/patch/path.js";
 import type { Diagnostic, JsonValue, LayerSpec, MapSpec, SourceSpec } from "../types.js";
@@ -750,6 +750,8 @@ function countDiagnostics(diagnostics: Diagnostic[]): DiagnosticCounts {
   );
 }
 
+/** Digest inputs are always sanitised (see indexFixtureFeatures), so no key ever holds `undefined` —
+ * canonicalStringify renders those as `null`, which the local stringifier this replaced did not. */
 function digestStableValue(value: unknown): string {
   const input = canonicalStringify(value);
   let hash = 2166136261;
