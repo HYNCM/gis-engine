@@ -2877,7 +2877,7 @@ Expected: PASS。`size:check` 若因新增 `evidence-verifier.mjs` 与 `evidence
 | `DERIVATION_CLOSED` | 命令序列的 revision 链与逆补丁哈希在记录内自洽（不执行命令） |
 | `TOOLCHAIN_RECORDED` | 引擎 / Node / pnpm 版本已入记录 |
 
-字节级（含格式）完整性由 `artifact-manifest.json` 兜住：`pnpm --filter @gis-engine/cli verify <dir>`。
+字节级（含格式）完整性由 `artifact-manifest.json` 兜住：`create-gis-map --verify-artifacts <dir>`。
 ```
 
 更新 `docs/README.md` 索引与 `CHANGELOG.md`；Run: `node scripts/doc-generator.mjs links` → Expected: `✅ 所有活动文档交叉引用完整`。
