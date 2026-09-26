@@ -15,6 +15,12 @@ decision_level: advisory
 
 # Evolution Framework
 
+> Current execution policy (2026-09-26): this is an optional analysis reference.
+> The cadences below describe the former operating model; no evolution collector
+> runs on a schedule. Use these tools only for a concrete decision, and record
+> unavailable metrics as unavailable. [AGENTS.md](../../AGENTS.md) owns current rules.
+
+
 GIS Engine treats the agent system itself as a product that should improve from
 measured execution, not folklore.
 
@@ -153,7 +159,7 @@ Every closed sprint should contribute at least one of:
 | Evolution collector | `scripts/evolution-collector.mjs` | Collects D1-D6 metrics and produces ledger inputs |
 | Health dashboard | `scripts/dashboard-generator.mjs` → `docs/planning/AGENT_HEALTH_DASHBOARD.md` | Shows report freshness, handoff anomalies, and SLA status |
 | Agent runner | `scripts/agent-runner.mjs` | Standardizes front matter, dry runs, and health checks |
-| Weekly workflow | `.github/workflows/agent-weekly.yml` | Runs the current planning/research/documentation cadence |
+| Supplementary review | `.github/workflows/agent-review.yml` | Manual checks only; no evolution collection |
 
 ## Health Dashboard Interpretation
 

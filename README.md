@@ -26,6 +26,17 @@ npm exec --package @gis-engine/cli@latest -- create-gis-map my-map
 
 Generated-app scene browsing is an extension-only delivery signal. The stable `view.mode: "scene3d"` remains blocked until its promotion gate accepts renderer evidence.
 
+## Project Surfaces
+
+- `packages/engine`: MapSpec, validated commands, diagnostics and renderer contracts.
+- `packages/ai` and `packages/cli`: agent access and buildable project delivery.
+- `apps/studio`: local review UI; `examples/ai-map-workbench`: contract reference.
+- `packages/scene3d*`: isolated experimental extensions, subject to promotion gates.
+
+Start with one map-change-to-export path. See [current scope](docs/planning/next-step-plan.md)
+for delivery priorities and optional maintenance tooling. Routine work uses PR CI;
+periodic report generation is not required.
+
 ## Docs
 
 - [Documentation map](docs/README.md)

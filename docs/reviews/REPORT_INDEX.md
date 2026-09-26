@@ -1,7 +1,7 @@
 ---
 title: Review Report Index
 description: Current review evidence entry points
-generated_at: 2026-08-06T00:00:00Z
+generated_at: 2026-09-26T12:33:40Z
 scope: "Current review tree"
 ---
 
@@ -12,6 +12,7 @@ Review files are evidence snapshots. GitHub checks and Issues remain the current
 ## Current Signposts
 
 - [Latest documentation audit](documentation-audit-2026-08-06.md)
+- [Escalation backlog root cause](agent-escalation-backlog-triage-2026-09-26.md)
 - [Compatibility closeout](w32-w34-compatibility-evidence-closeout-2026-08-06.md)
 - [Package-size decision](package-size-budget-quality-decision-2026-08-05.md)
 - [MCP compatibility decision](mcp-2026-07-28-quality-decision-2026-08-03.md)
