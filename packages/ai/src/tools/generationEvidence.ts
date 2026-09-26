@@ -36,11 +36,7 @@ import {
 } from "@gis-engine/engine";
 import { Ajv } from "ajv/dist/ajv.js";
 import { type GisEngineToolName, GisEngineToolNameSchema } from "../internal/mcpToolNames.js";
-import {
-  ContextSummaryToolResultSchema,
-  SnapshotSpecToolResultSchema,
-  ValidationReportSchema,
-} from "../mcp/server.js";
+import { ContextSummaryToolResultSchema, SnapshotSpecToolResultSchema, ValidationReportSchema } from "../mcp/server.js";
 import { applyCommandsTool } from "./applyCommands.js";
 import { type ContextSummary, getContextSummary } from "./contextSummary.js";
 import {
