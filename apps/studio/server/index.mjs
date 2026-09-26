@@ -394,13 +394,7 @@ export function applyProviderCommands(engine, output, spec) {
       break;
     }
     case "reset":
-      activeBasemap = DEFAULT_BASEMAP;
-      return {
-        status: "applied",
-        nextSpec: createInitialSpec(),
-        diagnostics: [],
-        evidence: manualCommandEvidence(1),
-      };
+      return newMapSessionResult();
     case "unsupported":
       return {
         status: "blocked",
@@ -585,13 +579,7 @@ export function applyLegacyIntent(engine, intent, spec) {
     };
   }
   if (plan.intent === "reset") {
-    activeBasemap = DEFAULT_BASEMAP;
-    return {
-      status: "applied",
-      nextSpec: createInitialSpec(),
-      diagnostics: [],
-      evidence: manualCommandEvidence(1),
-    };
+    return newMapSessionResult();
   }
 
   let commands = [];
@@ -764,13 +752,21 @@ function emptyCommandEvidence() {
   };
 }
 
-function manualCommandEvidence(changedPathCount) {
+function newMapSessionResult() {
+  activeBasemap = DEFAULT_BASEMAP;
+  const nextSpec = createInitialSpec();
   return {
-    commandCount: 1,
-    committed: true,
-    rolledBack: false,
-    failed: false,
-    changedPathCount,
+    // A new MapSpec id at revision "0" is a session replacement, not a command
+    // application, so no MapCommand may be claimed for it.
+    status: "reset",
+    nextSpec,
+    diagnostics: [],
+    evidence: {
+      ...emptyCommandEvidence(),
+      sessionReplaced: true,
+      mapId: nextSpec.id,
+      toRevision: nextSpec.revision,
+    },
   };
 }
 
@@ -897,7 +893,7 @@ function isBoundsArray(value) {
 
 let activeSpec = createInitialSpec();
 let activeBasemap = DEFAULT_BASEMAP;
-let _activeEpoch = 0;
+let activeEpoch = 0;
 const sessionId = `studio.${randomUUID()}`;
 const projectId = normalizeProjectId(process.env.STUDIO_PROJECT_ID);
 const reviewPrincipal = { role: "reviewer", projectIds: [projectId] };
@@ -908,12 +904,13 @@ export const STUDIO_LOCAL_REVIEW_LEDGER_VERSION = "studio.review-ledger.v1";
 export const STUDIO_LOCAL_REVIEW_EXPORT_VERSION = "studio.review-export.v1";
 export const WORKBENCH_PRODUCT_ROUTE_VERSION = "studio.workbench-product-route.v1";
 export const WORKBENCH_PRODUCT_ROUTE = "/review-console/workbench/:projectId";
-const REVIEW_LEDGER_AUDIT_STATUSES = new Set(["all", "applied", "blocked", "ready", "reviewed"]);
+const REVIEW_LEDGER_AUDIT_STATUSES = new Set(["all", "applied", "reset", "blocked", "ready", "reviewed"]);
 const REVIEW_LEDGER_REVIEW_OUTCOMES = new Set(["all", "accepted", "blocked", "follow-up-required"]);
 const REVIEW_EXPORT_KINDS = new Set(["all", "audit", "review"]);
 const REVIEW_EXPORT_STATUSES = new Set([
   "all",
   "applied",
+  "reset",
   "blocked",
   "ready",
   "reviewed",
@@ -923,7 +920,27 @@ const REVIEW_EXPORT_STATUSES = new Set([
 
 function replaceActiveSpec(next) {
   activeSpec = next;
-  _activeEpoch++;
+  activeEpoch++;
+}
+
+function isActiveMapSession(session) {
+  return session.epoch === activeEpoch && session.spec === activeSpec;
+}
+
+function staleSessionPayload(engine) {
+  return {
+    ...statePayload(engine, "blocked", activeSpec),
+    diagnostics: [
+      {
+        code: "STUDIO.PROVIDER_RESULT_STALE",
+        severity: "error",
+        path: "/providerResponse",
+        message:
+          "The active map changed while the provider request was running, so the provider result was not applied.",
+      },
+    ],
+    commandEvidence: emptyCommandEvidence(),
+  };
 }
 
 function replaceBoundedRecords(target, nextRecords, cap) {
@@ -1155,6 +1172,7 @@ function summarizeAuditStatuses(auditRecords = []) {
     (counts, record) => {
       if (
         record?.status === "applied" ||
+        record?.status === "reset" ||
         record?.status === "blocked" ||
         record?.status === "ready" ||
         record?.status === "reviewed"
@@ -1163,7 +1181,7 @@ function summarizeAuditStatuses(auditRecords = []) {
       }
       return counts;
     },
-    { applied: 0, blocked: 0, ready: 0, reviewed: 0 },
+    { applied: 0, reset: 0, blocked: 0, ready: 0, reviewed: 0 },
   );
 }
 
@@ -1809,6 +1827,9 @@ async function main() {
         const providerId = typeof body.providerId === "string" ? body.providerId : "mock-ai";
         const chatMode = typeof body.mode === "string" ? body.mode : "standard";
         const fromRevision = activeSpec.revision || "0";
+        // A provider response may arrive after the visible map moved on; pin the
+        // session so the result can be rejected instead of applied to a new map.
+        const requestSession = { spec: activeSpec, epoch: activeEpoch };
 
         if (!message) {
           return sendJson(
@@ -1876,7 +1897,6 @@ async function main() {
             summary,
             capabilityPrompt: maplibreCapabilities.buildMapLibreCapabilityPrompt(),
           });
-          console.log("DeepSeek result:", JSON.stringify(result).slice(0, 300));
 
           if (!result.ok) {
             const diagnostics = [
@@ -1902,13 +1922,28 @@ async function main() {
             });
           }
 
+          if (!isActiveMapSession(requestSession)) {
+            appendStudioAudit({
+              providerId: "deepseek",
+              status: "blocked",
+              promptHash: result.providerOutput.promptHash,
+              traceId: result.providerOutput.traceId,
+              commandEvidence: emptyCommandEvidence(),
+              diagnostics: staleSessionPayload(engine).diagnostics,
+              fromRevision,
+              toRevision: activeSpec.revision || "0",
+            });
+            return sendJson(res, staleSessionPayload(engine), 409);
+          }
+
           const commandResult =
             chatMode === "agent" && ai?.renderIntent
               ? applyAgentIntent(ai, engine, result.providerOutput, activeSpec)
               : applyProviderCommands(engine, result.providerOutput, activeSpec);
           const nextSpec = commandResult.nextSpec;
           const status = commandResult.status;
-          if (status === "applied") replaceActiveSpec(nextSpec);
+          const sessionChanged = status === "applied" || status === "reset";
+          if (sessionChanged) replaceActiveSpec(nextSpec);
           const diagnostics = commandResult.diagnostics;
           appendStudioAudit({
             providerId: "deepseek",
@@ -1918,12 +1953,12 @@ async function main() {
             commandEvidence: commandResult.evidence,
             diagnostics,
             fromRevision,
-            toRevision: (status === "applied" ? nextSpec : activeSpec).revision || "0",
+            toRevision: (sessionChanged ? nextSpec : activeSpec).revision || "0",
           });
 
           return sendJson(res, {
             ...withCommandDiagnostics(
-              statePayload(engine, status, status === "applied" ? nextSpec : activeSpec),
+              statePayload(engine, status, sessionChanged ? nextSpec : activeSpec),
               diagnostics,
             ),
             commandEvidence: commandResult.evidence,
@@ -1937,7 +1972,8 @@ async function main() {
         }
 
         const legacyResult = applyLegacyIntent(engine, message, activeSpec);
-        if (legacyResult.status === "applied") {
+        const legacySessionChanged = legacyResult.status === "applied" || legacyResult.status === "reset";
+        if (legacySessionChanged) {
           replaceActiveSpec(legacyResult.nextSpec);
         }
         const promptHash = hashPrompt(message);
@@ -1949,16 +1985,12 @@ async function main() {
           commandEvidence: legacyResult.evidence,
           diagnostics: legacyResult.diagnostics,
           fromRevision,
-          toRevision: (legacyResult.status === "applied" ? legacyResult.nextSpec : activeSpec).revision || "0",
+          toRevision: (legacySessionChanged ? legacyResult.nextSpec : activeSpec).revision || "0",
         });
 
         return sendJson(res, {
           ...withCommandDiagnostics(
-            statePayload(
-              engine,
-              legacyResult.status,
-              legacyResult.status === "applied" ? legacyResult.nextSpec : activeSpec,
-            ),
+            statePayload(engine, legacyResult.status, legacySessionChanged ? legacyResult.nextSpec : activeSpec),
             legacyResult.diagnostics,
           ),
           commandEvidence: legacyResult.evidence,
@@ -2090,18 +2122,25 @@ async function main() {
     }
   });
 
-  server.listen(PORT, HOST, () => {
-    console.log("\n🚀 AI Map Studio Server");
-    console.log(`   http://${HOST}:${PORT}`);
-    console.log(`   DB: ${store.resolveStorePath()}`);
-    console.log(`   API: http://${HOST}:${PORT}/api/state`);
-    console.log(`   Maps: http://${HOST}:${PORT}/api/maps\n`);
-  });
+  await new Promise((resolve_listen) => server.listen(PORT, HOST, resolve_listen));
+  return server;
+}
+
+export async function start() {
+  return main();
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  main().catch((error) => {
-    console.error("Failed to start server:", error);
-    process.exit(1);
-  });
+  main()
+    .then(() => {
+      console.log("\n🚀 AI Map Studio Server");
+      console.log(`   http://${HOST}:${PORT}`);
+      console.log(`   DB: ${store.resolveStorePath()}`);
+      console.log(`   API: http://${HOST}:${PORT}/api/state`);
+      console.log(`   Maps: http://${HOST}:${PORT}/api/maps\n`);
+    })
+    .catch((error) => {
+      console.error("Failed to start server:", error);
+      process.exit(1);
+    });
 }

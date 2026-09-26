@@ -10,7 +10,7 @@ import { ALL_TEMPLATES, basicMapTemplate, type MapSpecTemplate } from "./templat
 // ────────────────────────────────────────────────────────────────────────────
 
 export interface ServerState {
-  status: "ready" | "loading" | "blocked" | "applied" | "reviewed";
+  status: "ready" | "loading" | "blocked" | "applied" | "reset" | "reviewed";
   spec: Record<string, unknown>;
   style: Record<string, unknown> | null;
   summary: {
@@ -34,6 +34,7 @@ export interface ServerState {
     rolledBack: boolean;
     failed?: boolean;
     changedPathCount: number;
+    sessionReplaced?: boolean;
   };
   provider?: {
     providerId: string;
@@ -75,7 +76,7 @@ export interface AuditRecord {
   id: string;
   sessionId: string;
   timestamp: string;
-  status: "applied" | "blocked" | "ready" | "reviewed";
+  status: "applied" | "reset" | "blocked" | "ready" | "reviewed";
   providerId: string;
   promptHash?: string;
   traceId?: string;
@@ -345,9 +346,11 @@ export default function App() {
       const reply =
         data.status === "applied"
           ? `Done. ${commandEvidence?.changedPathCount ?? 0} path(s) changed.`
-          : data.status === "blocked"
-            ? `Blocked${errorCount ? `: ${errorCount} error(s)` : ""}. See evidence.`
-            : `Status: ${data.status}.`;
+          : data.status === "reset"
+            ? "Started a new map session; no commands were applied."
+            : data.status === "blocked"
+              ? `Blocked${errorCount ? `: ${errorCount} error(s)` : ""}. See evidence.`
+              : `Status: ${data.status}.`;
 
       setMessages((previous) => [
         ...previous,
@@ -386,7 +389,7 @@ export default function App() {
   const mapPreviewState = previewSpec ?? serverState;
 
   const statusBadgeColor =
-    status === "ready" || status === "applied" || status === "reviewed"
+    status === "ready" || status === "applied" || status === "reset" || status === "reviewed"
       ? "bg-green-900/50 text-green-400"
       : status === "thinking"
         ? "bg-yellow-900/50 text-yellow-400"
