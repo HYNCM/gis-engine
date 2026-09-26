@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { Ajv } from "ajv/dist/ajv.js";
+import { EngineCapabilityMatrixSchema, EvidenceRecordSchema } from "../src/evidence/index.js";
 import {
   ApplyCommandsToolInputSchema,
   CapabilityReportSchema,
@@ -26,6 +27,8 @@ const schemas = [
   ["map-generation-prompt-plan.v0.1.schema.json", MapGenerationPromptPlanSchema],
   ["map-generation-command-skeleton.v0.1.schema.json", MapGenerationCommandSkeletonSchema],
   ["ai-tools.v0.1.schema.json", ApplyCommandsToolInputSchema],
+  ["evidence-record.v0.1.schema.json", EvidenceRecordSchema],
+  ["engine-capabilities.v0.1.schema.json", EngineCapabilityMatrixSchema],
 ] as const;
 
 await mkdir(outDir, { recursive: true });

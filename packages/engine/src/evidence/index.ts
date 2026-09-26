@@ -6,4 +6,25 @@ export {
   type EngineCapabilityBlocker,
   type EngineCapabilityMatrix,
 } from "./capability-matrix.js";
-export { canonicalHash } from "./record.js";
+export {
+  type BuildEvidenceRecordResult,
+  buildEvidenceRecord,
+  canonicalHash,
+  EVIDENCE_RECORD_SCHEMA_VERSION,
+  EvidenceAssertionId,
+  EvidenceExclusionId,
+  EvidenceIssueCode,
+  type EvidenceRecord,
+  type EvidenceRecordArtifact,
+  type EvidenceRecordCapabilities,
+  type EvidenceRecordCommand,
+  type EvidenceRecordInput,
+  MAX_EVIDENCE_RECORD_BYTES,
+} from "./record.js";
+export {
+  EngineCapabilityBlockerSchema,
+  type EngineCapabilityMatrixFromSchema,
+  EngineCapabilityMatrixSchema,
+  type EvidenceRecordFromSchema,
+  EvidenceRecordSchema,
+} from "./schema.js";

@@ -25,6 +25,26 @@ export {
   type EngineCapabilityBlocker,
   type EngineCapabilityMatrix,
 } from "./evidence/capability-matrix.js";
+// Types only: `./evidence/record.js` value-imports `node:crypto` and must stay off the
+// browser-facing runtime graph (see tests/evidence/canonical-hash.test.ts reachability guard).
+export type {
+  BuildEvidenceRecordResult,
+  EvidenceAssertionId,
+  EvidenceExclusionId,
+  EvidenceIssueCode,
+  EvidenceRecord,
+  EvidenceRecordArtifact,
+  EvidenceRecordCapabilities,
+  EvidenceRecordCommand,
+  EvidenceRecordInput,
+} from "./evidence/record.js";
+export {
+  EngineCapabilityBlockerSchema,
+  type EngineCapabilityMatrixFromSchema,
+  EngineCapabilityMatrixSchema,
+  type EvidenceRecordFromSchema,
+  EvidenceRecordSchema,
+} from "./evidence/schema.js";
 export {
   createMapGenerationCommandSkeleton,
   type MapGenerationAnalysisEvidence,

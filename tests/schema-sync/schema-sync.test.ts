@@ -41,6 +41,8 @@ import {
   CapabilityReportSchema,
   DiagnosticCodes,
   DiagnosticSchema,
+  EngineCapabilityMatrixSchema,
+  EvidenceRecordSchema,
   MapCommandSchema,
   MapGenerationCommandSkeletonSchema,
   MapGenerationPromptPlannerInputSchema,
@@ -50,6 +52,7 @@ import {
   Scene3DStableRuntimeBlockerCodes,
   SceneView3DExtensionSchema,
 } from "@gis-engine/engine";
+import { buildEvidenceRecord, EvidenceIssueCode, type EvidenceRecordInput } from "@gis-engine/engine/evidence";
 import Ajv from "ajv";
 import { describe, expect, it } from "vitest";
 import scene3dExtensionSpec from "../fixtures/specs/valid/scene3d-extension.map.json";
@@ -83,8 +86,21 @@ describe("schema sync gate", () => {
       ExportExampleAppToolResultSchema,
       GenerationEvidenceBundleInputSchema,
       GenerationEvidenceBundleSchema,
+      EvidenceRecordSchema,
+      EngineCapabilityMatrixSchema,
     ]) {
       expect(() => new Ajv({ strict: false }).compile(schema)).not.toThrow();
+    }
+  });
+
+  it("publishes evidence schemas without nested $id", () => {
+    for (const [name, schema] of [
+      ["evidence-record.v0.1.schema.json", EvidenceRecordSchema],
+      ["engine-capabilities.v0.1.schema.json", EngineCapabilityMatrixSchema],
+    ] as const) {
+      const serialized = JSON.stringify(schema);
+      const idCount = serialized.match(/"\$id":/g)?.length ?? 0;
+      expect(idCount, name).toBe(1);
     }
   });
 
@@ -411,5 +427,208 @@ describe("schema sync gate", () => {
 
     expect(missing, `MCP tools missing from docs/mcp-server-description.md: ${missing.join(", ")}`).toEqual([]);
     expect(extra, `Documented tools not found in MCP server: ${extra.join(", ")}`).toEqual([]);
+  });
+});
+
+// `evidence/schema.ts` (the TypeBox contract Ajv enforces for external consumers) and
+// `evidence/record.ts`'s zero-dependency `structuralIssues` validator encode the same shape in
+// two places. That duplication is only safe while both stay in lockstep: every property the
+// schema marks required must also be rejected by the hand-written validator. These guards make
+// any drift fail deterministically instead of shipping a record Ajv would reject downstream.
+describe("evidence record schema/validator alignment", () => {
+  // Fields the builder always derives — they are required on the record but never supplied via
+  // EvidenceRecordInput, so the structural validator cannot (and must not) reject their absence.
+  const DERIVED_TOP_LEVEL = ["schemaVersion", "recordId", "issuedAt", "exclusions"] as const;
+
+  const hash = (seed: string) => `sha256:${seed.repeat(64).slice(0, 64)}`;
+
+  const validInput = (): EvidenceRecordInput =>
+    JSON.parse(
+      JSON.stringify({
+        project: { id: "proj-a", baseRevision: "r0", revision: "r1" },
+        origin: { actor: "agent:codex", providerKind: "mcp", promptHash: hash("a") },
+        commands: [
+          {
+            command: { id: "cmd-1", version: "0.1", type: "removeLayer", layerId: "layer-a" },
+            outcome: "applied",
+            diagnostics: [],
+            inversePatchHash: hash("0"),
+            baseRevision: "r0",
+            nextRevision: "r1",
+          },
+        ],
+        spec: { beforeHash: hash("1"), afterHash: hash("2"), diffHash: hash("3") },
+        artifacts: [{ path: "map.json", role: "mapspec", bytes: 128, sha256: hash("4") }],
+        capabilities: { schemaVersion: "engine-capabilities.v0.1", available: ["mapspec.validate"], blocked: [] },
+        toolchain: { engineVersion: "1.5.0", nodeMajor: "22", pnpmVersion: "11.9.0" },
+        issuer: "gis-engine-cli",
+      }),
+    ) as EvidenceRecordInput;
+
+  // One representative violation per schema-required field that the structural validator enforces.
+  // Keys are JSON-pointer-style labels used by the coverage lock below.
+  const violations: Record<string, (input: Record<string, unknown>) => void> = {
+    "/project": (i) => {
+      delete i.project;
+    },
+    "/project/id": (i) => {
+      (i.project as { id: string }).id = "";
+    },
+    "/project/baseRevision": (i) => {
+      (i.project as { baseRevision: string }).baseRevision = "";
+    },
+    "/project/revision": (i) => {
+      (i.project as { revision: string }).revision = "";
+    },
+    "/origin": (i) => {
+      delete i.origin;
+    },
+    "/origin/actor": (i) => {
+      (i.origin as { actor: string }).actor = "";
+    },
+    "/origin/providerKind": (i) => {
+      (i.origin as { providerKind: string }).providerKind = "";
+    },
+    "/origin/promptHash": (i) => {
+      (i.origin as { promptHash: string }).promptHash = "not-a-hash";
+    },
+    "/commands": (i) => {
+      i.commands = [];
+    },
+    "/commands/command": (i) => {
+      delete (i.commands as Record<string, unknown>[])[0].command;
+    },
+    "/commands/outcome": (i) => {
+      (i.commands as Record<string, unknown>[])[0].outcome = "reverted";
+    },
+    "/commands/diagnostics": (i) => {
+      (i.commands as Record<string, unknown>[])[0].diagnostics = "none";
+    },
+    "/commands/inversePatchHash": (i) => {
+      (i.commands as Record<string, unknown>[])[0].inversePatchHash = "nope";
+    },
+    "/spec": (i) => {
+      delete i.spec;
+    },
+    "/spec/beforeHash": (i) => {
+      (i.spec as { beforeHash: string }).beforeHash = "nope";
+    },
+    "/spec/afterHash": (i) => {
+      (i.spec as { afterHash: string }).afterHash = "nope";
+    },
+    "/spec/diffHash": (i) => {
+      (i.spec as { diffHash: string }).diffHash = "nope";
+    },
+    "/artifacts": (i) => {
+      i.artifacts = [];
+    },
+    "/artifacts/path": (i) => {
+      (i.artifacts as Record<string, unknown>[])[0].path = "";
+    },
+    "/artifacts/role": (i) => {
+      (i.artifacts as Record<string, unknown>[])[0].role = "";
+    },
+    "/artifacts/bytes": (i) => {
+      (i.artifacts as Record<string, unknown>[])[0].bytes = -1;
+    },
+    "/artifacts/sha256": (i) => {
+      (i.artifacts as Record<string, unknown>[])[0].sha256 = "nope";
+    },
+    "/capabilities": (i) => {
+      delete i.capabilities;
+    },
+    "/capabilities/schemaVersion": (i) => {
+      (i.capabilities as { schemaVersion: string }).schemaVersion = "";
+    },
+    "/capabilities/available": (i) => {
+      (i.capabilities as { available: unknown }).available = "mapspec.validate";
+    },
+    "/capabilities/blocked": (i) => {
+      (i.capabilities as { blocked: unknown }).blocked = null;
+    },
+    "/toolchain": (i) => {
+      delete i.toolchain;
+    },
+    "/toolchain/engineVersion": (i) => {
+      (i.toolchain as { engineVersion: string }).engineVersion = "";
+    },
+    "/toolchain/nodeMajor": (i) => {
+      (i.toolchain as { nodeMajor: string }).nodeMajor = "";
+    },
+    "/toolchain/pnpmVersion": (i) => {
+      (i.toolchain as { pnpmVersion: string }).pnpmVersion = "";
+    },
+    "/issuer": (i) => {
+      i.issuer = "";
+    },
+  };
+
+  it("accepts a fully valid input through both the structural validator and Ajv", () => {
+    const result = buildEvidenceRecord(validInput());
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const validate = new Ajv({ strict: false }).compile(EvidenceRecordSchema);
+    expect(validate(result.record)).toBe(true);
+    // Derived fields must actually be emitted by the builder, not merely declared required.
+    for (const field of DERIVED_TOP_LEVEL) {
+      expect(Object.keys(result.record), field).toContain(field);
+    }
+  });
+
+  it("rejects a violation of every schema-required field the validator owns", () => {
+    for (const [path, mutate] of Object.entries(violations)) {
+      const input = validInput() as Record<string, unknown>;
+      mutate(input);
+      const result = buildEvidenceRecord(input as EvidenceRecordInput);
+      expect(result.ok, path).toBe(false);
+      if (result.ok) continue;
+      expect(
+        result.diagnostics.some((d) => d.code === "EVIDENCE.RECORD_INVALID"),
+        path,
+      ).toBe(true);
+    }
+  });
+
+  it("keeps the schema's required fields and the validator's violation cases in lockstep", () => {
+    const covered = new Set(Object.keys(violations));
+
+    // Every required top-level field is either builder-derived or has a matching violation case.
+    for (const field of EvidenceRecordSchema.required) {
+      if ((DERIVED_TOP_LEVEL as readonly string[]).includes(field)) continue;
+      expect(covered, `top-level required field /${field} has no structural-validator violation case`).toContain(
+        `/${field}`,
+      );
+    }
+
+    // Every required leaf on the objects the validator fully owns must have a violation case.
+    const itemOf = (schema: { items?: unknown }) => schema.items as { required: string[] };
+    const locked: Array<[string, { required: string[] }]> = [
+      ["/project", EvidenceRecordSchema.properties.project],
+      ["/origin", EvidenceRecordSchema.properties.origin],
+      ["/spec", EvidenceRecordSchema.properties.spec],
+      ["/capabilities", EvidenceRecordSchema.properties.capabilities],
+      ["/toolchain", EvidenceRecordSchema.properties.toolchain],
+      ["/commands", itemOf(EvidenceRecordSchema.properties.commands)],
+      ["/artifacts", itemOf(EvidenceRecordSchema.properties.artifacts)],
+    ];
+    for (const [base, objectSchema] of locked) {
+      for (const key of objectSchema.required) {
+        // The MapCommand `command` leaf is validated by Ajv's command union, not field-by-field by
+        // the structural validator, which only asserts its presence.
+        expect(covered, `required field ${base}/${key} has no structural-validator violation case`).toContain(
+          `${base}/${key}`,
+        );
+      }
+    }
+  });
+
+  it("keeps record.ts EvidenceIssueCode literals in sync with DiagnosticCodes EVIDENCE.* codes", () => {
+    const diagnosticEvidenceCodes = Object.values(DiagnosticCodes).filter((code) => code.startsWith("EVIDENCE."));
+    const issueCodes = Object.values(EvidenceIssueCode);
+
+    // record.ts may not import codes.ts (Task 6's standalone build), so the mirror must be exact:
+    // the same set, or a code silently disappears from the Ajv-enforced diagnostic enum.
+    expect([...issueCodes].sort()).toEqual([...diagnosticEvidenceCodes].sort());
   });
 });
