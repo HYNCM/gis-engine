@@ -1,7 +1,7 @@
 ---
 title: Documentation Artifact Policy
 description: Committed snapshot and generated-report policy for documentation artifacts
-generated_at: 2026-06-06T19:43:01Z
+generated_at: 2026-09-26T12:20:00Z
 scope: "docs automation artifacts"
 ---
 
@@ -15,8 +15,9 @@ that still act as current evidence.
 | Artifact | Current Policy | Owner | Required Sync |
 | --- | --- | --- | --- |
 | `docs/planning/issues-snapshot.md` | Keep the last authenticated snapshot when GitHub issue state is unavailable. | `@orchestrator` | Regenerate with `node scripts/planning-evidence.mjs`; failed or unauthenticated fetches must exit non-zero without replacing the committed snapshot. |
-| `docs/planning/AGENT_HEALTH_DASHBOARD.md` | Keep as a committed snapshot. Template-only reports are not specialist freshness evidence. | `@orchestrator` | Regenerate with `node scripts/planning-evidence.mjs` so its issue counts and evidence run id match the issue snapshot and handoff ledger; keep `docs/README.md` linked. |
+| `docs/planning/AGENT_HEALTH_DASHBOARD.md` | Keep as a committed dated snapshot, not a live health service. Template-only reports are not specialist freshness evidence. | `@orchestrator` | Regenerate on demand with `node scripts/planning-evidence.mjs` so its issue counts and evidence run id match the issue snapshot and handoff ledger. `docs/README.md` links it as dated evidence only when a review cites it. |
 | `docs/planning/handoff-ledger.json` | Keep as a committed snapshot. Template-only upstream or downstream reports cannot satisfy HOC consumption. | `@orchestrator` | Regenerate with `node scripts/planning-evidence.mjs` when issue or HOC inputs change; keep AGENTS and handoff-contract docs aligned. |
+| `docs/planning/task-burndown.md`, `weekly-digest.md`, `monthly-roadmap.md`, `dependency-graph.md` | Frozen last-approved snapshots from the former scheduled cadence. GitHub Issues are canonical task state; nothing rewrites these on a schedule. | `@orchestrator` | Update only inside an explicit planning run that records its revision and inputs; never refresh a date to imply current status. |
 | `docs/reviews/doc-link-audit.md` | Keep as a committed generated report. | `@docs` | Regenerate with `node scripts/doc-generator.mjs links` after documentation restructuring. |
 
 ## Cleanup Rules

@@ -51,7 +51,9 @@ status: ready-for-planning | requires-escalation
 
 **Artifacts** (all must exist):
 1. `docs/research/competitor-updates-{week}.md` — with dated evidence and source URLs
-2. `docs/research/capability-scorecard.md` — with W-over-W score deltas and evidence notes
+2. `docs/research/capability-scorecard.md` — with evidence notes and W-over-W deltas
+   when the rubric is comparable; if the rubric changes, explicitly record why
+   scores are not comparable instead of fabricating a delta
 3. Priority-ranked recommendations with short justifications
 
 ### Validation Gate

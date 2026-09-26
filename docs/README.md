@@ -26,11 +26,16 @@ pnpm docs:links
 - [Link audit](reviews/doc-link-audit.md)
 - [Issue snapshot](planning/issues-snapshot.md)
 
-## Current Coordination
+## Current Work
 
-- [Weekly digest](planning/weekly-digest.md)
-- [Next-step plan](planning/next-step-plan.md)
-- [Handoff contracts](planning/agent-handoff-contracts.md)
-- [Review index](reviews/REPORT_INDEX.md)
+- [Scope and next steps](planning/next-step-plan.md)
+- [Competitor analysis, checked 2026-09-26](research/competitor-updates-2026-W39.md)
+- [Operating rules](../AGENTS.md)
+
+PR CI owns routine verification. Supplementary checks use the manual
+[Agent Review](../.github/workflows/agent-review.yml) workflow. Planning reports,
+[handoff audits](planning/agent-handoff-contracts.md) and evolution tools are
+on-demand; dated dashboards and [review records](reviews/REPORT_INDEX.md) are
+historical evidence, not a live health service.
 
 Historical prose lives in Git history. Do not recreate an in-tree archive.

@@ -42,6 +42,7 @@ jobs:
   size-check:
     name: "体积检查"
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
 

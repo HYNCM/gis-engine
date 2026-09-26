@@ -18,6 +18,7 @@ jobs:
   schema-diff:
     name: "schema: diff report"
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
         with:
@@ -80,6 +81,7 @@ jobs:
   quality:
     name: "quality: PR gate plan"
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
         with:

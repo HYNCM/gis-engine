@@ -1,0 +1,66 @@
+name: Agent Review
+
+# Supplementary, on-demand evidence. PR CI remains the merge gate.
+on:
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: "Checks to run (logs are artifacts, not a specialist decision)"
+        required: true
+        type: choice
+        default: checks
+        options:
+          - checks
+          - docs
+
+permissions:
+  contents: read
+
+concurrency:
+  group: agent-review-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11.9.0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install Playwright Chromium
+        if: inputs.scope == 'checks'
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run selected checks
+        env:
+          REVIEW_SCOPE: ${{ inputs.scope }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p review-evidence
+          git rev-parse HEAD > review-evidence/revision.txt
+          case "${REVIEW_SCOPE}" in
+            checks)
+              { pnpm build:schema; pnpm check; } 2>&1 | tee review-evidence/checks.log
+              ;;
+            docs)
+              pnpm test:docs 2>&1 | tee review-evidence/docs.log
+              ;;
+            *) echo "Unknown review scope" >&2; exit 2 ;;
+          esac
+
+      - name: Upload review evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: review-evidence-${{ github.run_id }}
+          path: review-evidence/
+          if-no-files-found: warn
+          retention-days: 14
