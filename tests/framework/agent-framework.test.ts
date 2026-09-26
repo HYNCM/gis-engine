@@ -78,7 +78,7 @@ describe("agent coordination framework", () => {
     for (const file of ["ci.yml", "pr-quality.yml", "auto-fix.yml", "bundle-size.yml", "deploy-docs.yml"]) {
       const workflow = readFileSync(`.github/workflows/${file}`, "utf8");
       const lines = workflow.split("\n");
-      const jobsStart = lines.findIndex((line) => line === "jobs:");
+      const jobsStart = lines.indexOf("jobs:");
       expect(jobsStart, `${file} declares a jobs block`).toBeGreaterThan(-1);
       const jobs = lines
         .slice(jobsStart + 1)
@@ -86,7 +86,7 @@ describe("agent coordination framework", () => {
         .map((line) => line.trim().slice(0, -1));
       expect(jobs.length, `${file} declares jobs`).toBeGreaterThan(0);
       for (const job of jobs) {
-        const start = lines.findIndex((line) => line === `  ${job}:`);
+        const start = lines.indexOf(`  ${job}:`);
         const end = lines.findIndex((line, index) => index > start && /^ {0,2}[a-z][a-z0-9_-]*:$/g.test(line));
         const body = lines.slice(start + 1, end === -1 ? lines.length : end).join("\n");
         expect(body, `${file} job '${job}' needs timeout-minutes`).toContain("timeout-minutes:");
