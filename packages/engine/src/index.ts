@@ -21,6 +21,8 @@ export { DiagnosticCodes, Scene3DStableRuntimeBlockerCodes } from "./diagnostics
 export {
   type BuildEngineCapabilityMatrixInput,
   buildEngineCapabilityMatrix,
+  canonicalHash,
+  canonicalStringify,
   ENGINE_CAPABILITY_MATRIX_SCHEMA_VERSION,
   type EngineCapabilityBlocker,
   type EngineCapabilityMatrix,

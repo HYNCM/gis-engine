@@ -1,7 +1,7 @@
-import { createHash } from "node:crypto";
 import {
   type CapabilityReport,
   CapabilityReportSchema,
+  canonicalHash,
   createPMTilesQueryEvidence,
   createSourceReadinessReport,
   type Diagnostic,
@@ -1289,7 +1289,7 @@ function spatialQueryFixtureHash(
     sourceIds: selectedSourceIdsForCase(spec, readiness, queryCase),
     resultLimit,
   };
-  return `sha256:${createHash("sha256").update(JSON.stringify(fixture)).digest("hex")}`;
+  return canonicalHash(fixture);
 }
 
 function spatialQueryEmptyResultDiagnostic(

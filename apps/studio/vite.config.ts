@@ -21,6 +21,10 @@ export default defineConfig({
       },
     },
     rollupOptions: {
+      // evidence/record.ts only value-imports node:crypto (zero-dep verifier constraint);
+      // the browser bundle never executes it, so keep it out of the module graph instead
+      // of letting Vite's browser-external stub fail Rollup's named-export trace.
+      external: ["node:crypto"],
       output: {
         manualChunks: {
           "react-vendor": ["react", "react-dom"],

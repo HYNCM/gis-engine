@@ -5,3 +5,4 @@ export {
   type EngineCapabilityBlocker,
   type EngineCapabilityMatrix,
 } from "./capability-matrix.js";
+export { canonicalHash, canonicalStringify } from "./record.js";
