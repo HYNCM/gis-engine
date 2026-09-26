@@ -2138,9 +2138,14 @@ const BUNDLE_MODULES = [
 describe("standalone evidence verifier", () => {
   it("emits a single file whose only runtime imports are node builtins", () => {
     const source = readFileSync(DIST_VERIFIER, "utf-8");
-    const imports = [...source.matchAll(/^import[^\n]*from\s+"([^"]+)"/gm)].map((match) => match[1]!);
+    // Same scanner the build script uses: a `from "…"`-only regex is bypassed by `await import("…")`,
+    // which is exactly how Task 3's reachability guard was shown to be leaky.
+    const specifiers = [
+      ...source.matchAll(/(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)"([^"]+)"/g),
+    ].map((match) => match[1]!);
 
-    for (const specifier of imports) {
+    expect(specifiers.length).toBeGreaterThan(0);
+    for (const specifier of specifiers) {
       expect(specifier.startsWith("node:")).toBe(true);
     }
   });
@@ -2149,8 +2154,18 @@ describe("standalone evidence verifier", () => {
     const verifier = readFileSync(DIST_VERIFIER, "utf-8");
 
     for (const module of BUNDLE_MODULES) {
-      // 构建脚本只剥掉「非 node: 的顶层 import 行」，其余逐字内嵌；这里用同一套剥除规则复算。
-      const inlined = readFileSync(module, "utf-8").replace(/^import[^\n]*from\s+"(?!node:)[^"]+";[^\n]*\n/gm, "");
+      // 构建脚本只剥掉「引用闭包内模块的那几行 import」，其余逐字内嵌；这里用同一套剥除规则复算。
+      // 复算必须与 build-evidence-verifier.ts 的剥除逻辑同构（同一 specifier 判定），否则这条
+      // 「逐字内嵌」锁会和构建脚本各说各话。
+      const inlined = readFileSync(module, "utf-8")
+        .split("\n")
+        .filter(
+          (line) =>
+            ![...line.matchAll(/(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)"([^"]+)"/g)]
+              .map((match) => match[1]!)
+              .some((specifier) => !specifier.startsWith("node:") && specifier.startsWith("./")),
+        )
+        .join("\n");
       expect(verifier).toContain(inlined.trimEnd());
     }
   });
@@ -2312,12 +2327,18 @@ import { dirname, resolve } from "node:path";
 // Dependency order: callees first. Append new closure members in this order.
 const BUNDLE = ["dist/src/evidence/canonical-stringify.js", "dist/src/evidence/record.js"].map(resolve);
 const target = resolve("dist/evidence-verifier.mjs");
-const ANY_IMPORT = /^import[^\n]*from\s+"([^"]+)"[^\n]*\n/gm;
+// Every syntax that can pull in another module at runtime. Task 3's reachability guard learned the
+// hard way that a `from "…"`-only scan is bypassed by `await import("…")`; a scanner that misses one
+// here emits a bundle that breaks on the auditor's machine instead of failing the build.
+const MODULE_SPECIFIER = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)"([^"]+)"/g;
+
+function specifiersIn(code: string): string[] {
+  return [...code.matchAll(MODULE_SPECIFIER)].map((match) => match[1] as string);
+}
 
 const sources = BUNDLE.map((source) => {
   const compiled = readFileSync(source, "utf-8");
-  const offenders = [...compiled.matchAll(ANY_IMPORT)]
-    .map((match) => match[1] as string)
+  const offenders = [...new Set(specifiersIn(compiled))]
     .filter((specifier) => !specifier.startsWith("node:"))
     .map((specifier) => resolve(dirname(source), specifier))
     .filter((dependency) => !BUNDLE.includes(dependency));
@@ -2332,8 +2353,14 @@ const sources = BUNDLE.map((source) => {
     return "";
   }
 
-  // Strip only intra-bundle imports; node: builtins stay and are asserted by the guard test.
-  return compiled.replace(/^import[^\n]*from\s+"(?!node:)[^"]+";[^\n]*\n/gm, "");
+  // Strip only lines carrying an intra-bundle specifier; node: builtins stay and the guard test
+  // asserts nothing else survives. tsc/Biome emit single-line import statements, so a line filter
+  // cannot leave a fragment behind — and if that invariant ever breaks, the standalone CLI test
+  // *executes* this file, so a parse error fails the gate instead of shipping.
+  return compiled
+    .split("\n")
+    .filter((line) => !specifiersIn(line).some((specifier) => BUNDLE.includes(resolve(dirname(source), specifier))))
+    .join("\n");
 });
 
 if (process.exitCode !== 1) {
@@ -2360,6 +2387,12 @@ process.exitCode = await runEvidenceVerifierCli(process.argv.slice(2), {
 ```
 
 守卫失败即 `exit 1`，`pnpm build` 随之失败——不允许"先出包、以后再清依赖"。
+
+**这条守卫必须被证明承重**（Task 3 的教训：能绕过的守卫等于没有守卫）。变异证明两步，写进 Step 6
+的执行记录：① 临时在 `record.ts` 顶部加一条 `import { manualFix } from "../internal/shared.js";`
+并在任一函数里真的用它（否则 tsc 会先报未使用），确认 `pnpm --filter @gis-engine/engine build`
+以 exit 1 失败且报错点名该文件；② 换成 `await import("../internal/shared.js")`，确认同一个守卫照样
+`exit 1`（这一步就是老 `ANY_IMPORT` 正则漏掉的形态）。两步做完必须还原，并确认 `git status` 干净。
 
 - [ ] **Step 5: 接进构建**
 
