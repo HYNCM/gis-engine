@@ -402,8 +402,9 @@ git commit -m "feat(engine): derive capability matrix from promotion gate and re
 
 **Files:**
 - Modify: `packages/ai/src/tools/contextSummary.ts:112-149`（`ContextSummary` 接口）、`:234`（构造点）、`:459`（readiness 映射）
-- Modify: `packages/ai/src/mcp/server.ts:128-145`（`ValidationReportSchema`）、`:410-459`（`ContextSummaryToolResultSchema`）、`:848-856`（`validate_spec` handler）
+- Modify: `packages/ai/src/mcp/server.ts`（`ValidationReportSchema` 之后新增 `ValidateSpecToolResultSchema`、`ContextSummaryToolResultSchema`、`validate_spec` handler）
 - Modify: `packages/ai/src/index.ts`（导出新 schema）
+- Modify: `packages/ai/src/tools/generationEvidence.ts`（bundle 的 `validation` 改指裸 `ValidationReportSchema`，保持已发布形状不变）
 - Create: `tests/ai/capability-matrix-exposure.test.ts`
 - Modify: `tests/schema-sync/schema-sync.test.ts`（新 schema 进 Ajv 编译清单）
 **Interfaces:**
@@ -516,15 +517,22 @@ export const EngineCapabilityMatrixContractSchema = {
 } as const;
 ```
 
-`ValidationReportSchema` 补字段（`properties` 与 `required` 各一处）：
+**新字段只能加在 `ValidateSpecToolResultSchema` 上，不能加在共享的 `ValidationReportSchema` 上。** `snapshot_spec` 与 `explain_spec` 的 `validation` 字段、以及 `GenerationEvidenceBundleSchema.validation` 都内嵌 `ValidationReportSchema`，而它们装的是裸 `validateSpec()` 报告（`snapshotSpec.ts:68`、`explainSpec.ts:51`、`generationEvidence.ts:628`）——引擎侧 `ValidationReport` 根本没有 `capabilities`。往共享基上加 required 字段会同时撑大四个公开契约，并让三处 `structuredContent` 立刻被 Ajv 拒（实测：`data/validation must have required property 'capabilities'`）。
+
+在 `ValidationReportSchema` 之后新增一个组合出的工具结果 schema，并让 `validate_spec` 的 descriptor 指向它：
 
 ```ts
+export const ValidateSpecToolResultSchema = {
+  ...ValidationReportSchema,
+  properties: {
+    ...ValidationReportSchema.properties,
     capabilities: EngineCapabilityMatrixContractSchema,
+  },
+  required: [...ValidationReportSchema.required, "capabilities"],
+} as const;
 ```
 
-```ts
-  required: ["valid", "diagnostics", "stats", "capabilities"],
-```
+`generationEvidence.ts` 里嵌入 bundle 的那处必须指向裸基（`stripNestedIds(ValidationReportSchema)`），否则 bundle 的 `validation` 会被间接撑大；为此把 `ValidationReportSchema` 从 `server.ts` 具名导出，但**不要**经 `packages/ai/src/index.ts` 再导出——它是包内共享形状，不是公开面。
 
 `ContextSummaryToolResultSchema` 同样补：`properties` 加 `capabilityMatrix: EngineCapabilityMatrixContractSchema,`，`required` 数组末尾加 `"capabilityMatrix"`。
 
