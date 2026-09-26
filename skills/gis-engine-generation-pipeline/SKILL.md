@@ -102,7 +102,8 @@ After a successful generate run, these files are written:
 | `delivery-summary.json` | Yes | Pipeline metadata, delivery status, source readiness, follow-ups. |
 | `REVIEW.md` | Yes | Human-readable review handoff for the first reviewer to open. |
 | `artifact-manifest.json` | Yes | File list with roles, byte sizes, and sha256 hashes. |
-| `evidence.json` | Yes | Full evidence bundle with all pipeline artifacts. |
+| `evidence.json` | Yes | The `EvidenceRecord`: command lineage, spec hashes, and a sha256 for every other file in the package. |
+| `evidence-verifier.mjs` | Yes | Zero-dependency recomputation tool shipped beside the record so a third party needs nothing else. |
 | `diagnostics.json` | Only when present | Aggregated diagnostics from plan, skeleton, and validation. |
 | App scaffold files | Conditional | Vite + React + Tailwind files when app template is emitted. |
 
@@ -305,26 +306,59 @@ The mock provider guarantees deterministic output, so CI runs are reproducible.
   run: npx @gis-engine/cli create-gis-map my-map --generate -p deepseek --prompt "Earthquake map"
 ```
 
-## Evidence Bundle Structure
+## Evidence Record Structure
 
-The `evidence.json` file contains all pipeline artifacts for auditing:
+The `evidence.json` file is an `EvidenceRecord` (`evidence-record.v0.1`): the
+command lineage, the spec hashes, and a sha256 for every other file written
+besides itself.
 
 ```json
 {
-  "promptHash": "sha256:<hex>",
-  "traceId": "cli-<timestamp36>",
-  "provider": "mock",
-  "retainedRawPrompt": false,
-  "plan": { "status": "ok", "commands": [...] },
-  "skeleton": { "baseSpec": {...}, "commands": [...] },
-  "validation": { "valid": true, "diagnostics": [] },
-  "contextSummary": { "sourceCount": 2, "layerCount": 3 },
-  "generatedAt": "2026-07-01T00:00:00Z"
+  "schemaVersion": "evidence-record.v0.1",
+  "recordId": "sha256:<hex>",
+  "project": { "id": "my-map", "baseRevision": "0", "revision": "1" },
+  "origin": { "actor": "provider:mock", "providerKind": "cli-generate", "promptHash": "sha256:<hex>" },
+  "commands": [
+    {
+      "command": { "id": "gen-set-view", "type": "set-view" },
+      "outcome": "applied",
+      "diagnostics": [],
+      "inversePatchHash": "sha256:<hex>",
+      "baseRevision": "0",
+      "nextRevision": "1"
+    }
+  ],
+  "spec": { "beforeHash": "sha256:<hex>", "afterHash": "sha256:<hex>", "diffHash": "sha256:<hex>" },
+  "artifacts": [
+    { "path": "map.json", "role": "mapspec", "bytes": 112, "sha256": "sha256:<hex>" }
+  ],
+  "capabilities": { "schemaVersion": "engine-capability-matrix.v0.1", "available": [], "blocked": [] },
+  "toolchain": { "engineVersion": "1.5.0", "nodeMajor": "22", "pnpmVersion": "11.9.0" },
+  "issuedAt": "2026-09-27T00:00:00.000Z",
+  "issuer": "gis-engine-cli",
+  "exclusions": ["OFFLINE_REPLAY", "VISUAL_CONSISTENCY"]
 }
 ```
 
 The raw prompt text is never stored. Only the SHA-256 hash is retained for
 correlation without exposing prompt content.
+
+Recompute the record from inside the exported package — no source checkout, no
+npm install, no network:
+
+```bash
+node evidence-verifier.mjs evidence.json --root . --json
+```
+
+Byte-level (including formatting) integrity of the package itself comes from
+`artifact-manifest.json`:
+`npx @gis-engine/cli create-gis-map --verify-artifacts ./my-map`. See
+[`docs/engineering/evidence-record.md`](../../docs/engineering/evidence-record.md)
+for the assertion semantics and the threat model.
+
+`createGenerationEvidenceBundle()` remains the `@gis-engine/ai` tool-facing view
+and carries the matching `recordId`; it is no longer the format written to
+`evidence.json`.
 
 ## Tips
 

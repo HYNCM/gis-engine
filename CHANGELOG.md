@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- **EvidenceRecord public contract (`evidence-record.v0.1`)**: a schema-first, command-only record of one AI change — `recordId` over the canonical body, command lineage with inverse-patch hashes, before/after/diff spec hashes, a sha256 and byte count per package file, the engine capability matrix, and toolchain versions. Contract, builder, and pure-data verifier are reachable only through the `@gis-engine/engine/evidence` subpath, which keeps `node:crypto` off the browser-facing root barrel.
+- **Standalone zero-dependency verifier**: `@gis-engine/engine/evidence-verifier.mjs` recomputes a record from the exported package alone (`node evidence-verifier.mjs evidence.json --root . --json`) with no source checkout, npm install, or network, and returns the fixed `{ ok, assertions[], diagnostics[] }` shape over `node:` builtins only.
+- **Third-party recompute guide**: [docs/engineering/evidence-record.md](docs/engineering/evidence-record.md) records the assertion semantics, the byte budgets, and the threat model.
+
+### Changed
+- **`evidence.json` in a generated package is now an `EvidenceRecord`.** It previously held the `GenerationEvidenceBundle` tool view. `createGenerationEvidenceBundle()` stays the AI-side contract and gained an optional `recordId` pointing at the record it views; `delivery-summary.json` remains the human/reviewer delivery摘要, so review content is unchanged.
+- **Review artifact set widened**: `evidence.json` joined `artifact-manifest.json`'s `requiredReviewFiles`, and `evidence-verifier.mjs` now ships inside the package as a hashed `role: "evidence"` artifact. `--verify-artifacts` additionally cross-checks the manifest's file set against the record's `artifacts[]`.
+- **Read-side byte budget**: the standalone verifier refuses an `evidence.json` larger than `MAX_EVIDENCE_RECORD_BYTES` (1,048,576) before parsing it, exiting `1` without producing an assertion verdict. The builder already refused to emit one, so reject-not-truncate now holds at both ends.
+- **Package size budget**: `@gis-engine/engine` complete-dist canonical gzip moved to `262144` bytes. The evidence subsystem accounts for `+38,703` B of the measured `237,324` B (`dist/src/evidence/**` `23,384`, `dist/schema/evidence-record*.json` `5,239`, `dist/evidence-verifier.mjs` `9,898`); with it removed the package measures `197,354` B, inside the previous `204,800` B budget. This contract is what crosses the line, so the budget moves rather than the evidence surface shrinking.
+
 ## [1.5.0] - 2026-07-06
 
 ### Added
