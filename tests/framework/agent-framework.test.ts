@@ -45,6 +45,12 @@ describe("agent coordination framework", () => {
     expect(coordinationPlan).toContain("node scripts/doc-generator.mjs links");
   });
 
+  it("requires the evidence suite for evidence contract changes", () => {
+    const plan = [...buildPlan(["packages/engine/src/evidence/record.ts"]).keys()];
+
+    expect(plan).toContain("pnpm test:evidence");
+  });
+
   it("installs Playwright before recovery gates run snapshot smoke", () => {
     const workflow = readFileSync(".github/workflows/agent-failure-recovery.yml", "utf8");
     const installIndex = workflow.indexOf("pnpm exec playwright install --with-deps chromium");

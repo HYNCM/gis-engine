@@ -19,6 +19,13 @@ export { type ApplyCommandsResult, applyCommands } from "./commands/applyCommand
 export { type BuildPatchResult, buildPatch } from "./commands/buildPatch.js";
 export { DiagnosticCodes, Scene3DStableRuntimeBlockerCodes } from "./diagnostics/codes.js";
 export {
+  type BuildEngineCapabilityMatrixInput,
+  buildEngineCapabilityMatrix,
+  ENGINE_CAPABILITY_MATRIX_SCHEMA_VERSION,
+  type EngineCapabilityBlocker,
+  type EngineCapabilityMatrix,
+} from "./evidence/index.js";
+export {
   createMapGenerationCommandSkeleton,
   type MapGenerationAnalysisEvidence,
   type MapGenerationCommandSkeleton,
