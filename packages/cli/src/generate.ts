@@ -11,7 +11,7 @@
  */
 
 import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -20,7 +20,16 @@ import {
   type ExampleAppDeliverySummary,
   normalizeWorkbenchProviderPlan,
 } from "@gis-engine/ai";
-import { applyCommands, createMapGenerationCommandSkeleton, validateSpec } from "@gis-engine/engine";
+import {
+  applyCommands,
+  buildEngineCapabilityMatrix,
+  createMapGenerationCommandSkeleton,
+  createSourceReadinessReport,
+  validateSpec,
+} from "@gis-engine/engine";
+// `buildEvidenceRecord`/`canonicalHash` reach `node:crypto`, so they live on the engine's
+// `./evidence` subpath and never on the browser-facing root barrel.
+import { buildEvidenceRecord, canonicalHash, type EvidenceRecordCommand } from "@gis-engine/engine/evidence";
 import { type PreflightResult, preflightMapSpec } from "./preflight.js";
 import { CLI_API_KEY_ENVS, createProviderDiagnostics, readProviderApiKey, resolveProviderProfile } from "./provider.js";
 import { callProvider, type ProviderConfidence } from "./provider-http.js";
@@ -211,7 +220,13 @@ type GeneratedArtifactManifest = {
   files: GeneratedArtifactManifestEntry[];
 };
 
-const REQUIRED_REVIEW_FILES = ["map.json", "preflight.json", "delivery-summary.json", "REVIEW.md"] as const;
+const REQUIRED_REVIEW_FILES = [
+  "map.json",
+  "preflight.json",
+  "delivery-summary.json",
+  "REVIEW.md",
+  "evidence.json",
+] as const;
 
 function classifyGeneratedArtifact(path: string): GeneratedArtifactRole {
   if (path === "map.json") return "mapspec";
@@ -219,12 +234,45 @@ function classifyGeneratedArtifact(path: string): GeneratedArtifactRole {
   if (path === "delivery-summary.json") return "delivery-summary";
   if (path === "REVIEW.md") return "review";
   if (path === "evidence.json") return "evidence";
+  // The record is only third-party verifiable if the recomputation tool that ships beside it is
+  // hashed by the record too, so it enters `files` as an artifact rather than as scaffold.
+  if (path === "evidence-verifier.mjs") return "evidence";
   if (path === "diagnostics.json") return "diagnostics";
   return "app";
 }
 
 function hashFileSha256(filePath: string): string {
   return `sha256:${createHash("sha256").update(readFileSync(filePath)).digest("hex")}`;
+}
+
+function readEngineVersion(): string {
+  try {
+    const pkg = createRequire(import.meta.url).resolve("@gis-engine/engine/package.json");
+    return (JSON.parse(readFileSync(pkg, "utf-8")) as { version: string }).version;
+  } catch {
+    return "unknown";
+  }
+}
+
+function readPackageManagerVersion(): string {
+  // pnpm sets npm_config_user_agent="pnpm/11.9.0 npm/? node/..."; spawning pnpm here
+  // would add a process per generate run for a string we already have.
+  const agent = process.env.npm_config_user_agent ?? "";
+  return agent.match(/^pnpm\/([\d.]+)/)?.[1] ?? "unknown";
+}
+
+/**
+ * The standalone verifier beside the record, so a third party needs nothing else to recompute.
+ * `@gis-engine/engine` publishes it through its `exports` map; the source-tree fallback only has to
+ * cover workspace runs that resolve through the repo layout before the package is packed.
+ */
+function resolveVerifierPath(): string {
+  try {
+    return createRequire(import.meta.url).resolve("@gis-engine/engine/evidence-verifier.mjs");
+  } catch {
+    // Workspace runs resolve through the source tree before the package is packed.
+    return fileURLToPath(new URL("../../engine/dist/evidence-verifier.mjs", import.meta.url));
+  }
 }
 
 function createArtifactManifest(input: {
@@ -439,8 +487,15 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
   let providerConfidence: ProviderConfidence | undefined;
 
   if (opts.provider === "mock") {
-    // Mock: deterministic, no HTTP call
-    intent = { targetDomains: ["feature-display"] };
+    // Mock: deterministic, no HTTP call. The `view` declaration is not decoration — an
+    // `EvidenceRecord` requires at least one command (`evidence-record.v0.1` keeps `commands`
+    // `minItems: 1`), and `buildGenerationCommands` only emits a command for a request field that
+    // carries content. Without it the mock planner yields zero commands, so the very path every
+    // `tests/cli` case and the offline smoke run uses could not produce a record at all.
+    // `mode: "map2d"` is chosen because it matches the base spec the skeleton builds, so the
+    // resulting `gen-set-view` command attests the viewport the run already had instead of
+    // changing the generated map.
+    intent = { targetDomains: ["feature-display"], view: { mode: "map2d" } };
     console.log(`  ✓ Mock provider: deterministic intent`);
   } else {
     // Real provider: HTTP call
@@ -612,13 +667,6 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
     writeFileSync(reviewPath, renderReviewMarkdown(deliverySummary), "utf-8");
     files.push("REVIEW.md");
 
-    // evidence.json — full evidence bundle
-    if (evidenceResult.ok) {
-      const evidencePath = join(outDir, "evidence.json");
-      writeFileSync(evidencePath, `${JSON.stringify(evidenceResult.result, null, 2)}\n`, "utf-8");
-      files.push("evidence.json");
-    }
-
     // diagnostics.json — all diagnostics from the pipeline
     const allDiagnostics = [...plan.diagnostics, ...skeleton.diagnostics, ...validation.diagnostics];
     if (allDiagnostics.length > 0) {
@@ -650,6 +698,83 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
         console.log(`  ✓ App template: ${templateName} (${templateFiles.length} files)`);
       }
     }
+
+    // evidence-verifier.mjs ships beside the record so a third party needs nothing else.
+    const verifierTarget = join(outDir, "evidence-verifier.mjs");
+    copyFileSync(resolveVerifierPath(), verifierTarget);
+    files.push("evidence-verifier.mjs");
+
+    const commandById = new Map(skeleton.commands.map((command) => [command.id, command]));
+    const evidenceCommands: EvidenceRecordCommand[] = applied.results.map((result) => {
+      const command = commandById.get(result.commandId);
+      if (!command) throw new Error(`Command ${result.commandId} missing from generation skeleton.`);
+
+      return {
+        command,
+        outcome: result.status,
+        diagnostics: result.diagnostics,
+        inversePatchHash: canonicalHash(result.inversePatch ?? []),
+        ...(result.baseRevision ? { baseRevision: result.baseRevision } : {}),
+        ...(result.nextRevision ? { nextRevision: result.nextRevision } : {}),
+      };
+    });
+
+    const evidenceRecord = buildEvidenceRecord({
+      project: {
+        id: opts.projectName,
+        baseRevision: applied.results[0]?.baseRevision ?? "initial",
+        revision: applied.results[applied.results.length - 1]?.nextRevision ?? "initial",
+      },
+      origin: {
+        actor: `provider:${opts.provider}`,
+        providerKind: "cli-generate",
+        promptHash,
+      },
+      commands: evidenceCommands,
+      spec: {
+        beforeHash: canonicalHash(skeleton.baseSpec),
+        afterHash: canonicalHash(applied.spec),
+        diffHash: canonicalHash(applied.results.flatMap((result) => result.changedPaths)),
+      },
+      artifacts: files.map((path) => ({
+        path,
+        role: classifyGeneratedArtifact(path),
+        bytes: statSync(join(outDir, path)).size,
+        sha256: hashFileSha256(join(outDir, path)),
+      })),
+      capabilities: buildEngineCapabilityMatrix({ readiness: createSourceReadinessReport(applied.spec).sources }),
+      toolchain: {
+        engineVersion: readEngineVersion(),
+        nodeMajor: process.versions.node.split(".")[0] ?? "unknown",
+        pnpmVersion: readPackageManagerVersion(),
+      },
+      issuer: "gis-engine-cli",
+      issuedAt: new Date().toISOString(),
+    });
+
+    if (!evidenceRecord.ok) {
+      rmSync(outDir, { recursive: true, force: true });
+      console.error(`Evidence record rejected:\n${JSON.stringify(evidenceRecord.diagnostics, null, 2)}`);
+      process.exitCode = 1;
+      return {
+        promptHash,
+        planStatus: plan.status,
+        commandCount: skeleton.commands.length,
+        validationValid: validation.valid,
+        evidenceStatus: "rejected",
+        outputDir: outDir,
+        files: [],
+      };
+    }
+
+    // The ai-side bundle stays the tool-facing view of this record; `recordId` is the one link between
+    // them. It cannot reach `delivery-summary.json`: that file is hashed into the record, so the link
+    // must point from the bundle to the record, never the other way round.
+    if (evidenceResult.ok) evidenceResult.result.recordId = evidenceRecord.record.recordId;
+
+    const evidencePath = join(outDir, "evidence.json");
+    writeFileSync(evidencePath, `${JSON.stringify(evidenceRecord.record, null, 2)}\n`, "utf-8");
+    files.push("evidence.json");
 
     // artifact-manifest.json - hashes and roles for all generated files written before the manifest itself
     const artifactManifest = createArtifactManifest({

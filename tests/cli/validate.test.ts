@@ -411,7 +411,7 @@ describe("cli-bin-artifact-verify-mode", () => {
           mode: "artifact-manifest-verify",
           status: "verified",
           summary: {
-            requiredFileCount: 4,
+            requiredFileCount: 5,
             missingFileCount: 0,
             byteMismatchCount: 0,
             hashMismatchCount: 0,

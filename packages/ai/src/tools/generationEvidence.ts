@@ -412,6 +412,9 @@ export const GenerationEvidenceBundleSchema = {
       type: "array",
       items: DiagnosticContractSchema,
     },
+    // Optional: the bundle is the tool-facing view of an EvidenceRecord, and only a producer that has
+    // already built one can name its id. Not in `required` so pre-record bundles stay valid.
+    recordId: { type: "string", pattern: "^sha256:[a-f0-9]{64}$" },
   },
   required: [
     "promptHash",
@@ -607,6 +610,8 @@ export interface GenerationEvidenceBundle {
   delivery: ExampleAppDeliverySummary;
   exampleEvidence: GenerationExampleEvidence;
   diagnostics: Diagnostic[];
+  /** Canonical EvidenceRecord this bundle is the tool-facing view of. */
+  recordId?: string;
 }
 
 export type GenerationEvidenceBundleResponse =
