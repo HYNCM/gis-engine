@@ -122,8 +122,12 @@ export function buildEvidenceRecord(input: EvidenceRecordInput): BuildEvidenceRe
     issuer: input.issuer,
     // Sorted + de-duplicated: canonical hashing preserves array order, so a caller passing the same
     // exclusion set in a different order must not get a different recordId (same ruling as Task 1's
-    // `available`/`blocked` sort).
-    exclusions: [...new Set(input.exclusions ?? DEFAULT_EXCLUSIONS)].sort(),
+    // `available`/`blocked` sort). Only an array is canonicalised: this literal evaluates before
+    // structuralIssues runs, so spreading a non-iterable value would throw a TypeError instead of
+    // returning the constraint-7 diagnostic the validator's non-array check already reports.
+    exclusions: Array.isArray(input.exclusions)
+      ? [...new Set(input.exclusions)].sort()
+      : (input.exclusions ?? DEFAULT_EXCLUSIONS),
   };
 
   const diagnostics = structuralIssues(record);

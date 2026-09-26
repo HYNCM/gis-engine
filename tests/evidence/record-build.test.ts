@@ -174,6 +174,51 @@ describe("buildEvidenceRecord", () => {
     expect(forward.record.exclusions).toEqual(["OFFLINE_REPLAY", "VISUAL_CONSISTENCY"]);
   });
 
+  // Constraint 7 (same ruling as Review I-2): the exclusions canonicalisation runs before
+  // structuralIssues, so it must be total over any runtime value. A non-iterable, non-nullish
+  // `exclusions` previously threw `TypeError: object is not iterable` from inside the record
+  // literal; it must now fall through untouched to the validator's non-array check.
+  for (const value of [{}, 42, true]) {
+    it(`returns a structured diagnostic instead of throwing for non-iterable exclusions ${JSON.stringify(value)}`, () => {
+      const result = buildEvidenceRecord({ ...baseInput, exclusions: value } as unknown as EvidenceRecordInput);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.diagnostics).toContainEqual(
+        expect.objectContaining({ code: "EVIDENCE.RECORD_INVALID", path: "/exclusions" }),
+      );
+    });
+  }
+
+  // The sibling rejection paths that must stay green through the totalisation: "ab" is iterable, so
+  // it was canonicalised to ["a","b"] and rejected member-wise before; after the guard a non-array
+  // reaches the validator instead. Either way it must come back as an EVIDENCE.RECORD_INVALID
+  // diagnostic under /exclusions, never as a throw or an accepted record.
+  it("still rejects iterable-but-invalid exclusions such as a short string", () => {
+    const result = buildEvidenceRecord({ ...baseInput, exclusions: "ab" } as unknown as EvidenceRecordInput);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.diagnostics.every((d) => d.code === "EVIDENCE.RECORD_INVALID")).toBe(true);
+    expect(result.diagnostics.some((d) => d.path === "/exclusions" || d.path === "/exclusions/0")).toBe(true);
+  });
+
+  it("still rejects empty and unknown-member exclusion arrays at the pre-guard paths", () => {
+    const empty = buildEvidenceRecord({ ...baseInput, exclusions: [] });
+    expect(empty.ok).toBe(false);
+    if (!empty.ok) {
+      expect(empty.diagnostics).toContainEqual(
+        expect.objectContaining({ code: "EVIDENCE.RECORD_INVALID", path: "/exclusions" }),
+      );
+    }
+
+    const unknown = buildEvidenceRecord({ ...baseInput, exclusions: ["NOPE"] } as unknown as EvidenceRecordInput);
+    expect(unknown.ok).toBe(false);
+    if (!unknown.ok) {
+      expect(unknown.diagnostics).toContainEqual(
+        expect.objectContaining({ code: "EVIDENCE.RECORD_INVALID", path: "/exclusions/0" }),
+      );
+    }
+  });
+
   for (const field of ["project", "commands", "spec", "artifacts", "capabilities", "toolchain"] as const) {
     it(`refuses to build a record missing the ${field} skeleton field`, () => {
       const stripped = { ...baseInput } as Record<string, unknown>;

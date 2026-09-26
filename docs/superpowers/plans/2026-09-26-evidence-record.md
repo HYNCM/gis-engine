@@ -1121,7 +1121,11 @@ export function buildEvidenceRecord(input: EvidenceRecordInput): BuildEvidenceRe
     issuer: input.issuer,
     // Sorted + de-duplicated: canonical hashing preserves array order, so a caller passing the same
     // exclusion set in a different order must not get a different recordId (same ruling as Task 1).
-    exclusions: [...new Set(input.exclusions ?? DEFAULT_EXCLUSIONS)].sort(),
+    // 只有数组会被规范化：该字面量先于 structuralIssues 求值，展开非可迭代的值会抛 TypeError 而不是
+    // 返回校验器非数组检查已有的约束 7 诊断——规范化不得跑在数组检查之前。
+    exclusions: Array.isArray(input.exclusions)
+      ? [...new Set(input.exclusions)].sort()
+      : (input.exclusions ?? DEFAULT_EXCLUSIONS),
   };
 
   const diagnostics = structuralIssues(record);
