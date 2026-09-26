@@ -19,6 +19,11 @@ describe("smoke report contract", () => {
         steps: [
           { name: "Fresh consumer path", status: "passed", evidence: "Built the generated app." },
           { name: "Generated map review path", status: "passed", evidence: "Preflight and artifact checks passed." },
+          {
+            name: "Third-party evidence recompute",
+            status: "passed",
+            evidence: "Recomputed with the shipped verifier.",
+          },
         ],
         failureMessage: "",
       },
@@ -36,6 +41,7 @@ describe("smoke report contract", () => {
     expect(report).toContain("## CLI Install Smoke Breakdown");
     expect(report).toContain("| Fresh consumer path | passed | Built the generated app. |");
     expect(report).toContain("| Generated map review path | passed | Preflight and artifact checks passed. |");
+    expect(report).toContain("| Third-party evidence recompute | passed |");
   });
 
   it("renders a next action for advisory release parity failures", () => {

@@ -126,6 +126,44 @@ export function runCliInstallSmoke(options = {}) {
 
     runStep(
       result,
+      "Third-party evidence recompute",
+      "Recomputed the shipped EvidenceRecord with the packaged zero-dependency verifier and detected a tampered record.",
+      () => {
+        const verdict = runJson("node", ["evidence-verifier.mjs", "evidence.json", "--json"], generatedProjectDir);
+        assertSmokeResult(verdict.ok === true, "Standalone evidence recompute did not pass.");
+        assertSmokeResult(
+          verdict.assertions.every((entry) => entry.status !== "failed"),
+          "Standalone evidence recompute reported a failed assertion.",
+        );
+        assertSmokeResult(
+          verdict.assertions.some((entry) => entry.status === "not-covered" && entry.id === "VISUAL_CONSISTENCY"),
+          "Recompute must state visual consistency is not covered rather than staying silent.",
+        );
+
+        const tamperedPath = join(generatedProjectDir, "evidence.json");
+        const original = readFileSync(tamperedPath, "utf-8");
+        writeFileSync(tamperedPath, original.replace(/"issuer":\s*"[^"]*"/, '"issuer": "tampered-by-rehearsal"'));
+        try {
+          execFileSync("node", ["evidence-verifier.mjs", "evidence.json", "--json"], {
+            cwd: generatedProjectDir,
+            encoding: "utf-8",
+            stdio: ["ignore", "pipe", "inherit"],
+          });
+          assertSmokeResult(false, "Tampered EvidenceRecord did not fail the recompute.");
+        } catch (error) {
+          const code = error?.status ?? 0;
+          assertSmokeResult(
+            code === 2,
+            `Tampered EvidenceRecord exited with ${code}; expected the verifier's blocked code 2.`,
+          );
+        } finally {
+          writeFileSync(tamperedPath, original);
+        }
+      },
+    );
+
+    runStep(
+      result,
       "Prompt safety",
       "Checked generated files and artifact-manifest.json to confirm the raw prompt text was not retained.",
       () => {

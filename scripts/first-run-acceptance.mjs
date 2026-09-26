@@ -189,6 +189,7 @@ export function renderFirstRunAcceptanceReport(result) {
     "- `preflight.json`",
     "- `delivery-summary.json`",
     "- `REVIEW.md`",
+    "- `evidence.json`",
     "",
     ...smokeBreakdown,
     ...nextActionSection,
