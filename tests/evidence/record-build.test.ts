@@ -75,8 +75,11 @@ describe("buildEvidenceRecord", () => {
   });
 
   it("is stable under key reordering of the same input", () => {
-    const first = buildEvidenceRecord(JSON.parse(JSON.stringify(baseInput)));
-    const second = buildEvidenceRecord({ ...baseInput, origin: reverseKeys(baseInput.origin) });
+    // Explicit issuedAt: `baseInput` omits it, so each build would otherwise stamp its own
+    // `new Date()`, and this comparison would go red whenever the two calls straddle a millisecond.
+    const issuedAt = "2026-09-26T12:00:00.000Z";
+    const first = buildEvidenceRecord(JSON.parse(JSON.stringify({ ...baseInput, issuedAt })));
+    const second = buildEvidenceRecord({ ...baseInput, issuedAt, origin: reverseKeys(baseInput.origin) });
 
     expect(first.ok && second.ok).toBe(true);
     if (!first.ok || !second.ok) return;
