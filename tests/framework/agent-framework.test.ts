@@ -1,7 +1,16 @@
 import { spawnSync } from "node:child_process";
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, utimesSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  utimesSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   classifyChangedFiles,
@@ -21,7 +30,7 @@ describe("agent coordination framework", () => {
     expect(docsOnly.docsOnly).toBe(true);
     expect(docsOnly.requiresFrameworkChecks).toBe(false);
 
-    const workflowChange = classifyChangedFiles([".github/workflows/agent-weekly.yml"]);
+    const workflowChange = classifyChangedFiles([".github/workflows/agent-review.yml"]);
     expect(workflowChange.docsOnly).toBe(false);
     expect(workflowChange.requiresFrameworkChecks).toBe(true);
 
@@ -32,7 +41,7 @@ describe("agent coordination framework", () => {
   });
 
   it("routes workflow and coordination changes to deterministic gates", () => {
-    const workflowPlan = [...buildPlan([".github/workflows/agent-weekly.yml"]).keys()];
+    const workflowPlan = [...buildPlan([".github/workflows/agent-review.yml"]).keys()];
     expect(workflowPlan).toContain("pnpm test:agent-framework");
     expect(workflowPlan).toContain("pnpm build:schema");
     expect(workflowPlan).toContain("pnpm check");
@@ -45,134 +54,125 @@ describe("agent coordination framework", () => {
     expect(coordinationPlan).toContain("node scripts/doc-generator.mjs links");
   });
 
-  it("installs Playwright before recovery gates run snapshot smoke", () => {
-    const workflow = readFileSync(".github/workflows/agent-failure-recovery.yml", "utf8");
-    const installIndex = workflow.indexOf("pnpm exec playwright install --with-deps chromium");
-    const gateIndex = workflow.indexOf("pnpm build:schema && pnpm check");
-
-    expect(installIndex).toBeGreaterThan(-1);
-    expect(gateIndex).toBeGreaterThan(installIndex);
+  it("keeps supplementary review manual and read-only without shadow schedulers", () => {
+    const workflow = readFileSync(".github/workflows/agent-review.yml", "utf8");
+    expect(workflow).toContain("workflow_dispatch:");
+    expect(workflow).toContain("contents: read");
+    expect(workflow).not.toMatch(/schedule:|cron:|contents: write|issues: write|git commit|git push|--apply/);
+    expect(workflow).toContain("if: always()");
+    expect(workflow).toContain("path: review-evidence/");
+    const install = workflow.indexOf("pnpm exec playwright install --with-deps chromium");
+    expect(install).toBeGreaterThan(-1);
+    expect(workflow.indexOf("pnpm build:schema")).toBeGreaterThan(install);
+    for (const name of ["daily", "weekly", "monthly", "failure-recovery"]) {
+      expect(existsSync(`.github/workflows/agent-${name}.yml`)).toBe(false);
+    }
+    // Core event-driven gates are not replaced by the supplementary workflow.
+    expect(readFileSync(".github/workflows/ci.yml", "utf8")).toContain("pnpm check");
+    expect(readFileSync(".github/workflows/pr-quality.yml", "utf8")).toContain("pull_request:");
   });
 
-  it("passes every failed workflow identity to the recovery incident CLI", () => {
-    const workflow = readFileSync(".github/workflows/agent-failure-recovery.yml", "utf8");
-
-    expect(workflow).toContain("--json conclusion,status,databaseId,url");
-    expect(workflow).toContain("FAILED_RUNS_FILE");
-    expect(workflow).toContain("while IFS=$'\\t' read -r WORKFLOW_NAME RUN_ID RUN_URL");
-    expect(workflow).toMatch(
-      /node scripts\/recovery-incident\.mjs --workflow "\$\{WORKFLOW_NAME\}" --run-id "\$\{RUN_ID\}"/,
-    );
-    expect(workflow).not.toContain("gh issue create");
-    expect(workflow).not.toContain('|| echo "[]"');
-  });
-
-  it("attempts every recovery incident before failing the reconciliation step", () => {
-    const workflow = readFileSync(".github/workflows/agent-failure-recovery.yml", "utf8");
-    const script = extractWorkflowRunStep(workflow, "Reconcile escalation incidents");
-    const root = mkdtempSync(join(tmpdir(), "gis-engine-recovery-loop-"));
-    const binDir = join(root, "bin");
-    const attemptsPath = join(root, "attempts.txt");
-    const incidentsPath = join(root, "failed-runs.tsv");
-    mkdirSync(binDir, { recursive: true });
-    writeFileSync(
-      join(binDir, "node"),
-      `#!/bin/sh
-printf '%s\n' "$*" >> "$ATTEMPTS_FILE"
-case "$*" in
-  *"--run-id 111"*) exit 1 ;;
-esac
-exit 0
-`,
-      "utf8",
-    );
-    chmodSync(join(binDir, "node"), 0o755);
-    writeFileSync(
-      incidentsPath,
-      "Agent Daily Cadence\t111\thttps://github.test/actions/runs/111\nAgent Weekly Cadence\t222\thttps://github.test/actions/runs/222\n",
-      "utf8",
-    );
-
-    const result = spawnSync("/bin/bash", ["-c", script], {
-      encoding: "utf8",
-      env: {
-        ...process.env,
-        ATTEMPTS_FILE: attemptsPath,
-        FAILED_RUNS_FILE: incidentsPath,
-        PATH: `${binDir}:${process.env.PATH}`,
-      },
-    });
-    const attempts = readFileSync(attemptsPath, "utf8").trim().split("\n");
-
-    expect(result.status).toBe(1);
-    expect(attempts).toHaveLength(2);
-    expect(attempts[0]).toContain("--run-id 111");
-    expect(attempts[1]).toContain("--run-id 222");
-  });
-
-  it("serializes recovery scans without cancelling an in-progress reconciliation", () => {
-    const workflow = readFileSync(".github/workflows/agent-failure-recovery.yml", "utf8");
-
-    expect(workflow).toContain("concurrency:\n  group: agent-failure-recovery\n  cancel-in-progress: false");
-  });
-
-  it("uses nullglob for optional monthly release reports", () => {
-    const workflow = readFileSync(".github/workflows/agent-monthly.yml", "utf8");
-
-    expect(workflow).toContain("shopt -s nullglob");
-    expect(workflow).toContain("release_reports=(docs/reviews/quality-gate-release-*.md)");
-    expect(workflow).not.toContain('file_pattern: "docs/planning/monthly-roadmap.md');
-  });
-
-  it("gates generated daily artifacts before the orchestrator bot commits them", () => {
-    const workflow = readFileSync(".github/workflows/agent-daily.yml", "utf8");
-    const refreshIndex = workflow.indexOf("Refresh health dashboard and retention window");
-    const gateIndex = workflow.indexOf("Gate generated daily artifacts");
-    const commitIndex = workflow.indexOf("Commit daily artifacts");
-
-    expect(refreshIndex).toBeGreaterThan(-1);
-    expect(gateIndex).toBeGreaterThan(refreshIndex);
-    expect(commitIndex).toBeGreaterThan(gateIndex);
-    expect(workflow).toContain("pnpm install --frozen-lockfile");
-    expect(workflow).toContain("git diff --check");
-    expect(workflow).toContain("pnpm test:agent-framework");
-    expect(workflow).toContain("node scripts/doc-generator.mjs links");
-  });
-
-  it("passes authenticated issue state into atomic weekly and monthly planning evidence", () => {
-    for (const workflowPath of [".github/workflows/agent-weekly.yml", ".github/workflows/agent-monthly.yml"]) {
-      const workflow = readFileSync(workflowPath, "utf8");
-      const refreshIndex = workflow.indexOf("node scripts/planning-evidence.mjs");
-      const commitIndex = workflow.indexOf("git commit");
-
-      expect(refreshIndex, workflowPath).toBeGreaterThan(-1);
-      expect(commitIndex, workflowPath).toBeGreaterThan(refreshIndex);
-      expect(workflow, workflowPath).toMatch(/permissions:\n(?:[ \t]+.*\n)*?[ \t]+issues: read/);
-      expect(workflow, workflowPath).toContain("GH_TOKEN: ${{ github.token }}");
+  it("bounds every event-driven CI job with an explicit timeout", () => {
+    // PR67 evidence: two 2026-08-19 jobs hung ~6h until a later push cancelled
+    // them because no timeout-minutes was set.
+    for (const file of ["ci.yml", "pr-quality.yml", "auto-fix.yml", "bundle-size.yml", "deploy-docs.yml"]) {
+      const workflow = readFileSync(`.github/workflows/${file}`, "utf8");
+      const lines = workflow.split("\n");
+      const jobsStart = lines.findIndex((line) => line === "jobs:");
+      expect(jobsStart, `${file} declares a jobs block`).toBeGreaterThan(-1);
+      const jobs = lines
+        .slice(jobsStart + 1)
+        .filter((line) => /^ {2}([a-z][a-z0-9_-]*):$/g.test(line))
+        .map((line) => line.trim().slice(0, -1));
+      expect(jobs.length, `${file} declares jobs`).toBeGreaterThan(0);
+      for (const job of jobs) {
+        const start = lines.findIndex((line) => line === `  ${job}:`);
+        const end = lines.findIndex((line, index) => index > start && /^ {0,2}[a-z][a-z0-9_-]*:$/g.test(line));
+        const body = lines.slice(start + 1, end === -1 ? lines.length : end).join("\n");
+        expect(body, `${file} job '${job}' needs timeout-minutes`).toContain("timeout-minutes:");
+      }
     }
   });
 
-  it("serializes cadence artifact writers and fails closed on specialist evidence health", () => {
-    const workflowPaths = [
-      ".github/workflows/agent-daily.yml",
-      ".github/workflows/agent-weekly.yml",
-      ".github/workflows/agent-monthly.yml",
-    ];
+  it.each([
+    { scope: "checks", fail: "", status: 0, calls: ["build:schema", "check"] },
+    { scope: "checks", fail: "build:schema", status: 7, calls: ["build:schema"] },
+    { scope: "checks", fail: "check", status: 7, calls: ["build:schema", "check"] },
+    { scope: "docs", fail: "test:docs", status: 7, calls: ["test:docs"] },
+    { scope: "docs", fail: "", status: 0, calls: ["test:docs"] },
+    { scope: "invalid", fail: "", status: 2, calls: [] },
+  ])("preserves check exit status and scope: $scope / $fail", ({ scope, fail, status, calls }) => {
+    const workflow = readFileSync(".github/workflows/agent-review.yml", "utf8");
+    const root = mkdtempSync(join(tmpdir(), "gis-engine-review-"));
+    const binDir = join(root, "bin");
+    mkdirSync(binDir);
+    const attemptsPath = join(root, "attempts.txt");
+    writeFileSync(attemptsPath, "");
+    writeFileSync(
+      join(binDir, "pnpm"),
+      `#!/bin/sh
+printf '%s\\n' "$*" >> "$ATTEMPTS_FILE"
+echo "observed $*"
+if [ "$*" = "$FAIL_COMMAND" ]; then exit 7; fi
+`,
+      "utf8",
+    );
+    writeFileSync(join(binDir, "git"), "#!/bin/sh\necho fixture-sha\n", "utf8");
+    chmodSync(join(binDir, "pnpm"), 0o755);
+    chmodSync(join(binDir, "git"), 0o755);
+    const result = spawnSync("/bin/bash", ["-c", extractWorkflowRunStep(workflow, "Run selected checks")], {
+      cwd: root,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        REVIEW_SCOPE: scope,
+        FAIL_COMMAND: fail,
+        ATTEMPTS_FILE: attemptsPath,
+        PATH: `${binDir}:${process.env.PATH}`,
+      },
+    });
+    expect(result.status, result.stderr).toBe(status);
+    expect(readFileSync(attemptsPath, "utf8").trim().split("\n").filter(Boolean)).toEqual(calls);
+    expect(readFileSync(join(root, "review-evidence/revision.txt"), "utf8").trim()).toBe("fixture-sha");
+    if (calls.length) {
+      const log = readFileSync(join(root, `review-evidence/${scope}.log`), "utf8");
+      expect(log).toContain(`observed ${calls.at(-1)}`);
+    }
+  });
 
-    for (const workflowPath of workflowPaths) {
-      const workflow = readFileSync(workflowPath, "utf8");
-      const evidenceGateIndex = workflow.indexOf("node scripts/sla-checker.mjs");
-      const handoffGateIndex = workflow.indexOf("node scripts/handoff-ledger.mjs --check --dry-run");
-      const commitIndex = workflow.indexOf("git commit");
-
-      expect(workflow, workflowPath).toMatch(/group: agent-artifact-writers-\$\{\{ github\.ref \}\}/);
-      expect(evidenceGateIndex, workflowPath).toBeGreaterThan(-1);
-      expect(handoffGateIndex, workflowPath).toBeGreaterThan(evidenceGateIndex);
-      expect(commitIndex, workflowPath).toBeGreaterThan(handoffGateIndex);
-      expect(workflow, workflowPath).toContain("node scripts/git-push-retry.mjs");
-      expect(workflow, workflowPath).not.toContain("git-auto-commit-action");
-      expect(workflow, workflowPath).not.toMatch(/git push(?:\s|$)/);
-      expect(workflow, workflowPath).not.toContain("--force");
+  it("discovers checkout tests without collecting nested copies or browser specs", () => {
+    const root = mkdtempSync(join(tmpdir(), "gis-engine-discovery-"));
+    try {
+      for (const file of [
+        "tests/owned.test.ts",
+        "tests/browser.spec.ts",
+        ".worktrees/other/tests/copied.test.ts",
+        ".pnpm-store/project/tests/cached.test.ts",
+      ]) {
+        const path = join(root, file);
+        mkdirSync(dirname(path), { recursive: true });
+        writeFileSync(path, 'import { it } from "vitest"; it("fixture", () => {});\n');
+      }
+      const result = spawnSync(
+        process.execPath,
+        [
+          resolve("node_modules/vitest/vitest.mjs"),
+          "list",
+          "--filesOnly",
+          "--json",
+          "--config",
+          resolve("vitest.config.ts"),
+          "--root",
+          root,
+        ],
+        { encoding: "utf8" },
+      );
+      expect(result.status, result.stderr).toBe(0);
+      expect(JSON.parse(result.stdout).map((entry: { file: string }) => entry.file)).toEqual([
+        join(root, "tests/owned.test.ts"),
+      ]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
     }
   });
 

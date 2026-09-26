@@ -25,6 +25,7 @@ jobs:
   build:
     name: "构建文档站"
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     outputs:
       pages_available: ${{ steps.pages.outputs.available }}
     steps:
@@ -101,6 +102,7 @@ jobs:
       name: "github-pages"
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: build
     steps:
       - name: Deploy to GitHub Pages
