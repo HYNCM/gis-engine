@@ -42,8 +42,12 @@ const sources = BUNDLE.map((source) => {
   // asserts nothing else survives. tsc/Biome emit single-line import statements, so a line filter
   // cannot leave a fragment behind — and if that invariant ever breaks, the standalone CLI test
   // *executes* this file, so a parse error fails the gate instead of shipping.
+  // `//# sourceMappingURL=…` comments also go: they point at `.js.map` files that never ship beside
+  // the single file, and a standalone artifact must not advertise unresolvable references (review M3;
+  // tests/evidence/standalone-verifier.test.ts pins both the strip here and this strip rule there).
   return compiled
     .split("\n")
+    .filter((line) => !line.startsWith("//# sourceMappingURL="))
     .filter((line) => !specifiersIn(line).some((specifier) => BUNDLE.includes(resolve(dirname(source), specifier))))
     .join("\n");
 });

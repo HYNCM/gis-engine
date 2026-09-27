@@ -6,10 +6,11 @@ import {
   type EvidenceRecordCapabilities,
   type EvidenceRecordCommand,
   type EvidenceVerificationResult,
+  normaliseEvidencePayload,
   verifyEvidenceRecord,
 } from "@gis-engine/engine/evidence";
 import { describe, expect, it } from "vitest";
-import { buildFixture, MAP_JSON, validRecord } from "./fixtures/record.js";
+import { buildFixture, MAP_JSON, sha256Of, validRecord } from "./fixtures/record.js";
 
 /**
  * Artifact bytes are supplied by a per-test reader instead of a module-level mutable map: a failed
@@ -29,10 +30,9 @@ const readArtifact = artifactReader();
 /**
  * Re-seals a hand-forged record so `CHAIN_CLOSED` stays green and whatever the chain hash cannot see
  * (a malformed field, an unsupported schema version) has to be caught by the checks themselves.
- * Same JSON round trip + canonical hash the builder uses for `recordId`.
  */
 function reseal(record: EvidenceRecord): EvidenceRecord {
-  const payload = JSON.parse(JSON.stringify({ ...record, recordId: undefined }));
+  const payload = normaliseEvidencePayload({ ...record, recordId: undefined });
   return { ...record, recordId: canonicalHash(payload) };
 }
 
@@ -177,6 +177,84 @@ describe("verifyEvidenceRecord", () => {
   });
 });
 
+// Spec §7's third `EVIDENCE.DERIVATION_FAILED` trigger: the packaged `mapspec` body must canonicalise
+// to `spec.afterHash`. Record-internal checks (lineage, inverse patches) cannot see a coordinated
+// forgery — swapped bytes plus a re-hashed, self-consistent record is free for a forger — so without
+// this recompute "the record is self-consistent" would masquerade as "the record describes this
+// package", which is the one claim the trust tier exists to make.
+describe("verifyEvidenceRecord packaged mapspec recompute (spec §7 trigger 3)", () => {
+  const PACKAGED_MAP = `{"view":{"zoom":99}}\n`;
+
+  function mapspecArtifact(text: string): EvidenceRecord["artifacts"][number] {
+    return {
+      path: "map.json",
+      role: "mapspec",
+      bytes: Buffer.byteLength(text, "utf8"),
+      sha256: sha256Of(text),
+    };
+  }
+
+  it("fails DERIVATION_CLOSED on a forged pair whose artifact bytes match the record but not the attested spec", async () => {
+    // The artifact sha256 matches the served bytes and the record is honestly sealed: only the
+    // packaged spec's body disagrees with the hash the attested lineage produced.
+    const forged = buildFixture({ artifacts: [mapspecArtifact(PACKAGED_MAP)] });
+
+    const result = await verifyEvidenceRecord(forged, {
+      readArtifact: artifactReader({ "map.json": PACKAGED_MAP }),
+    });
+
+    expect(statusOf(result, "ARTIFACTS_MATCH")).toBe("passed");
+    expect(statusOf(result, "CHAIN_CLOSED")).toBe("passed");
+    expect(statusOf(result, "DERIVATION_CLOSED")).toBe("failed");
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: "EVIDENCE.DERIVATION_FAILED",
+        path: "/artifacts/0",
+        // The message names both hashes so an auditor can see what was expected and what arrived.
+        message: expect.stringContaining(canonicalHash(JSON.parse(PACKAGED_MAP))),
+        severity: "error",
+      }),
+    );
+    expect(result.diagnostics.some((entry) => entry.message.includes(forged.spec.afterHash))).toBe(true);
+    expect(result.ok).toBe(false);
+  });
+
+  it("keeps DERIVATION_CLOSED green when the packaged spec body canonicalises to spec.afterHash", async () => {
+    // Guards the recompute against an always-reject: the honest package shape must stay verifiable,
+    // mirroring the writer-side equivalence tests/cli/generate.test.ts proves for real CLI output.
+    const honest = buildFixture({
+      artifacts: [mapspecArtifact(PACKAGED_MAP)],
+      spec: {
+        beforeHash: canonicalHash({}),
+        afterHash: canonicalHash(JSON.parse(PACKAGED_MAP)),
+        diffHash: canonicalHash([]),
+      },
+    });
+
+    const result = await verifyEvidenceRecord(honest, {
+      readArtifact: artifactReader({ "map.json": PACKAGED_MAP }),
+    });
+
+    expect(statusOf(result, "DERIVATION_CLOSED")).toBe("passed");
+    expect(codes(result)).not.toContain("EVIDENCE.DERIVATION_FAILED");
+    expect(result.ok).toBe(true);
+  });
+
+  it("degrades malformed packaged spec bytes to a structured DERIVATION_FAILED instead of throwing", async () => {
+    const junk = "not-json{{\n";
+    const forged = buildFixture({ artifacts: [mapspecArtifact(junk)] });
+
+    const result = await verifyEvidenceRecord(forged, { readArtifact: artifactReader({ "map.json": junk }) });
+
+    expect(statusOf(result, "ARTIFACTS_MATCH")).toBe("passed");
+    expect(statusOf(result, "DERIVATION_CLOSED")).toBe("failed");
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({ code: "EVIDENCE.DERIVATION_FAILED", path: "/artifacts/0", severity: "error" }),
+    );
+    expect(result.ok).toBe(false);
+  });
+});
+
 // L-1: DERIVATION_CLOSED must never report a vacuous pass. Only `applied` entries move runtime state,
 // so only they form the chain — and every revision the verifier cannot read is a failure it must say
 // out loud.
@@ -295,7 +373,11 @@ describe("verifyEvidenceRecord revision lineage (L-1)", () => {
       expect.objectContaining({
         code: "EVIDENCE.DERIVATION_FAILED",
         path: "/commands",
-        message: expect.stringContaining("without any applied command"),
+        // Single quotes around the revisions are load-bearing, not stylistic: double-quoted words
+        // after `from` read as module specifiers to build-evidence-verifier.ts's MODULE_SPECIFIER
+        // scanner and fail the standalone-bundle build. Pinned here so the coupling is noticed by a
+        // test, not discovered as a build error (review M6 / plan deviation D1).
+        message: expect.stringContaining("moved from 'r0' to 'r1' without any applied command"),
       }),
     );
     expect(statusOf(result, "DERIVATION_CLOSED")).toBe("failed");

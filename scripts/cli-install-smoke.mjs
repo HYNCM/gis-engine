@@ -129,7 +129,14 @@ export function runCliInstallSmoke(options = {}) {
       "Third-party evidence recompute",
       "Recomputed the shipped EvidenceRecord with the packaged zero-dependency verifier and detected a tampered record.",
       () => {
-        const verdict = runJson("node", ["evidence-verifier.mjs", "evidence.json", "--json"], generatedProjectDir);
+        // `--root .` matches the published invocation in docs/engineering/evidence-record.md and
+        // SKILL.md, so the rehearsal exercises the same `--root` prefixing branch an auditor runs —
+        // not just the root-less cwd-relative fallback that happens to agree here.
+        const verdict = runJson(
+          "node",
+          ["evidence-verifier.mjs", "evidence.json", "--root", ".", "--json"],
+          generatedProjectDir,
+        );
         assertSmokeResult(verdict.ok === true, "Standalone evidence recompute did not pass.");
         assertSmokeResult(
           verdict.assertions.every((entry) => entry.status !== "failed"),
@@ -144,7 +151,7 @@ export function runCliInstallSmoke(options = {}) {
         const original = readFileSync(tamperedPath, "utf-8");
         writeFileSync(tamperedPath, original.replace(/"issuer":\s*"[^"]*"/, '"issuer": "tampered-by-rehearsal"'));
         try {
-          execFileSync("node", ["evidence-verifier.mjs", "evidence.json", "--json"], {
+          execFileSync("node", ["evidence-verifier.mjs", "evidence.json", "--root", ".", "--json"], {
             cwd: generatedProjectDir,
             encoding: "utf-8",
             stdio: ["ignore", "pipe", "inherit"],

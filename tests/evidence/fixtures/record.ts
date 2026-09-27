@@ -36,7 +36,13 @@ export function buildFixture(overrides: Partial<EvidenceRecordInput> = {}): Evid
         nextRevision: "r1",
       },
     ],
-    spec: { beforeHash: canonicalHash({}), afterHash: canonicalHash({}), diffHash: canonicalHash([]) },
+    // spec §7 trigger 3 makes the verifier recompute `canonicalHash(JSON.parse(map.json bytes))`, so
+    // the fixture's `afterHash` must be the honest value for MAP_JSON, not a stand-in `{}` hash.
+    spec: {
+      beforeHash: canonicalHash({}),
+      afterHash: canonicalHash(JSON.parse(MAP_JSON)),
+      diffHash: canonicalHash([]),
+    },
     artifacts: [{ path: "map.json", role: "mapspec", bytes: MAP_JSON.length, sha256: sha256Of(MAP_JSON) }],
     capabilities: {
       schemaVersion: "engine-capabilities.v0.1",

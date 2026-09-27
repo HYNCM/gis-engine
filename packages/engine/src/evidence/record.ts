@@ -437,6 +437,10 @@ export async function verifyEvidenceRecord(
 
   const artifactEntries = Array.isArray(record.artifacts) ? record.artifacts : [];
   const artifactIssues: Diagnostic[] = [];
+  // Spec §7 trigger 3: matched `mapspec` artifacts whose body does not canonicalise to
+  // `spec.afterHash`. Kept separate from `artifactIssues` because the failure is about the
+  // derivation claim, not the byte hash the artifact row itself carried.
+  const packagedSpecIssues: Diagnostic[] = [];
   let matched = 0;
   if (!readArtifact) {
     artifactIssues.push({
@@ -466,6 +470,15 @@ export async function verifyEvidenceRecord(
       const actual = `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
       if (actual === declaredSha && bytes.byteLength === declaredBytes) {
         matched += 1;
+        // The byte hash only proves the file matches what the record attested; spec §7's third
+        // trigger additionally requires the packaged spec body to canonicalise to `spec.afterHash`
+        // — the claim that the attested lineage describes *this* package. Writer-side equivalence
+        // is pinned by tests/cli/generate.test.ts (`canonicalHash(JSON.parse(mapBytes)) ===
+        // evidence.spec.afterHash`), so an honest package stays green here.
+        if (artifact && artifact.role === "mapspec") {
+          const packagedIssue = checkPackagedSpecBody(declaredPath, bytes, record.spec, path);
+          if (packagedIssue) packagedSpecIssues.push(packagedIssue);
+        }
         continue;
       }
       artifactIssues.push({
@@ -477,7 +490,7 @@ export async function verifyEvidenceRecord(
       });
     }
   }
-  diagnostics.push(...artifactIssues);
+  diagnostics.push(...artifactIssues, ...packagedSpecIssues);
 
   const lineageIssue = checkLineage(record);
   if (lineageIssue) diagnostics.push(lineageIssue);
@@ -512,8 +525,14 @@ export async function verifyEvidenceRecord(
     },
     {
       id: EvidenceAssertionId.DerivationClosed,
-      status: lineageIssue || inverseIssue ? "failed" : "passed",
-      detail: lineageIssue ? lineageIssue.message : inverseIssue ? inverseIssue.message : "revision lineage closed",
+      // spec §7's three DERIVATION_FAILED triggers land on this one row: record-internal lineage,
+      // inverse-patch hashes, and the packaged-spec recompute folded in above.
+      status: lineageIssue || inverseIssue || packagedSpecIssues.length > 0 ? "failed" : "passed",
+      detail: lineageIssue
+        ? lineageIssue.message
+        : inverseIssue
+          ? inverseIssue.message
+          : (packagedSpecIssues[0]?.message ?? "revision lineage closed"),
     },
     exclusionAssertion(
       EvidenceAssertionId.OfflineReplay,
@@ -654,6 +673,48 @@ function checkLineage(record: EvidenceRecord): Diagnostic | undefined {
   return undefined;
 }
 
+/**
+ * Spec §7's third `EVIDENCE.DERIVATION_FAILED` trigger: the packaged `mapspec` body must canonicalise
+ * to `spec.afterHash`. The artifact loop has already proven these bytes are what the record attested,
+ * so a mismatch here means the attested lineage describes a spec nobody delivered — the coordinated
+ * forgery the byte hash alone cannot see. Decode/parse failures degrade to the same structured
+ * diagnostic (constraint 7: the verifier never throws at an injected boundary), and the hash
+ * comparison runs on the same `canonicalHash` the writer used (tests/cli/generate.test.ts pins the
+ * builder-side equivalence `canonicalHash(JSON.parse(mapBytes)) === spec.afterHash`).
+ */
+function checkPackagedSpecBody(
+  declaredPath: string,
+  bytes: Uint8Array,
+  spec: EvidenceRecord["spec"],
+  path: string,
+): Diagnostic | undefined {
+  const failed = (message: string): Diagnostic => ({
+    severity: "error",
+    code: EvidenceIssueCode.DerivationFailed,
+    message,
+    path,
+  });
+  let body: unknown;
+  try {
+    body = JSON.parse(new TextDecoder().decode(bytes));
+  } catch {
+    return failed(
+      `Packaged spec "${declaredPath}" is not parseable UTF-8 JSON, so its canonical hash cannot be compared with spec.afterHash.`,
+    );
+  }
+  const recomputed = safeCanonicalHash(body);
+  const declared = spec && typeof spec.afterHash === "string" ? spec.afterHash : String(spec && spec.afterHash);
+  if (recomputed === undefined) {
+    return failed(`Packaged spec "${declaredPath}" could not be canonically hashed for comparison with spec.afterHash.`);
+  }
+  if (recomputed !== declared) {
+    return failed(
+      `Packaged spec "${declaredPath}" canonicalises to ${recomputed}, which does not match spec.afterHash ${declared}.`,
+    );
+  }
+  return undefined;
+}
+
 function checkInversePatchHashes(record: EvidenceRecord): Diagnostic | undefined {
   const commands = Array.isArray(record.commands) ? record.commands : [];
   for (const [index, entry] of commands.entries()) {
@@ -768,18 +829,33 @@ function resolveUnderRoot(root: string, path: string): string {
  * import budget and Task 7/8 can drive the same wiring from a test.
  */
 export async function runEvidenceVerifierCli(argv: string[], deps: EvidenceVerifierCliDependencies): Promise<number> {
+  const usage = "usage: evidence-verifier <evidence.json> [--root <dir>] [--json]";
   const [recordPath, ...flags] = argv;
   if (!recordPath) {
-    deps.log("usage: evidence-verifier <evidence.json> [--root <dir>] [--json]");
+    deps.log(usage);
     return 1;
   }
 
-  const rootIndex = flags.indexOf("--root");
-  if (rootIndex >= 0 && !flags[rootIndex + 1]) {
-    deps.log("--root requires a directory.");
+  // A verifier's argv is part of its audit contract: an unrecognised flag like `--root=./pkg` must
+  // not silently degrade into cwd-relative reads, or the verdict describes a different file set
+  // than the operator believes they pointed at. Reject with the usage text and exit 1.
+  let rawRoot = "";
+  for (let index = 0; index < flags.length; index += 1) {
+    const flag = flags[index];
+    if (flag === "--json") continue;
+    if (flag === "--root") {
+      const value = flags[index + 1];
+      if (!value) {
+        deps.log("--root requires a directory.");
+        return 1;
+      }
+      rawRoot = value;
+      index += 1;
+      continue;
+    }
+    deps.log(`Unrecognised argument "${flag}".\n${usage}`);
     return 1;
   }
-  const rawRoot = rootIndex >= 0 ? (flags[rootIndex + 1] as string) : "";
   const root = rawRoot.endsWith("/") || rawRoot === "" ? rawRoot : `${rawRoot}/`;
 
   const recordFile = resolveUnderRoot(root, recordPath);

@@ -24,6 +24,7 @@ export {
   type EvidenceVerificationResult,
   type EvidenceVerifierCliDependencies,
   MAX_EVIDENCE_RECORD_BYTES,
+  normaliseEvidencePayload,
   runEvidenceVerifierCli,
   type VerifyEvidenceRecordOptions,
   verifyEvidenceRecord,

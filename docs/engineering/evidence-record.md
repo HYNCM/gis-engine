@@ -11,7 +11,9 @@ node evidence-verifier.mjs evidence.json --root . --json
 `passed | failed | not-covered`；`VISUAL_CONSISTENCY` 与 `OFFLINE_REPLAY` 在当前范围下恒为
 `not-covered`——这两项是被主动推迟的，不是实现遗漏。
 
-退出码：`0` 全部断言绿，`2` 至少一条断言失败，`1` 用法或 IO 层面的拒绝（包括下面提到的超限字节）。
+退出码：`0` 记录可采信（全部断言绿 **且** 没有任何 `severity: "error"` 诊断——六行全绿但 verifier
+自报读不懂这条记录时，仍退 `2`），`2` 至少一条断言失败或存在 error 级诊断，`1` 用法或 IO 层面的拒绝
+（包括下面提到的超限字节，以及未识别的命令行参数）。
 
 ## 断言语义
 
@@ -19,7 +21,7 @@ node evidence-verifier.mjs evidence.json --root . --json
 | --- | --- |
 | `CHAIN_CLOSED` | `recordId` 等于正文的规范化 SHA-256，改一个数据字节即失败 |
 | `ARTIFACTS_MATCH` | 每个文件的 sha256 与字节数与记录一致 |
-| `DERIVATION_CLOSED` | 命令序列的 revision 链与逆补丁哈希在记录内自洽（不执行命令） |
+| `DERIVATION_CLOSED` | 命令序列的 revision 链与逆补丁哈希在记录内自洽，且包内 `mapspec` 文件正文的规范化哈希等于 `spec.afterHash`（不执行命令） |
 | `TOOLCHAIN_RECORDED` | 引擎 / Node / pnpm 版本已入记录 |
 
 可信层只做纯数据复算：它不渲染地图、不访问网络、不执行 `applyCommands`。这是设计约束，不是
@@ -65,6 +67,12 @@ npx @gis-engine/cli create-gis-map --verify-artifacts ./my-map
   同一件事，前者是这条路径约束的职责，后者不是。
 - **`recordId` 只覆盖数据模型。** 它规范化的是记录正文，不覆盖磁盘上的文件格式与记录之外的文件，
   所以格式级篡改必须走上面那一节的 manifest 交叉核对。
+- **capability 漂移不在单文件 verifier 的可达范围内。** `EVIDENCE.CAPABILITY_DRIFT` 只有当调用方
+  向引擎 API（`verifyEvidenceRecord`）传入 `expectedCapabilities`（引擎当前的 capability 矩阵）时
+  才会判定；单文件 verifier 没有活体门禁，结构上无法提供这个参数，目前仓库里传它的只有测试。读上面
+  那张四行断言表时，不要把"复算通过"理解成"记录的 capability 声明也被复核过"。仓库内计划的供给方是
+  plan Task 9 的 Workbench receipt 绑定（领取证据包时对照引擎当前矩阵）；在它落地之前，该诊断码处于
+  「契约已定、尚无生产消费方」的状态，而非已覆盖的防线。
 
 ## 相关入口
 

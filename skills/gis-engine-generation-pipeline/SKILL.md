@@ -310,29 +310,70 @@ The mock provider guarantees deterministic output, so CI runs are reproducible.
 
 The `evidence.json` file is an `EvidenceRecord` (`evidence-record.v0.1`): the
 command lineage, the spec hashes, and a sha256 for every other file written
-besides itself.
+besides itself (abridged here to the `map.json` entry; a real CLI-issued record
+lists every packaged file). Every value below is a real hash recomputed from the
+example's own content, so the record validates against `EvidenceRecordSchema`
+and re-seals to the shown `recordId`.
 
 ```json
 {
   "schemaVersion": "evidence-record.v0.1",
-  "recordId": "sha256:<hex>",
+  "recordId": "sha256:31fe7fc53297493328aa5fd55651c8d4fcfb97258edbb3cf76f7639bd186bcc5",
   "project": { "id": "my-map", "baseRevision": "0", "revision": "1" },
-  "origin": { "actor": "provider:mock", "providerKind": "cli-generate", "promptHash": "sha256:<hex>" },
+  "origin": {
+    "actor": "provider:mock",
+    "providerKind": "cli-generate",
+    "promptHash": "sha256:aa6ff7cf5ce04605acd74e68dc9ef34805891c6015b9f25d6fbfc337bab75e3f"
+  },
   "commands": [
     {
-      "command": { "id": "gen-set-view", "type": "set-view" },
+      "command": {
+        "id": "gen-set-view",
+        "version": "0.1",
+        "type": "setView",
+        "view": { "center": [8.5, 47.37], "zoom": 11 }
+      },
       "outcome": "applied",
       "diagnostics": [],
-      "inversePatchHash": "sha256:<hex>",
+      "inversePatchHash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
       "baseRevision": "0",
       "nextRevision": "1"
     }
   ],
-  "spec": { "beforeHash": "sha256:<hex>", "afterHash": "sha256:<hex>", "diffHash": "sha256:<hex>" },
+  "spec": {
+    "beforeHash": "sha256:6f5e8517273ef5fd5ce0d0ba59188e0f51022263dda3f268e57db9807e36fb7f",
+    "afterHash": "sha256:ad44a71f04e09f6b2807bc4bfad3590693c5089f9bbb95696aa02bd7d34d6923",
+    "diffHash": "sha256:ccd383a70f5eb01a3b189fbc52ce9641781f8bef32fb4c53f6259d51ec1fed11"
+  },
   "artifacts": [
-    { "path": "map.json", "role": "mapspec", "bytes": 112, "sha256": "sha256:<hex>" }
+    {
+      "path": "map.json",
+      "role": "mapspec",
+      "bytes": 152,
+      "sha256": "sha256:991cde202a187fa5089180e980a9dd44f5761e5aa8da4e84237860a607cb219a"
+    }
   ],
-  "capabilities": { "schemaVersion": "engine-capability-matrix.v0.1", "available": [], "blocked": [] },
+  "capabilities": {
+    "schemaVersion": "engine-capabilities.v0.1",
+    "available": ["commands.apply", "evidence.build", "export.spec", "mapspec.validate", "snapshot.smoke-mock"],
+    "blocked": [
+      {
+        "code": "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED",
+        "reason": "scene3d view mode requires the promotion gate to reach stable.",
+        "path": "/view/mode"
+      },
+      {
+        "code": "SCENE3D.STABLE_RUNTIME_RENDERER_BLOCKED",
+        "reason": "scene3d renderer requires the promotion gate to reach stable.",
+        "path": "/capabilities/renderer"
+      },
+      {
+        "code": "SCENE3D.STABLE_RUNTIME_DIMENSIONS_BLOCKED",
+        "reason": "3D dimensions require the promotion gate to reach stable.",
+        "path": "/capabilities/dimensions"
+      }
+    ]
+  },
   "toolchain": { "engineVersion": "1.5.0", "nodeMajor": "22", "pnpmVersion": "11.9.0" },
   "issuedAt": "2026-09-27T00:00:00.000Z",
   "issuer": "gis-engine-cli",

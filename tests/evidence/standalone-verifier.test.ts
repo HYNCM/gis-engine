@@ -38,6 +38,10 @@ describe("standalone evidence verifier", () => {
     for (const specifier of specifiers) {
       expect(specifier.startsWith("node:")).toBe(true);
     }
+    // The compiled inputs carry `//# sourceMappingURL=…` comments pointing at `.js.map` files that
+    // never ship beside the single file; an artifact whose whole job is to stand alone must not
+    // advertise references it cannot resolve.
+    expect(source).not.toContain("sourceMappingURL");
   });
 
   it("keeps the build script's embedded closure list identical to this test's list", () => {
@@ -54,11 +58,13 @@ describe("standalone evidence verifier", () => {
     const verifier = readFileSync(DIST_VERIFIER, "utf-8");
 
     for (const module of BUNDLE_MODULES) {
-      // 构建脚本只剥掉「引用闭包内模块的那几行 import」，其余逐字内嵌；这里用同一套剥除规则复算。
-      // 复算必须与 build-evidence-verifier.ts 的剥除逻辑同构（同一 specifier 判定），否则这条
-      // 「逐字内嵌」锁会和构建脚本各说各话。
+      // 构建脚本只剥掉「引用闭包内模块的那几行 import」和 `//# sourceMappingURL=` 注释行，其余逐字内嵌；
+      // 这里用同一套剥除规则复算。
+      // 复算必须与 build-evidence-verifier.ts 的剥除逻辑同构（同一 specifier 判定 + 同一 sourceMappingURL
+      // 剥除），否则这条「逐字内嵌」锁会和构建脚本各说各话。
       const inlined = readFileSync(module, "utf-8")
         .split("\n")
+        .filter((line) => !line.startsWith("//# sourceMappingURL="))
         .filter(
           (line) =>
             ![...line.matchAll(/(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)"([^"]+)"/g)]
@@ -118,6 +124,39 @@ describe("standalone evidence verifier", () => {
 
       expect(exitCode).toBe(2);
       expect(JSON.parse(stdout).diagnostics).toContainEqual(expect.objectContaining({ code: "EVIDENCE.CHAIN_BROKEN" }));
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("detects a forged mapspec pair through the shipped single file (spec §7 trigger 3)", () => {
+    // The record's artifact sha256 matches the file bytes, so only the packaged spec's body
+    // disagreeing with `spec.afterHash` can catch this — the recompute has to survive being inlined
+    // into the dependency-free single file, not just live in the engine module.
+    const packaged = `{"view":{"zoom":99}}\n`;
+    const directory = mkdtempSync(join(tmpdir(), "evidence-forgery-"));
+    try {
+      const record = buildFixture({
+        artifacts: [{ path: "map.json", role: "mapspec", bytes: Buffer.byteLength(packaged, "utf8"), sha256: sha256Of(packaged) }],
+      });
+      writeFileSync(join(directory, "evidence.json"), `${JSON.stringify(record)}\n`);
+      writeFileSync(join(directory, "map.json"), packaged);
+
+      let status = 0;
+      let stdout = "";
+      try {
+        stdout = execFileSync("node", [DIST_VERIFIER, join(directory, "evidence.json"), "--root", directory, "--json"], {
+          encoding: "utf-8",
+        });
+      } catch (error) {
+        status = (error as { status?: number }).status ?? 0;
+        stdout = String((error as { stdout?: string }).stdout ?? "");
+      }
+
+      expect(status).toBe(2);
+      const verdict = JSON.parse(stdout) as { ok: boolean; diagnostics: Array<{ code: string }> };
+      expect(verdict.ok).toBe(false);
+      expect(verdict.diagnostics).toContainEqual(expect.objectContaining({ code: "EVIDENCE.DERIVATION_FAILED" }));
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }
@@ -227,6 +266,56 @@ describe("standalone evidence verifier", () => {
       } finally {
         rmSync(root, { recursive: true, force: true });
       }
+    });
+  });
+
+  describe("argument handling", () => {
+    /**
+     * A tool that emits audit verdicts must not silently ignore flags it does not understand:
+     * `--root=./pkg` read as "no flags" degrades to cwd-relative artifact reads, so the verdict the
+     * auditor acts on was computed over a different file set than the one the operator named.
+     */
+    async function runArgv(argv: string[]) {
+      const reads: string[] = [];
+      const lines: string[] = [];
+      const code = await runEvidenceVerifierCli(argv, {
+        readFile: async (path) => {
+          reads.push(path);
+          return new Uint8Array(readFileSync(path));
+        },
+        log: (line) => {
+          lines.push(line);
+        },
+      });
+      return { reads, output: lines.join("\n"), code };
+    }
+
+    const USAGE = "usage: evidence-verifier <evidence.json> [--root <dir>] [--json]";
+
+    for (const argv of [["evidence.json", "--root=./pkg", "--json"], ["evidence.json", "--verbose"]]) {
+      it(`rejects the unrecognised flag form ${JSON.stringify(argv)} with usage and exit 1`, async () => {
+        const root = mkdtempSync(join(tmpdir(), "evidence-args-"));
+        try {
+          writeFileSync(join(root, "evidence.json"), `${JSON.stringify(validRecord)}\n`);
+          writeFileSync(join(root, "map.json"), MAP_JSON);
+
+          const { reads, output, code } = await runArgv(argv);
+
+          expect(code).toBe(1);
+          expect(output).toContain(USAGE);
+          // The refusal happens before any file is opened: nothing leaks a partial verdict.
+          expect(reads).toEqual([]);
+        } finally {
+          rmSync(root, { recursive: true, force: true });
+        }
+      });
+    }
+
+    it("still rejects a missing record path with the usage text", async () => {
+      const { output, code } = await runArgv([]);
+
+      expect(code).toBe(1);
+      expect(output).toContain(USAGE);
     });
   });
 

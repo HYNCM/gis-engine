@@ -2479,6 +2479,8 @@ git commit -m "feat(evidence): ship a standalone zero-dependency evidence verifi
 | Step 4 `const BUNDLE = […].map(resolve)` | `.map(resolve)` | `.map((source) => resolve(source))` | strict 模式 TS2345：`Array.map` 会把 index 传进 `resolve` 的 rest 形参。 |
 | Step 1 containment 用例 | 四条 | 五条 | 第六条覆盖 `isInsideRoot` 自己的「root 含 `..`」分支——未测的守卫分支等于没有守卫（Task 3 同类）。 |
 | Step 6 Expected | 6 passed | 11 passed | 上面两条用例集扩大的直接结果。 |
+| spec §7 `DERIVATION_FAILED` 第三条触发（整分支评审 Important 1，2026-09-27 补录） | 计划没有任何 task 文本要求复算包内 spec；Task 5 草图只覆盖前两条触发（`checkLineage` / `checkInversePatchHashes`） | `verifyEvidenceRecord` 在 artifact 字节匹配后对 `role: "mapspec"` 的正文做 `canonicalHash(JSON.parse(bytes)) === spec.afterHash` 复算，不符即 `EVIDENCE.DERIVATION_FAILED` 并并入 `DERIVATION_CLOSED` 与 `ok`；解析失败降级为同一结构化诊断，不抛异常；未提供 `readArtifact` 时跳过（该路径已在 `ARTIFACTS_MATCH` 失败） | spec §7 是契约而非草图；此前这条触发静默缺席、也未进任何 sync 表，属计划缺口，本行补披露。伪造对 / 诚实包 / 畸形字节三条引擎测试与单文件 exit 2 用例先红后绿；共享 fixture `spec.afterHash` 同步为 MAP_JSON 正文的诚实哈希。 |
+| Task 5 Step 4b 导出清单（`plan:2050-2056`；整分支评审 Important 4，2026-09-27 补录） | 清单只列 `EvidenceAssertion`/`EvidenceAssertionStatus`/`EvidenceVerificationResult`/`VerifyEvidenceRecordOptions`/`verifyEvidenceRecord` 五个符号 | `@gis-engine/engine/evidence` barrel 值导出补 `normaliseEvidencePayload`；`tests/evidence/record-verify.test.ts` 的 `reseal()` 改调它并删除手抄注释 | 遗漏即来源：该函数的注释自述「builder 与 verifier 只能共用这一个归一化表达式」，但它不在 Step 4b 清单上，导致计划 Task 9 与任何第三方 builder 只能重抄 `JSON.parse(JSON.stringify(…))`，而仓库自己的测试已经抄了一份。根 barrel 仍保持 evidence 符号类型-only（`tests/evidence/canonical-hash.test.ts` 的 BFS 守卫验证未破坏）。 |
 
 `packages/engine/scripts/**` 里两处 `console.*` 是 Biome `noConsole` **warning**（根目录 override 只覆盖顶层
 `scripts/**`），`biome check` 仍 exit 0；这是构建脚本的必要输出，不动配置。
