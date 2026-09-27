@@ -1,0 +1,47 @@
+# Task 1 Review: engine capability matrix truth source + gate wiring
+
+Reviewed commit range `b7ad498..3c4d13c` (19d8b37 + fix 3c4d13c). Read the diff file in full in one pass; focused out-of-diff checks were run only for the named risks listed inline.
+
+### Spec Compliance
+
+- ✅ Interfaces block produced exactly as promised: `EngineCapabilityBlocker` (capability-matrix.ts:8-12 in the new file, diff lines 115-119), `EngineCapabilityMatrix` with `schemaVersion: typeof ENGINE_CAPABILITY_MATRIX_SCHEMA_VERSION` (which infers the literal `"engine-capabilities.v0.1"`), and `buildEngineCapabilityMatrix(input)` with an omitted-or-default input matching the brief's optional signature. `BuildEngineCapabilityMatrixInput` is the brief's own Step 3/4 name, not an addition.
+- ✅ Matrix genuinely derives from the two truth sources, not a duplicate list: gate values/semantics come from `spec/scene3d-promotion-gate.ts` (verified: `Scene3DPromotionGate = "blocked" | "experimental" | "stable"`, `DEFAULT_SCENE3D_PROMOTION_GATE = "blocked"`), blocker codes from `Scene3DStableRuntimeBlockerCodes` / `DiagnosticCodes.CapabilityUnsupported` in `diagnostics/codes.ts:22,43-46` (imported, not retyped), and source rows from injected `SourceReadinessEntry[]` whose producer is `createSourceReadinessReport` (readiness.ts:87). The three asserted blocker code strings match the imported constants' actual values.
+- ✅ Constraint 4 (explicit, non-empty blocked by default): default gate pushes all three `SCENE3D_BLOCKERS` (capability-matrix.ts:49-53) and the first test pins the exact list (test lines 13-18); readiness `blocked` entries become explicit `CAPABILITY.UNSUPPORTED` rows; `readiness-only` is deliberately in neither list, matching the brief's no-overclaim design.
+- ✅ Sorted-order ruling executed for `available` and pinned: `[...available].sort()` with rationale comment (capability-matrix.ts:71-74), test renamed and reordered with the canonical-order comment (test lines 46-58), and the plan file `docs/superpowers/plans/2026-09-26-evidence-record.md` amended in the same commit. I agree sorting is technically correct. **But the execution is half-complete — see Important #1: the same rationale applies verbatim to `blocked[]`, which remains input-order-dependent.**
+- ✅ Constraint 1: diff touches nothing in `packages/ai`; no tool-name changes.
+- ✅ Constraint 2: pure data recompute — no imports beyond codes/readiness/promotion-gate modules, no I/O, no `applyCommands`.
+- ✅ Constraint 10 wiring, all three pieces verbatim per Step 6: `test:evidence` script after `test:cli` and `pnpm test:evidence &&` inside the `test` chain (package.json diff), evidence gate block inserted before the `packages/ai/` block in `scripts/gate-plan.mjs` (matching the brief's regexes), and the `buildPlan(["packages/engine/src/evidence/record.ts"])` guard test added. Reported `test:agent-framework` 74/74 supports the claim; the new gate is additive so no existing consumer's expectations can regress.
+- ✅ Brief Step 4 placement: I claimed-risk-checked `packages/engine/src/index.ts` — the evidence block (lines 21-27) does sit before `export { MockAdapter } from "./renderer/mock.js"` (line 55) in the final file, so the Biome re-sort kept the deviation cosmetic and the report's description is accurate.
+- ⚠️ Constraint 7 (schema-first): the matrix is a plain TS interface with no TypeBox schema yet. This is consistent with the brief (Task 2 puts it into MCP envelopes with outputSchemas), but the controller should confirm Task 2 actually adds TypeBox + Ajv coverage before the structure is exposed through any MCP `outputSchema`.
+- ⚠️ `BASE_AVAILABLE` (capability-matrix.ts:24) and `evidence.build` are hand-maintained literals with no mechanical truth source — unavoidable, since no existing module encodes lifecycle capabilities. They name real, existing surfaces (`validate/apply/export/snapshot` per AGENTS.md's closed loop) and the deliberate `snapshot.smoke-mock` wording is preserved per the brief. Not a violation of constraint 11's spirit (that targets duplicating the scene3d/source lists), but any future addition to this list should be review-gated.
+
+### Strengths
+
+- The derivation discipline is real, not decorative: every asserted blocker code in the test is matched against the imported constant's actual value (`diagnostics/codes.ts:43-46`), so a rename in the truth source breaks the build, not a silent drift.
+- Honest self-reporting: the implementer surfaced the brief's internal ordering contradiction before ruling, kept the verbatim test otherwise, and flagged both the Biome relocation and the unescaped path themselves rather than burying them.
+- The amended test ("lists only capabilities with a truth source behind them, in canonical order", test:46) doubles as a whitelist assertion — a future capability with no truth source cannot be added without updating a test whose comment explains *why* order is contractual.
+- Test imports go through the public `@gis-engine/engine` entry (test:1), so the test simultaneously validates the Step 4 export surface rather than reaching into src paths.
+- Gate wiring is minimal and correctly positioned in all three files, with the framework guard test exactly where the brief said.
+
+### Issues
+
+#### Critical (Must Fix)
+
+None.
+
+#### Important (Should Fix)
+
+1. **`blocked[]` is not canonically ordered, so the ruling's own rationale is only half-executed.** capability-matrix.ts:60-67 pushes blocked-source entries in `input.readiness` iteration order, and `createSourceReadinessReport` produces that order from `Object.entries(spec.sources)` (readiness.ts:96) — i.e., the spec's key insertion order. Task 4 hashes the whole `EngineCapabilityMatrix` into `EvidenceRecord.recordId`, and canonical hashing preserves array order, so a spec with the same blocked sources listed in a different key order still yields a different `recordId`. This is precisely the failure mode that justified sorting `available` (capability-matrix.ts:71-72 comment). The implementer noted "I did not reorder `blocked[]`" (report item 1) but it stayed unflagged against the ruling's basis. Fix now while cheap: sort `blocked` deterministically (e.g., by `code`, then `path`), or explicitly record in the plan that Task 4's canonicalization must sort blocked entries — but note the latter contradicts the "canonical hashing preserves array order" premise the ruling relied on.
+2. **`(plan-mandated)` Unescaped source ids in blocker paths — `/sources/${entry.sourceId}` (capability-matrix.ts:64) is inconsistent with the repo's own path convention.** Named risk checked: `sources: Type.Record(Type.String(), SourceSpecSchema)` (map-spec.schema.ts:166) places no character constraint on source ids, while `readiness.ts` consistently escapes the same ids with `escapePathSegment` (`~`→`~0`, `/`→`~1`) when building diagnostic paths (readiness.ts:327, 394). For any source id containing `~` or `/`, the matrix's `path` is ambiguous and will not string-match the diagnostic paths other tooling produces for the same source — a silent join failure for Task 2/5 consumers comparing blocker paths to diagnostics. The brief's code is verbatim here (implementer correctly did not deviate unilaterally), and the pinned test uses `"parcels"` so `escapePathSegment(entry.sourceId)` is a one-line fix that breaks nothing.
+
+#### Minor (Nice to Have)
+
+1. **Shared-object aliasing:** `blocked.push(...SCENE3D_BLOCKERS)` (capability-matrix.ts:50) puts the module-level blocker objects directly into the returned array, typed as mutable `EngineCapabilityBlocker[]`; a consumer mutating `matrix.blocked[0].reason` would corrupt every subsequent call. A `[...SCENE3D_BLOCKERS].map((b) => ({ ...b }))` (or `Object.freeze`) removes the footgun. Verbatim from the brief.
+2. **Third duplication of the code↔path pairing:** the same three (code, path) combinations already exist in `spec/validate.ts:338-366` and `generation/commandSkeleton.ts:269-298`. `SCENE3D_BLOCKERS` follows existing convention rather than inventing a new one, but a shared `scene3d-stable-runtime-blockers` constant would be the right refactor; drift is a rename away.
+3. **Coverage gaps:** no test for `readiness-only` entries appearing in neither list (the behavior the report claims); the default-gate test asserts only `code`s, not the `reason`/`path` fields of the three blockers; the `as never` casts (test:5, test:36, brief-verbatim) let the tests construct entries that don't satisfy `SourceReadinessEntry`, so a required-field change in readiness.ts wouldn't be caught here. All are brief-inherited test shapes.
+4. Duplicate entries of the same source type collapse into one `source.<type>` available entry while still producing per-source blockers (e.g., one supported + one blocked raster → `source.raster` available and a raster blocker present). Defensible ("type supported, instance policy-blocked") and brief-designed; worth a doc comment.
+
+### Assessment
+
+**Task quality:** Needs fixes
+**Reasoning:** The architecture, derivation discipline, export surface and all gate wiring match the brief and the ruling's letter, but two contract-level defects should be closed while each is a one-line change: `blocked[]` retains the exact input-order sensitivity the sorted-order ruling exists to eliminate (recordId stability in Task 4), and the unescaped `/sources/<id>` path breaks against the repo's own escaping convention for legally-named sources.
