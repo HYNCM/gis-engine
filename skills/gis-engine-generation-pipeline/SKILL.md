@@ -311,9 +311,13 @@ The mock provider guarantees deterministic output, so CI runs are reproducible.
 The `evidence.json` file is an `EvidenceRecord` (`evidence-record.v0.1`): the
 command lineage, the spec hashes, and a sha256 for every other file written
 besides itself (abridged here to the `map.json` entry; a real CLI-issued record
-lists every packaged file). Every value below is a real hash recomputed from the
-example's own content, so the record validates against `EvidenceRecordSchema`
-and re-seals to the shown `recordId`.
+lists every packaged file). This example is pinned by
+`tests/docs/public-docs-consistency.test.ts`: it validates against
+`EvidenceRecordSchema`, and its `recordId` re-seals from the body below under the
+same canonical hash `verifyEvidenceRecord` uses. The `spec.*` and
+`artifacts[].sha256` literals are illustrative — the `map.json` bytes they
+attest are not printed here, so the packaged-spec recompute behind
+`DERIVATION_CLOSED` only runs against a generated package.
 
 ```json
 {

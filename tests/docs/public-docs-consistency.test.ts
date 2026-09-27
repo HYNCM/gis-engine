@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { EvidenceRecordSchema } from "@gis-engine/engine/evidence";
+import { canonicalHash, EvidenceRecordSchema, normaliseEvidencePayload } from "@gis-engine/engine/evidence";
 import Ajv from "ajv";
 import { describe, expect, it } from "vitest";
 
@@ -268,6 +268,16 @@ describe("public docs consistency", () => {
     const validate = new Ajv({ allErrors: true, strict: false }).compile(EvidenceRecordSchema);
 
     expect(validate(example), `skill example rejected: ${JSON.stringify(validate.errors)}`).toBe(true);
+
+    // The prose promises the shown `recordId` re-seals, so the docs test recomputes it the same way
+    // `verifyEvidenceRecord`'s CHAIN_CLOSED does. Without this the claim is unverifiable prose, and a
+    // later edit to one field would leave the example attesting a record its own hash rejects.
+    const record = example as { recordId: string };
+    const payload = normaliseEvidencePayload({ ...record, recordId: undefined });
+    expect(payload).toBeDefined();
+    expect(record.recordId, "skill example recordId does not re-seal from its own body").toBe(
+      payload === undefined ? undefined : canonicalHash(payload),
+    );
   });
 
   it("documents the MCP structured result and compatible error contracts", () => {
