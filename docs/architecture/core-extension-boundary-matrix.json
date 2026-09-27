@@ -34,6 +34,12 @@
           "notes": "`examples/ai-map-workbench` 只做 Phase 1 参考实现"
         },
         {
+          "area": "产品消费者",
+          "core": "`apps/workbench` 消费公开的 `MapSpec`、command、diagnostic 和 adapter 契约",
+          "extension": "Workbench 本地项目、计划、预览、应用和导出编排",
+          "notes": "产品工作流不得重定义 core 或 `RendererAdapter` 契约"
+        },
+        {
           "area": "工作流",
           "core": "`validate -> apply -> snapshot -> export` 作为最小闭环",
           "extension": "其他消费者可按需要重组顺序",
@@ -78,6 +84,12 @@
           "core": "`RendererAdapter` contract",
           "extension": "MapLibre、WebGL2 lite、scene adapter 的实现细节",
           "notes": "renderer-specific 行为必须留在 adapter 后面"
+        },
+        {
+          "area": "Product consumer",
+          "core": "`apps/workbench` consumes public `MapSpec`, command, diagnostic, and adapter contracts",
+          "extension": "Workbench-local project, plan, preview, apply, and export orchestration",
+          "notes": "The product workflow must not redefine core or `RendererAdapter` contracts; `examples/ai-map-workbench` remains Phase 1 reference evidence"
         }
       ]
     }

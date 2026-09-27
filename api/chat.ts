@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { Type } from "@sinclair/typebox";
 import Ajv from "ajv";
-import { applyProviderOutput, emptyCommandEvidence } from "./studio-command-apply";
-import { type DeepSeekProviderProfile, resolveDeepSeekProvider } from "./studio-provider-guardrails";
+import { applyProviderOutput, emptyCommandEvidence } from "./workbench-command-apply";
+import { type DeepSeekProviderProfile, resolveDeepSeekProvider } from "./workbench-provider-guardrails";
 
 export const config = {
   runtime: "nodejs",

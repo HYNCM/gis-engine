@@ -52,7 +52,7 @@ gis-engine/
 │   ├── scene3d/    # SceneView3D package boundary (experimental)
 │   └── scene3d-three-adapter/  # Three.js adapter (experimental spike)
 ├── apps/
-│   └── studio/     # Studio web application
+│   └── workbench/  # Local-first Workbench application
 ├── examples/       # Runnable examples and MapSpec fixtures
 ├── tests/          # Integration and unit tests
 └── docs/           # Documentation and VitePress site
@@ -65,8 +65,12 @@ gis-engine/
 | `pnpm build` | Build all packages |
 | `pnpm build:schema` | Generate TypeBox schemas (run before tests) |
 | `pnpm test` | Run full test suite (13 test runners) |
-| `pnpm test:studio` | Run studio-specific tests |
-| `pnpm check` | Full build + test + studio tests |
+| `pnpm test:workbench` | Run Workbench-specific tests |
+| `pnpm test:workbench:e2e` | Build Workbench and run the Mock-provider golden path |
+| `pnpm test:workbench:security` | Run path, provider, export, and telemetry safety tests |
+| `pnpm test:workbench:delivery` | Install/build an exported app and verify preflight + artifact hashes |
+| `pnpm workbench:server` | Start Workbench at the selected local project root |
+| `pnpm check` | Full build + test + Workbench tests |
 | `pnpm lint` | Run Biome linter |
 | `pnpm lint:fix` | Run Biome with auto-fix |
 | `pnpm format` | Format code with Biome |
@@ -87,6 +91,9 @@ gis-engine/
 2. **Make changes** following the coding standards above.
 3. **Add tests** for new functionality.
 4. **Run checks**: `pnpm check` must pass (build + full test suite).
+   Changes under `apps/workbench`, Workbench tests, or the delivery helper must
+   also pass the E2E, security, delivery, resource-policy, and strict MapLibre
+   visual gates selected by `pnpm gate:plan`.
 5. **Submit PR** with a clear description of what changed and why.
 6. **CI validation**: All CI checks must pass before merge.
 7. **Review**: A maintainer will review your PR. Address feedback promptly.

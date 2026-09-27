@@ -17,9 +17,18 @@ owner: "@product"
 decision_level: advisory
 ---
 
-# Current Product Definition
+# Historical Product Definition
 
-## Objective
+Status: Superseded
+
+> [!IMPORTANT]
+> **Historical Snapshot.** This 2026-06-14 product view is retained as decision
+> evidence and is superseded by the
+> [canonical Workbench product definition](../../intent/project-definition.md).
+> The SDK, AI, CLI, and MCP surfaces described below are now the shared
+> foundation of GIS Engine Workbench, not parallel primary products.
+
+## Historical Objective
 
 GIS Engine is an AI-native, schema-first map SDK + CLI product line. The
 current product surface is the developer adoption path: validate a `MapSpec`,
@@ -30,14 +39,14 @@ This repo does not currently define itself as a hosted Workbench product, a
 stable SceneView3D runtime, or a full cloud-native data runtime. Those remain
 bounded by explicit no-go or promotion-gate docs.
 
-## Current Product Surface
+## Historical Product Surface
 
 | Surface | Status | What It Is For | What It Is Not For |
 | --- | --- | --- | --- |
 | `@gis-engine/engine` | primary | schema-first runtime, command application, diagnostics, snapshots, adapter contracts | renderer replacement, hidden state mutation, ad hoc runtime edits |
 | `@gis-engine/ai` | primary | MCP tools, generation evidence, structured handoff data | new tool aliases, renderer internals, free-form prompt parsing |
 | `@gis-engine/cli` | primary | scaffold, generate, preflight, artifact verification, first-run acceptance | hosted product route, opaque generate output, unverified artifact delivery |
-| `apps/studio` / `examples/ai-map-workbench` | reference | local example and review surface | hosted/product promotion in the current cycle |
+| `apps/workbench` / `examples/ai-map-workbench` | reference | local example and review surface | hosted/product promotion in the current cycle |
 | `scene3d` / PMTiles query / cloud-native data runtime | bounded | evidence and promotion gates | stable runtime claims without a dedicated future issue |
 
 ## Success Criteria

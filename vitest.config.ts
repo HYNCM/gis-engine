@@ -7,12 +7,18 @@ const root = dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   test: {
     environment: "node",
-    // The root gate must execute this checkout's tests only. Vitest's default include
-    // (`**/*.test.ts`) also sweeps two git-ignored trees that live inside this directory:
-    // `.worktrees/**` (sibling feature branches, whose stale tests assert the pre-EvidenceRecord
-    // CLI output) and `.pnpm-store/**` (a pnpm project cache holding a copy of this repository).
-    // Both were reported as first-party failures once a breaking change landed.
-    exclude: [...configDefaults.exclude, ".worktrees/**", ".pnpm-store/**"],
+    // Vitest's default include (`**/*.{test,spec}.ts`) sweeps two git-ignored trees that live
+    // inside this directory: `.worktrees/**` (sibling feature branches, whose copies of this
+    // repo's tests are stale by definition) and `.pnpm-store/**` (a pnpm project cache holding
+    // another copy of this repository). Both get reported as first-party failures otherwise.
+    // The Workbench `.spec.ts` files are Playwright specs and must stay out of this runner too.
+    exclude: [
+      ...configDefaults.exclude,
+      ".worktrees/**",
+      ".pnpm-store/**",
+      "tests/workbench/**/*.spec.ts",
+      "tests/e2e/**/*.spec.ts",
+    ],
     coverage: {
       provider: "v8",
       include: ["packages/*/src/**/*.ts"],

@@ -26,6 +26,7 @@ Use the core + extensions model. `MapSpec` keeps `version`, `view`, `sources`, `
 | `extensions.*` | 只保留版本化扩展入口 | `scene3d`、`aiHints`、terrain、vertical payload、第三方插件字段 | 3D / scene / 行业能力走扩展命名空间 |
 | `RendererAdapter` | 只定义稳定渲染契约 | MapLibre、WebGL2 lite、scene adapter 的实现细节 | 具体渲染器行为必须留在 adapter 后面 |
 | 参考实现 | 提供可运行 proof-of-concept | 不定义产品形态，也不替代主协议 | `examples/ai-map-workbench` 只做 Phase 1 参考实现 |
+| 产品消费者 | `apps/workbench` 消费公开的 `MapSpec`、command、diagnostic 和 adapter 契约 | Workbench 本地项目、计划、预览、应用和导出编排 | 产品工作流不得重定义 core 或 `RendererAdapter` 契约 |
 | 工作流 | `validate -> apply -> snapshot -> export` 作为最小闭环 | 其他消费者可按需要重组顺序 | 该闭环是证据最小闭环，不是唯一流程 |
 <!-- core-extension-boundary:framework:end -->
 

@@ -116,9 +116,26 @@ export function buildPlan(files) {
     addGate(gates, "pnpm test:cli", "CLI behavior");
   }
 
-  if (files.some((file) => /^apps\/studio\//.test(file))) {
-    addGate(gates, "pnpm studio:build", "Studio bundle");
-    addGate(gates, "pnpm test:studio", "Studio behavior");
+  const workbenchTouched = files.some((file) =>
+    fileMatches(file, [
+      /^apps\/workbench\//,
+      /^tests\/workbench\//,
+      /^scripts\/workbench-/,
+      /^packages\/cli\/src\/delivery\.ts$/,
+    ]),
+  );
+  if (workbenchTouched) {
+    addGate(gates, "pnpm workbench:build", "Workbench bundle");
+    addGate(gates, "pnpm test:workbench", "Workbench behavior");
+    addGate(gates, "pnpm test:workbench:security", "Workbench path, provider, export, and telemetry safety");
+    addGate(gates, "pnpm test:workbench:e2e", "Workbench Mock-provider golden path");
+    addGate(gates, "pnpm test:workbench:delivery", "Workbench install, build, preflight, and artifact hashes");
+    addGate(gates, "pnpm test:resources", "Workbench data and external resource policy");
+    addGate(
+      gates,
+      "GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual",
+      "Workbench MapLibre 2D requires strict visual evidence",
+    );
   }
 
   if (

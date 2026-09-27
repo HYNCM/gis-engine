@@ -3,7 +3,7 @@
  */
 
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { publicProviderProfiles } from "./studio-provider-guardrails";
+import { publicProviderProfiles } from "./workbench-provider-guardrails";
 
 type Req = IncomingMessage & { query?: Record<string, string | string[]> };
 type Res = ServerResponse & { json: (body: unknown) => void; status: (code: number) => Res };

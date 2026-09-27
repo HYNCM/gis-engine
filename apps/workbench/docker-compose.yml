@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  workbench:
+    build:
+      context: ../..
+      dockerfile: apps/workbench/Dockerfile
+    ports:
+      - "127.0.0.1:4321:4321"
+    volumes:
+      - workbench-data:/data
+    environment:
+      - NODE_ENV=production
+      - HOST=0.0.0.0
+      - PORT=4321
+      - WORKBENCH_DB_PATH=/data/maps.db
+      - WORKBENCH_PROJECT_ROOT=/data/project
+      # - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+    restart: unless-stopped
+
+volumes:
+  workbench-data:

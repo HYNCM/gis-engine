@@ -29,6 +29,7 @@ Successful calls expose schema-conforming `structuredContent`. Failures use a st
 | AI / MCP | 已公开的 snake_case 工具契约和输入/输出 schema | 新工具的扩展 payload、AI 证据和 adapter-local diagnostics | 新 tool 必须继续遵守 schema-first 和 contract tests |
 | Workflow | `validate -> apply -> snapshot -> export` 作为证据最小闭环 | 其他消费者可以重排或只用其中一段 | 不把参考实现工作流写成唯一协议顺序 |
 | Renderer boundary | `RendererAdapter` contract | MapLibre、WebGL2 lite、scene adapter 的实现细节 | renderer-specific 行为必须留在 adapter 后面 |
+| Product consumer | `apps/workbench` consumes public `MapSpec`, command, diagnostic, and adapter contracts | Workbench-local project, plan, preview, apply, and export orchestration | The product workflow must not redefine core or `RendererAdapter` contracts; `examples/ai-map-workbench` remains Phase 1 reference evidence |
 <!-- core-extension-boundary:contracts:end -->
 
 ## Signposts

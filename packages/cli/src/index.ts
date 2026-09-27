@@ -1,6 +1,11 @@
 export { formatVerifyArtifactsText, type VerifyArtifactsResult, verifyArtifacts } from "./artifacts.js";
 export { main } from "./bin.js";
 export { type CliConfig, parseArgs } from "./config.js";
+export {
+  type WriteMapProjectDeliveryOptions,
+  type WriteMapProjectDeliveryResult,
+  writeMapProjectDelivery,
+} from "./delivery.js";
 export { type GenerateOptions, type GenerateResult, generate, hashPrompt } from "./generate.js";
 export {
   formatLintText,

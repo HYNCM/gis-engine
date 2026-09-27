@@ -190,16 +190,18 @@ type DeliverySummaryReviewInput = {
   delivery?: DeliveryReviewSummary;
 };
 
-type GeneratedArtifactRole =
+export type GeneratedArtifactRole =
   | "mapspec"
   | "preflight"
   | "delivery-summary"
   | "review"
   | "evidence"
   | "diagnostics"
-  | "app";
+  | "app"
+  | "configuration"
+  | "documentation";
 
-type GeneratedArtifactManifestEntry = {
+export type GeneratedArtifactManifestEntry = {
   path: string;
   role: GeneratedArtifactRole;
   required: boolean;
@@ -207,7 +209,7 @@ type GeneratedArtifactManifestEntry = {
   sha256: string;
 };
 
-type GeneratedArtifactManifest = {
+export type GeneratedArtifactManifest = {
   schemaVersion: "gis-engine.generate-artifact-manifest.v1";
   generatedAt: string;
   projectName: string;
@@ -229,7 +231,7 @@ const REQUIRED_REVIEW_FILES = [
 ] as const;
 
 function classifyGeneratedArtifact(path: string): GeneratedArtifactRole {
-  if (path === "map.json") return "mapspec";
+  if (path === "map.json" || path === "mapspec.json") return "mapspec";
   if (path === "preflight.json") return "preflight";
   if (path === "delivery-summary.json") return "delivery-summary";
   if (path === "REVIEW.md") return "review";
@@ -238,6 +240,8 @@ function classifyGeneratedArtifact(path: string): GeneratedArtifactRole {
   // hashed by the record too, so it enters `files` as an artifact rather than as scaffold.
   if (path === "evidence-verifier.mjs") return "evidence";
   if (path === "diagnostics.json") return "diagnostics";
+  if (path === "README.md") return "documentation";
+  if (path === ".env.example" || path.endsWith("config.json")) return "configuration";
   return "app";
 }
 
@@ -275,20 +279,23 @@ function resolveVerifierPath(): string {
   }
 }
 
-function createArtifactManifest(input: {
+export function createArtifactManifest(input: {
   outDir: string;
   files: string[];
   projectName: string;
   provider: string;
   promptHash: string;
   traceId: string;
+  generatedAt?: string;
+  requiredReviewFiles?: readonly string[];
 }): GeneratedArtifactManifest {
+  const requiredReviewFiles = input.requiredReviewFiles ?? REQUIRED_REVIEW_FILES;
   const entries = input.files.map<GeneratedArtifactManifestEntry>((path) => {
     const filePath = join(input.outDir, path);
     return {
       path,
       role: classifyGeneratedArtifact(path),
-      required: REQUIRED_REVIEW_FILES.includes(path as (typeof REQUIRED_REVIEW_FILES)[number]),
+      required: requiredReviewFiles.includes(path),
       bytes: statSync(filePath).size,
       sha256: hashFileSha256(filePath),
     };
@@ -296,14 +303,14 @@ function createArtifactManifest(input: {
 
   return {
     schemaVersion: "gis-engine.generate-artifact-manifest.v1",
-    generatedAt: new Date().toISOString(),
+    generatedAt: input.generatedAt ?? new Date().toISOString(),
     projectName: input.projectName,
     provider: input.provider,
     promptHash: input.promptHash,
     traceId: input.traceId,
     retainedRawPrompt: false,
     artifactCount: entries.length,
-    requiredReviewFiles: [...REQUIRED_REVIEW_FILES],
+    requiredReviewFiles: [...requiredReviewFiles],
     files: entries,
   };
 }

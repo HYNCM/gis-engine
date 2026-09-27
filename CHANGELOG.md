@@ -13,6 +13,32 @@
 - **Read-side byte budget**: the standalone verifier refuses an `evidence.json` larger than `MAX_EVIDENCE_RECORD_BYTES` (1,048,576) before parsing it, exiting `1` without producing an assertion verdict. The builder already refused to emit one, so reject-not-truncate now holds at both ends.
 - **Package size budget**: `@gis-engine/engine` complete-dist canonical gzip moved to `262144` bytes. The evidence subsystem accounts for `+38,703` B of the measured `237,324` B (`dist/src/evidence/**` `23,384`, `dist/schema/evidence-record*.json` `5,239`, `dist/evidence-verifier.mjs` `9,898`); with it removed the package measures `197,354` B, inside the previous `204,800` B budget. This contract is what crosses the line, so the budget moves rather than the evidence surface shrinking.
 
+## [Workbench 0.1.0] - Unreleased
+
+### Added
+
+- Local-first engineering workspace with project/data/layer/history navigation,
+  MapLibre 2D map and MapSpec/file views, structured AI plan review, diagnostics,
+  revision restore, and confirmed export.
+- Human-readable project authority through `gis-engine.project.json`,
+  `mapspec.json`, project data, and immutable revision/export receipts; legacy
+  SQLite records remain available through a read-only export command.
+- Public TypeBox/Ajv Workbench project, plan, apply, export, telemetry schemas
+  and stable diagnostics.
+- Mock and server-held OpenAI-compatible provider profiles. Raw prompts,
+  provider bodies, and credentials are excluded from exported artifacts;
+  opt-in telemetry additionally excludes data, MapSpec, and file paths.
+- `gis-engine-workbench [project-directory]` launcher, deterministic browser
+  E2E, security gates, strict MapLibre visual evidence, and exported-project
+  install/build/preflight/hash verification.
+
+### Product boundary
+
+Workbench is independently versioned at `0.x` until its Alpha and local-v1
+user-success gates pass. PR #47 is an engine-family contract release for a
+breaking GeoParquet metadata-shape change only; it does not promote Workbench,
+stable 3D, hosted preview, cloud collaboration, or enterprise governance.
+
 ## [1.5.0] - 2026-07-06
 
 ### Added

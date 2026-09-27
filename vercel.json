@@ -1,6 +1,6 @@
 {
-  "buildCommand": "pnpm --filter @gis-engine/studio... build",
-  "outputDirectory": "apps/studio/dist",
+  "buildCommand": "pnpm --filter @gis-engine/workbench... build",
+  "outputDirectory": "apps/workbench/dist",
   "installCommand": "pnpm install --frozen-lockfile",
   "framework": null,
   "cleanUrls": true

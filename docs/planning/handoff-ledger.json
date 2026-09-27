@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-06T01:12:55.424Z",
-  "repo_revision": "b2ddaab",
+  "generated_at": "2026-08-19T15:42:21.297Z",
+  "repo_revision": "b48287d",
   "source": "scripts/handoff-ledger.mjs",
   "evidence_run_id": null,
   "issue_snapshot": null,
@@ -11,11 +11,11 @@
       "to": "orchestrator",
       "description": "competitor signals and priority recommendations",
       "required": true,
-      "status": "consumed",
-      "severity": "info",
-      "code": null,
-      "note": "orchestrator report cites docs/research/competitor-updates-2026-W32.md",
-      "action": null,
+      "status": "invalid-upstream",
+      "severity": "error",
+      "code": "EVIDENCE.SPECIALIST_STALE",
+      "note": "product specialist evidence is 335.5h old (SLA: 48h)",
+      "action": "@product must refresh specialist evidence before the SLA or handoff can pass",
       "upstream": {
         "path": "docs/research/competitor-updates-2026-W32.md",
         "generated_at": "2026-08-05T16:11:14.000Z",
@@ -23,8 +23,8 @@
       },
       "downstream": {
         "path": "docs/planning/weekly-digest.md",
-        "generated_at": "2026-08-05T17:28:00.000Z",
-        "sha256": "2b714376f7f125fd0651d55487a8ab68c39703ec1dd45bc6d7387b275f07a39c"
+        "generated_at": "2026-08-19T15:28:05.000Z",
+        "sha256": "867c36685e44e706f0ebce05cb40ad7d2df0055af97c27968299b2c4a3f6414c"
       },
       "latest_upstream_template": null,
       "latest_downstream_template": null
@@ -38,17 +38,17 @@
       "status": "consumed",
       "severity": "info",
       "code": null,
-      "note": "quality report cites docs/reviews/package-size-budget-builder-evidence-2026-08-05.md",
+      "note": "quality report cites docs/reviews/workbench-v1-builder-evidence-2026-08-19.md",
       "action": null,
       "upstream": {
-        "path": "docs/reviews/package-size-budget-builder-evidence-2026-08-05.md",
-        "generated_at": "2026-08-05T15:42:37.000Z",
-        "sha256": "3000a5c129ed7509a960c655182da62643a494e35f2be1afcf7b18954bb868a1"
+        "path": "docs/reviews/workbench-v1-builder-evidence-2026-08-19.md",
+        "generated_at": "2026-08-19T14:44:10.000Z",
+        "sha256": "4133ba4126b7be61da5ab864ff7d492bd9c05083cf00ab03533fd9b4a2efcc2d"
       },
       "downstream": {
-        "path": "docs/reviews/package-size-budget-quality-decision-2026-08-05.md",
-        "generated_at": "2026-08-05T15:42:37.000Z",
-        "sha256": "4be3513468b7ef7d813b5f695ba3b1ad0da7c01922cb29619cab6f56971cf6cb"
+        "path": "docs/reviews/workbench-v1-quality-decision-2026-08-19.md",
+        "generated_at": "2026-08-19T14:44:10.000Z",
+        "sha256": "a0bcacdc24b18d9b8710e1a81b5238c0a11011b7801a6982479bac44d05d2ec4"
       },
       "latest_upstream_template": null,
       "latest_downstream_template": {
@@ -66,17 +66,17 @@
       "status": "consumed",
       "severity": "info",
       "code": null,
-      "note": "orchestrator report cites docs/reviews/package-size-budget-quality-decision-2026-08-05.md",
+      "note": "orchestrator report cites docs/reviews/workbench-v1-quality-decision-2026-08-19.md",
       "action": null,
       "upstream": {
-        "path": "docs/reviews/package-size-budget-quality-decision-2026-08-05.md",
-        "generated_at": "2026-08-05T15:42:37.000Z",
-        "sha256": "4be3513468b7ef7d813b5f695ba3b1ad0da7c01922cb29619cab6f56971cf6cb"
+        "path": "docs/reviews/workbench-v1-quality-decision-2026-08-19.md",
+        "generated_at": "2026-08-19T14:44:10.000Z",
+        "sha256": "a0bcacdc24b18d9b8710e1a81b5238c0a11011b7801a6982479bac44d05d2ec4"
       },
       "downstream": {
         "path": "docs/planning/weekly-digest.md",
-        "generated_at": "2026-08-05T17:28:00.000Z",
-        "sha256": "2b714376f7f125fd0651d55487a8ab68c39703ec1dd45bc6d7387b275f07a39c"
+        "generated_at": "2026-08-19T15:28:05.000Z",
+        "sha256": "867c36685e44e706f0ebce05cb40ad7d2df0055af97c27968299b2c4a3f6414c"
       },
       "latest_upstream_template": {
         "path": "docs/reviews/quality-gate-2026-07-06.md",

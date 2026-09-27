@@ -39,13 +39,16 @@ fixtures -> schema validation -> command replay -> renderer adapter -> snapshot 
     "test:perf:nightly": "vitest run tests/nightly-perf",
     "test:resources": "vitest run tests/resources",
     "test:docs": "vitest run tests/docs",
-    "test:studio": "vitest run tests/studio",
+    "test:workbench": "vitest run tests/workbench",
+    "test:workbench:e2e": "pnpm workbench:build && playwright test tests/workbench/workbench-e2e.spec.ts --workers=1",
+    "test:workbench:security": "vitest run tests/workbench/workbench-api.test.ts tests/workbench/workbench-export.test.ts tests/workbench/workbench-telemetry.test.ts",
+    "test:workbench:delivery": "pnpm --filter @gis-engine/engine build:schema && pnpm --filter @gis-engine/cli build && pnpm workbench:build && node scripts/workbench-delivery-smoke.mjs",
     "test:release:scene3d": "vitest run tests/snapshot/smoke/scene3d-release-visual-gate.test.ts",
     "test:release:rc": "pnpm build:schema && pnpm check && pnpm test:snapshot:visual",
     "test:release:strict": "pnpm build:schema && pnpm check && GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual",
     "release:preflight": "node scripts/release-preflight.mjs",
     "release:verify": "node scripts/release-verify.mjs",
-    "check": "pnpm build && pnpm test && pnpm test:studio",
+    "check": "pnpm build && pnpm test && pnpm test:workbench",
     "smoke:first-run": "node scripts/first-run-acceptance.mjs",
     "smoke:cli-install": "node scripts/cli-install-smoke.mjs"
   }
@@ -104,6 +107,9 @@ CI 分为 PR、main-nightly、release 三档。PR 目标是稳定阻断确定性
 | perf trend | 否 | `pnpm test:perf:trend` 周度运行并归档趋势报告 | `scripts/perf-trend.mjs` 生成的 `docs/reviews/perf-trend-*.md` 周度证据 |
 | CLI install smoke | 否 | 建议运行；失败告警 | `pnpm smoke:cli-install` 必跑且阻断 |
 | migration tests | 变更 schema 时必跑且阻断 | 变更 schema 时必跑且阻断 | 必跑且阻断 |
+| Workbench contracts/security | Workbench 路径变更时必跑且阻断 | 必跑且阻断 | 必跑且阻断 |
+| Workbench Mock golden path | Workbench 路径变更时必跑且阻断 | 必跑且阻断 | 必跑且阻断 |
+| Workbench exported delivery | Workbench/CLI delivery路径变更时必跑且阻断 | 必跑且阻断 | 必跑且阻断 |
 
 `GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1` 会把 `snapshot:visual` 从可降级 gate 提升为强制 gate。该环境变量适用于 release、手动验收、baseline 更新和任何需要确认真实 MapLibre GL 渲染的 CI job。
 

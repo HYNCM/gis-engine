@@ -1,0 +1,46 @@
+export {
+  type WorkbenchContractDiagnostic,
+  WorkbenchContractDiagnosticSchema,
+  type WorkbenchDiagnosticCode,
+  WorkbenchDiagnosticCodes,
+} from "./diagnostics.js";
+export {
+  createWorkbenchCanonicalHash,
+  createWorkbenchPlanHash,
+  createWorkbenchPromptHash,
+} from "./hash.js";
+export {
+  DATA_FILE_NAME_PATTERN,
+  SOURCE_ID_PATTERN,
+  type WorkbenchApplyRequest,
+  WorkbenchApplyRequestSchema,
+  type WorkbenchApplyResult,
+  WorkbenchApplyResultSchema,
+  type WorkbenchDataAttachmentRequest,
+  WorkbenchDataAttachmentRequestSchema,
+  type WorkbenchDataAttachmentResult,
+  WorkbenchDataAttachmentResultSchema,
+  type WorkbenchExportPreview,
+  WorkbenchExportPreviewSchema,
+  type WorkbenchExportReceipt,
+  WorkbenchExportReceiptSchema,
+  type WorkbenchPlan,
+  WorkbenchPlanSchema,
+  type WorkbenchProject,
+  WorkbenchProjectSchema,
+  type WorkbenchTelemetryEvent,
+  WorkbenchTelemetryEventSchema,
+} from "./schemas.js";
+export {
+  validateWorkbenchApplyRequest,
+  validateWorkbenchApplyResult,
+  validateWorkbenchDataAttachmentRequest,
+  validateWorkbenchDataAttachmentResult,
+  validateWorkbenchExportPreview,
+  validateWorkbenchExportReceipt,
+  validateWorkbenchPlan,
+  validateWorkbenchProject,
+  validateWorkbenchSchema,
+  validateWorkbenchTelemetryEvent,
+  type WorkbenchValidationResult,
+} from "./validation.js";
