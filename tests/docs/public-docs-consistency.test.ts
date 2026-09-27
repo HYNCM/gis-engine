@@ -263,8 +263,8 @@ describe("public docs consistency", () => {
     expect(skill).toContain(heading);
     const section = skill.slice(skill.indexOf(heading));
     const fence = section.match(/```json\n([\s\S]*?)\n```/);
-    expect(fence, "the Evidence Record Structure section must carry the example json block").not.toBeNull();
-    const example = JSON.parse(fence![1]!) as unknown;
+    if (!fence) throw new Error("the Evidence Record Structure section must carry the example json block");
+    const example = JSON.parse(fence[1] ?? "") as unknown;
     const validate = new Ajv({ allErrors: true, strict: false }).compile(EvidenceRecordSchema);
 
     expect(validate(example), `skill example rejected: ${JSON.stringify(validate.errors)}`).toBe(true);
