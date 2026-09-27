@@ -591,6 +591,82 @@ describe("GIS Engine Workbench server state", () => {
     });
   });
 
+  function auditMapWithResetRecord() {
+    return {
+      id: "map-1",
+      name: "Workbench Reset Ledger",
+      revision: "4",
+      basemapId: "osm",
+      createdAt: "2026-06-03T00:00:00Z",
+      updatedAt: "2026-06-03T00:05:00Z",
+      auditRecords: [
+        {
+          id: "studio.test.1",
+          sessionId: "studio.test",
+          timestamp: "2026-06-03T00:01:00Z",
+          status: "applied",
+          providerId: "mock-ai",
+          commandCount: 2,
+          diagnosticCounts: { error: 0, warning: 0, info: 0 },
+          fromRevision: "2",
+          toRevision: "3",
+        },
+        {
+          id: "studio.test.2",
+          sessionId: "studio.test",
+          timestamp: "2026-06-03T00:02:00Z",
+          status: "reset",
+          providerId: "mock-ai",
+          commandCount: 0,
+          diagnosticCounts: { error: 0, warning: 0, info: 0 },
+          fromRevision: "3",
+          toRevision: "0",
+        },
+      ],
+      reviewDecisions: [],
+    };
+  }
+
+  it("counts reset audit records in the Workbench local review ledger summary", () => {
+    const ledger = buildSavedMapReviewLedger(auditMapWithResetRecord(), {});
+
+    expect(ledger.summary.auditStatusCounts).toEqual({
+      applied: 1,
+      blocked: 0,
+      ready: 0,
+      reviewed: 0,
+      reset: 1,
+    });
+  });
+
+  it("filters Workbench local review ledger records by the reset audit status", () => {
+    const ledger = buildSavedMapReviewLedger(auditMapWithResetRecord(), { auditStatus: "reset" });
+
+    expect(ledger).toMatchObject({
+      filters: { auditStatus: "reset" },
+      summary: { matchingAuditRecordCount: 1 },
+      audit: {
+        recordCount: 2,
+        matchingRecordCount: 1,
+        returnedRecordCount: 1,
+        records: [expect.objectContaining({ id: "studio.test.2", status: "reset" })],
+      },
+    });
+  });
+
+  it("filters Workbench local review export events by the reset audit status", () => {
+    const exportEnvelope = buildSavedMapReviewExport(auditMapWithResetRecord(), {
+      kind: "audit",
+      status: "reset",
+    });
+
+    expect(exportEnvelope).toMatchObject({
+      filters: { kind: "audit", status: "reset" },
+      summary: { matchingEventCount: 1, returnedEventCount: 1 },
+      events: [expect.objectContaining({ eventId: "studio.test.2", status: "reset", toRevision: "0" })],
+    });
+  });
+
   it("builds a paginated Workbench local review export envelope", () => {
     const exportEnvelope = buildSavedMapReviewExport(
       {
