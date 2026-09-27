@@ -137,7 +137,9 @@ describe("standalone evidence verifier", () => {
     const directory = mkdtempSync(join(tmpdir(), "evidence-forgery-"));
     try {
       const record = buildFixture({
-        artifacts: [{ path: "map.json", role: "mapspec", bytes: Buffer.byteLength(packaged, "utf8"), sha256: sha256Of(packaged) }],
+        artifacts: [
+          { path: "map.json", role: "mapspec", bytes: Buffer.byteLength(packaged, "utf8"), sha256: sha256Of(packaged) },
+        ],
       });
       writeFileSync(join(directory, "evidence.json"), `${JSON.stringify(record)}\n`);
       writeFileSync(join(directory, "map.json"), packaged);
@@ -145,9 +147,13 @@ describe("standalone evidence verifier", () => {
       let status = 0;
       let stdout = "";
       try {
-        stdout = execFileSync("node", [DIST_VERIFIER, join(directory, "evidence.json"), "--root", directory, "--json"], {
-          encoding: "utf-8",
-        });
+        stdout = execFileSync(
+          "node",
+          [DIST_VERIFIER, join(directory, "evidence.json"), "--root", directory, "--json"],
+          {
+            encoding: "utf-8",
+          },
+        );
       } catch (error) {
         status = (error as { status?: number }).status ?? 0;
         stdout = String((error as { stdout?: string }).stdout ?? "");
@@ -292,7 +298,10 @@ describe("standalone evidence verifier", () => {
 
     const USAGE = "usage: evidence-verifier <evidence.json> [--root <dir>] [--json]";
 
-    for (const argv of [["evidence.json", "--root=./pkg", "--json"], ["evidence.json", "--verbose"]]) {
+    for (const argv of [
+      ["evidence.json", "--root=./pkg", "--json"],
+      ["evidence.json", "--verbose"],
+    ]) {
       it(`rejects the unrecognised flag form ${JSON.stringify(argv)} with usage and exit 1`, async () => {
         const root = mkdtempSync(join(tmpdir(), "evidence-args-"));
         try {

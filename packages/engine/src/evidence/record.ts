@@ -705,7 +705,9 @@ function checkPackagedSpecBody(
   const recomputed = safeCanonicalHash(body);
   const declared = spec && typeof spec.afterHash === "string" ? spec.afterHash : String(spec && spec.afterHash);
   if (recomputed === undefined) {
-    return failed(`Packaged spec "${declaredPath}" could not be canonically hashed for comparison with spec.afterHash.`);
+    return failed(
+      `Packaged spec "${declaredPath}" could not be canonically hashed for comparison with spec.afterHash.`,
+    );
   }
   if (recomputed !== declared) {
     return failed(
