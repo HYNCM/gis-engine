@@ -114,8 +114,19 @@ This writes the following files to `./my-project/`:
 | `map.json` | The generated `MapSpec` |
 | `preflight.json` | IO-free MapSpec delivery preflight with validation, source readiness, PMTiles load-plan, and diagnostics |
 | `delivery-summary.json` | Pipeline, delivery, and preflight summary without raw prompt |
-| `evidence.json` | Full `GenerationEvidenceBundle` |
+| `evidence.json` | `EvidenceRecord` (`evidence-record.v0.1`): command lineage, spec hashes, and a sha256 per package file |
+| `evidence-verifier.mjs` | Zero-dependency recomputation tool shipped beside the record |
 | `diagnostics.json` | All diagnostics (only if non-empty) |
+
+Recompute a generated package without a source checkout, npm install, or network:
+
+```bash
+node evidence-verifier.mjs evidence.json --root . --json
+```
+
+See [EvidenceRecord recompute](../../engineering/evidence-record.md) for assertion
+semantics and the threat model. `createGenerationEvidenceBundle()` below stays the
+AI-tool view of the same record and carries its `recordId`.
 
 Use `--dry-run` to preview without writing files.
 

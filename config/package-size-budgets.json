@@ -31,14 +31,14 @@
   "packages": {
     "engine": {
       "distPath": "packages/engine/dist",
-      "budgetBytes": 204800,
+      "budgetBytes": 262144,
       "semantics": "blocking",
       "baselineBytes": 193984,
       "baselineRawBytes": 1984108,
       "baselineFileCount": 210,
       "baselineRevision": "4465943af6279c4a2a9b3dc140ba13fab0deb040",
       "measuredAt": "2026-08-05T15:23:33Z",
-      "rationale": "A 200 KiB complete-dist canonical gzip limit replaces the stale 130 KB active-doc claim and the workflow-only 170 KB tar estimate; it retains measured headroom without changing the measured artifact scope."
+      "rationale": "A 200 KiB complete-dist canonical gzip limit replaces the stale 130 KB active-doc claim and the workflow-only 170 KB tar estimate; it retains measured headroom without changing the measured artifact scope. Raised to a 256 KiB limit by the EvidenceRecord contract: the clean build at 99a902a measured 236,057 B against the 204,800 B blocking budget, and this working tree measures 237,324 B. Attribution is complete, not estimated: every evidence-owned file is named below, and the whole-subsystem share is measured rather than summed from them. The evidence subsystem accounts for 38,703 B, the subtraction-derived total (236,057 B measured minus the 197,354 B non-evidence dist). Its individual files dist/src/evidence/** 23,384 B, dist/schema/evidence-record*.json 5,239 B and dist/evidence-verifier.mjs 9,898 B sum to 38,521 B, and the two figures differ by 182 B because canonical dist gzip is not additive across files. The non-evidence dist 197,354 B remains inside the previous budget: this spec is precisely what crosses it, and deleting the standalone verifier single file does not get back under it (226,159 B). The budget moves with the recorded numbers instead of the evidence surface shrinking to dodge the gate; baselineBytes stays at the 4465943 reference so the regression stays visible, and the advisory threshold keeps reporting it. Note that pnpm check does not run size:check and bundle-size.yml only triggers on packages/** changes, so this branch is the first to exercise that gate."
     },
     "cli": {
       "distPath": "packages/cli/dist",
@@ -49,7 +49,7 @@
       "baselineFileCount": 44,
       "baselineRevision": "4465943af6279c4a2a9b3dc140ba13fab0deb040",
       "measuredAt": "2026-08-05T15:23:33Z",
-      "rationale": "A 64 KiB complete-dist canonical gzip limit replaces the stale 35 KB active-doc claim and the workflow-only 70 KB tar estimate; the lower canonical value comes from deterministic framing rather than a narrower artifact scope."
+      "rationale": "A 64 KiB complete-dist canonical gzip limit replaces the stale 35 KB active-doc claim and the workflow-only 70 KB tar estimate; the lower canonical value comes from deterministic framing rather than a narrower artifact scope. Headroom warning for future contributors: the EvidenceRecord export surface (the verifier copy plus the record build path in generate.ts) measures 65,260 B against this 65,536 B limit — 99.6% consumed, 7.46% above the recorded 60,730 B baseline — so this budget is effectively spent; the limit is deliberately not raised, and the next CLI feature needs an explicit budget decision before it lands."
     }
   }
 }

@@ -19,6 +19,39 @@ export { type ApplyCommandsResult, applyCommands } from "./commands/applyCommand
 export { type BuildPatchResult, buildPatch } from "./commands/buildPatch.js";
 export { DiagnosticCodes, Scene3DStableRuntimeBlockerCodes } from "./diagnostics/codes.js";
 export {
+  type BuildEngineCapabilityMatrixInput,
+  buildEngineCapabilityMatrix,
+  ENGINE_CAPABILITY_MATRIX_SCHEMA_VERSION,
+  type EngineCapabilityBlocker,
+  type EngineCapabilityMatrix,
+} from "./evidence/capability-matrix.js";
+// Types only: `./evidence/record.js` value-imports `node:crypto` and must stay off the
+// browser-facing runtime graph (see tests/evidence/canonical-hash.test.ts reachability guard).
+// `verifyEvidenceRecord` itself is a runtime value and is therefore exported only through the
+// `@gis-engine/engine/evidence` subpath, never from this root barrel.
+export type {
+  BuildEvidenceRecordResult,
+  EvidenceAssertion,
+  EvidenceAssertionId,
+  EvidenceAssertionStatus,
+  EvidenceExclusionId,
+  EvidenceIssueCode,
+  EvidenceRecord,
+  EvidenceRecordArtifact,
+  EvidenceRecordCapabilities,
+  EvidenceRecordCommand,
+  EvidenceRecordInput,
+  EvidenceVerificationResult,
+  VerifyEvidenceRecordOptions,
+} from "./evidence/record.js";
+export {
+  EngineCapabilityBlockerSchema,
+  type EngineCapabilityMatrixFromSchema,
+  EngineCapabilityMatrixSchema,
+  type EvidenceRecordFromSchema,
+  EvidenceRecordSchema,
+} from "./evidence/schema.js";
+export {
   createMapGenerationCommandSkeleton,
   type MapGenerationAnalysisEvidence,
   type MapGenerationCommandSkeleton,

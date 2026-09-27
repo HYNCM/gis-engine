@@ -104,6 +104,10 @@ export function buildPlan(files) {
     addGate(gates, "pnpm test:patch", "patch/replay behavior");
   }
 
+  if (files.some((file) => /^packages\/engine\/src\/evidence\//.test(file) || /^tests\/evidence\//.test(file))) {
+    addGate(gates, "pnpm test:evidence", "delivery evidence contract");
+  }
+
   if (files.some((file) => /^packages\/ai\//.test(file))) {
     addGate(gates, "pnpm test:ai", "MCP and AI tool contract");
   }

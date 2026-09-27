@@ -3,7 +3,16 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "no
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { generate, hashPrompt, main, verifyArtifacts } from "@gis-engine/cli";
+import { canonicalHash } from "@gis-engine/engine/evidence";
 import { describe, expect, it, vi } from "vitest";
+
+/**
+ * `map.json` is written with the full generated spec, and canonical stringification is key-order
+ * independent, so the on-disk file is a direct input to the record's `spec.afterHash`.
+ */
+function specOf(mapBytes: Buffer): unknown {
+  return JSON.parse(mapBytes.toString("utf-8")) as unknown;
+}
 
 // ---------------------------------------------------------------------------
 // generate.ts — hashPrompt
@@ -124,6 +133,7 @@ describe("cli-generate-delivery-summary", () => {
         "preflight.json",
         "delivery-summary.json",
         "REVIEW.md",
+        "evidence.json",
       ]);
       expect(manifest.files.map((file: { path: string }) => file.path)).toEqual(
         result.files.filter((file) => file !== "artifact-manifest.json"),
@@ -140,7 +150,7 @@ describe("cli-generate-delivery-summary", () => {
       expect(manifest.files.find((file: { path: string }) => file.path === "evidence.json")).toMatchObject({
         path: "evidence.json",
         role: "evidence",
-        required: false,
+        required: true,
       });
       expect(summary.preflight).toMatchObject({
         ok: preflight.ok,
@@ -161,26 +171,51 @@ describe("cli-generate-delivery-summary", () => {
         },
       });
       expect(summary.delivery).toMatchObject({
-        status: evidence.delivery.status,
-        acceptance: evidence.delivery.acceptance,
-        confirmationRequired: evidence.delivery.confirmationRequired,
+        // Asserted against the enum rather than the bundle: the bundle no longer exists on disk to
+        // agree or disagree with, but a delivery state outside this set is still a defect.
+        status: expect.stringMatching(/^ready|blocked|needs-confirmation|follow-up-required$/),
       });
-      expect(summary.delivery.sections).toEqual(evidence.delivery.sections);
+      expect(typeof summary.delivery.confirmationRequired).toBe("boolean");
+      expect(summary.delivery.acceptance).toMatchObject({
+        state: expect.stringMatching(/^ready|blocked|needs-confirmation|follow-up-required$/),
+      });
       expect(summary.delivery.sourceReadiness).toMatchObject({
-        total: evidence.delivery.sourceReadiness.length,
-        supported: evidence.delivery.sourceReadiness.filter((source: { state: string }) => source.state === "supported")
-          .length,
-        readinessOnly: evidence.delivery.sourceReadiness.filter(
+        // Retired cross-check: these five fields used to pull `delivery-summary.json` against the
+        // published `GenerationEvidenceBundle`, which no longer lives on disk (Task 7 Step 4b
+        // 已知代价). What the file can still be held to on its own is its own derivation: the counts
+        // must agree with the source list they summarise.
+        total: summary.delivery.sourceReadiness.sources.length,
+        supported: summary.delivery.sourceReadiness.sources.filter(
+          (source: { state: string }) => source.state === "supported",
+        ).length,
+        readinessOnly: summary.delivery.sourceReadiness.sources.filter(
           (source: { state: string }) => source.state === "readiness-only",
         ).length,
-        blocked: evidence.delivery.sourceReadiness.filter((source: { state: string }) => source.state === "blocked")
-          .length,
-        sources: evidence.delivery.sourceReadiness,
+        blocked: summary.delivery.sourceReadiness.sources.filter(
+          (source: { state: string }) => source.state === "blocked",
+        ).length,
       });
-      expect(summary.delivery.spatialQueryReadiness).toEqual(evidence.delivery.spatialQueryReadiness);
-      expect(summary.delivery.sourcePromotionCandidates).toEqual(evidence.delivery.sourcePromotionCandidates ?? []);
-      expect(summary.delivery.confirmations).toEqual(evidence.delivery.confirmations);
-      expect(summary.delivery.followUps).toEqual(evidence.delivery.followUps);
+      // The list must not be asserted against itself — `sources: ….sources` can never fail. Two anchors
+      // that can: it has to stay the readiness array, and it has to be the list the shipped spec derives.
+      // `buildSourceReadiness` emits exactly one row per `map.json` source and the deterministic mock plan
+      // declares none, so an empty spec pins an empty list: a fabricated or re-pointed row turns this red
+      // even while the self-consistent count legs above stay green.
+      expect(summary.delivery.sourceReadiness.sources).toBeInstanceOf(Array);
+      expect(summary.delivery.sourceReadiness.sources).toEqual([]);
+      expect(
+        summary.delivery.sourceReadiness.sources.map((source: { sourceId: string }) => source.sourceId).sort(),
+      ).toEqual(Object.keys((specOf(mapBytes) as { sources: Record<string, unknown> }).sources ?? {}).sort());
+      // `evidence.json` is an `EvidenceRecord` now, so the assertions here are about the record, not
+      // about a second delivery view.
+      expect(evidence).toMatchObject({
+        schemaVersion: "evidence-record.v0.1",
+        issuer: "gis-engine-cli",
+        origin: { providerKind: "cli-generate", promptHash: summary.promptHash },
+      });
+      expect(evidence.recordId).toMatch(/^sha256:[a-f0-9]{64}$/);
+      expect(JSON.stringify(evidence)).not.toContain("private customer locations");
+      expect(summary.delivery.confirmations).toBeInstanceOf(Array);
+      expect(summary.delivery.followUps).toBeInstanceOf(Array);
     } finally {
       process.chdir(cwd);
       logSpy.mockRestore();
@@ -239,13 +274,21 @@ describe("cli-generate-delivery-summary", () => {
             .length,
         },
       });
-      expect(summary.delivery.sections).toEqual(evidence.delivery.sections);
-      expect(summary.delivery.spatialQueryReadiness).toEqual(evidence.delivery.spatialQueryReadiness);
+      // Retired cross-check (Task 7 Step 4b 已知代价): `summary.delivery.sections` and
+      // `spatialQueryReadiness` used to be pulled against the published `GenerationEvidenceBundle`
+      // that lived in `evidence.json`. That bundle is off disk, so the anchor here is the record's
+      // own facts: the files it attests, and the spec hash it committed to.
+      const mapBytes = readFileSync(join(projectDir, "map.json"));
+      const recordFiles = new Set((evidence.artifacts as Array<{ path: string }>).map((artifact) => artifact.path));
+      expect(recordFiles.has("delivery-summary.json")).toBe(true);
+      expect(recordFiles.has("map.json")).toBe(true);
+      expect(canonicalHash(specOf(mapBytes))).toBe(evidence.spec.afterHash);
       expect(manifest.requiredReviewFiles).toEqual([
         "map.json",
         "preflight.json",
         "delivery-summary.json",
         "REVIEW.md",
+        "evidence.json",
       ]);
       expect(filesByPath.get("map.json")).toMatchObject({ role: "mapspec", required: true });
       expect(filesByPath.get("preflight.json")).toMatchObject({ role: "preflight", required: true });
@@ -254,7 +297,10 @@ describe("cli-generate-delivery-summary", () => {
         required: true,
       });
       expect(filesByPath.get("REVIEW.md")).toMatchObject({ role: "review", required: true });
-      expect(filesByPath.get("evidence.json")).toMatchObject({ role: "evidence", required: false });
+      expect(filesByPath.get("evidence.json")).toMatchObject({ role: "evidence", required: true });
+      // The verifier ships inside the package so a third party needs nothing else; it is hashed and
+      // role-bound like any other artifact, but it is not a *review* file.
+      expect(filesByPath.get("evidence-verifier.mjs")).toMatchObject({ role: "evidence", required: false });
       expect(filesByPath.get("artifact-manifest.json")).toBeUndefined();
       expect(review).toContain("## Review Files");
       for (const requiredFile of manifest.requiredReviewFiles) {
@@ -267,7 +313,7 @@ describe("cli-generate-delivery-summary", () => {
         mode: "artifact-manifest-verify",
         status: "verified",
         summary: {
-          requiredFileCount: 4,
+          requiredFileCount: 5,
           missingFileCount: 0,
           byteMismatchCount: 0,
           hashMismatchCount: 0,
@@ -534,14 +580,17 @@ describe("cli-generate-evidence-structure", () => {
       });
 
       const evidencePath = join(dir, "evidence-map", "evidence.json");
-      if (existsSync(evidencePath)) {
-        const evidence = JSON.parse(readFileSync(evidencePath, "utf-8"));
-        expect(evidence).toHaveProperty("delivery");
-        expect(evidence).toHaveProperty("promptHash");
-        expect(evidence.promptHash).toMatch(/^sha256:/);
-        // Verify no raw prompt leak
-        expect(JSON.stringify(evidence)).not.toContain("Test evidence structure");
-      }
+      // Unconditional: `evidence.json` is a required review file now, so a missing file is a failure
+      // rather than a branch.
+      expect(existsSync(evidencePath)).toBe(true);
+      const evidence = JSON.parse(readFileSync(evidencePath, "utf-8"));
+      expect(evidence).toHaveProperty("recordId");
+      expect(evidence).toHaveProperty("commands");
+      expect(evidence.origin.promptHash).toMatch(/^sha256:/);
+      // `assertions` belongs to the verifier's output, never to the record: this pins that nobody
+      // writes a recomputation verdict back into the artefact being recomputed.
+      expect(evidence.assertions).toBeUndefined();
+      expect(JSON.stringify(evidence)).not.toContain("Test evidence structure");
     } finally {
       process.chdir(cwd);
       logSpy.mockRestore();

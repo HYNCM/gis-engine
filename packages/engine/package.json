@@ -16,7 +16,13 @@
     ".": {
       "types": "./dist/src/index.d.ts",
       "import": "./dist/src/index.js"
-    }
+    },
+    "./evidence": {
+      "types": "./dist/src/evidence/index.d.ts",
+      "import": "./dist/src/evidence/index.js"
+    },
+    "./evidence-verifier.mjs": "./dist/evidence-verifier.mjs",
+    "./package.json": "./package.json"
   },
   "files": [
     "dist",
@@ -26,8 +32,8 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "build:schema": "tsc -p tsconfig.json && node dist/scripts/build-schema.js"
+    "build": "tsc -p tsconfig.json && node dist/scripts/build-evidence-verifier.js",
+    "build:schema": "tsc -p tsconfig.json && node dist/scripts/build-schema.js && node dist/scripts/build-evidence-verifier.js"
   },
   "dependencies": {
     "@sinclair/typebox": "^0.34.0",

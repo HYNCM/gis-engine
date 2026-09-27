@@ -3,8 +3,10 @@ import { pathToFileURL } from "node:url";
 import {
   ApplyCommandsToolInputSchema,
   applyCommands,
+  buildEngineCapabilityMatrix,
   type CapabilityReport,
   CapabilityReportSchema,
+  createSourceReadinessReport,
   type Diagnostic,
   DiagnosticCodes,
   DiagnosticSchema,
@@ -125,7 +127,31 @@ const JsonPatchOperationSchema = {
   additionalProperties: false,
 } as const;
 
-const ValidationReportSchema = {
+const EngineCapabilityBlockerContractSchema = {
+  type: "object",
+  properties: {
+    code: { type: "string" },
+    reason: { type: "string" },
+    path: { type: "string" },
+  },
+  required: ["code", "reason"],
+  additionalProperties: false,
+} as const;
+
+export const EngineCapabilityMatrixContractSchema = {
+  type: "object",
+  properties: {
+    schemaVersion: { type: "string", const: "engine-capabilities.v0.1" },
+    available: { type: "array", items: { type: "string" } },
+    blocked: { type: "array", items: EngineCapabilityBlockerContractSchema },
+  },
+  required: ["schemaVersion", "available", "blocked"],
+  additionalProperties: false,
+} as const;
+
+// Bare validation report shared by nested `validation` fields (snapshot_spec, explain_spec,
+// generation evidence bundle). validate_spec's top-level envelope widens it below.
+export const ValidationReportSchema = {
   type: "object",
   properties: {
     valid: { type: "boolean" },
@@ -211,7 +237,18 @@ export const ApplyCommandsToolResultSchema = {
   additionalProperties: false,
 } as const;
 
-export const ValidateSpecToolResultSchema = ValidationReportSchema;
+// validate_spec widens the shared validation report with the derived capability matrix.
+// The nested `validation` fields in snapshot_spec/explain_spec and the generation evidence
+// bundle keep the bare ValidationReportSchema, so only this top-level envelope requires it.
+export const ValidateSpecToolResultSchema = {
+  ...ValidationReportSchema,
+  properties: {
+    ...ValidationReportSchema.properties,
+    capabilities: EngineCapabilityMatrixContractSchema,
+  },
+  required: [...ValidationReportSchema.required, "capabilities"],
+  additionalProperties: false,
+} as const;
 export const ExportSpecToolResultSchema = MapSpecSchema;
 
 const CapabilityDomainSummarySchema = {
@@ -454,10 +491,11 @@ export const ContextSummaryToolResultSchema = {
       additionalProperties: false,
     },
     capabilitySummary: CapabilitySummarySchema,
+    capabilityMatrix: EngineCapabilityMatrixContractSchema,
     capabilities: CapabilityReportContractSchema,
     scene3d: Scene3DContextSummarySchema,
   },
-  required: ["view", "sources", "sourceReadiness", "layers", "validation", "capabilitySummary"],
+  required: ["view", "sources", "sourceReadiness", "layers", "validation", "capabilitySummary", "capabilityMatrix"],
   additionalProperties: false,
 } as const;
 
@@ -852,7 +890,13 @@ export async function callGisEngineTool(request: {
         "Invalid validate_spec tool input.",
       );
       if (!input.ok) return toolTextResult(input.diagnostics, true);
-      return toolTextResult(validateSpec(input.input.spec));
+      const report = validateSpec(input.input.spec);
+      const readiness = report.valid ? createSourceReadinessReport(input.input.spec as MapSpec).sources : [];
+
+      return toolTextResult({
+        ...report,
+        capabilities: buildEngineCapabilityMatrix({ readiness }),
+      });
     }
 
     if (name === "export_spec") {

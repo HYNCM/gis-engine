@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import {
   type CapabilityReport,
   CapabilityReportSchema,
@@ -34,13 +33,10 @@ import {
   type ValidationReport,
   validateSpec,
 } from "@gis-engine/engine";
+import { canonicalHash } from "@gis-engine/engine/evidence";
 import { Ajv } from "ajv/dist/ajv.js";
 import { type GisEngineToolName, GisEngineToolNameSchema } from "../internal/mcpToolNames.js";
-import {
-  ContextSummaryToolResultSchema,
-  SnapshotSpecToolResultSchema,
-  ValidateSpecToolResultSchema,
-} from "../mcp/server.js";
+import { ContextSummaryToolResultSchema, SnapshotSpecToolResultSchema, ValidationReportSchema } from "../mcp/server.js";
 import { applyCommandsTool } from "./applyCommands.js";
 import { type ContextSummary, getContextSummary } from "./contextSummary.js";
 import {
@@ -65,7 +61,7 @@ import { SnapshotSpecToolInputSchema, snapshotSpecTool } from "./snapshotSpec.js
 const DiagnosticContractSchema = stripNestedIds(DiagnosticSchema);
 const ContextSummaryContractSchema = stripNestedIds(ContextSummaryToolResultSchema);
 const SnapshotSpecContractSchema = stripNestedIds(SnapshotSpecToolResultSchema);
-const ValidationReportContractSchema = stripNestedIds(ValidateSpecToolResultSchema);
+const ValidationReportContractSchema = stripNestedIds(ValidationReportSchema);
 type Scene3DStableRuntimeBlockerCode =
   (typeof Scene3DStableRuntimeBlockerCodes)[keyof typeof Scene3DStableRuntimeBlockerCodes];
 
@@ -416,6 +412,9 @@ export const GenerationEvidenceBundleSchema = {
       type: "array",
       items: DiagnosticContractSchema,
     },
+    // Optional: the bundle is the tool-facing view of an EvidenceRecord, and only a producer that has
+    // already built one can name its id. Not in `required` so pre-record bundles stay valid.
+    recordId: { type: "string", pattern: "^sha256:[a-f0-9]{64}$" },
   },
   required: [
     "promptHash",
@@ -611,6 +610,8 @@ export interface GenerationEvidenceBundle {
   delivery: ExampleAppDeliverySummary;
   exampleEvidence: GenerationExampleEvidence;
   diagnostics: Diagnostic[];
+  /** Canonical EvidenceRecord this bundle is the tool-facing view of. */
+  recordId?: string;
 }
 
 export type GenerationEvidenceBundleResponse =
@@ -1293,7 +1294,7 @@ function spatialQueryFixtureHash(
     sourceIds: selectedSourceIdsForCase(spec, readiness, queryCase),
     resultLimit,
   };
-  return `sha256:${createHash("sha256").update(JSON.stringify(fixture)).digest("hex")}`;
+  return canonicalHash(fixture);
 }
 
 function spatialQueryEmptyResultDiagnostic(

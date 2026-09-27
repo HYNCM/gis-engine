@@ -39,7 +39,7 @@ pnpm test:perf:nightly
 
 | Package | Budget (gzipped) |
 |---|---|
-| `@gis-engine/engine` | 200 KiB blocking |
+| `@gis-engine/engine` | 256 KiB blocking |
 | `@gis-engine/cli` | 64 KiB blocking |
 
 `config/package-size-budgets.json` is the only authority for these byte limits,

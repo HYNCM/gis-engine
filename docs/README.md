@@ -16,6 +16,7 @@ pnpm docs:links
 - [Architecture decision](architecture/core-framework.md)
 - [Contracts](spec/contracts-and-interfaces.md)
 - [Resource policy context](engineering/ci-test-strategy.md)
+- [EvidenceRecord recompute](engineering/evidence-record.md)
 - [Release boundaries](engineering/release-wording-guardrails.md)
 - [Migration index](migration/README.md)
 

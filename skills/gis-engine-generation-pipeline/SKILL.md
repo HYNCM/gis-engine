@@ -102,7 +102,8 @@ After a successful generate run, these files are written:
 | `delivery-summary.json` | Yes | Pipeline metadata, delivery status, source readiness, follow-ups. |
 | `REVIEW.md` | Yes | Human-readable review handoff for the first reviewer to open. |
 | `artifact-manifest.json` | Yes | File list with roles, byte sizes, and sha256 hashes. |
-| `evidence.json` | Yes | Full evidence bundle with all pipeline artifacts. |
+| `evidence.json` | Yes | The `EvidenceRecord`: command lineage, spec hashes, and a sha256 for every other file in the package. |
+| `evidence-verifier.mjs` | Yes | Zero-dependency recomputation tool shipped beside the record so a third party needs nothing else. |
 | `diagnostics.json` | Only when present | Aggregated diagnostics from plan, skeleton, and validation. |
 | App scaffold files | Conditional | Vite + React + Tailwind files when app template is emitted. |
 
@@ -305,26 +306,104 @@ The mock provider guarantees deterministic output, so CI runs are reproducible.
   run: npx @gis-engine/cli create-gis-map my-map --generate -p deepseek --prompt "Earthquake map"
 ```
 
-## Evidence Bundle Structure
+## Evidence Record Structure
 
-The `evidence.json` file contains all pipeline artifacts for auditing:
+The `evidence.json` file is an `EvidenceRecord` (`evidence-record.v0.1`): the
+command lineage, the spec hashes, and a sha256 for every other file written
+besides itself (abridged here to the `map.json` entry; a real CLI-issued record
+lists every packaged file). This example is pinned by
+`tests/docs/public-docs-consistency.test.ts`: it validates against
+`EvidenceRecordSchema`, and its `recordId` re-seals from the body below under the
+same canonical hash `verifyEvidenceRecord` uses. The `spec.*` and
+`artifacts[].sha256` literals are illustrative — the `map.json` bytes they
+attest are not printed here, so the packaged-spec recompute behind
+`DERIVATION_CLOSED` only runs against a generated package.
 
 ```json
 {
-  "promptHash": "sha256:<hex>",
-  "traceId": "cli-<timestamp36>",
-  "provider": "mock",
-  "retainedRawPrompt": false,
-  "plan": { "status": "ok", "commands": [...] },
-  "skeleton": { "baseSpec": {...}, "commands": [...] },
-  "validation": { "valid": true, "diagnostics": [] },
-  "contextSummary": { "sourceCount": 2, "layerCount": 3 },
-  "generatedAt": "2026-07-01T00:00:00Z"
+  "schemaVersion": "evidence-record.v0.1",
+  "recordId": "sha256:31fe7fc53297493328aa5fd55651c8d4fcfb97258edbb3cf76f7639bd186bcc5",
+  "project": { "id": "my-map", "baseRevision": "0", "revision": "1" },
+  "origin": {
+    "actor": "provider:mock",
+    "providerKind": "cli-generate",
+    "promptHash": "sha256:aa6ff7cf5ce04605acd74e68dc9ef34805891c6015b9f25d6fbfc337bab75e3f"
+  },
+  "commands": [
+    {
+      "command": {
+        "id": "gen-set-view",
+        "version": "0.1",
+        "type": "setView",
+        "view": { "center": [8.5, 47.37], "zoom": 11 }
+      },
+      "outcome": "applied",
+      "diagnostics": [],
+      "inversePatchHash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "baseRevision": "0",
+      "nextRevision": "1"
+    }
+  ],
+  "spec": {
+    "beforeHash": "sha256:6f5e8517273ef5fd5ce0d0ba59188e0f51022263dda3f268e57db9807e36fb7f",
+    "afterHash": "sha256:ad44a71f04e09f6b2807bc4bfad3590693c5089f9bbb95696aa02bd7d34d6923",
+    "diffHash": "sha256:ccd383a70f5eb01a3b189fbc52ce9641781f8bef32fb4c53f6259d51ec1fed11"
+  },
+  "artifacts": [
+    {
+      "path": "map.json",
+      "role": "mapspec",
+      "bytes": 152,
+      "sha256": "sha256:991cde202a187fa5089180e980a9dd44f5761e5aa8da4e84237860a607cb219a"
+    }
+  ],
+  "capabilities": {
+    "schemaVersion": "engine-capabilities.v0.1",
+    "available": ["commands.apply", "evidence.build", "export.spec", "mapspec.validate", "snapshot.smoke-mock"],
+    "blocked": [
+      {
+        "code": "SCENE3D.STABLE_RUNTIME_VIEW_MODE_BLOCKED",
+        "reason": "scene3d view mode requires the promotion gate to reach stable.",
+        "path": "/view/mode"
+      },
+      {
+        "code": "SCENE3D.STABLE_RUNTIME_RENDERER_BLOCKED",
+        "reason": "scene3d renderer requires the promotion gate to reach stable.",
+        "path": "/capabilities/renderer"
+      },
+      {
+        "code": "SCENE3D.STABLE_RUNTIME_DIMENSIONS_BLOCKED",
+        "reason": "3D dimensions require the promotion gate to reach stable.",
+        "path": "/capabilities/dimensions"
+      }
+    ]
+  },
+  "toolchain": { "engineVersion": "1.5.0", "nodeMajor": "22", "pnpmVersion": "11.9.0" },
+  "issuedAt": "2026-09-27T00:00:00.000Z",
+  "issuer": "gis-engine-cli",
+  "exclusions": ["OFFLINE_REPLAY", "VISUAL_CONSISTENCY"]
 }
 ```
 
 The raw prompt text is never stored. Only the SHA-256 hash is retained for
 correlation without exposing prompt content.
+
+Recompute the record from inside the exported package — no source checkout, no
+npm install, no network:
+
+```bash
+node evidence-verifier.mjs evidence.json --root . --json
+```
+
+Byte-level (including formatting) integrity of the package itself comes from
+`artifact-manifest.json`:
+`npx @gis-engine/cli create-gis-map --verify-artifacts ./my-map`. See
+[`docs/engineering/evidence-record.md`](../../docs/engineering/evidence-record.md)
+for the assertion semantics and the threat model.
+
+`createGenerationEvidenceBundle()` remains the `@gis-engine/ai` tool-facing view
+and carries the matching `recordId`; it is no longer the format written to
+`evidence.json`.
 
 ## Tips
 

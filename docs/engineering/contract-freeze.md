@@ -80,11 +80,15 @@ breaking/non-breaking note in the PR summary.
   remains internal/experimental and is not part of the GA publish workflow.
 - All published packages use `files` whitelist: `["dist", "README.md"]`
   (CLI adds `"templates"`).
-- Package-size budgets are `200 KiB` for engine and `64 KiB` for CLI. Both are
+- Package-size budgets are `256 KiB` for engine and `64 KiB` for CLI. Both are
   blocking limits sourced only from `config/package-size-budgets.json` and
-  measured by `canonical-dist-gzip-v1` over each complete `dist` tree. Growth
-  above the recorded baseline by more than 5% is advisory until the blocking
-  byte limit is crossed. `pnpm size:check` runs the same authoritative recipe
+  measured by `canonical-dist-gzip-v1` over each complete `dist` tree. The
+  engine limit was raised for the `EvidenceRecord` contract, whose subsystem
+  accounts for 38,703 measured gzip bytes (`dist/src/evidence/**`,
+  `dist/schema/evidence-record*.json`, and `dist/evidence-verifier.mjs`); the
+  non-evidence engine `dist` stays inside the previous limit. Growth above the
+  recorded baseline by more than 5% is advisory until the blocking byte limit
+  is crossed. `pnpm size:check` runs the same authoritative recipe
   locally and in CI: clean the managed engine/CLI output and incremental cache,
   run `pnpm build:schema`, run `pnpm build`, then measure.
 - The canonical 14-tool MCP inventory remains frozen in `tools/list` order:

@@ -38,6 +38,12 @@ export const DiagnosticCodes = {
   GeoEmptyBbox: "GEO.EMPTY_BBOX",
   QueryEmptyResult: "QUERY.EMPTY_RESULT",
   SchemaInvalid: "SCHEMA.INVALID",
+  EvidenceRecordInvalid: "EVIDENCE.RECORD_INVALID",
+  EvidenceChainBroken: "EVIDENCE.CHAIN_BROKEN",
+  EvidenceArtifactMismatch: "EVIDENCE.ARTIFACT_MISMATCH",
+  EvidenceDerivationFailed: "EVIDENCE.DERIVATION_FAILED",
+  EvidenceSchemaVersionUnsupported: "EVIDENCE.SCHEMA_VERSION_UNSUPPORTED",
+  EvidenceCapabilityDrift: "EVIDENCE.CAPABILITY_DRIFT",
 } as const;
 
 export const Scene3DStableRuntimeBlockerCodes = {

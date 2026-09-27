@@ -16,6 +16,8 @@ Review files are evidence snapshots. GitHub checks and Issues remain the current
 - [Package-size decision](package-size-budget-quality-decision-2026-08-05.md)
 - [MCP compatibility decision](mcp-2026-07-28-quality-decision-2026-08-03.md)
 - [MapLibre compatibility decision](maplibre-6.1-quality-decision-2026-08-03.md)
+- [Third-party evidence recompute rehearsal](first-run-acceptance-2026-09-26.md)
+- [EvidenceRecord sub-project A — SDD process evidence](../superpowers/sdd/2026-09-26-evidence-record/README.md)
 - [Generated link audit](doc-link-audit.md)
 
 Use [the documentation map](../README.md) for contracts and [the health dashboard](../planning/AGENT_HEALTH_DASHBOARD.md) for current handoff freshness. Historical reports live in Git history.

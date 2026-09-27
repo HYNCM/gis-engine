@@ -16,7 +16,7 @@
 
 1. **不新增 MCP 工具**：`GIS_ENGINE_TOOL_NAMES` 14 个名字与顺序不得变化（`tests/schema-sync/schema-sync.test.ts:190` 的 "keeps MCP tool names snake_case" 断言是硬门禁）。能力自描述只能扩现有工具的 `outputSchema`。
 2. **可信层只允许纯数据复算**（spec §6 决定 4）：`verifyEvidenceRecord()` 与单文件 verifier **不得调用 `applyCommands`、不得渲染、不得联网**。
-3. **`record.ts` 的 value import 只允许 `node:` 内置模块**（`import type` 不限）——这是单文件 verifier 成立的前提，由 `scripts/build-evidence-verifier` 静态守卫。
+3. **`record.ts` 的 value import 只允许 `node:` 内置模块，或 Task 6 verifier 闭包（`BUNDLE`）里已声明的同目录模块**（`import type` 不限）——这是单文件 verifier 成立的前提，由 `scripts/build-evidence-verifier` 静态守卫：闭包外的非 `node:` 依赖一律 `exit 1`，不允许静默剥除。Task 3 拆出的 `./canonical-stringify.js` 是闭包成员，因此合法。
 4. **`exclusions` 必须显式存在且默认非空**；被主动排除的能力（`VISUAL_CONSISTENCY`、`OFFLINE_REPLAY`）在复算结论里必须以 `status: "not-covered"` 出现，不得静默缺席。
 5. **超限拒绝导出，不截断字段**（spec §5）：`MAX_EVIDENCE_RECORD_BYTES = 1_048_576`。
 6. **`evidence.json` 只被引用、不被二次修改**：下游（manifest、receipt）只能追加自己的哈希绑定。
@@ -35,7 +35,7 @@
 
 | # | spec 原文 | 计划采用 | 原因 |
 | --- | --- | --- | --- |
-| D1 | §6 决定 1：「同一逻辑两份实现，必须有结论一致性测试」 | **一份实现**：单文件 verifier = `dist/src/evidence/record.js` 的字节拷贝 + shebang | `record.ts` 只 value-import `node:crypto`，编译产物本身就是零依赖单文件。双实现是纯粹的额外负担 |
+| D1 | §6 决定 1：「同一逻辑两份实现，必须有结论一致性测试」 | **一份实现**：单文件 verifier = `dist/src/evidence/canonical-stringify.js` + `dist/src/evidence/record.js` 编译闭包内联（剥掉二者互相引用的 import 行）+ shebang | 哈希实现只有一份，双实现是纯粹的额外负担。Task 3 为把 `node:crypto` 挡在浏览器 barrel 外拆出纯函数文件，故闭包是两个文件而非一个 |
 | D2 | §5：`spec: { beforeHash, afterHash, diff }` | `spec: { beforeHash, afterHash, diffHash }`，`diffHash = canonicalHash(changedPaths 有序数组)` | 完整 diff 与 `commands[].command.patch` 是同一事实的两份副本，会各自漂移；且 `DERIVATION_CLOSED` 在可信层只能做记录内链式核对，不放 exec 语义 |
 | D3 | §8 断言 1：「改动任意一个字节 ⇒ `EVIDENCE.CHAIN_BROKEN`」 | 语义字节 ⇒ `CHAIN_BROKEN`；格式字节（空白/键序）⇒ 由 `artifact-manifest.json` 的 `sha256` 兜住 | `recordId` 覆盖的是数据模型而非文件字节。只改缩进的记录在密码学上确实未被篡改，把它报成 `CHAIN_BROKEN` 是错的；字节级完整性本来就是 manifest 的职责 |
 
@@ -49,7 +49,7 @@
 
 | 文件 | 单一职责 |
 | --- | --- |
-| `packages/engine/src/evidence/record.ts` | `canonicalStringify` / `canonicalHash` / `EvidenceRecord` 类型与结构校验 / `buildEvidenceRecord` / `verifyEvidenceRecord` / verifier CLI 入口。**value import 只有 `node:crypto`** |
+| `packages/engine/src/evidence/canonical-stringify.ts` + `record.ts` | `canonicalStringify`（纯函数，零 import）/ `canonicalHash` / `EvidenceRecord` 类型与结构校验 / `buildEvidenceRecord` / `verifyEvidenceRecord` / verifier CLI 入口。**value import 只有 `node:crypto` 与闭包内的 `./canonical-stringify.js`** |
 | `packages/engine/src/evidence/capability-matrix.ts` | 从两处真相源（promotion gate + source readiness）生成 `EngineCapabilityMatrix`，不新造第三份清单 |
 | `packages/engine/src/evidence/schema.ts` | `EvidenceRecordSchema` / `EngineCapabilityMatrixSchema`（TypeBox，公开契约） |
 | `packages/engine/src/evidence/index.ts` | evidence 面唯一导出点 |
@@ -116,11 +116,25 @@
 创建 `tests/evidence/capability-matrix.test.ts`：
 
 ```ts
-import { buildEngineCapabilityMatrix } from "@gis-engine/engine";
+import { buildEngineCapabilityMatrix, type SourceReadinessEntry } from "@gis-engine/engine";
 import { describe, expect, it } from "vitest";
 
-function blockedSourceEntry(sourceId: string) {
-  return { sourceId, type: "pmtiles", state: "blocked" } as never;
+function readinessEntry(sourceId: string, type: string, state: SourceReadinessEntry["state"]): SourceReadinessEntry {
+  return {
+    sourceId,
+    type,
+    state,
+    displayReady: state === "supported",
+    queryReady: state === "supported",
+    resourcePolicy: "passed",
+    diagnostics: [],
+    limitations: [],
+    nextAction: "none",
+  };
+}
+
+function blockedSourceEntry(sourceId: string): SourceReadinessEntry {
+  return readinessEntry(sourceId, "pmtiles", "blocked");
 }
 
 describe("buildEngineCapabilityMatrix", () => {
@@ -151,7 +165,7 @@ describe("buildEngineCapabilityMatrix", () => {
   it("marks a blocked source as blocked and a supported source as available", () => {
     const matrix = buildEngineCapabilityMatrix({
       scene3dPromotionGate: "stable",
-      readiness: [blockedSourceEntry("parcels"), { sourceId: "roads", type: "geojson", state: "supported" } as never],
+      readiness: [blockedSourceEntry("parcels"), readinessEntry("roads", "geojson", "supported")],
     });
 
     expect(matrix.blocked).toContainEqual(
@@ -161,15 +175,50 @@ describe("buildEngineCapabilityMatrix", () => {
     expect(matrix.available).not.toContain("source.pmtiles");
   });
 
-  it("never lists a capability that has no truth source behind it", () => {
+  it("does not list a readiness-only source in either set", () => {
+    const matrix = buildEngineCapabilityMatrix({
+      scene3dPromotionGate: "stable",
+      readiness: [readinessEntry("tiles", "raster", "readiness-only")],
+    });
+
+    expect(matrix.available).not.toContain("source.raster");
+    expect(matrix.blocked).toEqual([]);
+  });
+
+  it("orders blocked sources by source id, not by the order they were passed in", () => {
+    const forward = buildEngineCapabilityMatrix({
+      scene3dPromotionGate: "stable",
+      readiness: [blockedSourceEntry("alpha"), blockedSourceEntry("zeta")],
+    });
+    const reversed = buildEngineCapabilityMatrix({
+      scene3dPromotionGate: "stable",
+      readiness: [blockedSourceEntry("zeta"), blockedSourceEntry("alpha")],
+    });
+
+    expect(forward.blocked.map((entry) => entry.path)).toEqual(["/sources/alpha", "/sources/zeta"]);
+    expect(reversed.blocked).toEqual(forward.blocked);
+  });
+
+  it("escapes source ids in blocker paths the way diagnostics do", () => {
+    const matrix = buildEngineCapabilityMatrix({
+      scene3dPromotionGate: "stable",
+      readiness: [blockedSourceEntry("a/b~c")],
+    });
+
+    expect(matrix.blocked[0]?.path).toBe("/sources/a~1b~0c");
+  });
+
+  it("lists only capabilities with a truth source behind them, in canonical order", () => {
     const matrix = buildEngineCapabilityMatrix();
 
+    // Sorted order is part of the contract: EvidenceRecord.recordId hashes this array, and
+    // canonical hashing preserves array order.
     expect(matrix.available).toEqual([
-      "mapspec.validate",
       "commands.apply",
-      "export.spec",
-      "snapshot.smoke-mock",
       "evidence.build",
+      "export.spec",
+      "mapspec.validate",
+      "snapshot.smoke-mock",
     ]);
   });
 });
@@ -187,6 +236,7 @@ Expected: FAIL — `buildEngineCapabilityMatrix is not a function`（或 import 
 ```ts
 import { DiagnosticCodes, Scene3DStableRuntimeBlockerCodes } from "../diagnostics/codes.js";
 import type { SourceReadinessEntry } from "../sources/readiness.js";
+import { escapePathSegment } from "../spec/patch/path.js";
 import { DEFAULT_SCENE3D_PROMOTION_GATE, type Scene3DPromotionGate } from "../spec/scene3d-promotion-gate.js";
 
 export const ENGINE_CAPABILITY_MATRIX_SCHEMA_VERSION = "engine-capabilities.v0.1";
@@ -209,6 +259,11 @@ export interface BuildEngineCapabilityMatrixInput {
 }
 
 const BASE_AVAILABLE = ["mapspec.validate", "commands.apply", "export.spec", "snapshot.smoke-mock"] as const;
+
+function compareIds(a: string, b: string): number {
+  if (a === b) return 0;
+  return a < b ? -1 : 1;
+}
 
 const SCENE3D_BLOCKERS: ReadonlyArray<{ code: string; path: string; reason: string }> = [
   {
@@ -239,7 +294,14 @@ export function buildEngineCapabilityMatrix(input: BuildEngineCapabilityMatrixIn
     available.add("scene3d.experimental-gate");
   }
 
-  for (const entry of input.readiness ?? []) {
+  // Readiness rows arrive in the spec's `sources` key order; sort them so the same blocked
+  // set derives the same array however the spec is written. Task 4 hashes this array into
+  // EvidenceRecord.recordId, and canonical hashing preserves array order.
+  const readiness = [...(input.readiness ?? [])].sort(
+    (a, b) => compareIds(a.sourceId, b.sourceId) || compareIds(a.type, b.type),
+  );
+
+  for (const entry of readiness) {
     if (entry.state === "supported") {
       available.add(`source.${entry.type}`);
       continue;
@@ -248,7 +310,7 @@ export function buildEngineCapabilityMatrix(input: BuildEngineCapabilityMatrixIn
       blocked.push({
         code: DiagnosticCodes.CapabilityUnsupported,
         reason: `source "${entry.sourceId}" of type "${entry.type}" is ${entry.state} at runtime.`,
-        path: `/sources/${entry.sourceId}`,
+        path: `/sources/${escapePathSegment(entry.sourceId)}`,
       });
     }
   }
@@ -292,7 +354,7 @@ export {
 - [ ] **Step 5: 跑测试确认通过**
 
 Run: `pnpm vitest run tests/evidence/capability-matrix.test.ts`
-Expected: PASS（5 passed）
+Expected: PASS（8 passed）
 
 - [ ] **Step 6: 接线 test:evidence 与 path-aware gate**
 
@@ -340,8 +402,9 @@ git commit -m "feat(engine): derive capability matrix from promotion gate and re
 
 **Files:**
 - Modify: `packages/ai/src/tools/contextSummary.ts:112-149`（`ContextSummary` 接口）、`:234`（构造点）、`:459`（readiness 映射）
-- Modify: `packages/ai/src/mcp/server.ts:128-145`（`ValidationReportSchema`）、`:410-459`（`ContextSummaryToolResultSchema`）、`:848-856`（`validate_spec` handler）
+- Modify: `packages/ai/src/mcp/server.ts`（`ValidationReportSchema` 之后新增 `ValidateSpecToolResultSchema`、`ContextSummaryToolResultSchema`、`validate_spec` handler）
 - Modify: `packages/ai/src/index.ts`（导出新 schema）
+- Modify: `packages/ai/src/tools/generationEvidence.ts`（bundle 的 `validation` 改指裸 `ValidationReportSchema`，保持已发布形状不变）
 - Create: `tests/ai/capability-matrix-exposure.test.ts`
 - Modify: `tests/schema-sync/schema-sync.test.ts`（新 schema 进 Ajv 编译清单）
 **Interfaces:**
@@ -454,15 +517,22 @@ export const EngineCapabilityMatrixContractSchema = {
 } as const;
 ```
 
-`ValidationReportSchema` 补字段（`properties` 与 `required` 各一处）：
+**新字段只能加在 `ValidateSpecToolResultSchema` 上，不能加在共享的 `ValidationReportSchema` 上。** `snapshot_spec` 与 `explain_spec` 的 `validation` 字段、以及 `GenerationEvidenceBundleSchema.validation` 都内嵌 `ValidationReportSchema`，而它们装的是裸 `validateSpec()` 报告（`snapshotSpec.ts:68`、`explainSpec.ts:51`、`generationEvidence.ts:628`）——引擎侧 `ValidationReport` 根本没有 `capabilities`。往共享基上加 required 字段会同时撑大四个公开契约，并让三处 `structuredContent` 立刻被 Ajv 拒（实测：`data/validation must have required property 'capabilities'`）。
+
+在 `ValidationReportSchema` 之后新增一个组合出的工具结果 schema，并让 `validate_spec` 的 descriptor 指向它：
 
 ```ts
+export const ValidateSpecToolResultSchema = {
+  ...ValidationReportSchema,
+  properties: {
+    ...ValidationReportSchema.properties,
     capabilities: EngineCapabilityMatrixContractSchema,
+  },
+  required: [...ValidationReportSchema.required, "capabilities"],
+} as const;
 ```
 
-```ts
-  required: ["valid", "diagnostics", "stats", "capabilities"],
-```
+`generationEvidence.ts` 里嵌入 bundle 的那处必须指向裸基（`stripNestedIds(ValidationReportSchema)`），否则 bundle 的 `validation` 会被间接撑大；为此把 `ValidationReportSchema` 从 `server.ts` 具名导出，但**不要**经 `packages/ai/src/index.ts` 再导出——它是包内共享形状，不是公开面。
 
 `ContextSummaryToolResultSchema` 同样补：`properties` 加 `capabilityMatrix: EngineCapabilityMatrixContractSchema,`，`required` 数组末尾加 `"capabilityMatrix"`。
 
@@ -525,20 +595,26 @@ git commit -m "feat(ai): surface engine capability matrix through validate_spec 
 ## Task 3: `canonicalHash` 唯一实现 + 三处哈希收敛（spec 第 1 步，必须同一提交）
 
 **Files:**
-- Create: `packages/engine/src/evidence/record.ts`
+- Create: `packages/engine/src/evidence/canonical-stringify.ts`（纯函数，零 import）
+- Create: `packages/engine/src/evidence/record.ts`（`node:crypto` + 上面的纯函数）
 - Create: `tests/evidence/canonical-hash.test.ts`
 - Modify: `packages/engine/src/sources/pmtiles-query.ts:750-770`
 - Modify: `packages/ai/src/tools/generationEvidence.ts:1281-1296`
-- Modify: `packages/engine/src/evidence/index.ts`
+- Modify: `packages/engine/src/evidence/index.ts`、`packages/engine/src/index.ts`
+- Modify: `packages/engine/package.json`（新增 `./evidence` 子路径导出）
+- Modify: `vitest.config.ts`（子路径 alias，必须排在 `@gis-engine/engine` 前面）
 
 **Interfaces:**
-- Consumes: 无（`record.ts` 不 value-import 任何 engine 模块）。
+- Consumes: 无。
 - Produces:
   ```ts
+  // @gis-engine/engine/evidence
   export function canonicalStringify(value: unknown): string;
   export function canonicalHash(value: unknown): string; // "sha256:<64 hex>"
   ```
-  Task 4/5 用 `canonicalHash` 算 `recordId` 与所有链式哈希；Task 6 的 verifier 就是本文件的编译产物。
+  Task 4/5 用 `canonicalHash` 算 `recordId` 与所有链式哈希；Task 6 的 verifier = 这两个文件编译产物的内联闭包。
+
+**模块边界（不得回退）：** `canonicalHash` 依赖 `node:crypto`，只能挂在 `@gis-engine/engine/evidence` 子路径上，**不得**从根 barrel `packages/engine/src/index.ts` 再导出。根 barrel 被 `apps/studio` 与 `examples/*` 打进浏览器包，`node:crypto` 一旦进入其可达图，Vite 只能靠 `rollupOptions.external` 掩盖（`pnpm build` 里 studio 构建会失败，这是真实门禁，不是假想风险）。`canonicalStringify` 是纯函数，`pmtiles-query.ts` 必须从 `canonical-stringify.ts` 取，不得取 `record.ts`。
 
 - [ ] **Step 1: 先采基线**
 
@@ -550,7 +626,7 @@ Purpose: 记录哪些测试钉住了 `fnv1a32:` 或 `sha256:` 字面量。收敛
 创建 `tests/evidence/canonical-hash.test.ts`：
 
 ```ts
-import { canonicalHash, canonicalStringify } from "@gis-engine/engine";
+import { canonicalHash, canonicalStringify } from "@gis-engine/engine/evidence";
 import { describe, expect, it } from "vitest";
 
 describe("canonicalStringify", () => {
@@ -585,11 +661,9 @@ Expected: FAIL — `canonicalHash is not a function`。
 
 - [ ] **Step 4: 写实现**
 
-创建 `packages/engine/src/evidence/record.ts`：
+创建 `packages/engine/src/evidence/canonical-stringify.ts`（零 import，浏览器可打包）：
 
 ```ts
-import { createHash } from "node:crypto";
-
 export function canonicalStringify(value: unknown): string {
   if (value === null || typeof value !== "object") return JSON.stringify(value) ?? "null";
   if (Array.isArray(value)) return `[${value.map((entry) => canonicalStringify(entry)).join(",")}]`;
@@ -600,16 +674,41 @@ export function canonicalStringify(value: unknown): string {
     .map((key) => `${JSON.stringify(key)}:${canonicalStringify(record[key])}`)
     .join(",")}}`;
 }
+```
+
+创建 `packages/engine/src/evidence/record.ts`（Node 侧唯一 `node:crypto` 入口）：
+
+```ts
+import { createHash } from "node:crypto";
+import { canonicalStringify } from "./canonical-stringify.js";
 
 export function canonicalHash(value: unknown): string {
   return `sha256:${createHash("sha256").update(canonicalStringify(value)).digest("hex")}`;
 }
 ```
 
-`packages/engine/src/evidence/index.ts` 追加：
+`packages/engine/src/evidence/index.ts` 追加（子路径 barrel，同时导出矩阵与哈希）：
 
 ```ts
-export { canonicalHash, canonicalStringify } from "./record.js";
+export { canonicalStringify } from "./canonical-stringify.js";
+export { canonicalHash } from "./record.js";
+```
+
+`packages/engine/src/index.ts` 根 barrel：矩阵符号改为直接从 `./evidence/capability-matrix.js` 取，**不要**再导出 `canonicalHash` / `canonicalStringify`。
+
+`packages/engine/package.json` 的 `exports`：
+
+```json
+    "./evidence": {
+      "types": "./dist/src/evidence/index.d.ts",
+      "import": "./dist/src/evidence/index.js"
+    }
+```
+
+`vitest.config.ts` 的 alias（子路径条目必须在前，否则被 `@gis-engine/engine` 前缀吞掉）：
+
+```ts
+      "@gis-engine/engine/evidence": resolve(root, "packages/engine/src/evidence/index.ts"),
 ```
 
 - [ ] **Step 5: 收敛站点 1 —— `pmtiles-query.ts`**
@@ -628,7 +727,7 @@ function digestStableValue(value: unknown): string {
 }
 ```
 
-文件顶部加 `import { canonicalStringify } from "../evidence/record.js";`。
+文件顶部加 `import { canonicalStringify } from "../evidence/canonical-stringify.js";`（不是 `record.js`：那条路径会把 `node:crypto` 拖进浏览器包）。
 
 > 行为差异必须核对：旧私有实现用 `JSON.stringify(value)` 且**没有** `?? "null"` 兜底，`undefined` 会被序列化成 JS 的 `undefined` 字面量拼进字符串。若某条 fixture 的输入含 `undefined`，其 `fnv1a32` 值会变。Step 6 若出现此类 diff，逐个确认输入是否真含 `undefined`；真含则更新期望值并在 PR 里说明，不含则说明改动越界了。
 
@@ -640,7 +739,11 @@ function digestStableValue(value: unknown): string {
   return canonicalHash(fixture);
 ```
 
-顶部从 `@gis-engine/engine` 补 `canonicalHash`，删掉因此不再使用的 `createHash` import（`sha256:` 前缀格式不变）。
+把 `canonicalHash` 改为从 `@gis-engine/engine/evidence` 单独 import（不能留在 `@gis-engine/engine` 的具名 import 列表里：根 barrel 不再导出它），并删掉因此不再使用的 `createHash` import（`sha256:` 前缀格式不变）：
+
+```ts
+import { canonicalHash } from "@gis-engine/engine/evidence";
+```
 
 - [ ] **Step 7: 跑测试 + 钉死收敛**
 
@@ -666,13 +769,77 @@ describe("hash convergence", () => {
 });
 ```
 
+同一条命令里再补一道边界守卫（钉住「根 barrel 不得触到 `node:` 内置」这条契约，Task 4/5 往根 barrel 加导出时会被它拦住）。在 `tests/evidence/canonical-hash.test.ts` 追加：
+
+```ts
+const ENGINE_SRC = "packages/engine/src";
+
+describe("browser-facing engine surface", () => {
+  it("keeps node builtins out of every module the public root barrel reaches at runtime", () => {
+    const queue = ["index.ts"];
+    const visited = new Set<string>();
+    const offenders: string[] = [];
+
+    while (queue.length > 0) {
+      const relativePath = queue.shift() as string;
+      if (visited.has(relativePath)) continue;
+      visited.add(relativePath);
+      const file = resolve(ENGINE_SRC, relativePath);
+      for (const specifier of runtimeDependencies(file)) {
+        if (specifier.startsWith("node:")) {
+          offenders.push(`${relativePath} -> ${specifier}`);
+          continue;
+        }
+        if (!specifier.startsWith(".")) continue;
+        const target = relative(ENGINE_SRC, resolve(dirname(file), specifier)).replace(/\.js$/, ".ts");
+        if (!target.startsWith("..")) queue.push(target);
+      }
+    }
+
+    expect(offenders).toEqual([]);
+  });
+});
+
+/** 运行期真正加载的 specifier：`import type` / `export type` 会被 TS 擦除，不计；
+ * 动态 `import(...)` 是表达式不是语句，单独扫一遍——那是浏览器包里唯一非语句的泄漏口。 */
+function runtimeDependencies(file: string): string[] {
+  const text = readFileSync(file, "utf-8");
+  const specifiers: string[] = [];
+  for (const chunk of text.split(/;\n/)) {
+    const statement = chunk.trim();
+    if (!/^(?:import|export)\b/.test(statement)) continue;
+    if (/^(?:import|export)\s+type\b/.test(statement)) continue;
+    const from = /\bfrom\s+"([^"]+)"/.exec(statement);
+    const bare = /^import\s+"([^"]+)"/.exec(statement);
+    if (from?.[1]) specifiers.push(from[1]);
+    else if (bare?.[1]) specifiers.push(bare[1]);
+  }
+  for (const dynamic of text.matchAll(/\bimport\s*\(\s*"([^"]+)"/g)) {
+    if (dynamic[1]) specifiers.push(dynamic[1]);
+  }
+  return specifiers;
+}
+```
+
 Run: `pnpm vitest run tests/evidence/canonical-hash.test.ts && pnpm test:schema && pnpm test:ai && pnpm test:runtime && pnpm test:resources`
-Expected: PASS（Step 1 基线里记录的 diff 全部有结论后才算过）
+Expected: PASS（Step 1 基线里记录的 diff 全部有结论后才算过）。守卫需自证有效：临时往 `packages/engine/src/index.ts` 加一行 `import { createHash } from "node:crypto";`，确认该用例变红后再撤掉。
+
+- [ ] **Step 7b: 三份能力矩阵编码对齐（pre-flight 锁，评审 I-3）**
+
+同一个能力矩阵现在有三份编码：engine 的 `EngineCapabilityMatrix` 类型、engine 的 TypeBox
+`EngineCapabilityMatrixSchema`、AI 侧手写的 `EngineCapabilityMatrixContractSchema`（MCP `outputSchema`）。
+在 `tests/schema-sync/schema-sync.test.ts` 加一条比较测试：对 `properties` 的键集合、`required`、
+`additionalProperties`，以及 `properties.capabilities`/`schemaVersion`/`available`/`blocked` 逐项比较两份
+schema 的归一化描述（TypeBox 侧先 `JSON.parse(JSON.stringify(schema))` 再剥掉 `$id`/`$schema`/`definitions`
+等生成元数据）。**必须自证有效**：临时把 AI 侧的 `required` 改一项，测试转红后还原。两侧符号都已经在该文件
+的 import 列表里（`@gis-engine/engine` 与 `@gis-engine/ai/mcp`），不需要新依赖。
 
 - [ ] **Step 8: Commit（本 task 的产物必须同属一个提交）**
 
 ```bash
-git add packages/engine/src/evidence packages/engine/src/sources/pmtiles-query.ts packages/ai/src/tools/generationEvidence.ts tests/evidence
+git add packages/engine/src/evidence packages/engine/src/index.ts packages/engine/package.json \
+  vitest.config.ts packages/engine/src/sources/pmtiles-query.ts \
+  packages/ai/src/tools/generationEvidence.ts tests/evidence
 git commit -m "refactor(evidence): converge canonical hashing into one implementation"
 ```
 
@@ -690,8 +857,8 @@ git commit -m "refactor(evidence): converge canonical hashing into one implement
 - Modify: `tests/schema-sync/schema-sync.test.ts`
 
 **Interfaces:**
-- Consumes: `canonicalHash`（Task 3）、`MapCommandSchema` / `DiagnosticSchema`（`spec/schemas/`）、`stripNestedIds`（`spec/schemas/generation.schema.ts`）、`EngineCapabilityMatrix`（Task 1）。
-- Produces（`@gis-engine/engine` 公开面）:
+- Consumes: `canonicalHash`（Task 3，从 `@gis-engine/engine/evidence` 取）、`MapCommandSchema` / `DiagnosticSchema`（`spec/schemas/`）、`stripNestedIds`（`spec/schemas/generation.schema.ts`）、`EngineCapabilityMatrix`（Task 1）。
+- Produces（`@gis-engine/engine/evidence` 公开面；根 barrel 只放类型与 schema 等无 `node:` 依赖的符号）:
   ```ts
   export const EVIDENCE_RECORD_SCHEMA_VERSION = "evidence-record.v0.1";
   export const MAX_EVIDENCE_RECORD_BYTES = 1_048_576;
@@ -721,7 +888,7 @@ import {
   buildEngineCapabilityMatrix,
   buildEvidenceRecord,
   canonicalHash,
-} from "@gis-engine/engine";
+} from "@gis-engine/engine/evidence";
 import Ajv from "ajv";
 import { describe, expect, it } from "vitest";
 
@@ -756,7 +923,13 @@ describe("buildEvidenceRecord", () => {
     if (!result.ok) return;
     const { record } = result;
     expect(record.schemaVersion).toBe(EVIDENCE_RECORD_SCHEMA_VERSION);
-    expect(record.recordId).toBe(canonicalHash({ ...record, recordId: undefined }));
+    expect(record.recordId).toBe(
+      canonicalHash(JSON.parse(JSON.stringify({ ...record, recordId: undefined }))),
+    );
+    // The record must survive the transport it is actually delivered over, byte for byte.
+    expect(canonicalHash(JSON.parse(JSON.stringify({ ...JSON.parse(JSON.stringify(record)), recordId: undefined })))).toBe(
+      record.recordId,
+    );
     expect(validate(record)).toBe(true);
   });
 
@@ -832,7 +1005,7 @@ Expected: FAIL — 导入符号不存在。
 
 - [ ] **Step 3: `record.ts` 加类型与构造函数**
 
-在 `packages/engine/src/evidence/record.ts` 追加（**只允许 `import type`，value import 仍只有 `node:crypto`**）：
+在 `packages/engine/src/evidence/record.ts` 追加（**只允许 `import type`；value import 仍只有 `node:crypto` 与闭包内的 `./canonical-stringify.js`**）：
 
 ```ts
 import type { Diagnostic, MapCommand } from "../types.js";
@@ -926,9 +1099,14 @@ export type BuildEvidenceRecordResult =
 const DEFAULT_EXCLUSIONS: EvidenceExclusionId[] = [EvidenceExclusionId.OfflineReplay, EvidenceExclusionId.VisualConsistency];
 
 export function buildEvidenceRecord(input: EvidenceRecordInput): BuildEvidenceRecordResult {
-  const diagnostics = structuralIssues(input);
-  if (diagnostics.length > 0) return { ok: false, diagnostics };
+  // 约束 7：入口 nullish 守卫（评审 I-2），失败必须是结构化诊断，不得抛 TypeError。
+  if (!input || typeof input !== "object") {
+    return { ok: false, diagnostics: [issue("/ must be an object.", "/")] };
+  }
 
+  // 先物化 builder 派生默认值、再对候选记录做结构校验：`issuedAt`/`exclusions` 在 input 上可选、
+  // 在 record 上必填，Step 4 的必填式检查若按原样跑在裸 input 上，会把 Step 1 里合法的默认输入
+  // 也拒掉（Task 4 修复轮对 brief 的执行次序修正）。
   const record: EvidenceRecord = {
     schemaVersion: EVIDENCE_RECORD_SCHEMA_VERSION,
     recordId: "sha256:" + "0".repeat(64),
@@ -941,30 +1119,44 @@ export function buildEvidenceRecord(input: EvidenceRecordInput): BuildEvidenceRe
     toolchain: input.toolchain,
     issuedAt: input.issuedAt ?? new Date().toISOString(),
     issuer: input.issuer,
-    exclusions: input.exclusions ?? [...DEFAULT_EXCLUSIONS],
+    // Sorted + de-duplicated: canonical hashing preserves array order, so a caller passing the same
+    // exclusion set in a different order must not get a different recordId (same ruling as Task 1).
+    // 只有数组会被规范化：该字面量先于 structuralIssues 求值，展开非可迭代的值会抛 TypeError 而不是
+    // 返回校验器非数组检查已有的约束 7 诊断——规范化不得跑在数组检查之前。
+    exclusions: Array.isArray(input.exclusions)
+      ? [...new Set(input.exclusions)].sort()
+      : (input.exclusions ?? DEFAULT_EXCLUSIONS),
   };
 
-  record.recordId = canonicalHash({ ...record, recordId: undefined });
+  const diagnostics = structuralIssues(record);
+  if (diagnostics.length > 0) return { ok: false, diagnostics };
+
+  // Hash the exact bytes a consumer will re-parse, not the in-memory object: JSON.stringify drops
+  // undefined-valued keys while canonicalStringify renders them as null.
+  const payload = JSON.parse(JSON.stringify({ ...record, recordId: undefined }));
+  record.recordId = canonicalHash(payload);
 
   if (Buffer.byteLength(canonicalStringify(record), "utf8") > MAX_EVIDENCE_RECORD_BYTES) {
-    return {
-      ok: false,
-      diagnostics: [
-        {
-          severity: "error",
-          code: EvidenceIssueCode.RecordInvalid,
-          message: `Evidence record exceeds the ${MAX_EVIDENCE_RECORD_BYTES} byte budget; refusing to export rather than truncating evidence fields.`,
-          path: "/commands",
-        },
-      ],
-    };
+    return { ok: false, diagnostics: [oversizeDiagnostic(record)] };
   }
 
   return { ok: true, record };
 }
+
+// 体积诊断必须指向真正越过预算的部分（Task 4 修复轮 Minor）：单个顶层 section 自己超预算时报
+// `/<key>`；只有整条记录合计超预算、没有任何单 section 超时才报 `/`。不得写死 `/commands`。
+function oversizeDiagnostic(record: EvidenceRecord): Diagnostic {
+  const message = `Evidence record exceeds the ${MAX_EVIDENCE_RECORD_BYTES} byte budget; refusing to export rather than truncating evidence fields.`;
+  for (const [key, value] of Object.entries(record)) {
+    if (Buffer.byteLength(canonicalStringify(value), "utf8") > MAX_EVIDENCE_RECORD_BYTES) {
+      return { severity: "error", code: EvidenceIssueCode.RecordInvalid, message, path: `/${key}` };
+    }
+  }
+  return { severity: "error", code: EvidenceIssueCode.RecordInvalid, message, path: "/" };
+}
 ```
 
-**`recordId` 的自指处理**：先把 `recordId` 置为占位、再对 `{ ...record, recordId: undefined }` 求哈希。`canonicalStringify` 会把 `undefined` 归一化为 `null`，因此任何实现者改写键序或删除该键都不会改变哈希输入。verify 侧必须用**同一个**表达式重算。
+**`recordId` 的自指处理**：先把 `recordId` 置为占位，再对 **`JSON.parse(JSON.stringify(...))` 归一化后的**对象求哈希。归一化这一步是契约的一部分，不是风格问题：`canonicalStringify` 把 `undefined` 值渲染成 `null`，而 `JSON.stringify` 会直接丢掉值为 `undefined` 的键——两侧口径不同，落盘再读回的诚实记录必然 `CHAIN_BROKEN`（Task 4 评审 I-4，已用 `{a: undefined}` 反证）。键序无关性由 `canonicalHash` 自己保证。verify 侧（Task 5）必须用**同一个**归一化表达式重算。
 
 - [ ] **Step 4: 写结构校验（零依赖，不用 Ajv）**
 
@@ -972,6 +1164,10 @@ export function buildEvidenceRecord(input: EvidenceRecordInput): BuildEvidenceRe
 
 ```ts
 const SHA256_PATTERN = /^sha256:[a-f0-9]{64}$/;
+// 与 schema.ts 的 Iso8601Utc / Type.Literal 各自硬抄同一字面量（record.ts 不得 value-import TypeBox），
+// 语义由 Step 7 的双向违规表钉死。
+const ISO8601_UTC_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/;
+const ENGINE_CAPABILITY_MATRIX_SCHEMA_VERSION = "engine-capabilities.v0.1";
 
 function issue(message: string, path: string): Diagnostic {
   return { severity: "error", code: EvidenceIssueCode.RecordInvalid, message, path };
@@ -1046,10 +1242,38 @@ function structuralIssues(input: EvidenceRecordInput): Diagnostic[] {
     });
   }
   if (requireObject(input.capabilities, "/capabilities")) {
-    if (!Array.isArray(input.capabilities.available)) diagnostics.push(issue("/capabilities/available must be an array.", "/capabilities/available"));
-    if (!Array.isArray(input.capabilities.blocked)) diagnostics.push(issue("/capabilities/blocked must be an array.", "/capabilities/blocked"));
-    if (typeof input.capabilities.schemaVersion !== "string" || input.capabilities.schemaVersion.length === 0) {
-      diagnostics.push(issue("/capabilities/schemaVersion is required.", "/capabilities/schemaVersion"));
+    if (input.capabilities.schemaVersion !== ENGINE_CAPABILITY_MATRIX_SCHEMA_VERSION) {
+      diagnostics.push(
+        issue(`/capabilities/schemaVersion must be "${ENGINE_CAPABILITY_MATRIX_SCHEMA_VERSION}".`, "/capabilities/schemaVersion"),
+      );
+    }
+    if (Array.isArray(input.capabilities.available)) {
+      input.capabilities.available.forEach((entry, index) => {
+        if (typeof entry !== "string" || entry.length === 0) {
+          diagnostics.push(issue(`/capabilities/available/${index} must be a non-empty string.`, `/capabilities/available/${index}`));
+        }
+      });
+    } else {
+      diagnostics.push(issue("/capabilities/available must be an array.", "/capabilities/available"));
+    }
+    if (Array.isArray(input.capabilities.blocked)) {
+      input.capabilities.blocked.forEach((entry, index) => {
+        const path = `/capabilities/blocked/${index}`;
+        if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+          diagnostics.push(issue(`${path} must be an object.`, path));
+          return;
+        }
+        for (const key of ["code", "reason"] as const) {
+          if (typeof entry[key] !== "string" || entry[key].length === 0) {
+            diagnostics.push(issue(`${path}/${key} must be a non-empty string.`, `${path}/${key}`));
+          }
+        }
+        if (entry.path !== undefined && typeof entry.path !== "string") {
+          diagnostics.push(issue(`${path}/path must be a string when present.`, `${path}/path`));
+        }
+      });
+    } else {
+      diagnostics.push(issue("/capabilities/blocked must be an array.", "/capabilities/blocked"));
     }
   }
   if (requireObject(input.toolchain, "/toolchain")) {
@@ -1062,12 +1286,40 @@ function structuralIssues(input: EvidenceRecordInput): Diagnostic[] {
   if (typeof input.issuer !== "string" || input.issuer.length === 0) {
     diagnostics.push(issue("/issuer must be a non-empty string.", "/issuer"));
   }
+  // Task 5 reads exclusions to decide "not-covered" rows, so an out-of-vocabulary or absent member
+  // would silently delete an assertion from the verdict instead of failing the record.
+  if (!Array.isArray(input.exclusions) || input.exclusions.length === 0) {
+    diagnostics.push(issue("/exclusions must be a non-empty array.", "/exclusions"));
+  } else {
+    input.exclusions.forEach((entry, index) => {
+      if (!Object.values(EvidenceExclusionId).includes(entry)) {
+        diagnostics.push(issue(`/exclusions/${index} is not a known exclusion id.`, `/exclusions/${index}`));
+      }
+    });
+  }
+  if (typeof input.issuedAt !== "string" || !ISO8601_UTC_PATTERN.test(input.issuedAt)) {
+    diagnostics.push(issue("/issuedAt must be an ISO-8601 UTC timestamp.", "/issuedAt"));
+  }
 
   return diagnostics;
 }
 ```
 
 `exactOptionalPropertyTypes: true` 下不得写 `{ issuedAt: undefined }`——所有可选字段一律用 `?? ` 或条件展开，代码里已按此写法。
+
+`ISO8601_UTC_PATTERN` 必须与 Step 5b 的 TypeBox 常量同源（本仓库不引 `ajv-formats`，时间戳就是正则）：
+`/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/`，即 `schema.ts` 的 `Iso8601Utc`；两侧各自硬抄
+同一串字面量是本 task 允许的**唯一**重复，因为 `record.ts` 不得 value-import TypeBox。exclusion 词汇表同理：
+结构校验用 `Object.values(EvidenceExclusionId)`，TypeBox 用 `Type.Union([Type.Literal…])`，两者由 Step 7 的
+双向违规表钉在一起。
+
+> **评审 I-1/I-2 裁定（覆盖面的边界，必须照做）：** 零依赖结构校验器**不负责**复刻 `MapCommandSchema` /
+> `MapSpec` 的深层形状——那是 Ajv 侧的公开契约，重抄一份只会制造第二真相源。它的职责边界是：**凡 Task 5
+> 的复算结论会直接读到的字段，必须在这里被钉住**（`recordId`、`exclusions`、`capabilities.*`、`issuedAt`、
+> `artifacts[].sha256/bytes`、`commands[].inversePatchHash/outcome`）。因此：
+> 1. `buildEvidenceRecord` 的入口先做 nullish 守卫：`if (!input || typeof input !== "object") return { ok: false, diagnostics: [issue("/ must be an object.", "/")] }`（`strict` 下禁止抛 `TypeError`，见约束 7）。
+> 2. Step 7 的 schema-sync 锁必须**双向**：违规表里每一行同时断言 `!ajvValid(record)` **且** `structuralIssues` 非空——只锁一个方向等于没锁（Task 4 评审原文："Only one direction is locked"）。
+> 3. 评审探针里那批「Ajv 拒、结构校验放」的用例必须逐条进违规表：`exclusions: []`、`exclusions` 含未知成员、`capabilities.schemaVersion` 改成 `…v0.2`、`capabilities.available` 含非字符串、`capabilities.blocked` 成员形状非法、`issuedAt` 非 ISO。
 
 - [ ] **Step 5: TypeBox 公开契约**
 
@@ -1285,7 +1537,7 @@ git commit -m "feat(evidence): add EvidenceRecord contract and hash-chained buil
 
 - [ ] **Step 1: 加诊断码**
 
-`packages/engine/src/diagnostics/codes.ts` 在 `SchemaInvalid: "SCHEMA.INVALID",` 之后插入：
+**状态更新（Task 4 已提前落）**：这六个 `EVIDENCE.*` 码已由 Task 4 按本文件逐字插入 `packages/engine/src/diagnostics/codes.ts`（Task 4 的 `issue(): Diagnostic` 在 `strict` 下必须它们存在才能编译）。本步改为**核对存在且值一致**，不要再插一遍——重复键是 TS1117 编译错误。
 
 ```ts
   EvidenceRecordInvalid: "EVIDENCE.RECORD_INVALID",
@@ -1304,7 +1556,7 @@ git commit -m "feat(evidence): add EvidenceRecord contract and hash-chained buil
 
 ```ts
 import { readFileSync } from "node:fs";
-import { type EvidenceRecord, verifyEvidenceRecord } from "@gis-engine/engine";
+import { type EvidenceRecord, verifyEvidenceRecord } from "@gis-engine/engine/evidence";
 import { describe, expect, it } from "vitest";
 import { MAP_JSON, buildFixture, validRecord } from "./fixtures/record.js";
 
@@ -1391,7 +1643,7 @@ import {
   canonicalHash,
   type EvidenceRecord,
   type EvidenceRecordInput,
-} from "@gis-engine/engine";
+} from "@gis-engine/engine/evidence";
 import { createHash } from "node:crypto";
 
 export function sha256Of(value: string | Uint8Array): string {
@@ -1438,6 +1690,16 @@ export function buildFixture(overrides: Partial<EvidenceRecordInput> = {}): Evid
 export const validRecord: EvidenceRecord = buildFixture();
 ```
 
+> 实现轮的最终测试面以 `tests/evidence/record-verify.test.ts` 为准：Task 5 Step 2 的初稿骨架在
+> fix round 1 之后按 L-1 的五条子句、L-2 的 `ok` 规则、`available` drift 与"没有 options 对象也不能
+> 抛"逐条铺开；artifact 字节改用**每个测试自己的** reader（不再有模块级可变 `Map`），并且不留
+> `commands[0]!` 这类 `noNonNullAssertion` 警告。
+>
+> 同一意义下，**Step 4 的代码块也是示意而非全文**：`packages/engine/src/evidence/record.ts` 里
+> 已落地的实现才是权威——它额外含 `unverifiableAssertions()`（记录根本不是对象时六行全 `failed`、
+> 不抛异常）、`exclusionAssertion()`（约束 4）、`checkLineage` 的 applied-only 五条款，以及 options
+> 缺失时的 nullish 探针。后续任务只消费导出的 `verifyEvidenceRecord`，不要按 Step 4 骨架重抄一份。
+
 - [ ] **Step 3: 跑测试确认失败**
 
 Run: `pnpm vitest run tests/evidence/record-verify.test.ts`
@@ -1445,7 +1707,12 @@ Expected: FAIL — `verifyEvidenceRecord is not a function`。
 
 - [ ] **Step 4: 实现 verify**
 
-`record.ts` 追加（保持"value import 只有 `node:crypto`"）：
+`record.ts` 追加（保持"value import 只有 `node:crypto`"）。同一 commit 里必须把
+`buildEvidenceRecord` 现有的
+`const payload = JSON.parse(JSON.stringify({ ...record, recordId: undefined }));` 换成
+`const payload = normaliseEvidencePayload({ ...record, recordId: undefined });`，并在
+`payload === undefined` 时 `return { ok: false, diagnostics: [issue(<约束 7 文案>, "/")] }`——
+builder 与 verifier 只能共用这一个归一化表达式：
 
 ```ts
 export type EvidenceAssertionStatus = "passed" | "failed" | "not-covered";
@@ -1469,11 +1736,31 @@ export interface VerifyEvidenceRecordOptions {
 
 const UNSUPPORTED_VERSION_MESSAGE = "Evidence record schemaVersion is newer than this verifier supports.";
 
+/**
+ * The one normalisation expression both builder and verifier hash: a JSON round trip reproduces
+ * exactly what the transport does with `undefined`-valued keys (Task 4 review I-4). `buildEvidenceRecord`
+ * must call this too — two spellings of the same hash contract is how honest records start
+ * reporting CHAIN_BROKEN. Unserialisable input (cyclic graph, BigInt leaf) yields `undefined`
+ * instead of throwing: constraint 7 requires failures to be structured diagnostics, and Task 4's
+ * round-2 ruling totalises it here once rather than in two try/catch sites.
+ */
+export function normaliseEvidencePayload<T>(value: T): T | undefined {
+  try {
+    return JSON.parse(JSON.stringify(value)) as T;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function verifyEvidenceRecord(
   record: EvidenceRecord,
   options: VerifyEvidenceRecordOptions,
 ): Promise<EvidenceVerificationResult> {
   const diagnostics: Diagnostic[] = [];
+
+  // L-2：复算之前先重跑一次同文件的零依赖 `structuralIssues`（不新增依赖，约束 3 不变）。
+  // 否则一条字节自洽、`recordId` 重算闭合但字段是垃圾的伪造记录，可以一路绿到 `ok`。
+  diagnostics.push(...structuralIssues(record));
 
   if (record.schemaVersion !== EVIDENCE_RECORD_SCHEMA_VERSION) {
     diagnostics.push({
@@ -1484,8 +1771,11 @@ export async function verifyEvidenceRecord(
     });
   }
 
-  const chainExpected = canonicalHash({ ...record, recordId: undefined });
-  const chainClosed = typeof record.recordId === "string" && record.recordId === chainExpected;
+  const chainPayload = normaliseEvidencePayload({ ...record, recordId: undefined });
+  const chainClosed =
+    chainPayload !== undefined &&
+    typeof record.recordId === "string" &&
+    record.recordId === canonicalHash(chainPayload);
   if (!chainClosed) {
     diagnostics.push({
       severity: "error",
@@ -1495,34 +1785,49 @@ export async function verifyEvidenceRecord(
     });
   }
 
+  // 约束 7 的 options 形态：没有 options 对象 ⇒ 不得在读 `expectedCapabilities` 时抛 TypeError。
+  // 缺 `readArtifact` 时 artifact 比对根本没法跑，必须诚实地让 ARTIFACTS_MATCH `failed` + 诊断，
+  // 而不是假装通过；缺 `expectedCapabilities` 就是"调用方没给期望矩阵"，drift 不跑。
+  const readArtifact = options && typeof options.readArtifact === "function" ? options.readArtifact : undefined;
+  const expectedCapabilities = options ? options.expectedCapabilities : undefined;
+
   const artifactIssues: Diagnostic[] = [];
   let matched = 0;
-  for (const [index, artifact] of record.artifacts.entries()) {
-    const path = `/artifacts/${index}`;
-    let bytes: Uint8Array;
-    try {
-      bytes = await options.readArtifact(artifact.path);
-    } catch (error) {
-      artifactIssues.push({
-        severity: "error",
-        code: EvidenceIssueCode.ArtifactMismatch,
-        message: `Artifact "${artifact.path}" could not be read: ${error instanceof Error ? error.message : String(error)}`,
-        path,
-      });
-      continue;
-    }
-    const actual = `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
-    if (actual === artifact.sha256 && bytes.byteLength === artifact.bytes) {
-      matched += 1;
-      continue;
-    }
+  if (!readArtifact) {
     artifactIssues.push({
       severity: "error",
       code: EvidenceIssueCode.ArtifactMismatch,
-      message: `Artifact "${artifact.path}" hash or size does not match the evidence record.`,
-      path,
-      relatedResources: [{ kind: "source", path: artifact.path }],
+      message: "options.readArtifact was not supplied, so no artifact byte could be re-hashed.",
+      path: "/artifacts",
     });
+  } else {
+    for (const [index, artifact] of record.artifacts.entries()) {
+      const path = `/artifacts/${index}`;
+      let bytes: Uint8Array;
+      try {
+        bytes = await readArtifact(artifact.path);
+      } catch (error) {
+        artifactIssues.push({
+          severity: "error",
+          code: EvidenceIssueCode.ArtifactMismatch,
+          message: `Artifact "${artifact.path}" could not be read: ${error instanceof Error ? error.message : String(error)}`,
+          path,
+        });
+        continue;
+      }
+      const actual = `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
+      if (actual === artifact.sha256 && bytes.byteLength === artifact.bytes) {
+        matched += 1;
+        continue;
+      }
+      artifactIssues.push({
+        severity: "error",
+        code: EvidenceIssueCode.ArtifactMismatch,
+        message: `Artifact "${artifact.path}" hash or size does not match the evidence record.`,
+        path,
+        relatedResources: [{ kind: "source", path: artifact.path }],
+      });
+    }
   }
   diagnostics.push(...artifactIssues);
 
@@ -1532,8 +1837,8 @@ export async function verifyEvidenceRecord(
   const inverseIssue = checkInversePatchHashes(record);
   if (inverseIssue) diagnostics.push(inverseIssue);
 
-  if (options.expectedCapabilities) {
-    const driftIssue = checkCapabilityDrift(record.capabilities, options.expectedCapabilities);
+  if (expectedCapabilities) {
+    const driftIssue = checkCapabilityDrift(record.capabilities, expectedCapabilities);
     if (driftIssue) diagnostics.push(driftIssue);
   }
 
@@ -1545,8 +1850,10 @@ export async function verifyEvidenceRecord(
   const assertions: EvidenceAssertion[] = [
     {
       id: EvidenceAssertionId.ArtifactsMatch,
-      status: artifactIssues.length === 0 ? "passed" : "failed",
-      detail: `${matched} of ${record.artifacts.length} artifacts matched`,
+      // builder 保证 artifacts 非空，所以 "0 of 0 matched" 只可能出现在手工伪造的记录上——
+      // 空集合判 passed 会把它 smuggling 进 `ok`（Task 5 评审 D1）。
+      status: artifactEntries.length > 0 && artifactIssues.length === 0 ? "passed" : "failed",
+      detail: `${matched} of ${artifactEntries.length} artifacts matched`,
     },
     {
       id: EvidenceAssertionId.ChainClosed,
@@ -1558,58 +1865,122 @@ export async function verifyEvidenceRecord(
       status: lineageIssue || inverseIssue ? "failed" : "passed",
       detail: lineageIssue ? lineageIssue.message : inverseIssue ? inverseIssue.message : "revision lineage closed",
     },
-    {
-      id: EvidenceAssertionId.OfflineReplay,
-      status: "not-covered",
-      detail: "excluded: requires referenced replay outside the trust tier",
-    },
+    // 约束 4：`not-covered` 只在记录自己声明了排除时成立；未声明却跑不了的断言必须是 `failed`
+    // 并把 `ok` 按住（`exclusionAssertion`，不得写死 status）。
+    exclusionAssertion(
+      EvidenceAssertionId.OfflineReplay,
+      record.exclusions,
+      "excluded: requires referenced replay outside the trust tier",
+    ),
     {
       id: EvidenceAssertionId.ToolchainRecorded,
       status: toolchainRecorded ? "passed" : "failed",
-      detail: `engine ${record.toolchain.engineVersion} / node ${record.toolchain.nodeMajor} / pnpm ${record.toolchain.pnpmVersion}`,
+      detail: toolchain
+        ? `engine ${toolchain.engineVersion} / node ${toolchain.nodeMajor} / pnpm ${toolchain.pnpmVersion}`
+        : "engine / node / pnpm",
     },
-    {
-      id: EvidenceAssertionId.VisualConsistency,
-      status: "not-covered",
-      detail: "excluded: visual consistency is deferred",
-    },
-  ].sort((left, right) => left.id.localeCompare(right.id));
+    exclusionAssertion(
+      EvidenceAssertionId.VisualConsistency,
+      record.exclusions,
+      "excluded: visual consistency is deferred",
+    ),
+  ];
+  // 单独一句排序，不接在字面量后面：链式 `.sort()` 会让 `status` 的字面量类型被推宽成 `string`。
+  assertions.sort((left, right) => left.id.localeCompare(right.id));
+
+  // L-2：`ok` 不只由六行断言决定。断言全绿但 verifier 自己说了"读不懂这条记录"
+  // （SCHEMA_VERSION_UNSUPPORTED / RECORD_INVALID / CAPABILITY_DRIFT）时，`ok` 必须是 false。
+  // 用 severity 判定而不是 `diagnostics.length === 0`，这样未来的 informational 诊断不会误伤。
+  const blockingDiagnostic = diagnostics.some((entry) => entry.severity === "error");
 
   return {
-    ok: assertions.every((entry) => entry.status !== "failed"),
+    ok: assertions.every((entry) => entry.status !== "failed") && !blockingDiagnostic,
     assertions,
     diagnostics,
   };
 }
 ```
 
+> **消费者契约（Task 6/7/8 必读）**：`ok === true` 的含义是"**六行断言无一 `failed`，且不存在任何
+> `severity: "error"` 的诊断**"。因此 Task 7 的 CLI、Task 8 的第三方复算与 Task 6 的单文件 verifier
+> **必须分支在 `result.ok` 上**，不能只看 `assertions` 数组——`SCHEMA_VERSION_UNSUPPORTED` 与
+> `CAPABILITY_DRIFT` 这两类推不出断言行、只能落在诊断里的失败，正是靠 `ok` 传出来的。断言 id 集合是
+> spec §8 冻结契约，不会新增第七行来承载它们。
+
 追加三个纯数据核对函数（**不做任何 patch 执行**，这是 spec §6 决定 4 的落点）：
 
 ```ts
+/**
+ * L-1：`baseRevision` / `nextRevision` 在 `EvidenceRecordCommand` 上是**可选**字段，而
+ * `structuralIssues` 从不要求它们——所以按"数组下标 + 字段存在才比"的旧写法，一条命令里完全不带
+ * revision 数据的记录会走成"检查过了"的空真通过。真实语义是：**只有 `applied` 条目改过运行时状态**，
+ * 链就只在它们之间、按记录顺序闭合。
+ */
 function checkLineage(record: EvidenceRecord): Diagnostic | undefined {
-  const path = "/commands";
-  const failed = (message: string): Diagnostic => ({
+  const failed = (message: string, path = "/commands"): Diagnostic => ({
     severity: "error",
     code: EvidenceIssueCode.DerivationFailed,
     message,
     path,
   });
-
-  for (const [index, entry] of record.commands.entries()) {
-    if (typeof entry.baseRevision === "string" && entry.baseRevision !== (index === 0 ? record.project.baseRevision : previousRevision(record, index))) {
-      return failed(`commands[${index}].baseRevision does not continue the revision lineage.`);
-    }
+  const commands = Array.isArray(record.commands) ? record.commands : [];
+  const project = record.project;
+  const baseRevision = project ? project.baseRevision : undefined;
+  const revision = project ? project.revision : undefined;
+  // 验证器不再跑 validation（伪造记录），锚点本身不是字符串 ⇒ 失败，不是"看不见就算过"。
+  if (typeof baseRevision !== "string") {
+    return failed(
+      "project.baseRevision must be a string: the revision lineage has no starting point.",
+      "/project/baseRevision",
+    );
   }
-  const last = record.commands[record.commands.length - 1];
-  if (!last) return failed("Evidence records must carry at least one command.");
-  if (typeof last.nextRevision === "string" && last.nextRevision !== record.project.revision) {
-    return failed("The final command revision does not match project.revision.");
+  if (typeof revision !== "string") {
+    return failed("project.revision must be a string: the revision lineage has no end point.", "/project/revision");
+  }
+
+  const applied: Array<{ index: number; base: string; next: string }> = [];
+  for (const [index, entry] of commands.entries()) {
+    const base = entry?.baseRevision;
+    const next = entry?.nextRevision;
+    // 任何条目（含 skipped/failed）只要**提供了**非字符串的 revision，就是畸形数据。
+    if ((base !== undefined && typeof base !== "string") || (next !== undefined && typeof next !== "string")) {
+      return failed(
+        `commands[${index}] carries a revision field that is not a string; refusing to infer lineage from malformed data.`,
+        `/commands/${index}`,
+      );
+    }
+    if (entry?.outcome !== "applied") continue; // 未应用的命令没有 before/after，允许两个字段都不带。
+    if (typeof base !== "string" || typeof next !== "string") {
+      return failed(
+        `commands[${index}] is applied but carries no string baseRevision/nextRevision pair, so its revision step is unverifiable.`,
+        `/commands/${index}`,
+      );
+    }
+    applied.push({ index, base, next });
+  }
+
+  if (applied.length === 0) {
+    // 没有任何命令改过状态 ⇒ 唯一诚实的主张是项目修订号没动。
+    return baseRevision === revision
+      ? undefined
+      : failed(`project revision moved from "${baseRevision}" to "${revision}" without any applied command.`);
+  }
+
+  // 链只走在 applied 之间：起始 = project.baseRevision，逐条 next→后继 base，末端 = project.revision。
+  // 故意不按 `commands` 数组下标取前驱——开头一条 `skipped` 记录不该污染期望值。
+  let expected = baseRevision;
+  let finalIndex = 0;
+  for (const step of applied) {
+    if (step.base !== expected) {
+      return failed(`commands[${step.index}].baseRevision does not continue the revision lineage.`, `/commands/${step.index}`);
+    }
+    expected = step.next;
+    finalIndex = step.index;
+  }
+  if (expected !== revision) {
+    return failed("The final command revision does not match project.revision.", `/commands/${finalIndex}`);
   }
   return undefined;
-}
-
-function previousRevision(record: EvidenceRecord, index: number): string | undefined {
-  return record.commands[index - 1]?.nextRevision;
 }
 
 function checkInversePatchHashes(record: EvidenceRecord): Diagnostic | undefined {
@@ -1628,21 +1999,44 @@ function checkInversePatchHashes(record: EvidenceRecord): Diagnostic | undefined
   return undefined;
 }
 
+/**
+ * 能力 drift 比较**两侧都按 sorted set**：引擎多/少了 available 能力，与 blocker 变了，同样是 drift。
+ * 只在调用方给了 `expectedCapabilities` 时才跑——这里没有第二真相源。
+ */
 function checkCapabilityDrift(
   recorded: EvidenceRecordCapabilities,
   expected: EvidenceRecordCapabilities,
 ): Diagnostic | undefined {
-  const recordedCodes = recorded.blocked.map((entry) => entry.code).sort();
-  const expectedCodes = expected.blocked.map((entry) => entry.code).sort();
-  if (recordedCodes.length === expectedCodes.length && recordedCodes.every((code, index) => code === expectedCodes[index])) {
-    return undefined;
-  }
-  return {
+  const drift = (message: string, path: string): Diagnostic => ({
     severity: "error",
     code: EvidenceIssueCode.CapabilityDrift,
-    message: "Recorded capability blockers differ from the engine's current blockers.",
-    path: "/capabilities/blocked",
-  };
+    message,
+    path,
+  });
+  if (!sameNames(availableNames(recorded), availableNames(expected))) {
+    return drift(
+      "Recorded capability available list differs from the engine's current available capabilities.",
+      "/capabilities/available",
+    );
+  }
+  if (!sameNames(blockedCodes(recorded), blockedCodes(expected))) {
+    return drift("Recorded capability blockers differ from the engine's current blockers.", "/capabilities/blocked");
+  }
+  return undefined;
+}
+
+function availableNames(capabilities: EvidenceRecordCapabilities): string[] {
+  const available = capabilities && Array.isArray(capabilities.available) ? capabilities.available : [];
+  return available.map((entry) => (typeof entry === "string" ? entry : "")).sort();
+}
+
+function sameNames(left: string[], right: string[]): boolean {
+  return left.length === right.length && left.every((name, index) => name === right[index]);
+}
+
+function blockedCodes(capabilities: EvidenceRecordCapabilities): string[] {
+  const blocked = capabilities && Array.isArray(capabilities.blocked) ? capabilities.blocked : [];
+  return blocked.map((entry) => (entry && typeof entry.code === "string" ? entry.code : "")).sort();
 }
 ```
 
@@ -1650,7 +2044,8 @@ function checkCapabilityDrift(
 
 - [ ] **Step 4b: 导出 verify 面**
 
-`packages/engine/src/evidence/index.ts` 追加（`record.js` 那一批导出里补进以下符号，`packages/engine/src/index.ts` 的 evidence 块同样补齐）：
+`packages/engine/src/evidence/index.ts` 追加（`record.js` 那一批导出里补进以下符号；
+`packages/engine/src/index.ts` 的 evidence 块**只补类型**）：
 
 ```ts
   type EvidenceAssertion,
@@ -1660,7 +2055,12 @@ function checkCapabilityDrift(
   verifyEvidenceRecord,
 ```
 
-Task 6/7/8 全部通过 `@gis-engine/engine` 消费 `verifyEvidenceRecord`，所以这一步不做完，Task 6 的第一个 import 就编译不过。
+> **修正（Task 5 实现轮）：原文写的是「Task 6/7/8 全部通过 `@gis-engine/engine` 消费
+> `verifyEvidenceRecord`」，那与 Task 3 立的模块边界契约冲突。** `verifyEvidenceRecord` 是运行时值，
+> 住在 `record.ts` 里，而 `record.ts` 值导入 `node:crypto`；从根 barrel 值导出它会把 `node:` 说明符
+> 拖进浏览器可达图，直接被 `tests/evidence/canonical-hash.test.ts` 的 BFS 守卫判红。
+> 因此根 barrel 只导出这四个类型，**Task 6/7/8 一律从 `@gis-engine/engine/evidence` 子路径导入
+> `verifyEvidenceRecord`**（Task 4 之后这三个任务的导入位已统一改成子路径）。
 
 - [ ] **Step 5: 跑测试**
 
@@ -1724,28 +2124,50 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { canonicalHash, DiagnosticCodes, EvidenceIssueCode, verifyEvidenceRecord } from "@gis-engine/engine";
+import { DiagnosticCodes } from "@gis-engine/engine";
+import { canonicalHash, EvidenceIssueCode, verifyEvidenceRecord } from "@gis-engine/engine/evidence";
 import { describe, expect, it } from "vitest";
 import { MAP_JSON, buildFixture, sha256Of, validRecord } from "./fixtures/record.js";
 
 const DIST_VERIFIER = resolve("packages/engine/dist/evidence-verifier.mjs");
-const RECORD_MODULE = resolve("packages/engine/dist/src/evidence/record.js");
+const BUNDLE_MODULES = [
+  resolve("packages/engine/dist/src/evidence/canonical-stringify.js"),
+  resolve("packages/engine/dist/src/evidence/record.js"),
+];
 
 describe("standalone evidence verifier", () => {
   it("emits a single file whose only runtime imports are node builtins", () => {
     const source = readFileSync(DIST_VERIFIER, "utf-8");
-    const imports = [...source.matchAll(/^import[^\n]*from\s+"([^"]+)"/gm)].map((match) => match[1]!);
+    // Same scanner the build script uses: a `from "…"`-only regex is bypassed by `await import("…")`,
+    // which is exactly how Task 3's reachability guard was shown to be leaky.
+    const specifiers = [
+      ...source.matchAll(/(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)"([^"]+)"/g),
+    ].map((match) => match[1]!);
 
-    for (const specifier of imports) {
+    expect(specifiers.length).toBeGreaterThan(0);
+    for (const specifier of specifiers) {
       expect(specifier.startsWith("node:")).toBe(true);
     }
   });
 
-  it("ships the compiled engine record module verbatim inside the standalone file", () => {
+  it("ships the compiled engine hashing modules verbatim inside the standalone file", () => {
     const verifier = readFileSync(DIST_VERIFIER, "utf-8");
-    const compiledModule = readFileSync(RECORD_MODULE, "utf-8");
 
-    expect(verifier).toContain(compiledModule);
+    for (const module of BUNDLE_MODULES) {
+      // 构建脚本只剥掉「引用闭包内模块的那几行 import」，其余逐字内嵌；这里用同一套剥除规则复算。
+      // 复算必须与 build-evidence-verifier.ts 的剥除逻辑同构（同一 specifier 判定），否则这条
+      // 「逐字内嵌」锁会和构建脚本各说各话。
+      const inlined = readFileSync(module, "utf-8")
+        .split("\n")
+        .filter(
+          (line) =>
+            ![...line.matchAll(/(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)"([^"]+)"/g)]
+              .map((match) => match[1]!)
+              .some((specifier) => !specifier.startsWith("node:") && specifier.startsWith("./")),
+        )
+        .join("\n");
+      expect(verifier).toContain(inlined.trimEnd());
+    }
   });
 
   it("agrees with the engine implementation on the same fixture", async () => {
@@ -1886,13 +2308,56 @@ export async function runEvidenceVerifierCli(
 }
 ```
 
+**必须补的 containment 守卫（Task 6 预检发现；spec §6 决定 4 的威胁模型要求）：**
+Step 3 草图里 `readArtifact` 那一行只是把 `root` 和记录里的路径首尾拼接。一条不受信任的
+`evidence.json` 只要把 `artifacts[].path` 写成 `../../etc/passwd`、绝对路径，或 Windows 盘符/反斜杠
+形态，就能把「审计员在自己机器上跑的复算器」变成读任意文件的 oracle（它会把读到的字节哈希回报）。
+所以 CLI 侧必须拒绝 root 之外的路径——这是数据面守卫，不改变 `verifyEvidenceRecord` 的纯度：
+
+```ts
+/**
+ * A record is untrusted input and this CLI is run by the party auditing it, so an artifact path that
+ * walks outside `--root` is a finding, not a file to open. Pure string work on purpose: constraint 3
+ * keeps `record.js`'s value imports at `node:` builtins, and `node:path`'s judgement about platform
+ * separators is exactly what a cross-machine evidence file must not depend on.
+ */
+function isInsideRoot(root: string, path: string): boolean {
+  const normalised = path.replace(/\\/g, "/");
+  if (normalised.startsWith("/") || /^\s*[A-Za-z]:/.test(normalised) || normalised.includes("\0")) return false;
+  if (normalised.split("/").includes("..")) return false;
+  // The root is supplied by the operator, but a `..` in it would defeat the check trivially.
+  return !root.replace(/\\/g, "/").split("/").includes("..");
+}
+```
+
+`readArtifact` 先过这道判断：不在 root 内时**不去读**，直接按该 artifact 失败处理
+（`ARTIFACT_MISMATCH` 诊断 + `ARTIFACTS_MATCH` `failed` ⇒ 退出码 2），诊断文案点名越界路径但绝不回传
+文件内容或大小。落地方式是把 Step 3 草图那一行换成先判断再读，越界时由注入的 reader 抛出带路径的
+错误，让 verifier 已有的 catch 分支收敛成诊断——约束 7 禁止的是 verifier 自己抛，注入边界的失败本来
+就走 `ARTIFACT_MISMATCH`，不要为此再改 verifier 的签名或断言形状：
+
+```ts
+readArtifact: (path) => {
+  if (!isInsideRoot(root, path)) {
+    throw new Error(`artifact path escapes --root: ${path}`);
+  }
+  return deps.readFile(`${root}${path}`);
+},
+```
+
+Step 1 的测试面相应加四条：`"../secret"`、绝对 `"/etc/passwd"`、Windows 形态 `"C:\shares\x"`
+三种都必须 `ok:false`，并且用一个记录调用次数的 spy 断言 `readFile` 对这些路径**一次都没被调用**；
+最后一条是合法的两级相对路径 `data/nested/map.json` 必须照常通过——防止守卫被写成「见斜杠就拒」。
+
 > 默认 `--root` 为空字符串时 `readFile(recordPath)` 即按 cwd 解析，与 Step 1 测试里 `cwd: directory` 的用法一致；传 `--root` 时统一以 `/` 结尾拼接，避免 `join`/`path` 再引入 `node:path`。
 
-同一批导出里补进 `evidence/index.ts` 与 `packages/engine/src/index.ts`：`type EvidenceVerifierCliDependencies`、`runEvidenceVerifierCli`（Task 7/8 的集成测试直接调它，不重复实现 CLI 装配）。
+同一批导出里补进 `evidence/index.ts`：`type EvidenceVerifierCliDependencies`、`runEvidenceVerifierCli`（Task 7/8 的集成测试直接调它，不重复实现 CLI 装配）。**不要**加进根 barrel `packages/engine/src/index.ts`——`record.ts` 带 `node:crypto`，会被 `tests/evidence/canonical-hash.test.ts` 的浏览器面守卫挡红。
 
 - [ ] **Step 4: 写构建脚本（守卫 + 尾注入口）**
 
-单文件 = `shebang` + **编译产物逐字内嵌** + 一段读盘尾注。ESM 的 `import` 声明可以出现在模块顶层任意位置（会被提升），因此尾注里再写一条 `import` 合法，且 `runEvidenceVerifierCli` 已在同一文件内，无需再 import 自己。这样"两份实现"彻底不存在，Task 6 Step 1 的"逐字内嵌"断言就是防漂移的那道锁。
+单文件 = `shebang` + **编译产物逐字内嵌（依赖闭包）** + 一段读盘尾注。闭包就是 Task 3 拆出来的两个文件：`canonical-stringify.js`（零 import）在前、`record.js` 在后，内嵌时剥掉 `record.js` 指向 `canonical-stringify.js` 的那条 import 行。ESM 的 `import` 声明可以出现在模块顶层任意位置（会被提升），因此尾注里再写一条 `import` 合法，且 `runEvidenceVerifierCli` 已在同一文件内，无需再 import 自己。这样"两份实现"彻底不存在，Task 6 Step 1 的"逐字内嵌"断言就是防漂移的那道锁。
+
+出现闭包外的非 `node:` 依赖时**必须失败**，不允许静默剥除——否则以后 `record.ts` 引入 `diagnostics/codes.js` 这类运行期依赖时，会悄悄产出打不开的包。
 
 创建 `packages/engine/scripts/build-evidence-verifier.ts`：
 
@@ -1900,27 +2365,51 @@ export async function runEvidenceVerifierCli(
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
-const source = resolve("dist/src/evidence/record.js");
+// Dependency order: callees first. Append new closure members in this order.
+const BUNDLE = ["dist/src/evidence/canonical-stringify.js", "dist/src/evidence/record.js"].map(resolve);
 const target = resolve("dist/evidence-verifier.mjs");
-const compiled = readFileSync(source, "utf-8");
+// Every syntax that can pull in another module at runtime. Task 3's reachability guard learned the
+// hard way that a `from "…"`-only scan is bypassed by `await import("…")`; a scanner that misses one
+// here emits a bundle that breaks on the auditor's machine instead of failing the build.
+const MODULE_SPECIFIER = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)"([^"]+)"/g;
 
-const offenders = [...compiled.matchAll(/^import[^\n]*from\s+"([^"]+)"/gm)]
-  .map((match) => match[1] as string)
-  .filter((specifier) => !specifier.startsWith("node:"));
+function specifiersIn(code: string): string[] {
+  return [...code.matchAll(MODULE_SPECIFIER)].map((match) => match[1] as string);
+}
 
-if (offenders.length > 0) {
-  console.error(
-    `evidence-verifier must stay dependency-free. Offending imports in ${source}:\n${offenders
-      .map((offender) => `  ${offender}`)
-      .join("\n")}`,
-  );
-  process.exitCode = 1;
-} else {
+const sources = BUNDLE.map((source) => {
+  const compiled = readFileSync(source, "utf-8");
+  const offenders = [...new Set(specifiersIn(compiled))]
+    .filter((specifier) => !specifier.startsWith("node:"))
+    .map((specifier) => resolve(dirname(source), specifier))
+    .filter((dependency) => !BUNDLE.includes(dependency));
+
+  if (offenders.length > 0) {
+    console.error(
+      `evidence-verifier must stay dependency-free. Offending imports in ${source}:\n${offenders
+        .map((offender) => `  ${offender}`)
+        .join("\n")}`,
+    );
+    process.exitCode = 1;
+    return "";
+  }
+
+  // Strip only lines carrying an intra-bundle specifier; node: builtins stay and the guard test
+  // asserts nothing else survives. tsc/Biome emit single-line import statements, so a line filter
+  // cannot leave a fragment behind — and if that invariant ever breaks, the standalone CLI test
+  // *executes* this file, so a parse error fails the gate instead of shipping.
+  return compiled
+    .split("\n")
+    .filter((line) => !specifiersIn(line).some((specifier) => BUNDLE.includes(resolve(dirname(source), specifier))))
+    .join("\n");
+});
+
+if (process.exitCode !== 1) {
   mkdirSync(dirname(target), { recursive: true });
   writeFileSync(
     target,
     `#!/usr/bin/env node
-${compiled}
+${sources.join("\n")}
 import { readFile } from "node:fs/promises";
 
 process.exitCode = await runEvidenceVerifierCli(process.argv.slice(2), {
@@ -1940,6 +2429,12 @@ process.exitCode = await runEvidenceVerifierCli(process.argv.slice(2), {
 
 守卫失败即 `exit 1`，`pnpm build` 随之失败——不允许"先出包、以后再清依赖"。
 
+**这条守卫必须被证明承重**（Task 3 的教训：能绕过的守卫等于没有守卫）。变异证明两步，写进 Step 6
+的执行记录：① 临时在 `record.ts` 顶部加一条 `import { manualFix } from "../internal/shared.js";`
+并在任一函数里真的用它（否则 tsc 会先报未使用），确认 `pnpm --filter @gis-engine/engine build`
+以 exit 1 失败且报错点名该文件；② 换成 `await import("../internal/shared.js")`，确认同一个守卫照样
+`exit 1`（这一步就是老 `ANY_IMPORT` 正则漏掉的形态）。两步做完必须还原，并确认 `git status` 干净。
+
 - [ ] **Step 5: 接进构建**
 
 `packages/engine/package.json`：
@@ -1947,6 +2442,13 @@ process.exitCode = await runEvidenceVerifierCli(process.argv.slice(2), {
 ```json
     "build": "tsc -p tsconfig.json && node dist/scripts/build-evidence-verifier.js",
     "build:schema": "tsc -p tsconfig.json && node dist/scripts/build-schema.js && node dist/scripts/build-evidence-verifier.js"
+```
+
+同一文件再加两条 `exports`。Task 7/8 的消费方用 `createRequire(...).resolve("@gis-engine/engine/…")` 取 verifier 与 package.json，而包一旦声明了 `exports`，未列出的深路径会直接 `ERR_PACKAGE_PATH_NOT_EXPORTED`：
+
+```json
+    "./evidence-verifier.mjs": "./dist/evidence-verifier.mjs",
+    "./package.json": "./package.json"
 ```
 
 - [ ] **Step 6: 跑门禁**
@@ -1968,6 +2470,22 @@ git add packages/engine/scripts/build-evidence-verifier.ts packages/engine/packa
 git commit -m "feat(evidence): ship a standalone zero-dependency evidence verifier"
 ```
 
+**Task 6 落地后的计划同步（controller 裁定，`e4e42df` + `99a902a`；后续 task 以本节为准，别再照上面的草图写）：**
+
+| 草图位置 | 草图文本 | 实际落地 | 裁定 |
+| --- | --- | --- | --- |
+| `checkLineage` 诊断文案 | `moved from "${baseRevision}" to "${revision}"` | 同一句话改用单引号 | 保留 `MODULE_SPECIFIER` 的**过近似**语义（宁可误报也不能漏报），把输入改成 scanner-clean；精确化正则会漏掉 `import {…}\nfrom "…"` 的多行形态，正是 Task 3 暴露的假阴性方向。无测试钉过双引号形态（`tests/evidence/record-verify.test.ts:298` 只钉 `stringContaining("without any applied command")`）。 |
+| Step 3 `readFile(\`${root}${recordPath}\`)` / `readArtifact` | 无条件前缀拼接 | `resolveUnderRoot()`：绝对路径只对**操作者点名的记录文件**生效，artifact 路径先过 `isInsideRoot` 才可能进入拼接 | 必须偏离：Step 1 的两条测试用绝对记录路径 + `--root`，照草图必然 ENOENT。评审已确认这条不会给 artifact 开后门（绝对分支对 artifact 不可达，因为 `isInsideRoot` 先拒绝对路径）。 |
+| Step 4 `const BUNDLE = […].map(resolve)` | `.map(resolve)` | `.map((source) => resolve(source))` | strict 模式 TS2345：`Array.map` 会把 index 传进 `resolve` 的 rest 形参。 |
+| Step 1 containment 用例 | 四条 | 五条 | 第六条覆盖 `isInsideRoot` 自己的「root 含 `..`」分支——未测的守卫分支等于没有守卫（Task 3 同类）。 |
+| Step 6 Expected | 6 passed | 11 passed | 上面两条用例集扩大的直接结果。 |
+| spec §7 `DERIVATION_FAILED` 第三条触发（整分支评审 Important 1，2026-09-27 补录） | 计划没有任何 task 文本要求复算包内 spec；Task 5 草图只覆盖前两条触发（`checkLineage` / `checkInversePatchHashes`） | `verifyEvidenceRecord` 在 artifact 字节匹配后对 `role: "mapspec"` 的正文做 `canonicalHash(JSON.parse(bytes)) === spec.afterHash` 复算，不符即 `EVIDENCE.DERIVATION_FAILED` 并并入 `DERIVATION_CLOSED` 与 `ok`；解析失败降级为同一结构化诊断，不抛异常；未提供 `readArtifact` 时跳过（该路径已在 `ARTIFACTS_MATCH` 失败） | spec §7 是契约而非草图；此前这条触发静默缺席、也未进任何 sync 表，属计划缺口，本行补披露。伪造对 / 诚实包 / 畸形字节三条引擎测试与单文件 exit 2 用例先红后绿；共享 fixture `spec.afterHash` 同步为 MAP_JSON 正文的诚实哈希。 |
+| Task 5 Step 4b 导出清单（`plan:2050-2056`；整分支评审 Important 4，2026-09-27 补录） | 清单只列 `EvidenceAssertion`/`EvidenceAssertionStatus`/`EvidenceVerificationResult`/`VerifyEvidenceRecordOptions`/`verifyEvidenceRecord` 五个符号 | `@gis-engine/engine/evidence` barrel 值导出补 `normaliseEvidencePayload`；`tests/evidence/record-verify.test.ts` 的 `reseal()` 改调它并删除手抄注释 | 遗漏即来源：该函数的注释自述「builder 与 verifier 只能共用这一个归一化表达式」，但它不在 Step 4b 清单上，导致计划 Task 9 与任何第三方 builder 只能重抄 `JSON.parse(JSON.stringify(…))`，而仓库自己的测试已经抄了一份。根 barrel 仍保持 evidence 符号类型-only（`tests/evidence/canonical-hash.test.ts` 的 BFS 守卫验证未破坏）。 |
+
+`packages/engine/scripts/**` 里两处 `console.*` 是 Biome `noConsole` **warning**（根目录 override 只覆盖顶层
+`scripts/**`），`biome check` 仍 exit 0；这是构建脚本的必要输出，不动配置。
+
+
 ---
 
 ## Task 7: CLI 导出包落盘 `evidence.json` + manifest 角色（spec 第 3 步 U4）
@@ -1982,6 +2500,30 @@ git commit -m "feat(evidence): ship a standalone zero-dependency evidence verifi
 - Modify: `skills/gis-engine-generation-pipeline/SKILL.md:105`、`:310`
 - Modify: `README.md` / `CHANGELOG.md`（公开契约新增）
 - Conditional: `config/package-size-budgets.json`（仅当 Step 5 实测超预算，理由写进 PR）
+
+**从 Task 6 结转、必须由本 task 闭合的三项（评审裁定的前置条件，不是可选项）：**
+
+1. **读侧字节上限。** `buildEvidenceRecord` 有 `MAX_EVIDENCE_RECORD_BYTES`，但
+   `runEvidenceVerifierCli` 会对任意大的不受信任 `evidence.json` 直接 `JSON.parse`。约束 5 的
+   reject-not-truncate 在**生产侧**，审计侧的入口同样是攻击面：读到盘的字节数超过
+   `MAX_EVIDENCE_RECORD_BYTES` 时必须拒绝（退出码 1，文案点名实际字节数与上限），不得截断、不得解析。
+   加一条测试：写入一份超限的 `evidence.json` ⇒ CLI 失败且不产出任何断言结论。
+2. **`BUNDLE` / `BUNDLE_MODULES` 两处清单互相指认。** 构建脚本的 `BUNDLE` 与
+   `tests/evidence/standalone-verifier.test.ts` 的 `BUNDLE_MODULES` 必须同序同集，否则「逐字内嵌」锁的
+   覆盖面会在闭包增长时静默缩小。两边的注释各点名对方一次。
+3. **spec §6 决定 4 的残余面要写进文档。** `isInsideRoot` 是纯字符串判断，root 内一个指向外部的
+   **符号链接**照样会被 `readFile` 跟随。这是刻意选择的代价（引入 `node:fs` 的 `realpath` 判断会破坏
+   零依赖闭包），必须在 `docs/engineering/evidence-record.md` 的威胁模型里写明白：`--root` 由审计方自己
+   提供，root 内的符号链接属于审计方自己的信任域。
+
+**实测体积（供 Step 5 判定，`canonical-dist-gzip-v1` / complete-dist，`99a902a` 干净构建）：**
+engine 现状 236,057 B，预算 204,800 B（blocking），基线 193,984 B @ `4465943`（2026-08-05 实测 194,509 B 通过）。
+逐件归因：`dist/src/evidence/**` 23,384 B、`dist/schema/evidence-record*.json` 5,239 B、
+`dist/evidence-verifier.mjs` 9,898 B ⇒ 证据子系统合计 **+38,703 B**，扣掉后为 197,354 B（仍在新预算之下）。
+也就是说：**超预算完全由本 spec 引入，且删掉 verifier 单文件也回不到预算内（226,159 B）。**
+本 task 的 Step 5 因此按既有约定更新预算与基线，并把上面这组数字与理由写进 PR——不得静默调高，
+也不得以「缩小证据面」为名绕开门禁。另外 `pnpm check` 不含 `size:check`，`bundle-size.yml` 只在
+`packages/**` 变更时跑：本分支是第一例会真正触发它的分支，这个盲区一并记进 PR。
 
 **Interfaces:**
 - Consumes: `buildEvidenceRecord`、`verifyEvidenceRecord`、`canonicalHash`、Task 2 的 capability matrix、`applied.results`、`applied.spec`、`skeleton.baseSpec`、`skeleton.commands`、`promptHash`、`traceId`、`files`。
@@ -2012,7 +2554,7 @@ git commit -m "feat(evidence): ship a standalone zero-dependency evidence verifi
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { EvidenceRecordSchema, verifyEvidenceRecord } from "@gis-engine/engine";
+import { EvidenceRecordSchema, verifyEvidenceRecord } from "@gis-engine/engine/evidence";
 import { main, verifyArtifacts } from "@gis-engine/cli";
 import Ajv from "ajv";
 import { describe, expect, it, vi } from "vitest";
@@ -2064,6 +2606,8 @@ describe("CLI evidence export", () => {
         readArtifact: async (path) => new Uint8Array(readFileSync(join(projectDir, path))),
       });
 
+      // 消费者契约见 Task 5 Step 4：绿与否只看 `result.ok`（断言全绿 **且** 无 error 诊断）。
+      expect(result.ok).toBe(true);
       expect(result.assertions.filter((entry) => entry.status === "failed")).toEqual([]);
       expect(result.assertions.map((entry) => entry.status)).toContain("not-covered");
     } finally {
@@ -2204,7 +2748,7 @@ function readPackageManagerVersion(): string {
 ```ts
 function resolveVerifierPath(): string {
   try {
-    return createRequire(import.meta.url).resolve("@gis-engine/engine/dist/evidence-verifier.mjs");
+    return createRequire(import.meta.url).resolve("@gis-engine/engine/evidence-verifier.mjs");
   } catch {
     // Workspace runs resolve through the source tree before the package is packed.
     return fileURLToPath(new URL("../../engine/dist/evidence-verifier.mjs", import.meta.url));
@@ -2281,7 +2825,7 @@ function resolveVerifierPath(): string {
       expect(canonicalHash(specOf(mapBytes))).toBe(evidence.spec.afterHash);
 ```
 
-并在该文件顶部 import 块补 `import { canonicalHash } from "@gis-engine/engine";`。`specOf` 不必新造：`map.json` 落盘时已含完整 spec（`generate.ts:591` 用 `JSON.stringify(applied.spec, null, 2)`），而 `canonicalStringify` 与键序无关，所以 `JSON.parse(mapBytes)` 直接可用作输入：
+并在该文件顶部 import 块补 `import { canonicalHash } from "@gis-engine/engine/evidence";`。`specOf` 不必新造：`map.json` 落盘时已含完整 spec（`generate.ts:591` 用 `JSON.stringify(applied.spec, null, 2)`），而 `canonicalStringify` 与键序无关，所以 `JSON.parse(mapBytes)` 直接可用作输入：
 
 ```ts
 function specOf(mapBytes: Buffer): unknown {
@@ -2335,7 +2879,7 @@ Expected: PASS。`size:check` 若因新增 `evidence-verifier.mjs` 与 `evidence
 | `DERIVATION_CLOSED` | 命令序列的 revision 链与逆补丁哈希在记录内自洽（不执行命令） |
 | `TOOLCHAIN_RECORDED` | 引擎 / Node / pnpm 版本已入记录 |
 
-字节级（含格式）完整性由 `artifact-manifest.json` 兜住：`pnpm --filter @gis-engine/cli verify <dir>`。
+字节级（含格式）完整性由 `artifact-manifest.json` 兜住：`create-gis-map --verify-artifacts <dir>`。
 ```
 
 更新 `docs/README.md` 索引与 `CHANGELOG.md`；Run: `node scripts/doc-generator.mjs links` → Expected: `✅ 所有活动文档交叉引用完整`。
@@ -2493,7 +3037,7 @@ git commit -m "test(acceptance): rehearse third-party evidence recomputation end
 追加到 `tests/workbench/workbench-contracts.test.ts`（该文件已有 Workbench contract 层用例，沿用它的 import 风格）：
 
 ```ts
-import { canonicalHash } from "@gis-engine/engine";
+import { canonicalHash } from "@gis-engine/engine/evidence";
 import { describe, expect, it } from "vitest";
 import { createWorkbenchCanonicalHash } from "../../apps/workbench/contracts/hash.ts";
 
@@ -2553,7 +3097,7 @@ Expected: FAIL（receipt 无 `recordId`；两处哈希实现在 undefined 键序
 `apps/workbench/contracts/hash.ts` 把实现改为委托：
 
 ```ts
-import { canonicalHash } from "@gis-engine/engine";
+import { canonicalHash } from "@gis-engine/engine/evidence";
 
 export function createWorkbenchCanonicalHash(value: unknown): string {
   return canonicalHash(value);

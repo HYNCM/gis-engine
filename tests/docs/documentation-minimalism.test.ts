@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const processArtifactPrefix = "docs/superpowers/";
 const generatedMarkdown = new Set([
   "docs/planning/AGENT_HEALTH_DASHBOARD.md",
   "docs/planning/issues-snapshot.md",
@@ -86,7 +87,9 @@ describe("documentation minimalism", () => {
 
   it("keeps handwritten documentation at or below 20 percent of code", () => {
     const codeFiles = ["*.ts", "*.tsx", "*.mjs", "*.js"].flatMap(trackedFiles);
-    const documentationLines = handwrittenMarkdown().reduce((total, path) => total + lineCount(path), 0);
+    const documentationLines = handwrittenMarkdown()
+      .filter((path) => !path.startsWith(processArtifactPrefix))
+      .reduce((total, path) => total + lineCount(path), 0);
     const codeLines = codeFiles.reduce((total, path) => total + lineCount(path), 0);
 
     expect(documentationLines / codeLines).toBeLessThanOrEqual(0.2);

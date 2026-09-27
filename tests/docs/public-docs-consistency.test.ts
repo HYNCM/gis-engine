@@ -1,6 +1,8 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { canonicalHash, EvidenceRecordSchema, normaliseEvidencePayload } from "@gis-engine/engine/evidence";
+import Ajv from "ajv";
 import { describe, expect, it } from "vitest";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -250,6 +252,32 @@ describe("public docs consistency", () => {
         /"version"\s*:\s*"1\.0"/,
       );
     }
+  });
+
+  it("keeps the generation skill's EvidenceRecord example schema-valid", () => {
+    // The skill is a native AI entry point: an example record its consumers copy must pass the
+    // published `EvidenceRecordSchema` (Ajv, additionalProperties: false), or the docs teach a
+    // record the repo's own contract rejects with EVIDENCE.RECORD_INVALID (review Important 3).
+    const skill = readText("skills/gis-engine-generation-pipeline/SKILL.md");
+    const heading = "## Evidence Record Structure";
+    expect(skill).toContain(heading);
+    const section = skill.slice(skill.indexOf(heading));
+    const fence = section.match(/```json\n([\s\S]*?)\n```/);
+    if (!fence) throw new Error("the Evidence Record Structure section must carry the example json block");
+    const example = JSON.parse(fence[1] ?? "") as unknown;
+    const validate = new Ajv({ allErrors: true, strict: false }).compile(EvidenceRecordSchema);
+
+    expect(validate(example), `skill example rejected: ${JSON.stringify(validate.errors)}`).toBe(true);
+
+    // The prose promises the shown `recordId` re-seals, so the docs test recomputes it the same way
+    // `verifyEvidenceRecord`'s CHAIN_CLOSED does. Without this the claim is unverifiable prose, and a
+    // later edit to one field would leave the example attesting a record its own hash rejects.
+    const record = example as { recordId: string };
+    const payload = normaliseEvidencePayload({ ...record, recordId: undefined });
+    expect(payload).toBeDefined();
+    expect(record.recordId, "skill example recordId does not re-seal from its own body").toBe(
+      payload === undefined ? undefined : canonicalHash(payload),
+    );
   });
 
   it("documents the MCP structured result and compatible error contracts", () => {

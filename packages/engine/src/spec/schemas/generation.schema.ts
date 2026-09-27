@@ -174,7 +174,7 @@ export type MapGenerationPromptPlanFromSchema = Static<typeof MapGenerationPromp
 export type MapGenerationRequestFromSchema = Static<typeof MapGenerationRequestSchema>;
 export type MapGenerationCommandSkeletonFromSchema = Static<typeof MapGenerationCommandSkeletonSchema>;
 
-function stripNestedIds<T>(value: T): T {
+export function stripNestedIds<T>(value: T): T {
   if (Array.isArray(value)) return value.map(stripNestedIds) as T;
   if (!value || typeof value !== "object") return value;
   return Object.fromEntries(
