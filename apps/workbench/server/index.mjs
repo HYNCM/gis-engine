@@ -943,14 +943,7 @@ export const STUDIO_LOCAL_REVIEW_LEDGER_VERSION = "studio.review-ledger.v1";
 export const STUDIO_LOCAL_REVIEW_EXPORT_VERSION = "studio.review-export.v1";
 export const WORKBENCH_PRODUCT_ROUTE_VERSION = "studio.workbench-product-route.v1";
 export const WORKBENCH_PRODUCT_ROUTE = "/review-console/workbench/:projectId";
-const REVIEW_LEDGER_AUDIT_STATUSES = new Set([
-  "all",
-  "applied",
-  "blocked",
-  "ready",
-  "reviewed",
-  "reset",
-]);
+const REVIEW_LEDGER_AUDIT_STATUSES = new Set(["all", "applied", "blocked", "ready", "reviewed", "reset"]);
 const REVIEW_LEDGER_REVIEW_OUTCOMES = new Set(["all", "accepted", "blocked", "follow-up-required"]);
 const REVIEW_EXPORT_KINDS = new Set(["all", "audit", "review"]);
 const REVIEW_EXPORT_STATUSES = new Set([
@@ -2059,11 +2052,7 @@ export async function main() {
 
         return sendJson(res, {
           ...withCommandDiagnostics(
-            statePayload(
-              engine,
-              legacyResult.status,
-              legacySessionChanged ? legacyResult.nextSpec : activeSpec,
-            ),
+            statePayload(engine, legacyResult.status, legacySessionChanged ? legacyResult.nextSpec : activeSpec),
             legacyResult.diagnostics,
           ),
           commandEvidence: legacyResult.evidence,

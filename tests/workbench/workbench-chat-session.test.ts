@@ -1,7 +1,7 @@
-import * as engine from "@gis-engine/engine";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import * as engine from "@gis-engine/engine";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { applyLegacyIntent, applyProviderCommands, createInitialSpec } from "../../apps/workbench/server/index.mjs";
 
@@ -86,7 +86,7 @@ function providerOutput(paint: Record<string, unknown>) {
 }
 
 function createDeferred() {
-  let resolve: ((value: unknown) => void) = () => {};
+  let resolve: (value: unknown) => void = () => {};
   const promise = new Promise<unknown>((res) => {
     resolve = res;
   });
