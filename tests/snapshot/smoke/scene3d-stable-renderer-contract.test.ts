@@ -375,11 +375,20 @@ describe("SceneView3D stable renderer contract QA slice", () => {
     expect(promotionSummary.runtimeSupported).toBe(false);
     expect(releaseGate.accepted).toBe(true);
     expect(releaseGate.runtime.stableViewMode).toBe(false);
+    expect(rendererEvidence.frameProvenance).toBe("synthetic-canvas2d");
+    expect(releaseGate.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "warning",
+        code: DiagnosticCodes.CapabilityUnsupported,
+        path: "/rendererVisualEvidence/frameProvenance",
+      }),
+    );
 
     const mockEvidence: Scene3DRendererVisualEvidence = {
       passed: true,
       renderer: "scene3d-mock",
       reportPath: "test-results/scene3d-mock/report.json",
+      frameProvenance: "no-frame",
       diagnostics: [],
     };
     expect(

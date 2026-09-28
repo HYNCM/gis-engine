@@ -114,10 +114,17 @@ export interface Scene3DQueryResult {
 export type Scene3DReleaseCiTier = "pr" | "main-nightly" | "release" | "local";
 export type Scene3DReleaseVisualGateDecision = "passed" | "failed" | "waived";
 
+/**
+ * Where the pixels behind renderer visual evidence actually came from. A synthetic Canvas2D
+ * paint proves the evidence contract, not that a 3D renderer ran.
+ */
+export type Scene3DFrameProvenance = "renderer-frame" | "synthetic-canvas2d" | "no-frame";
+
 export interface Scene3DRendererVisualEvidence {
   passed: boolean;
   renderer: string;
   reportPath?: string;
+  frameProvenance: Scene3DFrameProvenance;
   diagnostics?: Diagnostic[];
 }
 
@@ -433,6 +440,10 @@ export function evaluateScene3DReleaseVisualGate(
     ...(options.rendererVisualEvidence?.diagnostics ?? []),
   ];
 
+  if (options.rendererVisualEvidence && options.rendererVisualEvidence.frameProvenance !== "renderer-frame") {
+    diagnostics.push(nonRendererFrameEvidenceDiagnostic(options.rendererVisualEvidence.frameProvenance));
+  }
+
   if (snapshot.summary.pickableLayerCount > 0 && query.picks.length === 0) {
     diagnostics.push({
       severity: "error",
@@ -728,6 +739,24 @@ function isReleaseVisualWaiverComplete(
       waiver.reason.length > 0 &&
       waiver.followUpTaskId.length > 0,
   );
+}
+
+function nonRendererFrameEvidenceDiagnostic(frameProvenance: Scene3DFrameProvenance): Diagnostic {
+  const synthetic = frameProvenance === "synthetic-canvas2d";
+  return {
+    severity: "warning",
+    code: DiagnosticCodes.CapabilityUnsupported,
+    message: synthetic
+      ? "SceneView3D renderer visual evidence came from a synthetic Canvas2D paint, not from a 3D renderer frame."
+      : "SceneView3D renderer visual evidence reports no captured frame.",
+    path: "/rendererVisualEvidence/frameProvenance",
+    fix: manualFix(
+      synthetic
+        ? "Report this evidence as adapter contract evidence; do not cite it as stable SceneView3D rendering."
+        : "Capture a frame before reporting SceneView3D renderer visual evidence.",
+      "high",
+    ),
+  };
 }
 
 function missingReleaseVisualEvidenceDiagnostic(): Diagnostic {

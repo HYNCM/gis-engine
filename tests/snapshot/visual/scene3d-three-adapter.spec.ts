@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 import { assertSnapshotReport } from "../report.js";
 import { runScene3DThreeAdapterBrowserRunner } from "../scene3d-browser-runner.js";
 
-test("renders a release-capable SceneView3D browser runner snapshot", async ({}, testInfo) => {
+test("captures a synthetic Canvas2D SceneView3D frame and the adapter runtime evidence", async ({}, testInfo) => {
   const runner = await runScene3DThreeAdapterBrowserRunner();
 
   assertSnapshotReport(runner.report);
@@ -18,17 +18,20 @@ test("renders a release-capable SceneView3D browser runner snapshot", async ({},
 
   expect(runner.report.status).toBe("passed");
   expect(runner.rendererEvidence.passed).toBe(true);
+  expect(runner.rendererEvidence.frameProvenance).toBe("synthetic-canvas2d");
   expect(runner.capture.nonTransparentPixels).toBeGreaterThan(0);
   expect(runner.capture.changedPixelsFromBackground).toBeGreaterThan(0);
   expect(runner.capture.consoleErrors).toEqual([]);
 
   const matrix = runner.report.promotionMatrix;
-  expect(matrix.frameMetrics).toEqual({
+  expect(matrix.browserPaintEvidence).toEqual({
     width: runner.capture.width,
     height: runner.capture.height,
     nonTransparentPixels: runner.capture.nonTransparentPixels,
     changedPixelsFromBackground: runner.capture.changedPixelsFromBackground,
     targetLayerPixels: runner.capture.targetLayerPixels,
+    paintMethod: "canvas2d-synthetic",
+    rendersThreeScene: false,
   });
   expect(matrix.consoleDiagnostics).toEqual({
     errorCount: 0,
@@ -51,9 +54,13 @@ test("renders a release-capable SceneView3D browser runner snapshot", async ({},
     passed: true,
     ready: true,
     reportPath: "test-results/scene3d-three-adapter/browser-runner-report.json",
+    frameProvenance: "synthetic-canvas2d",
   });
-  expect(matrix.snapshotQueryEvidence).toEqual({
+  expect(matrix.runtimeEvidence).toEqual({
     fixture: "tests/fixtures/specs/valid/scene3d-extension.map.json",
+    packageName: "@gis-engine/scene3d-three-adapter",
+    declaresThreeDependency: false,
+    importsRendererSource: false,
     snapshot: {
       passed: true,
       format: "data-url",

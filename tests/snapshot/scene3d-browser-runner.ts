@@ -1,19 +1,32 @@
 import { Buffer } from "node:buffer";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
+import { resolve } from "node:path";
 import type { SceneView3DExtension } from "@gis-engine/engine";
 import { chromium, type Page } from "@playwright/test";
-import type { Scene3DMockSnapshotResult, Scene3DQueryResult } from "../../packages/scene3d/src/index.js";
+import type {
+  Scene3DMockSnapshotResult,
+  Scene3DQueryResult,
+  Scene3DRendererVisualEvidence,
+} from "../../packages/scene3d/src/index.js";
 import {
   createScene3DThreeAdapterPromotionEvidenceSummary,
   createScene3DThreeAdapterRendererEvidence,
   createScene3DThreeAdapterRuntime,
   type Scene3DThreeAdapterVisualCapture,
+  scene3dThreeAdapterBoundary,
 } from "../../packages/scene3d-three-adapter/src/index.js";
 import type { SnapshotReport } from "./report.js";
 
 const defaultWidth = 320;
 const defaultHeight = 200;
 const defaultReportPath = "test-results/scene3d-three-adapter/browser-runner-report.json";
+const scene3dFixturePath = "tests/fixtures/specs/valid/scene3d-extension.map.json";
+const adapterManifestPath = "packages/scene3d-three-adapter/package.json";
+const adapterSourceRoot = "packages/scene3d-three-adapter/src";
+const dependencyFields = ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"] as const;
+/** The runner paints this frame itself with Canvas2D fillRect calls; no renderer runtime is involved. */
+const scene3dPaintMethod = "canvas2d-synthetic" as const;
 const require = createRequire(import.meta.url);
 const scene3dExtensionSpec = require("../fixtures/specs/valid/scene3d-extension.map.json") as {
   extensions: { scene3d: SceneView3DExtension };
@@ -106,6 +119,7 @@ export async function runScene3DThreeAdapterBrowserRunner(
     };
     const rendererEvidence = createScene3DThreeAdapterRendererEvidence(runtime.spikeReport, {
       capture,
+      paintMethod: scene3dPaintMethod,
       diagnostics: [...runtimeLoadReport.diagnostics, ...snapshot.diagnostics, ...query.diagnostics],
     });
     const promotionEvidenceSummary = createScene3DThreeAdapterPromotionEvidenceSummary(runtime.spikeReport, {
@@ -122,7 +136,7 @@ export async function runScene3DThreeAdapterBrowserRunner(
       promotionEvidenceSummary,
       snapshot,
       query,
-      rendererEvidence.diagnostics ?? [],
+      rendererEvidence,
     );
 
     return {
@@ -265,7 +279,7 @@ function createSnapshotReport(
   promotionEvidenceSummary: Scene3DThreeAdapterPromotionEvidenceSummary,
   snapshot: Scene3DMockSnapshotResult,
   query: Scene3DQueryResult,
-  rendererDiagnostics: SnapshotReport["diagnostics"],
+  rendererEvidence: Scene3DRendererVisualEvidence,
 ): Scene3DThreeAdapterBrowserRunnerReport {
   const passed =
     browserRenderResult.ok &&
@@ -295,7 +309,7 @@ function createSnapshotReport(
       promotionEvidenceSummary,
       snapshot,
       query,
-      rendererDiagnostics,
+      rendererEvidence,
     ),
     artifacts: {
       actualImage: "captured:data-url",
@@ -325,19 +339,22 @@ function createPromotionMatrixSummary(
   promotionEvidenceSummary: Scene3DThreeAdapterPromotionEvidenceSummary,
   snapshot: Scene3DMockSnapshotResult,
   query: Scene3DQueryResult,
-  rendererDiagnostics: SnapshotReport["diagnostics"],
+  rendererEvidence: Scene3DRendererVisualEvidence,
 ): Scene3DThreeAdapterPromotionMatrixSummary {
+  const rendererDiagnostics = rendererEvidence.diagnostics ?? [];
   return {
     kind: "Scene3DThreeAdapterPromotionMatrixSummary",
     version: "0.1",
     stableViewMode: false,
     runtimeSupported: false,
-    frameMetrics: {
+    browserPaintEvidence: {
       width: browserRenderResult.ok ? browserRenderResult.canvasWidth : 0,
       height: browserRenderResult.ok ? browserRenderResult.canvasHeight : 0,
       nonTransparentPixels: browserRenderResult.ok ? browserRenderResult.nonTransparentPixels : 0,
       changedPixelsFromBackground: browserRenderResult.ok ? browserRenderResult.changedPixelsFromBackground : 0,
       targetLayerPixels: browserRenderResult.ok ? browserRenderResult.targetLayerPixels : {},
+      paintMethod: scene3dPaintMethod,
+      rendersThreeScene: scene3dPaintMethod === "webgl-renderer",
     },
     consoleDiagnostics: {
       errorCount: consoleErrors.length,
@@ -352,12 +369,16 @@ function createPromotionMatrixSummary(
       passed: promotionEvidenceSummary.evidence.rendererVisual.passed,
       ready:
         browserRenderResult.ok && consoleErrors.length === 0 && promotionEvidenceSummary.evidence.rendererVisual.passed,
+      frameProvenance: rendererEvidence.frameProvenance,
       ...(promotionEvidenceSummary.evidence.rendererVisual.reportPath
         ? { reportPath: promotionEvidenceSummary.evidence.rendererVisual.reportPath }
         : {}),
     },
-    snapshotQueryEvidence: {
-      fixture: "tests/fixtures/specs/valid/scene3d-extension.map.json",
+    runtimeEvidence: {
+      fixture: scene3dFixturePath,
+      packageName: scene3dThreeAdapterBoundary.packageName,
+      declaresThreeDependency: declaresRendererDependency(),
+      importsRendererSource: importsRendererSource(),
       snapshot: {
         passed: snapshot.passed,
         format: snapshot.summary.format,
@@ -414,6 +435,43 @@ function visualDiagnostics(
   }));
 }
 
+function declaresRendererDependency(): boolean {
+  const manifest = JSON.parse(readFileSync(resolve(adapterManifestPath), "utf8")) as Record<string, unknown>;
+  return scene3dThreeAdapterBoundary.forbiddenCoreDependencies.some((packageName) =>
+    dependencyFields.some((field) => {
+      const deps = manifest[field] as Record<string, string> | undefined;
+      return deps !== undefined && Object.keys(deps).includes(packageName);
+    }),
+  );
+}
+
+const importSpecifierPatterns = [
+  /\bfrom\s+["']([^"']+)["']/g,
+  /\bimport\s+["']([^"']+)["']/g,
+  /\bimport\s*\(\s*["']([^"']+)["']\s*\)/g,
+];
+
+function importsRendererSource(): boolean {
+  const rendererPackages = [...scene3dThreeAdapterBoundary.forbiddenCoreDependencies];
+  return tsSourceFiles(adapterSourceRoot).some((filePath) => {
+    const source = readFileSync(filePath, "utf8");
+    return importSpecifierPatterns.some((pattern) =>
+      [...source.matchAll(pattern)].some((match) =>
+        rendererPackages.some((packageName) => match[1] === packageName || match[1]?.startsWith(`${packageName}/`)),
+      ),
+    );
+  });
+}
+
+function tsSourceFiles(root: string): string[] {
+  const directory = resolve(root);
+  return readdirSync(directory).flatMap((entry) => {
+    const entryPath = resolve(directory, entry);
+    if (statSync(entryPath).isDirectory()) return tsSourceFiles(entryPath);
+    return entry.endsWith(".ts") ? [entryPath] : [];
+  });
+}
+
 export type Scene3DThreeAdapterBrowserRenderResult =
   | {
       ok: true;
@@ -435,12 +493,14 @@ export interface Scene3DThreeAdapterPromotionMatrixSummary {
   version: "0.1";
   stableViewMode: false;
   runtimeSupported: false;
-  frameMetrics: {
+  browserPaintEvidence: {
     width: number;
     height: number;
     nonTransparentPixels: number;
     changedPixelsFromBackground: number;
     targetLayerPixels: Record<string, number>;
+    paintMethod: "canvas2d-synthetic" | "webgl-renderer";
+    rendersThreeScene: boolean;
   };
   consoleDiagnostics: {
     errorCount: number;
@@ -454,10 +514,14 @@ export interface Scene3DThreeAdapterPromotionMatrixSummary {
   rendererVisualEvidence: {
     passed: boolean;
     ready: boolean;
+    frameProvenance: Scene3DRendererVisualEvidence["frameProvenance"];
     reportPath?: string;
   };
-  snapshotQueryEvidence: {
+  runtimeEvidence: {
     fixture: "tests/fixtures/specs/valid/scene3d-extension.map.json";
+    packageName: string;
+    declaresThreeDependency: boolean;
+    importsRendererSource: boolean;
     snapshot: {
       passed: boolean;
       format: "png" | "data-url";

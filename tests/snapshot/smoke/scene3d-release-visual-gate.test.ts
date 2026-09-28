@@ -80,7 +80,7 @@ describe("SceneView3D release visual gate", () => {
     );
   });
 
-  it("passes release mode when renderer visual evidence is available", () => {
+  it("passes release mode when a renderer frame is reported", () => {
     const report = evaluateScene3DReleaseVisualGate(scene3dExtension(), {
       ciTier: "release",
       loadedSourceIds: ["terrain-dem", "city-tiles", "station-model"],
@@ -88,6 +88,7 @@ describe("SceneView3D release visual gate", () => {
         passed: true,
         renderer: "scene3d-browser-runner",
         reportPath: "test-results/scene3d/visual-report.json",
+        frameProvenance: "renderer-frame",
       },
     });
 
@@ -102,10 +103,55 @@ describe("SceneView3D release visual gate", () => {
       passed: true,
       renderer: "scene3d-browser-runner",
       reportPath: "test-results/scene3d/visual-report.json",
+      frameProvenance: "renderer-frame",
     });
+    expect(report.diagnostics).toEqual([]);
   });
 
-  it("runs the browser visual runner and feeds real renderer evidence into the release gate", async () => {
+  it("says so in a warning when a synthetic frame is accepted as renderer visual evidence", () => {
+    const report = evaluateScene3DReleaseVisualGate(scene3dExtension(), {
+      ciTier: "release",
+      loadedSourceIds: ["terrain-dem", "city-tiles", "station-model"],
+      rendererVisualEvidence: {
+        passed: true,
+        renderer: "scene3d-browser-runner",
+        reportPath: "test-results/scene3d/visual-report.json",
+        frameProvenance: "synthetic-canvas2d",
+      },
+    });
+
+    expect(report.decision).toBe("passed");
+    expect(report.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "warning",
+        code: DiagnosticCodes.CapabilityUnsupported,
+        path: "/rendererVisualEvidence/frameProvenance",
+      }),
+    );
+    expect(report.diagnostics.some((diagnostic) => diagnostic.severity === "error")).toBe(false);
+  });
+
+  it("labels evidence without a captured frame as no-frame instead of a pass", () => {
+    const report = evaluateScene3DReleaseVisualGate(scene3dExtension(), {
+      ciTier: "release",
+      loadedSourceIds: ["terrain-dem", "city-tiles", "station-model"],
+      rendererVisualEvidence: {
+        passed: true,
+        renderer: "scene3d-browser-runner",
+        reportPath: "test-results/scene3d/visual-report.json",
+        frameProvenance: "no-frame",
+      },
+    });
+
+    expect(report.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "warning",
+        path: "/rendererVisualEvidence/frameProvenance",
+      }),
+    );
+  });
+
+  it("runs the browser visual runner and feeds its synthetic Canvas2D frame into the release gate", async () => {
     const runner = await runScene3DThreeAdapterBrowserRunner();
     const report = evaluateScene3DReleaseVisualGate(scene3dExtension(), {
       ciTier: "release",
@@ -118,6 +164,7 @@ describe("SceneView3D release visual gate", () => {
     expect(runner.capture.nonTransparentPixels).toBeGreaterThan(0);
     expect(runner.capture.changedPixelsFromBackground).toBeGreaterThan(0);
     expect(runner.rendererEvidence.passed).toBe(true);
+    expect(runner.rendererEvidence.frameProvenance).toBe("synthetic-canvas2d");
     expect(runner.snapshot.passed).toBe(true);
     expect(runner.snapshot.pendingSourceIds).toEqual([]);
     expect(runner.query.picks.map((pick) => pick.objectId)).toEqual([
@@ -128,8 +175,20 @@ describe("SceneView3D release visual gate", () => {
       expect.objectContaining({
         stableViewMode: false,
         runtimeSupported: false,
-        snapshotQueryEvidence: {
+        browserPaintEvidence: {
+          width: runner.capture.width,
+          height: runner.capture.height,
+          nonTransparentPixels: runner.capture.nonTransparentPixels,
+          changedPixelsFromBackground: runner.capture.changedPixelsFromBackground,
+          targetLayerPixels: runner.capture.targetLayerPixels,
+          paintMethod: "canvas2d-synthetic",
+          rendersThreeScene: false,
+        },
+        runtimeEvidence: {
           fixture: "tests/fixtures/specs/valid/scene3d-extension.map.json",
+          packageName: "@gis-engine/scene3d-three-adapter",
+          declaresThreeDependency: false,
+          importsRendererSource: false,
           snapshot: {
             passed: true,
             format: "data-url",
@@ -164,6 +223,13 @@ describe("SceneView3D release visual gate", () => {
     expect(report.accepted).toBe(true);
     expect(report.runtime.stableViewMode).toBe(false);
     expect(report.evidence.rendererVisual).toEqual(runner.rendererEvidence);
+    expect(report.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "warning",
+        code: DiagnosticCodes.CapabilityUnsupported,
+        path: "/rendererVisualEvidence/frameProvenance",
+      }),
+    );
   });
 });
 

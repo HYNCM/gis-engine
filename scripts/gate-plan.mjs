@@ -144,7 +144,7 @@ export function buildPlan(files) {
     )
   ) {
     addGate(gates, "pnpm test:adapter", "renderer adapter contract");
-    addGate(gates, "pnpm test:release:scene3d", "SceneView3D release smoke gate");
+    addGate(gates, "pnpm test:release:scene3d", "SceneView3D release evidence gate (synthetic Canvas2D frame)");
   }
 
   if (

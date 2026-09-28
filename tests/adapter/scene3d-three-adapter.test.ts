@@ -321,6 +321,7 @@ describe("SceneView3D Three.js adapter spike", () => {
       passed: true,
       renderer: "scene3d-three-adapter",
       reportPath: "test-results/scene3d-three-adapter/report.json",
+      frameProvenance: "synthetic-canvas2d",
       diagnostics: [],
     });
     expect(releaseGate.decision).toBe("passed");
@@ -612,6 +613,7 @@ describe("SceneView3D Three.js adapter spike", () => {
       present: true,
       passed: true,
       reportPath: "test-results/scene3d-three-adapter/report.json",
+      frameProvenance: "synthetic-canvas2d",
       diagnostics: { error: 0, warning: 0, info: 0 },
     });
     expect(summary.diagnosticCounts.error).toBe(0);
@@ -800,8 +802,86 @@ describe("SceneView3D Three.js adapter spike", () => {
     expect(readme).toContain("diagnostics");
     expect(readme).toContain("resource cleanup");
     expect(normalizedReadme).toContain('stable `view.mode: "scene3d"` remains blocked');
-    expect(normalizedReadme).toContain("Three.js and 3DTilesRendererJS are adapter-local renderer dependencies");
+    expect(normalizedReadme).toContain("declares no Three.js or 3DTilesRendererJS dependency");
     expect(readme).toContain("Non-goals");
+  });
+
+  it("keeps frame provenance on renderer visual evidence", () => {
+    const runtime = createScene3DThreeAdapterRuntime(scene3dExtension(), {
+      estimates: {
+        tilesetJsonBytes: { "city-tiles": 512_000 },
+        modelBytes: { "station-model": 1_048_576 },
+        workerCount: 1,
+      },
+    });
+    const capture = {
+      reportPath: "test-results/scene3d-three-adapter/report.json",
+      width: 800,
+      height: 600,
+      nonTransparentPixels: 240_000,
+      changedPixelsFromBackground: 120_000,
+      consoleErrors: [],
+    };
+
+    const synthetic = runtime.rendererEvidence({ capture, paintMethod: "canvas2d-synthetic" });
+    const frameless = runtime.rendererEvidence({});
+
+    expect(synthetic.frameProvenance).toBe("synthetic-canvas2d");
+    expect(synthetic.passed).toBe(true);
+    expect(frameless.frameProvenance).toBe("no-frame");
+  });
+
+  it("refuses a renderer-frame claim from an adapter that declares no stable runtime", () => {
+    const runtime = createScene3DThreeAdapterRuntime(scene3dExtension(), {
+      estimates: {
+        tilesetJsonBytes: { "city-tiles": 512_000 },
+        modelBytes: { "station-model": 1_048_576 },
+        workerCount: 1,
+      },
+    });
+    const claimed = createScene3DThreeAdapterRendererEvidence(runtime.spikeReport, {
+      capture: {
+        reportPath: "test-results/scene3d-three-adapter/report.json",
+        width: 800,
+        height: 600,
+        nonTransparentPixels: 240_000,
+        changedPixelsFromBackground: 120_000,
+        consoleErrors: [],
+      },
+      paintMethod: "webgl-renderer",
+    });
+    const releaseGate = evaluateScene3DReleaseVisualGate(scene3dExtension(), {
+      ciTier: "release",
+      loadedSourceIds: ["terrain-dem", "city-tiles", "station-model"],
+      rendererVisualEvidence: claimed,
+    });
+
+    expect(claimed.frameProvenance).toBe("renderer-frame");
+    expect(claimed.passed).toBe(false);
+    expect(claimed.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        code: "CAPABILITY.UNSUPPORTED",
+        path: "/rendererVisualEvidence/frameProvenance",
+      }),
+    );
+    expect(releaseGate.decision).toBe("failed");
+    expect(releaseGate.accepted).toBe(false);
+  });
+
+  it("does not let the adapter package claim a renderer dependency it has not declared", () => {
+    const manifest = readPackageJson("packages/scene3d-three-adapter/package.json");
+    const declared = {
+      ...manifest.dependencies,
+      ...manifest.devDependencies,
+      ...manifest.peerDependencies,
+    };
+
+    expect(Object.keys(declared).filter((name) => /three|3dtiles/i.test(name))).toEqual([]);
+
+    const readme = readFileSync(resolve("packages/scene3d-three-adapter/README.md"), "utf8");
+    expect(readme).toContain("declares no Three.js or 3DTilesRendererJS dependency");
+    expect(readme).toContain("synthetic Canvas2D");
   });
 });
 

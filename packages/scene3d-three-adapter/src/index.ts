@@ -13,6 +13,7 @@ import {
   type DiagnosticCounts,
   getScene3DV1Capabilities,
   queryScene3DMock,
+  type Scene3DFrameProvenance,
   type Scene3DMockSnapshotOptions,
   type Scene3DMockSnapshotResult,
   type Scene3DQueryOptions,
@@ -357,8 +358,12 @@ export interface Scene3DThreeAdapterVisualCapture {
   consoleErrors?: string[];
 }
 
+export type Scene3DThreeAdapterPaintMethod = "canvas2d-synthetic" | "webgl-renderer";
+
 export interface Scene3DThreeAdapterRendererEvidenceOptions {
   capture?: Scene3DThreeAdapterVisualCapture;
+  /** Defaults to the synthetic paint so a renderer-frame claim must be made deliberately. */
+  paintMethod?: Scene3DThreeAdapterPaintMethod;
   diagnostics?: Diagnostic[];
 }
 
@@ -406,6 +411,7 @@ export interface Scene3DThreeAdapterPromotionEvidenceSummary {
       present: boolean;
       passed: boolean;
       reportPath?: string;
+      frameProvenance?: Scene3DFrameProvenance;
       diagnostics: DiagnosticCounts;
     };
   };
@@ -662,6 +668,8 @@ export function createScene3DThreeAdapterRendererEvidence(
 ): Scene3DRendererVisualEvidence {
   const diagnostics = [...spikeReport.resourceReport.diagnostics, ...(options.diagnostics ?? [])];
   const capture = options.capture;
+  const paintMethod = options.paintMethod ?? "canvas2d-synthetic";
+  const frameProvenance = frameProvenanceFor(capture, paintMethod);
 
   if (!capture) {
     diagnostics.push(missingRendererCaptureDiagnostic());
@@ -669,10 +677,15 @@ export function createScene3DThreeAdapterRendererEvidence(
     diagnostics.push(...validateRendererCapture(capture));
   }
 
+  if (frameProvenance === "renderer-frame" && !spikeReport.runtimeSupported) {
+    diagnostics.push(unsupportedRendererFrameClaimDiagnostic());
+  }
+
   return {
     passed: spikeReport.resourceReport.valid && diagnostics.every((diagnostic) => diagnostic.severity !== "error"),
     renderer: "scene3d-three-adapter",
     ...(capture ? { reportPath: capture.reportPath } : {}),
+    frameProvenance,
     diagnostics,
   };
 }
@@ -728,6 +741,7 @@ export function createScene3DThreeAdapterPromotionEvidenceSummary(
     present: options.rendererVisualEvidence !== undefined,
     passed: options.rendererVisualEvidence?.passed ?? false,
     ...(options.rendererVisualEvidence?.reportPath ? { reportPath: options.rendererVisualEvidence.reportPath } : {}),
+    ...(options.rendererVisualEvidence ? { frameProvenance: options.rendererVisualEvidence.frameProvenance } : {}),
     diagnostics: countDiagnostics(rendererVisualDiagnostics),
   };
 
@@ -1116,6 +1130,31 @@ function isPackageOrSubpath(importSpecifier: string, packageName: string): boole
 
 function jsonPointerSegment(segment: string): string {
   return segment.replace(/~/g, "~0").replace(/\//g, "~1");
+}
+
+function frameProvenanceFor(
+  capture: Scene3DThreeAdapterVisualCapture | undefined,
+  paintMethod: Scene3DThreeAdapterPaintMethod,
+): Scene3DFrameProvenance {
+  if (!capture) return "no-frame";
+  return paintMethod === "webgl-renderer" ? "renderer-frame" : "synthetic-canvas2d";
+}
+
+function unsupportedRendererFrameClaimDiagnostic(): Diagnostic {
+  return {
+    severity: "error",
+    code: DiagnosticCodes.CapabilityUnsupported,
+    message:
+      "The Three.js SceneView3D adapter reports runtimeSupported=false, so it cannot report a renderer-frame capture.",
+    path: "/rendererVisualEvidence/frameProvenance",
+    relatedResources: [{ kind: "adapter", id: scene3dThreeAdapterBoundary.packageName }],
+    fix: {
+      kind: "manual",
+      confidence: "high",
+      message:
+        "Report the capture as a synthetic Canvas2D frame until the adapter ships a real renderer runtime and the stable renderer contract is accepted.",
+    },
+  };
 }
 
 function missingRendererCaptureDiagnostic(): Diagnostic {
