@@ -147,8 +147,21 @@ jobs:
           git diff --check
           pnpm test:agent-framework
           node scripts/doc-generator.mjs links
-          node scripts/sla-checker.mjs --period "$(date -u +%Y-%m-%d)" --dry-run
-          node scripts/handoff-ledger.mjs --check --dry-run
+
+      - name: Check specialist evidence health
+        run: |
+          PERIOD="$(date -u +%Y-%m-%d)"
+          SLA_STATUS=0
+          node scripts/sla-checker.mjs --period "${PERIOD}" --dry-run || SLA_STATUS=$?
+          HOC_STATUS=0
+          node scripts/handoff-ledger.mjs --check --dry-run || HOC_STATUS=1
+          STATUS=$(( SLA_STATUS > HOC_STATUS ? SLA_STATUS : HOC_STATUS ))
+          # A stale-evidence verdict must not block committing the artifacts that refresh it,
+          # so the status is recorded here and enforced by the final step.
+          echo "EVIDENCE_HEALTH_STATUS=${STATUS}" >> "$GITHUB_ENV"
+          if [ "${STATUS}" -ne 0 ]; then
+            echo "::warning::Specialist evidence health reported violations (exit ${STATUS})."
+          fi
 
       - name: Commit daily artifacts
         run: |
@@ -177,3 +190,11 @@ jobs:
 
           git commit -m "docs: daily agent artifacts"
           node scripts/git-push-retry.mjs --remote origin --branch "${GITHUB_REF_NAME}" --max-attempts 3
+
+      - name: Fail on recorded evidence health violations
+        run: |
+          STATUS="${EVIDENCE_HEALTH_STATUS:-0}"
+          if [ "${STATUS}" != "0" ]; then
+            echo "::error::Specialist evidence has SLA or handoff violations (exit ${STATUS}). Daily artifacts were committed so the next cadence can refresh them."
+            exit "${STATUS}"
+          fi

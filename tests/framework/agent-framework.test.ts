@@ -15,6 +15,12 @@ import { buildGatePlan, buildPlan, executePlan, renderMarkdown } from "../../scr
 import { buildHandoffLedger, classifyFlow, findLatestReport } from "../../scripts/handoff-ledger.mjs";
 import { collectSlaViolations } from "../../scripts/sla-checker.mjs";
 
+const CADENCE_WORKFLOWS = [
+  ".github/workflows/agent-daily.yml",
+  ".github/workflows/agent-weekly.yml",
+  ".github/workflows/agent-monthly.yml",
+];
+
 describe("agent coordination framework", () => {
   it("separates docs-only changes from framework changes", () => {
     const docsOnly = classifyChangedFiles(["docs/README.md"]);
@@ -216,13 +222,7 @@ exit 0
   });
 
   it("serializes cadence artifact writers and fails closed on specialist evidence health", () => {
-    const workflowPaths = [
-      ".github/workflows/agent-daily.yml",
-      ".github/workflows/agent-weekly.yml",
-      ".github/workflows/agent-monthly.yml",
-    ];
-
-    for (const workflowPath of workflowPaths) {
+    for (const workflowPath of CADENCE_WORKFLOWS) {
       const workflow = readFileSync(workflowPath, "utf8");
       const evidenceGateIndex = workflow.indexOf("node scripts/sla-checker.mjs");
       const handoffGateIndex = workflow.indexOf("node scripts/handoff-ledger.mjs --check --dry-run");
@@ -237,6 +237,65 @@ exit 0
       expect(workflow, workflowPath).not.toMatch(/git push(?:\s|$)/);
       expect(workflow, workflowPath).not.toContain("--force");
     }
+  });
+
+  it.each([
+    { checkerExit: 2, recorded: "2" },
+    { checkerExit: 0, recorded: "0" },
+  ])("records evidence health as EVIDENCE_HEALTH_STATUS=$recorded without aborting the commit", ({
+    checkerExit,
+    recorded,
+  }) => {
+    const root = mkdtempSync(join(tmpdir(), `gis-engine-evidence-health-${checkerExit}-`));
+    const binDir = join(root, "bin");
+    const githubEnv = join(root, "github-env.txt");
+    mkdirSync(binDir, { recursive: true });
+    writeFileSync(join(binDir, "node"), `#!/bin/sh\nexit ${checkerExit}\n`, "utf8");
+    chmodSync(join(binDir, "node"), 0o755);
+
+    for (const workflowPath of CADENCE_WORKFLOWS) {
+      const workflow = readFileSync(workflowPath, "utf8");
+      const script = extractWorkflowRunStep(workflow, "Check specialist evidence health");
+
+      const result = spawnSync("/bin/bash", ["-c", script], {
+        encoding: "utf8",
+        env: { ...process.env, PATH: `${binDir}:${process.env.PATH}`, GITHUB_ENV: githubEnv },
+      });
+
+      expect(result.status, workflowPath).toBe(0);
+      expect(result.stderr, workflowPath).toBe("");
+      expect(readFileSync(githubEnv, "utf8"), workflowPath).toContain(`EVIDENCE_HEALTH_STATUS=${recorded}`);
+    }
+  });
+
+  it("enforces recorded evidence health violations only after the recovery commit", () => {
+    for (const workflowPath of CADENCE_WORKFLOWS) {
+      const workflow = readFileSync(workflowPath, "utf8");
+      const commitIndex = workflow.indexOf("git commit");
+      const enforceIndex = workflow.indexOf("Fail on recorded evidence health violations");
+
+      expect(enforceIndex, workflowPath).toBeGreaterThan(commitIndex);
+
+      const script = extractWorkflowRunStep(workflow, "Fail on recorded evidence health violations");
+      const violated = spawnSync("/bin/bash", ["-c", script], {
+        env: { ...process.env, EVIDENCE_HEALTH_STATUS: "2" },
+      });
+      expect(violated.status, workflowPath).toBe(2);
+
+      const cleanEnv = { ...process.env } as Record<string, string | undefined>;
+      delete cleanEnv.EVIDENCE_HEALTH_STATUS;
+      expect(spawnSync("/bin/bash", ["-c", script], { env: cleanEnv }).status, workflowPath).toBe(0);
+    }
+  });
+
+  it("keeps specialist health checks out of the daily artifact gate that must abort", () => {
+    const workflow = readFileSync(".github/workflows/agent-daily.yml", "utf8");
+    const gateScript = extractWorkflowRunStep(workflow, "Gate generated daily artifacts");
+
+    expect(gateScript).toContain("git diff --check");
+    expect(gateScript).toContain("pnpm test:agent-framework");
+    expect(gateScript).not.toContain("sla-checker.mjs");
+    expect(gateScript).not.toContain("handoff-ledger.mjs");
   });
 
   it("fails closed on malformed task ids and keeps valid ids in sync", () => {
