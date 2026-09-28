@@ -190,46 +190,117 @@ export function buildPlan(files) {
 function serializePlan(files, gates) {
   return {
     generated_at: new Date().toISOString(),
+    decision: "planned",
     changed_files: files,
     gates: [...gates.entries()].map(([command, reasons]) => ({
       command,
       reasons: [...reasons],
+      status: "planned",
+      exit_code: null,
+      duration_ms: null,
+      diagnostics: [],
     })),
   };
 }
 
-function renderMarkdown(plan) {
-  const lines = ["# Path-aware Gate Plan", "", `Generated: ${plan.generated_at}`, "", "## Changed Files", ""];
+export function buildGatePlan(files) {
+  return serializePlan(files, buildPlan(files));
+}
+
+function defaultRunCommand(command) {
+  // stdio is inherited so CI logs keep showing the gate output; only the outcome
+  // (status, exit code, duration, diagnostic) is captured into the evidence.
+  console.log(`\n$ ${command}`);
+  execSync(command, { stdio: "inherit" });
+}
+
+export function executePlan(plan, { runCommand = defaultRunCommand } = {}) {
+  let failed = false;
+
+  for (const [index, gate] of plan.gates.entries()) {
+    if (failed) {
+      gate.status = "not-run";
+      continue;
+    }
+
+    const startedAt = Date.now();
+    try {
+      runCommand(gate.command);
+      gate.status = "passed";
+      gate.exit_code = 0;
+    } catch (error) {
+      failed = true;
+      gate.status = "failed";
+      gate.exit_code = Number.isInteger(error?.status) ? error.status : 1;
+      gate.diagnostics = [
+        {
+          severity: "error",
+          code: "GATE.COMMAND_FAILED",
+          path: `/gates/${index}/command`,
+          message: `${gate.command} exited with code ${gate.exit_code}.`,
+        },
+      ];
+    } finally {
+      gate.duration_ms = Date.now() - startedAt;
+    }
+  }
+
+  plan.decision = failed ? "block" : "pass";
+  return plan;
+}
+
+export function renderMarkdown(plan) {
+  const executed = plan.gates.some((gate) => gate.status !== "planned");
+  const lines = [
+    "# Path-aware Gate Plan",
+    "",
+    `Generated: ${plan.generated_at}`,
+    "",
+    `gate_result: ${plan.decision}`,
+    "",
+    "## Changed Files",
+    "",
+  ];
   if (plan.changed_files.length === 0) {
     lines.push("- (none detected)");
   } else {
     for (const file of plan.changed_files) lines.push(`- \`${file}\``);
   }
-  lines.push("", "## Gates", "", "| Command | Reasons |", "| --- | --- |");
-  for (const gate of plan.gates) {
-    lines.push(`| \`${gate.command}\` | ${gate.reasons.join("; ")} |`);
+
+  if (!executed) {
+    lines.push(
+      "",
+      "> These gates were selected from the changed paths but have not been executed.",
+      "> This is a plan, not gate evidence.",
+    );
   }
+
+  lines.push("", "## Gates", "", "| Command | Status | Exit | Duration | Reasons |", "| --- | --- | --- | --- | --- |");
+  for (const gate of plan.gates) {
+    lines.push(
+      `| \`${gate.command}\` | ${gate.status} | ${gate.exit_code ?? "—"} | ${
+        gate.duration_ms == null ? "—" : `${gate.duration_ms}ms`
+      } | ${gate.reasons.join("; ")} |`,
+    );
+  }
+
+  const failedGates = plan.gates.filter((gate) => gate.diagnostics.length > 0);
+  if (failedGates.length > 0) {
+    lines.push("", "## Diagnostics", "");
+    for (const gate of failedGates) {
+      for (const diagnostic of gate.diagnostics) {
+        lines.push(`- \`${diagnostic.code}\` at \`${diagnostic.path}\`: ${diagnostic.message}`);
+      }
+    }
+  }
+
   return lines.join("\n");
 }
 
-function runGates(plan) {
-  let failed = false;
-  for (const gate of plan.gates) {
-    console.log(`\n$ ${gate.command}`);
-    try {
-      execSync(gate.command, { stdio: "inherit" });
-    } catch {
-      failed = true;
-      break;
-    }
-  }
-  return failed ? 1 : 0;
-}
-
 function main() {
-  const files = gitChangedFiles();
-  const gates = buildPlan(files);
-  const plan = serializePlan(files, gates);
+  const plan = buildGatePlan(gitChangedFiles());
+
+  if (options.run) executePlan(plan);
 
   if (options.summary) {
     writeFileSync(options.summary, `${renderMarkdown(plan)}\n`, "utf-8");
@@ -242,7 +313,7 @@ function main() {
   }
 
   if (options.run) {
-    process.exit(runGates(plan));
+    process.exit(plan.decision === "block" ? 1 : 0);
   }
 }
 

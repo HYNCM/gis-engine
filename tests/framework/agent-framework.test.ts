@@ -11,7 +11,7 @@ import {
 } from "../../scripts/agent-framework.mjs";
 import { AGENT_REGISTRY, listAgentNames } from "../../scripts/agent-registry.mjs";
 import { generateReport } from "../../scripts/agent-runner.mjs";
-import { buildPlan } from "../../scripts/gate-plan.mjs";
+import { buildGatePlan, buildPlan, executePlan, renderMarkdown } from "../../scripts/gate-plan.mjs";
 import { buildHandoffLedger, classifyFlow, findLatestReport } from "../../scripts/handoff-ledger.mjs";
 import { collectSlaViolations } from "../../scripts/sla-checker.mjs";
 
@@ -49,6 +49,63 @@ describe("agent coordination framework", () => {
     const plan = [...buildPlan(["packages/engine/src/evidence/record.ts"]).keys()];
 
     expect(plan).toContain("pnpm test:evidence");
+  });
+
+  it("records which gates ran, which failed, and which never ran", () => {
+    const plan = buildGatePlan([".github/workflows/pr-quality.yml"]);
+    const attempted: string[] = [];
+    executePlan(plan, {
+      runCommand: (command: string) => {
+        attempted.push(command);
+        if (attempted.length === 2) throw Object.assign(new Error("boom"), { status: 3 });
+      },
+    });
+
+    expect(plan.decision).toBe("block");
+    expect(plan.gates[0]).toMatchObject({ status: "passed", exit_code: 0, diagnostics: [] });
+    expect(plan.gates[1]).toMatchObject({ status: "failed", exit_code: 3 });
+    expect(plan.gates[1].diagnostics).toEqual([
+      expect.objectContaining({
+        severity: "error",
+        code: "GATE.COMMAND_FAILED",
+        path: "/gates/1/command",
+      }),
+    ]);
+    expect(attempted).toHaveLength(2);
+    for (const gate of plan.gates.slice(2)) expect(gate.status).toBe("not-run");
+
+    const markdown = renderMarkdown(plan);
+    expect(markdown).toContain("gate_result: block");
+    expect(markdown).toContain("| Command | Status | Exit | Duration | Reasons |");
+    expect(markdown).toContain("failed");
+    expect(markdown).toContain("not-run");
+  });
+
+  it("records a pass decision when every gate succeeds", () => {
+    const plan = buildGatePlan(["docs/README.md"]);
+    executePlan(plan, { runCommand: () => {} });
+
+    expect(plan.decision).toBe("pass");
+    expect(plan.gates.every((gate: { status: string }) => gate.status === "passed")).toBe(true);
+    expect(renderMarkdown(plan)).toContain("gate_result: pass");
+  });
+
+  it("labels an unexecuted plan as a plan instead of gate evidence", () => {
+    const plan = buildGatePlan(["docs/README.md"]);
+
+    expect(plan.decision).toBe("planned");
+    expect(renderMarkdown(plan)).toContain("gate_result: planned");
+    expect(renderMarkdown(plan)).toContain("not gate evidence");
+  });
+
+  it("writes the summary only after gates have been executed", () => {
+    const script = readFileSync("scripts/gate-plan.mjs", "utf8");
+    const executeIndex = script.indexOf("if (options.run) executePlan(plan);");
+    const summaryIndex = script.indexOf("writeFileSync(options.summary");
+
+    expect(executeIndex).toBeGreaterThan(-1);
+    expect(summaryIndex).toBeGreaterThan(executeIndex);
+    expect(script).toContain('plan.decision === "block" ? 1 : 0');
   });
 
   it("installs Playwright before recovery gates run snapshot smoke", () => {
