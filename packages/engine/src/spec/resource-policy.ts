@@ -115,16 +115,37 @@ function isAllowedScheme(scheme: string, policy: ResourcePolicy): scheme is Reso
 }
 
 function validatePathPrefix(
-  pathname: string,
+  resourcePath: string,
   originalUrl: string,
   diagnosticPath: string,
   policy: ResourcePolicy,
 ): Diagnostic[] {
   if (!policy.allowedPathPrefixes || policy.allowedPathPrefixes.length === 0) return [];
 
-  if (policy.allowedPathPrefixes.some((prefix) => pathname.startsWith(prefix))) return [];
+  const pathname = normalizeResourcePath(resourcePath);
+  if (policy.allowedPathPrefixes.some((prefix) => pathInDirectory(pathname, prefix))) return [];
 
   return [blocked(originalUrl, diagnosticPath, `Resource path "${pathname}" is not allowed by policy.`)];
+}
+
+const relativePathBase = "http://resource-policy.invalid/";
+
+// Prefixes name directories, not string prefixes: "/tiles" covers "/tiles" and "/tiles/a.json"
+// but must not cover "/tiles-evil". Dot segments are resolved before the comparison so a path
+// cannot claim one directory while resolving into another.
+function pathInDirectory(pathname: string, prefix: string): boolean {
+  const directory = normalizeResourcePath(prefix).replace(/\/+$/, "");
+  if (directory.length === 0) return true;
+  return pathname === directory || pathname.startsWith(`${directory}/`);
+}
+
+function normalizeResourcePath(value: string): string {
+  try {
+    // Stripping leading slashes first keeps "//x" a path rather than a network-path reference.
+    return new URL(`/${value.replace(/^\/+/, "")}`, relativePathBase).pathname;
+  } catch {
+    return `/${value.replace(/^\/+/, "")}`;
+  }
 }
 
 function blocked(urlString: string, path: string, message: string): Diagnostic {

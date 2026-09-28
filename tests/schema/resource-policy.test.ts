@@ -196,6 +196,78 @@ describe("ResourcePolicy validation", () => {
   });
 });
 
+describe("ResourcePolicy path prefix allowlisting", () => {
+  const blockedFor = "/sources/points/data";
+
+  function policyWithPrefixes(allowedPathPrefixes: string[]) {
+    return {
+      ...defaultResourcePolicy,
+      allowedHosts: [...defaultResourcePolicy.allowedHosts, "tiles.example.com"],
+      allowedPathPrefixes,
+    };
+  }
+
+  const safePrefix = policyWithPrefixes(["/safe"]);
+
+  function check(url: string, policy = safePrefix) {
+    return validateResourceUrl(url, blockedFor, policy);
+  }
+
+  it("allows the prefix itself and its directory children but not an adjacent prefix", () => {
+    expect(check("https://tiles.example.com/safe")).toEqual([]);
+    expect(check("https://tiles.example.com/safe/points.geojson")).toEqual([]);
+
+    expect(check("https://tiles.example.com/safe-evil/payload")).toContainEqual(
+      expect.objectContaining({
+        code: DiagnosticCodes.SecurityUrlBlocked,
+        path: blockedFor,
+      }),
+    );
+  });
+
+  it("keeps an encoded separator out of the allowed directory", () => {
+    expect(check("https://tiles.example.com/safe%2fevil/payload")).toContainEqual(
+      expect.objectContaining({
+        code: DiagnosticCodes.SecurityUrlBlocked,
+        path: blockedFor,
+      }),
+    );
+  });
+
+  it("resolves dot segments before comparing the prefix", () => {
+    expect(check("https://tiles.example.com/other/../safe/points.geojson")).toEqual([]);
+
+    expect(check("https://tiles.example.com/safe/../evil/points.geojson")).toContainEqual(
+      expect.objectContaining({
+        code: DiagnosticCodes.SecurityUrlBlocked,
+        path: blockedFor,
+      }),
+    );
+  });
+
+  it("applies the same directory rule to relative resources", () => {
+    expect(check("./safe/points.geojson")).toEqual([]);
+    expect(check("safe/points.geojson")).toEqual([]);
+
+    expect(check("./safe-evil/points.geojson")).toContainEqual(
+      expect.objectContaining({
+        code: DiagnosticCodes.SecurityUrlBlocked,
+        path: blockedFor,
+      }),
+    );
+  });
+
+  it("reads a configured prefix as a directory even when it is slash-heavy", () => {
+    expect(check("https://tiles.example.com/evil/points.geojson", policyWithPrefixes(["//safe"]))).toContainEqual(
+      expect.objectContaining({
+        code: DiagnosticCodes.SecurityUrlBlocked,
+        path: blockedFor,
+      }),
+    );
+    expect(check("https://tiles.example.com/safe/points.geojson", policyWithPrefixes(["/safe/"]))).toEqual([]);
+  });
+});
+
 describe("view.bounds semantic validation", () => {
   it("accepts valid bounds where west <= east and south <= north", () => {
     const report = validateSpec(withBounds([100, 20, 120, 40]));
