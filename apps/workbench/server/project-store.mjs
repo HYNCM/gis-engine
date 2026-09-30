@@ -20,7 +20,7 @@ const PROJECT_LOCK_DIRECTORY = join(".gis-engine", "project.lock");
 const PROJECT_LOCK_RETRY_MS = 10;
 const PROJECT_LOCK_RETRY_LIMIT = 500;
 const PROJECT_LOCK_STALE_MS = 5 * 60 * 1000;
-const activeProjectLocks = new Set();
+const projectLockTails = new Map();
 
 export class WorkbenchProjectStoreError extends Error {
   constructor(message, diagnostics) {
@@ -91,12 +91,11 @@ export async function createWorkbenchProject(input, options = {}) {
 }
 
 export async function openWorkbenchProject(projectRoot) {
-  const root = await resolveExistingProjectRoot(projectRoot);
-  if (activeProjectLocks.has(root)) {
-    await recoverPendingCommit(root);
-  } else {
-    await withProjectLock(root, () => recoverPendingCommit(root));
-  }
+  return withProjectLock(projectRoot, (root) => recoverAndReadProject(root));
+}
+
+async function recoverAndReadProject(root) {
+  await recoverPendingCommit(root);
   const [project, spec, history, exportReceipts] = await Promise.all([
     readJson(join(root, PROJECT_FILE)),
     readJson(join(root, MAP_SPEC_FILE)),
@@ -132,8 +131,8 @@ export async function openWorkbenchProject(projectRoot) {
 }
 
 export async function applyWorkbenchProject(projectRoot, input, options = {}) {
-  return withProjectLock(projectRoot, async () => {
-    const state = await openWorkbenchProject(projectRoot);
+  return withProjectLock(projectRoot, async (root) => {
+    const state = await recoverAndReadProject(root);
     return applyProjectTransaction(state, input, {
       now: options.now,
       kind: "apply",
@@ -143,8 +142,8 @@ export async function applyWorkbenchProject(projectRoot, input, options = {}) {
 }
 
 export async function restoreWorkbenchRevision(projectRoot, input, options = {}) {
-  return withProjectLock(projectRoot, async () => {
-    const state = await openWorkbenchProject(projectRoot);
+  return withProjectLock(projectRoot, async (root) => {
+    const state = await recoverAndReadProject(root);
     if (state.project.currentRevision !== input.baseRevision) {
       return revisionConflict(state.project.currentRevision, input.baseRevision);
     }
@@ -455,6 +454,18 @@ async function readExportReceipts(root) {
 
 async function withProjectLock(projectRoot, operation) {
   const root = await resolveExistingProjectRoot(projectRoot);
+  // In-process operations on the same root run strictly one at a time. The fs lock below only
+  // guards other processes; awaiting the local tail prevents a read from interrupting this
+  // process's own recovery/commit sequence.
+  const previous = projectLockTails.get(root) ?? Promise.resolve();
+  let releaseTail;
+  const tail = new Promise((resolveTail) => {
+    releaseTail = resolveTail;
+  });
+  const chain = previous.then(() => tail);
+  projectLockTails.set(root, chain);
+
+  await previous.catch(() => undefined);
   const lockPath = join(root, PROJECT_LOCK_DIRECTORY);
   await mkdir(dirname(lockPath), { recursive: true });
   let acquired = false;
@@ -478,6 +489,8 @@ async function withProjectLock(projectRoot, operation) {
     }
   }
   if (!acquired) {
+    releaseTail();
+    settleLockTail(root, chain);
     throw new WorkbenchProjectStoreError("The Workbench project is busy.", [
       diagnostic(
         WorkbenchDiagnosticCodes.ProjectBusy,
@@ -488,12 +501,16 @@ async function withProjectLock(projectRoot, operation) {
   }
 
   try {
-    activeProjectLocks.add(root);
-    return await operation();
+    return await operation(root);
   } finally {
-    activeProjectLocks.delete(root);
     await rm(lockPath, { recursive: true, force: true });
+    releaseTail();
+    settleLockTail(root, chain);
   }
+}
+
+function settleLockTail(root, chain) {
+  if (projectLockTails.get(root) === chain) projectLockTails.delete(root);
 }
 
 async function recoverPendingCommit(root) {

@@ -273,6 +273,67 @@ describe("Workbench file-backed project store", () => {
     expect((await openWorkbenchProject(root)).project.currentRevision).toBe("1");
   });
 
+  it("holds project reads until an in-flight multi-file commit finishes", async () => {
+    const root = await createTempRoot();
+    await createWorkbenchProject(
+      { root, id: "project-1", name: "Earthquake review", initialSpec: initialSpec() },
+      { now: () => createdAt },
+    );
+
+    let releaseRenameGate: (() => void) | undefined;
+    const renameGate = new Promise<void>((resolveGate) => {
+      releaseRenameGate = resolveGate;
+    });
+    let markFirstRenameStarted: (() => void) | undefined;
+    const firstRenameStarted = new Promise<void>((resolveStart) => {
+      markFirstRenameStarted = resolveStart;
+    });
+
+    const applyPromise = applyWorkbenchProject(
+      root,
+      {
+        baseRevision: "0",
+        planHash,
+        commands: [
+          {
+            id: "paint-red",
+            version: "0.1",
+            type: "setPaint",
+            layerId: "earthquakes",
+            paint: { "circle-color": "#dc2626" },
+          },
+        ],
+      },
+      {
+        commitOptions: {
+          async afterRename(index) {
+            if (index === 0) {
+              markFirstRenameStarted?.();
+              await renameGate;
+            }
+          },
+        },
+      },
+    );
+
+    await firstRenameStarted;
+    let readSettled = false;
+    const readPromise = openWorkbenchProject(root).then((state) => {
+      readSettled = true;
+      return state;
+    });
+    // The commit is paused mid-rename; a correct read must stay blocked on the lock.
+    await new Promise((resolveTick) => setTimeout(resolveTick, 30));
+    expect(readSettled).toBe(false);
+
+    releaseRenameGate?.();
+    const applied = await applyPromise;
+    expect(applied.ok).toBe(true);
+    const read = await readPromise;
+    expect(read.project.currentRevision).toBe("1");
+    expect(read.spec.layers[0]?.paint).toEqual({ "circle-color": "#dc2626" });
+  });
+
   it("recovers an interrupted multi-file commit from its journal", async () => {
     const root = await createTempRoot();
     await createWorkbenchProject(
