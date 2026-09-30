@@ -124,7 +124,7 @@ Recompute a generated package without a source checkout, npm install, or network
 node evidence-verifier.mjs evidence.json --root . --json
 ```
 
-See [EvidenceRecord recompute](../../engineering/evidence-record.md) for assertion
+See `docs/engineering/evidence-record.md` in the repository for assertion
 semantics and the threat model. `createGenerationEvidenceBundle()` below stays the
 AI-tool view of the same record and carries its `recordId`.
 
