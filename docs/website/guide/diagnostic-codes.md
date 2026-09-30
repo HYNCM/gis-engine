@@ -185,6 +185,14 @@ These codes are returned by `validateSpec()` when the MapSpec fails JSON Schema 
 | **Fix** | Ensure `load()` has been called successfully before performing operations on the adapter. |
 | **Example** | Calling `applyPatch()` on a MapLibre adapter that hasn't loaded a spec yet. |
 
+### RENDER.RECOVER_FAILED
+
+| Field | Detail |
+|---|---|
+| **Code** | `RENDER.RECOVER_FAILED` |
+| **Trigger** | A patch failed inside the renderer adapter and the runtime's follow-up `load()` of the last committed MapSpec also failed, so the renderer may still show uncommitted state. |
+| **Fix** | Retry the command once the adapter recovers, or recreate the runtime. The command result keeps `RENDER.ADAPTER_ERROR` alongside this code, so the original failure stays visible. |
+
 ### RENDER.DESTROYED
 
 | Field | Detail |
@@ -400,6 +408,7 @@ These codes are returned by `validateSpec()` when the MapSpec fails JSON Schema 
 | `EXPR.PROPERTY_UNKNOWN` | EXPR | warning | Feature property not in known set |
 | `VIEW.OUT_OF_DATA_BOUNDS` | VIEW | error | View extent misses all data _(reserved)_ |
 | `RENDER.ADAPTER_ERROR` | RENDER | error | Adapter operation failed |
+| `RENDER.RECOVER_FAILED` | RENDER | error | Reload of the last committed MapSpec failed |
 | `RENDER.DESTROYED` | RENDER | info | Operation on destroyed adapter |
 | `SNAPSHOT.BLANK_CANVAS` | SNAPSHOT | error | Snapshot with no visible layers |
 | `SNAPSHOT.RESOURCE_PENDING` | SNAPSHOT | error/warning | Snapshot before resources loaded |
