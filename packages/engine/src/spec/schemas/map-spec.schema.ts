@@ -7,6 +7,9 @@ import { GeoTiffSourceSchemaForMapSpec } from "../cloud-native/geotiff-source.js
 const JsonValueSchema = Type.Unknown();
 export const LayerFilterSchema = Type.Unsafe<Expression>({ type: "array", minItems: 1 });
 
+/** Canonical revision: a non-negative integer string; the safe-integer bound is a semantic rule. */
+export const SafeRevisionPattern = "^(0|[1-9][0-9]*)$";
+
 const DimensionSchema = Type.Union([Type.Literal("2d"), Type.Literal("2_5d"), Type.Literal("3d")]);
 const RendererSchema = Type.Union([Type.Literal("maplibre"), Type.Literal("webgl2-lite"), Type.Literal("scene3d")]);
 const SnapshotFormatSchema = Type.Union([Type.Literal("png"), Type.Literal("jpeg"), Type.Literal("data-url")]);
@@ -160,7 +163,7 @@ export const MapSpecSchema = Type.Object(
   {
     version: Type.Literal("0.1"),
     id: Type.Optional(Type.String()),
-    revision: Type.Optional(Type.String()),
+    revision: Type.Optional(Type.String({ pattern: SafeRevisionPattern })),
     capabilities: Type.Optional(CapabilityRequestSchema),
     view: ViewSpecSchema,
     sources: Type.Record(Type.String(), SourceSpecSchema),

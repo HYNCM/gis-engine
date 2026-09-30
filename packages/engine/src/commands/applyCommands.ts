@@ -51,6 +51,8 @@ export function applyCommands(
     const failed = failedResult(command, sequenceId, traceId, diagnostics);
     appendResult(results, traces, command, failed);
     if (transaction === "atomic") {
+      // Atomic rollback must hand back the untouched input spec, not the partially
+      // advanced candidate, so replay and conflict detection keep their meaning.
       return finish(spec, results, { transaction, dryRun, traceId, committed: false, rolledBack: true }, traces);
     }
     return null;
@@ -204,7 +206,13 @@ function commandTraceTimestamp(createdAt: string | undefined, sequenceId: number
 
 function withNextRevision(spec: MapSpec): MapSpec {
   const current = Number.parseInt(spec.revision ?? "0", 10);
-  const next = Number.isSafeInteger(current) && current >= 0 ? String(current + 1) : "1";
+  // A non-canonical or exhausted revision must fail closed: emitting "1" or an unsafe
+  // integer would silently rewrite the replay/conflict chain. The post-command
+  // validateSpec pass turns these sentinels into structured diagnostics.
+  const next =
+    Number.isSafeInteger(current) && current >= 0 && current < Number.MAX_SAFE_INTEGER
+      ? String(current + 1)
+      : `invalid-revision(${spec.revision ?? "missing"})`;
   return { ...spec, revision: next };
 }
 

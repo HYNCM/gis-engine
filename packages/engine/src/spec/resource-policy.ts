@@ -24,6 +24,7 @@ export function validateResourcePolicy(spec: MapSpec, policy: ResourcePolicy = d
   const diagnostics: Diagnostic[] = [];
 
   for (const [sourceId, source] of Object.entries(spec.sources)) {
+    if (source === null || typeof source !== "object") continue;
     const sourcePath = `/sources/${escapePathSegment(sourceId)}`;
 
     if (source.type === "geojson" && typeof source.data === "string") {

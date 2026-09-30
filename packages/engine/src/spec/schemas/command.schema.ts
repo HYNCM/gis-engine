@@ -4,6 +4,7 @@ import {
   InteractionSpecSchema,
   LayerFilterSchema,
   LayerSpecSchema,
+  SafeRevisionPattern,
   SourceSpecSchema,
 } from "./map-spec.schema.js";
 import { SceneCameraSchema, SceneLayerSchema, SceneSourceSchema } from "./sceneview3d.schema.js";
@@ -12,7 +13,7 @@ const CommandBaseSchema = Type.Object(
   {
     id: Type.String({ minLength: 1 }),
     version: Type.Literal("0.1"),
-    baseRevision: Type.Optional(Type.String()),
+    baseRevision: Type.Optional(Type.String({ pattern: SafeRevisionPattern })),
     author: Type.Optional(
       Type.Object(
         {

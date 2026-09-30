@@ -48,6 +48,10 @@ describe("MapSpec fixtures", () => {
     spec.layers[1] = {
       ...layerAt(spec, 1),
       type: "fill-extrusion-lite",
+      paint: {
+        "fill-extrusion-color": "#2563eb",
+        "fill-extrusion-height": 60,
+      },
     };
 
     const missingGate = validateSpec(spec);

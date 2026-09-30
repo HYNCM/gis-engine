@@ -6,7 +6,7 @@ import {
   Scene3DStableRuntimeBlockerCodes,
 } from "../diagnostics/codes.js";
 import type { Diagnostic, MapSpec, SceneResourcePolicy, SceneView3DExtension, ValidationReport } from "../types.js";
-import { validateExpression, validateFilterExpression } from "./expression-validator.js";
+import { validateFilterExpression } from "./expression-validator.js";
 import { escapePathSegment } from "./patch/path.js";
 import {
   defaultResourcePolicy,
@@ -16,6 +16,7 @@ import {
 } from "./resource-policy.js";
 import { DEFAULT_SCENE3D_PROMOTION_GATE, type Scene3DPromotionGate } from "./scene3d-promotion-gate.js";
 import { MapSpecSchema, SceneView3DExtensionSchema } from "./schemas/index.js";
+import { validateStyleProperties } from "./style-spec.js";
 
 const ajv = new Ajv({ allErrors: true, strict: true });
 const validateMapSpecSchema = ajv.compile(MapSpecSchema);
@@ -33,6 +34,14 @@ export function validateSpec(
 
   if (isMapSpecLike(spec)) {
     diagnostics.push(...validateSemanticRules(spec, options?.scene3dPromotionGate));
+    if (typeof spec.revision === "string" && !Number.isSafeInteger(Number.parseInt(spec.revision, 10))) {
+      diagnostics.push({
+        severity: "error",
+        code: DiagnosticCodes.SpecInvalidType,
+        message: `Revision "${spec.revision}" exceeds the safe integer ceiling (Number.MAX_SAFE_INTEGER).`,
+        path: "/revision",
+      });
+    }
     diagnostics.push(...validateResourcePolicy(spec, options?.resourcePolicy));
     diagnostics.push(...validateSceneView3DExtension(spec));
   }
@@ -41,10 +50,10 @@ export function validateSpec(
     valid: !diagnostics.some((diagnostic) => diagnostic.severity === "error"),
     diagnostics,
     stats: {
-      sourceCount: isMapSpecLike(spec) ? Object.keys(spec.sources).length : 0,
+      sourceCount: isMapSpecLike(spec) && isPlainObject(spec.sources) ? Object.keys(spec.sources).length : 0,
       layerCount: isMapSpecLike(spec) ? spec.layers.length : 0,
       visibleLayerCount: isMapSpecLike(spec)
-        ? spec.layers.filter((layer) => layer.layout?.visibility !== "none").length
+        ? spec.layers.filter((layer) => isPlainObject(layer) && layer.layout?.visibility !== "none").length
         : 0,
     },
   };
@@ -170,9 +179,14 @@ function schemaKeywordToCode(error: ErrorObject): Diagnostic["code"] {
 function validateSemanticRules(spec: MapSpec, scene3dPromotionGate?: Scene3DPromotionGate): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
 
+  if (!isPlainObject(spec.view)) {
+    // Shape already reported by the schema pass; semantic rules assume a typed view.
+    return diagnostics;
+  }
+
   diagnostics.push(...validateViewAndCapabilityBoundary(spec, scene3dPromotionGate));
 
-  if (spec.view.center) {
+  if (isCoordinateTuple(spec.view.center)) {
     const [lng, lat] = spec.view.center;
     if (lng < -180 || lng > 180 || lat < -90 || lat > 90) {
       diagnostics.push({
@@ -184,7 +198,7 @@ function validateSemanticRules(spec: MapSpec, scene3dPromotionGate?: Scene3DProm
     }
   }
 
-  if (spec.view.bounds) {
+  if (isCoordinateTuple(spec.view.bounds, 4)) {
     const [west, south, east, north] = spec.view.bounds;
     if (west > east) {
       diagnostics.push({
@@ -215,9 +229,15 @@ function validateSemanticRules(spec: MapSpec, scene3dPromotionGate?: Scene3DProm
   }
 
   const layerIds = new Set<string>();
+  const sources: Record<string, unknown> = isPlainObject(spec.sources) ? spec.sources : {};
 
   for (const [index, layer] of spec.layers.entries()) {
     const layerPath = `/layers/${index}`;
+
+    if (!isPlainObject(layer)) {
+      // Entry shape (or lack of it) is already reported by the schema pass.
+      continue;
+    }
 
     if (layerIds.has(layer.id)) {
       diagnostics.push({
@@ -241,7 +261,7 @@ function validateSemanticRules(spec: MapSpec, scene3dPromotionGate?: Scene3DProm
       });
     }
 
-    if (layer.source && !spec.sources[layer.source]) {
+    if (layer.source && !sources[layer.source]) {
       diagnostics.push({
         severity: "error",
         code: DiagnosticCodes.SourceNotFound,
@@ -259,8 +279,13 @@ function validateSemanticRules(spec: MapSpec, scene3dPromotionGate?: Scene3DProm
       });
     }
 
-    const source = layer.source ? spec.sources[layer.source] : undefined;
-    if (layer.source && source && !isLayerSourceCompatible(layer.type, source.type)) {
+    const source = layer.source ? sources[layer.source] : undefined;
+    if (
+      layer.source &&
+      isPlainObject(source) &&
+      typeof source.type === "string" &&
+      !isLayerSourceCompatible(layer.type, source.type)
+    ) {
       diagnostics.push({
         severity: "error",
         code: DiagnosticCodes.LayerSourceIncompatible,
@@ -309,20 +334,12 @@ function validateSemanticRules(spec: MapSpec, scene3dPromotionGate?: Scene3DProm
       diagnostics.push(...validateFilterExpression(layer.filter, `${layerPath}/filter`));
     }
 
-    if (layer.paint) {
-      for (const [key, value] of Object.entries(layer.paint)) {
-        if (Array.isArray(value)) {
-          diagnostics.push(...validateExpression(value, `${layerPath}/paint/${key}`));
-        }
-      }
+    if (isPlainObject(layer.paint)) {
+      diagnostics.push(...validateStyleProperties(String(layer.type), layer.paint, "paint", `${layerPath}/paint`));
     }
 
-    if (layer.layout) {
-      for (const [key, value] of Object.entries(layer.layout)) {
-        if (Array.isArray(value)) {
-          diagnostics.push(...validateExpression(value, `${layerPath}/layout/${key}`));
-        }
-      }
+    if (isPlainObject(layer.layout)) {
+      diagnostics.push(...validateStyleProperties(String(layer.type), layer.layout, "layout", `${layerPath}/layout`));
     }
   }
 
@@ -425,12 +442,24 @@ function isLayerSourceCompatible(layerType: string, sourceType: string): boolean
 }
 
 function isMapSpecLike(value: unknown): value is MapSpec {
-  if (!value || typeof value !== "object") return false;
+  if (!isPlainObject(value)) return false;
   const candidate = value as Partial<MapSpec>;
   return (
     candidate.version === "0.1" &&
     Boolean(candidate.view) &&
     Boolean(candidate.sources) &&
     Array.isArray(candidate.layers)
+  );
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isCoordinateTuple(value: unknown, length = 2): value is number[] {
+  return (
+    Array.isArray(value) &&
+    value.length === length &&
+    value.every((entry) => typeof entry === "number" && Number.isFinite(entry))
   );
 }

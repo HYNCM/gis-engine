@@ -472,10 +472,13 @@ describe("expression validator", () => {
   });
 
   it("accepts interpolate-hcl and interpolate-lab color interpolation", () => {
-    const spec = withPaintAndLayout({
-      "circle-color": ["interpolate-hcl", ["linear"], ["get", "score"], 0, "#ff0000", 100, "#0000ff"],
-      "text-color": ["interpolate-lab", ["exponential", 1.5], ["get", "value"], 0, "#000", 100, "#fff"],
-    });
+    const spec = withSymbolStyle(
+      {},
+      {
+        "icon-color": ["interpolate-hcl", ["linear"], ["get", "score"], 0, "#ff0000", 100, "#0000ff"],
+        "text-color": ["interpolate-lab", ["exponential", 1.5], ["get", "value"], 0, "#000", 100, "#fff"],
+      },
+    );
 
     const report = validateSpec(spec);
     expect(report.valid).toBe(true);
@@ -509,11 +512,13 @@ describe("expression validator", () => {
   });
 
   it("accepts boolean, number, object type assertions", () => {
-    const spec = withPaintAndLayout({
-      "circle-color": ["case", ["boolean", ["get", "active"]], "#ff0000", "#0000ff"],
-      "circle-radius": ["number", ["get", "size"]],
-      "text-field": ["to-string", ["object", ["get", "metadata"]]],
-    });
+    const spec = withSymbolStyle(
+      { "text-field": ["to-string", ["object", ["get", "metadata"]]] },
+      {
+        "text-color": ["case", ["boolean", ["get", "active"]], "#ff0000", "#0000ff"],
+        "text-halo-width": ["number", ["get", "size"]],
+      },
+    );
 
     const report = validateSpec(spec);
     expect(report.valid).toBe(true);
@@ -538,7 +543,7 @@ describe("expression validator", () => {
   });
 
   it("accepts collator expression", () => {
-    const spec = withPaintAndLayout({
+    const spec = withSymbolStyle({
       "text-field": ["to-string", ["collator", { "case-sensitive": false }]],
     });
 
@@ -548,12 +553,12 @@ describe("expression validator", () => {
   });
 
   it("reports invalid collator expression", () => {
-    const noArgs = validateSpec(withPaintAndLayout({ "text-field": ["collator"] }));
+    const noArgs = validateSpec(withSymbolStyle({ "text-field": ["collator"] }));
     expect(noArgs.diagnostics).toContainEqual(
       expect.objectContaining({ code: DiagnosticCodes.ExpressionInvalidArity }),
     );
 
-    const nonObjectArg = validateSpec(withPaintAndLayout({ "text-field": ["collator", "not-an-object"] }));
+    const nonObjectArg = validateSpec(withSymbolStyle({ "text-field": ["collator", "not-an-object"] }));
     expect(nonObjectArg.diagnostics).toContainEqual(
       expect.objectContaining({
         severity: "error",
@@ -563,7 +568,7 @@ describe("expression validator", () => {
   });
 
   it("accepts format expression", () => {
-    const spec = withPaintAndLayout({
+    const spec = withSymbolStyle({
       "text-field": ["format", ["get", "name"], { "font-scale": 1.5 }],
     });
 
@@ -573,14 +578,14 @@ describe("expression validator", () => {
   });
 
   it("reports format with no arguments", () => {
-    const noArgs = validateSpec(withPaintAndLayout({ "text-field": ["format"] }));
+    const noArgs = validateSpec(withSymbolStyle({ "text-field": ["format"] }));
     expect(noArgs.diagnostics).toContainEqual(
       expect.objectContaining({ code: DiagnosticCodes.ExpressionInvalidArity }),
     );
   });
 
   it("accepts image expression", () => {
-    const spec = withPaintAndLayout({
+    const spec = withSymbolStyle({
       "icon-image": ["image", "marker-15"],
     });
 
@@ -590,12 +595,12 @@ describe("expression validator", () => {
   });
 
   it("reports invalid image expression", () => {
-    const noArgs = validateSpec(withPaintAndLayout({ "icon-image": ["image"] }));
+    const noArgs = validateSpec(withSymbolStyle({ "icon-image": ["image"] }));
     expect(noArgs.diagnostics).toContainEqual(
       expect.objectContaining({ code: DiagnosticCodes.ExpressionInvalidArity }),
     );
 
-    const nonStringArg = validateSpec(withPaintAndLayout({ "icon-image": ["image", 42] }));
+    const nonStringArg = validateSpec(withSymbolStyle({ "icon-image": ["image", 42] }));
     expect(nonStringArg.diagnostics).toContainEqual(
       expect.objectContaining({
         severity: "error",
@@ -628,7 +633,7 @@ describe("expression validator", () => {
   });
 
   it("accepts is-supported-script expression", () => {
-    const spec = withPaintAndLayout({
+    const spec = withSymbolStyle({
       "text-field": ["case", ["is-supported-script", ["get", "name"]], ["get", "name"], "Unsupported"],
     });
 
@@ -638,12 +643,12 @@ describe("expression validator", () => {
   });
 
   it("reports invalid is-supported-script expression", () => {
-    const noArgs = validateSpec(withPaintAndLayout({ "text-field": ["is-supported-script"] }));
+    const noArgs = validateSpec(withSymbolStyle({ "text-field": ["is-supported-script"] }));
     expect(noArgs.diagnostics).toContainEqual(
       expect.objectContaining({ code: DiagnosticCodes.ExpressionInvalidArity }),
     );
 
-    const nonStringArg = validateSpec(withPaintAndLayout({ "text-field": ["is-supported-script", 42] }));
+    const nonStringArg = validateSpec(withSymbolStyle({ "text-field": ["is-supported-script", 42] }));
     expect(nonStringArg.diagnostics).toContainEqual(
       expect.objectContaining({
         severity: "error",
@@ -653,7 +658,7 @@ describe("expression validator", () => {
   });
 
   it("accepts resolved-locale expression", () => {
-    const spec = withPaintAndLayout({
+    const spec = withSymbolStyle({
       "text-field": ["resolved-locale", ["collator", { locale: "en" }]],
     });
 
@@ -663,7 +668,7 @@ describe("expression validator", () => {
   });
 
   it("reports invalid resolved-locale expression", () => {
-    const noArgs = validateSpec(withPaintAndLayout({ "text-field": ["resolved-locale"] }));
+    const noArgs = validateSpec(withSymbolStyle({ "text-field": ["resolved-locale"] }));
     expect(noArgs.diagnostics).toContainEqual(
       expect.objectContaining({ code: DiagnosticCodes.ExpressionInvalidArity }),
     );
@@ -702,6 +707,7 @@ function withPaintAndLayout(
   paint: Record<string, unknown>,
   layout: Record<string, unknown> = {},
   filter?: unknown[],
+  type: MapSpec["layers"][number]["type"] = "circle",
 ): MapSpec {
   return {
     version: "0.1",
@@ -719,7 +725,7 @@ function withPaintAndLayout(
     layers: [
       {
         id: "points",
-        type: "circle",
+        type,
         source: "points",
         ...(filter ? { filter: filter as MapSpec["layers"][number]["filter"] } : {}),
         paint,
@@ -727,4 +733,9 @@ function withPaintAndLayout(
       },
     ],
   };
+}
+
+/** text-* and icon-* styling lives on symbol layers, split across layout and paint buckets. */
+function withSymbolStyle(layout: Record<string, unknown>, paint: Record<string, unknown> = {}): MapSpec {
+  return withPaintAndLayout(paint, layout, undefined, "symbol");
 }
