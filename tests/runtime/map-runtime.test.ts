@@ -31,8 +31,21 @@ class RuntimeMockAdapter implements RendererAdapter {
   loadedSpec: MapSpec | null = null;
   applyDiagnostics: AdapterApplyResult["diagnostics"] = [];
   applyDelayMs = 0;
+  queryDelayMs = 0;
   failLoadAfterFirstCall = false;
   loadError: Error | null = null;
+  snapshotCalls = 0;
+  queryCalls = 0;
+  destroyCalls = 0;
+  callOrder = 0;
+  patchCallOrder: number[] = [];
+  snapshotCallOrder: number[] = [];
+  queryCallOrder: number[] = [];
+
+  nextOrder(): number {
+    this.callOrder += 1;
+    return this.callOrder;
+  }
 
   async getCapabilities(): Promise<CapabilityReport> {
     return {
@@ -60,20 +73,36 @@ class RuntimeMockAdapter implements RendererAdapter {
       await new Promise((resolve) => setTimeout(resolve, this.applyDelayMs));
     }
     this.patches.push(patch);
+    this.patchCallOrder.push(this.nextOrder());
     return { diagnostics: this.applyDiagnostics };
   }
 
-  async queryFeatures(_options: QueryFeaturesOptions): Promise<FeatureQueryResult> {
+  async queryFeatures(options: QueryFeaturesOptions): Promise<FeatureQueryResult> {
+    this.queryCalls += 1;
+    if (this.queryDelayMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, this.queryDelayMs));
+    }
+    const queriedAt = this.nextOrder();
+    this.queryCallOrder.push(queriedAt);
+    // Mirror the synchronous-adapter contract: a query observed after a committed patch
+    // must already see that patch in adapter state.
+    const lastPatch = this.patches.at(-1);
+    if (options.layers?.includes("runtime-points") && lastPatch?.some((operation) => operation.path === "/revision")) {
+      return { features: [{ properties: { id: "post-patch" } }], diagnostics: [] };
+    }
     return { features: [], diagnostics: [] };
   }
 
   async snapshot(_options: SnapshotOptions): Promise<SnapshotResult> {
+    this.snapshotCalls += 1;
+    this.snapshotCallOrder.push(this.nextOrder());
     return { passed: true, diagnostics: [] };
   }
 
   resize(_size: { width: number; height: number }): void {}
 
   async destroy(): Promise<ResourceReport> {
+    this.destroyCalls += 1;
     return { destroyed: true, diagnostics: [] };
   }
 
@@ -289,7 +318,11 @@ describe("MapRuntime", () => {
       container: {} as HTMLElement,
     });
 
-    await expect(runtime.apply(commands as MapCommand[])).rejects.toThrow("reload failed");
+    const results = await runtime.apply(commands as MapCommand[]);
+
+    expect(results[0]?.status).toBe("failed");
+    expect(results[0]?.diagnostics.some((diagnostic) => diagnostic.code === "RENDER.RECOVER_FAILED")).toBe(true);
+    expect(runtime.exportSpec()).toEqual(before);
 
     adapter.failLoadAfterFirstCall = false;
     adapter.applyDiagnostics = [];
@@ -305,7 +338,79 @@ describe("MapRuntime", () => {
 
     expect(recoveryResults[0]?.status).toBe("applied");
     expect(runtime.exportSpec().view.zoom).toBe(8);
-    expect(adapter.loadCalls).toBe(2);
+    // load(initial) + failed reload + reload attempted before the recovery apply.
+    expect(adapter.loadCalls).toBe(3);
+  });
+
+  it("waits for queued applies before snapshot so evidence binds the committed state", async () => {
+    const adapter = new RuntimeMockAdapter();
+    adapter.applyDelayMs = 15;
+    const runtime = await MapRuntime.create(before as MapSpec, {
+      adapter,
+      container: {} as HTMLElement,
+    });
+
+    const applyStartedAt = Date.now();
+    const applyPromise = runtime.apply(firstStyleCommand());
+    const snapshotPromise = runtime.snapshot();
+    expect(adapter.snapshotCalls).toBe(0);
+
+    const [results, snapshot] = await Promise.all([applyPromise, snapshotPromise]);
+
+    expect(results[0]?.status).toBe("applied");
+    expect(adapter.snapshotCalls).toBe(1);
+    expect(adapter.snapshotCallOrder.at(-1)).toBeGreaterThan(adapter.patchCallOrder.at(-1));
+    expect(Date.now() - applyStartedAt).toBeGreaterThanOrEqual(10);
+    expect(snapshot.passed).toBe(true);
+  });
+
+  it("binds queryFeatures and snapshot to the committed revision of queued applies", async () => {
+    const adapter = new RuntimeMockAdapter();
+    adapter.queryDelayMs = 10;
+    const runtime = await MapRuntime.create(runtimeQuerySpec(), {
+      adapter,
+      container: {} as HTMLElement,
+    });
+
+    const viewCommand: MapCommand = {
+      id: "cmd-query-order-view",
+      version: "0.1",
+      type: "setView",
+      baseRevision: "1",
+      view: { zoom: 6 },
+    };
+    const applyPromise = runtime.apply(viewCommand);
+    // While the apply is still queued, evidence calls must not overtake it.
+    const queryPromise = runtime.queryFeatures({ point: [1, 2], layers: ["runtime-points"] });
+    const snapshotPromise = runtime.snapshot();
+
+    const [applyResults, queryResult, snapshot] = await Promise.all([applyPromise, queryPromise, snapshotPromise]);
+
+    expect(applyResults[0]?.status).toBe("applied");
+    expect(queryResult.features).toEqual([expect.objectContaining({ properties: { id: "post-patch" } })]);
+    expect(snapshot.passed).toBe(true);
+    expect(adapter.queryCallOrder.at(-1)).toBeGreaterThan(adapter.patchCallOrder.at(-1));
+    expect(adapter.snapshotCallOrder.at(-1)).toBeGreaterThan(adapter.patchCallOrder.at(-1));
+  });
+
+  it("destroy waits for queued applies and then releases the adapter exactly once", async () => {
+    const adapter = new RuntimeMockAdapter();
+    adapter.applyDelayMs = 15;
+    const runtime = await MapRuntime.create(before as MapSpec, {
+      adapter,
+      container: {} as HTMLElement,
+    });
+
+    const applyPromise = runtime.apply(firstStyleCommand());
+    const destroyPromise = runtime.destroy();
+    expect(adapter.destroyCalls).toBe(0);
+
+    const [results, report] = await Promise.all([applyPromise, destroyPromise]);
+
+    expect(results[0]?.status).toBe("applied");
+    expect(adapter.destroyCalls).toBe(1);
+    expect(report.destroyed).toBe(true);
+    expect(() => runtime.exportSpec()).toThrow("MapRuntime has been destroyed.");
   });
 
   it("forwards queryFeatures to the committed adapter state", async () => {

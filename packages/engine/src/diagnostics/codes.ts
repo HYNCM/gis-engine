@@ -16,6 +16,7 @@ export const DiagnosticCodes = {
   ExpressionPropertyUnknown: "EXPR.PROPERTY_UNKNOWN",
   ViewOutOfDataBounds: "VIEW.OUT_OF_DATA_BOUNDS",
   RenderAdapterError: "RENDER.ADAPTER_ERROR",
+  RenderRecoverFailed: "RENDER.RECOVER_FAILED",
   RenderDestroyed: "RENDER.DESTROYED",
   SnapshotBlankCanvas: "SNAPSHOT.BLANK_CANVAS",
   SnapshotResourcePending: "SNAPSHOT.RESOURCE_PENDING",

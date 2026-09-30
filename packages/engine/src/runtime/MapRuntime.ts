@@ -38,6 +38,7 @@ export class MapRuntime {
   #adapter: RendererAdapter;
   #container: HTMLElement;
   #destroyed = false;
+  #needsReload = false;
   #applyQueue: Promise<void> = Promise.resolve();
 
   private constructor(spec: MapSpec, options: MapRuntimeOptions) {
@@ -71,8 +72,23 @@ export class MapRuntime {
 
   async #applyImmediately(commands: MapCommand | MapCommand[], options: ApplyOptions): Promise<CommandResult[]> {
     this.#assertAlive();
-    const result = applyCommands(this.#spec, commands, options);
     const commandList = Array.isArray(commands) ? commands : [commands];
+
+    if (this.#needsReload) {
+      const recoverDiagnostics = await this.#reloadLastCommittedSpec();
+      if (recoverDiagnostics) {
+        return commandList.map((command, sequenceId) => ({
+          commandId: command.id,
+          sequenceId,
+          status: "failed" as const,
+          changedPaths: [],
+          diagnostics: recoverDiagnostics,
+          ...(options.traceId ? { traceId: options.traceId } : {}),
+        }));
+      }
+    }
+
+    const result = applyCommands(this.#spec, commands, options);
     const patch = result.committed
       ? result.results.flatMap((commandResult, index) =>
           commandList[index]?.dryRun ? [] : (commandResult.patch ?? []),
@@ -91,8 +107,10 @@ export class MapRuntime {
       }
 
       if (failureDiagnostics) {
-        await this.#reloadLastCommittedSpec();
-        return markAdapterFailure(result.results, failureDiagnostics);
+        this.#needsReload = true;
+        const recoverDiagnostics = await this.#reloadLastCommittedSpec();
+        const combined = recoverDiagnostics ? [...failureDiagnostics, ...recoverDiagnostics] : failureDiagnostics;
+        return markAdapterFailure(result.results, combined);
       }
 
       this.#spec = result.spec;
@@ -111,12 +129,15 @@ export class MapRuntime {
     return validateSpec(this.#spec);
   }
 
-  queryFeatures(options: QueryFeaturesOptions): Promise<FeatureQueryResult> {
+  async queryFeatures(options: QueryFeaturesOptions): Promise<FeatureQueryResult> {
+    // Reads observe the last committed state: an in-flight apply must settle first.
+    await this.#applyQueue;
     this.#assertAlive();
     return this.#adapter.queryFeatures(options);
   }
 
-  snapshot(options: SnapshotOptions = {}): Promise<SnapshotResult> {
+  async snapshot(options: SnapshotOptions = {}): Promise<SnapshotResult> {
+    await this.#applyQueue;
     this.#assertAlive();
     return this.#adapter.snapshot(options);
   }
@@ -131,18 +152,17 @@ export class MapRuntime {
 
   async destroy(): Promise<ResourceReport> {
     if (this.#destroyed) {
-      return {
-        destroyed: true,
-        diagnostics: [
-          {
-            severity: "info",
-            code: DiagnosticCodes.RenderDestroyed,
-            message: "MapRuntime is already destroyed.",
-          },
-        ],
-      };
+      return alreadyDestroyedReport();
     }
 
+    // Destroy is the terminal queue entry: every queued apply settles before the adapter is released.
+    const pending = this.#applyQueue;
+    this.#applyQueue = Promise.resolve();
+    await pending.catch(() => undefined);
+    // A second destroy queued behind the first one must not release the adapter twice.
+    if (this.#destroyed) {
+      return alreadyDestroyedReport();
+    }
     this.#destroyed = true;
     return this.#adapter.destroy();
   }
@@ -151,9 +171,42 @@ export class MapRuntime {
     if (this.#destroyed) throw new Error("MapRuntime has been destroyed.");
   }
 
-  async #reloadLastCommittedSpec(): Promise<void> {
-    await this.#adapter.load(this.#spec, { container: this.#container });
+  async #reloadLastCommittedSpec(): Promise<Diagnostic[] | undefined> {
+    try {
+      await this.#adapter.load(this.#spec, { container: this.#container });
+    } catch (error) {
+      return [
+        {
+          severity: "error",
+          code: DiagnosticCodes.RenderRecoverFailed,
+          message: `Failed to reload the last committed MapSpec into the renderer adapter: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+          fix: {
+            kind: "manual",
+            confidence: "medium",
+            message:
+              "The renderer may show uncommitted state; retry once the adapter recovers, or recreate the runtime.",
+          },
+        },
+      ];
+    }
+    this.#needsReload = false;
+    return undefined;
   }
+}
+
+function alreadyDestroyedReport(): ResourceReport {
+  return {
+    destroyed: true,
+    diagnostics: [
+      {
+        severity: "info",
+        code: DiagnosticCodes.RenderDestroyed,
+        message: "MapRuntime is already destroyed.",
+      },
+    ],
+  };
 }
 
 function markAdapterFailure(results: CommandResult[], diagnostics: Diagnostic[]): CommandResult[] {

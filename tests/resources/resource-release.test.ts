@@ -38,8 +38,8 @@ describe("resource release smoke", () => {
 
     expect(() => runtime.exportSpec()).toThrow("MapRuntime has been destroyed.");
     expect(() => runtime.validate()).toThrow("MapRuntime has been destroyed.");
-    expect(() => runtime.snapshot()).toThrow("MapRuntime has been destroyed.");
-    expect(() => runtime.queryFeatures({ point: [10, 10] })).toThrow("MapRuntime has been destroyed.");
+    await expect(runtime.snapshot()).rejects.toThrow("MapRuntime has been destroyed.");
+    await expect(runtime.queryFeatures({ point: [10, 10] })).rejects.toThrow("MapRuntime has been destroyed.");
 
     const command: MapCommand = {
       id: "cmd-after-destroy",
