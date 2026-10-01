@@ -23,6 +23,7 @@ import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { chromium, expect, type Page, type TestInfo, test } from "@playwright/test";
+import type { MapSpec } from "../../packages/engine/dist/src/index.js";
 
 const require = createRequire(import.meta.url);
 const width = 320;
@@ -671,6 +672,344 @@ test("E2E-5: resizing the container updates the canvas dimensions", async ({}, t
     // New dimensions should be approximately 480×300
     expect(resizeResult.resizedWidth).toBe(480);
     expect(resizeResult.resizedHeight).toBe(300);
+  } finally {
+    await browser.close();
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Test 6: Resource policy blocks backslash network-path refs before MapLibre fetches them
+// ---------------------------------------------------------------------------
+
+const HOSTILE_BACKSLASH_REF = "\\\\tiles.example.com/points.geojson";
+
+function geojsonUrlSpec(data: string): MapSpec {
+  return {
+    version: "0.1",
+    id: "resource-policy-browser",
+    view: { center: [120, 30], zoom: 5 },
+    sources: { points: { type: "geojson", data } },
+    layers: [{ id: "points", type: "circle", source: "points", paint: { "circle-color": "#2563eb" } }],
+  };
+}
+
+test("E2E-6: resource policy blocks backslash network-path refs before MapLibre fetches them", async ({}, testInfo) => {
+  let engineModule: typeof import("../../packages/engine/dist/src/index.js");
+  try {
+    engineModule = await import("../../packages/engine/dist/src/index.js");
+  } catch {
+    testInfo.skip(true, "@gis-engine/engine dist not built — run pnpm build first.");
+    return;
+  }
+  const bundle = resolveMapLibreBundle();
+  if (!bundle.scriptPath) {
+    testInfo.skip(true, bundle.reason);
+    return;
+  }
+  let browser;
+  try {
+    browser = await chromium.launch();
+  } catch (e) {
+    testInfo.skip(true, `Chromium unavailable: ${e instanceof Error ? e.message : String(e)}`);
+    return;
+  }
+  try {
+    const { page } = await setupPage(browser);
+    if (!(await checkWebGL(page, testInfo))) return;
+    await loadMapLibreBundle(page, bundle);
+
+    const externalRequests: string[] = [];
+    await page.route(
+      (url) => url.hostname === "tiles.example.com",
+      async (route) => {
+        externalRequests.push(route.request().url());
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ type: "FeatureCollection", features: [] }),
+        });
+      },
+    );
+
+    // The browser's own WHATWG parser resolves the ref to an off-allowlist host, so an
+    // unguarded renderer really would request it.
+    const resolved = await page.evaluate((ref) => new URL(ref, "http://localhost:5173/").href, HOSTILE_BACKSLASH_REF);
+    expect(resolved).toBe("http://tiles.example.com/points.geojson");
+
+    // A guarded pipeline applies only policy-valid specs; this ref must be rejected with
+    // SECURITY.URL_BLOCKED so nothing reaches the renderer.
+    const report = engineModule.validateSpec(geojsonUrlSpec(HOSTILE_BACKSLASH_REF));
+    expect(report.valid).toBe(false);
+    expect(report.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: engineModule.DiagnosticCodes.SecurityUrlBlocked,
+        path: "/sources/points/data",
+      }),
+    );
+    expect(externalRequests).toEqual([]);
+
+    // Sanity check the interceptor: handing the resolved URL to MapLibre does fire the request.
+    await page.evaluate(async (url) => {
+      const maplibregl = (window as typeof window & { maplibregl?: { Map?: new (opts: unknown) => unknown } })
+        .maplibregl;
+      if (!maplibregl?.Map) throw new Error("maplibregl.Map not available.");
+      const container = document.getElementById("map");
+      if (!container) throw new Error("No #map container.");
+      const map = new maplibregl.Map({
+        container,
+        style: {
+          version: 8,
+          sources: {},
+          layers: [{ id: "bg", type: "background", paint: { "background-color": "#ffffff" } }],
+        },
+        interactive: false,
+        attributionControl: false,
+      }) as {
+        once(event: string, cb: () => void): void;
+        addSource(id: string, source: unknown): void;
+        addLayer(layer: unknown): void;
+        remove(): void;
+      };
+      await new Promise<void>((resolve) => map.once("load", resolve));
+      map.addSource("points", { type: "geojson", data: url });
+      map.addLayer({ id: "points-layer", type: "circle", source: "points", paint: { "circle-radius": 3 } });
+      await new Promise((resolve) => window.setTimeout(resolve, 1500));
+      map.remove();
+    }, resolved);
+    await expect.poll(() => externalRequests, { timeout: 5_000 }).toContain(resolved);
+  } finally {
+    await browser.close();
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Test 7: setView / fitBounds commands move the real MapLibre camera
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds the compiled engine into a browser-consumable ES module using the
+ * workbench's Vite toolchain, then rewrites the adapter's dynamic
+ * `import("maplibre-gl")` to the UMD namespace the page already loaded —
+ * the same resolution Vite performs when bundling the workbench app.
+ */
+async function buildEngineBrowserBundle(): Promise<string> {
+  const entry = join(process.cwd(), "packages", "engine", "dist", "src", "index.js");
+  if (!existsSync(entry)) throw new Error(`engine dist entry missing: ${entry}`);
+  const viteEntry = join(process.cwd(), "apps", "workbench", "node_modules", "vite");
+  if (!existsSync(viteEntry)) throw new Error("vite is not available under apps/workbench.");
+  const vite = require(require.resolve("vite", { paths: [join(process.cwd(), "apps", "workbench")] })) as {
+    build: (options: unknown) => Promise<unknown>;
+  };
+  const result = (await vite.build({
+    configFile: false,
+    logLevel: "silent",
+    build: {
+      write: false,
+      minify: false,
+      target: "es2022",
+      lib: { entry, formats: ["es"], fileName: () => "engine.js" },
+      rollupOptions: { external: [/^maplibre-gl$/, /^node:/] },
+    },
+  })) as Array<{ output: Array<{ code?: string }> }> | { output: Array<{ code?: string }> };
+  const outputs = Array.isArray(result) ? result : [result];
+  let code = outputs[0]?.output[0]?.code ?? "";
+  if (code.length === 0) throw new Error("vite produced an empty engine browser bundle.");
+  if (/from\s+["']node:|import\(\s*["']node:/.test(code)) {
+    throw new Error(
+      "engine browser bundle statically reaches a node: builtin — keep node-only modules out of the index barrel.",
+    );
+  }
+  code = code.replace(/import\(\s*["']maplibre-gl["']\s*\)/g, "(globalThis.maplibregl)");
+  if (code.includes('"maplibre-gl"') || code.includes("'maplibre-gl'")) {
+    throw new Error("unresolved bare maplibre-gl specifier remains in the engine browser bundle.");
+  }
+  return code;
+}
+
+test("E2E-7: setView and fitBounds commands move the real MapLibre camera, not just the spec", async ({}, testInfo) => {
+  let engineCode: string;
+  try {
+    engineCode = await buildEngineBrowserBundle();
+  } catch (error) {
+    testInfo.skip(true, `engine browser bundle unavailable: ${error instanceof Error ? error.message : String(error)}`);
+    return;
+  }
+  const bundle = resolveMapLibreBundle();
+  if (!bundle.scriptPath) {
+    testInfo.skip(true, bundle.reason);
+    return;
+  }
+  let browser;
+  try {
+    browser = await chromium.launch();
+  } catch (e) {
+    testInfo.skip(true, `Chromium unavailable: ${e instanceof Error ? e.message : String(e)}`);
+    return;
+  }
+  try {
+    const { page, consoleErrors } = await setupPage(browser);
+    if (!(await checkWebGL(page, testInfo))) return;
+    await loadMapLibreBundle(page, bundle);
+
+    await page.route("https://engine-e2e.invalid/**", async (route) => {
+      if (route.request().url().endsWith("/engine.js")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/javascript",
+          headers: { "access-control-allow-origin": "*" },
+          body: engineCode,
+        });
+        return;
+      }
+      await route.fulfill({ status: 404, body: "" });
+    });
+
+    const outcome = await page.evaluate(
+      async ({ stubPng }) => {
+        const engine = (await import("https://engine-e2e.invalid/engine.js")) as {
+          MapLibreAdapter: new () => {
+            getMapInstance(): {
+              getCenter(): { lng: number; lat: number };
+              getZoom(): number;
+              getBearing(): number;
+              once(event: string, cb: () => void): void;
+            } | null;
+          };
+          MapRuntime: {
+            create(
+              spec: unknown,
+              options: { adapter: unknown; container: HTMLElement },
+            ): Promise<{
+              apply(commands: unknown): Promise<Array<{ status: string }>>;
+              exportSpec(): { view: { center?: [number, number]; zoom?: number } };
+              snapshot(): Promise<{ passed: boolean; dataUrl?: string }>;
+            }>;
+          };
+        };
+        const container = document.getElementById("map");
+        if (!container) return { ok: false as const, reason: "No #map container." };
+
+        const adapter = new engine.MapLibreAdapter();
+        const runtime = await engine.MapRuntime.create(
+          {
+            version: "0.1",
+            id: "camera-sync-e2e",
+            view: { center: [120, 30], zoom: 5 },
+            sources: {
+              anchor: {
+                type: "geojson",
+                data: {
+                  type: "FeatureCollection",
+                  features: [
+                    {
+                      type: "Feature",
+                      properties: { name: "camera-anchor" },
+                      geometry: { type: "Point", coordinates: [110, 20] },
+                    },
+                  ],
+                },
+              },
+            },
+            layers: [
+              {
+                id: "anchor",
+                type: "circle",
+                source: "anchor",
+                paint: { "circle-radius": 18, "circle-color": "#d7263d" },
+              },
+            ],
+          },
+          { adapter, container },
+        );
+
+        const map = adapter.getMapInstance();
+        if (!map) return { ok: false as const, reason: "Adapter did not create a live maplibregl.Map." };
+
+        const waitForIdle = () =>
+          new Promise<void>((resolve) => {
+            const timer = window.setTimeout(resolve, 4_000);
+            map.once("idle", () => {
+              window.clearTimeout(timer);
+              resolve();
+            });
+          });
+
+        function camera(): { center: [number, number]; zoom: number; bearing: number } {
+          return {
+            center: [Number(map.getCenter().lng.toFixed(4)), Number(map.getCenter().lat.toFixed(4))],
+            zoom: Number(map.getZoom().toFixed(2)),
+            bearing: Number(map.getBearing().toFixed(2)),
+          };
+        }
+
+        await waitForIdle();
+        const initial = camera();
+
+        const setViewResults = await runtime.apply([
+          { id: "cmd-setview", version: "0.1", type: "setView", view: { center: [110, 20], zoom: 8, bearing: 45 } },
+        ]);
+        if (!setViewResults.every((r) => r.status === "applied")) {
+          return { ok: false as const, reason: `setView returned ${setViewResults.map((r) => r.status).join(",")}.` };
+        }
+        await waitForIdle();
+        const afterSetView = camera();
+        const exportedAfterSetView = runtime.exportSpec();
+
+        const fitResults = await runtime.apply([
+          { id: "cmd-fitbounds", version: "0.1", type: "fitBounds", bounds: [100, 10, 105, 15] },
+        ]);
+        if (!fitResults.every((r) => r.status === "applied")) {
+          return { ok: false as const, reason: `fitBounds returned ${fitResults.map((r) => r.status).join(",")}.` };
+        }
+        await waitForIdle();
+        const afterFitBounds = camera();
+
+        const snapshot = await runtime.snapshot();
+        const snapOk = snapshot.passed && !!snapshot.dataUrl && snapshot.dataUrl.length > 64;
+
+        // Stashed for assertions outside the page; snapshot/stub equality checked in Node.
+        (window as unknown as { __cameraE2E: unknown }).__cameraE2E = {
+          initial,
+          afterSetView,
+          afterFitBounds,
+          snapOk,
+          exportedCenter: exportedAfterSetView.view.center,
+          exportedZoom: exportedAfterSetView.view.zoom,
+          stub: snapshot.dataUrl === stubPng,
+        };
+        return { ok: true as const };
+      },
+      { stubPng: TRANSPARENT_PNG_DATA_URL },
+    );
+
+    if (!outcome.ok) throw new Error(`Browser camera regression failed: ${outcome.reason}`);
+
+    const stashed = await page.evaluate(
+      () => (window as unknown as { __cameraE2E: Record<string, unknown> }).__cameraE2E,
+    );
+    type Camera = { center: [number, number]; zoom: number; bearing: number };
+    const initial = stashed.initial as Camera;
+    const afterSetView = stashed.afterSetView as Camera;
+    const afterFitBounds = stashed.afterFitBounds as Camera;
+
+    expect(initial.center).toEqual([120, 30]);
+    expect(initial.zoom).toBeCloseTo(5, 1);
+
+    // The command reported applied — the camera must follow, not just the exported spec.
+    expect(afterSetView.center).toEqual([110, 20]);
+    expect(afterSetView.zoom).toBeCloseTo(8, 1);
+    expect(afterSetView.bearing).toBeCloseTo(45, 1);
+    expect(stashed.exportedCenter).toEqual([110, 20]);
+
+    // fitBounds([100,10,105,15]) re-centers on the bounds midpoint.
+    expect(afterFitBounds.center[0]).toBeCloseTo(102.5, 1);
+    expect(afterFitBounds.center[1]).toBeCloseTo(12.5, 1);
+
+    // Snapshot is a real frame from the moved camera, not the 1×1 stub.
+    expect(stashed.snapOk).toBe(true);
+    expect(stashed.stub).toBe(false);
+
+    expect(consoleErrors).toEqual([]);
   } finally {
     await browser.close();
   }

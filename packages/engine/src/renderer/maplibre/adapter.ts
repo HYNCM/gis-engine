@@ -25,7 +25,7 @@ import type {
   Unsubscribe,
 } from "../adapter.js";
 import { queryInlineGeoJsonFeatures } from "../queryGeoJson.js";
-import { applyIncrementalPatch } from "./styleDiff.js";
+import { applyIncrementalPatch, synchronizeMapLibreView } from "./styleDiff.js";
 import { type MapLibreStyle, transformMapSpecToMapLibreStyle } from "./transformer.js";
 
 const TRANSPARENT_PNG_DATA_URL =
@@ -180,6 +180,9 @@ export class MapLibreAdapter implements RendererAdapter {
 
         if (this.#map && transformResult.style) {
           this.#map.setStyle(transformResult.style as never, { diff: false });
+          if (patch.some((operation) => operation.path === "/view" || operation.path.startsWith("/view/"))) {
+            synchronizeMapLibreView(this.#map, nextSpec.view);
+          }
         }
 
         // Re-apply interactions after full rebuild (setStyle resets handlers).

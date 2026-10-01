@@ -1,6 +1,6 @@
 import type { Map as MapLibreMap } from "maplibre-gl";
-import type { JsonPatchOperation, LayerSpec, MapSpec, SourceSpec } from "../../types.js";
-import type { MapLibreLayer, MapLibreSource } from "./transformer.js";
+import type { JsonPatchOperation, MapSpec, SourceSpec } from "../../types.js";
+import type { MapLibreSource } from "./transformer.js";
 
 /**
  * Attempts to apply JSON Patch operations incrementally to a MapLibre map instance.
@@ -11,8 +11,12 @@ export function applyIncrementalPatch(map: MapLibreMap | null, patch: JsonPatchO
   // No map instance (headless mode) — cannot apply incrementally.
   if (!map) return false;
 
-  // Collect view changes to batch them into a single jumpTo call.
-  const viewChanges: { center?: [number, number]; zoom?: number; bearing?: number; pitch?: number } = {};
+  // Array indices in a patch describe intermediate states, while spec is the
+  // final state. Rebuild structural layer changes instead of targeting the wrong
+  // layer or losing an addLayer beforeLayerId anchor.
+  if (patch.some((op) => /^\/layers\/[^/]+$/.test(op.path))) return false;
+
+  // Apply the final camera once, after the style operations have succeeded.
   let hasViewChanges = false;
 
   for (const op of patch) {
@@ -25,21 +29,18 @@ export function applyIncrementalPatch(map: MapLibreMap | null, patch: JsonPatchO
 
     // --- View changes: /view/center, /view/zoom, /view/bearing, /view/pitch ---
     if (segment0 === "view" && parts.length === 2) {
-      if (segment1 === "center" && spec.view.center) {
-        viewChanges.center = spec.view.center;
-        hasViewChanges = true;
-      } else if (segment1 === "zoom" && spec.view.zoom !== undefined) {
-        viewChanges.zoom = spec.view.zoom;
-        hasViewChanges = true;
-      } else if (segment1 === "bearing" && spec.view.bearing !== undefined) {
-        viewChanges.bearing = spec.view.bearing;
-        hasViewChanges = true;
-      } else if (segment1 === "pitch" && spec.view.pitch !== undefined) {
-        viewChanges.pitch = spec.view.pitch;
+      if (["center", "zoom", "bearing", "pitch", "bounds", "mode"].includes(segment1)) {
         hasViewChanges = true;
       } else {
         return false;
       }
+      continue;
+    }
+
+    // --- Full view replacement: setView/fitBounds patch the whole /view object ---
+    if (segment0 === "view" && parts.length === 1) {
+      if (op.op !== "replace" && op.op !== "add") return false;
+      hasViewChanges = true;
       continue;
     }
 
@@ -76,36 +77,6 @@ export function applyIncrementalPatch(map: MapLibreMap | null, patch: JsonPatchO
       if (Number.isNaN(layerIndex)) return false;
 
       const layer = spec.layers[layerIndex];
-
-      // Full layer add / replace / remove
-      if (parts.length === 2) {
-        if (op.op === "add" || op.op === "replace") {
-          if (!layer) return false;
-          const maplibreLayer = transformLayerForMapLibre(spec, layer);
-          if (!maplibreLayer) return false;
-
-          try {
-            if (op.op === "replace" && map.getLayer(layer.id)) {
-              map.removeLayer(layer.id);
-            }
-            map.addLayer(maplibreLayer as never);
-          } catch {
-            return false;
-          }
-        } else if (op.op === "remove") {
-          // Layer ID must come from the patch value for remove ops.
-          const layerId = extractLayerId(op.value);
-          if (!layerId) return false;
-          try {
-            if (map.getLayer(layerId)) map.removeLayer(layerId);
-          } catch {
-            return false;
-          }
-        } else {
-          return false;
-        }
-        continue;
-      }
 
       // Layer property updates (paint / layout / filter)
       if (!layer) return false;
@@ -153,6 +124,11 @@ export function applyIncrementalPatch(map: MapLibreMap | null, patch: JsonPatchO
       continue;
     }
 
+    // Revision metadata is not part of the rendered style.
+    if (segment0 === "revision") {
+      continue;
+    }
+
     // Unrecognized path — fallback to full rebuild.
     return false;
   }
@@ -160,7 +136,7 @@ export function applyIncrementalPatch(map: MapLibreMap | null, patch: JsonPatchO
   // Apply batched view changes in a single call.
   if (hasViewChanges) {
     try {
-      map.jumpTo(viewChanges as never);
+      synchronizeMapLibreView(map, spec.view);
     } catch {
       return false;
     }
@@ -173,13 +149,18 @@ export function applyIncrementalPatch(map: MapLibreMap | null, patch: JsonPatchO
 // Private helpers
 // ---------------------------------------------------------------------------
 
-/** Safely extract `id` from a patch value that is expected to be a layer-like object. */
-function extractLayerId(value: unknown): string | undefined {
-  if (value !== null && typeof value === "object" && "id" in value) {
-    const id = (value as { id: unknown }).id;
-    if (typeof id === "string") return id;
+/** Keep camera synchronization identical for incremental and full-style paths. */
+export function synchronizeMapLibreView(map: MapLibreMap, view: MapSpec["view"]): void {
+  const options: { center?: [number, number]; zoom?: number; bearing?: number; pitch?: number } = {};
+  if (view.bearing !== undefined) options.bearing = view.bearing;
+  if (view.pitch !== undefined) options.pitch = view.pitch;
+  if (view.bounds && !view.center && view.zoom === undefined) {
+    map.fitBounds(view.bounds as never, { ...options, duration: 0, linear: true });
+    return;
   }
-  return undefined;
+  if (view.center) options.center = view.center;
+  if (view.zoom !== undefined) options.zoom = view.zoom;
+  if (Object.keys(options).length > 0) map.jumpTo(options);
 }
 
 /**
@@ -206,58 +187,4 @@ function transformSourceForMapLibre(_sourceId: string, source: SourceSpec): MapL
   }
   // pmtiles / flatgeobuf / geoparquet / geotiff — not supported incrementally.
   return null;
-}
-
-/**
- * Transform a MapSpec `LayerSpec` to a MapLibre-compatible layer descriptor.
- * Only handles layer types supported by the MapLibre transformer.
- */
-function transformLayerForMapLibre(spec: MapSpec, layer: LayerSpec): MapLibreLayer | null {
-  const supportedTypes = new Set([
-    "background",
-    "raster",
-    "fill",
-    "line",
-    "circle",
-    "symbol",
-    "symbol-lite",
-    "fill-extrusion-lite",
-    "heatmap",
-  ]);
-
-  if (!supportedTypes.has(layer.type)) return null;
-
-  const maplibreLayer: MapLibreLayer = {
-    id: layer.id,
-    type: mapLayerType(layer.type),
-  };
-
-  if (layer.type !== "background" && layer.source) {
-    maplibreLayer.source = layer.source;
-  }
-
-  // Resolve source-layer metadata for vector / pmtiles sources.
-  if (layer.source) {
-    const source = spec.sources[layer.source];
-    if (source && (source.type === "pmtiles" || source.type === "vector")) {
-      const sourceLayer = layer.metadata?.["source-layer"];
-      if (typeof sourceLayer === "string" && sourceLayer.length > 0) {
-        maplibreLayer["source-layer"] = sourceLayer;
-      }
-    }
-  }
-
-  if (layer.filter) maplibreLayer.filter = layer.filter;
-  if (layer.minzoom !== undefined) maplibreLayer.minzoom = layer.minzoom;
-  if (layer.maxzoom !== undefined) maplibreLayer.maxzoom = layer.maxzoom;
-  if (layer.paint) maplibreLayer.paint = layer.paint;
-  if (layer.layout) maplibreLayer.layout = layer.layout;
-
-  return maplibreLayer;
-}
-
-function mapLayerType(type: string): MapLibreLayer["type"] {
-  if (type === "symbol-lite") return "symbol";
-  if (type === "fill-extrusion-lite") return "fill-extrusion";
-  return type as MapLibreLayer["type"];
 }
