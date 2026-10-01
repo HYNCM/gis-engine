@@ -1,8 +1,8 @@
 ---
 agent: orchestrator
 period: 2026-W40
-generated_at: 2026-10-01T14:28:00Z
-repo_revision: "1059e9c"
+generated_at: 2026-10-01T14:52:00Z
+repo_revision: "2c69806"
 inputs:
   - docs/research/competitor-updates-2026-W40.md
   - docs/planning/monthly-roadmap.md
@@ -18,6 +18,8 @@ inputs:
   - https://github.com/HYNCM/gis-engine/actions/runs/36866555879
   - https://github.com/HYNCM/gis-engine/actions/runs/36873486290
   - https://github.com/HYNCM/gis-engine/actions/runs/36874558507
+  - https://github.com/HYNCM/gis-engine/actions/runs/36877446387
+  - https://github.com/HYNCM/gis-engine/actions/runs/36878170757
   - https://github.com/HYNCM/gis-engine/pull/123
   - https://github.com/HYNCM/gis-engine/pull/124
   - https://github.com/HYNCM/gis-engine/pull/125
@@ -116,13 +118,14 @@ wording and the changeset file that `changesets/action` deletes in that commit.
   their own exit requirement (a successful replacement run) is met. They were
   closed as completed rather than duplicate because they are not duplicates of
   each other; they are repeat observations of causes that are now fixed.
-- 42 remain open and stay open on purpose: 32 older Daily incidents, 8 Weekly
-  (`#98`, `#106`, `#116`, `#90`, `#81`, `#73`, `#63`, `#55`), and 2 Monthly
-  (`#83`, `#122`). The previous revision of this bullet said "33 older Daily",
-  which miscounts by one — `gh issue list --label agent-escalation --state open`
-  totals 42 today, and today's framework merges filed nothing new. The latest
-  Agent Weekly Cadence run (36372641006, 2026-09-28) and the previous Monthly run
-  (36817352239) are both still `failure`, so those incidents have no green
+- Before this cycle's triage, 42 incidents were open on purpose: 32 older Daily
+  incidents, 8 Weekly (`#98`, `#106`, `#116`, `#90`, `#81`, `#73`, `#63`, `#55`),
+  and 2 Monthly (`#83`, `#122`). The previous revision of this bullet said
+  "33 older Daily", which miscounts by one —
+  `gh issue list --label agent-escalation --state open` totalled 42 at that
+  point, and today's framework merges filed nothing new. The latest Agent Weekly
+  Cadence run (36372641006, 2026-09-28) and the previous Monthly run
+  (36817352239) were both still `failure`, so those incidents had no green
   replacement run to close against. No issue is deleted.
 - Re-dispatching Monthly (`36874558507` at `dd96530`) changed what the failure
   means. `scripts/sla-checker.mjs` now reports
@@ -139,16 +142,44 @@ wording and the changeset file that `changesets/action` deletes in that commit.
   artifacts (`AGENT_HEALTH_DASHBOARD.md`, `handoff-ledger.json`,
   `issues-snapshot.md`); no specialist report was in the diff.
 
+## Cadence health is green for the first time in this window
+
+- Agent Weekly Cadence `36877446387` (2026-10-01, at `998d46f`) is
+  completed/success — the first green Weekly since `30778954232` on 2026-08-03,
+  ending a streak of eight consecutive failures (`31346702789` … `36372641006`).
+  All eight failed at `Gate specialist evidence health`.
+- Agent Monthly Cadence `36878170757` (at `eb84ed2`) is completed/success — the
+  first green Monthly since `30681675206` on 2026-08-01, ending three
+  consecutive failures (`33469125219`, `36817352239`, `36874558507`). It
+  committed `2c69806`, generated artifacts only.
+- Five escalation incidents were closed as **completed** against those green
+  replacement runs: Weekly `#98`, `#106`, `#116` and Monthly `#83`, `#122`. Each
+  closure comment cites the failing step and the stale-hour range measured from
+  that run's own log (`634.8..636.6h`, `945.5..947.3h`, `1113.5..1115.2h`,
+  `1281.7..1283.5h`, `1021.5..1356.8h`). Nothing was deleted.
+- Backlog after that triage: **37 open** — 32 Daily and 5 Weekly (`#90`, `#81`,
+  `#73`, `#63`, `#55`), 0 Monthly. The remaining Weekly and Daily incidents stay
+  open on purpose: they were not individually re-diagnosed, and a green
+  replacement run satisfies the letter of their exit requirement without proving
+  their specific failure matched the fixed class.
+- Operator pitfall worth recording: Weekly and Monthly share
+  `concurrency: agent-artifact-writers-<ref>` with `cancel-in-progress: false`,
+  which protects a *running* job but replaces a *queued* one. Dispatching both
+  six seconds apart cancelled Monthly `36877440116` before its first job started.
+  Dispatch one cadence, wait for it to finish, then dispatch the other.
+
 ## Queue and approvals
 
-- PR #47 (`chore: version packages`, head `0f8e136` after the `dd96530` push)
-  keeps landing its four PR runs in `action_required` because the head commit is
-  authored by `github-actions[bot]`. Every push to `main` regenerates the bump,
-  so the parked queue grows by four per bump and now stands at **44 runs across
-  11 head SHAs**. Repository approval settings will not be relaxed, and #123
-  turned out not to park-proof the queue — see the correction above. The decision
-  that matters is no longer "approve the runs": CI at that head fails
-  `pnpm check`, so #47 cannot be merged as authored.
+- PR #47 (`chore: version packages`, head `efe5b3d`) keeps landing its four PR
+  runs in `action_required` because the head commit is authored by
+  `github-actions[bot]`. Every push to `main` regenerates the bump, so the parked
+  queue grows by four per push: **48 runs across 12 head SHAs** at the time of
+  writing, up from 20 across 6 SHAs earlier today — and the cadence commits
+  recorded in this digest are themselves part of that growth. Repository
+  approval settings will not be relaxed, and #123 turned out not to park-proof
+  the queue — see the correction above. The decision that matters is no longer
+  "approve the runs": CI at that head fails `pnpm check`, so #47 cannot be merged
+  as authored.
 - PR #112 (studio-state-safety) and #113 (event-driven-agent-gates) remain open;
   per triage rule #113 closes as duplicate after its quiet window, never delete.
 - `codex/evidence-record-a` merged into `main` and deleted locally; PR #67
@@ -174,10 +205,11 @@ wording and the changeset file that `changesets/action` deletes in that commit.
    upstream is v6.11.2 while the matrix pins v5.
 4. **P2 — MCP 2026-07-28 migration assessment** (@builder ai): stateless routing,
    MRTR elicitation, 12-month deprecation window.
-5. **P2 — Cadence reliability** (@orchestrator): the staleness half is now green,
-   so a Weekly replacement run only needs the @orchestrator digest to be reissued
-   after each @quality re-issue; then close the 8 Weekly and 2 Monthly incidents
-   against green runs, and add a green-replacement close rule so the backlog
-   stops needing manual triage.
+5. **P2 — Escalation backlog policy** (@orchestrator + human decision): Weekly
+   and Monthly are now green and five incidents closed, so the mechanism is
+   proven. The open question is the remaining 37 — 32 Daily and 5 Weekly — which
+   were not individually re-diagnosed. Either write an explicit
+   green-replacement close rule with an audit comment template and sweep them, or
+   assign per-run diagnosis before closing. Either way: never delete.
 6. **P3 — community.ts name-escaping follow-up** (advisory carry-over from
    P2-2).
