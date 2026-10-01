@@ -109,6 +109,29 @@ describe("ResourcePolicy validation", () => {
     );
   });
 
+  it("treats backslash and mixed-separator network paths as remote", () => {
+    for (const ref of [
+      "\\\\tiles.example.com/points.geojson",
+      "/\\tiles.example.com/points.geojson",
+      "\\/tiles.example.com/points.geojson",
+    ]) {
+      const report = validateSpec(withGeojsonData(ref));
+      expect(report.diagnostics).toContainEqual(
+        expect.objectContaining({
+          code: DiagnosticCodes.SecurityUrlBlocked,
+          path: "/sources/points/data",
+          message: expect.stringContaining("tiles.example.com"),
+        }),
+      );
+    }
+
+    const allowlisted = validateResourceUrl("\\\\tiles.example.com/points.geojson", "/sources/points/data", {
+      ...defaultResourcePolicy,
+      allowedHosts: [...defaultResourcePolicy.allowedHosts, "tiles.example.com"],
+    });
+    expect(allowlisted).toEqual([]);
+  });
+
   it("applies resource policy to SceneView3D extension source URLs", () => {
     const blocked = withSceneSourceUrl("city-tiles", "file:///tmp/city/tileset.json");
 

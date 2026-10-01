@@ -75,12 +75,15 @@ export function validateResourceUrl(
   path: string,
   policy: ResourcePolicy = defaultResourcePolicy,
 ): Diagnostic[] {
-  const trimmedUrl = urlString.trim();
+  // Browsers remove TAB, LF and CR anywhere in a URL before recognizing its scheme
+  // or authority. Apply the same normalization before classifying relative refs.
+  const trimmedUrl = urlString.trim().replace(/[\t\n\r]/g, "");
   if (trimmedUrl.length === 0) return [blocked(urlString, path, "Resource URL must not be empty.")];
 
-  // Treat protocol-relative URLs (e.g. "//example.com/data.geojson") as remote URLs rather than local paths.
-  // Without this normalization, `//host/...` bypasses host allowlisting because it matches the "relative URL" rule.
-  const effectiveUrl = trimmedUrl.startsWith("//") ? `http:${trimmedUrl}` : trimmedUrl;
+  // Treat network-path references (e.g. "//example.com/data.geojson") as remote URLs rather than local paths.
+  // WHATWG URL parsing also treats "\\", "/\" and "\/" prefixes as authority introducers, so they must be
+  // normalized here; otherwise such refs match the "relative URL" rule and bypass host allowlisting.
+  const effectiveUrl = isNetworkPathReference(trimmedUrl) ? `http:${trimmedUrl.replace(/\\/g, "/")}` : trimmedUrl;
 
   if (isRelativeResourceUrl(effectiveUrl)) {
     if (policy.allowRelativeUrls === false) {
@@ -164,10 +167,19 @@ function blocked(urlString: string, path: string, message: string): Diagnostic {
   };
 }
 
+function isNetworkPathReference(urlString: string): boolean {
+  return /^[/\\]{2}/.test(urlString);
+}
+
 function isRelativeResourceUrl(urlString: string): boolean {
   return !/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(urlString);
 }
 
 function hasPathTraversal(urlString: string): boolean {
-  return urlString.split("/").some((segment) => segment === "..");
+  const pathname = urlString.split(/[?#]/, 1)[0] ?? "";
+  return pathname
+    .replace(/\\/g, "/")
+    .replace(/%2e/gi, ".")
+    .split("/")
+    .some((segment) => segment === "..");
 }
