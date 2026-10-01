@@ -121,6 +121,21 @@ export interface Template {
   generate(ctx: TemplateContext): GeneratedFile[];
 }
 
+/** Embed a value in a double-quoted JS string, including inside an HTML script element. */
+export function jsStringInner(value: string): string {
+  return JSON.stringify(value).slice(1, -1).replaceAll("<", "\\u003c");
+}
+
+/** Embed a value as HTML text (titles, headings) without opening tag/attribute contexts. */
+export function htmlText(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 const staticHtmlTemplate: Template = {
   name: "static-html",
   description: "Standalone HTML file with inline GIS Engine CDN imports",
@@ -133,7 +148,7 @@ const staticHtmlTemplate: Template = {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${ctx.projectName} — GIS Engine</title>
+  <title>${htmlText(ctx.projectName)} — GIS Engine</title>
   <style>
     body { margin: 0; font-family: system-ui, sans-serif; }
     #map { width: 100vw; height: 100vh; }
@@ -160,7 +175,7 @@ const staticHtmlTemplate: Template = {
 
     const container = document.getElementById("map");
     const map = await createMap(container, spec, { renderer: "maplibre" });
-    console.log("[${ctx.projectName}] map created", map.exportSpec());
+    console.log("[${jsStringInner(ctx.projectName)}] map created", map.exportSpec());
   </script>
 </body>
 </html>
@@ -241,7 +256,7 @@ const viteTsTemplate: Template = {
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>${ctx.projectName}</title>
+  <title>${htmlText(ctx.projectName)}</title>
 </head>
 <body>
   <div id="map" style="width:100vw;height:100vh;"></div>
@@ -279,11 +294,11 @@ async function main() {
   if (!container) throw new Error("Missing #map container");
 
   const map = await createMap(container, spec, { renderer: "maplibre" });
-  console.log("[${ctx.projectName}] map ready", map.exportSpec());
+  console.log("[${jsStringInner(ctx.projectName)}] map ready", map.exportSpec());
 }
 
 main().catch((error) => {
-  console.error("[${ctx.projectName}] failed to initialize map", error);
+  console.error("[${jsStringInner(ctx.projectName)}] failed to initialize map", error);
 });
 `,
       },

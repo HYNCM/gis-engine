@@ -3,7 +3,7 @@ import { dirname, join, resolve } from "node:path";
 import type { MapSpec } from "@gis-engine/engine";
 import { createArtifactManifest } from "./generate.js";
 import { preflightMapSpec } from "./preflight.js";
-import { getTemplate } from "./templates/index.js";
+import { getTemplate, jsStringInner } from "./templates/index.js";
 
 export interface WriteMapProjectDeliveryOptions {
   outputDir: string;
@@ -144,6 +144,6 @@ async function main() {
   await createMap(container, spec, { renderer: "maplibre" });
 }
 
-main().catch((error) => console.error("[${projectName}] failed to initialize map", error));
+main().catch((error) => console.error("[${jsStringInner(projectName)}] failed to initialize map", error));
 `;
 }
