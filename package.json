@@ -27,7 +27,7 @@
     "test:workbench:delivery": "pnpm --filter @gis-engine/engine build:schema && pnpm --filter @gis-engine/cli build && pnpm workbench:build && node scripts/workbench-delivery-smoke.mjs",
     "test:studio": "pnpm test:workbench",
     "test:docs": "vitest run tests/docs",
-    "test:agent-framework": "vitest run tests/framework",
+    "test:agent-framework": "pnpm build:schema && vitest run tests/framework",
     "test:snapshot": "pnpm test:snapshot:smoke && pnpm test:snapshot:visual",
     "test:snapshot:smoke": "vitest run tests/snapshot/smoke",
     "test:snapshot:visual": "playwright test tests/snapshot/visual",

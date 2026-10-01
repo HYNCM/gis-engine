@@ -25,8 +25,11 @@ describe("visual pixel baseline", () => {
     ];
     for (const spec of entries) {
       const listed = spawnSync("node_modules/.bin/playwright", ["test", spec, "--list"], { encoding: "utf8" });
-      expect(listed.stdout, spec).not.toContain("No tests found");
-      expect(listed.status, `${spec} must stay discoverable: ${listed.stdout}`).toBe(0);
+      // A spec that fails to import also reports "Total: 0 tests in 0 files", and the reason only
+      // reaches stderr, so a stdout-only message sends the next reader back to CI logs.
+      const diagnostics = `${spec} must stay discoverable:\nstdout: ${listed.stdout}\nstderr: ${listed.stderr}`;
+      expect(listed.status, diagnostics).toBe(0);
+      expect(listed.stdout, diagnostics).not.toContain("No tests found");
     }
   });
 
