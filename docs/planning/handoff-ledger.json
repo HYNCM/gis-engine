@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-10-01T14:20:36.561Z",
-  "repo_revision": "dd96530",
+  "generated_at": "2026-10-01T14:39:28.389Z",
+  "repo_revision": "998d46f",
   "source": "scripts/handoff-ledger.mjs",
-  "evidence_run_id": "planning-evidence-20261001T142036561Z",
+  "evidence_run_id": "planning-evidence-20261001T143928389Z",
   "issue_snapshot": {
     "source": "authenticated",
     "open": 46,
@@ -28,8 +28,8 @@
       },
       "downstream": {
         "path": "docs/planning/weekly-digest.md",
-        "generated_at": "2026-10-01T12:20:00.000Z",
-        "sha256": "cadecf709e12bc1933c53f96c1c8a2ba9a30e328e4d2826920f6769a18f2570a"
+        "generated_at": "2026-10-01T14:28:00.000Z",
+        "sha256": "94fbd55498f79c0352f458fc36b1548777b8ed369c51105dca59921f137a9412"
       },
       "latest_upstream_template": null,
       "latest_downstream_template": null
@@ -68,10 +68,10 @@
       "to": "orchestrator",
       "description": "gate pass/block and release readiness",
       "required": true,
-      "status": "pending",
-      "severity": "error",
+      "status": "consumed",
+      "severity": "info",
       "code": null,
-      "note": "orchestrator report is older than quality report",
+      "note": "orchestrator report cites docs/reviews/quality-gate-release-2026-10-01.md",
       "action": null,
       "upstream": {
         "path": "docs/reviews/quality-gate-release-2026-10-01.md",
@@ -80,8 +80,8 @@
       },
       "downstream": {
         "path": "docs/planning/weekly-digest.md",
-        "generated_at": "2026-10-01T12:20:00.000Z",
-        "sha256": "cadecf709e12bc1933c53f96c1c8a2ba9a30e328e4d2826920f6769a18f2570a"
+        "generated_at": "2026-10-01T14:28:00.000Z",
+        "sha256": "94fbd55498f79c0352f458fc36b1548777b8ed369c51105dca59921f137a9412"
       },
       "latest_upstream_template": {
         "path": "docs/reviews/quality-gate-2026-07-06.md",
