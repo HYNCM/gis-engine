@@ -38,6 +38,7 @@ export class MapRuntime {
   #adapter: RendererAdapter;
   #container: HTMLElement;
   #destroyed = false;
+  #closing = false;
   #needsReload = false;
   #applyQueue: Promise<void> = Promise.resolve();
 
@@ -71,7 +72,6 @@ export class MapRuntime {
   }
 
   async #applyImmediately(commands: MapCommand | MapCommand[], options: ApplyOptions): Promise<CommandResult[]> {
-    this.#assertAlive();
     const commandList = Array.isArray(commands) ? commands : [commands];
 
     if (this.#needsReload) {
@@ -129,17 +129,20 @@ export class MapRuntime {
     return validateSpec(this.#spec);
   }
 
-  async queryFeatures(options: QueryFeaturesOptions): Promise<FeatureQueryResult> {
-    // Reads observe the last committed state: an in-flight apply must settle first.
-    await this.#applyQueue;
+  queryFeatures(options: QueryFeaturesOptions): Promise<FeatureQueryResult> {
     this.#assertAlive();
-    return this.#adapter.queryFeatures(options);
+    // Reads observe the last committed state: an in-flight apply must settle first.
+    return this.#settleQueueForRead().then(() => this.#adapter.queryFeatures(options));
   }
 
-  async snapshot(options: SnapshotOptions = {}): Promise<SnapshotResult> {
+  snapshot(options: SnapshotOptions = {}): Promise<SnapshotResult> {
+    this.#assertAlive();
+    return this.#settleQueueForRead().then(() => this.#adapter.snapshot(options));
+  }
+
+  async #settleQueueForRead(): Promise<void> {
     await this.#applyQueue;
     this.#assertAlive();
-    return this.#adapter.snapshot(options);
   }
 
   resize(): void {
@@ -151,11 +154,14 @@ export class MapRuntime {
   }
 
   async destroy(): Promise<ResourceReport> {
-    if (this.#destroyed) {
+    if (this.#destroyed || this.#closing) {
       return alreadyDestroyedReport();
     }
 
-    // Destroy is the terminal queue entry: every queued apply settles before the adapter is released.
+    // Destroy enters closing synchronously: applies submitted after this point are
+    // rejected instead of crossing the destroy boundary.
+    this.#closing = true;
+    // Destroy is the terminal queue entry: every accepted apply settles before the adapter is released.
     const pending = this.#applyQueue;
     this.#applyQueue = Promise.resolve();
     await pending.catch(() => undefined);
@@ -168,7 +174,7 @@ export class MapRuntime {
   }
 
   #assertAlive(): void {
-    if (this.#destroyed) throw new Error("MapRuntime has been destroyed.");
+    if (this.#destroyed || this.#closing) throw new Error("MapRuntime has been destroyed.");
   }
 
   async #reloadLastCommittedSpec(): Promise<Diagnostic[] | undefined> {

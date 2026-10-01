@@ -413,6 +413,31 @@ describe("MapRuntime", () => {
     expect(() => runtime.exportSpec()).toThrow("MapRuntime has been destroyed.");
   });
 
+  it("rejects applies submitted after destroy starts and never reaches the adapter", async () => {
+    const adapter = new RuntimeMockAdapter();
+    adapter.applyDelayMs = 20;
+    const runtime = await MapRuntime.create(before as MapSpec, {
+      adapter,
+      container: {} as HTMLElement,
+    });
+
+    // apply-1 is accepted and still in flight when destroy starts.
+    const applyOne = runtime.apply(firstStyleCommand());
+    const destroyPromise = runtime.destroy();
+
+    // A second apply submitted after destroy began must be rejected, not queued
+    // across the destroy boundary.
+    await expect(runtime.apply(firstStyleCommand())).rejects.toThrow("MapRuntime has been destroyed.");
+
+    const results = await applyOne;
+    const report = await destroyPromise;
+
+    expect(results[0]?.status).toBe("applied");
+    expect(report.destroyed).toBe(true);
+    expect(adapter.patches).toHaveLength(1);
+    expect(adapter.destroyCalls).toBe(1);
+  });
+
   it("forwards queryFeatures to the committed adapter state", async () => {
     const runtime = await MapRuntime.create(runtimeQuerySpec(), {
       adapter: new MockAdapter(),
