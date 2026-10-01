@@ -93,6 +93,24 @@ function createDeferred() {
   return { promise, resolve };
 }
 
+/**
+ * The chat handler pins the map session when it starts, so a race test must not submit the second
+ * edit until the provider call is actually in flight — otherwise the second request can be served
+ * first and the "stale" result is legitimately still current.
+ */
+function heldProvider() {
+  const pending = createDeferred();
+  const entered = createDeferred();
+  return {
+    pending,
+    entered: entered.promise,
+    handler: () => {
+      entered.resolve(undefined);
+      return pending.promise;
+    },
+  };
+}
+
 describe("Workbench chat provider race", () => {
   let dbDir = "";
   let port = 0;
@@ -159,11 +177,12 @@ describe("Workbench chat provider race", () => {
   });
 
   it("rejects a provider result that arrives after the map session moved on", async () => {
-    const pending = createDeferred();
-    callProvider.current = () => pending.promise;
+    const { pending, entered, handler } = heldProvider();
+    callProvider.current = handler;
 
     const baseline = await getState();
     const inFlight = post("/api/chat", { message: "make points red through the provider", providerId: "deepseek" });
+    await entered;
 
     // The reviewer edits the map from another tab while the provider request is running.
     const concurrent = await post("/api/chat", { message: "make the points smaller" });
@@ -191,11 +210,12 @@ describe("Workbench chat provider race", () => {
   });
 
   it("rejects a provider result that arrives after a reset restored the same revision", async () => {
-    const pending = createDeferred();
-    callProvider.current = () => pending.promise;
+    const { pending, entered, handler } = heldProvider();
+    callProvider.current = handler;
 
     const beforeReset = await getState();
     const inFlight = post("/api/chat", { message: "make points red through the provider", providerId: "deepseek" });
+    await entered;
 
     const reset = await post("/api/chat", { message: "reset" });
     expect(reset.body.status).toBe("reset");
