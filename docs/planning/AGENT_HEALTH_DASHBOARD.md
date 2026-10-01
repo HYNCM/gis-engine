@@ -1,6 +1,6 @@
 ---
-generated_at: 2026-10-01T14:39:28.389Z
-repo_revision: "998d46f"
+generated_at: 2026-10-01T14:44:59.819Z
+repo_revision: "eb84ed2"
 period: 2026-10-01
 agent: orchestrator
 inputs:
@@ -8,7 +8,7 @@ inputs:
   - docs/planning/handoff-ledger.json
 owner: "@orchestrator"
 decision_level: info
-evidence_run_id: planning-evidence-20261001T143928389Z
+evidence_run_id: planning-evidence-20261001T144459819Z
 ---
 
 # Agent Health Dashboard (as of 2026-10-01)
@@ -56,4 +56,4 @@ evidence_run_id: planning-evidence-20261001T143928389Z
 - **健康 agent**: 5/5
 - **问题 agent**: 0/5
 - **数据流异常**: 0
-- **生成时间**: 2026-10-01T14:39:28.389Z
+- **生成时间**: 2026-10-01T14:44:59.819Z

@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-10-01T14:39:28.389Z",
-  "repo_revision": "998d46f",
+  "generated_at": "2026-10-01T14:44:59.819Z",
+  "repo_revision": "eb84ed2",
   "source": "scripts/handoff-ledger.mjs",
-  "evidence_run_id": "planning-evidence-20261001T143928389Z",
+  "evidence_run_id": "planning-evidence-20261001T144459819Z",
   "issue_snapshot": {
     "source": "authenticated",
     "open": 46,
