@@ -1,6 +1,6 @@
 ---
-generated_at: 2026-10-01T12:16:18.017Z
-repo_revision: "5883e71"
+generated_at: 2026-10-01T14:20:36.561Z
+repo_revision: "dd96530"
 period: 2026-10-01
 agent: orchestrator
 inputs:
@@ -8,7 +8,7 @@ inputs:
   - docs/planning/handoff-ledger.json
 owner: "@orchestrator"
 decision_level: info
-evidence_run_id: planning-evidence-20261001T121618017Z
+evidence_run_id: planning-evidence-20261001T142036561Z
 ---
 
 # Agent Health Dashboard (as of 2026-10-01)
@@ -20,7 +20,7 @@ evidence_run_id: planning-evidence-20261001T121618017Z
 
 | Issue Source | Open | Closed | Total | Required Handoffs |
 | --- | ---: | ---: | ---: | --- |
-| authenticated | 46 | 54 | 100 | 2/2 consumed |
+| authenticated | 46 | 54 | 100 | 1/2 consumed |
 
 ## Execution Health
 
@@ -34,7 +34,9 @@ evidence_run_id: planning-evidence-20261001T121618017Z
 
 ## Data Flow Health
 
-✅ 所有 agent-to-agent 数据流时序正常。
+| Flow | Issue | Severity |
+| --- | --- | --- |
+| quality → orchestrator<br/>*gate pass/block and release readiness (HOC-N3)* | orchestrator report is older than quality report | 🔴 error |
 
 ## SLA Compliance
 
@@ -49,11 +51,11 @@ evidence_run_id: planning-evidence-20261001T121618017Z
 
 ## Action Items
 
-✅ 当前无待处理操作项。
+- [ ] **quality → orchestrator**: orchestrator report is older than quality report → 检查 handoff 时序
 
 ## Summary
 
 - **健康 agent**: 5/5
 - **问题 agent**: 0/5
-- **数据流异常**: 0
-- **生成时间**: 2026-10-01T12:16:18.017Z
+- **数据流异常**: 1
+- **生成时间**: 2026-10-01T14:20:36.561Z
