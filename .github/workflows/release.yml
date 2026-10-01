@@ -5,7 +5,9 @@
 #
 # 行为：
 #   - 如果有待发布的 changeset → 创建 "Version Packages" PR
-#   - 如果没有待发布的 changeset → 发布当前未发布的 GA 包版本到 npm
+#   - 如果有待发布的 changeset → 创建 "Version Packages" PR
+#   - 如果没有待发布的 changeset → 先在同一 SHA 上执行 release:verify 门禁（含严格视觉与 CLI 安装 smoke），
+#     全部通过后发布当前未发布的 GA 包版本到 npm；任一 gate 失败都不会到达 publish
 #   - scene3d 使用 next dist-tag；scene3d-three-adapter 不进 GA publish
 #
 # 前置条件：
@@ -76,6 +78,14 @@ jobs:
           title: "chore: version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Playwright Chromium for the release gate
+        if: steps.changesets.outputs.pending == 'false'
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Release quality gate (same SHA)
+        if: steps.changesets.outputs.pending == 'false'
+        run: pnpm release:verify
 
       - name: Publish GA packages to npm
         if: steps.changesets.outputs.pending == 'false'

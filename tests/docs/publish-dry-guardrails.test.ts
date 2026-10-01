@@ -68,6 +68,39 @@ describe("publish dry-run guardrails", () => {
     expect(publishScript).not.toContain("@gis-engine/scene3d-three-adapter");
   });
 
+  it("gates the main-push release workflow on the same-SHA release verification before publish", () => {
+    const releaseWorkflow = readText(".github/workflows/release.yml");
+
+    const gateIndex = releaseWorkflow.indexOf("run: pnpm release:verify");
+    const publishIndex = releaseWorkflow.indexOf("run: pnpm release:publish");
+    expect(gateIndex, "release.yml must run the release quality gates").toBeGreaterThan(-1);
+    expect(publishIndex).toBeGreaterThan(-1);
+    expect(gateIndex, "publish must not run before the quality gate on the same SHA").toBeLessThan(publishIndex);
+
+    // The gate needs a real browser for the strict visual suite.
+    const browserIndex = releaseWorkflow.indexOf("playwright install --with-deps chromium");
+    expect(browserIndex).toBeGreaterThan(-1);
+    expect(browserIndex).toBeLessThan(gateIndex);
+
+    // Gate and publish only apply to the no-pending-changesets branch.
+    const gateBranch = releaseWorkflow.slice(0, gateIndex);
+    expect(gateBranch).toContain("steps.changesets.outputs.pending == 'false'");
+    const gateIfCount = (releaseWorkflow.match(/if: steps\.changesets\.outputs\.pending == 'false'/g) ?? []).length;
+    expect(gateIfCount).toBeGreaterThanOrEqual(3);
+  });
+
+  it("provides a canonical Ubuntu runner job to generate pixel baselines explicitly", () => {
+    const baselineWorkflow = readText(".github/workflows/visual-baselines.yml");
+
+    expect(baselineWorkflow).toContain("workflow_dispatch");
+    expect(baselineWorkflow).toContain("ubuntu-latest");
+    expect(baselineWorkflow).toContain("playwright install --with-deps chromium");
+    expect(baselineWorkflow).toContain(
+      "SNAPSHOT_UPDATE=1 GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual",
+    );
+    expect(baselineWorkflow).toContain("upload-artifact");
+  });
+
   it("keeps legacy NPM Publish workflow delegated to the GA publish script and shared token fallback", () => {
     const legacyWorkflow = readText(".github/workflows/npm-publish.yml");
 

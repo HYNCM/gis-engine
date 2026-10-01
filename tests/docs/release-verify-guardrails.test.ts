@@ -41,6 +41,15 @@ describe("release verify guardrails", () => {
     expect(releaseVerifyScript).not.toContain("@gis-engine/scene3d-three-adapter publish");
   });
 
+  it("requires strict visual snapshots inside release:verify", () => {
+    const releaseVerifyScript = readText("scripts/release-verify.mjs");
+
+    expect(releaseVerifyScript).toContain('name: "visual-snapshots"');
+    expect(releaseVerifyScript).toContain('args: ["test:snapshot:visual"]');
+    expect(releaseVerifyScript).toContain("GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT");
+    expect(releaseVerifyScript).toContain('"1"');
+  });
+
   it("keeps the CLI install smoke as a generated-artifact acceptance loop", () => {
     const smokeScript = readText("scripts/cli-install-smoke.mjs");
 

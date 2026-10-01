@@ -40,6 +40,18 @@ const steps = [
     args: ["smoke:cli-install"],
     failureAction: "Fix packaged CLI or generated-project regressions before continuing.",
   },
+  ...(skipBrowser
+    ? []
+    : [
+        {
+          name: "visual-snapshots",
+          command: "pnpm",
+          args: ["test:snapshot:visual"],
+          env: { GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT: "1" },
+          failureAction:
+            "Pixel baselines must exist and match for this runner's platform. Generate a foreign-platform baseline only through the explicit visual-baselines workflow, never as a side effect of a comparison run.",
+        },
+      ]),
   {
     name: "build-cdn-dry-run",
     command: "pnpm",
@@ -68,6 +80,7 @@ for (const step of steps) {
     execFileSync(step.command, step.args, {
       cwd: root,
       stdio: "inherit",
+      env: { ...process.env, ...step.env },
     });
     console.log(`✓ ${step.name}\n`);
   } catch (error) {
