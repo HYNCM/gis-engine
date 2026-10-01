@@ -21,7 +21,12 @@ import { execSync } from "node:child_process";
 import { closeSync, mkdirSync, openSync, readFileSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { extractTaskIds, validateAutomationReportContent, validatePlanningConsistency } from "./agent-framework.mjs";
+import {
+  classifyReportEvidence,
+  extractTaskIds,
+  validateAutomationReportContent,
+  validatePlanningConsistency,
+} from "./agent-framework.mjs";
 import {
   AGENT_REGISTRY,
   getAgentOutput,
@@ -466,6 +471,27 @@ export function generateReport(agentName, agentDef, period, gateResults) {
   return lines.join("\n");
 }
 
+/**
+ * 模板只负责首先生成证据骨架：已经填写过的报告必须保留。
+ * classifyReportEvidence 对无法识别的内容返回 specialist，因此缺 front matter 的手写报告同样受保护。
+ */
+export function writeTemplateReport(outputPath, report) {
+  let existing = null;
+  try {
+    existing = readFileSync(outputPath, "utf-8");
+  } catch {
+    existing = null;
+  }
+
+  if (existing !== null && classifyReportEvidence(existing) === "specialist") {
+    return { written: false, reason: "specialist-evidence-preserved" };
+  }
+
+  mkdirSync(dirname(outputPath), { recursive: true });
+  writeFileSync(outputPath, report, "utf-8");
+  return { written: true, reason: existing === null ? "new-report" : "template-refresh" };
+}
+
 // ── 主逻辑 ──
 
 async function main() {
@@ -631,9 +657,12 @@ Agent Runner — GIS Engine 多智能体调用脚本
         if (!reportValidation.valid) {
           throw new Error(`Generated report failed validation for ${name}: ${reportValidation.issues.join("; ")}`);
         }
-        mkdirSync(dirname(outputPath), { recursive: true });
-        writeFileSync(outputPath, report, "utf-8");
-        console.log(`   📄 报告已生成: ${outputPath}`);
+        const outcome = writeTemplateReport(outputPath, report);
+        if (outcome.written) {
+          console.log(`   📄 报告已生成: ${outputPath}`);
+        } else {
+          console.log(`   ⏭️ 目标报告已有 specialist 分析，按单写者约定未覆盖: ${outputPath}`);
+        }
       }
       console.log("");
     }
