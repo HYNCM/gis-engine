@@ -369,8 +369,12 @@ function generateFrontMatter(agentName, agentDef, period, _gateResults) {
   ].join("\n");
 }
 
+/** 单条门禁的时间预算：`pnpm check` 是全量合并门禁（build + 全部用例），冷缓存的 runner 需要数分钟。 */
+export const GATE_TIMEOUT_MS = 30 * 60_000;
+const GATE_EXCERPT_CHARS = 4_000;
+
 /** 运行门禁命令 */
-function runGates(gates) {
+export function runGates(gates, { timeoutMs = GATE_TIMEOUT_MS, log = (line) => console.log(line) } = {}) {
   const results = [];
   for (const gate of gates) {
     try {
@@ -378,15 +382,20 @@ function runGates(gates) {
         cwd: ROOT,
         encoding: "utf-8",
         stdio: "pipe",
-        timeout: 120_000,
+        timeout: timeoutMs,
+        maxBuffer: 64 * 1024 * 1024,
       });
       results.push({ gate, status: "passed", output: output.slice(-500) });
     } catch (err) {
-      results.push({
-        gate,
-        status: "failed",
-        output: err.stderr?.slice(-500) || err.message,
-      });
+      const detail = (err.stderr || "").slice(-GATE_EXCERPT_CHARS);
+      const excerpt =
+        err.code === "ETIMEDOUT"
+          ? `timed out after ${timeoutMs}ms${detail ? `\n${detail}` : ""}`
+          : detail || err.message;
+      results.push({ gate, status: "failed", output: excerpt });
+      // Without this the CI log shows a red icon and nothing else: the excerpt only reached a
+      // report that push-triggered runs never upload, so a false block was undiagnosable.
+      log(`     ↳ ${gate} failed: ${excerpt}`);
     }
   }
   return results;
