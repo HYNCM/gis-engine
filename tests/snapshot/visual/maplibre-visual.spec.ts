@@ -10,6 +10,11 @@ const require = createRequire(import.meta.url);
 const width = 320;
 const height = 200;
 const strictVisualSnapshot = process.env.GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT === "1";
+const pngBase64Prefix = "data:image/png;base64,";
+
+function decodePngFrame(dataUrl: string): Buffer {
+  return Buffer.from(dataUrl.slice(pngBase64Prefix.length), "base64");
+}
 
 interface MapLibreBundle {
   /** File path to the bundle (UMD) or the ESM module (v6+). */
@@ -227,6 +232,7 @@ test("renders a real MapLibre visual snapshot when dependencies are available", 
     expect(renderResult.canvasHeight).toBeGreaterThan(0);
     expect(renderResult.nonTransparentSamples).toBeGreaterThan(0);
     expect(renderResult.nonWhiteSamples).toBeGreaterThan(0);
+    expect(decodePngFrame(renderResult.dataUrl)).toMatchSnapshot("maplibre-geojson.png");
     expect(report.status).toBe("passed");
   } finally {
     await browser.close();
@@ -336,6 +342,7 @@ test("renders a vector tile release acceptance snapshot with generated local MVT
     expect(renderResult.canvasHeight).toBeGreaterThan(0);
     expect(renderResult.nonTransparentSamples).toBeGreaterThan(0);
     expect(renderResult.nonWhiteSamples).toBeGreaterThan(0);
+    expect(decodePngFrame(renderResult.dataUrl)).toMatchSnapshot("maplibre-vector-tile.png");
     expect(consoleErrors).toEqual([]);
     expect(report.status).toBe("passed");
   } finally {
@@ -430,6 +437,7 @@ test("renders a fill-extrusion-lite beta visual snapshot", async ({}, testInfo) 
     expect(renderResult.canvasHeight).toBeGreaterThan(0);
     expect(renderResult.nonTransparentSamples).toBeGreaterThan(0);
     expect(renderResult.nonWhiteSamples).toBeGreaterThan(0);
+    expect(decodePngFrame(renderResult.dataUrl)).toMatchSnapshot("maplibre-fill-extrusion.png");
     expect(consoleErrors).toEqual([]);
     expect(report.status).toBe("passed");
   } finally {
@@ -524,6 +532,7 @@ test("renders a data-driven-styling visual snapshot with circle-color expression
     expect(renderResult.canvasHeight).toBeGreaterThan(0);
     expect(renderResult.nonTransparentSamples).toBeGreaterThan(0);
     expect(renderResult.nonWhiteSamples).toBeGreaterThan(0);
+    expect(decodePngFrame(renderResult.dataUrl)).toMatchSnapshot("maplibre-data-driven.png");
     expect(consoleErrors).toEqual([]);
     expect(report.status).toBe("passed");
   } finally {

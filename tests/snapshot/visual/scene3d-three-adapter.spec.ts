@@ -11,8 +11,9 @@ test("captures a synthetic Canvas2D SceneView3D frame and the adapter runtime ev
     body: Buffer.from(JSON.stringify(runner.report, null, 2), "utf8"),
     contentType: "application/json",
   });
+  const framePng = Buffer.from(runner.browserRenderResult.dataUrl.split(",")[1] ?? "", "base64");
   await testInfo.attach("scene3d-browser-runner.png", {
-    body: Buffer.from(runner.browserRenderResult.dataUrl.split(",")[1] ?? "", "base64"),
+    body: framePng,
     contentType: "image/png",
   });
 
@@ -22,6 +23,7 @@ test("captures a synthetic Canvas2D SceneView3D frame and the adapter runtime ev
   expect(runner.capture.nonTransparentPixels).toBeGreaterThan(0);
   expect(runner.capture.changedPixelsFromBackground).toBeGreaterThan(0);
   expect(runner.capture.consoleErrors).toEqual([]);
+  expect(framePng).toMatchSnapshot("scene3d-frame.png");
 
   const matrix = runner.report.promotionMatrix;
   expect(matrix.browserPaintEvidence).toEqual({

@@ -1,0 +1,56 @@
+# Visual Baselines — 在规范 Ubuntu runner 上显式生成像素基线
+#
+# 触发：仅手动 workflow_dispatch。普通比较运行（playwright.config.ts 默认
+# updateSnapshots: "none"）绝不写参考帧；缺基线直接失败。
+#
+# 产物：tests/__snapshots__ 打包为 artifact，由 @builder(qa) 审查后人工提交，
+# 供 pr-quality / release 的严格视觉门禁（*-linux.png）消费。
+
+name: Visual Baselines
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: visual-baselines-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  generate:
+    name: "generate: ubuntu pixel baselines"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11.9.0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build:schema
+
+      - run: pnpm build
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Generate Linux pixel baselines (explicit writer)
+        run: SNAPSHOT_UPDATE=1 GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual
+
+      - name: Upload generated baselines for human review
+        uses: actions/upload-artifact@v7
+        with:
+          name: ubuntu-pixel-baselines
+          path: tests/__snapshots__/**/*-linux.png
+          if-no-files-found: error

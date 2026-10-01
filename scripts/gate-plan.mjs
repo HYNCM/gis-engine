@@ -166,6 +166,18 @@ export function buildPlan(files) {
 
   if (
     files.some((file) =>
+      fileMatches(file, [/^playwright\.config\.ts$/, /^tests\/__snapshots__\//, /^tests\/snapshot\/visual\//]),
+    )
+  ) {
+    addGate(
+      gates,
+      "GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual",
+      "Playwright harness, pixel baselines, and visual specs require strict visual evidence",
+    );
+  }
+
+  if (
+    files.some((file) =>
       fileMatches(file, [
         /^packages\/engine\/src\/renderer\/maplibre\//,
         /^tests\/(?:adapter\/.*maplibre|e2e\/render-pipeline\.spec\.ts|snapshot\/visual\/maplibre-visual\.spec\.ts)/,

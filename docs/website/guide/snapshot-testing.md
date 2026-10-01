@@ -27,12 +27,18 @@ pnpm test:snapshot:visual
 ```
 
 ```bash
-# Update baselines
-SNAPSHOT_UPDATE=1 pnpm test:snapshot:visual
+# Update baselines (rewrites pixel references and requires the visual suite)
+pnpm test:snapshot:update
 
 # Strict mode (CI)
 GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual
 ```
+
+Each visual scene is additionally compared against a committed pixel baseline under
+`tests/__snapshots__/`: `maplibre-geojson`, `maplibre-vector-tile`, `maplibre-fill-extrusion`,
+`maplibre-data-driven`, and `scene3d-frame`. Baselines exist for macOS runners only, so a runner on
+another platform reports a missing baseline rather than a rendering regression — it never produced
+the reference frame.
 
 ## When to Use Each
 
