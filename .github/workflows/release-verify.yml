@@ -1,0 +1,52 @@
+# Release Verify — 在规范 Ubuntu runner 上手动执行发布验证链
+#
+# 触发：仅手动 workflow_dispatch（在要验证的 SHA 上 dispatch）。
+#
+# 为什么单独存在：
+#   `pnpm release:verify` 是唯一消费 `*-linux.png` 像素基线的门禁，而 push 触发的
+#   Release job 只在没有待发布 changeset 时才走到它。只要有 changeset 在 PR 里等待，
+#   Ubuntu 严格视觉证据就永远不会产生，@quality 只能给出 block。
+#   本工作流提供同一 SHA 的非发布验证入口：跑完整 verify 链（含 strict visual 与
+#   CLI 安装 smoke），但没有任何 publish 步骤。
+#
+# 边界：
+#   - permissions 只有 contents: read，不写基线（绝不出现 SNAPSHOT_UPDATE），不发布。
+#   - 发布仍由 release.yml 在同一 SHA 的门禁后执行。
+
+name: Release Verify
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: "verify: release gate chain"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11.9.0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Release verification (strict visual included, no publish)
+        run: pnpm release:verify
