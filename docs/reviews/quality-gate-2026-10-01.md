@@ -1,8 +1,8 @@
 ---
 agent: quality
 period: 2026-10-01
-generated_at: 2026-10-01T07:59:00Z
-repo_revision: "0ac2546"
+generated_at: 2026-10-01T08:55:00Z
+repo_revision: "4b62370"
 inputs:
   - docs/reviews/project-review-2026-10-01.md
   - docs/reviews/review-fixes-builder-evidence-2026-10-01.md
@@ -10,6 +10,7 @@ inputs:
   - .github/workflows/release.yml
   - .github/workflows/visual-baselines.yml
   - playwright.config.ts
+  - https://github.com/HYNCM/gis-engine/actions/runs/36834064620
 owner: "@quality"
 decision_level: advisory
 evidence_kind: specialist
@@ -20,8 +21,9 @@ gate_result: conditional-pass
 
 ## Verdict
 
-**conditional-pass** for merge; **block** for release claims until the Linux
-pixel baselines exist.
+**conditional-pass** for merge. The Linux pixel-baseline release blocker raised
+in the first revision of this report is **closed**; one new release condition
+replaces it (see "Blocking condition for release").
 
 All nine findings from `docs/reviews/project-review-2026-10-01.md` are
 remediated with regression tests that were observed failing first. The batch
@@ -52,14 +54,45 @@ itself was re-verified on the merged local tree (repo_revision 0ac2546):
   structured (`SECURITY.URL_BLOCKED`, `RENDER.DESTROYED` paths unchanged),
   renderer behavior stayed behind the adapter contract.
 
+## Linux pixel baselines — closed
+
+Visual Baselines run `36834064620` generated the five Ubuntu frames
+(`SNAPSHOT_UPDATE=1` on `ubuntu-latest`), the step log recorded
+`A snapshot doesn't exist ... writing actual` for each one, and all five were
+reviewed frame by frame before commit `c32105e`. They are byte-identical to the
+macOS references, so these fixtures render deterministically across runners.
+`tests/framework/visual-pixel-baseline.test.ts` now fails if any scene loses a
+platform frame, which is what a missing baseline used to hide behind.
+
 ## Blocking condition for release
 
-`release:verify` now runs the strict visual suite on Ubuntu runners, where no
-`*-linux.png` baselines are committed. Until
-`.github/workflows/visual-baselines.yml` is dispatched, its artifacts reviewed,
-and the Linux references committed, any main-push Release job will fail on the
-missing-baseline condition — by design, not a rendering regression.
-Follow-up owner: @orchestrator (dispatch + review + commit baselines).
+`pnpm release:verify` runs the strict visual suite on `ubuntu-latest`, and the
+push-triggered Release job has not exercised that path yet: while changesets are
+pending it stops after "Create Version Packages Pull Request" (run `36838718047`,
+1m40s, no `release:verify` step). The Ubuntu frames are therefore reviewed and
+committed but never consumed by CI. Close this by running
+`GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual` on an Ubuntu
+runner once through the release path, or by dispatching it deliberately before
+the next release claim.
+Follow-up owner: @orchestrator (release-day verification), @quality (accept the
+evidence).
+
+## CI failures found after the merge push
+
+Both were pre-existing and were exposed, not caused, by this batch:
+
+1. `scripts/agent-runner.mjs` capped every gate at 120s while `pnpm check` is
+   build plus the whole suite. Run `36835161332` timed out at 154s; run
+   `36837116539` cleared the same four gates in 118s, i.e. two seconds under the
+   cap — the daily quality evidence was a coin flip, and the failure excerpt
+   reached only a report that push runs never upload. Fixed in `21609d8`
+   (30-minute budget, excerpt logged, `maxBuffer` raised).
+2. `tests/workbench/workbench-chat-session.test.ts` raced a second chat edit
+   against a held provider response without synchronising on the handler
+   entering it. CI run `36837116518` (macos-latest) served the second request
+   first, so the "stale" result was legitimately current and returned 200
+   instead of 409. Fixed in `4b62370`; the race did not reproduce locally in 20
+   runs, so the fix follows the CI evidence rather than a local repro.
 
 ## Advisory carry-over items
 
@@ -68,5 +101,10 @@ Follow-up owner: @orchestrator (dispatch + review + commit baselines).
 2. Repo-wide `pnpm lint` has pre-existing biome findings outside this batch;
    schedule a cleanup or fold it into the merge gate deliberately.
 3. Remote `Agent Daily/Monthly Cadence` failures were SLA-staleness of
-   specialist evidence (exit 2), addressed by this report set; monitor the next
-   cadence run to confirm green.
+   specialist evidence (exit 2), addressed by this report set; the daily cadence
+   has been green since run `36837116539`. The Monthly run `36817352239` still
+   shows the pre-fix failure and has not been re-run.
+4. PR #47 (`chore: version packages`) workflow runs keep landing in
+   `action_required`; the runs need a one-time approval or a repository
+   approval-setting change, which is a human decision.
+
