@@ -16,6 +16,7 @@ concurrency:
 
 jobs:
   schema-diff:
+    if: ${{ github.actor != 'github-actions[bot]' }}
     name: "schema: diff report"
     runs-on: ubuntu-latest
     steps:
@@ -78,6 +79,7 @@ jobs:
         continue-on-error: true
 
   quality:
+    if: ${{ github.actor != 'github-actions[bot]' }}
     name: "quality: PR gate plan"
     runs-on: ubuntu-latest
     steps:

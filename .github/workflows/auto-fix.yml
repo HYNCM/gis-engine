@@ -33,6 +33,7 @@ permissions:
 jobs:
   # ── Job 1: 诊断 ──
   diagnose:
+    if: ${{ github.actor != 'github-actions[bot]' }}
     name: "诊断当前问题"
     runs-on: ubuntu-latest
     outputs:
@@ -92,7 +93,7 @@ jobs:
     name: "自动修复 Schema 同步"
     runs-on: ubuntu-latest
     needs: [diagnose]
-    if: ${{ needs.diagnose.outputs.schema_issue == 'true' || needs.diagnose.outputs.test_issue == 'true' }}
+    if: ${{ github.actor != 'github-actions[bot]' && (needs.diagnose.outputs.schema_issue == 'true' || needs.diagnose.outputs.test_issue == 'true') }}
     steps:
       - uses: actions/checkout@v6
 
@@ -123,7 +124,7 @@ jobs:
     name: "自动修复文档引用"
     runs-on: ubuntu-latest
     needs: [diagnose]
-    if: ${{ needs.diagnose.outputs.docs_issue == 'true' }}
+    if: ${{ github.actor != 'github-actions[bot]' && needs.diagnose.outputs.docs_issue == 'true' }}
     steps:
       - uses: actions/checkout@v6
 

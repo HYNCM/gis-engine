@@ -40,6 +40,7 @@ permissions:
 
 jobs:
   size-check:
+    if: ${{ github.event_name != 'pull_request' || github.actor != 'github-actions[bot]' }}
     name: "体积检查"
     runs-on: ubuntu-latest
     steps:
