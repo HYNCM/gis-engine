@@ -1,63 +1,69 @@
 ---
 agent: orchestrator
-period: 2026-W34
-generated_at: 2026-08-19T15:28:05Z
-repo_revision: "5be1b147"
+period: 2026-W40
+generated_at: 2026-10-01T08:04:00Z
+repo_revision: "0ac2546"
 inputs:
+  - docs/research/competitor-updates-2026-W40.md
+  - docs/reviews/quality-gate-2026-10-01.md
+  - docs/reviews/review-fixes-builder-evidence-2026-10-01.md
+  - docs/reviews/documentation-audit-2026-10-01.md
+  - docs/reviews/project-review-2026-10-01.md
   - docs/planning/issues-snapshot.md
-  - docs/reviews/workbench-v1-builder-evidence-2026-08-19.md
-  - docs/reviews/workbench-v1-quality-decision-2026-08-19.md
-  - docs/research/competitor-updates-2026-W32.md
-  - https://github.com/HYNCM/gis-engine/issues/66
-  - https://github.com/HYNCM/gis-engine/pull/67
-  - https://github.com/HYNCM/gis-engine/pull/47
+  - https://github.com/HYNCM/gis-engine/actions/runs/36817352239
+  - https://github.com/HYNCM/gis-engine/pull/112
+  - https://github.com/HYNCM/gis-engine/pull/113
 owner: "@orchestrator"
 decision_level: advisory
 evidence_kind: specialist
 ---
 
-# Weekly Digest
+# Weekly Digest — 2026-W40
 
-## Workbench Decision
+## Headline: the 2026-10-01 quality review is fully remediated
 
-PR [#67](https://github.com/HYNCM/gis-engine/pull/67) is the Draft implementation
-candidate for the local-first Workbench golden path. The bounded implementation
-gate passes locally; Alpha and local-v1 promotion remain blocked by target-user
-metrics, generated dependency advisory triage, and final-head remote CI.
+All six P1 and three P2 findings in `docs/reviews/project-review-2026-10-01.md`
+were fixed test-first and committed to `main` (121061d..0ac2546). @quality
+issued **conditional-pass** for merge; see
+`docs/reviews/quality-gate-2026-10-01.md` for the gate table and
+`docs/reviews/review-fixes-builder-evidence-2026-10-01.md` for implementation
+evidence.
 
-| Surface | Current state | Boundary |
-| --- | --- | --- |
-| Workbench implementation | Candidate complete on `codex/workbench-v1` | Review and user validation only; not v1 promotion |
-| Product milestone | [#66](https://github.com/HYNCM/gis-engine/issues/66) OPEN in milestone 3 | Seven implementation items complete; user-study gates open |
-| Quality | Conditional PASS | [HOC-N3](../reviews/workbench-v1-quality-decision-2026-08-19.md) passes code candidate and blocks promotion |
-| PR #47 | Engine-family release vehicle only | GeoParquet metadata shape is breaking; no Workbench/3D/hosted uplift |
-| MCP | Canonical 14-tool 2025-11-25 inventory unchanged | No Workbench aliases |
-| Rendering | MapLibre 2D only | Stable `scene3d` remains independently blocked |
+## Remote CI state
 
-## Evidence
+- `Agent Daily / Weekly / Monthly Cadence` failures (runs 36806226829,
+  36817352239, escalation issues #120–#122, #116, #118) were SLA-staleness of
+  specialist evidence (exit 2), not gate regressions. This digest set closes the
+  evidence gap; escalation issues can be closed after the next cadence run goes
+  green.
+- Open blocking bug **#119**: `@gis-engine/cli` gzip 68,184 B over the 65,536 B
+  budget (filed 2026-09-30, before this batch). Bundle Size is a push-to-main
+  gate on `packages/**`, so it must be resolved as part of landing this work.
+- Until Linux pixel baselines are generated via `visual-baselines.yml` and
+  committed, the strict visual stage of `release:verify` will fail on Ubuntu
+  runners by design (missing-baseline ≠ rendering regression).
 
-- Project files, plans, revisions, export receipts, read-only SQLite migration,
-  opt-in telemetry, Mock and one server-held provider are implemented.
-- `pnpm build:schema`, `pnpm check`, 27 security tests, browser E2E, delivery
-  install/build/preflight/hash verification, resource policy, strict visual 5/5,
-  and documentation build pass locally.
-- Clean-checkout PR quality runs caught eager launcher loading and an E2E
-  server dependency on implicit CLI `dist`. Commit `5be1b14` defers launcher
-  import and `test:workbench:e2e` now builds CLI explicitly; final-head CI is
-  being rerun.
-- Delivery succeeds but npm reports one high and one moderate dependency
-  advisory. This is a release blocker until the exact chain is triaged.
+## Priorities for next week (priority formula applied, inputs from @product W40)
 
-## Next Checkpoint
+1. **P1 — Linux pixel baselines + Release closure** (@orchestrator dispatches
+   `visual-baselines`, @quality reviews frames, then commit). Unblocks the
+   same-SHA release gate shipped in this batch.
+2. **P1 — Bundle budget #119** (@builder engine/cli focus): bring
+   `@gis-engine/cli` under the `config/package-size-budgets.json` limit.
+3. **P2 — MapLibre v6 compatibility evidence** (@builder adapter + @quality):
+   upstream is v6.11.2 while the matrix pins v5 — extend the exact-version
+   compat matrix before the next rendering contract change.
+4. **P2 — MCP 2026-07-28 migration assessment** (@builder ai): stateless
+   routing, MRTR elicitation, 12-month deprecation window; contract tool
+   inventory itself is expected to survive.
+5. **P3 — community.ts name-escaping follow-up** (advisory carry-over from
+   P2-2).
 
-1. Require PR #67 final-head CI and human review without changing product
-   promotion status.
-2. Triage the generated app dependency advisories.
-3. Run the five-person Alpha study and record completion time, build result,
-   and leak checks per participant.
-4. Plan local-v1 validation only after the Alpha threshold passes.
+## Queue and branch hygiene
 
-HOC-N1 remains stale because current external competitor/standards research was
-not refreshed in this product implementation run. No protocol, renderer,
-cloud-native format, or competitor-driven adoption decision is authorized by
-the W32 report.
+- PR #112 (studio-state-safety) and #113 (event-driven-agent-gates) remain open;
+  per triage rule #113 closes as duplicate after its quiet window, never delete.
+- `codex/evidence-record-a` merged into `main` and deleted locally; PR #67
+  merged, its worktree preserved untouched.
+- Workbench Alpha gate still waits on naming 5 target WebGIS engineers (user
+  decision).

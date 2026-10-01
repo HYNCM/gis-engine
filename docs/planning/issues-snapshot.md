@@ -1,15 +1,15 @@
 ---
 agent: orchestrator
 period: issue-snapshot
-generated_at: 2026-10-01T04:58:10.959Z
-repo_revision: "a8d558e"
+generated_at: 2026-10-01T07:57:04.646Z
+repo_revision: "0ac2546"
 inputs:
   - GitHub Issues API
 owner: "@orchestrator"
 decision_level: info
 issue_source: authenticated
-source_updated_at: 2026-09-30T22:08:49Z
-evidence_run_id: planning-evidence-20261001T045810959Z
+source_updated_at: 2026-10-01T05:23:48Z
+evidence_run_id: planning-evidence-2026-10-01T07:57:04.646Z
 ---
 
 # GitHub Issues Planning Snapshot
@@ -18,19 +18,21 @@ evidence_run_id: planning-evidence-20261001T045810959Z
 
 ## Summary
 
-- Open issues: 70
-- Closed issues in snapshot: 30
+- Open issues: 72
+- Closed issues in snapshot: 28
 - Total returned: 100
 
 ## Issues
 
 | Issue | State | Title | Labels | Assignees | Milestone | Updated |
 | --- | --- | --- | --- | --- | --- | --- |
+| #122 | OPEN | [Agent Escalation: Agent Monthly Cadence run 36817352239](https://github.com/HYNCM/gis-engine/issues/122) | agent-escalation, automation | - | - | 2026-10-01T05:23:48Z |
+| #121 | OPEN | [Agent Escalation: Agent Daily Cadence run 36806226829](https://github.com/HYNCM/gis-engine/issues/121) | agent-escalation, automation | - | - | 2026-10-01T05:23:40Z |
 | #120 | OPEN | [Agent Escalation: Agent Daily Cadence run 36698077914](https://github.com/HYNCM/gis-engine/issues/120) | agent-escalation, automation | - | - | 2026-09-30T22:08:42Z |
 | #119 | OPEN | [Bundle Size gate fails on @gis-engine/cli: 68,184 B over the 65,536 B blocking budget](https://github.com/HYNCM/gis-engine/issues/119) | bug, agent:builder, priority:p1 | - | - | 2026-09-30T09:44:00Z |
 | #118 | OPEN | [Agent Escalation: Agent Daily Cadence run 36660071422](https://github.com/HYNCM/gis-engine/issues/118) | agent-escalation, automation | - | - | 2026-09-30T05:07:48Z |
 | #117 | OPEN | [Agent Escalation: Agent Daily Cadence run 36514281764](https://github.com/HYNCM/gis-engine/issues/117) | agent-escalation, automation | - | - | 2026-09-29T22:08:50Z |
-| #116 | OPEN | [Agent Escalation: Agent Weekly Cadence run 36372641006](https://github.com/HYNCM/gis-engine/issues/116) | agent-escalation, automation | - | - | 2026-09-30T22:08:45Z |
+| #116 | OPEN | [Agent Escalation: Agent Weekly Cadence run 36372641006](https://github.com/HYNCM/gis-engine/issues/116) | agent-escalation, automation | - | - | 2026-10-01T05:23:44Z |
 | #115 | OPEN | [Agent Escalation: Agent Daily Cadence run 36368211963](https://github.com/HYNCM/gis-engine/issues/115) | agent-escalation, automation | - | - | 2026-09-28T23:09:47Z |
 | #114 | OPEN | [Agent Escalation: Agent Daily Cadence run 36287013399](https://github.com/HYNCM/gis-engine/issues/114) | agent-escalation, automation | - | - | 2026-09-27T21:14:17Z |
 | #111 | OPEN | [Agent Escalation: Agent Daily Cadence run 36210504828](https://github.com/HYNCM/gis-engine/issues/111) | agent-escalation, automation | - | - | 2026-09-26T20:56:54Z |
@@ -124,5 +126,3 @@ evidence_run_id: planning-evidence-20261001T045810959Z
 | #13 | CLOSED | [TASK-2026W25-STUDIO-001: Studio and Workbench product Go/No-go evidence](https://github.com/HYNCM/gis-engine/issues/13) | documentation, agent:product, priority:p2, track:productization, agent:quality | - | - | 2026-06-10T05:46:52Z |
 | #12 | CLOSED | [TASK-2026W25-DATA-001: bounded PMTiles runtime query promotion design](https://github.com/HYNCM/gis-engine/issues/12) | enhancement, agent:product, priority:p2, track:productization, agent:quality | - | - | 2026-06-10T05:46:52Z |
 | #11 | CLOSED | [TASK-2026W25-ADOPT-003: generated project auditability regression](https://github.com/HYNCM/gis-engine/issues/11) | enhancement, track:productization, agent:quality, agent:builder, priority:p1 | - | - | 2026-06-10T05:46:52Z |
-| #10 | CLOSED | [TASK-2026W25-ADOPT-002: OpenAI-compatible provider end-to-end smoke](https://github.com/HYNCM/gis-engine/issues/10) | enhancement, track:productization, agent:quality, agent:builder, priority:p1 | - | - | 2026-06-10T05:46:52Z |
-| #9 | CLOSED | [TASK-2026W25-ADOPT-001: SDK+CLI 30-minute first-run acceptance](https://github.com/HYNCM/gis-engine/issues/9) | enhancement, track:productization, agent:quality, agent:builder, priority:p1 | - | - | 2026-06-10T04:56:48Z |
