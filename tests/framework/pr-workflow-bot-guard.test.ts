@@ -17,12 +17,15 @@ function jobRanges(lines: string[]): Array<{ name: string; body: string[] }> {
   const jobsStart = lines.indexOf("jobs:");
   if (jobsStart === -1) throw new Error("workflow declares no jobs section");
 
-  const starts = lines
-    .map((line, index) => ({ line, index }))
-    .filter(({ index, line }) => index > jobsStart && /^ {2}[A-Za-z0-9_-]+:$/.test(line));
+  const starts: Array<{ name: string; index: number }> = [];
+  lines.forEach((line, index) => {
+    if (index <= jobsStart) return;
+    const match = /^ {2}([A-Za-z0-9_-]+):$/.exec(line);
+    if (match) starts.push({ name: match[1], index });
+  });
 
-  return starts.map(({ line, index }, position) => ({
-    name: /^ {2}([A-Za-z0-9_-]+):$/.exec(line)![1],
+  return starts.map(({ name, index }, position) => ({
+    name,
     body: lines.slice(index + 1, starts[position + 1]?.index ?? lines.length),
   }));
 }
