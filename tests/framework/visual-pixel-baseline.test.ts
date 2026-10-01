@@ -67,6 +67,28 @@ describe("visual pixel baseline", () => {
     expect(config).toMatch(/SNAPSHOT_UPDATE === "1"\s*\?\s*"all"\s*:\s*"none"/);
   });
 
+  it("ships a committed baseline for every scene on every CI runner platform", () => {
+    const groups = [
+      { dir: "maplibre-visual.spec.ts", source: maplibreVisualSpec },
+      { dir: "scene3d-three-adapter.spec.ts", source: scene3dVisualSpec },
+    ];
+
+    // CI builds run on both ubuntu-latest and macos-latest, so each platform needs its own reference frame.
+    for (const platform of ["darwin", "linux"]) {
+      for (const { dir, source } of groups) {
+        const scenes = [...source.matchAll(/toMatchSnapshot\("([^"]+\.png)"\)/g)].map((match) => match[1]);
+        expect(scenes.length, dir).toBeGreaterThan(0);
+        for (const scene of scenes) {
+          const baseline = scene.replace(/\.png$/, `-${platform}.png`);
+          expect(
+            existsSync(join("tests/__snapshots__/snapshot/visual", dir, baseline)),
+            `${baseline} must be committed; generate it with the Visual Baselines workflow and review before committing`,
+          ).toBe(true);
+        }
+      }
+    }
+  });
+
   it("rejects a missing baseline without writing a reference frame, and writes only on explicit update", () => {
     const dir = mkdtempSync(join(tmpdir(), "gis-baseline-policy-"));
     const png1x1 = Buffer.from(
