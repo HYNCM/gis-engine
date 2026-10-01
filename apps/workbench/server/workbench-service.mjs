@@ -281,14 +281,8 @@ export async function previewWorkbenchPlan(projectRoot, plan) {
     return revisionConflict(state.project.currentRevision, plan.baseRevision);
   }
 
-  const unconfirmed = plan.resourceRequests.find((request) => request.confirmed !== true);
-  if (unconfirmed) {
-    return failure(
-      WorkbenchDiagnosticCodes.NetworkConfirmationRequired,
-      `Resource request "${unconfirmed.resource}" requires explicit confirmation.`,
-      "/resourceRequests",
-    );
-  }
+  const flagFailure = unconfirmedRequestFailure(plan);
+  if (flagFailure) return flagFailure;
 
   const applied = applyCommands(state.spec, plan.commands, {
     transaction: "atomic",
@@ -303,6 +297,9 @@ export async function previewWorkbenchPlan(projectRoot, plan) {
       diagnostics,
     );
   }
+
+  const undeclaredFailure = undeclaredNewResourceFailure(plan, state.spec, applied.spec);
+  if (undeclaredFailure) return undeclaredFailure;
 
   const diff = diffSpecsTool({ before: state.spec, after: applied.spec });
   const affectedPaths = Array.from(
@@ -361,6 +358,14 @@ export async function applyWorkbenchPlan(projectRoot, plan, request, options = {
   const state = await openWorkbenchProject(projectRoot);
   if (request.projectId !== state.project.id) {
     return failure(WorkbenchDiagnosticCodes.ProjectInvalid, "The apply request targets another project.", "/projectId");
+  }
+
+  const flagFailure = unconfirmedRequestFailure(plan);
+  if (flagFailure) return flagFailure;
+  const dryRun = applyCommands(state.spec, plan.commands, { transaction: "atomic" });
+  if (dryRun.committed && !dryRun.rolledBack) {
+    const undeclaredFailure = undeclaredNewResourceFailure(plan, state.spec, dryRun.spec);
+    if (undeclaredFailure) return undeclaredFailure;
   }
 
   return applyWorkbenchProject(
@@ -748,6 +753,44 @@ function collectSpecResources(spec) {
     if (Array.isArray(source.tiles)) resources.push(...source.tiles.filter((entry) => typeof entry === "string"));
   }
   return resources;
+}
+
+// Preview flags requests as unconfirmed, but the apply boundary must not trust that the plan
+// declared every resource its commands actually introduce, so the after-spec is diffed here too.
+function unconfirmedRequestFailure(plan) {
+  const unconfirmed = plan.resourceRequests.find((request) => request.confirmed !== true);
+  if (!unconfirmed) return null;
+  return failure(
+    WorkbenchDiagnosticCodes.NetworkConfirmationRequired,
+    `Resource request "${unconfirmed.resource}" requires explicit confirmation.`,
+    "/resourceRequests",
+  );
+}
+
+function undeclaredNewResourceFailure(plan, beforeSpec, afterSpec) {
+  const declared = new Set(plan.resourceRequests.map((request) => request.resource));
+  const known = new Set(collectSpecResources(beforeSpec));
+  const undeclared = collectSpecResources(afterSpec).filter(
+    (resource) => !known.has(resource) && !declared.has(resource) && isNetworkResourceReference(resource),
+  );
+  if (undeclared.length === 0) return null;
+  return failure(
+    WorkbenchDiagnosticCodes.NetworkConfirmationRequired,
+    `New network resource "${undeclared[0]}" requires an explicit confirmed resource request.`,
+    "/resourceRequests",
+  );
+}
+
+function isNetworkResourceReference(value) {
+  const trimmed = value.trim();
+  if (/^[/\\]{2}/.test(trimmed)) return true;
+  if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed)) return false;
+  try {
+    const parsed = new URL(trimmed);
+    return !["data:", "blob:"].includes(parsed.protocol);
+  } catch {
+    return false;
+  }
 }
 
 function topLevelPath(path) {

@@ -19,6 +19,8 @@ export const WorkbenchDiagnosticCodes = {
   ExportCollision: "WORKBENCH.EXPORT_COLLISION",
   TelemetryConsentRequired: "WORKBENCH.TELEMETRY_CONSENT_REQUIRED",
   TelemetryPayloadRejected: "WORKBENCH.TELEMETRY_PAYLOAD_REJECTED",
+  OriginForbidden: "WORKBENCH.ORIGIN_FORBIDDEN",
+  MediaTypeInvalid: "WORKBENCH.MEDIA_TYPE_INVALID",
 } as const;
 
 const WorkbenchDiagnosticCodeSchema = Type.Union(

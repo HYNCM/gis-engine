@@ -105,9 +105,11 @@ describe("Workbench chat provider race", () => {
     | undefined;
 
   async function post(pathname: string, body: Record<string, unknown>) {
+    const tokenResponse = await fetch(`http://127.0.0.1:${port}/api/workbench-token`);
+    const { token } = (await tokenResponse.json()) as { token?: string };
     const response = await fetch(`http://127.0.0.1:${port}${pathname}`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", "x-workbench-token": token ?? "" },
       body: JSON.stringify(body),
     });
     return { status: response.status, body: (await response.json()) as ChatPayload };

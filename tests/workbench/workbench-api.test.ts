@@ -83,6 +83,25 @@ function planInput(overrides: Record<string, unknown> = {}) {
   };
 }
 
+const REMOTE_GEOJSON_URL = "http://127.0.0.1:8080/private.geojson";
+
+function remoteSourcePlanInput(resourceRequests: unknown[]) {
+  return planInput({
+    goal: "Add the remote cities feed",
+    promptHash: sha256("Add the remote cities feed"),
+    commands: [
+      {
+        id: "add-remote-source",
+        version: "0.1",
+        type: "addSource",
+        sourceId: "remote",
+        source: { type: "geojson", data: REMOTE_GEOJSON_URL },
+      },
+    ],
+    resourceRequests,
+  });
+}
+
 afterEach(async () => {
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
@@ -305,6 +324,84 @@ describe("Workbench plan preview and application", () => {
     });
     expect(applied).toMatchObject({ ok: true, result: { previousRevision: "0", revision: "1" } });
     expect((await openWorkbenchProject(root)).spec.layers[0]?.paint).toEqual({ "circle-color": "#dc2626" });
+  });
+
+  it("blocks direct apply of a plan with an unconfirmed network resource request", async () => {
+    const root = await projectRoot();
+    const created = createWorkbenchPlan(
+      remoteSourcePlanInput([{ kind: "url", resource: REMOTE_GEOJSON_URL, confirmed: false }]),
+      { id: "remote-plan", now: () => createdAt },
+    );
+    if (!created.ok) throw new Error("plan creation failed");
+    const before = await openWorkbenchProject(root);
+    const mapspecBefore = await readFile(join(root, "mapspec.json"));
+
+    expect(await previewWorkbenchPlan(root, created.result.plan)).toMatchObject({
+      ok: false,
+      diagnostics: [{ code: "WORKBENCH.NETWORK_CONFIRMATION_REQUIRED" }],
+    });
+
+    const applied = await applyWorkbenchPlan(root, created.result.plan, {
+      schemaVersion: "gis-engine.workbench.apply-request.v1",
+      projectId: "project-1",
+      planHash: created.result.planHash,
+      baseRevision: "0",
+    });
+    expect(applied).toMatchObject({
+      ok: false,
+      diagnostics: [{ code: "WORKBENCH.NETWORK_CONFIRMATION_REQUIRED" }],
+    });
+    expect(await openWorkbenchProject(root)).toEqual(before);
+    expect(await readFile(join(root, "mapspec.json"))).toEqual(mapspecBefore);
+  });
+
+  it("blocks a plan that adds a network resource without declaring it in resourceRequests", async () => {
+    const root = await projectRoot();
+    const created = createWorkbenchPlan(remoteSourcePlanInput([]), {
+      id: "undeclared-plan",
+      now: () => createdAt,
+    });
+    if (!created.ok) throw new Error("plan creation failed");
+    const before = await openWorkbenchProject(root);
+
+    expect(await previewWorkbenchPlan(root, created.result.plan)).toMatchObject({
+      ok: false,
+      diagnostics: [{ code: "WORKBENCH.NETWORK_CONFIRMATION_REQUIRED" }],
+    });
+
+    const applied = await applyWorkbenchPlan(root, created.result.plan, {
+      schemaVersion: "gis-engine.workbench.apply-request.v1",
+      projectId: "project-1",
+      planHash: created.result.planHash,
+      baseRevision: "0",
+    });
+    expect(applied).toMatchObject({
+      ok: false,
+      diagnostics: [{ code: "WORKBENCH.NETWORK_CONFIRMATION_REQUIRED" }],
+    });
+    expect(await openWorkbenchProject(root)).toEqual(before);
+  });
+
+  it("applies a plan whose new network resource carries a confirmed request", async () => {
+    const root = await projectRoot();
+    const created = createWorkbenchPlan(
+      remoteSourcePlanInput([{ kind: "url", resource: REMOTE_GEOJSON_URL, confirmed: true }]),
+      { id: "confirmed-plan", now: () => createdAt },
+    );
+    if (!created.ok) throw new Error("plan creation failed");
+
+    expect(await previewWorkbenchPlan(root, created.result.plan)).toMatchObject({ ok: true });
+    const applied = await applyWorkbenchPlan(root, created.result.plan, {
+      schemaVersion: "gis-engine.workbench.apply-request.v1",
+      projectId: "project-1",
+      planHash: created.result.planHash,
+      baseRevision: "0",
+    });
+    expect(applied).toMatchObject({ ok: true, result: { previousRevision: "0", revision: "1" } });
+    expect((await openWorkbenchProject(root)).spec.sources["remote"]).toEqual({
+      type: "geojson",
+      data: REMOTE_GEOJSON_URL,
+    });
   });
 
   it("rejects stale previews and preserves state after an atomic apply failure", async () => {

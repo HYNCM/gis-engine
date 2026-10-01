@@ -14,7 +14,7 @@
  *   WORKBENCH_DB_PATH=./data/maps.db node apps/workbench/server/index.mjs
  */
 
-import { createHash, randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { createRequire } from "node:module";
@@ -163,6 +163,97 @@ export async function readJsonBody(req, maxBytes = MAX_JSON_BODY_BYTES) {
 }
 
 const TILE_PROXY_PREFIX = "/api/tiles";
+
+// This server binds to a local interface only, so any local process — or a DNS-rebound page in a
+// browser — can reach it. Mutations therefore need a same-origin check, a strict JSON media type
+// (which forces a CORS preflight a cross-site page cannot pass), and a per-process token that a
+// cross-site script cannot read or guess.
+const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1"]);
+const WORKBENCH_AUTH_TOKEN = randomBytes(24).toString("base64url");
+const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+function normalizeRequestHostname(value) {
+  if (typeof value !== "string") return "";
+  const trimmed = value.trim().toLowerCase();
+  if (trimmed.startsWith("[")) {
+    const end = trimmed.indexOf("]");
+    return end === -1 ? "" : trimmed.slice(1, end);
+  }
+  return trimmed.split(":")[0];
+}
+
+function isTrustedLocalHostname(hostname) {
+  if (!hostname) return false;
+  if (LOCAL_HOSTNAMES.has(hostname)) return true;
+  return hostname === normalizeRequestHostname(HOST) || hostname === normalizeRequestHostname(process.env.HOST);
+}
+
+function trustFailure(status, code, path, message) {
+  return { status, diagnostics: [{ severity: "error", code, path, message }] };
+}
+
+function tokenMatches(candidate) {
+  if (typeof candidate !== "string") return false;
+  const a = Buffer.from(candidate);
+  const b = Buffer.from(WORKBENCH_AUTH_TOKEN);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+export function authorizeWorkbenchApiRequest(method, pathname, headers) {
+  if (typeof pathname !== "string" || !pathname.startsWith("/api/")) return null;
+
+  const host = normalizeRequestHostname(headers?.host);
+  if (!isTrustedLocalHostname(host)) {
+    return trustFailure(
+      403,
+      "WORKBENCH.ORIGIN_FORBIDDEN",
+      "/host",
+      "Only local requests may access the Workbench API.",
+    );
+  }
+  const origin = headers?.origin;
+  if (typeof origin === "string" && origin.trim() !== "") {
+    let parsed;
+    try {
+      parsed = new URL(origin);
+    } catch {
+      parsed = null;
+    }
+    const originHostname = parsed ? normalizeRequestHostname(parsed.hostname) : "";
+    if (!parsed || !["http:", "https:"].includes(parsed.protocol) || !isTrustedLocalHostname(originHostname)) {
+      return trustFailure(
+        403,
+        "WORKBENCH.ORIGIN_FORBIDDEN",
+        "/origin",
+        "Cross-origin Workbench requests are forbidden.",
+      );
+    }
+  }
+
+  if (!MUTATING_METHODS.has(String(method).toUpperCase())) return null;
+
+  const contentType = String(headers?.["content-type"] ?? "")
+    .split(";", 1)[0]
+    .trim()
+    .toLowerCase();
+  if (contentType !== "application/json") {
+    return trustFailure(
+      415,
+      "WORKBENCH.MEDIA_TYPE_INVALID",
+      "/content-type",
+      "Workbench mutations require an application/json body.",
+    );
+  }
+  if (!tokenMatches(headers?.["x-workbench-token"])) {
+    return trustFailure(
+      401,
+      "WORKBENCH.ORIGIN_FORBIDDEN",
+      "/x-workbench-token",
+      "A valid Workbench auth token is required.",
+    );
+  }
+  return null;
+}
 
 export const BASEMAPS = {
   none: {
@@ -1763,6 +1854,16 @@ export async function main() {
   const server = createServer(async (req, res) => {
     try {
       const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
+
+      const trust = authorizeWorkbenchApiRequest(req.method, url.pathname, req.headers);
+      if (trust) {
+        req.resume();
+        return sendJson(res, { ok: false, diagnostics: trust.diagnostics }, trust.status);
+      }
+
+      if (req.method === "GET" && url.pathname === "/api/workbench-token") {
+        return sendJson(res, { token: WORKBENCH_AUTH_TOKEN });
+      }
 
       if (url.pathname === "/api/projects" || url.pathname.startsWith("/api/projects/")) {
         const result = await workbenchApi({

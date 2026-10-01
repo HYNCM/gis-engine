@@ -535,11 +535,35 @@ class ApiError extends Error {
   }
 }
 
+let workbenchToken: Promise<string> | undefined;
+
+function fetchWorkbenchToken(): Promise<string> {
+  return fetch("/api/workbench-token", { headers: { Accept: "application/json" } })
+    .then(async (response) => {
+      if (!response.ok) throw new Error(`Workbench token request failed with ${response.status}.`);
+      const body = (await response.json()) as { token?: string };
+      if (typeof body.token !== "string" || body.token.length === 0) {
+        throw new Error("Workbench token response is missing a token.");
+      }
+      return body.token;
+    })
+    .catch((error) => {
+      workbenchToken = undefined;
+      throw error;
+    });
+}
+
 async function request<T = unknown>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, {
-    ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
-  });
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(init?.headers as Record<string, string> | undefined),
+  };
+  const method = (init?.method ?? "GET").toUpperCase();
+  if (method !== "GET" && method !== "HEAD") {
+    workbenchToken ??= fetchWorkbenchToken();
+    headers["X-Workbench-Token"] = await workbenchToken;
+  }
+  const response = await fetch(path, { ...init, headers });
   const body = await response.json();
   if (!response.ok || body?.ok === false) {
     throw new ApiError(
