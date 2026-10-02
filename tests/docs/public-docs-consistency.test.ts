@@ -360,9 +360,22 @@ describe("public docs consistency", () => {
     expect(releaseNotes).toContain("GeoParquet versioned metadata");
     expect(engineApi).toContain("Unreleased current-source API");
     expect(releaseNotes).not.toContain("main-branch contract");
-    expect(existsSync(changesetPath), "breaking GeoParquet contract should have a changeset").toBe(true);
+    // The version bump deletes the changeset, so after a release the CHANGELOG entry is the vehicle.
+    const engineVersion = (JSON.parse(readText("packages/engine/package.json")) as { version: string }).version;
+    const changelog = readText("packages/engine/CHANGELOG.md");
+    const headingIndex = changelog.indexOf(`## ${engineVersion}\n`);
+    const nextHeadingIndex = changelog.indexOf("\n## ", headingIndex);
+    const releasedSection =
+      headingIndex === -1
+        ? ""
+        : changelog.slice(headingIndex, nextHeadingIndex === -1 ? changelog.length : nextHeadingIndex);
+
+    expect(
+      existsSync(changesetPath) || releasedSection.includes("GeoParquet"),
+      "breaking GeoParquet contract needs a pending changeset or a released CHANGELOG entry",
+    ).toBe(true);
     if (existsSync(changesetPath)) {
-      expect(readText(".changeset/geoparquet-versioned-metadata.md")).toContain('"@gis-engine/engine": major');
+      expect(readText(changesetPath)).toContain('"@gis-engine/engine": major');
     }
   });
 
