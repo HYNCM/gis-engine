@@ -154,11 +154,11 @@ describe("public docs consistency", () => {
     }
   });
 
-  it("keeps the current release section on v1.5 truth and explicit No-go boundaries", () => {
+  it("keeps the current release section on v2.0 truth and explicit No-go boundaries", () => {
     const releaseNotes = readText("docs/website/release-notes.md");
     const currentHeading = releaseNotes.match(/^## (v\d+\.\d+\.\d+)$/m);
 
-    expect(currentHeading?.[1]).toBe("v1.5.0");
+    expect(currentHeading?.[1]).toBe("v2.0.0");
 
     const currentStart = currentHeading?.index ?? -1;
     const nextReleaseStart = releaseNotes.indexOf("\n## v", currentStart + 1);
@@ -168,7 +168,7 @@ describe("public docs consistency", () => {
     for (const tool of currentMcpTools) {
       expect(currentRelease, `current release notes should list ${tool}`).toContain(tool);
     }
-    expectCanonicalMcpOrderInText(currentRelease, "current v1.5 release section");
+    expectCanonicalMcpOrderInText(currentRelease, "current v2.0 release section");
     expect(currentRelease).toContain("- **Hosted Workbench GA**: No-go.");
     expect(currentRelease).toContain("- **Stable SceneView3D**: No-go.");
     expect(currentRelease).toContain("- **PMTiles runtime query support**: No-go.");
@@ -348,19 +348,11 @@ describe("public docs consistency", () => {
     expect(migration).toMatch(/antimeridian/i);
   });
 
-  it("marks the breaking GeoParquet contract as unreleased and records its release vehicle", () => {
+  it("records the breaking GeoParquet contract as released with its version vehicle", () => {
     const migration = readText("docs/migration/geoparquet-versioned-metadata.md");
     const releaseNotes = readText("docs/website/release-notes.md");
     const engineApi = readText("docs/website/api/reference/engine/index.md");
     const changesetPath = resolve(repoRoot, ".changeset/geoparquet-versioned-metadata.md");
-
-    expect(migration).toContain("Unreleased");
-    expect(migration).toContain("not part of the published v1.5.0 package");
-    expect(releaseNotes).toContain("## Unreleased");
-    expect(releaseNotes).toContain("GeoParquet versioned metadata");
-    expect(engineApi).toContain("Unreleased current-source API");
-    expect(releaseNotes).not.toContain("main-branch contract");
-    // The version bump deletes the changeset, so after a release the CHANGELOG entry is the vehicle.
     const engineVersion = (JSON.parse(readText("packages/engine/package.json")) as { version: string }).version;
     const changelog = readText("packages/engine/CHANGELOG.md");
     const headingIndex = changelog.indexOf(`## ${engineVersion}\n`);
@@ -370,13 +362,16 @@ describe("public docs consistency", () => {
         ? ""
         : changelog.slice(headingIndex, nextHeadingIndex === -1 ? changelog.length : nextHeadingIndex);
 
-    expect(
-      existsSync(changesetPath) || releasedSection.includes("GeoParquet"),
-      "breaking GeoParquet contract needs a pending changeset or a released CHANGELOG entry",
-    ).toBe(true);
-    if (existsSync(changesetPath)) {
-      expect(readText(changesetPath)).toContain('"@gis-engine/engine": major');
-    }
+    expect(engineVersion).toBe("2.0.0");
+    expect(migration).toContain("Released in `@gis-engine/engine` 2.0.0");
+    expect(migration).not.toContain("Unreleased");
+    expect(releaseNotes).toContain("## v2.0.0");
+    expect(releaseNotes).toContain("GeoParquet versioned metadata");
+    expect(engineApi).toContain("Current-source API in `@gis-engine/engine` 2.0.0");
+    expect(releaseNotes).not.toContain("main-branch contract");
+    expect(releasedSection, `@gis-engine/engine CHANGELOG must keep a ${engineVersion} section`).not.toBe("");
+    expect(releasedSection).toContain("GeoParquet");
+    expect(existsSync(changesetPath), "a released contract must not keep a pending changeset").toBe(false);
   });
 
   it("distinguishes the MapLibre peer range from the resolved release baseline", () => {
