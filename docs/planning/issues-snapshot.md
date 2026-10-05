@@ -1,15 +1,15 @@
 ---
 agent: orchestrator
 period: issue-snapshot
-generated_at: 2026-10-01T14:44:59.819Z
-repo_revision: "eb84ed2"
+generated_at: 2026-10-05T03:39:50.059Z
+repo_revision: "d7096f6"
 inputs:
   - GitHub Issues API
 owner: "@orchestrator"
 decision_level: info
 issue_source: authenticated
-source_updated_at: 2026-10-01T12:56:38Z
-evidence_run_id: planning-evidence-20261001T144459819Z
+source_updated_at: 2026-10-04T21:11:30Z
+evidence_run_id: planning-evidence-20261005T033950059Z
 ---
 
 # GitHub Issues Planning Snapshot
@@ -18,21 +18,23 @@ evidence_run_id: planning-evidence-20261001T144459819Z
 
 ## Summary
 
-- Open issues: 46
-- Closed issues in snapshot: 54
+- Open issues: 43
+- Closed issues in snapshot: 57
 - Total returned: 100
 
 ## Issues
 
 | Issue | State | Title | Labels | Assignees | Milestone | Updated |
 | --- | --- | --- | --- | --- | --- | --- |
-| #122 | OPEN | [Agent Escalation: Agent Monthly Cadence run 36817352239](https://github.com/HYNCM/gis-engine/issues/122) | agent-escalation, automation | - | - | 2026-10-01T12:56:38Z |
+| #129 | OPEN | [Agent Escalation: Agent Daily Cadence run 37172444190](https://github.com/HYNCM/gis-engine/issues/129) | agent-escalation, automation | - | - | 2026-10-04T21:11:30Z |
+| #128 | OPEN | [Agent Escalation: Agent Daily Cadence run 37089685436](https://github.com/HYNCM/gis-engine/issues/128) | agent-escalation, automation | - | - | 2026-10-03T20:57:02Z |
+| #122 | CLOSED | [Agent Escalation: Agent Monthly Cadence run 36817352239](https://github.com/HYNCM/gis-engine/issues/122) | agent-escalation, automation | - | - | 2026-10-01T14:53:05Z |
 | #121 | CLOSED | [Agent Escalation: Agent Daily Cadence run 36806226829](https://github.com/HYNCM/gis-engine/issues/121) | agent-escalation, automation | - | - | 2026-10-01T12:13:44Z |
 | #120 | CLOSED | [Agent Escalation: Agent Daily Cadence run 36698077914](https://github.com/HYNCM/gis-engine/issues/120) | agent-escalation, automation | - | - | 2026-10-01T12:13:42Z |
 | #119 | CLOSED | [Bundle Size gate fails on @gis-engine/cli: 68,184 B over the 65,536 B blocking budget](https://github.com/HYNCM/gis-engine/issues/119) | bug, agent:builder, priority:p1 | - | - | 2026-10-01T12:14:03Z |
 | #118 | CLOSED | [Agent Escalation: Agent Daily Cadence run 36660071422](https://github.com/HYNCM/gis-engine/issues/118) | agent-escalation, automation | - | - | 2026-10-01T12:13:38Z |
 | #117 | CLOSED | [Agent Escalation: Agent Daily Cadence run 36514281764](https://github.com/HYNCM/gis-engine/issues/117) | agent-escalation, automation | - | - | 2026-10-01T12:13:35Z |
-| #116 | OPEN | [Agent Escalation: Agent Weekly Cadence run 36372641006](https://github.com/HYNCM/gis-engine/issues/116) | agent-escalation, automation | - | - | 2026-10-01T12:56:33Z |
+| #116 | CLOSED | [Agent Escalation: Agent Weekly Cadence run 36372641006](https://github.com/HYNCM/gis-engine/issues/116) | agent-escalation, automation | - | - | 2026-10-01T14:51:50Z |
 | #115 | CLOSED | [Agent Escalation: Agent Daily Cadence run 36368211963](https://github.com/HYNCM/gis-engine/issues/115) | agent-escalation, automation | - | - | 2026-10-01T12:13:32Z |
 | #114 | CLOSED | [Agent Escalation: Agent Daily Cadence run 36287013399](https://github.com/HYNCM/gis-engine/issues/114) | agent-escalation, automation | - | - | 2026-10-01T12:13:28Z |
 | #111 | CLOSED | [Agent Escalation: Agent Daily Cadence run 36210504828](https://github.com/HYNCM/gis-engine/issues/111) | agent-escalation, automation | - | - | 2026-10-01T12:13:25Z |
@@ -40,7 +42,7 @@ evidence_run_id: planning-evidence-20261001T144459819Z
 | #109 | CLOSED | [Agent Escalation: Agent Daily Cadence run 35944030692](https://github.com/HYNCM/gis-engine/issues/109) | agent-escalation, automation | - | - | 2026-10-01T12:13:19Z |
 | #108 | CLOSED | [Agent Escalation: Agent Daily Cadence run 35808071365](https://github.com/HYNCM/gis-engine/issues/108) | agent-escalation, automation | - | - | 2026-10-01T12:13:16Z |
 | #107 | CLOSED | [Agent Escalation: Agent Daily Cadence run 35677624508](https://github.com/HYNCM/gis-engine/issues/107) | agent-escalation, automation | - | - | 2026-10-01T12:13:13Z |
-| #106 | OPEN | [Agent Escalation: Agent Weekly Cadence run 35555774472](https://github.com/HYNCM/gis-engine/issues/106) | agent-escalation, automation | - | - | 2026-09-27T21:14:19Z |
+| #106 | CLOSED | [Agent Escalation: Agent Weekly Cadence run 35555774472](https://github.com/HYNCM/gis-engine/issues/106) | agent-escalation, automation | - | - | 2026-10-01T14:51:05Z |
 | #105 | CLOSED | [Agent Escalation: Agent Daily Cadence run 35551934454](https://github.com/HYNCM/gis-engine/issues/105) | agent-escalation, automation | - | - | 2026-10-01T12:13:10Z |
 | #104 | CLOSED | [Agent Escalation: Agent Daily Cadence run 35482163261](https://github.com/HYNCM/gis-engine/issues/104) | agent-escalation, automation | - | - | 2026-10-01T12:13:06Z |
 | #103 | CLOSED | [Agent Escalation: Agent Daily Cadence run 35413469003](https://github.com/HYNCM/gis-engine/issues/103) | agent-escalation, automation | - | - | 2026-10-01T12:13:03Z |
@@ -48,7 +50,7 @@ evidence_run_id: planning-evidence-20261001T144459819Z
 | #101 | CLOSED | [Agent Escalation: Agent Daily Cadence run 35172111111](https://github.com/HYNCM/gis-engine/issues/101) | agent-escalation, automation | - | - | 2026-10-01T12:12:56Z |
 | #100 | CLOSED | [Agent Escalation: Agent Daily Cadence run 35045412635](https://github.com/HYNCM/gis-engine/issues/100) | agent-escalation, automation | - | - | 2026-10-01T12:12:53Z |
 | #99 | CLOSED | [Agent Escalation: Agent Daily Cadence run 34919222459](https://github.com/HYNCM/gis-engine/issues/99) | agent-escalation, automation | - | - | 2026-10-01T12:12:49Z |
-| #98 | OPEN | [Agent Escalation: Agent Weekly Cadence run 34800984036](https://github.com/HYNCM/gis-engine/issues/98) | agent-escalation, automation | - | - | 2026-09-20T20:39:47Z |
+| #98 | CLOSED | [Agent Escalation: Agent Weekly Cadence run 34800984036](https://github.com/HYNCM/gis-engine/issues/98) | agent-escalation, automation | - | - | 2026-10-01T14:50:33Z |
 | #97 | CLOSED | [Agent Escalation: Agent Daily Cadence run 34796978729](https://github.com/HYNCM/gis-engine/issues/97) | agent-escalation, automation | - | - | 2026-10-01T12:12:46Z |
 | #96 | CLOSED | [Agent Escalation: Agent Daily Cadence run 34730589343](https://github.com/HYNCM/gis-engine/issues/96) | agent-escalation, automation | - | - | 2026-10-01T12:12:42Z |
 | #95 | CLOSED | [Agent Escalation: Agent Daily Cadence run 34665388241](https://github.com/HYNCM/gis-engine/issues/95) | agent-escalation, automation | - | - | 2026-10-01T12:12:39Z |
@@ -63,7 +65,7 @@ evidence_run_id: planning-evidence-20261001T144459819Z
 | #86 | OPEN | [Agent Escalation: Agent Daily Cadence run 33825761919](https://github.com/HYNCM/gis-engine/issues/86) | agent-escalation, automation | - | - | 2026-09-04T20:39:49Z |
 | #85 | OPEN | [Agent Escalation: Agent Daily Cadence run 33704067473](https://github.com/HYNCM/gis-engine/issues/85) | agent-escalation, automation | - | - | 2026-09-03T20:53:22Z |
 | #84 | OPEN | [Agent Escalation: Agent Daily Cadence run 33579555537](https://github.com/HYNCM/gis-engine/issues/84) | agent-escalation, automation | - | - | 2026-09-02T20:55:33Z |
-| #83 | OPEN | [Agent Escalation: Agent Monthly Cadence run 33469125219](https://github.com/HYNCM/gis-engine/issues/83) | agent-escalation, automation | - | - | 2026-09-30T22:08:49Z |
+| #83 | CLOSED | [Agent Escalation: Agent Monthly Cadence run 33469125219](https://github.com/HYNCM/gis-engine/issues/83) | agent-escalation, automation | - | - | 2026-10-01T14:52:58Z |
 | #82 | OPEN | [Agent Escalation: Agent Daily Cadence run 33461276148](https://github.com/HYNCM/gis-engine/issues/82) | agent-escalation, automation | - | - | 2026-09-01T20:56:33Z |
 | #81 | OPEN | [Agent Escalation: Agent Weekly Cadence run 33352561416](https://github.com/HYNCM/gis-engine/issues/81) | agent-escalation, automation | - | - | 2026-09-06T20:18:32Z |
 | #80 | OPEN | [Agent Escalation: Agent Daily Cadence run 33348381097](https://github.com/HYNCM/gis-engine/issues/80) | agent-escalation, automation | - | - | 2026-08-31T22:44:58Z |
@@ -124,5 +126,3 @@ evidence_run_id: planning-evidence-20261001T144459819Z
 | #15 | CLOSED | [TASK-2026W26-STUDIO-001: Review-console Workbench product route Go gate](https://github.com/HYNCM/gis-engine/issues/15) | documentation, agent:product, priority:p2, track:productization, agent:quality | - | - | 2026-06-11T17:09:05Z |
 | #14 | CLOSED | [TASK-2026W26-DATA-001: PMTiles runtime query loader contract and negative fixtures](https://github.com/HYNCM/gis-engine/issues/14) | enhancement, track:productization, agent:quality, agent:builder, priority:p1 | - | - | 2026-06-11T17:05:09Z |
 | #13 | CLOSED | [TASK-2026W25-STUDIO-001: Studio and Workbench product Go/No-go evidence](https://github.com/HYNCM/gis-engine/issues/13) | documentation, agent:product, priority:p2, track:productization, agent:quality | - | - | 2026-06-10T05:46:52Z |
-| #12 | CLOSED | [TASK-2026W25-DATA-001: bounded PMTiles runtime query promotion design](https://github.com/HYNCM/gis-engine/issues/12) | enhancement, agent:product, priority:p2, track:productization, agent:quality | - | - | 2026-06-10T05:46:52Z |
-| #11 | CLOSED | [TASK-2026W25-ADOPT-003: generated project auditability regression](https://github.com/HYNCM/gis-engine/issues/11) | enhancement, track:productization, agent:quality, agent:builder, priority:p1 | - | - | 2026-06-10T05:46:52Z |
