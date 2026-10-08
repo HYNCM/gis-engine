@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-10-07T02:49:08.460Z",
-  "repo_revision": "b8348c1",
+  "generated_at": "2026-10-08T03:07:24.256Z",
+  "repo_revision": "03b2977",
   "source": "scripts/handoff-ledger.mjs",
   "evidence_run_id": null,
   "issue_snapshot": null,
@@ -14,7 +14,7 @@
       "status": "invalid-upstream",
       "severity": "error",
       "code": "EVIDENCE.SPECIALIST_STALE",
-      "note": "product specialist evidence is 138.8h old (SLA: 48h)",
+      "note": "product specialist evidence is 163.1h old (SLA: 48h)",
       "action": "@product must refresh specialist evidence before the SLA or handoff can pass",
       "upstream": {
         "path": "docs/research/competitor-updates-2026-W40.md",
@@ -38,7 +38,7 @@
       "status": "pending",
       "severity": "warning",
       "code": "EVIDENCE.SPECIALIST_STALE",
-      "note": "quality specialist evidence is 132.7h old (SLA: 24h)",
+      "note": "quality specialist evidence is 157.0h old (SLA: 24h)",
       "action": "@quality must refresh specialist evidence before the SLA or handoff can pass",
       "upstream": {
         "path": "docs/reviews/review-fixes-builder-evidence-2026-10-01.md",
@@ -66,7 +66,7 @@
       "status": "invalid-upstream",
       "severity": "error",
       "code": "EVIDENCE.SPECIALIST_STALE",
-      "note": "quality specialist evidence is 132.7h old (SLA: 24h)",
+      "note": "quality specialist evidence is 157.0h old (SLA: 24h)",
       "action": "@quality must refresh specialist evidence before the SLA or handoff can pass",
       "upstream": {
         "path": "docs/reviews/quality-gate-release-2026-10-01.md",
