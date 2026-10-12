@@ -1,15 +1,15 @@
 ---
 agent: orchestrator
 period: issue-snapshot
-generated_at: 2026-10-05T03:39:50.059Z
-repo_revision: "d7096f6"
+generated_at: 2026-10-12T03:56:13.175Z
+repo_revision: "d80353a"
 inputs:
   - GitHub Issues API
 owner: "@orchestrator"
 decision_level: info
 issue_source: authenticated
-source_updated_at: 2026-10-04T21:11:30Z
-evidence_run_id: planning-evidence-20261005T033950059Z
+source_updated_at: 2026-10-11T21:46:41Z
+evidence_run_id: planning-evidence-20261012T035613175Z
 ---
 
 # GitHub Issues Planning Snapshot
@@ -18,14 +18,22 @@ evidence_run_id: planning-evidence-20261005T033950059Z
 
 ## Summary
 
-- Open issues: 43
-- Closed issues in snapshot: 57
+- Open issues: 51
+- Closed issues in snapshot: 49
 - Total returned: 100
 
 ## Issues
 
 | Issue | State | Title | Labels | Assignees | Milestone | Updated |
 | --- | --- | --- | --- | --- | --- | --- |
+| #137 | OPEN | [Agent Escalation: Agent Daily Cadence run 38104669258](https://github.com/HYNCM/gis-engine/issues/137) | agent-escalation, automation | - | - | 2026-10-11T21:46:38Z |
+| #136 | OPEN | [Agent Escalation: Agent Daily Cadence run 38018332958](https://github.com/HYNCM/gis-engine/issues/136) | agent-escalation, automation | - | - | 2026-10-10T21:29:50Z |
+| #135 | OPEN | [Agent Escalation: Agent Daily Cadence run 37877990220](https://github.com/HYNCM/gis-engine/issues/135) | agent-escalation, automation | - | - | 2026-10-09T22:31:55Z |
+| #134 | OPEN | [Agent Escalation: Agent Daily Cadence run 37720871709](https://github.com/HYNCM/gis-engine/issues/134) | agent-escalation, automation | - | - | 2026-10-08T23:13:52Z |
+| #133 | OPEN | [Agent Escalation: Agent Daily Cadence run 37563475842](https://github.com/HYNCM/gis-engine/issues/133) | agent-escalation, automation | - | - | 2026-10-07T23:02:35Z |
+| #132 | OPEN | [Agent Escalation: Agent Daily Cadence run 37408646738](https://github.com/HYNCM/gis-engine/issues/132) | agent-escalation, automation | - | - | 2026-10-06T18:14:58Z |
+| #131 | OPEN | [Agent Escalation: Agent Weekly Cadence run 37260239599](https://github.com/HYNCM/gis-engine/issues/131) | agent-escalation, automation | - | - | 2026-10-11T21:46:41Z |
+| #130 | OPEN | [Agent Escalation: Agent Daily Cadence run 37255426942](https://github.com/HYNCM/gis-engine/issues/130) | agent-escalation, automation | - | - | 2026-10-05T23:58:32Z |
 | #129 | OPEN | [Agent Escalation: Agent Daily Cadence run 37172444190](https://github.com/HYNCM/gis-engine/issues/129) | agent-escalation, automation | - | - | 2026-10-04T21:11:30Z |
 | #128 | OPEN | [Agent Escalation: Agent Daily Cadence run 37089685436](https://github.com/HYNCM/gis-engine/issues/128) | agent-escalation, automation | - | - | 2026-10-03T20:57:02Z |
 | #122 | CLOSED | [Agent Escalation: Agent Monthly Cadence run 36817352239](https://github.com/HYNCM/gis-engine/issues/122) | agent-escalation, automation | - | - | 2026-10-01T14:53:05Z |
@@ -118,11 +126,3 @@ evidence_run_id: planning-evidence-20261005T033950059Z
 | #23 | CLOSED | [Agent Escalation: Workflow failure detected](https://github.com/HYNCM/gis-engine/issues/23) | agent-escalation, automation | - | - | 2026-07-03T12:43:33Z |
 | #22 | CLOSED | [TASK-2026W25-DOC-001: Generate the core/extension boundary matrix from one source](https://github.com/HYNCM/gis-engine/issues/22) | documentation, enhancement, priority:p2, track:productization, agent:quality, agent:builder | - | - | 2026-07-06T15:47:42Z |
 | #21 | CLOSED | [TASK-2026W26-CLI-003: CLI install smoke builds generated app](https://github.com/HYNCM/gis-engine/issues/21) | enhancement, priority:p2, track:productization, agent:quality, agent:builder | - | - | 2026-06-13T18:07:18Z |
-| #20 | CLOSED | [TASK-2026W26-CLI-002: Generated app review rail next-action visibility](https://github.com/HYNCM/gis-engine/issues/20) | enhancement, priority:p2, track:productization, agent:quality, agent:builder | - | - | 2026-06-13T16:39:15Z |
-| #19 | CLOSED | [TASK-2026W26-CLI-001: Preflight text next-action visibility](https://github.com/HYNCM/gis-engine/issues/19) | enhancement, priority:p2, track:productization, agent:quality, agent:builder | - | - | 2026-06-13T15:29:37Z |
-| #18 | CLOSED | [TASK-2026W26-DATA-004: GeoTIFF runtime/query promotion gate](https://github.com/HYNCM/gis-engine/issues/18) | enhancement, priority:p2, track:productization, agent:quality, agent:builder | - | - | 2026-06-12T13:22:37Z |
-| #17 | CLOSED | [TASK-2026W26-DATA-003: FlatGeobuf runtime/query promotion gate](https://github.com/HYNCM/gis-engine/issues/17) | enhancement, priority:p2, track:productization, agent:quality, agent:builder | - | - | 2026-06-11T17:43:29Z |
-| #16 | CLOSED | [TASK-2026W26-DATA-002: GeoParquet runtime/query promotion gate](https://github.com/HYNCM/gis-engine/issues/16) | enhancement, priority:p2, track:productization, agent:quality, agent:builder | - | - | 2026-06-11T17:33:38Z |
-| #15 | CLOSED | [TASK-2026W26-STUDIO-001: Review-console Workbench product route Go gate](https://github.com/HYNCM/gis-engine/issues/15) | documentation, agent:product, priority:p2, track:productization, agent:quality | - | - | 2026-06-11T17:09:05Z |
-| #14 | CLOSED | [TASK-2026W26-DATA-001: PMTiles runtime query loader contract and negative fixtures](https://github.com/HYNCM/gis-engine/issues/14) | enhancement, track:productization, agent:quality, agent:builder, priority:p1 | - | - | 2026-06-11T17:05:09Z |
-| #13 | CLOSED | [TASK-2026W25-STUDIO-001: Studio and Workbench product Go/No-go evidence](https://github.com/HYNCM/gis-engine/issues/13) | documentation, agent:product, priority:p2, track:productization, agent:quality | - | - | 2026-06-10T05:46:52Z |
