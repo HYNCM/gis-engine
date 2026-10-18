@@ -1,17 +1,56 @@
 # Release Notes
 
-## Unreleased
+## v2.0.0
 
-GeoParquet versioned metadata now requires explicit `1.1.0` or reviewed
-`2.0.0-rc.1` evidence and has a breaking `@gis-engine/engine` changeset. This
-current-source contract is not part of the published v1.5.0 package. It does not
-promote GeoParquet fetch, parsing, WASM execution, display, or feature query;
-all runtime paths remain No-go until a separate quality-approved release gate.
+GIS Engine v2.0.0 is a metadata-contract release cut on top of the v1.5.0 SDK and
+CLI line. The version bump for `@gis-engine/engine`, `@gis-engine/ai`,
+`@gis-engine/cli`, and `@gis-engine/scene3d` is recorded here; registry
+availability for these versions is produced by the release workflow that
+publishes this same commit.
+
+### Packages
+
+| Package | Version | Tag |
+|---|---|---|
+| `@gis-engine/engine` | 2.0.0 | latest |
+| `@gis-engine/ai` | 2.0.0 | latest |
+| `@gis-engine/cli` | 2.0.0 | latest |
+| `@gis-engine/scene3d` | 2.0.0 | next |
+| `@gis-engine/scene3d-three-adapter` | 0.2.x | (not published) |
+
+### Breaking Change: GeoParquet versioned metadata
+
+Public GeoParquet source contracts require exact `1.1.0` or reviewed
+`2.0.0-rc.1` metadata evidence, with version-specific schema validation and
+stable `GEOPARQUET.*` diagnostics. See
+[GeoParquet versioned metadata](/migration/geoparquet-versioned-metadata) for the
+field-by-field rewrite.
+
+This is a metadata-shape release only. It does not promote GeoParquet fetch,
+parsing, WASM execution, display, or feature query; all runtime paths remain
+No-go until a separate quality-approved release gate.
+
+### MCP Contract
+
+The v2.0.0 packages keep the canonical 14 MCP tools in the same `tools/list`
+order:
+
+`apply_commands`, `validate_spec`, `export_spec`, `get_context_summary`,
+`snapshot_spec`, `explain_spec`, `export_example_app`, `diff_specs`,
+`generate_spec`, `inspect_data`, `edit_spec`, `query_features`,
+`style_recommend`, `transform_data`
+
+### Release Boundaries
+
+- **Hosted Workbench GA**: No-go.
+- **Stable SceneView3D**: No-go.
+- **PMTiles runtime query support**: No-go.
 
 ## v1.5.0
 
-GIS Engine v1.5.0 is the current public SDK and CLI release line. It extends
-the schema-first, command-only workflow with a complete AI-facing contract while
+GIS Engine v1.5.0 is the public SDK and CLI release line that v2.0.0 builds on.
+It extends the schema-first, command-only workflow with a complete AI-facing
+contract while
 keeping experimental product, renderer, and cloud-native runtime claims behind
 their promotion gates.
 

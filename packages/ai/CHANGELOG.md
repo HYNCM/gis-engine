@@ -1,5 +1,13 @@
 # @gis-engine/ai
 
+## 2.0.0
+
+### Patch Changes
+
+- Updated dependencies [5800a6d]
+  - @gis-engine/engine@2.0.0
+  - @gis-engine/scene3d@2.0.0
+
 ## 1.5.0
 
 ### Minor Changes

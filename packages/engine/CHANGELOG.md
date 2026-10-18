@@ -1,5 +1,14 @@
 # @gis-engine/engine
 
+## 2.0.0
+
+### Major Changes
+
+- 5800a6d: Require exact GeoParquet 1.1 or reviewed 2.0 RC metadata evidence in public
+  source contracts, with version-specific schema validation and stable
+  diagnostics. This is a breaking metadata-shape change only; GeoParquet fetch,
+  decode, display, and feature query remain unsupported.
+
 ## 1.5.0
 
 ### Minor Changes

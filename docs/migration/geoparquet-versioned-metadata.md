@@ -1,8 +1,9 @@
 # Migrating GeoParquet Versioned Metadata
 
-> **Unreleased:** This contract is not part of the published v1.5.0 package.
-> It is queued through a breaking engine changeset and must not be presented as
-> available until the matching package version is published.
+> **Released in `@gis-engine/engine` 2.0.0:** this contract ships in the 2.0.0
+> package line. It stays a schema and type-level contract: GeoParquet fetch,
+> decode, display, and feature query runtime remains blocked, and the runtime
+> path is still a No-go.
 
 The GeoParquet source contract now requires exact, versioned metadata evidence.
 This is a breaking schema and TypeScript change for consumers that used the
