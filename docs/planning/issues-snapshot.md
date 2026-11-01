@@ -1,15 +1,15 @@
 ---
 agent: orchestrator
 period: issue-snapshot
-generated_at: 2026-10-26T02:50:24.736Z
-repo_revision: "b16be02"
+generated_at: 2026-11-01T05:04:50.010Z
+repo_revision: "34fc94b"
 inputs:
   - GitHub Issues API
 owner: "@orchestrator"
 decision_level: info
 issue_source: authenticated
-source_updated_at: 2026-10-25T20:40:17Z
-evidence_run_id: planning-evidence-20261026T025024736Z
+source_updated_at: 2026-10-31T21:16:31Z
+evidence_run_id: planning-evidence-20261101T050450010Z
 ---
 
 # GitHub Issues Planning Snapshot
@@ -18,14 +18,21 @@ evidence_run_id: planning-evidence-20261026T025024736Z
 
 ## Summary
 
-- Open issues: 67
-- Closed issues in snapshot: 33
+- Open issues: 69
+- Closed issues in snapshot: 31
 - Total returned: 100
 
 ## Issues
 
 | Issue | State | Title | Labels | Assignees | Milestone | Updated |
 | --- | --- | --- | --- | --- | --- | --- |
+| #160 | OPEN | [Agent Escalation: Agent Daily Cadence run 41161606376](https://github.com/HYNCM/gis-engine/issues/160) | agent-escalation, automation | - | - | 2026-10-31T21:16:26Z |
+| #159 | OPEN | [Agent Escalation: Agent Daily Cadence run 40994958799](https://github.com/HYNCM/gis-engine/issues/159) | agent-escalation, automation | - | - | 2026-10-30T22:07:53Z |
+| #158 | OPEN | [Agent Escalation: Agent Daily Cadence run 40809330429](https://github.com/HYNCM/gis-engine/issues/158) | agent-escalation, automation | - | - | 2026-10-29T22:38:29Z |
+| #157 | OPEN | [Agent Escalation: Agent Daily Cadence run 40622027968](https://github.com/HYNCM/gis-engine/issues/157) | agent-escalation, automation | - | - | 2026-10-28T22:25:46Z |
+| #156 | OPEN | [Agent Escalation: Agent Daily Cadence run 40438706703](https://github.com/HYNCM/gis-engine/issues/156) | agent-escalation, automation | - | - | 2026-10-27T22:01:20Z |
+| #155 | OPEN | [Agent Escalation: Agent Weekly Cadence run 40260948492](https://github.com/HYNCM/gis-engine/issues/155) | agent-escalation, automation | - | - | 2026-10-31T21:16:31Z |
+| #154 | OPEN | [Agent Escalation: Agent Daily Cadence run 40256169976](https://github.com/HYNCM/gis-engine/issues/154) | agent-escalation, automation | - | - | 2026-10-26T22:32:00Z |
 | #153 | OPEN | [Agent Escalation: Agent Daily Cadence run 40152084384](https://github.com/HYNCM/gis-engine/issues/153) | agent-escalation, automation | - | - | 2026-10-25T20:40:13Z |
 | #152 | OPEN | [Agent Escalation: Agent Daily Cadence run 40052425967](https://github.com/HYNCM/gis-engine/issues/152) | agent-escalation, automation | - | - | 2026-10-24T20:32:19Z |
 | #151 | OPEN | [Agent Escalation: Agent Daily Cadence run 39887415530](https://github.com/HYNCM/gis-engine/issues/151) | agent-escalation, automation | - | - | 2026-10-23T21:15:24Z |
@@ -119,10 +126,3 @@ evidence_run_id: planning-evidence-20261026T025024736Z
 | #55 | OPEN | [Agent Escalation: Agent Weekly Cadence run 31346702789](https://github.com/HYNCM/gis-engine/issues/55) | agent-escalation, automation | - | - | 2026-08-16T18:38:54Z |
 | #54 | OPEN | [Agent Escalation: Agent Daily Cadence run 31345055180](https://github.com/HYNCM/gis-engine/issues/54) | agent-escalation, automation | - | - | 2026-08-10T19:06:59Z |
 | #52 | OPEN | [Agent Escalation: Agent Daily Cadence run 31286594926](https://github.com/HYNCM/gis-engine/issues/52) | agent-escalation, automation | - | - | 2026-08-09T02:11:28Z |
-| #51 | OPEN | [Agent Escalation: Agent Daily Cadence run 31230544507](https://github.com/HYNCM/gis-engine/issues/51) | agent-escalation, automation | - | - | 2026-08-08T18:49:20Z |
-| #50 | OPEN | [Agent Escalation: Agent Daily Cadence run 31139477831](https://github.com/HYNCM/gis-engine/issues/50) | agent-escalation, automation | - | - | 2026-08-07T19:06:56Z |
-| #48 | OPEN | [TASK-2026W35-GOV-003: Upgrade Release workflow actions off deprecated Node 20 runtime](https://github.com/HYNCM/gis-engine/issues/48) | priority:p2, agent:quality, agent:builder, automation | - | - | 2026-08-05T17:17:39Z |
-| #45 | OPEN | [TASK-2026W35-GOV-002: Resolve rolling-report retention unit](https://github.com/HYNCM/gis-engine/issues/45) | documentation, priority:p2, agent:quality, agent:builder, automation | - | - | 2026-08-05T16:17:25Z |
-| #44 | OPEN | [TASK-2026W35-GOV-001: Reconcile static inventory and dependency declarations](https://github.com/HYNCM/gis-engine/issues/44) | agent:quality, agent:builder, priority:p1, automation | - | - | 2026-08-05T16:09:10Z |
-| #43 | CLOSED | [TASK-2026W32-GOV-001: Make scheduled agent evidence actionable and deduplicate recovery incidents](https://github.com/HYNCM/gis-engine/issues/43) | enhancement, agent:quality, agent:builder, automation, priority:p0 | - | 2026 W32-W34 Compatibility and Evidence Integrity | 2026-08-05T17:02:49Z |
-| #42 | CLOSED | [TASK-2026W34-DATA-001: Define GeoParquet 1.1 and 2.0 RC readiness boundaries](https://github.com/HYNCM/gis-engine/issues/42) | documentation, enhancement, agent:product, priority:p2, track:productization, agent:quality, agent:builder | - | 2026 W32-W34 Compatibility and Evidence Integrity | 2026-08-05T17:02:51Z |
