@@ -1,7 +1,7 @@
 ---
-generated_at: 2026-11-13T03:40:38.484Z
-repo_revision: "aee49dc"
-period: 2026-11-13
+generated_at: 2026-11-14T03:39:36.988Z
+repo_revision: "fb3f538"
+period: 2026-11-14
 agent: orchestrator
 inputs:
   - scripts/dashboard-generator.mjs
@@ -10,7 +10,7 @@ owner: "@orchestrator"
 decision_level: info
 ---
 
-# Agent Health Dashboard (as of 2026-11-13)
+# Agent Health Dashboard (as of 2026-11-14)
 
 > ⚠️ 本 Dashboard 由 `scripts/dashboard-generator.mjs` 自动生成。
 > 状态为自动化推断，需 orchestrator 审查后确认。
@@ -19,44 +19,44 @@ decision_level: info
 
 | Agent | Cadence | Specialist Report | Last Run | Latest Template | Status | Age |
 | --- | --- | --- | --- | --- | --- | --- |
-| @orchestrator | weekly | docs/planning/weekly-digest.md | 2026-10-01 | — | 🔴 overdue | 43d |
-| @product | weekly | docs/research/competitor-updates-2026-W40.md | 2026-10-01 | — | 🔴 overdue | 43d |
-| @quality | daily | docs/reviews/quality-gate-release-2026-10-01.md | 2026-10-01 | docs/reviews/quality-gate-2026-07-06.md (2026-07-06) | 🔴 overdue | 43d |
-| @builder | ad-hoc | docs/reviews/review-fixes-builder-evidence-2026-10-01.md | 2026-10-01 | — | 🟢 ok | 43d |
-| @docs | daily | docs/reviews/documentation-audit-2026-10-01.md | 2026-10-01 | docs/reviews/documentation-audit-2026-07-06.md (2026-07-06) | 🔴 overdue | 43d |
+| @orchestrator | weekly | docs/planning/weekly-digest.md | 2026-10-01 | — | 🔴 overdue | 44d |
+| @product | weekly | docs/research/competitor-updates-2026-W40.md | 2026-10-01 | — | 🔴 overdue | 44d |
+| @quality | daily | docs/reviews/quality-gate-release-2026-10-01.md | 2026-10-01 | docs/reviews/quality-gate-2026-07-06.md (2026-07-06) | 🔴 overdue | 44d |
+| @builder | ad-hoc | docs/reviews/review-fixes-builder-evidence-2026-10-01.md | 2026-10-01 | — | 🟢 ok | 44d |
+| @docs | daily | docs/reviews/documentation-audit-2026-10-01.md | 2026-10-01 | docs/reviews/documentation-audit-2026-07-06.md (2026-07-06) | 🔴 overdue | 44d |
 
 ## Data Flow Health
 
 | Flow | Issue | Severity |
 | --- | --- | --- |
-| product → orchestrator<br/>*competitor signals and priority recommendations (HOC-N1)* | product specialist evidence is 1027.7h old (SLA: 48h) | 🔴 error |
-| builder → quality<br/>*implementation evidence and test results (HOC-N2)* | quality specialist evidence is 1021.6h old (SLA: 24h) | 🟡 warning |
-| quality → orchestrator<br/>*gate pass/block and release readiness (HOC-N3)* | quality specialist evidence is 1021.6h old (SLA: 24h) | 🔴 error |
+| product → orchestrator<br/>*competitor signals and priority recommendations (HOC-N1)* | product specialist evidence is 1051.6h old (SLA: 48h) | 🔴 error |
+| builder → quality<br/>*implementation evidence and test results (HOC-N2)* | quality specialist evidence is 1045.6h old (SLA: 24h) | 🟡 warning |
+| quality → orchestrator<br/>*gate pass/block and release readiness (HOC-N3)* | quality specialist evidence is 1045.6h old (SLA: 24h) | 🔴 error |
 
 ## SLA Compliance
 
 | Agent | SLA | Max Latency | Current | Status |
 | --- | --- | --- | --- | --- |
-| @orchestrator | 周一 00:00 UTC | 2d | 43d | ❌ breach |
-| @product | 周一 00:00 UTC | 2d | 43d | ❌ breach |
-| @quality | 每日 00:00 UTC | 1d | 43d | ❌ breach |
-| @docs | 每日 00:00 UTC | 2d | 43d | ❌ breach |
+| @orchestrator | 周一 00:00 UTC | 2d | 44d | ❌ breach |
+| @product | 周一 00:00 UTC | 2d | 44d | ❌ breach |
+| @quality | 每日 00:00 UTC | 1d | 44d | ❌ breach |
+| @docs | 每日 00:00 UTC | 2d | 44d | ❌ breach |
 
 > ℹ️ ad-hoc agent (builder) 无固定 SLA。
 
 ## Action Items
 
-- [ ] **@orchestrator**: 报告逾期 43 天 → 手动触发或检查 cron
-- [ ] **@product**: 报告逾期 43 天 → 手动触发或检查 cron
-- [ ] **@quality**: 报告逾期 43 天 → 手动触发或检查 cron
-- [ ] **@docs**: 报告逾期 43 天 → 手动触发或检查 cron
-- [ ] **product → orchestrator**: product specialist evidence is 1027.7h old (SLA: 48h) → 检查 handoff 时序
-- [ ] **builder → quality**: quality specialist evidence is 1021.6h old (SLA: 24h) → 检查 handoff 时序
-- [ ] **quality → orchestrator**: quality specialist evidence is 1021.6h old (SLA: 24h) → 检查 handoff 时序
+- [ ] **@orchestrator**: 报告逾期 44 天 → 手动触发或检查 cron
+- [ ] **@product**: 报告逾期 44 天 → 手动触发或检查 cron
+- [ ] **@quality**: 报告逾期 44 天 → 手动触发或检查 cron
+- [ ] **@docs**: 报告逾期 44 天 → 手动触发或检查 cron
+- [ ] **product → orchestrator**: product specialist evidence is 1051.6h old (SLA: 48h) → 检查 handoff 时序
+- [ ] **builder → quality**: quality specialist evidence is 1045.6h old (SLA: 24h) → 检查 handoff 时序
+- [ ] **quality → orchestrator**: quality specialist evidence is 1045.6h old (SLA: 24h) → 检查 handoff 时序
 
 ## Summary
 
 - **健康 agent**: 1/5
 - **问题 agent**: 4/5
 - **数据流异常**: 3
-- **生成时间**: 2026-11-13T03:40:38.484Z
+- **生成时间**: 2026-11-14T03:39:36.988Z
