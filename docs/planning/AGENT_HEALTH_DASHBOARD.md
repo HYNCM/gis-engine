@@ -1,6 +1,6 @@
 ---
-generated_at: 2026-11-16T03:17:16.375Z
-repo_revision: "95b2dc5"
+generated_at: 2026-11-16T04:25:22.015Z
+repo_revision: "1273396"
 period: 2026-11-16
 agent: orchestrator
 inputs:
@@ -8,12 +8,19 @@ inputs:
   - docs/planning/handoff-ledger.json
 owner: "@orchestrator"
 decision_level: info
+evidence_run_id: planning-evidence-20261116T042522015Z
 ---
 
 # Agent Health Dashboard (as of 2026-11-16)
 
 > ⚠️ 本 Dashboard 由 `scripts/dashboard-generator.mjs` 自动生成。
 > 状态为自动化推断，需 orchestrator 审查后确认。
+
+## Planning Evidence
+
+| Issue Source | Open | Closed | Total | Required Handoffs |
+| --- | ---: | ---: | ---: | --- |
+| authenticated | 69 | 31 | 100 | 0/2 consumed |
 
 ## Execution Health
 
@@ -29,9 +36,9 @@ decision_level: info
 
 | Flow | Issue | Severity |
 | --- | --- | --- |
-| product → orchestrator<br/>*competitor signals and priority recommendations (HOC-N1)* | product specialist evidence is 1099.3h old (SLA: 48h) | 🔴 error |
-| builder → quality<br/>*implementation evidence and test results (HOC-N2)* | quality specialist evidence is 1093.2h old (SLA: 24h) | 🟡 warning |
-| quality → orchestrator<br/>*gate pass/block and release readiness (HOC-N3)* | quality specialist evidence is 1093.2h old (SLA: 24h) | 🔴 error |
+| product → orchestrator<br/>*competitor signals and priority recommendations (HOC-N1)* | product specialist evidence is 1100.4h old (SLA: 48h) | 🔴 error |
+| builder → quality<br/>*implementation evidence and test results (HOC-N2)* | quality specialist evidence is 1094.3h old (SLA: 24h) | 🟡 warning |
+| quality → orchestrator<br/>*gate pass/block and release readiness (HOC-N3)* | quality specialist evidence is 1094.3h old (SLA: 24h) | 🔴 error |
 
 ## SLA Compliance
 
@@ -50,13 +57,13 @@ decision_level: info
 - [ ] **@product**: 报告逾期 46 天 → 手动触发或检查 cron
 - [ ] **@quality**: 报告逾期 46 天 → 手动触发或检查 cron
 - [ ] **@docs**: 报告逾期 46 天 → 手动触发或检查 cron
-- [ ] **product → orchestrator**: product specialist evidence is 1099.3h old (SLA: 48h) → 检查 handoff 时序
-- [ ] **builder → quality**: quality specialist evidence is 1093.2h old (SLA: 24h) → 检查 handoff 时序
-- [ ] **quality → orchestrator**: quality specialist evidence is 1093.2h old (SLA: 24h) → 检查 handoff 时序
+- [ ] **product → orchestrator**: product specialist evidence is 1100.4h old (SLA: 48h) → 检查 handoff 时序
+- [ ] **builder → quality**: quality specialist evidence is 1094.3h old (SLA: 24h) → 检查 handoff 时序
+- [ ] **quality → orchestrator**: quality specialist evidence is 1094.3h old (SLA: 24h) → 检查 handoff 时序
 
 ## Summary
 
 - **健康 agent**: 1/5
 - **问题 agent**: 4/5
 - **数据流异常**: 3
-- **生成时间**: 2026-11-16T03:17:16.375Z
+- **生成时间**: 2026-11-16T04:25:22.015Z
