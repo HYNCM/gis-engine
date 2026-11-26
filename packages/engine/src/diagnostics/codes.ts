@@ -45,6 +45,7 @@ export const DiagnosticCodes = {
   EvidenceDerivationFailed: "EVIDENCE.DERIVATION_FAILED",
   EvidenceSchemaVersionUnsupported: "EVIDENCE.SCHEMA_VERSION_UNSUPPORTED",
   EvidenceCapabilityDrift: "EVIDENCE.CAPABILITY_DRIFT",
+  EvidenceInputInvalid: "EVIDENCE.INPUT_INVALID",
 } as const;
 
 export const Scene3DStableRuntimeBlockerCodes = {

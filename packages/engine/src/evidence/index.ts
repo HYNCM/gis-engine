@@ -36,3 +36,4 @@ export {
   type EvidenceRecordFromSchema,
   EvidenceRecordSchema,
 } from "./schema.js";
+export { buildCommandTransitionEvidence, type CommandTransitionEvidenceInput } from "./transition.js";

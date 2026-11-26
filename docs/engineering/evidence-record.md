@@ -49,6 +49,18 @@ npx @gis-engine/cli create-gis-map --verify-artifacts ./my-map
 `applyCommands` 的真实产出，不接受第二个来源。记录超过 `MAX_EVIDENCE_RECORD_BYTES`（1,048,576 字节）
 时 CLI 丢弃整个输出目录并以退出码 1 结束：不截断字段，不放宽预算。
 
+另外两条生产路径共用 `@gis-engine/engine/evidence` 的 `buildCommandTransitionEvidence`：
+
+- **MCP `export_spec` + `includeEvidence: true`**：对非空命令批次、带 `revision` 锚点的 spec、
+  非 dryRun 的导出返回 `{ spec, evidence }`。唯一 attested 产物是 `mapspec.json`，字节约定与 CLI
+  `map.json` 一致（两空格 JSON + 末尾换行）；约束不满足时返回 `EVIDENCE.INPUT_INVALID`。
+- **`MapRuntime` 导出路径**：runtime 本体保持浏览器可达、不触碰 `node:crypto`，因此不内嵌记录构建；
+  调用方收集每次 `apply()` 返回的 `CommandResult[]` 与 `exportSpec()`，在 Node 侧交给同一个
+  `buildCommandTransitionEvidence` 构建并复算。可执行语义见
+  [`tests/evidence/runtime-export-evidence.test.ts`](../../tests/evidence/runtime-export-evidence.test.ts)。
+  没有 revision 锚点的 applied 结果会被构建器拒绝（`EVIDENCE.INPUT_INVALID`），而不是产出一条
+  复算必失败的记录。
+
 ## 威胁模型
 
 复算面对的是不受信任的输入，审计方要知道自己手里各道防线分别挡住什么。

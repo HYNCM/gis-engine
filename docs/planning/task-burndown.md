@@ -23,15 +23,19 @@ records Issue #66 open in the independent Workbench v1 milestone.
 | Scope | State | Evidence / remaining gate |
 | --- | --- | --- |
 | Definition, v1 specification, boundary matrix | DONE | branch docs and regression tests |
-| `apps/workbench` / package convergence | DONE | PR #67 candidate |
+| `apps/workbench` / package convergence | DONE | PR #67 merged 2026-09-30 (`851fb1a`) |
 | Public contracts and file-backed history | DONE | 106 Workbench tests |
 | Plan preview, atomic apply, restore | DONE | contract/state/E2E evidence |
 | Confirmed export and read-only migration | DONE | delivery + migration tests |
 | Mock + server-held provider, opt-in telemetry | DONE | 27 security tests |
-| Final-head remote CI | IN PROGRESS | clean-checkout fixes `5be1b14` + explicit CLI E2E build pushed |
+| Final-head remote CI | DONE | PR #67 final-head checks all SUCCESS; merged 2026-09-30 (`851fb1a`) |
 | Dependency advisory triage | TODO | npm: 1 high, 1 moderate |
 | Five-person Alpha | TODO | >=80% within 30 minutes; all exports build; no leaks |
 | Ten-person local v1 | TODO | >=80%, P90 <=30 minutes, release install/upgrade/recovery |
+
+> **Update (2026-11-10):** PR #67 merged 2026-09-30 (`851fb1a`) with final-head
+> checks green; the two PR #67 rows above are closed. The Alpha gate still waits
+> on naming five target WebGIS engineers (#66).
 
 ## Existing Follow-Ups
 

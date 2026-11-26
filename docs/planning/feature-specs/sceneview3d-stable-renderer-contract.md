@@ -20,6 +20,12 @@ decision_level: advisory
 
 # SceneView3D Stable Renderer Contract Plan
 
+> **Note (2026-11-10):** Cited evidence paths under `docs/archive/` and
+> `docs/reviews/sceneview3d-src-006-stable-runtime-gate-2026-05-29.md` were
+> deleted in-tree during the documentation audit and exist only in Git history
+> (`git log --all -- <path>`). The decision content is unchanged: stable
+> `view.mode: "scene3d"` remains blocked.
+
 ## Decision Boundary
 
 The W23 promotion-readiness package is accepted as planning evidence, but stable

@@ -24,7 +24,9 @@ release scope.
 
 ## Ordered Work
 
-1. Require all PR #67 final-head checks and close review findings.
+1. PR #67 final-head checks and review findings — closed: merged 2026-09-30
+   (`851fb1a`) with final-head checks green; the 2026-10-01 review findings were
+   fixed test-first.
 2. Resolve or formally bound the generated dependency audit findings.
 3. Define a repeatable participant script covering create, inspect, describe,
    preview, apply, export, build, reopen, and abandon/recover paths.
@@ -35,7 +37,7 @@ release scope.
 
 ## Acceptance
 
-- [ ] PR #67 final-head CI passes and review is complete.
+- [x] PR #67 final-head CI passes and review is complete (merged 2026-09-30, `851fb1a`; checks green).
 - [ ] One high and one moderate npm advisory are triaged at package level.
 - [ ] Five target engineers participate.
 - [ ] At least four finish the golden path within 30 minutes.

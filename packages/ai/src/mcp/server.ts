@@ -1,6 +1,8 @@
+import { createHash } from "node:crypto";
 import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
 import {
+  type ApplyCommandsResult,
   ApplyCommandsToolInputSchema,
   applyCommands,
   buildEngineCapabilityMatrix,
@@ -10,12 +12,14 @@ import {
   type Diagnostic,
   DiagnosticCodes,
   DiagnosticSchema,
+  EvidenceRecordSchema,
   type MapCommand,
   MapCommandSchema,
   type MapSpec,
   MapSpecSchema,
   validateSpec,
 } from "@gis-engine/engine";
+import { type BuildEvidenceRecordResult, buildCommandTransitionEvidence } from "@gis-engine/engine/evidence";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
@@ -101,6 +105,7 @@ export const ExportSpecToolInputSchema = {
     dryRun: { type: "boolean" },
     transaction: { type: "string", enum: ["atomic", "best-effort"] },
     traceId: { type: "string" },
+    includeEvidence: { type: "boolean" },
   },
   required: ["spec"],
   additionalProperties: false,
@@ -249,7 +254,19 @@ export const ValidateSpecToolResultSchema = {
   required: [...ValidationReportSchema.required, "capabilities"],
   additionalProperties: false,
 } as const;
-export const ExportSpecToolResultSchema = MapSpecSchema;
+const ExportSpecEvidenceEnvelopeSchema = {
+  type: "object",
+  properties: {
+    spec: stripNestedIds(MapSpecSchema),
+    evidence: stripNestedIds(EvidenceRecordSchema),
+  },
+  required: ["spec", "evidence"],
+  additionalProperties: false,
+} as const;
+
+export const ExportSpecToolResultSchema = {
+  oneOf: [stripNestedIds(MapSpecSchema), ExportSpecEvidenceEnvelopeSchema],
+} as const;
 
 const CapabilityDomainSummarySchema = {
   type: "object",
@@ -748,6 +765,7 @@ interface ExportSpecToolInput {
   dryRun?: boolean;
   transaction?: "atomic" | "best-effort";
   traceId?: string;
+  includeEvidence?: boolean;
 }
 
 interface ContextSummaryToolInput {
@@ -781,7 +799,7 @@ export const gisEngineTools = [
   {
     name: "export_spec",
     description:
-      "Return a validated, optionally command-modified MapSpec. Use when: the user needs the final usable MapSpec JSON for deployment or sharing; applying a batch of commands and exporting the result in one step. Do NOT use when: the user only needs to validate or preview the spec without obtaining the full output.",
+      "Return a validated, optionally command-modified MapSpec. Use when: the user needs the final usable MapSpec JSON for deployment or sharing; applying a batch of commands and exporting the result in one step. Set includeEvidence: true with a non-empty command batch on a revision-anchored spec (dryRun: false) to receive { spec, evidence } with a recomputable EvidenceRecord instead of the bare spec. Do NOT use when: the user only needs to validate or preview the spec without obtaining the full output.",
     inputSchema: withMcpJsonSchemaDialect(ExportSpecToolInputSchema),
     outputSchema: withMcpToolExecutionError(ExportSpecToolResultSchema),
   },
@@ -906,9 +924,13 @@ export async function callGisEngineTool(request: {
         "Invalid export_spec tool input.",
       );
       if (!input.ok) return toolTextResult(input.diagnostics, true);
-      const { spec, commands = [], dryRun = false, transaction, traceId } = input.input;
+      const { spec, commands = [], dryRun = false, transaction, traceId, includeEvidence = false } = input.input;
       const validation = validateSpec(spec);
       if (!validation.valid) return toolTextResult(validation.diagnostics, true);
+      if (includeEvidence) {
+        const constraint = exportEvidenceInputConstraint(spec, commands, dryRun);
+        if (constraint) return toolTextResult([constraint], true);
+      }
       if (commands.length === 0) return toolTextResult(spec);
       const result = applyCommands(spec, commands, {
         dryRun,
@@ -917,7 +939,10 @@ export async function callGisEngineTool(request: {
       });
       const diagnostics = result.results.flatMap((commandResult) => commandResult.diagnostics);
       if (diagnostics.some((diagnostic) => diagnostic.severity === "error")) return toolTextResult(diagnostics, true);
-      return toolTextResult(result.spec);
+      if (!includeEvidence) return toolTextResult(result.spec);
+      const evidence = buildExportSpecEvidence(spec, commands, result);
+      if (!evidence.ok) return toolTextResult(evidence.diagnostics, true);
+      return toolTextResult({ spec: result.spec, evidence: evidence.record });
     }
 
     if (name === "get_context_summary") {
@@ -1103,4 +1128,68 @@ function toolErrorDiagnostic(message: string, code: Diagnostic["code"] = Diagnos
     message,
     path: "/",
   };
+}
+
+function exportEvidenceInputConstraint(spec: MapSpec, commands: MapCommand[], dryRun: boolean): Diagnostic | undefined {
+  if (commands.length === 0) {
+    return {
+      severity: "error",
+      code: DiagnosticCodes.EvidenceInputInvalid,
+      message: "includeEvidence requires a non-empty command batch; a no-op export has no transition to attest.",
+      path: "/commands",
+    };
+  }
+  if (dryRun) {
+    return {
+      severity: "error",
+      code: DiagnosticCodes.EvidenceInputInvalid,
+      message: "includeEvidence is incompatible with dryRun: evidence attests committed transitions only.",
+      path: "/dryRun",
+    };
+  }
+  if (!spec.revision) {
+    return {
+      severity: "error",
+      code: DiagnosticCodes.EvidenceInputInvalid,
+      message:
+        'includeEvidence requires a revision-anchored spec; set spec.revision (e.g. "0") so the record lineage is recomputable.',
+      path: "/spec/revision",
+    };
+  }
+  return undefined;
+}
+
+function buildExportSpecEvidence(
+  spec: MapSpec,
+  commands: MapCommand[],
+  result: ApplyCommandsResult,
+): BuildEvidenceRecordResult {
+  // Attested bytes follow the CLI map.json convention: two-space JSON plus a trailing newline.
+  const serialized = `${JSON.stringify(result.spec, null, 2)}\n`;
+  const promptHash = commands
+    .map((command) => command.sourcePromptHash)
+    .find((hash): hash is string => typeof hash === "string" && /^sha256:[a-f0-9]{64}$/.test(hash));
+  return buildCommandTransitionEvidence({
+    projectId: spec.id ?? "map",
+    baseSpec: spec,
+    spec: result.spec,
+    commands,
+    results: result.results,
+    origin: { actor: "mcp-client", providerKind: "mcp-export", ...(promptHash ? { promptHash } : {}) },
+    artifacts: [
+      {
+        path: "mapspec.json",
+        role: "mapspec",
+        bytes: Buffer.byteLength(serialized, "utf8"),
+        sha256: `sha256:${createHash("sha256").update(serialized, "utf8").digest("hex")}`,
+      },
+    ],
+    capabilities: buildEngineCapabilityMatrix({ readiness: createSourceReadinessReport(result.spec).sources }),
+    toolchain: {
+      engineVersion: (packageRequire("@gis-engine/engine/package.json") as { version: string }).version,
+      nodeMajor: process.versions.node.split(".")[0] ?? "unknown",
+      pnpmVersion: process.env.npm_config_user_agent?.match(/^pnpm\/([\d.]+)/)?.[1] ?? "unknown",
+    },
+    issuer: "gis-engine-mcp",
+  });
 }

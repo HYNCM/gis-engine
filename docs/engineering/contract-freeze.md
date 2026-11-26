@@ -2,8 +2,8 @@
 
 This file records the public API freeze boundary for the v0.1 base, the
 2026-05-17 v0.2 checkpoint additions, and the 2026-05-18 SceneView3D v1
-preparation surface. Changes to these areas require an explicit
-breaking/non-breaking note in the PR summary.
+preparation surface, now shipping on the v1.5.0 foundation line. Changes to
+these areas require an explicit breaking/non-breaking note in the PR summary.
 
 ## Frozen Boundary
 
@@ -14,7 +14,7 @@ breaking/non-breaking note in the PR summary.
 - `packages/scene3d/src/index.ts`
 - MCP tool names, input schema, output schema, and JSON result shape
 
-## Current v0.1 Contract Additions
+## v0.1 Contract Additions
 
 - `ApplyOptions.traceId`
 - `ApplyCommandsResult.transaction`
@@ -25,7 +25,7 @@ breaking/non-breaking note in the PR summary.
 - `CommandResult.sequenceId`
 - `get_context_summary` MCP tool
 
-## Current v0.2 Checkpoint Additions
+## v0.2 Checkpoint Additions
 
 - `vector` source contract with `tiles[]` or `url` and optional `sourceLayer`, `minzoom`, `maxzoom`, `attribution`.
 - `CapabilityReportSchema` as a public schema artifact.
@@ -35,7 +35,7 @@ breaking/non-breaking note in the PR summary.
 - `fill-extrusion-lite` experimental gate.
 - Reserved `scene3d` unsupported diagnostics.
 
-## Current SceneView3D v1 Prep Additions
+## SceneView3D v1 Prep Additions
 
 - `SceneView3DExtensionSchema` as the public v1 3D extension schema for
   `extensions.scene3d`.
@@ -65,7 +65,7 @@ breaking/non-breaking note in the PR summary.
   requests until the v1 renderer package passes resource, snapshot, query, and
   release visual gates.
 
-## Current v0.2 GA Additions
+## v0.2 GA Additions
 
 - `@gis-engine/cli` package with `create-gis-map` bin, `static-html`, `vite-ts`,
   and `mapspec` templates, and `generate` pipeline (prompt hash → provider plan
@@ -98,7 +98,7 @@ breaking/non-breaking note in the PR summary.
   `style_recommend`, `transform_data`. No `generate_map_app` or
   `spatial_query` alias.
 
-## Current v1 Source Preflight Additions
+## v1 Source Preflight Additions
 
 - `PMTilesSourceLoader` and `createPMTilesRuntimeLoadPlan()` are additive SDK
   APIs for IO-free PMTiles preflight. They validate PMTiles source URLs against

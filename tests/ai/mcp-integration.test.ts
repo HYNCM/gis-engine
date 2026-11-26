@@ -1,5 +1,7 @@
 import { callGisEngineTool, createGisEngineMcpServer, listGisEngineTools } from "@gis-engine/ai";
 import type { MapSpec } from "@gis-engine/engine";
+import { canonicalHash, type EvidenceRecord, verifyEvidenceRecord } from "@gis-engine/engine/evidence";
+import Ajv from "ajv";
 import { describe, expect, it } from "vitest";
 import pmtilesLocalSpec from "../../examples/pmtiles-local/map.json";
 import before from "../fixtures/commands/replay/style-update/before.map.json";
@@ -221,6 +223,72 @@ describe("MCP Server Integration", () => {
     const commandDiagnostics = JSON.parse(invalidCommandResult.content[0]?.text) as Array<{ code: string }>;
     expect(invalidCommandResult.isError).toBe(true);
     expect(commandDiagnostics).toContainEqual(expect.objectContaining({ code: "SPEC.UNKNOWN_FIELD" }));
+  });
+
+  it("exports a spec with a recomputable EvidenceRecord when includeEvidence is set", async () => {
+    const result = await callGisEngineTool({
+      params: {
+        name: "export_spec",
+        arguments: { spec: before, commands, includeEvidence: true },
+      },
+    });
+
+    expect(result.isError).toBeUndefined();
+    const payload = result.structuredContent as { spec: MapSpec; evidence: EvidenceRecord };
+    expect(payload.spec.revision).toBe("2");
+    expect(payload.evidence.issuer).toBe("gis-engine-mcp");
+    expect(payload.evidence.project).toMatchObject({ baseRevision: "1", revision: "2" });
+    expect(payload.evidence.spec.afterHash).toBe(canonicalHash(payload.spec));
+
+    const descriptor = (await listGisEngineTools()).tools.find((tool) => tool.name === "export_spec");
+    const validateOutput = new Ajv({ allErrors: true, strict: false }).compile(descriptor?.outputSchema);
+    expect(validateOutput(payload), JSON.stringify(validateOutput.errors)).toBe(true);
+
+    // The documented consumer convention: write spec as two-space JSON plus a trailing newline.
+    const serialized = `${JSON.stringify(payload.spec, null, 2)}\n`;
+    const verification = await verifyEvidenceRecord(payload.evidence, {
+      readArtifact: async (path) => {
+        expect(path).toBe("mapspec.json");
+        return Buffer.from(serialized, "utf8");
+      },
+    });
+    expect(verification.diagnostics).toEqual([]);
+    expect(verification.ok).toBe(true);
+  });
+
+  it("rejects includeEvidence without a command batch", async () => {
+    const result = await callGisEngineTool({
+      params: { name: "export_spec", arguments: { spec: before, includeEvidence: true } },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent).toEqual({
+      diagnostics: [expect.objectContaining({ code: "EVIDENCE.INPUT_INVALID", path: "/commands" })],
+    });
+  });
+
+  it("rejects includeEvidence combined with dryRun", async () => {
+    const result = await callGisEngineTool({
+      params: { name: "export_spec", arguments: { spec: before, commands, dryRun: true, includeEvidence: true } },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent).toEqual({
+      diagnostics: [expect.objectContaining({ code: "EVIDENCE.INPUT_INVALID", path: "/dryRun" })],
+    });
+  });
+
+  it("rejects includeEvidence on a spec without a revision anchor", async () => {
+    const unanchored = structuredClone(before) as MapSpec;
+    delete unanchored.revision;
+    const result = await callGisEngineTool({
+      params: { name: "export_spec", arguments: { spec: unanchored, commands, includeEvidence: true } },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent).toEqual({
+      diagnostics: [expect.objectContaining({ code: "EVIDENCE.INPUT_INVALID", path: "/spec/revision" })],
+    });
   });
 
   it("returns compact context summaries for AI planning", async () => {

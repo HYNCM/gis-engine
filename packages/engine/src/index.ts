@@ -1,20 +1,3 @@
-export {
-  type A2AAgentAuthentication,
-  type A2AAgentCapabilities,
-  type A2AAgentCard,
-  type A2AAgentSkill,
-  type A2AArtifact,
-  type A2AMessage,
-  type A2APart,
-  type A2ATask,
-  A2ATaskRouter,
-  type A2ATaskRouterOptions,
-  type A2ATaskSendRequest,
-  type A2ATaskSendResponse,
-  type A2ATaskState,
-  createGisEngineAgentCard,
-  validateAgentCard,
-} from "./a2a/index.js";
 export { type ApplyCommandsResult, applyCommands } from "./commands/applyCommands.js";
 export { type BuildPatchResult, buildPatch } from "./commands/buildPatch.js";
 export { DiagnosticCodes, Scene3DStableRuntimeBlockerCodes } from "./diagnostics/codes.js";

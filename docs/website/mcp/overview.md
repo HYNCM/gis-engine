@@ -18,7 +18,7 @@ Canonical `tools/list` order: `apply_commands`, `validate_spec`, `export_spec`,
 |------|---------|-------|--------|
 | `apply_commands` | Edit a map through commands | `{ spec, commands, dryRun? }` | Updated spec + audit |
 | `validate_spec` | Validate a MapSpec document | `{ spec: MapSpec }` | `{ valid, diagnostics, stats }` |
-| `export_spec` | Export current map state | `{ spec, commands?, dryRun? }` | Clean MapSpec JSON |
+| `export_spec` | Export current map state | `{ spec, commands?, dryRun?, includeEvidence? }` | Clean MapSpec JSON; `{ spec, evidence }` with `includeEvidence` |
 | `get_context_summary` | Summarize engine capabilities | `{ spec, capabilities }` | Capability summary |
 | `snapshot_spec` | Take a deterministic snapshot | `{ spec, renderer?, snapshot? }` | `{ passed, diagnostics, dataUrl?, renderer, validation }` |
 | `explain_spec` | Return a structured map explanation | `{ spec, capabilities? }` | `{ summary, validation, diagnostics }` |

@@ -1,9 +1,9 @@
 # Supported Feature Matrix
 
-This matrix defines the current MapLibre MVP surface after the 2026-05-17
-v0.2 checkpoint and the 2026-05-18 SceneView3D v1 preparation pass. Features
-outside this table must return structured diagnostics instead of being silently
-accepted.
+This matrix defines the current MapLibre MVP surface on the v1.5.0 foundation
+line. It originated at the 2026-05-17 v0.2 checkpoint and the 2026-05-18
+SceneView3D v1 preparation pass. Features outside this table must return
+structured diagnostics instead of being silently accepted.
 
 | Area | Supported surface | Notes |
 | --- | --- | --- |
