@@ -19,7 +19,7 @@ fixtures -> schema validation -> command replay -> renderer adapter -> snapshot 
   "scripts": {
     "build": "pnpm -r build",
     "build:schema": "pnpm --filter @gis-engine/engine build:schema && pnpm --filter @gis-engine/scene3d build && pnpm --filter @gis-engine/ai build:schema",
-    "test": "pnpm test:schema && pnpm test:schema-sync && pnpm test:commands && pnpm test:patch && pnpm test:runtime && pnpm test:adapter && pnpm test:ai && pnpm test:cli && pnpm test:examples && pnpm test:docs && pnpm test:agent-framework && pnpm test:resources && pnpm test:perf:smoke && pnpm test:snapshot:smoke",
+    "test": "pnpm test:types && pnpm test:schema && pnpm test:schema-sync && pnpm test:commands && pnpm test:patch && pnpm test:runtime && pnpm test:adapter && pnpm test:ai && pnpm test:cli && pnpm test:evidence && pnpm test:examples && pnpm test:docs && pnpm test:agent-framework && pnpm test:resources && pnpm test:perf:smoke && pnpm test:snapshot:smoke",
     "test:schema": "vitest run tests/schema/schema-fixtures.test.ts tests/schema/expression-validator.test.ts tests/schema/resource-policy.test.ts tests/schema/cloud-native-policy.test.ts",
     "test:schema-sync": "vitest run tests/schema-sync",
     "test:commands": "vitest run tests/commands",
@@ -40,7 +40,7 @@ fixtures -> schema validation -> command replay -> renderer adapter -> snapshot 
     "test:resources": "vitest run tests/resources",
     "test:docs": "vitest run tests/docs",
     "test:workbench": "vitest run tests/workbench",
-    "test:workbench:e2e": "pnpm workbench:build && playwright test tests/workbench/workbench-e2e.spec.ts --workers=1",
+    "test:workbench:e2e": "pnpm --filter @gis-engine/cli build && pnpm workbench:build && playwright test tests/workbench/workbench-e2e.spec.ts --workers=1",
     "test:workbench:security": "vitest run tests/workbench/workbench-api.test.ts tests/workbench/workbench-export.test.ts tests/workbench/workbench-telemetry.test.ts",
     "test:workbench:delivery": "pnpm --filter @gis-engine/engine build:schema && pnpm --filter @gis-engine/cli build && pnpm workbench:build && node scripts/workbench-delivery-smoke.mjs",
     "test:release:scene3d": "vitest run tests/snapshot/smoke/scene3d-release-visual-gate.test.ts",
@@ -48,7 +48,9 @@ fixtures -> schema validation -> command replay -> renderer adapter -> snapshot 
     "test:release:strict": "pnpm build:schema && pnpm check && GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1 pnpm test:snapshot:visual",
     "release:preflight": "node scripts/release-preflight.mjs",
     "release:verify": "node scripts/release-verify.mjs",
-    "check": "pnpm build && pnpm test && pnpm test:workbench",
+    "check": "pnpm build && pnpm test && pnpm test:workbench && pnpm knip:gate",
+    "knip": "knip",
+    "knip:gate": "knip --include files,dependencies,devDependencies,unlisted,binaries,unresolved",
     "smoke:first-run": "node scripts/first-run-acceptance.mjs",
     "smoke:cli-install": "node scripts/cli-install-smoke.mjs"
   }
@@ -102,6 +104,7 @@ CI 分为 PR、main-nightly、release 三档。PR 目标是稳定阻断确定性
 | snapshot visual | 条件运行；无 GPU/WebGL 时生成 skipped report，不阻断 | 条件运行；环境可用时阻断，环境不可用时告警并归档 | 必跑且阻断；或 `GIS_ENGINE_REQUIRE_VISUAL_SNAPSHOT=1` 时必跑且阻断 |
 | WebGL2 lite contract | 否 | 如果声明 experimental 则运行 | 是，如果声明 experimental |
 | AI tool contract | 必跑且阻断 | 必跑且阻断 | 必跑且阻断 |
+| static inventory | `pnpm knip:gate` 随 `pnpm check` 必跑且阻断（files/dependencies/unlisted/binaries/unresolved；exports/types 留给完整 `pnpm knip` 审计） | 同左 | 同左 |
 | resource release | 必跑且阻断 | 必跑且阻断 | 必跑且阻断 |
 | perf smoke | 否 | `pnpm test:perf:nightly` 条件运行；失败告警 | `pnpm test:perf:nightly` 必跑且阻断 |
 | perf trend | 否 | `pnpm test:perf:trend` 周度运行并归档趋势报告 | `scripts/perf-trend.mjs` 生成的 `docs/reviews/perf-trend-*.md` 周度证据 |

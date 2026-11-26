@@ -39,6 +39,7 @@ export const EvidenceIssueCode = {
   DerivationFailed: "EVIDENCE.DERIVATION_FAILED",
   SchemaVersionUnsupported: "EVIDENCE.SCHEMA_VERSION_UNSUPPORTED",
   CapabilityDrift: "EVIDENCE.CAPABILITY_DRIFT",
+  InputInvalid: "EVIDENCE.INPUT_INVALID",
 } as const;
 export type EvidenceIssueCode = (typeof EvidenceIssueCode)[keyof typeof EvidenceIssueCode];
 

@@ -15,6 +15,7 @@ pnpm docs:links
 - [Project intent](intent/project-definition.md)
 - [Architecture decision](architecture/core-framework.md)
 - [Contracts](spec/contracts-and-interfaces.md)
+- [Supported feature matrix](engineering/supported-feature-matrix.md)
 - [Resource policy context](engineering/ci-test-strategy.md)
 - [EvidenceRecord recompute](engineering/evidence-record.md)
 - [Release boundaries](engineering/release-wording-guardrails.md)
@@ -23,7 +24,7 @@ pnpm docs:links
 ## Generated Docs
 
 - [API reference](website/api/reference)
-- [Feature matrix](engineering/supported-feature-matrix.md)
+- [Feature matrix audit](reviews/feature-matrix-audit.md)
 - [Link audit](reviews/doc-link-audit.md)
 - [Issue snapshot](planning/issues-snapshot.md)
 

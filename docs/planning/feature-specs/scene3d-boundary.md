@@ -14,7 +14,7 @@ decision_level: advisory
 
 ## Boundary
 
-`SceneView3D` remains a v1 capability boundary. The current v0.2 line reserves
+`SceneView3D` remains a v1 capability boundary. The current v1.5.0 line reserves
 names for `view.mode: "scene3d"`, `capabilities.renderer: "scene3d"`, and
 `capabilities.dimensions: ["3d"]`, but treats them as unsupported until the
 dedicated 3D package passes resource, snapshot, query, and renderer gates.

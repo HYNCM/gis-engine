@@ -25,6 +25,14 @@ External facts in this document were checked on **2026-10-01** and are limited
 to the signals recorded in [competitor-updates-2026-W40.md](../research/competitor-updates-2026-W40.md).
 Nothing here is a merge, release, or runtime-promotion approval.
 
+> **Correction (2026-11-10):** The Release row, Priority 3, and the release-risk
+> row below were corrected to the 2026-10-01 14:05Z gate state, superseding the
+> 12:05Z observation this file was generated with. Ubuntu strict visual evidence
+> exists (release-verify run `36866555879`, 5 visual tests passed against the
+> committed Linux baselines); the release blocker is the version-bump PR
+> docs-consistency deadlock. See [weekly-digest.md](weekly-digest.md) and
+> [quality-gate-release-2026-10-01.md](../reviews/quality-gate-release-2026-10-01.md).
+
 ## Product State
 
 Workbench remains the primary product narrative at `0.x`, built on
@@ -36,7 +44,7 @@ Engine semver still does not imply Workbench maturity.
 | Rendering contract | 2D path hardened; adapter is validated against MapLibre `5.24.0` while upstream is `v6.11.2` | W40 signal 1, [compat matrix](../../scripts/maplibre-compat-matrix.mjs) |
 | AI protocol | 14-tool MCP inventory intact on the pinned `2025-11-25`; `2026-07-28` starts a 12-month migration clock | W40 signal 2 |
 | Quality bar | All nine findings of the 2026-10-01 review fixed test-first, conditional-pass for merge | [quality gate](../reviews/quality-gate-2026-10-01.md) |
-| Release | Not release-capable: the strict visual stage of `release:verify` has never run on an Ubuntu runner in CI | quality gate "Blocking condition for release" |
+| Release | Not release-capable: Ubuntu strict visual evidence exists (release-verify run `36866555879`); the blocker is the version-bump PR docs-consistency deadlock | [quality gate re-issue](../reviews/quality-gate-release-2026-10-01.md), [weekly digest](weekly-digest.md) |
 | 3D | No promotion; stable `view.mode: "scene3d"` stays adapter-gated | AGENTS.md boundary, W40 signal 3 |
 | Alpha | Not started — waiting on 5 named target WebGIS engineers (user decision) | issue [#66](https://github.com/HYNCM/gis-engine/issues/66) |
 
@@ -61,8 +69,10 @@ Using the AGENTS.md priority formula with the W40 inputs:
    Dynamic Client Registration. The snake_case tool inventory and draft-07
    input/output schema discipline should survive unchanged. Owner: @builder (ai).
 3. **Release-path visual evidence** — unblocks the first credible release claim.
-   The Ubuntu pixel baselines are committed (`c32105e`) but the push Release job
-   stops while changesets are pending, so nothing has consumed them.
+   Ubuntu strict visual evidence now exists: the manual `release-verify`
+   workflow (#126) ran the chain on `ubuntu-latest` (`36866555879`, 5 visual
+   tests passed against the committed Linux baselines). The remaining blocker
+   is the version-bump PR docs-consistency deadlock, not missing baselines.
    Owner: @orchestrator + @quality.
 4. **Cadence reliability and queue hygiene** — 67 open `agent-escalation` issues,
    the latest Weekly run (`36372641006`) and latest Monthly run (`36817352239`)
@@ -79,7 +89,7 @@ Using the AGENTS.md priority formula with the W40 inputs:
 | Automated green is mistaken for product success | contained | #66 stays open with user metrics unchecked |
 | Pinned MCP revision read as protocol leadership | open | Priority 2 assessment; no adoption claim without it |
 | Stale scorecard drives priorities implicitly | contained | Scorecard staleness declared above; refresh before the November roadmap |
-| Release claims without Ubuntu visual evidence | contained | Quality gate records the blocking condition; PR #47 not merged |
+| Release claims without Ubuntu visual evidence | contained | Ubuntu visual evidence exists (run `36866555879`); release blocked on the version-bump PR gate deadlock; PR #47 not merged |
 | Cadence noise replaces signal in the issue tracker | open | Dedupe escalation incidents and add a green-replacement close rule |
 
 ## Handoff Required
