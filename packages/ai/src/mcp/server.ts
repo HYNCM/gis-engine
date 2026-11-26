@@ -2,8 +2,8 @@ import { createHash } from "node:crypto";
 import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
 import {
-  ApplyCommandsToolInputSchema,
   type ApplyCommandsResult,
+  ApplyCommandsToolInputSchema,
   applyCommands,
   buildEngineCapabilityMatrix,
   type CapabilityReport,
@@ -1151,7 +1151,8 @@ function exportEvidenceInputConstraint(spec: MapSpec, commands: MapCommand[], dr
     return {
       severity: "error",
       code: DiagnosticCodes.EvidenceInputInvalid,
-      message: 'includeEvidence requires a revision-anchored spec; set spec.revision (e.g. "0") so the record lineage is recomputable.',
+      message:
+        'includeEvidence requires a revision-anchored spec; set spec.revision (e.g. "0") so the record lineage is recomputable.',
       path: "/spec/revision",
     };
   }
