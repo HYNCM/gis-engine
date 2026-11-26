@@ -1,5 +1,15 @@
 # @gis-engine/cli
 
+## 2.0.0
+
+### Patch Changes
+
+- Updated dependencies [78edd29]
+- Updated dependencies [5800a6d]
+- Updated dependencies [78edd29]
+  - @gis-engine/engine@2.0.0
+  - @gis-engine/ai@2.0.0
+
 ## 1.5.0
 
 ### Minor Changes
